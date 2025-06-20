@@ -4,6 +4,8 @@ members = [
     "packages/minigame",
     "packages/metagame",
     "packages/utils",
+    "packages/leaderboard",
+    "packages/presets",
 ]
 
 [package]
@@ -30,6 +32,8 @@ game_components_denshokan = { path = "packages/denshokan" }
 game_components_minigame = { path = "packages/minigame" }
 game_components_metagame = { path = "packages/metagame" }
 game_components_utils = { path = "packages/utils" }
+game_components_leaderboard = { path = "packages/leaderboard" }
+game_components_presets = { path = "packages/presets" }
 
 [dev-dependencies]
 cairo_test = "=2.10.1"

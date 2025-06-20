@@ -1,0 +1,23 @@
+[package]
+name = "game_components_presets"
+version.workspace = true
+edition.workspace = true
+
+[lib]
+
+[cairo]
+sierra-replace-ids = true
+
+[dependencies]
+game_components_leaderboard = { path = "../leaderboard" }
+dojo = { git = "https://github.com/dojoengine/dojo", tag = "v1.5.1" }
+openzeppelin_token = "1.0.0"
+openzeppelin_introspection = "1.0.0"
+openzeppelin_access = "1.0.0"
+
+[[target.starknet-contract]]
+build-external-contracts = ["dojo::world::world_contract::world"]
+
+[dev-dependencies]
+cairo_test = "=2.10.1"
+dojo_cairo_test = { git = "https://github.com/dojoengine/dojo", tag = "v1.5.1" }
