@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod renderer_tests {
-    use game_components_utils::renderer::create_metadata;
+    use game_components_utils::renderer::{create_metadata, test_create_svg_wrapper, test_create_rect_wrapper, test_logo_wrapper};
     use super::super::test_helpers::contains;
 
     #[test]
@@ -267,5 +267,73 @@ mod renderer_tests {
         // Property: Valid structure exists
         assert!(contains(@metadata, @"data:application/json;base64,"));
         assert!(metadata.len() > 100);
+    }
+
+    #[test]
+    fn test_create_svg_empty_internals() {
+        let svg = test_create_svg_wrapper("red", "");
+        
+        // Should have basic SVG structure even with empty internals
+        assert!(contains(@svg, @"<svg"));
+        assert!(contains(@svg, @"</svg>"));
+        assert!(contains(@svg, @"style"));
+        assert!(contains(@svg, @"red"));
+        assert!(svg.len() > 50);
+    }
+
+    #[test]
+    fn test_create_svg_with_content() {
+        let svg = test_create_svg_wrapper("blue", "<rect x='0' y='0' width='100' height='100'/>");
+        
+        // Should contain the provided content
+        assert!(contains(@svg, @"<svg"));
+        assert!(contains(@svg, @"</svg>"));
+        assert!(contains(@svg, @"blue"));
+        assert!(contains(@svg, @"<rect"));
+        assert!(svg.len() > 100);
+    }
+
+    #[test]
+    fn test_create_rect_various_colors() {
+        let colors = array!["red", "blue", "#FF0000", "rgb(255,0,0)"];
+        let mut i = 0;
+        loop {
+            if i >= colors.len() {
+                break;
+            }
+            let color = colors[i];
+            let rect = test_create_rect_wrapper(color.clone());
+            
+            // Should contain rect element with specified color
+            assert!(contains(@rect, @"<rect"));
+            assert!(contains(@rect, @"stroke"));
+            assert!(contains(@rect, color));
+            assert!(rect.len() > 50);
+            i += 1;
+        };
+    }
+
+    #[test]
+    fn test_logo_with_empty_url() {
+        let logo = test_logo_wrapper("");
+        
+        // Should have clipPath and image structure even with empty URL
+        assert!(contains(@logo, @"<defs>"));
+        assert!(contains(@logo, @"<clipPath"));
+        assert!(contains(@logo, @"<image"));
+        assert!(contains(@logo, @"clip-path"));
+        assert!(logo.len() > 100);
+    }
+
+    #[test]
+    fn test_logo_with_url() {
+        let logo = test_logo_wrapper("https://example.com/image.png");
+        
+        // Should contain the provided URL
+        assert!(contains(@logo, @"<defs>"));
+        assert!(contains(@logo, @"<image"));
+        assert!(contains(@logo, @"https://example.com/image.png"));
+        assert!(contains(@logo, @"clip-path"));
+        assert!(logo.len() > 100);
     }
 }

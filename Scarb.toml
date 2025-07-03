@@ -5,7 +5,7 @@ members = [
     "packages/token",
     # Test packages can be uncommented when needed
     # "packages/test_dojo",  # Excluded - must be built separately with sozo
-    "packages/test_starknet",
+    # "packages/test_starknet",
     "packages/utils",
 ]
 
@@ -30,7 +30,7 @@ keywords = [
 
 [workspace.dependencies]
 starknet = "2.10.1"
-snforge_std = "0.45.0"
+snforge_std = "0.44.0"
 
 [dependencies]
 starknet.workspace = true
@@ -39,10 +39,20 @@ game_components_metagame = { path = "packages/metagame" }
 game_components_minigame = { path = "packages/minigame" }
 # Test packages
 # game_components_test_dojo = { path = "packages/test_dojo" }  # Excluded - must be built separately
-game_components_test_starknet = { path = "packages/test_starknet" }
+# game_components_test_starknet = { path = "packages/test_starknet" }
 game_components_utils = { path = "packages/utils" }
 
 [dev-dependencies]
 snforge_std.workspace = true
+
+[profile.dev.cairo]
+unstable-add-statements-functions-debug-info = true
+unstable-add-statements-code-locations-debug-info = true
+inlining-strategy = "avoid"
+
+[[target.starknet-contract]]
+allowed-libfuncs-list.name = "experimental"
+sierra = true
+casm = false
 
 [lib]

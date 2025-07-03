@@ -8,8 +8,21 @@ edition.workspace = true
 [cairo]
 sierra-replace-ids = true
 
+[[target.starknet-contract]]
+allowed-libfuncs-list.name = "experimental"
+sierra = true
+casm = false
+
 [dependencies]
 starknet.workspace = true
 game_components_token = { path = "../token" }
 game_components_utils = { path = "../utils" }
 openzeppelin_introspection = "1.0.0"
+
+[dev-dependencies]
+snforge_std.workspace = true
+
+[profile.dev.cairo]
+unstable-add-statements-functions-debug-info = true
+unstable-add-statements-code-locations-debug-info = true
+inlining-strategy = "avoid"

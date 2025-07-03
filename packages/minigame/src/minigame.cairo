@@ -3,29 +3,20 @@
 ///
 #[starknet::component]
 pub mod MinigameComponent {
-    use core::num::traits::Zero;
     use crate::interface::{
         IMinigame, IMinigameTokenData, IMINIGAME_ID,
     };
     use crate::libs;
-    use game_components_minigame::extensions::objectives::interface::{
-        IMINIGAME_OBJECTIVES_ID
-    };
-    use game_components_minigame::extensions::settings::interface::{
-        IMINIGAME_SETTINGS_ID
-    };
-    use game_components_metagame::extensions::context::structs::GameContextDetails;
     use game_components_token::extensions::multi_game::interface::{
         IMINIGAME_TOKEN_MULTIGAME_ID, IMinigameTokenMultiGameDispatcher, IMinigameTokenMultiGameDispatcherTrait,
     };
 
-    use starknet::{ContractAddress, get_contract_address};
+    use starknet::{ContractAddress};
     use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
 
     use openzeppelin_introspection::src5::SRC5Component;
     use openzeppelin_introspection::src5::SRC5Component::InternalTrait as SRC5InternalTrait;
     use openzeppelin_introspection::src5::SRC5Component::SRC5Impl;
-    use openzeppelin_introspection::interface::{ISRC5Dispatcher, ISRC5DispatcherTrait};
 
     #[storage]
     pub struct Storage {

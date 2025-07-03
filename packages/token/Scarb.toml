@@ -15,3 +15,16 @@ game_components_minigame = { path = "../minigame" }
 game_components_utils = { path = "../utils" }
 openzeppelin_token = "1.0.0"
 openzeppelin_introspection = "1.0.0"
+
+[dev-dependencies]
+snforge_std.workspace = true
+
+[[target.starknet-contract]]
+allowed-libfuncs-list.name = "experimental"
+sierra = true
+casm = false
+
+[profile.dev.cairo]
+unstable-add-statements-functions-debug-info = true
+unstable-add-statements-code-locations-debug-info = true
+inlining-strategy = "avoid"

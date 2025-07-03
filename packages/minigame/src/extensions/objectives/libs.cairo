@@ -1,6 +1,5 @@
 use starknet::ContractAddress;
 use crate::extensions::objectives::structs::GameObjective;
-use crate::extensions::objectives::interface::IMinigameObjectives;
 use game_components_token::extensions::objectives::interface::{
     IMinigameTokenObjectivesDispatcher, IMinigameTokenObjectivesDispatcherTrait,
 };

@@ -4,3 +4,4 @@ Scarb.lock
 .tool-versions
 *.sierra.json
 *.casm.json
+packages/token/snfoundry_trace

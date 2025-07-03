@@ -209,7 +209,7 @@ pub mod TokenComponent {
                                 let objective_id = *objective_ids.at(objective_index);
                                 assert!(
                                     objectives_dispatcher.objective_exists(objective_id),
-                                    "Denshokan: Objective id {} not registered",
+                                    "MinigameToken: Objective id {} not registered",
                                     objective_id,
                                 );
                                 objective_index += 1;

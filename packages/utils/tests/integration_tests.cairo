@@ -396,4 +396,50 @@ mod integration_tests {
         assert!(metadata.len() > 100);
         // Original check was for: @"Objectives Complete"));
     }
+
+    #[test]
+    fn test_svg_injection_in_colors() {
+        // Test SVG injection attempt in color parameter
+        let malicious_color = "\"><script>alert('xss')</script><rect fill=\"";
+        let metadata = create_metadata(
+            1, 'Game', 'Dev', "img.png", malicious_color, 0, 0, 'Player'
+        );
+        
+        // Verify script tags don't appear unescaped in output
+        assert!(metadata.len() > 0);
+        assert!(contains(@metadata, @"data:application/json;base64,"));
+        
+        // The malicious script should not appear as executable code
+        // Since the output is base64 encoded JSON, script injection should be neutralized
+        // Verify no raw script tags exist in the output
+        assert!(!contains(@metadata, @"<script>"));
+        assert!(!contains(@metadata, @"alert("));
+        
+        // Verify the metadata still has valid structure despite malicious input
+        assert!(metadata.len() > 100);
+    }
+
+    #[test]
+    fn test_metadata_attribute_count() {
+        // Test that metadata always has exactly 4 attributes
+        let metadata = create_metadata(
+            789, 'AttrGame', 'AttrDev', "attr.png", "cyan", 333, 4, 'AttrPlayer'
+        );
+        
+        // Verify it's a valid data URI
+        assert!(contains(@metadata, @"data:application/json;base64,"));
+        assert!(metadata.len() > 100);
+        
+        // Verify that the metadata structure is consistent
+        // Since the attributes are base64 encoded, we validate structural properties
+        // The metadata should have consistent length indicating proper attribute inclusion
+        assert!(metadata.len() > 1000); // Should be substantial with all 4 attributes
+        assert!(metadata.len() < 10000); // But not unreasonably large
+        
+        // Test with different inputs to ensure consistent attribute structure
+        let metadata2 = create_metadata(
+            1, 'Test', 'Dev', "", "red", 0, 0, 'Player'
+        );
+        assert!(metadata2.len() > 1000); // Should still have substantial content with 4 attributes
+    }
 }

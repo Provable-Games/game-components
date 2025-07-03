@@ -161,6 +161,18 @@ pub fn create_metadata(
 }
 
 
+pub fn test_create_svg_wrapper(color: ByteArray, internals: ByteArray) -> ByteArray {
+    create_svg(color, internals)
+}
+
+pub fn test_create_rect_wrapper(color: ByteArray) -> ByteArray {
+    create_rect(color)
+}
+
+pub fn test_logo_wrapper(image: ByteArray) -> ByteArray {
+    logo(image)
+}
+
 #[cfg(test)]
 mod tests {
     use super::create_metadata;

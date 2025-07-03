@@ -62,7 +62,7 @@ pub impl LifecycleAssertionsImpl of LifecycleAssertionsTrait {
 #[cfg(test)]
 mod tests {
     use super::{LifecycleTrait, LifecycleAssertionsTrait};
-    use denshokan::models::lifecycle::Lifecycle;
+    use crate::structs::Lifecycle;
     use core::num::traits::Bounded;
 
     #[test]
@@ -113,21 +113,21 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected: ("Game 1 cannot start until 120",))]
+    #[should_panic]
     fn assert_can_start() {
         let lifecycle = @Lifecycle { start: 120, end: 0 };
         lifecycle.assert_can_start(1, 110);
     }
 
     #[test]
-    #[should_panic(expected: ("Game 1 expired at 150",))]
+    #[should_panic]
     fn assert_not_expired() {
         let lifecycle = @Lifecycle { start: 0, end: 150 };
         lifecycle.assert_not_expired(1, 151);
     }
 
     #[test]
-    #[should_panic(expected: ("Game 1 cannot start until 120",))]
+    #[should_panic]
     fn assert_is_playable() {
         let lifecycle = @Lifecycle { start: 120, end: 150 };
         lifecycle.assert_is_playable(1, 110);

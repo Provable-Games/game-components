@@ -5,7 +5,7 @@
 pub mod MetagameComponent {
     use core::num::traits::Zero;
     use crate::interface::{IMetagame, IMETAGAME_ID};
-    use game_components_metagame::extensions::context::interface::{IMetagameContext, IMETAGAME_CONTEXT_ID};
+    use game_components_metagame::extensions::context::interface::IMETAGAME_CONTEXT_ID;
     use game_components_metagame::extensions::context::structs::GameContextDetails;
     use crate::libs;
 
