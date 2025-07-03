@@ -105,9 +105,9 @@ mod tests {
     use super::create_context_json;
     use super::create_json_array;
 
-    use game_components_minigame_settings::structs::GameSetting;
-    use game_components_minigame_objectives::structs::GameObjective;
-    use game_components_metagame_context::structs::GameContext;
+    use game_components_minigame::extensions::settings::structs::GameSetting;
+    use game_components_minigame::extensions::objectives::structs::GameObjective;
+    use game_components_metagame::extensions::context::structs::GameContext;
 
     #[test]
     fn test_settings_json() {
@@ -141,7 +141,7 @@ mod tests {
             GameContext { name: "Test Context 2", value: "Test Context 2 Value" },
         ]
             .span();
-        let _current_1 = create_context_json("Test App", "Test App Description", contexts);
+        let _current_1 = create_context_json("Test App", "Test App Description", Option::None, contexts);
         println!("{}", _current_1);
     }
 
@@ -159,7 +159,7 @@ mod tests {
             GameContext { name: "Tournament Id", value: format!("{}", tournament_id) },
         ]
             .span();
-        let context_json = create_context_json("Budokan", "The onchain tournament system", context);
+        let context_json = create_context_json("Budokan", "The onchain tournament system", Option::Some(tournament_id.try_into().unwrap()), context);
         println!("Budokan context: {}", context_json);
     }
 
@@ -172,7 +172,7 @@ mod tests {
         ]
             .span();
         let context_json = create_context_json(
-            "Eternum", "Multiplayer Civilization with a real economy that never sleeps", context,
+            "Eternum", "Multiplayer Civilization with a real economy that never sleeps", Option::Some(quest_id.try_into().unwrap()), context,
         );
         println!("Eternum context: {}", context_json);
     }

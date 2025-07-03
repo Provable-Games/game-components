@@ -136,7 +136,7 @@ fn encode_bytes(mut bytes: ByteArray, base64_chars: Span<u8>) -> ByteArray {
     result
 }
 
-trait BytesUsedTrait<T> {
+pub trait BytesUsedTrait<T> {
     /// Returns the number of bytes used to represent a `T` value.
     /// # Arguments
     /// * `self` - The value to check.
@@ -155,8 +155,8 @@ impl U8BytesUsedTraitImpl of BytesUsedTrait<u8> {
     }
 }
 
-impl USizeBytesUsedTraitImpl of BytesUsedTrait<usize> {
-    fn bytes_used(self: usize) -> u8 {
+impl U32BytesUsedTraitImpl of BytesUsedTrait<u32> {
+    fn bytes_used(self: u32) -> u8 {
         if self < 0x10000 { // 256^2
             if self < 0x100 { // 256^1
                 if self == 0 {
