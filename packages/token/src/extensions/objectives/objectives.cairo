@@ -16,6 +16,8 @@ pub mod TokenObjectivesComponent {
     use openzeppelin_introspection::src5::SRC5Component::InternalTrait as SRC5InternalTrait;
     use openzeppelin_introspection::src5::SRC5Component::SRC5Impl;
 
+    use game_components_token::token::TokenComponent;
+
     #[storage]
     pub struct Storage {
         token_objective_count: Map<u64, u32>, // storage of the number of objectives for a token
@@ -53,7 +55,10 @@ pub mod TokenObjectivesComponent {
 
     #[embeddable_as(TokenObjectivesImpl)]
     impl TokenObjectives<
-        TContractState, +HasComponent<TContractState>, +Drop<TContractState>,
+        TContractState,
+        +HasComponent<TContractState>,
+        impl Token: TokenComponent::HasComponent<TContractState>,
+        +Drop<TContractState>,
     > of IMinigameTokenObjectives<ComponentState<TContractState>> {
         fn objectives_count(self: @ComponentState<TContractState>, token_id: u64) -> u32 {
             self.token_objective_count.entry(token_id).read()

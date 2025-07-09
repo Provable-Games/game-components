@@ -1,0 +1,18 @@
+[package]
+name = "game_components_token_components"
+version = "1.5.1"
+edition = "2023_11"
+
+[dependencies]
+starknet = "2.8.2"
+openzeppelin = { git = "https://github.com/OpenZeppelin/cairo-contracts", tag = "v0.15.0" }
+game_components_utils = { path = "../utils" }
+game_components_minigame = { path = "../minigame" }
+game_components_metagame = { path = "../metagame" }
+
+[[target.starknet-contract]]
+sierra = true
+casm = true
+
+[tool.snforge]
+# See the official documentation at https://foundry-rs.github.io/starknet-foundry/appendix/snforge-toml.html 

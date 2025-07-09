@@ -10,6 +10,8 @@ pub mod MinterComponent {
     use openzeppelin_introspection::src5::SRC5Component::InternalTrait as SRC5InternalTrait;
     use openzeppelin_introspection::src5::SRC5Component::SRC5Impl;
 
+    use game_components_token::token::TokenComponent;
+
     #[storage]
     pub struct Storage {
         minter_registry: Map<ContractAddress, u64>,
@@ -22,6 +24,7 @@ pub mod MinterComponent {
         TContractState,
         +HasComponent<TContractState>,
         impl SRC5: SRC5Component::HasComponent<TContractState>,
+        impl Token: TokenComponent::HasComponent<TContractState>,
         +Drop<TContractState>,
     > of InternalTrait<TContractState> {
         fn initializer(ref self: ComponentState<TContractState>) {

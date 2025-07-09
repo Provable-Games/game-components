@@ -1,21 +1,22 @@
 #[starknet::component]
 pub mod TokenComponent {
     use core::num::traits::Zero;
-    use crate::interface::{IMinigameToken, IMINIGAME_TOKEN_ID};
+    use crate::interface::{
+        IMinigameToken, IMINIGAME_TOKEN_ID, TokenMinterCallback, TokenContextCallback,
+        TokenSoulboundCallback, TokenRendererCallback, TokenMultiGameCallback, TokenObjectivesCallback
+    };
     use crate::structs::{TokenMetadata, Lifecycle};
     use crate::libs::lifecycle::LifecycleTrait;
-    use crate::extensions::multi_game::multi_game::MultiGameComponent;
-    use crate::extensions::multi_game::multi_game::MultiGameComponent::InternalTrait as MultiGameInternalTrait;
+
     use crate::extensions::multi_game::interface::IMINIGAME_TOKEN_MULTIGAME_ID;
     use crate::extensions::multi_game::structs::GameMetadata;
     use crate::extensions::objectives::interface::IMINIGAME_TOKEN_OBJECTIVES_ID;
-    use crate::extensions::objectives::objectives::TokenObjectivesComponent;
-    use crate::extensions::objectives::objectives::TokenObjectivesComponent::InternalTrait as TokenObjectivesInternalTrait;
     use crate::extensions::objectives::structs::TokenObjective;
     use crate::extensions::settings::interface::IMINIGAME_TOKEN_SETTINGS_ID;
     use crate::extensions::minter::interface::IMINIGAME_TOKEN_MINTER_ID;
-    use crate::extensions::minter::minter::MinterComponent;
-    use crate::extensions::minter::minter::MinterComponent::InternalTrait as MinterInternalTrait;
+    // use crate::extensions::soulbound::interface::IMINIGAME_TOKEN_SOULBOUND_ID;
+    // TODO: Add renderer interface when it exists
+    // use crate::extensions::renderer::interface::IMINIGAME_TOKEN_RENDERER_ID;
 
     use game_components_minigame::interface::{
         IMINIGAME_ID, IMinigameDispatcher, IMinigameDispatcherTrait, IMinigameTokenDataDispatcher,
@@ -94,15 +95,19 @@ pub mod TokenComponent {
     // }
 
     #[embeddable_as(TokenImpl)]
-    impl Token<
+    pub impl Token<
         TContractState,
         +HasComponent<TContractState>,
         +ERC721Component::ERC721HooksTrait<TContractState>,
         impl SRC5: SRC5Component::HasComponent<TContractState>,
         impl ERC721: ERC721Component::HasComponent<TContractState>,
-        impl MultiGame: MultiGameComponent::HasComponent<TContractState>,
-        impl Minter: MinterComponent::HasComponent<TContractState>,
-        impl TokenObjectives: TokenObjectivesComponent::HasComponent<TContractState>,
+        // CALLBACK TRAITS FOR OPTIONAL COMPONENTS
+        impl MinterCallback: TokenMinterCallback<TContractState>,
+        impl ContextCallback: TokenContextCallback<TContractState>,
+        impl SoulboundCallback: TokenSoulboundCallback<TContractState>,
+        impl RendererCallback: TokenRendererCallback<TContractState>,
+        impl MultiGameCallback: TokenMultiGameCallback<TContractState>,
+        impl ObjectivesCallback: TokenObjectivesCallback<TContractState>,
         +Drop<TContractState>,
     > of IMinigameToken<ComponentState<TContractState>> {
         fn settings_id(self: @ComponentState<TContractState>, token_id: u64) -> u32 {
@@ -150,15 +155,14 @@ pub mod TokenComponent {
                     );
 
                     // Check if the token contract supports multi-game
-                    let mut game_id = 0;
+                    let mut game_id: u64 = 0;
                     let supports_multi_game_token = src5_component
                         .supports_interface(IMINIGAME_TOKEN_MULTIGAME_ID);
                     if supports_multi_game_token {
-                        // TODO: Move this to multigame internal
-                        let mut multi_game_component = get_dep_component_mut!(ref self, MultiGame);
-                        game_id = multi_game_component.get_game_id_from_address(game_address);
-                        let game_metadata: GameMetadata = multi_game_component
-                            .get_game_metadata(game_id);
+                        // CALLBACK PATTERN FOR MULTI-GAME
+                        let mut contract = self.get_contract_mut();
+                        game_id = MultiGameCallback::get_game_id_from_address(ref contract, game_address);
+                        let game_metadata: GameMetadata = MultiGameCallback::get_game_metadata(ref contract, game_id);
                         let game_address_display: felt252 = game_address.into();
                         assert!(
                             !game_metadata.contract_address.is_zero(),
@@ -276,11 +280,12 @@ pub mod TokenComponent {
 
             let caller_address = get_caller_address();
 
+            // CALLBACK PATTERN FOR MINTER
             let supports_minter = src5_component.supports_interface(IMINIGAME_TOKEN_MINTER_ID);
             let mut minted_by: u64 = 0;
             if supports_minter {
-                let mut minter_component = get_dep_component_mut!(ref self, Minter);
-                minted_by = minter_component.add_minter(caller_address);
+                let mut contract = self.get_contract_mut();
+                minted_by = MinterCallback::on_mint_with_minter(ref contract, caller_address);
             }
 
             // Create token metadata
@@ -293,7 +298,7 @@ pub mod TokenComponent {
                 soulbound: soulbound,
                 game_over: false,
                 completed_all_objectives: false,
-                has_context: false,
+                has_context: context.is_some(),
                 objectives_count: objectives_count.try_into().unwrap(),
             };
 
@@ -307,9 +312,35 @@ pub mod TokenComponent {
             if let Option::Some(name) = player_name {
                 self.token_player_names.entry(token_id).write(name);
             }
+            
             // Mint ERC721 token
             let mut erc721_component = get_dep_component_mut!(ref self, ERC721);
             erc721_component.mint(to, token_id.into());
+
+            // CALLBACK PATTERN FOR CONTEXT
+            if let Option::Some(context_data) = context {
+                let mut contract = self.get_contract_mut();
+                ContextCallback::on_mint_with_context(ref contract, token_id, context_data);
+            }
+
+            // // CALLBACK PATTERN FOR SOULBOUND
+            // if soulbound {
+            //     let supports_soulbound = src5_component.supports_interface(IMINIGAME_TOKEN_SOULBOUND_ID);
+            //     if supports_soulbound {
+            //         let mut contract = self.get_contract_mut();
+            //         SoulboundCallback::on_mint_soulbound(ref contract, token_id, to);
+            //     }
+            // }
+
+            // CALLBACK PATTERN FOR RENDERER
+            if let Option::Some(renderer_addr) = renderer_address {
+                // TODO: Add interface check when renderer interface exists
+                // let supports_renderer = src5_component.supports_interface(IMINIGAME_TOKEN_RENDERER_ID);
+                // if supports_renderer {
+                    let mut contract = self.get_contract_mut();
+                    RendererCallback::on_mint_with_renderer(ref contract, token_id, renderer_addr);
+                // }
+            }
 
             token_id
         }
@@ -329,15 +360,15 @@ pub mod TokenComponent {
             let mut completed_all_objectives = false;
             let mut game_address = self.game_address.read();
             let mut src5_component = get_dep_component_mut!(ref self, SRC5);
-            let mut multi_game_component = get_dep_component_mut!(ref self, MultiGame);
             let supports_objectives = src5_component
                 .supports_interface(IMINIGAME_TOKEN_OBJECTIVES_ID);
             if supports_objectives {
                 let supports_multi_game_token = src5_component
                     .supports_interface(IMINIGAME_TOKEN_MULTIGAME_ID);
                 if supports_multi_game_token {
-                    game_address = multi_game_component
-                        .get_game_address_from_id(token_metadata.game_id);
+                    // CALLBACK PATTERN FOR MULTI-GAME
+                    let mut contract = self.get_contract_mut();
+                    game_address = MultiGameCallback::get_game_address_from_id(ref contract, token_metadata.game_id);
                 }
                 let src5_dispatcher = ISRC5Dispatcher { contract_address: game_address };
                 assert!(
@@ -349,8 +380,8 @@ pub mod TokenComponent {
                         .supports_interface(IMINIGAME_TOKEN_MULTIGAME_ID);
                     let minigame_dispatcher = if supports_multi_game_token {
                         // Get game metadata to check for multi game token
-                        let game_metadata: GameMetadata = multi_game_component
-                            .get_game_metadata(token_metadata.game_id);
+                        let mut contract = self.get_contract_mut();
+                        let game_metadata: GameMetadata = MultiGameCallback::get_game_metadata(ref contract, token_metadata.game_id);
                         IMinigameDispatcher { contract_address: game_metadata.contract_address }
                     } else {
                         // Get the initialized game address for single game token
@@ -373,21 +404,18 @@ pub mod TokenComponent {
                         if objective_index == token_metadata.objectives_count.into() {
                             break;
                         }
-                        // This doesn't work as token objectives is not required
-                        let mut objectives_token_component = get_dep_component_mut!(
-                            ref self, TokenObjectives,
-                        );
-                        let token_objective: TokenObjective = objectives_token_component
-                            .get_objective(token_id, objective_index);
+                        // CALLBACK PATTERN FOR TOKEN OBJECTIVES
+                        let mut contract = self.get_contract_mut();
+                        let token_objective: TokenObjective = ObjectivesCallback::get_objective(ref contract, token_id, objective_index);
                         let objective_id = token_objective.objective_id;
                         let is_objective_completed = game_objectives_dispatcher
                             .completed_objective(token_id, objective_id);
                         if is_objective_completed {
-                            let token_objective: TokenObjective = TokenObjective {
+                            let updated_objective: TokenObjective = TokenObjective {
                                 objective_id, completed: true,
                             };
-                            objectives_token_component
-                                .set_objective(token_id, objective_index, token_objective);
+                            let mut contract2 = self.get_contract_mut();
+                            ObjectivesCallback::set_objective(ref contract2, token_id, objective_index, updated_objective);
                             completed_objectives += 1;
                         }
                         objective_index += 1;
@@ -486,4 +514,14 @@ pub mod TokenComponent {
             self.emit(MetadataUpdate { token_id });
         }
     }
+
+    //================================================================================================
+    // COMPONENT CALLBACK IMPLEMENTATIONS
+    //================================================================================================
+    //
+    // Component callback implementations should be defined at the contract level where they have
+    // access to all required components. See examples/ for contract implementations.
+    //
+    // Example implementations will be provided in the examples/ directory showing how to integrate
+    // with actual components when they are available.
 }

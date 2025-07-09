@@ -13,3 +13,12 @@ pub mod unit {
     #[cfg(test)]
     pub mod test_minter_component;
 }
+
+pub mod integration {
+    #[cfg(test)]
+    pub mod test_simple_token_example;
+    #[cfg(test)]
+    pub mod test_advanced_token_example;
+    #[cfg(test)]
+    pub mod test_full_featured_token_example;
+}

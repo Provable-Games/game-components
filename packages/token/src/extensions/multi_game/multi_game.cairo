@@ -18,7 +18,7 @@ pub mod MultiGameComponent {
     use openzeppelin_introspection::src5::SRC5Component::InternalTrait as SRC5InternalTrait;
     use openzeppelin_introspection::src5::SRC5Component::SRC5Impl;
 
-    use crate::token::TokenComponent;
+    use game_components_token::token::TokenComponent;
 
     #[storage]
     pub struct Storage {
