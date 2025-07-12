@@ -1,2 +1,6 @@
-pub const IMINIGAME_TOKEN_SOULBOUND_ID: felt252 =
-    0x0373556b429b8d6a1209e10edfb4d099f83f2eb128dd3c3d7cc427b238732cda;
+#[starknet::interface]
+pub trait IMinigameTokenSoulbound<TState> {
+    fn is_soulbound(self: @TState, token_id: u64) -> bool;
+    fn make_soulbound(ref self: TState, token_id: u64);
+    fn revoke_soulbound(ref self: TState, token_id: u64);
+}

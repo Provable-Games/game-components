@@ -5,9 +5,9 @@
 pub mod MinigameComponent {
     use crate::interface::{IMinigame, IMinigameTokenData, IMINIGAME_ID};
     use crate::libs;
-    use game_components_token::extensions::multi_game::interface::{
-        IMINIGAME_TOKEN_MULTIGAME_ID, IMinigameTokenMultiGameDispatcher,
-        IMinigameTokenMultiGameDispatcherTrait,
+    use game_components_token::examples::multi_game_contract::{
+        IMINIGAME_REGISTRY_ID, IMinigameRegistryDispatcher,
+        IMinigameRegistryDispatcherTrait,
     };
     use starknet::{ContractAddress};
     use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
@@ -62,8 +62,8 @@ pub mod MinigameComponent {
             color: Option<ByteArray>,
             client_url: Option<ByteArray>,
             renderer_address: Option<ContractAddress>,
-            settings_address: ContractAddress,
-            objectives_address: ContractAddress,
+            settings_address: Option<ContractAddress>,
+            objectives_address: Option<ContractAddress>,
             token_address: ContractAddress,
         ) {
             // Register base SRC5 interface
@@ -74,12 +74,12 @@ pub mod MinigameComponent {
 
             let mut src5_component = get_dep_component_mut!(ref self, SRC5);
             let supports_multi_game = src5_component
-                .supports_interface(IMINIGAME_TOKEN_MULTIGAME_ID);
+                .supports_interface(IMINIGAME_REGISTRY_ID);
             if supports_multi_game {
-                let minigame_token_multi_game_dispatcher = IMinigameTokenMultiGameDispatcher {
+                let minigame_registry_dispatcher = IMinigameRegistryDispatcher {
                     contract_address: token_address,
                 };
-                minigame_token_multi_game_dispatcher
+                minigame_registry_dispatcher
                     .register_game(
                         creator_address,
                         name,
@@ -95,8 +95,12 @@ pub mod MinigameComponent {
             }
 
             // Store the settings and objectives addresses
-            self.settings_address.write(settings_address.clone());
-            self.objectives_address.write(objectives_address.clone());
+            if let Option::Some(settings_address) = settings_address {
+                self.settings_address.write(settings_address);
+            }
+            if let Option::Some(objectives_address) = objectives_address {
+                self.objectives_address.write(objectives_address);
+            }
         }
 
         fn register_game_interface(ref self: ComponentState<TContractState>) {

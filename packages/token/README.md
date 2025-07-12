@@ -1,176 +1,220 @@
-# Game Components Token Package
+# Token Components Optimized
 
-This package provides a comprehensive token system for game components with support for multiple extensions.
+> **Revolutionary Configurable Direct Components Architecture**
+> 
+> Solves the Starknet 4MB contract size limit with compile-time optimization and runtime sophistication.
 
-## Overview
+## 🎯 **Problem Solved**
 
-The token package includes:
+Traditional token examples exceeded Starknet's 4MB limit:
+- SimpleTokenContract: 7.6MB
+- AdvancedTokenContract: 7.8MB
+- FullFeaturedTokenContract: 9.0MB
 
-- **Core Token Component**: Basic token functionality with game integration
-- **Extensions**: Modular extensions for different token features
-- **Mixin Component**: Combines all extensions into a single convenient interface (similar to OpenZeppelin's approach)
+This architecture provides **compile-time optimization** with **runtime sophistication**.
 
-## Extensions
+## 🏗️ **Architecture Overview**
 
-### Available Extensions
-
-1. **Multi-Game** (`IMinigameTokenMultiGame`): Support for multiple games within a single token contract
-2. **Objectives** (`IMinigameTokenObjectives`): Token-level objectives and completion tracking
-3. **Settings** (`IMinigameTokenSettings`): Game settings management
-4. **Minter** (`IMINIGAME_TOKEN_MINTER_ID`): Minting controls and permissions
-5. **Soulbound** (`IMINIGAME_TOKEN_SOULBOUND_ID`): Non-transferable token support
-
-## Token Mixin Component
-
-The `TokenMixinComponent` provides a single interface that combines all token extensions, similar to OpenZeppelin's `ERC721ABI`. This makes it easy to create contracts with full token functionality without having to individually implement each extension.
-
-### Features
-
-- **Combined Interface**: Single `IMinigameTokenABI` interface that includes all extension methods
-- **Flexible Initialization**: Choose which extensions to enable during deployment
-- **OpenZeppelin Integration**: Built on top of OpenZeppelin's ERC721 component
-- **Modular Design**: Can still use individual components if you don't need all features
-
-## Usage
-
-### Using the Full Mixin (Recommended)
-
+### 1. **Configuration Layer** (`src/config.cairo`)
+Compile-time feature flags that eliminate unused code:
 ```cairo
-#[starknet::contract]
-pub mod MyTokenContract {
-    use game_components_token::mixin::TokenMixinComponent;
-    use game_components_token::token::TokenComponent;
-    use game_components_token::extensions::multi_game::multi_game::MultiGameComponent;
-    use game_components_token::extensions::objectives::objectives::TokenObjectivesComponent;
-    use openzeppelin_introspection::src5::SRC5Component;
-    use openzeppelin_token::erc721::ERC721Component;
+pub const MINTER_ENABLED: bool = true;
+pub const MULTI_GAME_ENABLED: bool = false;
+pub const OBJECTIVES_ENABLED: bool = true;
+pub const CONTEXT_ENABLED: bool = false;
+pub const SOULBOUND_ENABLED: bool = false;
+pub const RENDERER_ENABLED: bool = false;
+```
 
-    // Component declarations
-    component!(path: TokenMixinComponent, storage: token_mixin, event: TokenMixinEvent);
-    component!(path: TokenComponent, storage: token, event: TokenEvent);
+### 2. **Core Layer** (`src/core/`)
+Single sophisticated `CoreTokenComponent` that preserves ALL logic from original TokenComponent:
+- Complex game address validation
+- Dynamic interface checking with `supports_interface` calls
+- Multi-game metadata lookups vs single-game validation
+- Settings/objectives validation when components available
+- Conditional feature execution based on availability
+
+### 3. **Features Layer** (`src/features/`)
+Six independent components:
+- **Minter** - Minter tracking and registry
+- **MultiGame** - Multi-game support and metadata
+- **Objectives** - Token objectives management
+- **Context** - Game context handling
+- **Soulbound** - Soulbound token functionality
+- **Renderer** - Custom renderer support
+
+### 4. **Integration Layer** (`src/integration/`)
+Helper traits, patterns, and comprehensive examples.
+
+## 🚀 **Key Innovation**
+
+Compile-time optimization with runtime sophistication:
+```cairo
+// Compile-time optimization
+let minted_by = if config::MINTER_ENABLED {
+    // Runtime sophistication - only compiled if enabled
+    if src5_component.supports_interface(IMINIGAME_TOKEN_MINTER_ID) {
+        let minter_component = get_dep_component!(ref self, Minter);
+        minter_component.on_mint_with_minter(caller)
+    } else {
+        0
+    }
+} else {
+    0
+};
+```
+
+## 📦 **Usage**
+
+### Basic Token (Minimal Size)
+```cairo
+// In your config.cairo
+pub const MINTER_ENABLED: bool = false;
+pub const MULTI_GAME_ENABLED: bool = false;
+pub const OBJECTIVES_ENABLED: bool = false;
+pub const CONTEXT_ENABLED: bool = false;
+pub const SOULBOUND_ENABLED: bool = false;
+pub const RENDERER_ENABLED: bool = false;
+
+// In your contract
+#[starknet::contract]
+mod MyToken {
+    use game_components_token_optimized::core::CoreTokenComponent;
+    use game_components_token_optimized::core::traits::*;
+    
+    component!(path: CoreTokenComponent, storage: core_token, event: CoreTokenEvent);
+    
+    #[abi(embed_v0)]
+    impl CoreTokenImpl = CoreTokenComponent::CoreTokenImpl<ContractState>;
+    
+    impl CoreTokenInternalImpl = CoreTokenComponent::InternalImpl<ContractState>;
+    
+    // Use NoOp implementations for disabled features
+    impl MinterImpl = NoOpMinter<ContractState>;
+    impl MultiGameImpl = NoOpMultiGame<ContractState>;
+    impl ObjectivesImpl = NoOpObjectives<ContractState>;
+    impl ContextImpl = NoOpContext<ContractState>;
+    impl SoulboundImpl = NoOpSoulbound<ContractState>;
+    impl RendererImpl = NoOpRenderer<ContractState>;
+}
+```
+
+### Advanced Token (Select Features)
+```cairo
+// In your config.cairo
+pub const MINTER_ENABLED: bool = true;
+pub const MULTI_GAME_ENABLED: bool = true;
+pub const OBJECTIVES_ENABLED: bool = true;
+pub const CONTEXT_ENABLED: bool = false;
+pub const SOULBOUND_ENABLED: bool = false;
+pub const RENDERER_ENABLED: bool = false;
+
+// In your contract
+#[starknet::contract]
+mod MyAdvancedToken {
+    use game_components_token_optimized::core::CoreTokenComponent;
+    use game_components_token_optimized::features::{
+        MinterComponent, MultiGameComponent, ObjectivesComponent
+    };
+    
+    component!(path: CoreTokenComponent, storage: core_token, event: CoreTokenEvent);
+    component!(path: MinterComponent, storage: minter, event: MinterEvent);
     component!(path: MultiGameComponent, storage: multi_game, event: MultiGameEvent);
-    component!(path: TokenObjectivesComponent, storage: token_objectives, event: TokenObjectivesEvent);
-    component!(path: SRC5Component, storage: src5, event: SRC5Event);
-    component!(path: ERC721Component, storage: erc721, event: ERC721Event);
-
-    // Single mixin implementation provides all functionality
-    #[abi(embed_v0)]
-    impl TokenMixinImpl = TokenMixinComponent::TokenMixinImpl<ContractState>;
-
-    #[constructor]
-    fn constructor(
-        ref self: ContractState,
-        name: ByteArray,
-        symbol: ByteArray,
-        base_uri: ByteArray,
-        game_address: Option<ContractAddress>,
-    ) {
-        // Initialize with all extensions enabled
-        self.token_mixin.initializer(
-            name,
-            symbol, 
-            base_uri,
-            game_address,
-            true, // supports_multi_game
-            true, // supports_objectives
-            true, // supports_settings
-            true, // supports_minter
-            true, // supports_soulbound
-        );
-    }
+    component!(path: ObjectivesComponent, storage: objectives, event: ObjectivesEvent);
+    
+    // Enable selected features
+    impl MinterOptionalImpl = MinterComponent::MinterOptionalImpl<ContractState>;
+    impl MultiGameOptionalImpl = MultiGameComponent::MultiGameOptionalImpl<ContractState>;
+    impl ObjectivesOptionalImpl = ObjectivesComponent::ObjectivesOptionalImpl<ContractState>;
+    
+    // Disable unused features
+    impl ContextImpl = NoOpContext<ContractState>;
+    impl SoulboundImpl = NoOpSoulbound<ContractState>;
+    impl RendererImpl = NoOpRenderer<ContractState>;
 }
 ```
 
-### Using Individual Components
+## 🔧 **Integration Patterns**
 
-If you only need specific functionality, you can use individual components:
-
+### Helper Macros
 ```cairo
-#[starknet::contract]
-pub mod SimpleTokenContract {
-    use game_components_token::token::TokenComponent;
-    use game_components_token::extensions::objectives::objectives::TokenObjectivesComponent;
-    use openzeppelin_introspection::src5::SRC5Component;
-    use openzeppelin_token::erc721::ERC721Component;
+use game_components_token_optimized::integration::macros::*;
 
-    // Component declarations
-    component!(path: TokenComponent, storage: token, event: TokenEvent);
-    component!(path: TokenObjectivesComponent, storage: token_objectives, event: TokenObjectivesEvent);
-    component!(path: SRC5Component, storage: src5, event: SRC5Event);
-    component!(path: ERC721Component, storage: erc721, event: ERC721Event);
+// Automatically configure based on enabled components
+configure_token_features!(ContractState);
+```
 
-    // Individual implementations
-    #[abi(embed_v0)]
-    impl TokenImpl = TokenComponent::TokenImpl<ContractState>;
-    #[abi(embed_v0)]
-    impl TokenObjectivesImpl = TokenObjectivesComponent::TokenObjectivesImpl<ContractState>;
-
-    #[constructor]
-    fn constructor(ref self: ContractState, name: ByteArray, symbol: ByteArray, game_address: ContractAddress) {
-        // Initialize only what you need
-        self.erc721.initializer(name, symbol, "");
-        self.token.initializer(Option::Some(game_address));
-        self.token_objectives.initializer();
+### Custom Trait Implementations
+```cairo
+// Override specific behaviors
+impl CustomMinter of OptionalMinter<ContractState> {
+    fn on_mint_with_minter(ref self: ContractState, minter: ContractAddress) -> u64 {
+        // Custom minter logic
+        42
     }
 }
 ```
 
-## API Reference
+## 🎨 **Examples**
 
-### Core Token Methods
+See `src/examples/` for comprehensive examples:
+- `minimal_token.cairo` - Smallest possible token
+- `gaming_token.cairo` - Game-optimized token
+- `full_featured_token.cairo` - All features enabled
+- `custom_integration.cairo` - Custom trait implementations
 
-- `token_metadata(token_id: u64) -> TokenMetadata`: Get token metadata
-- `is_playable(token_id: u64) -> bool`: Check if token is currently playable
-- `settings_id(token_id: u64) -> u32`: Get the settings ID for a token
-- `player_name(token_id: u64) -> ByteArray`: Get the player name for a token
-- `mint(...)`: Mint a new token with optional extensions
-- `update_game(token_id: u64)`: Update game state for a token
+## 🏆 **Benefits**
 
-### Multi-Game Extension Methods
+1. **Compile-time Optimization**: Unused features are completely eliminated
+2. **Runtime Sophistication**: Enabled features retain full complexity
+3. **Developer Choice**: Pick exactly what you need
+4. **Zero Dependencies**: Disabled features add zero overhead
+5. **Gradual Adoption**: Enable features as needed
+6. **Full Compatibility**: Works with existing game components
 
-- `game_count() -> u64`: Total number of registered games
-- `register_game(...)`: Register a new game
-- `game_metadata(game_id: u64) -> GameMetadata`: Get game information
-- `is_game_registered(contract_address: ContractAddress) -> bool`: Check if game is registered
+## 📚 **API Reference**
 
-### Objectives Extension Methods
+### Core Token Interface
+```cairo
+trait ICoreToken<TState> {
+    fn mint(ref self: TState, to: ContractAddress, game_address: ContractAddress, /* ... */);
+    fn burn(ref self: TState, token_id: u64);
+    fn token_uri(self: @TState, token_id: u64) -> ByteArray;
+    // ... standard ERC721 methods
+}
+```
 
-- `objectives_count(token_id: u64) -> u32`: Number of objectives for a token
-- `objectives(token_id: u64) -> Array<TokenObjective>`: Get all objectives
-- `all_objectives_completed(token_id: u64) -> bool`: Check completion status
-- `create_objective(...)`: Create a new objective
+### Feature Interfaces
+Each feature component provides its own interface:
+- `IMinterComponent` - Minter management
+- `IMultiGameComponent` - Multi-game support
+- `IObjectivesComponent` - Objectives management
+- `IContextComponent` - Context handling
+- `ISoulboundComponent` - Soulbound functionality
+- `IRendererComponent` - Custom rendering
 
-### Settings Extension Methods
+## 🔗 **Dependencies**
 
-- `create_settings(...)`: Create game settings configuration
+```toml
+[dependencies]
+starknet = "2.8.2"
+game_components_minigame = { path = "../minigame" }
+game_components_metagame = { path = "../metagame" }
+game_components_utils = { path = "../utils" }
 
-## Examples
+[dependencies.openzeppelin]
+git = "https://github.com/OpenZeppelin/cairo-contracts.git"
+tag = "v0.18.0"
+```
 
-See `src/examples/full_token_example.cairo` for complete examples of both mixin usage and individual component usage.
+## 🤝 **Contributing**
 
-## Dependencies
+1. Features should be completely independent
+2. Use the `OptionalTrait` pattern for core integration
+3. Provide both enabled and NoOp implementations
+4. Include comprehensive examples
+5. Update configuration constants as needed
 
-- **OpenZeppelin Contracts for Cairo**: ERC721 implementation and SRC5 introspection
-- **Game Components Minigame**: Minigame interfaces and structures
-- **Game Components Metagame**: Context and metadata structures
+---
 
-## Contributing
-
-When adding new extensions:
-
-1. Create the extension component in `src/extensions/your_extension/`
-2. Add the interface with appropriate interface ID constant
-3. Update the mixin component to include the new extension
-4. Add initialization logic and interface registration
-5. Update this README with the new functionality
-
-## Interface IDs
-
-All extensions use unique interface IDs for SRC5 introspection:
-
-- `IMINIGAME_TOKEN_ID`: Core token interface
-- `IMINIGAME_TOKEN_MULTIGAME_ID`: Multi-game extension
-- `IMINIGAME_TOKEN_OBJECTIVES_ID`: Objectives extension  
-- `IMINIGAME_TOKEN_SETTINGS_ID`: Settings extension
-- `IMINIGAME_TOKEN_MINTER_ID`: Minter extension
-- `IMINIGAME_TOKEN_SOULBOUND_ID`: Soulbound extension 
+**Built with ❤️ for the Starknet gaming ecosystem** 

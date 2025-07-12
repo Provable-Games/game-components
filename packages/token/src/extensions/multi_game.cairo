@@ -1,3 +1,2 @@
-pub mod interface;
 pub mod multi_game;
-pub mod structs;
+pub mod interface;
