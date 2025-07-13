@@ -36,6 +36,19 @@ pub impl LifecycleImpl of LifecycleTrait {
     fn is_playable(self: @Lifecycle, current_time: u64) -> bool {
         self.can_start(current_time) && !self.has_expired(current_time)
     }
+
+    /// @title Validate Lifecycle
+    /// @notice Validates that start time is not greater than end time when both are provided
+    /// @dev If either start or end is 0, no validation is performed
+    /// @panic If start > end when both are non-zero
+    #[inline(always)]
+    fn validate(self: @Lifecycle) {
+        if *self.start > 0 && *self.end > 0 {
+            assert!(
+                *self.start <= *self.end, "Lifecycle: Start time cannot be greater than end time",
+            );
+        }
+    }
 }
 
 #[generate_trait]
@@ -146,5 +159,36 @@ mod tests {
             max_end.is_playable(Bounded::MAX - 1), "Should be playable at one sec before max time",
         );
         assert!(!max_end.is_playable(Bounded::MAX), "Should not be playable at max time");
+    }
+
+    #[test]
+    fn validate_lifecycle_valid_cases() {
+        // Case 1: Both start and end are 0 (no restrictions)
+        let no_restrictions = @Lifecycle { start: 0, end: 0 };
+        no_restrictions.validate(); // Should not panic
+
+        // Case 2: Only start is set
+        let only_start = @Lifecycle { start: 100, end: 0 };
+        only_start.validate(); // Should not panic
+
+        // Case 3: Only end is set
+        let only_end = @Lifecycle { start: 0, end: 200 };
+        only_end.validate(); // Should not panic
+
+        // Case 4: Start equals end
+        let equal_times = @Lifecycle { start: 150, end: 150 };
+        equal_times.validate(); // Should not panic
+
+        // Case 5: Start less than end
+        let valid_range = @Lifecycle { start: 100, end: 200 };
+        valid_range.validate(); // Should not panic
+    }
+
+    #[test]
+    #[should_panic(expected: "Lifecycle: Start time cannot be greater than end time")]
+    fn validate_lifecycle_invalid_case() {
+        // Start greater than end should panic
+        let invalid_lifecycle = @Lifecycle { start: 200, end: 100 };
+        invalid_lifecycle.validate();
     }
 }

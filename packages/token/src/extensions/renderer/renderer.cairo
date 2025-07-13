@@ -26,11 +26,8 @@ pub mod RendererComponent {
 
     #[embeddable_as(RendererImpl)]
     pub impl Renderer<
-        TContractState,
-        +HasComponent<TContractState>,
-        +Drop<TContractState>,
+        TContractState, +HasComponent<TContractState>, +Drop<TContractState>,
     > of IMinigameTokenRenderer<ComponentState<TContractState>> {
-        
         fn get_renderer(self: @ComponentState<TContractState>, token_id: u64) -> ContractAddress {
             self.token_renderers.entry(token_id).read()
         }
@@ -43,15 +40,12 @@ pub mod RendererComponent {
 
     // Implementation of the OptionalRenderer trait for integration with CoreTokenComponent
     pub impl RendererOptionalImpl<
-        TContractState,
-        +HasComponent<TContractState>,
-        +Drop<TContractState>,
+        TContractState, +HasComponent<TContractState>, +Drop<TContractState>,
     > of OptionalRenderer<TContractState> {
-        
         fn get_token_renderer(self: @TContractState, token_id: u64) -> Option<ContractAddress> {
             let component = HasComponent::get_component(self);
             let renderer = component.get_renderer(token_id);
-            
+
             if renderer == starknet::contract_address_const::<0>() {
                 Option::None
             } else {
@@ -59,35 +53,34 @@ pub mod RendererComponent {
             }
         }
 
-        fn set_token_renderer(ref self: TContractState, token_id: u64, renderer: Option<ContractAddress>) {
+        fn set_token_renderer(
+            ref self: TContractState, token_id: u64, renderer: Option<ContractAddress>,
+        ) {
             match renderer {
                 Option::Some(renderer) => {
                     let mut component = HasComponent::get_component_mut(ref self);
                     component.set_renderer(token_id, renderer);
                 },
-                Option::None => {}
+                Option::None => {},
             }
         }
     }
 
     #[generate_trait]
     pub impl InternalImpl<
-        TContractState,
-        +HasComponent<TContractState>,
-        +Drop<TContractState>,
+        TContractState, +HasComponent<TContractState>, +Drop<TContractState>,
     > of InternalTrait<TContractState> {
-        
-        fn initializer(ref self: ComponentState<TContractState>) {
-            // Nothing to initialize for renderer
+        fn initializer(
+            ref self: ComponentState<TContractState>,
+        ) { // Nothing to initialize for renderer
         }
 
-        fn set_renderer(ref self: ComponentState<TContractState>, token_id: u64, renderer: ContractAddress) {
+        fn set_renderer(
+            ref self: ComponentState<TContractState>, token_id: u64, renderer: ContractAddress,
+        ) {
             self.token_renderers.entry(token_id).write(renderer);
-            
-            self.emit(RendererSet {
-                token_id,
-                renderer,
-            });
+
+            self.emit(RendererSet { token_id, renderer });
         }
     }
-} 
+}

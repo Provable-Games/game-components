@@ -1,7 +1,7 @@
 // Example: Optimized Token Contract using the new component system
 // This demonstrates how to configure and use the modular components
 
-use starknet::ContractAddress;
+use starknet::{ContractAddress, syscalls::call_contract_syscall};
 use starknet::storage::{StoragePointerReadAccess};
 
 // Core imports
@@ -10,13 +10,17 @@ use openzeppelin_introspection::src5::SRC5Component;
 
 // Game components imports
 use crate::core::core_token::CoreTokenComponent;
+use crate::structs::TokenMetadata;
 use crate::extensions::minter::minter::MinterComponent;
 use crate::extensions::objectives::objectives::ObjectivesComponent;
 use crate::extensions::context::context::ContextComponent;
 use crate::extensions::renderer::renderer::RendererComponent;
 use crate::extensions::settings::settings::SettingsComponent;
 
-use crate::config;
+use crate::examples::minigame_registry_contract::{
+    IMinigameRegistryDispatcher, IMinigameRegistryDispatcherTrait,
+};
+
 
 #[starknet::contract]
 mod OptimizedTokenContract {
@@ -25,12 +29,12 @@ mod OptimizedTokenContract {
     // ================================================================================================
     // COMPONENT DECLARATIONS
     // ================================================================================================
-    
+
     // Core components (always included)
     component!(path: ERC721Component, storage: erc721, event: ERC721Event);
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
     component!(path: CoreTokenComponent, storage: core_token, event: CoreTokenEvent);
-    
+
     // Optional components (only included if enabled)
     component!(path: MinterComponent, storage: minter, event: MinterEvent);
     component!(path: ObjectivesComponent, storage: objectives, event: ObjectivesEvent);
@@ -41,7 +45,7 @@ mod OptimizedTokenContract {
     // ================================================================================================
     // STORAGE
     // ================================================================================================
-    
+
     #[storage]
     struct Storage {
         // Core storage (always included)
@@ -51,7 +55,6 @@ mod OptimizedTokenContract {
         src5: SRC5Component::Storage,
         #[substorage(v0)]
         core_token: CoreTokenComponent::Storage,
-        
         // Optional storage (only included if features are enabled)
         #[substorage(v0)]
         minter: MinterComponent::Storage,
@@ -68,7 +71,7 @@ mod OptimizedTokenContract {
     // ================================================================================================
     // EVENTS
     // ================================================================================================
-    
+
     #[event]
     #[derive(Drop, starknet::Event)]
     enum Event {
@@ -93,21 +96,25 @@ mod OptimizedTokenContract {
     // ================================================================================================
     // COMPONENT IMPLEMENTATIONS
     // ================================================================================================
-    
+
     // Core implementations (always included)
     #[abi(embed_v0)]
     impl ERC721Impl = ERC721Component::ERC721Impl<ContractState>;
-    // #[abi(embed_v0)]
-    // impl SRC5Impl = SRC5Component::SRC5Impl<ContractState>;
+    #[abi(embed_v0)]
+    impl SRC5Impl = SRC5Component::SRC5Impl<ContractState>;
     #[abi(embed_v0)]
     impl CoreTokenImpl = CoreTokenComponent::CoreTokenImpl<ContractState>;
-    
+
     // Optional implementations (conditional based on feature flags)
     #[abi(embed_v0)]
     impl MinterImpl = MinterComponent::MinterImpl<ContractState>;
     #[abi(embed_v0)]
     impl ObjectivesImpl = ObjectivesComponent::ObjectivesImpl<ContractState>;
-    
+    #[abi(embed_v0)]
+    impl SettingsImpl = SettingsComponent::SettingsImpl<ContractState>;
+    #[abi(embed_v0)]
+    impl RendererImpl = RendererComponent::RendererImpl<ContractState>;
+
     // Internal implementations
     impl ERC721InternalImpl = ERC721Component::InternalImpl<ContractState>;
     impl SRC5InternalImpl = SRC5Component::InternalImpl<ContractState>;
@@ -117,25 +124,24 @@ mod OptimizedTokenContract {
     impl SettingsInternalImpl = SettingsComponent::InternalImpl<ContractState>;
     impl ContextInternalImpl = ContextComponent::InternalImpl<ContractState>;
     impl RendererInternalImpl = RendererComponent::InternalImpl<ContractState>;
-    
+
     // ================================================================================================
     // OPTIONAL TRAIT IMPLEMENTATIONS
     // ================================================================================================
-    
+
     // These implementations are chosen based on compile-time feature flags
     // If a feature is disabled, the NoOp implementation is used (zero runtime cost)
-    
+
     impl MinterOptionalImpl = MinterComponent::MinterOptionalImpl<ContractState>;
     impl ObjectivesOptionalImpl = ObjectivesComponent::ObjectivesOptionalImpl<ContractState>;
     impl SettingsOptionalImpl = SettingsComponent::SettingsOptionalImpl<ContractState>;
     impl ContextOptionalImpl = ContextComponent::ContextOptionalImpl<ContractState>;
     impl RendererOptionalImpl = RendererComponent::RendererOptionalImpl<ContractState>;
-    
+
     // Alternative: Use NoOp implementations for disabled features
     // impl MinterOptionalImpl = NoOpMinter<ContractState>;
     // impl MultiGameOptionalImpl = NoOpMultiGame<ContractState>;
     // etc.
-
 
     #[abi(embed_v0)]
     impl ERC721Metadata of IERC721Metadata<ContractState> {
@@ -151,43 +157,42 @@ mod OptimizedTokenContract {
 
         fn token_uri(self: @ContractState, token_id: u256) -> ByteArray {
             self.erc721._require_owned(token_id);
-            ""
 
-            // let mut world = self.world(@DEFAULT_NS());
-            // let mut store: Store = StoreTrait::new(world);
-            // let token_metadata: TokenMetadata = store
-            //     .get_token_metadata(token_id.try_into().unwrap());
+            let token_metadata: TokenMetadata = self
+                .core_token
+                .get_token_metadata(token_id.try_into().unwrap());
 
-            // // Try to get the token URI from the game contract if available
-            // if token_metadata.game_id != 0 {
-            //     let mut world = self.world(@DEFAULT_NS());
-            //     let mut store: Store = StoreTrait::new(world);
-            //     let game_registry_id: GameRegistryId = store
-            //         .get_game_registry_id(token_metadata.game_id);
+            // Try to get the token URI from the game contract if available
+            if token_metadata.game_id != 0 {
+                let game_registry_address = self.core_token.game_registry_address();
+                let game_registry_dispatcher = IMinigameRegistryDispatcher {
+                    contract_address: game_registry_address,
+                };
+                let game_address = game_registry_dispatcher
+                    .game_address_from_id(token_metadata.game_id);
 
-            //     // Try to call the game contract's token_uri function
-            //     let selector = selector!("token_uri");
-            //     let mut calldata = array![];
-            //     calldata.append(token_id.low.into());
-            //     calldata.append(token_id.high.into());
+                // Try to call the game contract's token_uri function
+                let selector = selector!("token_uri");
+                let mut calldata = array![];
+                calldata.append(token_id.low.into());
+                calldata.append(token_id.high.into());
 
-            //     match call_contract_syscall(
-            //         game_registry_id.contract_address, selector, calldata.span(),
-            //     ) {
-            //         Result::Ok(result) => {
-            //             // Try to deserialize the result as ByteArray
-            //             let mut result_span = result;
-            //             match Serde::<ByteArray>::deserialize(ref result_span) {
-            //                 Option::Some(game_uri) => game_uri,
-            //                 Option::None => "https://denshokan.dev/game/1",
-            //             }
-            //         },
-            //         Result::Err(_) => "https://denshokan.dev/game/1",
-            //     }
-            // } else {
-            //     // return the blank NFT renderer
-            //     "https://denshokan.dev/game/1"
-            // }
+                match call_contract_syscall(game_address, selector, calldata.span()) {
+                    Result::Ok(result) => {
+                        // Try to deserialize the result as ByteArray
+                        let mut result_span = result;
+                        match Serde::<ByteArray>::deserialize(ref result_span) {
+                            Option::Some(game_uri) => game_uri,
+                            Option::None => "https://denshokan.dev/game/1",
+                        }
+                    },
+                    Result::Err(_) => "https://denshokan.dev/game/1",
+                }
+            } else {
+                // return the blank NFT renderer
+                "https://denshokan.dev/game/1"
+            }
+            // ""
         }
     }
 
@@ -195,7 +200,7 @@ mod OptimizedTokenContract {
     // ================================================================================================
     // ERC721 HOOKS
     // ================================================================================================
-    
+
     impl ERC721HooksImpl of ERC721Component::ERC721HooksTrait<ContractState> {
         fn before_update(
             ref self: ERC721Component::ComponentState<ContractState>,
@@ -203,10 +208,15 @@ mod OptimizedTokenContract {
             token_id: u256,
             auth: ContractAddress,
         ) {
-            let contract_state = self.get_contract();
-            // Check if transfer is allowed for soulbound tokens
-            if !contract_state.is_soulbound(token_id.try_into().unwrap()) {
-                panic!("Token is soulbound and cannot be transferred");
+            // Only check soulbound restriction for transfers, not mints or burns
+            // For mints, the current owner would be zero
+            let current_owner = self._owner_of(token_id);
+            if current_owner.into() != 0 && to.into() != 0 {
+                // This is a transfer (not mint or burn)
+                let contract_state = self.get_contract();
+                if contract_state.is_soulbound(token_id.try_into().unwrap()) {
+                    panic!("Token is soulbound and cannot be transferred");
+                }
             }
         }
 
@@ -215,15 +225,14 @@ mod OptimizedTokenContract {
             to: ContractAddress,
             token_id: u256,
             auth: ContractAddress,
-        ) {
-            // Post-transfer logic can be added here
+        ) { // Post-transfer logic can be added here
         }
     }
 
     // ================================================================================================
     // CONSTRUCTOR
     // ================================================================================================
-    
+
     #[constructor]
     fn constructor(
         ref self: ContractState,
@@ -239,11 +248,11 @@ mod OptimizedTokenContract {
 
         self.minter.initializer();
         self.objectives.initializer();
+        self.settings.initializer();
         self.context.initializer();
         self.renderer.initializer();
     }
 }
-
 // ================================================================================================
 // CONFIGURATION EXAMPLES
 // ================================================================================================
@@ -276,4 +285,6 @@ mod OptimizedTokenContract {
 //     pub const CONTEXT_ENABLED: bool = false;
 //     pub const SOULBOUND_ENABLED: bool = false;
 //     pub const RENDERER_ENABLED: bool = false;
-// } 
+// }
+
+

@@ -37,11 +37,9 @@ pub trait IMinigameStarknetMockInit<TContractState> {
         game_color: Option<ByteArray>,
         client_url: Option<ByteArray>,
         renderer_address: Option<ContractAddress>,
-        settings_address: ContractAddress,
-        objectives_address: ContractAddress,
+        settings_address: Option<ContractAddress>,
+        objectives_address: Option<ContractAddress>,
         minigame_token_address: ContractAddress,
-        supports_settings: bool,
-        supports_objectives: bool,
     );
 }
 
@@ -316,11 +314,9 @@ pub mod minigame_starknet_mock {
             game_color: Option<ByteArray>,
             client_url: Option<ByteArray>,
             renderer_address: Option<ContractAddress>,
-            settings_address: ContractAddress,
-            objectives_address: ContractAddress,
+            settings_address: Option<ContractAddress>,
+            objectives_address: Option<ContractAddress>,
             minigame_token_address: ContractAddress,
-            supports_settings: bool,
-            supports_objectives: bool,
         ) {
             // Initialize storage counters
             self.settings_count.write(0);
@@ -347,11 +343,13 @@ pub mod minigame_starknet_mock {
 
             // Initialize optional features - these will only compile if the contract implements the
             // required traits
-            if supports_settings {
-                self.settings.initializer();
+            match settings_address {
+                Option::Some(_) => self.settings.initializer(),
+                Option::None => {},
             }
-            if supports_objectives {
-                self.objectives.initializer();
+            match objectives_address {
+                Option::Some(_) => self.objectives.initializer(),
+                Option::None => {},
             }
         }
     }

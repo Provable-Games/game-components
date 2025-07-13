@@ -12,14 +12,24 @@ openzeppelin_introspection = "1.0.0"
 game_components_minigame = { path = "../minigame" }
 game_components_metagame = { path = "../metagame" }
 game_components_utils = { path = "../utils" }
+game_components_test_starknet = { path = "../test_starknet" }
 
 [scripts]
 test = "snforge test"
 
 [[target.starknet-contract]]
 sierra = true
+build-external-contracts = [
+    "game_components_test_starknet::minigame::mocks::minigame_starknet_mock::minigame_starknet_mock",
+]
+
 
 [lib] 
 
 [dev-dependencies]
 snforge_std = "0.45.0"
+
+[profile.dev.cairo]
+unstable-add-statements-functions-debug-info = true
+unstable-add-statements-code-locations-debug-info = true
+inlining-strategy = "avoid"

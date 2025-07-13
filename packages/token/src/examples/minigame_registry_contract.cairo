@@ -40,9 +40,8 @@ pub trait IMinigameRegistry<TState> {
 }
 
 #[starknet::contract]
-pub mod MultiGameContract {
-    use core::num::traits::Zero;
-    use starknet::{ContractAddress, get_caller_address, get_contract_address};
+pub mod MinigameRegistryContract {
+    use starknet::{ContractAddress, get_caller_address};
     use starknet::storage::{
         StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess, Map,
     };
@@ -55,9 +54,7 @@ pub mod MultiGameContract {
     use openzeppelin_introspection::src5::SRC5Component;
     use openzeppelin_introspection::interface::{ISRC5Dispatcher, ISRC5DispatcherTrait};
 
-    use game_components_minigame::interface::{
-        IMINIGAME_ID, IMinigameDispatcher, IMinigameDispatcherTrait,
-    };
+    use game_components_minigame::interface::{IMINIGAME_ID};
 
     component!(path: ERC721Component, storage: erc721, event: ERC721Event);
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
@@ -116,10 +113,7 @@ pub mod MultiGameContract {
 
     #[constructor]
     pub fn constructor(
-        ref self: ContractState,
-        name: ByteArray,
-        symbol: ByteArray,
-        base_uri: ByteArray,
+        ref self: ContractState, name: ByteArray, symbol: ByteArray, base_uri: ByteArray,
     ) {
         self.erc721.initializer(name, symbol, base_uri);
         self.src5.register_interface(IMINIGAME_REGISTRY_ID);
@@ -127,7 +121,6 @@ pub mod MultiGameContract {
 
     #[abi(embed_v0)]
     impl MultiGameImpl of IMinigameRegistry<ContractState> {
-        
         fn game_count(self: @ContractState) -> u64 {
             self.game_counter.read()
         }
@@ -147,7 +140,7 @@ pub mod MultiGameContract {
         fn is_game_registered(self: @ContractState, contract_address: ContractAddress) -> bool {
             self.game_id_by_address.entry(contract_address).read() != 0
         }
-        
+
         fn register_game(
             ref self: ContractState,
             creator_address: ContractAddress,
@@ -174,10 +167,7 @@ pub mod MultiGameContract {
 
             // Check the game is not already registered
             let existing_game_id = self.game_id_by_address.entry(caller_address).read();
-            assert!(
-                existing_game_id == 0,
-                "MultiGame: Game already registered",
-            );
+            assert!(existing_game_id == 0, "MultiGame: Game already registered");
 
             // Set up the game registry
             self.game_id_by_address.entry(caller_address).write(new_game_id);
@@ -218,31 +208,29 @@ pub mod MultiGameContract {
             self.game_metadata.entry(new_game_id).write(metadata);
             self.game_counter.write(new_game_id);
 
-            self.emit(GameRegistered {
-                game_id: new_game_id,
-                contract_address: caller_address,
-                name: name.clone(),
-                creator_token_id: new_game_id,
-            });
+            self
+                .emit(
+                    GameRegistered {
+                        game_id: new_game_id,
+                        contract_address: caller_address,
+                        name: name.clone(),
+                        creator_token_id: new_game_id,
+                    },
+                );
 
             new_game_id
         }
     }
 
     #[generate_trait]
-    pub impl InternalImpl of InternalTrait {   
+    pub impl InternalImpl of InternalTrait {
         fn mint_creator_token(
-            ref self: ContractState,
-            game_id: u64,
-            creator_address: ContractAddress,
-        ) {            
+            ref self: ContractState, game_id: u64, creator_address: ContractAddress,
+        ) {
             // Mint the ERC721 token to the creator
             self.erc721.mint(creator_address, game_id.into());
-            
-            self.emit(CreatorTokenMinted { 
-                token_id: game_id, 
-                creator_address 
-            });
+
+            self.emit(CreatorTokenMinted { token_id: game_id, creator_address });
         }
     }
 }

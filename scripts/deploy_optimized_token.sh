@@ -12,19 +12,30 @@ set -euo pipefail
 STARKLI_VERSION=$(starkli --version | cut -d' ' -f1)
 echo "Detected starkli version: $STARKLI_VERSION"
 
-# Check if version is 0.3.x for RPC compatibility
-if [[ ! "$STARKLI_VERSION" =~ ^0\.3\. ]]; then
-    echo "WARNING: starkli version $STARKLI_VERSION may have RPC compatibility issues with Sepolia."
-    echo "Consider running: starkliup -v 0.3.8"
-    echo ""
-fi
+# # Check if version is 0.3.x for RPC compatibility
+# if [[ ! "$STARKLI_VERSION" =~ ^0\.3\. ]]; then
+#     echo "WARNING: starkli version $STARKLI_VERSION may have RPC compatibility issues with Sepolia."
+#     echo "Consider running: starkliup -v 0.3.8"
+#     echo ""
+# fi
 
 # Load environment variables from .env file if it exists
+# Check in current directory first, then parent directories
 if [ -f .env ]; then
     set -a
     source .env
     set +a
     echo "Loaded environment variables from .env file"
+elif [ -f ../.env ]; then
+    set -a
+    source ../.env
+    set +a
+    echo "Loaded environment variables from ../.env file"
+elif [ -f ../../.env ]; then
+    set -a
+    source ../../.env
+    set +a
+    echo "Loaded environment variables from ../../.env file"
 fi
 
 # Colors for output
@@ -137,7 +148,7 @@ fi
 # ============================
 
 print_info "Declaring Optimized Token contract..."
-DECLARE_OUTPUT=$(starkli declare --account $STARKNET_ACCOUNT --watch target/dev/game_components_token_OptimizedTokenContract.contract_class.json --private-key $STARKNET_PK 2>&1)
+DECLARE_OUTPUT=$(starkli declare --account $STARKNET_ACCOUNT --rpc $STARKNET_RPC --watch target/dev/game_components_token_OptimizedTokenContract.contract_class.json --private-key $STARKNET_PK 2>&1)
 
 # Extract class hash from output
 CLASS_HASH=$(echo "$DECLARE_OUTPUT" | grep -oE '0x[0-9a-fA-F]+' | tail -1)
@@ -157,47 +168,26 @@ else
 fi
 
 # ============================
-# PREPARE CONSTRUCTOR ARGUMENTS
+# PREPARE CONSTRUCTOR ARGUMENTS  
 # ============================
 
 print_info "Preparing constructor arguments..."
 
-# Create constructor calldata array
-CONSTRUCTOR_ARGS=()
+# Constructor parameters for OptimizedTokenContract:
+# - name: ByteArray
+# - symbol: ByteArray  
+# - base_uri: ByteArray
+# - game_address: Option<ContractAddress>
+# - game_registry_address: Option<ContractAddress>
 
-# Add token name (ByteArray serialization)
-CONSTRUCTOR_ARGS+=("$(echo -n "$TOKEN_NAME" | wc -c)")  # length
-CONSTRUCTOR_ARGS+=("$(echo -n "$TOKEN_NAME" | od -An -tx1 | tr -d ' \n' | sed 's/../0x&,/g' | sed 's/,$//')")  # data
-CONSTRUCTOR_ARGS+=("0")  # pending_word
-CONSTRUCTOR_ARGS+=("0")  # pending_word_len
+# Using starkli's built-in bytearray conversion
+TOKEN_NAME_ARG="bytearray:str:$TOKEN_NAME"
+TOKEN_SYMBOL_ARG="bytearray:str:$TOKEN_SYMBOL"
+TOKEN_BASE_URI_ARG="bytearray:str:$TOKEN_BASE_URI"
 
-# Add token symbol (ByteArray serialization)
-CONSTRUCTOR_ARGS+=("$(echo -n "$TOKEN_SYMBOL" | wc -c)")  # length
-CONSTRUCTOR_ARGS+=("$(echo -n "$TOKEN_SYMBOL" | od -An -tx1 | tr -d ' \n' | sed 's/../0x&,/g' | sed 's/,$//')")  # data
-CONSTRUCTOR_ARGS+=("0")  # pending_word
-CONSTRUCTOR_ARGS+=("0")  # pending_word_len
-
-# Add base URI (ByteArray serialization)
-CONSTRUCTOR_ARGS+=("$(echo -n "$TOKEN_BASE_URI" | wc -c)")  # length
-CONSTRUCTOR_ARGS+=("$(echo -n "$TOKEN_BASE_URI" | od -An -tx1 | tr -d ' \n' | sed 's/../0x&,/g' | sed 's/,$//')")  # data
-CONSTRUCTOR_ARGS+=("0")  # pending_word
-CONSTRUCTOR_ARGS+=("0")  # pending_word_len
-
-# Add game_address (Option<ContractAddress>)
-if [ -n "$GAME_ADDRESS" ]; then
-    CONSTRUCTOR_ARGS+=("0")  # Some variant
-    CONSTRUCTOR_ARGS+=("$GAME_ADDRESS")
-else
-    CONSTRUCTOR_ARGS+=("1")  # None variant
-fi
-
-# Add game_registry_address (Option<ContractAddress>)
-if [ -n "$GAME_REGISTRY_ADDRESS" ]; then
-    CONSTRUCTOR_ARGS+=("0")  # Some variant
-    CONSTRUCTOR_ARGS+=("$GAME_REGISTRY_ADDRESS")
-else
-    CONSTRUCTOR_ARGS+=("1")  # None variant
-fi
+print_info "Token name: '$TOKEN_NAME' -> $TOKEN_NAME_ARG"
+print_info "Token symbol: '$TOKEN_SYMBOL' -> $TOKEN_SYMBOL_ARG" 
+print_info "Base URI: '$TOKEN_BASE_URI' -> $TOKEN_BASE_URI_ARG"
 
 # ============================
 # DEPLOY CONTRACT
@@ -209,26 +199,31 @@ print_info "Deploying Optimized Token contract..."
 print_info "Executing deployment with starkli..."
 print_info "Command: starkli deploy"
 print_info "Class hash: $CLASS_HASH"
-print_info "Constructor args: ${CONSTRUCTOR_ARGS[*]}"
 
-# Check if we should use ETH or STRK for fees
-FEE_TOKEN_FLAG=""
-if [ "${USE_ETH_FEES:-false}" == "true" ]; then
-    FEE_TOKEN_FLAG="--eth"
-    print_warning "Using ETH for transaction fees (deprecated)"
-else
-    FEE_TOKEN_FLAG="--strk"
-    print_info "Using STRK for transaction fees"
-fi
+# # Check if we should use ETH or STRK for fees
+# FEE_TOKEN_FLAG=""
+# if [ "${USE_ETH_FEES:-false}" == "true" ]; then
+#     FEE_TOKEN_FLAG="--eth"
+#     print_warning "Using ETH for transaction fees (deprecated)"
+# else
+#     FEE_TOKEN_FLAG="--strk"
+#     print_info "Using STRK for transaction fees"
+# fi
 
-# Deploy with --watch flag
+# Deploy with starkli bytearray conversion
+# Option format: 0 [value] for Some, 1 for None
 CONTRACT_ADDRESS=$(starkli deploy \
     --account $STARKNET_ACCOUNT \
+    --rpc $STARKNET_RPC \
     --private-key $STARKNET_PK \
-    $FEE_TOKEN_FLAG \
     --watch \
     $CLASS_HASH \
-    "${CONSTRUCTOR_ARGS[@]}" 2>&1 | tee >(cat >&2) | grep -oE '0x[0-9a-fA-F]{64}' | tail -1)
+    "$TOKEN_NAME_ARG" \
+    "$TOKEN_SYMBOL_ARG" \
+    "$TOKEN_BASE_URI_ARG" \
+    $(if [ -n "$GAME_ADDRESS" ]; then echo "0 $GAME_ADDRESS"; else echo "1"; fi) \
+    $(if [ -n "$GAME_REGISTRY_ADDRESS" ]; then echo "0 $GAME_REGISTRY_ADDRESS"; else echo "1"; fi) \
+    2>&1 | tee >(cat >&2) | grep -oE '0x[0-9a-fA-F]{64}' | tail -1)
 
 if [ -z "$CONTRACT_ADDRESS" ]; then
     print_error "Failed to deploy contract"

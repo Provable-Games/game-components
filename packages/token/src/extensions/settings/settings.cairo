@@ -11,7 +11,9 @@ pub mod SettingsComponent {
 
     use game_components_minigame::interface::{IMinigameDispatcher, IMinigameDispatcherTrait};
     use game_components_minigame::extensions::settings::structs::GameSetting;
-    use game_components_minigame::extensions::settings::interface::{IMINIGAME_SETTINGS_ID, IMinigameSettingsDispatcher, IMinigameSettingsDispatcherTrait};
+    use game_components_minigame::extensions::settings::interface::{
+        IMINIGAME_SETTINGS_ID, IMinigameSettingsDispatcher, IMinigameSettingsDispatcherTrait,
+    };
 
     use openzeppelin_introspection::src5::SRC5Component;
     use openzeppelin_introspection::src5::SRC5Component::InternalTrait as SRC5InternalTrait;
@@ -40,8 +42,7 @@ pub mod SettingsComponent {
     #[embeddable_as(SettingsImpl)]
     impl Settings<
         TContractState,
-        +HasComponent<TContractState>,
-        // impl Token: TokenComponent::HasComponent<TContractState>,
+        +HasComponent<TContractState>, // impl Token: TokenComponent::HasComponent<TContractState>,
         +Drop<TContractState>,
     > of IMinigameTokenSettings<ComponentState<TContractState>> {
         fn create_settings(
@@ -83,37 +84,36 @@ pub mod SettingsComponent {
         impl SRC5: SRC5Component::HasComponent<TContractState>,
         +Drop<TContractState>,
     > of OptionalSettings<TContractState> {
-        fn validate_settings(self: @TContractState, game_address: ContractAddress, settings_id: Option<u32>) -> u32 {
-            match settings_id {
-                Option::Some(settings_id) => {
-                    let settings_component = HasComponent::get_component(self);
-                    let mut src5_component = get_dep_component!(settings_component, SRC5);
-                    let supports_settings = src5_component.supports_interface(IMINIGAME_TOKEN_SETTINGS_ID);
-                    assert!(supports_settings, "MinigameToken: Contract does not settings");
-                    // Get settings address from game
-                    let minigame_dispatcher = IMinigameDispatcher { contract_address: game_address };
-                    let settings_address = minigame_dispatcher.settings_address();
-                    
-                    if !settings_address.is_zero() {
-                        // Validate settings contract supports interface
-                        let settings_src5_dispatcher = ISRC5Dispatcher { contract_address: settings_address };
-                        assert!(
-                            settings_src5_dispatcher.supports_interface(IMINIGAME_SETTINGS_ID),
-                            "CoreToken: Settings contract does not support IMinigameSettings interface"
-                        );
-                        
-                        // Validate settings exist
-                        let settings_dispatcher = IMinigameSettingsDispatcher { contract_address: settings_address };
-                        assert!(
-                            settings_dispatcher.settings_exist(settings_id),
-                            "CoreToken: Settings ID {} does not exist",
-                            settings_id
-                        );
-                    }
-                    
-                    settings_id
-                },
-                Option::None => 0
+        fn validate_settings(
+            self: @TContractState, game_address: ContractAddress, settings_id: u32,
+        ) {
+            let settings_component = HasComponent::get_component(self);
+            let mut src5_component = get_dep_component!(settings_component, SRC5);
+            let supports_settings = src5_component.supports_interface(IMINIGAME_TOKEN_SETTINGS_ID);
+            assert!(supports_settings, "MinigameToken: Contract does not support settings");
+            // Get settings address from game
+            let minigame_dispatcher = IMinigameDispatcher { contract_address: game_address };
+            let settings_address = minigame_dispatcher.settings_address();
+
+            if !settings_address.is_zero() {
+                // Validate settings contract supports interface
+                let settings_src5_dispatcher = ISRC5Dispatcher {
+                    contract_address: settings_address,
+                };
+                assert!(
+                    settings_src5_dispatcher.supports_interface(IMINIGAME_SETTINGS_ID),
+                    "CoreToken: Settings contract does not support IMinigameSettings interface",
+                );
+
+                // Validate settings exist
+                let settings_dispatcher = IMinigameSettingsDispatcher {
+                    contract_address: settings_address,
+                };
+                assert!(
+                    settings_dispatcher.settings_exist(settings_id),
+                    "CoreToken: Settings ID {} does not exist",
+                    settings_id,
+                );
             }
         }
     }

@@ -2,6 +2,9 @@ use starknet::ContractAddress;
 use crate::structs::TokenMetadata;
 use game_components_metagame::extensions::context::structs::GameContextDetails;
 
+pub const IMINIGAME_TOKEN_ID: felt252 =
+    0x02c0f9265d397c10970f24822e4b57cac7d8895f8c449b7c9caaa26910499704;
+
 #[starknet::interface]
 pub trait IMinigameToken<TState> {
     fn token_metadata(self: @TState, token_id: u64) -> TokenMetadata;
@@ -29,5 +32,16 @@ pub trait IMinigameToken<TState> {
         to: ContractAddress,
         soulbound: bool,
     ) -> u64;
+    fn set_token_metadata(
+        ref self: TState,
+        token_id: u64,
+        game_address: ContractAddress,
+        player_name: Option<ByteArray>,
+        settings_id: Option<u32>,
+        start: Option<u64>,
+        end: Option<u64>,
+        objective_ids: Option<Span<u32>>,
+        context: Option<GameContextDetails>,
+    );
     fn update_game(ref self: TState, token_id: u64);
-} 
+}

@@ -32,4 +32,4 @@ pub mod full_featured {
     pub const SOULBOUND_ENABLED: bool = true;
     pub const CONTEXT_ENABLED: bool = true;
     pub const RENDERER_ENABLED: bool = true;
-} 
+}

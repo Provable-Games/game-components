@@ -16,9 +16,7 @@ use crate::extensions::context::ContextComponent;
 use crate::extensions::soulbound::SoulboundComponent;
 use crate::extensions::renderer::RendererComponent;
 
-use crate::core::noop_traits::{
-    NoOpMultiGame,
-};
+use crate::core::noop_traits::{NoOpMultiGame};
 
 use crate::config;
 
@@ -29,12 +27,12 @@ mod OptimizedTokenContract {
     // ================================================================================================
     // COMPONENT DECLARATIONS
     // ================================================================================================
-    
+
     // Core components (always included)
     component!(path: ERC721Component, storage: erc721, event: ERC721Event);
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
     component!(path: CoreTokenComponent, storage: core_token, event: CoreTokenEvent);
-    
+
     // Optional components (only included if enabled)
     component!(path: MinterComponent, storage: minter, event: MinterEvent);
     // component!(path: MultiGameComponent, storage: multi_game, event: MultiGameEvent);
@@ -46,7 +44,7 @@ mod OptimizedTokenContract {
     // ================================================================================================
     // STORAGE
     // ================================================================================================
-    
+
     #[storage]
     struct Storage {
         // Core storage (always included)
@@ -56,7 +54,6 @@ mod OptimizedTokenContract {
         src5: SRC5Component::Storage,
         #[substorage(v0)]
         core_token: CoreTokenComponent::Storage,
-        
         // Optional storage (only included if features are enabled)
         #[substorage(v0)]
         minter: MinterComponent::Storage,
@@ -75,7 +72,7 @@ mod OptimizedTokenContract {
     // ================================================================================================
     // EVENTS
     // ================================================================================================
-    
+
     #[event]
     #[derive(Drop, starknet::Event)]
     enum Event {
@@ -102,7 +99,7 @@ mod OptimizedTokenContract {
     // ================================================================================================
     // COMPONENT IMPLEMENTATIONS
     // ================================================================================================
-    
+
     // Core implementations (always included)
     #[abi(embed_v0)]
     impl ERC721Impl = ERC721Component::ERC721Impl<ContractState>;
@@ -110,7 +107,7 @@ mod OptimizedTokenContract {
     impl SRC5Impl = SRC5Component::SRC5Impl<ContractState>;
     #[abi(embed_v0)]
     impl CoreTokenImpl = CoreTokenComponent::CoreTokenImpl<ContractState>;
-    
+
     // Optional implementations (conditional based on feature flags)
     #[abi(embed_v0)]
     impl MinterImpl = MinterComponent::MinterImpl<ContractState>;
@@ -118,7 +115,7 @@ mod OptimizedTokenContract {
     // impl MultiGameImpl = MultiGameComponent::MultiGameImpl<ContractState>;
     #[abi(embed_v0)]
     impl ObjectivesImpl = ObjectivesComponent::ObjectivesImpl<ContractState>;
-    
+
     // Internal implementations
     impl ERC721InternalImpl = ERC721Component::InternalImpl<ContractState>;
     impl SRC5InternalImpl = SRC5Component::InternalImpl<ContractState>;
@@ -129,21 +126,21 @@ mod OptimizedTokenContract {
     impl ContextInternalImpl = ContextComponent::InternalImpl<ContractState>;
     impl SoulboundInternalImpl = SoulboundComponent::InternalImpl<ContractState>;
     impl RendererInternalImpl = RendererComponent::InternalImpl<ContractState>;
-    
+
     // ================================================================================================
     // OPTIONAL TRAIT IMPLEMENTATIONS
     // ================================================================================================
-    
+
     // These implementations are chosen based on compile-time feature flags
     // If a feature is disabled, the NoOp implementation is used (zero runtime cost)
-    
+
     impl MinterOptionalImpl = MinterComponent::MinterOptionalImpl<ContractState>;
     impl MultiGameOptionalImpl = MultiGameComponent::MultiGameOptionalImpl<ContractState>;
     impl ObjectivesOptionalImpl = ObjectivesComponent::ObjectivesOptionalImpl<ContractState>;
     impl ContextOptionalImpl = ContextComponent::ContextOptionalImpl<ContractState>;
     impl SoulboundOptionalImpl = SoulboundComponent::SoulboundOptionalImpl<ContractState>;
     impl RendererOptionalImpl = RendererComponent::RendererOptionalImpl<ContractState>;
-    
+
     // Alternative: Use NoOp implementations for disabled features
     // impl MinterOptionalImpl = NoOpMinter<ContractState>;
     // impl MultiGameOptionalImpl = NoOpMultiGame<ContractState>;
@@ -152,7 +149,7 @@ mod OptimizedTokenContract {
     // ================================================================================================
     // ERC721 HOOKS
     // ================================================================================================
-    
+
     impl ERC721HooksImpl of ERC721Component::ERC721HooksTrait<ContractState> {
         fn before_update(
             ref self: ERC721Component::ComponentState<ContractState>,
@@ -175,15 +172,14 @@ mod OptimizedTokenContract {
             to: ContractAddress,
             token_id: u256,
             auth: ContractAddress,
-        ) {
-            // Post-transfer logic can be added here
+        ) { // Post-transfer logic can be added here
         }
     }
 
     // ================================================================================================
     // CONSTRUCTOR
     // ================================================================================================
-    
+
     #[constructor]
     fn constructor(
         ref self: ContractState,
@@ -197,7 +193,7 @@ mod OptimizedTokenContract {
         self.erc721.initializer(name, symbol, base_uri);
         // SRC5 doesn't require initialization
         self.core_token.initializer(game_address);
-        
+
         // Initialize optional components (compile-time optimized)
         if config::MINTER_ENABLED {
             self.minter.initializer();
@@ -219,7 +215,6 @@ mod OptimizedTokenContract {
         }
     }
 }
-
 // ================================================================================================
 // CONFIGURATION EXAMPLES
 // ================================================================================================
@@ -252,4 +247,6 @@ mod OptimizedTokenContract {
 //     pub const CONTEXT_ENABLED: bool = false;
 //     pub const SOULBOUND_ENABLED: bool = false;
 //     pub const RENDERER_ENABLED: bool = false;
-// } 
+// }
+
+

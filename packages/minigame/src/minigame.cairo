@@ -5,15 +5,18 @@
 pub mod MinigameComponent {
     use crate::interface::{IMinigame, IMinigameTokenData, IMINIGAME_ID};
     use crate::libs;
-    use game_components_token::examples::multi_game_contract::{
-        IMINIGAME_REGISTRY_ID, IMinigameRegistryDispatcher,
-        IMinigameRegistryDispatcherTrait,
+    use game_components_token::core::interface::{
+        IMinigameTokenDispatcher, IMinigameTokenDispatcherTrait, IMINIGAME_TOKEN_ID,
+    };
+    use game_components_token::examples::minigame_registry_contract::{
+        IMINIGAME_REGISTRY_ID, IMinigameRegistryDispatcher, IMinigameRegistryDispatcherTrait,
     };
     use starknet::{ContractAddress};
     use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
     use openzeppelin_introspection::src5::SRC5Component;
     use openzeppelin_introspection::src5::SRC5Component::InternalTrait as SRC5InternalTrait;
     use openzeppelin_introspection::src5::SRC5Component::SRC5Impl;
+    use openzeppelin_introspection::interface::{ISRC5Dispatcher, ISRC5DispatcherTrait};
 
     #[storage]
     pub struct Storage {
@@ -72,12 +75,22 @@ pub mod MinigameComponent {
             // Store the namespace, token address, and feature flags
             self.token_address.write(token_address.clone());
 
-            let mut src5_component = get_dep_component_mut!(ref self, SRC5);
-            let supports_multi_game = src5_component
+            let token_src5_dispatcher = ISRC5Dispatcher { contract_address: token_address };
+            let supports_minigame_token = token_src5_dispatcher
+                .supports_interface(IMINIGAME_TOKEN_ID);
+            assert!(supports_minigame_token, "Minigame: Token does not support IMINIGAME_TOKEN_ID");
+            let minigame_token_dispatcher = IMinigameTokenDispatcher {
+                contract_address: token_address,
+            };
+            let minigame_registry_address = minigame_token_dispatcher.game_registry_address();
+            let minigame_registry_src5_dispatcher = ISRC5Dispatcher {
+                contract_address: minigame_registry_address,
+            };
+            let supports_minigame_registry = minigame_registry_src5_dispatcher
                 .supports_interface(IMINIGAME_REGISTRY_ID);
-            if supports_multi_game {
+            if supports_minigame_registry {
                 let minigame_registry_dispatcher = IMinigameRegistryDispatcher {
-                    contract_address: token_address,
+                    contract_address: minigame_registry_address,
                 };
                 minigame_registry_dispatcher
                     .register_game(

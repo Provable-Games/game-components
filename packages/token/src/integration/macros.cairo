@@ -4,7 +4,7 @@
 // Macro for common component declarations
 // Usage: declare_components!(Minter, MultiGame, Objectives);
 
-// Macro for common storage declarations  
+// Macro for common storage declarations
 // Usage: declare_storage!(minter, multi_game, objectives);
 
 // Macro for common event declarations
@@ -14,4 +14,4 @@
 // Usage: declare_implementations!(MinterImpl, MultiGameImpl, ObjectivesImpl);
 
 // Note: Cairo doesn't have macros yet, so these are placeholders for future implementation
-// For now, users need to manually declare components using the patterns in the examples 
+// For now, users need to manually declare components using the patterns in the examples

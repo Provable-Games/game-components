@@ -1,7 +1,7 @@
 use starknet::ContractAddress;
 use crate::core::traits::{
-    OptionalMinter, OptionalContext, OptionalObjectives, OptionalSettings,
-    OptionalSoulbound, OptionalRenderer
+    OptionalMinter, OptionalContext, OptionalObjectives, OptionalSettings, OptionalSoulbound,
+    OptionalRenderer, OptionalBlank,
 };
 use game_components_metagame::extensions::context::structs::GameContextDetails;
 
@@ -13,32 +13,45 @@ pub impl NoOpMinter<TContractState> of OptionalMinter<TContractState> {
 }
 
 pub impl NoOpContext<TContractState> of OptionalContext<TContractState> {
-    fn emit_context(ref self: TContractState, caller: ContractAddress, token_id: u64, context: Option<GameContextDetails>) -> bool {
-        false
+    fn emit_context(
+        ref self: TContractState,
+        caller: ContractAddress,
+        token_id: u64,
+        context: GameContextDetails,
+    ) { // No-op
     }
 }
 
 pub impl NoOpObjectives<TContractState> of OptionalObjectives<TContractState> {
-    fn validate_objectives(self: @TContractState, game_address: ContractAddress, objective_ids: Option<Span<u32>>) -> (u32, Option<Span<u32>>) {
-        (0, Option::None)
+    fn validate_objectives(
+        self: @TContractState, game_address: ContractAddress, objective_ids: Span<u32>,
+    ) -> (u32, Span<u32>) {
+        (0, objective_ids)
     }
 
-    fn set_token_objectives(ref self: TContractState, token_id: u64, objective_ids: Option<Span<u32>>) {
-        // No-op
+    fn set_token_objectives(
+        ref self: TContractState, token_id: u64, objective_ids: Span<u32>,
+    ) { // No-op
     }
 
-    fn update_objectives(ref self: TContractState, token_id: u64, game_address: ContractAddress, objectives_count: u32) -> bool {
+    fn update_objectives(
+        ref self: TContractState,
+        token_id: u64,
+        game_address: ContractAddress,
+        objectives_count: u32,
+    ) -> bool {
         false
     }
-    
+
     fn are_objectives_completed(self: @TContractState, token_id: u64) -> bool {
         true
     }
 }
 
 pub impl NoOpSettings<TContractState> of OptionalSettings<TContractState> {
-    fn validate_settings(self: @TContractState, game_address: ContractAddress, settings_id: Option<u32>) -> u32 {
-        0
+    fn validate_settings(
+        self: @TContractState, game_address: ContractAddress, settings_id: u32,
+    ) { // No-op
     }
 }
 
@@ -46,9 +59,8 @@ pub impl NoOpSoulbound<TContractState> of OptionalSoulbound<TContractState> {
     fn check_transfer_allowed(self: @TContractState, token_id: u64) -> bool {
         true
     }
-    
-    fn set_soulbound_status(ref self: TContractState, token_id: u64, is_soulbound: bool) {
-        // No-op
+
+    fn set_soulbound_status(ref self: TContractState, token_id: u64, is_soulbound: bool) { // No-op
     }
 }
 
@@ -56,8 +68,20 @@ pub impl NoOpRenderer<TContractState> of OptionalRenderer<TContractState> {
     fn get_token_renderer(self: @TContractState, token_id: u64) -> Option<ContractAddress> {
         Option::None
     }
-    
-    fn set_token_renderer(ref self: TContractState, token_id: u64, renderer: Option<ContractAddress>) {
-        // No-op
+
+    fn set_token_renderer(
+        ref self: TContractState, token_id: u64, renderer: Option<ContractAddress>,
+    ) { // No-op
+    }
+}
+
+pub impl NoOpBlank<TContractState> of OptionalBlank<TContractState> {
+    fn supports_blank(self: @TContractState) -> bool {
+        false
+    }
+
+    fn validate_blank_mint(
+        self: @TContractState,
+    ) { // No-op - validation passes silently when blank is not supported
     }
 }

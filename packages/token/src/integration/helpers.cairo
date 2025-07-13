@@ -25,23 +25,17 @@ pub trait ContractInitializer<TContractState> {
 
 // Helper function to validate component configuration
 pub fn validate_component_configuration() {
-    if config::MINTER_ENABLED {
-        // Minter validation logic
+    if config::MINTER_ENABLED { // Minter validation logic
     }
-    if config::MULTI_GAME_ENABLED {
-        // Multi-game validation logic
+    if config::MULTI_GAME_ENABLED { // Multi-game validation logic
     }
-    if config::OBJECTIVES_ENABLED {
-        // Objectives validation logic
+    if config::OBJECTIVES_ENABLED { // Objectives validation logic
     }
-    if config::CONTEXT_ENABLED {
-        // Context validation logic
+    if config::CONTEXT_ENABLED { // Context validation logic
     }
-    if config::SOULBOUND_ENABLED {
-        // Soulbound validation logic
+    if config::SOULBOUND_ENABLED { // Soulbound validation logic
     }
-    if config::RENDERER_ENABLED {
-        // Renderer validation logic
+    if config::RENDERER_ENABLED { // Renderer validation logic
     }
 }
 
@@ -58,9 +52,10 @@ pub fn get_feature_status() -> (bool, bool, bool, bool, bool, bool) {
 }
 
 // Helper function to create default trait implementations
-pub fn create_default_implementations<TContractState>() {
-    // This function provides guidance on how to implement default traits
-    // Users can reference this to understand the NoOp pattern
+pub fn create_default_implementations<
+    TContractState,
+>() { // This function provides guidance on how to implement default traits
+// Users can reference this to understand the NoOp pattern
 }
 
 // Helper function to validate token parameters
@@ -76,15 +71,15 @@ pub fn validate_token_parameters(
     if to == starknet::contract_address_const::<0>() {
         return false;
     }
-    
+
     if game_address == starknet::contract_address_const::<0>() {
         return false;
     }
-    
+
     if player_name.len() == 0 {
         return false;
     }
-    
+
     true
 }
 
@@ -97,11 +92,21 @@ pub fn suggest_optimal_configuration(
     use_soulbound: bool,
     use_renderer: bool,
 ) -> ByteArray {
-    if use_minter && use_multi_game && use_objectives && use_context && use_soulbound && use_renderer {
+    if use_minter
+        && use_multi_game
+        && use_objectives
+        && use_context
+        && use_soulbound
+        && use_renderer {
         "All features enabled configuration"
-    } else if !use_minter && !use_multi_game && !use_objectives && !use_context && !use_soulbound && !use_renderer {
+    } else if !use_minter
+        && !use_multi_game
+        && !use_objectives
+        && !use_context
+        && !use_soulbound
+        && !use_renderer {
         "Minimal configuration - all features disabled"
     } else {
         "Custom configuration with selected features"
     }
-} 
+}

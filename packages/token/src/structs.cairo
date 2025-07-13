@@ -33,4 +33,4 @@ impl TokenMetadataDefault of Default<TokenMetadata> {
             objectives_count: 0,
         }
     }
-} 
+}

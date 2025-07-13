@@ -1,5 +1,7 @@
-use game_components_token::core::interface::{IMinigameTokenDispatcher, IMinigameTokenDispatcherTrait};
-use game_components_token::examples::multi_game_contract::{
+use game_components_token::core::interface::{
+    IMinigameTokenDispatcher, IMinigameTokenDispatcherTrait,
+};
+use game_components_token::examples::minigame_registry_contract::{
     IMinigameRegistryDispatcher, IMinigameRegistryDispatcherTrait,
 };
 use game_components_metagame::extensions::context::structs::GameContextDetails;

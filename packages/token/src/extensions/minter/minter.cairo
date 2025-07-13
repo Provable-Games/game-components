@@ -28,20 +28,23 @@ pub mod MinterComponent {
 
     #[embeddable_as(MinterImpl)]
     pub impl Minter<
-        TContractState,
-        +HasComponent<TContractState>,
-        +Drop<TContractState>,
+        TContractState, +HasComponent<TContractState>, +Drop<TContractState>,
     > of IMinigameTokenMinter<ComponentState<TContractState>> {
-        
-        fn get_minter_address(self: @ComponentState<TContractState>, minter_id: u64) -> ContractAddress {
+        fn get_minter_address(
+            self: @ComponentState<TContractState>, minter_id: u64,
+        ) -> ContractAddress {
             self.minter_addresses.entry(minter_id).read()
         }
 
-        fn get_minter_id(self: @ComponentState<TContractState>, minter_address: ContractAddress) -> u64 {
+        fn get_minter_id(
+            self: @ComponentState<TContractState>, minter_address: ContractAddress,
+        ) -> u64 {
             self.minter_id_by_address.entry(minter_address).read()
         }
 
-        fn minter_exists(self: @ComponentState<TContractState>, minter_address: ContractAddress) -> bool {
+        fn minter_exists(
+            self: @ComponentState<TContractState>, minter_address: ContractAddress,
+        ) -> bool {
             self.minter_id_by_address.entry(minter_address).read() != 0
         }
 
@@ -52,46 +55,37 @@ pub mod MinterComponent {
 
     // Implementation of the OptionalMinter trait for integration with CoreTokenComponent
     pub impl MinterOptionalImpl<
-        TContractState,
-        +HasComponent<TContractState>,
-        +Drop<TContractState>,
+        TContractState, +HasComponent<TContractState>, +Drop<TContractState>,
     > of OptionalMinter<TContractState> {
-        
         fn add_minter(ref self: TContractState, minter: ContractAddress) -> u64 {
             let mut component = HasComponent::get_component_mut(ref self);
-            
+
             // Check if minter already exists
             let existing_id = component.minter_id_by_address.entry(minter).read();
             if existing_id != 0 {
                 return existing_id;
             }
-            
+
             // Register new minter
             let minter_id = component.minter_counter.read() + 1;
             component.minter_addresses.entry(minter_id).write(minter);
             component.minter_id_by_address.entry(minter).write(minter_id);
             component.minter_counter.write(minter_id);
-            
+
             // Emit event
-            component.emit(MinterRegistered {
-                minter_id,
-                minter_address: minter,
-            });
-            
+            component.emit(MinterRegistered { minter_id, minter_address: minter });
+
             minter_id
         }
     }
 
     #[generate_trait]
     pub impl InternalImpl<
-        TContractState,
-        +HasComponent<TContractState>,
-        +Drop<TContractState>,
+        TContractState, +HasComponent<TContractState>, +Drop<TContractState>,
     > of InternalTrait<TContractState> {
-        
         fn initializer(ref self: ComponentState<TContractState>) {
             // Initialize minter counter
             self.minter_counter.write(0);
         }
     }
-} 
+}
