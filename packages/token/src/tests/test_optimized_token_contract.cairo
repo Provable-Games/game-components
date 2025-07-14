@@ -10,10 +10,15 @@ use openzeppelin_introspection::interface::{ISRC5Dispatcher};
 use crate::examples::minigame_registry_contract::{IMinigameRegistryDispatcher};
 use crate::interface::{IMinigameTokenMixinDispatcher, IMinigameTokenMixinDispatcherTrait};
 use game_components_minigame::interface::{IMinigameDispatcher};
+use game_components_metagame::interface::{IMetagameDispatcher};
 use game_components_metagame::extensions::context::structs::{GameContextDetails, GameContext};
 use game_components_test_starknet::minigame::mocks::minigame_starknet_mock::{
     IMinigameStarknetMockInitDispatcher, IMinigameStarknetMockInitDispatcherTrait,
     IMinigameStarknetMockDispatcher, IMinigameStarknetMockDispatcherTrait,
+};
+use game_components_test_starknet::metagame::mocks::metagame_starknet_mock::{
+    IMetagameStarknetMockInitDispatcher, IMetagameStarknetMockInitDispatcherTrait,
+    IMetagameStarknetMockDispatcher,
 };
 
 // Import mocks
@@ -70,6 +75,7 @@ pub struct TestContracts {
     pub test_token: IMinigameTokenMixinDispatcher,
     pub erc721: ERC721ABIDispatcher,
     pub src5: ISRC5Dispatcher,
+    pub metagame_mock: IMetagameStarknetMockDispatcher,
 }
 
 // ================================================================================================
@@ -95,6 +101,17 @@ pub fn deploy_basic_mock_game() -> (IMinigameDispatcher, IMockGameDispatcher) {
     let minigame_dispatcher = IMinigameDispatcher { contract_address };
     let mock_game_dispatcher = IMockGameDispatcher { contract_address };
     (minigame_dispatcher, mock_game_dispatcher)
+}
+
+pub fn deploy_mock_metagame_contract() -> (
+    IMetagameDispatcher, IMetagameStarknetMockInitDispatcher, IMetagameStarknetMockDispatcher,
+) {
+    let contract = declare("metagame_starknet_mock").unwrap().contract_class();
+    let (contract_address, _) = contract.deploy(@array![]).unwrap();
+    let metagame_dispatcher = IMetagameDispatcher { contract_address };
+    let metagame_init_dispatcher = IMetagameStarknetMockInitDispatcher { contract_address };
+    let metagame_mock_dispatcher = IMetagameStarknetMockDispatcher { contract_address };
+    (metagame_dispatcher, metagame_init_dispatcher, metagame_mock_dispatcher)
 }
 
 fn deploy_minigame_registry_contract() -> IMinigameRegistryDispatcher {
@@ -169,6 +186,8 @@ fn deploy_test_token_contract() -> (
 pub fn setup() -> TestContracts {
     let (minigame_dispatcher, minigame_init_dispatcher, mock_minigame_dispatcher) =
         deploy_mock_game();
+    let (metagame_dispatcher, metagame_init_dispatcher, metagame_mock_dispatcher) =
+        deploy_mock_metagame_contract();
     let minigame_registry_dispatcher = deploy_minigame_registry_contract();
     let (test_token_dispatcher, erc721_dispatcher, src5_dispatcher, _) =
         deploy_test_token_contract_with_game(
@@ -194,6 +213,13 @@ pub fn setup() -> TestContracts {
             test_token_dispatcher.contract_address,
         );
 
+    metagame_init_dispatcher
+        .initializer(
+            Option::Some(metagame_dispatcher.contract_address),
+            test_token_dispatcher.contract_address,
+            true,
+        );
+
     TestContracts {
         minigame: minigame_dispatcher,
         mock_minigame: mock_minigame_dispatcher,
@@ -201,6 +227,7 @@ pub fn setup() -> TestContracts {
         test_token: test_token_dispatcher,
         erc721: erc721_dispatcher,
         src5: src5_dispatcher,
+        metagame_mock: metagame_mock_dispatcher,
     }
 }
 
@@ -214,6 +241,8 @@ pub fn setup_multi_game() -> TestContracts {
     // Deploy and register multiple games
     let (game1_dispatcher, game1_init_dispatcher, mock1_dispatcher) = deploy_mock_game();
     let (_game2_dispatcher, game2_init_dispatcher, _mock2_dispatcher) = deploy_mock_game();
+    let (_metagame_dispatcher, _metagame_init_dispatcher, metagame_mock_dispatcher) =
+        deploy_mock_metagame_contract();
 
     // Initialize game 1 (registers in init)
     game1_init_dispatcher
@@ -258,6 +287,7 @@ pub fn setup_multi_game() -> TestContracts {
         test_token: test_token_dispatcher,
         erc721: erc721_dispatcher,
         src5: src5_dispatcher,
+        metagame_mock: metagame_mock_dispatcher,
     }
 }
 
@@ -982,13 +1012,14 @@ fn test_update_nonexistent_token() { // UT-UPDATE-R001
 }
 
 #[test]
-#[ignore] // UT-UPDATE-R002 - update_game is a no-op for blank tokens
-fn test_update_with_invalid_game_interface() {
-    let test_contracts = setup();
+#[ignore]
+#[should_panic]
+fn test_update_game_with_blank_token() {
+    // Deploy a token contract without any game address
+    let (token_dispatcher, _, _, _) = deploy_test_token_contract();
 
-    // Mint a blank token (no game address)
-    let token_id = test_contracts
-        .test_token
+    // Mint a blank token (no game address specified in mint either)
+    let token_id = token_dispatcher
         .mint(
             Option::None, // No game address
             Option::None,
@@ -1004,7 +1035,7 @@ fn test_update_with_invalid_game_interface() {
         );
 
     // This should panic because there's no game address set
-    test_contracts.test_token.update_game(token_id);
+    token_dispatcher.update_game(token_id);
 }
 
 // State Transition Tests

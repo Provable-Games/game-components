@@ -15,8 +15,8 @@ pub mod CoreTokenComponent {
     use crate::core::traits::{
         OptionalMinter, OptionalContext, OptionalObjectives, OptionalRenderer, OptionalSettings,
     };
-    use crate::structs::{TokenMetadata, Lifecycle};
-    use crate::libs::LifecycleTrait;
+    use crate::structs::TokenMetadata;
+    use crate::libs::{LifecycleTrait, token_state};
 
     use game_components_metagame::extensions::context::structs::GameContextDetails;
 
@@ -31,6 +31,7 @@ pub mod CoreTokenComponent {
     use game_components_minigame::interface::{
         IMINIGAME_ID, IMinigameTokenDataDispatcher, IMinigameTokenDataDispatcherTrait,
     };
+    use crate::extensions::minter::interface::IMINIGAME_TOKEN_MINTER_ID;
     use game_components_minigame::extensions::objectives::interface::{};
     use game_components_minigame::extensions::settings::interface::{};
 
@@ -55,44 +56,33 @@ pub mod CoreTokenComponent {
 
     #[derive(Drop, starknet::Event)]
     pub struct TokenMinted {
-        #[key]
         pub token_id: u64,
-        #[key]
         pub to: ContractAddress,
-        #[key]
         pub game_address: ContractAddress,
     }
 
     #[derive(Drop, starknet::Event)]
     pub struct GameUpdated {
-        #[key]
         pub token_id: u64,
-        #[key]
         pub old_game_address: ContractAddress,
-        #[key]
         pub new_game_address: ContractAddress,
     }
 
     #[derive(Drop, starknet::Event)]
     pub struct ScoreUpdate {
-        #[key]
         pub token_id: u64,
         pub score: u64,
     }
 
     #[derive(Drop, starknet::Event)]
     pub struct MetadataUpdate {
-        #[key]
         pub token_id: u64,
     }
 
     #[derive(Drop, starknet::Event)]
     pub struct Owners {
-        #[key]
         pub token_id: u64,
-        #[key]
         pub owner: ContractAddress,
-        #[key]
         pub auth: ContractAddress,
     }
 
@@ -117,9 +107,7 @@ pub mod CoreTokenComponent {
         fn is_playable(self: @ComponentState<TContractState>, token_id: u64) -> bool {
             let metadata = self.token_metadata.entry(token_id).read();
             let current_time = get_block_timestamp();
-            metadata.lifecycle.is_playable(current_time)
-                && !metadata.game_over
-                && !metadata.completed_all_objectives
+            token_state::is_token_playable(@metadata, current_time)
         }
 
         fn settings_id(self: @ComponentState<TContractState>, token_id: u64) -> u32 {
@@ -143,7 +131,7 @@ pub mod CoreTokenComponent {
 
         fn game_address(self: @ComponentState<TContractState>, token_id: u64) -> ContractAddress {
             let metadata = self.token_metadata.entry(token_id).read();
-            if metadata.game_id == 0 {
+            if token_state::is_single_game_token(metadata.game_id) {
                 // Single game token - use component's game address
                 self.game_address.read()
             } else {
@@ -194,7 +182,7 @@ pub mod CoreTokenComponent {
             let token_id = self.token_counter.read() + 1;
 
             // Validate lifecycle parameters regardless of token type
-            let lifecycle = Lifecycle { start: start.unwrap_or(0), end: end.unwrap_or(0) };
+            let lifecycle = token_state::create_lifecycle_with_defaults(start, end);
             lifecycle.validate();
 
             match game_address {
@@ -247,18 +235,17 @@ pub mod CoreTokenComponent {
                     RendererOpt::set_token_renderer(ref contract_self, token_id, renderer_address);
 
                     // Create token metadata
-                    let metadata = TokenMetadata {
+                    let current_time = get_block_timestamp();
+                    let metadata = token_state::create_game_token_metadata(
                         game_id,
-                        minted_at: get_block_timestamp(),
-                        settings_id: validated_settings_id,
+                        validated_settings_id,
                         lifecycle,
                         minted_by,
                         soulbound,
-                        game_over: false,
-                        completed_all_objectives: false,
                         has_context,
-                        objectives_count: objectives_count.try_into().unwrap(),
-                    };
+                        objectives_count.try_into().unwrap(),
+                        current_time,
+                    );
 
                     self.token_metadata.entry(token_id).write(metadata);
                     self.token_counter.write(token_id);
@@ -279,6 +266,13 @@ pub mod CoreTokenComponent {
                     token_id
                 },
                 Option::None => {
+                    let src5_component = get_dep_component!(@self, SRC5);
+                    let supports_minter = src5_component
+                        .supports_interface(IMINIGAME_TOKEN_MINTER_ID);
+                    assert!(
+                        supports_minter,
+                        "MinigameToken: Game does not support IMinigameTokenMinter interface",
+                    );
                     // Blank token - minimal processing with default values
                     let mut contract_self = self.get_contract_mut();
 
@@ -289,18 +283,10 @@ pub mod CoreTokenComponent {
                     RendererOpt::set_token_renderer(ref contract_self, token_id, renderer_address);
 
                     // Create minimal token metadata with empty/default values
-                    let metadata = TokenMetadata {
-                        game_id: 0,
-                        minted_at: get_block_timestamp(),
-                        settings_id: 0,
-                        lifecycle,
-                        minted_by,
-                        soulbound,
-                        game_over: false,
-                        completed_all_objectives: false,
-                        has_context: false,
-                        objectives_count: 0,
-                    };
+                    let current_time = get_block_timestamp();
+                    let metadata = token_state::create_blank_token_metadata(
+                        lifecycle, minted_by, soulbound, current_time,
+                    );
 
                     self.token_metadata.entry(token_id).write(metadata);
                     self.token_counter.write(token_id);
@@ -338,10 +324,18 @@ pub mod CoreTokenComponent {
             objective_ids: Option<Span<u32>>,
             context: Option<GameContextDetails>,
         ) {
+            // This function only becomes relavant if we are keeping track of the minter address
+            // Validate game address supports required interfaces
+            let src5_component = get_dep_component!(@self, SRC5);
+            let supports_minter = src5_component.supports_interface(IMINIGAME_TOKEN_MINTER_ID);
+            assert!(
+                supports_minter,
+                "MinigameToken: Game does not support IMinigameTokenMinter interface",
+            );
             let caller = get_caller_address();
 
             // Validate lifecycle parameters regardless of token type
-            let lifecycle = Lifecycle { start: start.unwrap_or(0), end: end.unwrap_or(0) };
+            let lifecycle = token_state::create_lifecycle_with_defaults(start, end);
             lifecycle.validate();
 
             let mut contract_self = self.get_contract_mut();
@@ -355,6 +349,15 @@ pub mod CoreTokenComponent {
             let token_metadata: TokenMetadata = self.get_token_metadata(token_id);
             assert!(
                 token_metadata.game_id.is_zero(), "MinigameToken: Token id {} not blank", token_id,
+            );
+            // Get minted by address and assert it is the caller
+            let minted_by = token_metadata.minted_by;
+            let minter_address = MinterOpt::get_minter_address(contract, minted_by);
+            assert!(
+                minter_address == caller,
+                "MinigameToken: Token id {} minted by {} not by caller",
+                token_id,
+                minted_by,
             );
 
             let (final_game_address, game_id) = self
@@ -392,19 +395,18 @@ pub mod CoreTokenComponent {
             };
 
             let token_metadata = self.get_token_metadata(token_id);
+            let current_time = get_block_timestamp();
 
-            let metadata = TokenMetadata {
+            let metadata = token_state::create_game_token_metadata(
                 game_id,
-                minted_at: get_block_timestamp(),
-                settings_id: validated_settings_id,
+                validated_settings_id,
                 lifecycle,
-                minted_by: token_metadata.minted_by,
-                soulbound: token_metadata.soulbound,
-                game_over: false,
-                completed_all_objectives: false,
+                token_metadata.minted_by,
+                token_metadata.soulbound,
                 has_context,
-                objectives_count: objectives_count.try_into().unwrap(),
-            };
+                objectives_count.try_into().unwrap(),
+                current_time,
+            );
 
             self.token_metadata.entry(token_id).write(metadata);
 
@@ -456,13 +458,18 @@ pub mod CoreTokenComponent {
             let score = minigame_token_data_dispatcher.score(token_id);
 
             // Ensure game_over and completed_all_objectives can only transition from false to true
-            let final_game_over = token_metadata.game_over || game_over;
-            let final_completed_all_objectives = token_metadata.completed_all_objectives
-                || completed_all_objectives;
+            let final_game_over = token_state::ensure_game_over_transition(
+                token_metadata.game_over, game_over,
+            );
+            let final_completed_all_objectives =
+                token_state::ensure_objectives_completion_transition(
+                token_metadata.completed_all_objectives, completed_all_objectives,
+            );
 
             // Update metadata if game state changed
             if final_completed_all_objectives != token_metadata.completed_all_objectives
                 || final_game_over != token_metadata.game_over {
+                // Create updated metadata preserving original values
                 let updated_metadata = TokenMetadata {
                     game_id: token_metadata.game_id,
                     minted_at: token_metadata.minted_at,

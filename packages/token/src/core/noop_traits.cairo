@@ -1,7 +1,7 @@
-use starknet::ContractAddress;
+use starknet::{ContractAddress, contract_address_const};
 use crate::core::traits::{
     OptionalMinter, OptionalContext, OptionalObjectives, OptionalSettings, OptionalSoulbound,
-    OptionalRenderer, OptionalBlank,
+    OptionalRenderer,
 };
 use game_components_metagame::extensions::context::structs::GameContextDetails;
 
@@ -9,6 +9,10 @@ use game_components_metagame::extensions::context::structs::GameContextDetails;
 pub impl NoOpMinter<TContractState> of OptionalMinter<TContractState> {
     fn add_minter(ref self: TContractState, minter: ContractAddress) -> u64 {
         0
+    }
+
+    fn get_minter_address(self: @TContractState, minter_id: u64) -> starknet::ContractAddress {
+        contract_address_const::<0>()
     }
 }
 
@@ -72,16 +76,5 @@ pub impl NoOpRenderer<TContractState> of OptionalRenderer<TContractState> {
     fn set_token_renderer(
         ref self: TContractState, token_id: u64, renderer: Option<ContractAddress>,
     ) { // No-op
-    }
-}
-
-pub impl NoOpBlank<TContractState> of OptionalBlank<TContractState> {
-    fn supports_blank(self: @TContractState) -> bool {
-        false
-    }
-
-    fn validate_blank_mint(
-        self: @TContractState,
-    ) { // No-op - validation passes silently when blank is not supported
     }
 }

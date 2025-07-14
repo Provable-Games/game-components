@@ -21,6 +21,7 @@ test = "snforge test"
 sierra = true
 build-external-contracts = [
     "game_components_test_starknet::minigame::mocks::minigame_starknet_mock::minigame_starknet_mock",
+    "game_components_test_starknet::metagame::mocks::metagame_starknet_mock::metagame_starknet_mock"
 ]
 
 

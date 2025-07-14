@@ -6,6 +6,7 @@ use game_components_metagame::extensions::context::structs::GameContextDetails;
 
 pub trait OptionalMinter<TContractState> {
     fn add_minter(ref self: TContractState, minter: ContractAddress) -> u64;
+    fn get_minter_address(self: @TContractState, minter_id: u64) -> starknet::ContractAddress;
 }
 
 pub trait OptionalContext<TContractState> {
@@ -47,13 +48,3 @@ pub trait OptionalRenderer<TContractState> {
         ref self: TContractState, token_id: u64, renderer: Option<ContractAddress>,
     );
 }
-
-pub trait OptionalBlank<TContractState> {
-    fn supports_blank(self: @TContractState) -> bool;
-    fn validate_blank_mint(self: @TContractState);
-}
-// No-op implementations for disabled features
-// These should be imported separately when needed, not in the same scope as component
-// implementations
-
-

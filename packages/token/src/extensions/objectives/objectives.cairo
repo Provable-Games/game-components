@@ -1,7 +1,7 @@
 #[starknet::component]
 pub mod ObjectivesComponent {
     use core::num::traits::Zero;
-    use starknet::{ContractAddress, get_caller_address, get_contract_address};
+    use starknet::{ContractAddress, get_caller_address, get_contract_address, get_block_timestamp};
     use starknet::storage::{
         StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess, Map,
     };
@@ -20,6 +20,7 @@ pub mod ObjectivesComponent {
         IMINIGAME_OBJECTIVES_ID, IMinigameObjectivesDispatcher, IMinigameObjectivesDispatcherTrait,
     };
     use game_components_utils::json::create_objectives_json;
+    use crate::libs::objectives_logic;
 
     use openzeppelin_introspection::src5::SRC5Component;
     use openzeppelin_introspection::src5::SRC5Component::InternalTrait as SRC5InternalTrait;
@@ -104,22 +105,18 @@ pub mod ObjectivesComponent {
         }
 
         fn all_objectives_completed(self: @ComponentState<TContractState>, token_id: u64) -> bool {
+            // Inline the get_objectives_array logic
             let total_count = self.token_objectives_count.entry(token_id).read();
+            let mut objectives = array![];
             let mut index = 0;
-            let mut completed_count = 0;
 
             while index < total_count {
-                let objective: TokenObjective = self
-                    .token_objectives
-                    .entry(token_id)
-                    .entry(index)
-                    .read();
-                if objective.completed {
-                    completed_count += 1;
-                }
+                let objective = self.token_objectives.entry(token_id).entry(index).read();
+                objectives.append(objective);
                 index += 1;
             };
-            total_count == completed_count
+
+            objectives_logic::are_all_objectives_completed(objectives.span())
         }
 
         // this shouldn't be an exposed enpoint as anyone could call it and create an objective
@@ -272,31 +269,34 @@ pub mod ObjectivesComponent {
                                 objective_id: objective.objective_id, completed: true,
                             },
                         );
+                    component
+                        .emit(
+                            ObjectiveCompleted {
+                                token_id,
+                                objective_id: objective.objective_id,
+                                completion_timestamp: get_block_timestamp(),
+                            },
+                        );
                     completed_count += 1;
                 }
                 index += 1;
             };
-            total_count == completed_count
+            // Get all objectives and check if all are completed
+            let objectives = component.get_objectives_array(token_id);
+            let all_objectives_completed = objectives_logic::are_all_objectives_completed(
+                objectives.span(),
+            );
+
+            if all_objectives_completed {
+                component.emit(AllObjectivesCompleted { token_id });
+            }
+            all_objectives_completed
         }
 
         fn are_objectives_completed(self: @TContractState, token_id: u64) -> bool {
             let component = HasComponent::get_component(self);
-            let total_count = component.token_objectives_count.entry(token_id).read();
-            let mut index = 0;
-            let mut completed_count = 0;
-
-            while index < total_count {
-                let objective: TokenObjective = component
-                    .token_objectives
-                    .entry(token_id)
-                    .entry(index)
-                    .read();
-                if objective.completed {
-                    completed_count += 1;
-                }
-                index += 1;
-            };
-            total_count == completed_count
+            let objectives = component.get_objectives_array(token_id);
+            objectives_logic::are_all_objectives_completed(objectives.span())
         }
     }
 
@@ -319,6 +319,22 @@ pub mod ObjectivesComponent {
             objective: TokenObjective,
         ) {
             self.token_objectives.entry(token_id).entry(objective_index).write(objective);
+        }
+
+        fn get_objectives_array(
+            self: @ComponentState<TContractState>, token_id: u64,
+        ) -> Array<TokenObjective> {
+            let total_count = self.token_objectives_count.entry(token_id).read();
+            let mut objectives = array![];
+            let mut index = 0;
+
+            while index < total_count {
+                let objective = self.token_objectives.entry(token_id).entry(index).read();
+                objectives.append(objective);
+                index += 1;
+            };
+
+            objectives
         }
     }
 }

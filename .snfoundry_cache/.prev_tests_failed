@@ -1,9 +1,1 @@
-game_components_token::tests::test_events::test_mint_with_context_event
-game_components_token::tests::test_events::test_objectives_completion_events
-game_components_token::tests::test_events::test_set_token_metadata_events
-game_components_token::tests::test_fuzz::test_mint_nonexistent_settings_fuzz
 game_components_token::tests::test_fuzz::test_settings_immutability_fuzz
-game_components_token::tests::test_integration::test_achievement_hunt
-game_components_token::tests::test_integration::test_game_contract_unresponsive
-game_components_token::tests::test_integration::test_multi_game_platform
-game_components_token::tests::test_integration::test_tournament_flow

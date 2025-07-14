@@ -5,7 +5,10 @@ pub mod MinterComponent {
         StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess, Map,
     };
     use crate::core::traits::OptionalMinter;
-    use crate::extensions::minter::interface::IMinigameTokenMinter;
+    use crate::extensions::minter::interface::{IMinigameTokenMinter, IMINIGAME_TOKEN_MINTER_ID};
+
+    use openzeppelin_introspection::src5::SRC5Component;
+    use openzeppelin_introspection::src5::SRC5Component::InternalTrait as SRC5InternalTrait;
 
     #[storage]
     pub struct Storage {
@@ -57,6 +60,11 @@ pub mod MinterComponent {
     pub impl MinterOptionalImpl<
         TContractState, +HasComponent<TContractState>, +Drop<TContractState>,
     > of OptionalMinter<TContractState> {
+        fn get_minter_address(self: @TContractState, minter_id: u64) -> ContractAddress {
+            let component = HasComponent::get_component(self);
+            component.get_minter_address(minter_id)
+        }
+
         fn add_minter(ref self: TContractState, minter: ContractAddress) -> u64 {
             let mut component = HasComponent::get_component_mut(ref self);
 
@@ -81,11 +89,14 @@ pub mod MinterComponent {
 
     #[generate_trait]
     pub impl InternalImpl<
-        TContractState, +HasComponent<TContractState>, +Drop<TContractState>,
+        TContractState,
+        +HasComponent<TContractState>,
+        impl SRC5: SRC5Component::HasComponent<TContractState>,
+        +Drop<TContractState>,
     > of InternalTrait<TContractState> {
         fn initializer(ref self: ComponentState<TContractState>) {
-            // Initialize minter counter
-            self.minter_counter.write(0);
+            let mut src5_component = get_dep_component_mut!(ref self, SRC5);
+            src5_component.register_interface(IMINIGAME_TOKEN_MINTER_ID);
         }
     }
 }

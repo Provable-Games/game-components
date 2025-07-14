@@ -225,7 +225,8 @@ mod OptimizedTokenContract {
             to: ContractAddress,
             token_id: u256,
             auth: ContractAddress,
-        ) { // Post-transfer logic can be added here
+        ) { 
+            // TODO: Implement owners event in a dojo native way
         }
     }
 

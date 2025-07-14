@@ -6,6 +6,7 @@ pub mod RendererComponent {
     };
     use crate::core::traits::OptionalRenderer;
     use crate::extensions::renderer::interface::IMinigameTokenRenderer;
+    use crate::libs::address_utils;
 
     #[storage]
     pub struct Storage {
@@ -34,7 +35,7 @@ pub mod RendererComponent {
 
         fn has_custom_renderer(self: @ComponentState<TContractState>, token_id: u64) -> bool {
             let renderer = self.token_renderers.entry(token_id).read();
-            renderer != starknet::contract_address_const::<0>()
+            address_utils::is_non_zero_address(renderer)
         }
     }
 
@@ -45,12 +46,7 @@ pub mod RendererComponent {
         fn get_token_renderer(self: @TContractState, token_id: u64) -> Option<ContractAddress> {
             let component = HasComponent::get_component(self);
             let renderer = component.get_renderer(token_id);
-
-            if renderer == starknet::contract_address_const::<0>() {
-                Option::None
-            } else {
-                Option::Some(renderer)
-            }
+            address_utils::address_to_option(renderer)
         }
 
         fn set_token_renderer(

@@ -1,4 +1,4 @@
-use starknet::{ContractAddress, contract_address_const, get_block_timestamp};
+use starknet::{ContractAddress, contract_address_const};
 use snforge_std::{
     declare, ContractClassTrait, DeclareResultTrait, spy_events, EventSpyAssertionsTrait,
     start_cheat_block_timestamp, stop_cheat_block_timestamp, start_cheat_caller_address,
