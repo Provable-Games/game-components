@@ -42,6 +42,7 @@ pub mod CoreTokenComponent {
         token_counter: u64,
         game_address: ContractAddress,
         game_registry_address: ContractAddress,
+        event_relayer_address: ContractAddress,
     }
 
     #[event]
@@ -146,6 +147,10 @@ pub mod CoreTokenComponent {
 
         fn game_registry_address(self: @ComponentState<TContractState>) -> ContractAddress {
             self.game_registry_address.read()
+        }
+
+        fn event_relayer_address(self: @ComponentState<TContractState>) -> ContractAddress {
+            self.event_relayer_address.read()
         }
 
         fn is_soulbound(self: @ComponentState<TContractState>, token_id: u64) -> bool {
@@ -518,6 +523,7 @@ pub mod CoreTokenComponent {
             ref self: ComponentState<TContractState>,
             game_address: Option<ContractAddress>,
             game_registry_address: Option<ContractAddress>,
+            event_relayer_address: Option<ContractAddress>,
         ) {
             // Register token interface
             let mut contract = self.get_contract_mut();
@@ -531,6 +537,10 @@ pub mod CoreTokenComponent {
 
             if let Option::Some(game_registry_address) = game_registry_address {
                 self.game_registry_address.write(game_registry_address);
+            }
+
+            if let Option::Some(event_relayer_address) = event_relayer_address {
+                self.event_relayer_address.write(event_relayer_address);
             }
         }
 
@@ -616,6 +626,10 @@ pub mod CoreTokenComponent {
 
         fn emit_metadata_update(ref self: ComponentState<TContractState>, token_id: u64) {
             self.emit(MetadataUpdate { token_id });
+        }
+
+        fn emit_owners(ref self: ComponentState<TContractState>, token_id: u64, owner: ContractAddress, auth: ContractAddress) {
+            // self.emit(Owners { token_id, owner, auth });
         }
 
         fn get_token_metadata(

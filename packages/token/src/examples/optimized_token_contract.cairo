@@ -21,6 +21,8 @@ use crate::examples::minigame_registry_contract::{
     IMinigameRegistryDispatcher, IMinigameRegistryDispatcherTrait,
 };
 
+use crate::interface::{ITokenEventRelayerDispatcher, ITokenEventRelayerDispatcherTrait};
+
 
 #[starknet::contract]
 mod OptimizedTokenContract {
@@ -227,6 +229,11 @@ mod OptimizedTokenContract {
             auth: ContractAddress,
         ) { 
             // TODO: Implement owners event in a dojo native way
+            let contract_state = self.get_contract();
+            let event_relayer = ITokenEventRelayerDispatcher {
+                contract_address: contract_state.event_relayer_address(),
+            };
+            event_relayer.emit_owners(token_id.try_into().unwrap(), to, auth);
         }
     }
 
@@ -242,10 +249,11 @@ mod OptimizedTokenContract {
         base_uri: ByteArray,
         game_address: Option<ContractAddress>,
         game_registry_address: Option<ContractAddress>,
+        event_relayer_address: Option<ContractAddress>,
     ) {
         // Initialize core components
         self.erc721.initializer(name, symbol, base_uri);
-        self.core_token.initializer(game_address, game_registry_address);
+        self.core_token.initializer(game_address, game_registry_address, event_relayer_address);
 
         self.minter.initializer();
         self.objectives.initializer();

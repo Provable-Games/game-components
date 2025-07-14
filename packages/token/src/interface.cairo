@@ -94,3 +94,10 @@ pub trait IMinigameTokenMixin<TState> {
     fn get_renderer(self: @TState, token_id: u64) -> starknet::ContractAddress;
     fn has_custom_renderer(self: @TState, token_id: u64) -> bool;
 }
+
+#[starknet::interface]
+pub trait ITokenEventRelayer<TContractState> {
+    fn initialize(ref self: TContractState, token_address: ContractAddress, world_owner: ContractAddress);
+    // fn emit_score_update(ref self: TContractState, token_id: u256, score: u32);
+    fn emit_owners(ref self: TContractState, token_id: u64, owner: ContractAddress, auth: ContractAddress);
+}

@@ -99,7 +99,7 @@ mod MinimalOptimizedContract {
     ) {
         // Initialize core components
         self.erc721.initializer(name, symbol, base_uri);
-        self.core_token.initializer(game_address, Option::None);
+        self.core_token.initializer(game_address, Option::None, Option::None);
 
         // Only initialize enabled components
         if config::MINTER_ENABLED {

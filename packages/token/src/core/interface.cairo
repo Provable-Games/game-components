@@ -15,6 +15,7 @@ pub trait IMinigameToken<TState> {
     fn minted_by(self: @TState, token_id: u64) -> u64;
     fn game_address(self: @TState, token_id: u64) -> ContractAddress;
     fn game_registry_address(self: @TState) -> ContractAddress;
+    fn event_relayer_address(self: @TState) -> ContractAddress;
     fn is_soulbound(self: @TState, token_id: u64) -> bool;
     fn renderer_address(self: @TState, token_id: u64) -> ContractAddress;
 
