@@ -345,6 +345,7 @@ fn test_achievement_hunt() {
     constructor_calldata.append(0); // Some(game_address)
     constructor_calldata.append(game.contract_address.into());
     constructor_calldata.append(1); // None for registry
+    constructor_calldata.append(1); // None for event_relayer
 
     let (token_address, _) = token_contract.deploy(@constructor_calldata).unwrap();
     let token_dispatcher = IMinigameTokenMixinDispatcher { contract_address: token_address };
@@ -551,6 +552,7 @@ fn deploy_simple_setup() -> (IMinigameTokenMixinDispatcher, ContractAddress, Con
     constructor_calldata.append(0); // Some(game_address)
     constructor_calldata.append(game_address.into());
     constructor_calldata.append(1); // None for registry
+    constructor_calldata.append(1); // None for event_relayer
 
     let (token_address, _) = token_contract.deploy(@constructor_calldata).unwrap();
     let token_dispatcher = IMinigameTokenMixinDispatcher { contract_address: token_address };
@@ -745,6 +747,7 @@ fn test_game_contract_unresponsive() {
     constructor_calldata.append(0); // Some(game_address)
     constructor_calldata.append(game_address.into());
     constructor_calldata.append(1); // None for registry
+    constructor_calldata.append(1); // None for event_relayer
 
     let (token_address, _) = token_contract.deploy(@constructor_calldata).unwrap();
     let token_dispatcher = IMinigameTokenMixinDispatcher { contract_address: token_address };
@@ -816,6 +819,7 @@ fn test_registry_lookup_edge_cases() {
     token_calldata.append(1); // None for game
     token_calldata.append(0); // Some(registry)
     token_calldata.append(registry_address.into());
+    token_calldata.append(1); // None for event_relayer
 
     let (token_address, _) = token_contract.deploy(@token_calldata).unwrap();
     let token_dispatcher = IMinigameTokenMixinDispatcher { contract_address: token_address };

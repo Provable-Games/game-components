@@ -133,7 +133,7 @@ fn deploy_minigame_registry_contract() -> IMinigameRegistryDispatcher {
 }
 
 fn deploy_test_token_contract_with_game(
-    game_address: Option<ContractAddress>, game_registry_address: Option<ContractAddress>,
+    game_address: Option<ContractAddress>, game_registry_address: Option<ContractAddress>, event_relay_address: Option<ContractAddress>,
 ) -> (IMinigameTokenMixinDispatcher, ERC721ABIDispatcher, ISRC5Dispatcher, ContractAddress) {
     let contract = declare("OptimizedTokenContract").unwrap().contract_class();
 
@@ -168,6 +168,17 @@ fn deploy_test_token_contract_with_game(
         },
     }
 
+    // Serialize event_relay_address Option
+    match event_relay_address {
+        Option::Some(addr) => {
+            constructor_calldata.append(0); // Some variant
+            constructor_calldata.append(addr.into());
+        },
+        Option::None => {
+            constructor_calldata.append(1); // None variant
+        },
+    }
+
     let (contract_address, _) = contract.deploy(@constructor_calldata).unwrap();
 
     let test_token_dispatcher = IMinigameTokenMixinDispatcher { contract_address };
@@ -180,7 +191,7 @@ fn deploy_test_token_contract_with_game(
 fn deploy_test_token_contract() -> (
     IMinigameTokenMixinDispatcher, ERC721ABIDispatcher, ISRC5Dispatcher, ContractAddress,
 ) {
-    deploy_test_token_contract_with_game(Option::None, Option::None)
+    deploy_test_token_contract_with_game(Option::None, Option::None, Option::None)
 }
 
 pub fn setup() -> TestContracts {
@@ -193,6 +204,7 @@ pub fn setup() -> TestContracts {
         deploy_test_token_contract_with_game(
         Option::Some(minigame_dispatcher.contract_address),
         Option::Some(minigame_registry_dispatcher.contract_address),
+        Option::None,
     );
 
     // Initialize the minigame mock
@@ -236,6 +248,7 @@ pub fn setup_multi_game() -> TestContracts {
     let (test_token_dispatcher, erc721_dispatcher, src5_dispatcher, _) =
         deploy_test_token_contract_with_game(
         Option::None, Option::Some(minigame_registry_dispatcher.contract_address),
+        Option::None,
     );
 
     // Deploy and register multiple games
@@ -863,7 +876,7 @@ fn test_update_game_with_state_changes() { // UT-UPDATE-001
     let (_, mock_game) = deploy_basic_mock_game();
 
     let (token_dispatcher, _, _, _) = deploy_test_token_contract_with_game(
-        Option::Some(mock_game.contract_address), Option::None,
+        Option::Some(mock_game.contract_address), Option::None, Option::None,
     );
 
     let token_id = token_dispatcher
@@ -899,7 +912,7 @@ fn test_update_game_without_state_changes() { // UT-UPDATE-002
     let (_, mock_game) = deploy_basic_mock_game();
 
     let (token_dispatcher, _, _, _) = deploy_test_token_contract_with_game(
-        Option::Some(mock_game.contract_address), Option::None,
+        Option::Some(mock_game.contract_address), Option::None, Option::None,
     );
 
     let token_id = token_dispatcher
@@ -966,7 +979,7 @@ fn test_update_game_with_game_over_transition() { // UT-UPDATE-004
     let (_, mock_game) = deploy_basic_mock_game();
 
     let (token_dispatcher, _, _, _) = deploy_test_token_contract_with_game(
-        Option::Some(mock_game.contract_address), Option::None,
+        Option::Some(mock_game.contract_address), Option::None, Option::None,
     );
 
     let token_id = token_dispatcher
@@ -1046,7 +1059,7 @@ fn test_game_over_false_to_true_transition() { // UT-UPDATE-S001
     let (_, mock_game) = deploy_basic_mock_game();
 
     let (token_dispatcher, _, _, _) = deploy_test_token_contract_with_game(
-        Option::Some(mock_game.contract_address), Option::None,
+        Option::Some(mock_game.contract_address), Option::None, Option::None,
     );
 
     let token_id = token_dispatcher
@@ -1121,7 +1134,7 @@ fn test_idempotent_updates() { // UT-UPDATE-S003
     let (_, mock_game) = deploy_basic_mock_game();
 
     let (token_dispatcher, _, _, _) = deploy_test_token_contract_with_game(
-        Option::Some(mock_game.contract_address), Option::None,
+        Option::Some(mock_game.contract_address), Option::None, Option::None,
     );
 
     let token_id = token_dispatcher
@@ -1255,7 +1268,7 @@ fn test_is_playable_view() { // UT-VIEW-002
     // Test case 3: Token that's game over
     let (_, mock_game) = deploy_basic_mock_game();
     let (token_dispatcher, _, _, _) = deploy_test_token_contract_with_game(
-        Option::Some(mock_game.contract_address), Option::None,
+        Option::Some(mock_game.contract_address), Option::None, Option::None,
     );
 
     let token_id3 = token_dispatcher

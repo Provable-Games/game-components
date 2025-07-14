@@ -84,6 +84,7 @@ fn test_mint_soulbound_token() {
     base_uri.serialize(ref constructor_calldata);
     constructor_calldata.append(1); // None for game
     constructor_calldata.append(1); // None for registry
+    constructor_calldata.append(1); // None for event_relayer
 
     let (token_address, _) = token_contract.deploy(@constructor_calldata).unwrap();
     let token_dispatcher = IMinigameTokenMixinDispatcher { contract_address: token_address };
@@ -138,6 +139,7 @@ fn test_transfer_regular_token() {
     base_uri.serialize(ref constructor_calldata);
     constructor_calldata.append(1); // None for game
     constructor_calldata.append(1); // None for registry
+    constructor_calldata.append(1); // None for event_relayer
 
     let (token_address, _) = token_contract.deploy(@constructor_calldata).unwrap();
     let token_dispatcher = IMinigameTokenMixinDispatcher { contract_address: token_address };
@@ -187,6 +189,7 @@ fn test_set_token_renderer() {
     base_uri.serialize(ref constructor_calldata);
     constructor_calldata.append(1); // None for game
     constructor_calldata.append(1); // None for registry
+    constructor_calldata.append(1); // None for event_relayer
 
     let (token_address, _) = token_contract.deploy(@constructor_calldata).unwrap();
     let token_dispatcher = IMinigameTokenMixinDispatcher { contract_address: token_address };
@@ -234,6 +237,7 @@ fn test_get_renderer_no_custom() {
     base_uri.serialize(ref constructor_calldata);
     constructor_calldata.append(1); // None for game
     constructor_calldata.append(1); // None for registry
+    constructor_calldata.append(1); // None for event_relayer
 
     let (token_address, _) = token_contract.deploy(@constructor_calldata).unwrap();
     let token_dispatcher = IMinigameTokenMixinDispatcher { contract_address: token_address };
@@ -277,6 +281,7 @@ fn test_zero_address_renderer() {
     base_uri.serialize(ref constructor_calldata);
     constructor_calldata.append(1); // None for game
     constructor_calldata.append(1); // None for registry
+    constructor_calldata.append(1); // None for event_relayer
 
     let (token_address, _) = token_contract.deploy(@constructor_calldata).unwrap();
     let token_dispatcher = IMinigameTokenMixinDispatcher { contract_address: token_address };
@@ -343,6 +348,7 @@ fn test_mint_events() {
     base_uri.serialize(ref constructor_calldata);
     constructor_calldata.append(1); // None for game
     constructor_calldata.append(1); // None for registry
+    constructor_calldata.append(1); // None for event_relayer
 
     let (token_address, _) = token_contract.deploy(@constructor_calldata).unwrap();
     let token_dispatcher = IMinigameTokenMixinDispatcher { contract_address: token_address };

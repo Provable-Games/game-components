@@ -169,6 +169,7 @@ fn test_optimized_contract_game_integration() {
     constructor_calldata.append(0); // Some(game_address)
     constructor_calldata.append(mock_game.contract_address.into());
     constructor_calldata.append(1); // None for registry
+    constructor_calldata.append(1); // None for event_relayer
 
     let (token_address, _) = token_contract.deploy(@constructor_calldata).unwrap();
     let token_dispatcher = IMinigameTokenMixinDispatcher { contract_address: token_address };

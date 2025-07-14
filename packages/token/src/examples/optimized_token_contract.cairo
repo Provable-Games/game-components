@@ -1,6 +1,7 @@
 // Example: Optimized Token Contract using the new component system
 // This demonstrates how to configure and use the modular components
 
+use core::num::traits::Zero;
 use starknet::{ContractAddress, syscalls::call_contract_syscall};
 use starknet::storage::{StoragePointerReadAccess};
 
@@ -228,12 +229,13 @@ mod OptimizedTokenContract {
             token_id: u256,
             auth: ContractAddress,
         ) { 
-            // TODO: Implement owners event in a dojo native way
             let contract_state = self.get_contract();
-            let event_relayer = ITokenEventRelayerDispatcher {
-                contract_address: contract_state.event_relayer_address(),
-            };
-            event_relayer.emit_owners(token_id.try_into().unwrap(), to, auth);
+            if !contract_state.event_relayer_address().is_zero() {    
+                let event_relayer = ITokenEventRelayerDispatcher {
+                        contract_address: contract_state.event_relayer_address(),
+                };
+                event_relayer.emit_owners(token_id.try_into().unwrap(), to, auth);
+            }
         }
     }
 

@@ -38,6 +38,7 @@ fn deploy_test_token() -> (
     constructor_calldata.append(0); // Some(game_address)
     constructor_calldata.append(game_address.into());
     constructor_calldata.append(1); // None for registry
+    constructor_calldata.append(1); // None for event_relayer
 
     let (token_address, _) = token_contract.deploy(@constructor_calldata).unwrap();
 

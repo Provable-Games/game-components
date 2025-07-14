@@ -84,6 +84,7 @@ fn test_update_game_event_emissions() {
     constructor_calldata.append(0); // Some(game_address)
     constructor_calldata.append(minigame.contract_address.into());
     constructor_calldata.append(1); // None for registry
+    constructor_calldata.append(1); // None for event_relayer
 
     let (token_address, _) = token_contract.deploy(@constructor_calldata).unwrap();
     let token_dispatcher = IMinigameTokenMixinDispatcher { contract_address: token_address };
@@ -159,6 +160,7 @@ fn test_update_game_with_metadata_change_events() {
     constructor_calldata.append(0); // Some(game_address)
     constructor_calldata.append(minigame.contract_address.into());
     constructor_calldata.append(1); // None for registry
+    constructor_calldata.append(1); // None for event_relayer
 
     let (token_address, _) = token_contract.deploy(@constructor_calldata).unwrap();
     let token_dispatcher = IMinigameTokenMixinDispatcher { contract_address: token_address };
