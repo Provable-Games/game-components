@@ -1,37 +1,26 @@
-use starknet::{ContractAddress, contract_address_const};
+use starknet::{contract_address_const};
 use snforge_std::{
-    declare, ContractClassTrait, DeclareResultTrait, spy_events, EventSpyAssertionsTrait,
-    start_cheat_block_timestamp, stop_cheat_block_timestamp, start_cheat_caller_address,
-    stop_cheat_caller_address, cheat_caller_address, CheatSpan, EventSpy, Event,
+    spy_events,
 };
 
-use crate::interface::{IMinigameTokenMixinDispatcher, IMinigameTokenMixinDispatcherTrait};
-use crate::structs::{TokenMetadata, Lifecycle};
-use crate::extensions::objectives::interface::TokenObjective;
+use crate::interface::{IMinigameTokenMixinDispatcherTrait};
 
 // Import extension interfaces
-use game_components_metagame::extensions::context::interface::{
-    IMetagameContextDispatcher, IMetagameContextDispatcherTrait,
-};
 use game_components_minigame::extensions::settings::interface::{
-    IMinigameSettingsDispatcher, IMinigameSettingsDispatcherTrait,
+    IMinigameSettingsDispatcher,
 };
-use game_components_minigame::extensions::objectives::interface::{
-    IMinigameObjectivesDispatcher, IMinigameObjectivesDispatcherTrait,
+
+// Import setup helpers
+use crate::tests::setup::{
+    deploy_optimized_token_custom_metadata, deploy_mock_settings_contract, 
+    deploy_token_with_settings, ALICE,
 };
 
 // ================================================================================================
 // EXTENSION COMPONENT TESTS
 // ================================================================================================
 
-// Test addresses
-fn ALICE() -> ContractAddress {
-    contract_address_const::<'ALICE'>()
-}
-
-fn BOB() -> ContractAddress {
-    contract_address_const::<'BOB'>()
-}
+// Test addresses are now imported from setup module
 
 // ================================================================================================
 // TOKEN SETTINGS COMPONENT TESTS
@@ -41,17 +30,13 @@ fn BOB() -> ContractAddress {
 #[test]
 fn test_settings_create_from_authorized() {
     // Deploy mock settings contract
-    let settings_contract = declare("MockSettingsContract").unwrap().contract_class();
-    let (settings_address, _) = settings_contract.deploy(@array![]).unwrap();
+    let settings_address = deploy_mock_settings_contract();
 
     // Deploy token contract with settings support
-    let token_contract = declare("TokenWithSettings").unwrap().contract_class();
-    let mut calldata = array![];
-    calldata.append(settings_address.into());
-    let (token_address, _) = token_contract.deploy(@calldata).unwrap();
+    let _token_address = deploy_token_with_settings(settings_address);
 
     // Create settings through the settings contract (authorized)
-    let settings_dispatcher = IMinigameSettingsDispatcher { contract_address: settings_address };
+    let _settings_dispatcher = IMinigameSettingsDispatcher { contract_address: settings_address };
     // This would normally emit an event - verify no panic
 // In real implementation, settings creation would be done through game contract
 }
@@ -73,21 +58,11 @@ fn test_settings_create_from_unauthorized() {
 #[test]
 fn test_mint_soulbound_token() {
     // Deploy token contract
-    let token_contract = declare("OptimizedTokenContract").unwrap().contract_class();
-    let mut constructor_calldata = array![];
-    let name: ByteArray = "SoulboundTest";
-    let symbol: ByteArray = "SBT";
-    let base_uri: ByteArray = "";
-
-    name.serialize(ref constructor_calldata);
-    symbol.serialize(ref constructor_calldata);
-    base_uri.serialize(ref constructor_calldata);
-    constructor_calldata.append(1); // None for game
-    constructor_calldata.append(1); // None for registry
-    constructor_calldata.append(1); // None for event_relayer
-
-    let (token_address, _) = token_contract.deploy(@constructor_calldata).unwrap();
-    let token_dispatcher = IMinigameTokenMixinDispatcher { contract_address: token_address };
+    let (token_dispatcher, _, _, _) = deploy_optimized_token_custom_metadata(
+        "SoulboundTest",
+        "SBT",
+        ""
+    );
 
     // Mint soulbound token
     let token_id = token_dispatcher
@@ -128,21 +103,11 @@ fn test_transfer_soulbound_token_fails() {
 #[test]
 fn test_transfer_regular_token() {
     // Deploy token contract
-    let token_contract = declare("OptimizedTokenContract").unwrap().contract_class();
-    let mut constructor_calldata = array![];
-    let name: ByteArray = "RegularToken";
-    let symbol: ByteArray = "RT";
-    let base_uri: ByteArray = "";
-
-    name.serialize(ref constructor_calldata);
-    symbol.serialize(ref constructor_calldata);
-    base_uri.serialize(ref constructor_calldata);
-    constructor_calldata.append(1); // None for game
-    constructor_calldata.append(1); // None for registry
-    constructor_calldata.append(1); // None for event_relayer
-
-    let (token_address, _) = token_contract.deploy(@constructor_calldata).unwrap();
-    let token_dispatcher = IMinigameTokenMixinDispatcher { contract_address: token_address };
+    let (token_dispatcher, _, _, _) = deploy_optimized_token_custom_metadata(
+        "RegularToken",
+        "RT",
+        ""
+    );
 
     // Mint regular (non-soulbound) token
     let token_id = token_dispatcher
@@ -178,21 +143,11 @@ fn test_set_default_renderer() { // This test would require a contract that expo
 #[test]
 fn test_set_token_renderer() {
     // Deploy token contract
-    let token_contract = declare("OptimizedTokenContract").unwrap().contract_class();
-    let mut constructor_calldata = array![];
-    let name: ByteArray = "RendererTest";
-    let symbol: ByteArray = "RT";
-    let base_uri: ByteArray = "";
-
-    name.serialize(ref constructor_calldata);
-    symbol.serialize(ref constructor_calldata);
-    base_uri.serialize(ref constructor_calldata);
-    constructor_calldata.append(1); // None for game
-    constructor_calldata.append(1); // None for registry
-    constructor_calldata.append(1); // None for event_relayer
-
-    let (token_address, _) = token_contract.deploy(@constructor_calldata).unwrap();
-    let token_dispatcher = IMinigameTokenMixinDispatcher { contract_address: token_address };
+    let (token_dispatcher, _, _, _) = deploy_optimized_token_custom_metadata(
+        "RendererTest",
+        "RT",
+        ""
+    );
 
     let renderer_address = contract_address_const::<0x123456>();
 
@@ -226,21 +181,11 @@ fn test_get_renderer_with_custom() { // Covered by test_set_token_renderer
 #[test]
 fn test_get_renderer_no_custom() {
     // Deploy token contract
-    let token_contract = declare("OptimizedTokenContract").unwrap().contract_class();
-    let mut constructor_calldata = array![];
-    let name: ByteArray = "NoRenderer";
-    let symbol: ByteArray = "NR";
-    let base_uri: ByteArray = "";
-
-    name.serialize(ref constructor_calldata);
-    symbol.serialize(ref constructor_calldata);
-    base_uri.serialize(ref constructor_calldata);
-    constructor_calldata.append(1); // None for game
-    constructor_calldata.append(1); // None for registry
-    constructor_calldata.append(1); // None for event_relayer
-
-    let (token_address, _) = token_contract.deploy(@constructor_calldata).unwrap();
-    let token_dispatcher = IMinigameTokenMixinDispatcher { contract_address: token_address };
+    let (token_dispatcher, _, _, _) = deploy_optimized_token_custom_metadata(
+        "NoRenderer",
+        "NR",
+        ""
+    );
 
     // Mint without renderer
     let token_id = token_dispatcher
@@ -270,21 +215,11 @@ fn test_get_renderer_no_custom() {
 #[test]
 fn test_zero_address_renderer() {
     // Deploy token contract
-    let token_contract = declare("OptimizedTokenContract").unwrap().contract_class();
-    let mut constructor_calldata = array![];
-    let name: ByteArray = "ZeroRenderer";
-    let symbol: ByteArray = "ZR";
-    let base_uri: ByteArray = "";
-
-    name.serialize(ref constructor_calldata);
-    symbol.serialize(ref constructor_calldata);
-    base_uri.serialize(ref constructor_calldata);
-    constructor_calldata.append(1); // None for game
-    constructor_calldata.append(1); // None for registry
-    constructor_calldata.append(1); // None for event_relayer
-
-    let (token_address, _) = token_contract.deploy(@constructor_calldata).unwrap();
-    let token_dispatcher = IMinigameTokenMixinDispatcher { contract_address: token_address };
+    let (token_dispatcher, _, _, _) = deploy_optimized_token_custom_metadata(
+        "ZeroRenderer",
+        "ZR",
+        ""
+    );
 
     // Mint with zero address renderer
     let token_id = token_dispatcher
@@ -337,21 +272,11 @@ fn test_all_objectives_completed() { // Deploy contracts and mint token with obj
 #[test]
 fn test_mint_events() {
     // Deploy token contract
-    let token_contract = declare("OptimizedTokenContract").unwrap().contract_class();
-    let mut constructor_calldata = array![];
-    let name: ByteArray = "EventTest";
-    let symbol: ByteArray = "ET";
-    let base_uri: ByteArray = "";
-
-    name.serialize(ref constructor_calldata);
-    symbol.serialize(ref constructor_calldata);
-    base_uri.serialize(ref constructor_calldata);
-    constructor_calldata.append(1); // None for game
-    constructor_calldata.append(1); // None for registry
-    constructor_calldata.append(1); // None for event_relayer
-
-    let (token_address, _) = token_contract.deploy(@constructor_calldata).unwrap();
-    let token_dispatcher = IMinigameTokenMixinDispatcher { contract_address: token_address };
+    let (token_dispatcher, _, _, _) = deploy_optimized_token_custom_metadata(
+        "EventTest",
+        "ET",
+        ""
+    );
 
     // Start spying on events
     let mut _spy = spy_events();

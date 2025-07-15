@@ -1,39 +1,15 @@
-use starknet::{ContractAddress, contract_address_const};
-use snforge_std::{declare, ContractClassTrait, DeclareResultTrait, cheat_caller_address, CheatSpan};
+use starknet::{contract_address_const};
+use snforge_std::{cheat_caller_address, CheatSpan};
 
 use crate::interface::{IMinigameTokenMixinDispatcher, IMinigameTokenMixinDispatcherTrait};
 use openzeppelin_token::erc721::interface::{ERC721ABIDispatcher, ERC721ABIDispatcherTrait};
 
-// Test constants
-fn ALICE() -> ContractAddress {
-    contract_address_const::<'ALICE'>()
-}
-
-fn BOB() -> ContractAddress {
-    contract_address_const::<'BOB'>()
-}
+// Import setup helpers
+use crate::tests::setup::{deploy_minimal_optimized_contract, ALICE, BOB};
 
 // Deploy helper
 fn deploy_minimal_token() -> (IMinigameTokenMixinDispatcher, ERC721ABIDispatcher) {
-    let contract = declare("MinimalOptimizedContract").unwrap().contract_class();
-    let mut constructor_calldata = array![];
-    let name: ByteArray = "MinimalToken";
-    let symbol: ByteArray = "MIN";
-    let base_uri: ByteArray = "https://minimal.test/";
-
-    name.serialize(ref constructor_calldata);
-    symbol.serialize(ref constructor_calldata);
-    base_uri.serialize(ref constructor_calldata);
-
-    // No game address for minimal contract
-    constructor_calldata.append(1); // None for game
-
-    let (contract_address, _) = contract.deploy(@constructor_calldata).unwrap();
-
-    let token_dispatcher = IMinigameTokenMixinDispatcher { contract_address };
-    let erc721_dispatcher = ERC721ABIDispatcher { contract_address };
-
-    (token_dispatcher, erc721_dispatcher)
+    deploy_minimal_optimized_contract("MinimalToken", "MIN", "https://minimal.test/")
 }
 
 #[test]

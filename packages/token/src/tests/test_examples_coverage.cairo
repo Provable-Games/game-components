@@ -7,8 +7,10 @@ use snforge_std::{
 
 use crate::interface::{IMinigameTokenMixinDispatcher, IMinigameTokenMixinDispatcherTrait};
 use openzeppelin_token::erc721::interface::{ERC721ABIDispatcher, ERC721ABIDispatcherTrait};
-use crate::tests::test_optimized_token_contract::{
-    setup, ALICE, BOB, CHARLIE, deploy_mock_game, deploy_basic_mock_game,
+use crate::tests::setup::{
+    setup, deploy_mock_game, deploy_basic_mock_game,
+    deploy_optimized_token_with_game, deploy_optimized_token_custom_metadata,
+    ALICE, BOB, CHARLIE,
 };
 use crate::tests::mocks::mock_game::{IMockGameDispatcher, IMockGameDispatcherTrait};
 
@@ -157,22 +159,10 @@ fn test_optimized_contract_game_integration() {
     let (_, mock_game) = deploy_basic_mock_game();
 
     // Deploy token with mock game
-    let token_contract = declare("OptimizedTokenContract").unwrap().contract_class();
-    let mut constructor_calldata = array![];
-    let name: ByteArray = "GameToken";
-    let symbol: ByteArray = "GT";
-    let base_uri: ByteArray = "";
-
-    name.serialize(ref constructor_calldata);
-    symbol.serialize(ref constructor_calldata);
-    base_uri.serialize(ref constructor_calldata);
-    constructor_calldata.append(0); // Some(game_address)
-    constructor_calldata.append(mock_game.contract_address.into());
-    constructor_calldata.append(1); // None for registry
-    constructor_calldata.append(1); // None for event_relayer
-
-    let (token_address, _) = token_contract.deploy(@constructor_calldata).unwrap();
-    let token_dispatcher = IMinigameTokenMixinDispatcher { contract_address: token_address };
+    let (token_dispatcher, _, _, _) = deploy_optimized_token_custom_metadata(
+        "GameToken", "GT", ""
+    );
+    let (token_dispatcher, _, _, _) = deploy_optimized_token_with_game(mock_game.contract_address);
 
     // Mint and play
     let token_id = token_dispatcher

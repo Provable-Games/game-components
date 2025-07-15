@@ -1,28 +1,23 @@
-use starknet::{ContractAddress, contract_address_const};
 use snforge_std::{
-    declare, ContractClassTrait, DeclareResultTrait, spy_events, EventSpyAssertionsTrait,
+    spy_events, EventSpyAssertionsTrait,
     EventSpyTrait, cheat_caller_address, CheatSpan,
 };
 
-use openzeppelin_token::erc721::interface::{ERC721ABIDispatcher, ERC721ABIDispatcherTrait};
-use crate::interface::{IMinigameTokenMixinDispatcher, IMinigameTokenMixinDispatcherTrait};
-use game_components_minigame::interface::{IMinigameDispatcher};
-use game_components_metagame::extensions::context::structs::{GameContextDetails, GameContext};
+use openzeppelin_token::erc721::interface::{ERC721ABIDispatcherTrait};
+use crate::interface::{IMinigameTokenMixinDispatcherTrait};
 
 // Import IMockGameDispatcher trait
-use crate::tests::mocks::mock_game::{IMockGameDispatcher, IMockGameDispatcherTrait};
+use crate::tests::mocks::mock_game::{IMockGameDispatcherTrait};
 use game_components_test_starknet::minigame::mocks::minigame_starknet_mock::{
-    IMinigameStarknetMockDispatcher, IMinigameStarknetMockDispatcherTrait,
-    IMinigameStarknetMockInitDispatcher, IMinigameStarknetMockInitDispatcherTrait,
-};
-use game_components_test_starknet::metagame::mocks::metagame_starknet_mock::{
-    IMetagameStarknetMockDispatcher, IMetagameStarknetMockDispatcherTrait,
-    IMetagameStarknetMockInitDispatcher, IMetagameStarknetMockInitDispatcherTrait,
+    IMinigameStarknetMockDispatcherTrait,
+    IMinigameStarknetMockInitDispatcherTrait,
 };
 
-// Import test helpers
-use crate::tests::test_optimized_token_contract::{
-    setup, setup_multi_game, deploy_mock_game, deploy_basic_mock_game, ALICE, BOB, OWNER,
+// Import test helpers from setup module
+use crate::tests::setup::{
+    setup, setup_multi_game, deploy_mock_game, deploy_basic_mock_game, 
+    deploy_optimized_token_with_game,
+    ALICE, BOB, OWNER,
 };
 
 // ================================================================================================
@@ -68,26 +63,11 @@ fn test_mint_event_emission() {
 
 #[test]
 fn test_update_game_event_emissions() {
-    let test_contracts = setup();
+    let _test_contracts = setup();
     let (minigame, mock_game) = deploy_basic_mock_game();
 
     // Deploy token contract with mock game
-    let token_contract = declare("OptimizedTokenContract").unwrap().contract_class();
-    let mut constructor_calldata = array![];
-    let name: ByteArray = "TestToken";
-    let symbol: ByteArray = "TT";
-    let base_uri: ByteArray = "https://test.com/";
-
-    name.serialize(ref constructor_calldata);
-    symbol.serialize(ref constructor_calldata);
-    base_uri.serialize(ref constructor_calldata);
-    constructor_calldata.append(0); // Some(game_address)
-    constructor_calldata.append(minigame.contract_address.into());
-    constructor_calldata.append(1); // None for registry
-    constructor_calldata.append(1); // None for event_relayer
-
-    let (token_address, _) = token_contract.deploy(@constructor_calldata).unwrap();
-    let token_dispatcher = IMinigameTokenMixinDispatcher { contract_address: token_address };
+    let (token_dispatcher, _, _, token_address) = deploy_optimized_token_with_game(minigame.contract_address);
 
     // Mint a token
     let token_id = token_dispatcher
@@ -144,26 +124,11 @@ fn test_update_game_event_emissions() {
 
 #[test]
 fn test_update_game_with_metadata_change_events() {
-    let test_contracts = setup();
+    let _test_contracts = setup();
     let (minigame, mock_game) = deploy_basic_mock_game();
 
     // Deploy token contract
-    let token_contract = declare("OptimizedTokenContract").unwrap().contract_class();
-    let mut constructor_calldata = array![];
-    let name: ByteArray = "TestToken";
-    let symbol: ByteArray = "TT";
-    let base_uri: ByteArray = "https://test.com/";
-
-    name.serialize(ref constructor_calldata);
-    symbol.serialize(ref constructor_calldata);
-    base_uri.serialize(ref constructor_calldata);
-    constructor_calldata.append(0); // Some(game_address)
-    constructor_calldata.append(minigame.contract_address.into());
-    constructor_calldata.append(1); // None for registry
-    constructor_calldata.append(1); // None for event_relayer
-
-    let (token_address, _) = token_contract.deploy(@constructor_calldata).unwrap();
-    let token_dispatcher = IMinigameTokenMixinDispatcher { contract_address: token_address };
+    let (token_dispatcher, _, _, _token_address) = deploy_optimized_token_with_game(minigame.contract_address);
 
     // Mint token
     let token_id = token_dispatcher
@@ -197,12 +162,13 @@ fn test_mint_with_context_event() {
     let test_contracts = setup();
     let mut spy = spy_events();
 
-    // Use metagame to mint with context
+    // Use test token to mint (metagame doesn't have mint_game method)
     let _token_id = test_contracts
-        .metagame_mock
-        .mint_game(
+        .test_token
+        .mint(
             Option::Some(test_contracts.minigame.contract_address),
             Option::Some("Player1"),
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -390,7 +356,7 @@ fn test_multi_game_registry_events() {
         );
 
     // Mint token for new game
-    let token_id = test_contracts
+    let _token_id = test_contracts
         .test_token
         .mint(
             Option::Some(game.contract_address),

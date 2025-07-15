@@ -1,6 +1,6 @@
 use starknet::contract_address_const;
 use snforge_std::{
-    cheat_caller_address, CheatSpan, declare, ContractClassTrait, DeclareResultTrait,
+    cheat_caller_address, CheatSpan,
     start_cheat_block_timestamp, stop_cheat_block_timestamp,
 };
 
@@ -12,6 +12,9 @@ use game_components_minigame::interface::{
     IMinigameTokenDataDispatcher, IMinigameTokenDataDispatcherTrait,
 };
 
+// Import setup helpers
+use crate::tests::setup::{deploy_optimized_token_with_game, deploy_mock_game_standalone};
+
 // ================================================================================================
 // PROPERTY-BASED / FUZZ TESTS
 // ================================================================================================
@@ -21,29 +24,11 @@ fn deploy_test_token() -> (
     IMinigameTokenMixinDispatcher, ERC721ABIDispatcher, IMockGameDispatcher,
 ) {
     // Deploy mock game
-    let game_contract = declare("MockGame").unwrap().contract_class();
-    let (game_address, _) = game_contract.deploy(@array![]).unwrap();
+    let game_address = deploy_mock_game_standalone();
     let mock_game = IMockGameDispatcher { contract_address: game_address };
 
-    // Deploy token contract
-    let token_contract = declare("OptimizedTokenContract").unwrap().contract_class();
-    let mut constructor_calldata = array![];
-    let name: ByteArray = "TestToken";
-    let symbol: ByteArray = "TT";
-    let base_uri: ByteArray = "https://test.com/token/";
-
-    name.serialize(ref constructor_calldata);
-    symbol.serialize(ref constructor_calldata);
-    base_uri.serialize(ref constructor_calldata);
-    constructor_calldata.append(0); // Some(game_address)
-    constructor_calldata.append(game_address.into());
-    constructor_calldata.append(1); // None for registry
-    constructor_calldata.append(1); // None for event_relayer
-
-    let (token_address, _) = token_contract.deploy(@constructor_calldata).unwrap();
-
-    let token_dispatcher = IMinigameTokenMixinDispatcher { contract_address: token_address };
-    let erc721_dispatcher = ERC721ABIDispatcher { contract_address: token_address };
+    // Deploy token contract with game
+    let (token_dispatcher, erc721_dispatcher, _, _) = deploy_optimized_token_with_game(game_address);
 
     (token_dispatcher, erc721_dispatcher, mock_game)
 }
@@ -52,7 +37,7 @@ fn deploy_test_token() -> (
 #[test]
 #[fuzzer(runs: 100)]
 fn test_token_id_monotonicity_fuzz(seed: felt252) {
-    let (token_dispatcher, erc721_dispatcher, _) = deploy_test_token();
+    let (token_dispatcher, _erc721_dispatcher, _) = deploy_test_token();
 
     // Use seed to generate random addresses
     let mut addresses = array![];
@@ -302,7 +287,7 @@ fn test_ownership_protection_fuzz(caller1: felt252, caller2: felt252, caller3: f
         let caller_felt = *random_callers.at(i);
         if caller_felt != 0 && caller_felt != owner.into() {
             // Create different contract addresses
-            let caller = contract_address_const::<0x2>();
+            let _caller = contract_address_const::<0x2>();
 
             // This would panic if we actually tried to transfer without approval
             // For fuzz testing, we just verify the owner remains unchanged
@@ -603,7 +588,7 @@ fn test_soulbound_transfer_block_fuzz(attempt1: felt252, attempt2: felt252, atte
     while i < transfer_attempts.len() {
         let to_felt = *transfer_attempts.at(i);
         if to_felt != 0 && to_felt != owner.into() {
-            let to_address = contract_address_const::<0x2>();
+            let _to_address = contract_address_const::<0x2>();
 
             // In real test, transfer would panic due to soulbound
             // Here we just verify token remains with original owner
@@ -689,7 +674,7 @@ fn test_soulbound_transfer_scenarios_fuzz(scenario: u8) {
     let (token_dispatcher, erc721_dispatcher, _) = deploy_test_token();
 
     let owner = contract_address_const::<0x1>();
-    let other = contract_address_const::<0x2>();
+    let _other = contract_address_const::<0x2>();
 
     // Mint soulbound token
     let token_id = token_dispatcher

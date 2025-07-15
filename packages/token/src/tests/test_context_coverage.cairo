@@ -3,7 +3,7 @@ use starknet::{contract_address_const};
 use snforge_std::{spy_events, EventSpyTrait};
 
 use crate::interface::{IMinigameTokenMixinDispatcherTrait};
-use crate::tests::test_optimized_token_contract::{setup, ALICE, BOB};
+use crate::tests::setup::{setup, ALICE, BOB};
 use game_components_test_starknet::metagame::mocks::metagame_starknet_mock::{
     IMetagameStarknetMockDispatcherTrait,
 };

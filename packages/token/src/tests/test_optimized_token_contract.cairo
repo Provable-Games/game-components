@@ -1,308 +1,27 @@
-use starknet::{ContractAddress, contract_address_const};
+use starknet::contract_address_const;
 use snforge_std::{
-    declare, ContractClassTrait, DeclareResultTrait, start_cheat_block_timestamp,
-    stop_cheat_block_timestamp, cheat_caller_address, CheatSpan,
+    start_cheat_block_timestamp, stop_cheat_block_timestamp, cheat_caller_address, CheatSpan,
 };
 
-use openzeppelin_token::erc721::interface::{ERC721ABIDispatcher, ERC721ABIDispatcherTrait};
-use openzeppelin_introspection::interface::{ISRC5Dispatcher};
-
-use crate::examples::minigame_registry_contract::{IMinigameRegistryDispatcher};
-use crate::interface::{IMinigameTokenMixinDispatcher, IMinigameTokenMixinDispatcherTrait};
-use game_components_minigame::interface::{IMinigameDispatcher};
-use game_components_metagame::interface::{IMetagameDispatcher};
+use openzeppelin_token::erc721::interface::ERC721ABIDispatcherTrait;
+use crate::interface::IMinigameTokenMixinDispatcherTrait;
 use game_components_metagame::extensions::context::structs::{GameContextDetails, GameContext};
 use game_components_test_starknet::minigame::mocks::minigame_starknet_mock::{
-    IMinigameStarknetMockInitDispatcher, IMinigameStarknetMockInitDispatcherTrait,
-    IMinigameStarknetMockDispatcher, IMinigameStarknetMockDispatcherTrait,
-};
-use game_components_test_starknet::metagame::mocks::metagame_starknet_mock::{
-    IMetagameStarknetMockInitDispatcher, IMetagameStarknetMockInitDispatcherTrait,
-    IMetagameStarknetMockDispatcher,
+    IMinigameStarknetMockDispatcherTrait,
 };
 
 // Import mocks
-use crate::tests::mocks::mock_game::{IMockGameDispatcher, IMockGameDispatcherTrait};
+use crate::tests::mocks::mock_game::{IMockGameDispatcherTrait};
 
-// ================================================================================================
-// TEST CONSTANTS
-// ================================================================================================
+// Import setup helpers
+use crate::tests::setup::{
+    setup, setup_multi_game, deploy_mock_game, deploy_basic_mock_game,
+    deploy_test_token_contract_with_game, deploy_test_token_contract,
+    ALICE, BOB, CHARLIE, ZERO_ADDRESS, RENDERER_ADDRESS,
+    MAX_U64, PAST_TIME, CURRENT_TIME, FUTURE_TIME, FAR_FUTURE_TIME,
+};
 
-// Test addresses
-pub fn ALICE() -> ContractAddress {
-    contract_address_const::<'ALICE'>()
-}
-
-pub fn BOB() -> ContractAddress {
-    contract_address_const::<'BOB'>()
-}
-
-pub fn CHARLIE() -> ContractAddress {
-    contract_address_const::<'CHARLIE'>()
-}
-
-pub fn ZERO_ADDRESS() -> ContractAddress {
-    contract_address_const::<0>()
-}
-
-pub fn OWNER() -> ContractAddress {
-    contract_address_const::<'OWNER'>()
-}
-
-fn RENDERER_ADDRESS() -> ContractAddress {
-    contract_address_const::<'RENDERER'>()
-}
-
-// Edge case values
-const MAX_U64: u64 = 18446744073709551615;
-const MAX_U32: u32 = 4294967295;
-
-// Time constants
-const PAST_TIME: u64 = 100;
-const CURRENT_TIME: u64 = 1000;
-const FUTURE_TIME: u64 = 2000;
-const FAR_FUTURE_TIME: u64 = 3000;
-
-// ================================================================================================
-// TEST CONTRACTS STRUCT
-// ================================================================================================
-
-#[derive(Drop)]
-pub struct TestContracts {
-    pub minigame_registry: IMinigameRegistryDispatcher,
-    pub minigame: IMinigameDispatcher,
-    pub mock_minigame: IMinigameStarknetMockDispatcher,
-    pub test_token: IMinigameTokenMixinDispatcher,
-    pub erc721: ERC721ABIDispatcher,
-    pub src5: ISRC5Dispatcher,
-    pub metagame_mock: IMetagameStarknetMockDispatcher,
-}
-
-// ================================================================================================
-// DEPLOY HELPERS
-// ================================================================================================
-
-pub fn deploy_mock_game() -> (
-    IMinigameDispatcher, IMinigameStarknetMockInitDispatcher, IMinigameStarknetMockDispatcher,
-) {
-    let contract = declare("minigame_starknet_mock").unwrap().contract_class();
-    let (contract_address, _) = contract.deploy(@array![]).unwrap();
-
-    let minigame_dispatcher = IMinigameDispatcher { contract_address };
-    let minigame_init_dispatcher = IMinigameStarknetMockInitDispatcher { contract_address };
-    let minigame_mock_dispatcher = IMinigameStarknetMockDispatcher { contract_address };
-    (minigame_dispatcher, minigame_init_dispatcher, minigame_mock_dispatcher)
-}
-
-pub fn deploy_basic_mock_game() -> (IMinigameDispatcher, IMockGameDispatcher) {
-    let contract = declare("MockGame").unwrap().contract_class();
-    let (contract_address, _) = contract.deploy(@array![]).unwrap();
-
-    let minigame_dispatcher = IMinigameDispatcher { contract_address };
-    let mock_game_dispatcher = IMockGameDispatcher { contract_address };
-    (minigame_dispatcher, mock_game_dispatcher)
-}
-
-pub fn deploy_mock_metagame_contract() -> (
-    IMetagameDispatcher, IMetagameStarknetMockInitDispatcher, IMetagameStarknetMockDispatcher,
-) {
-    let contract = declare("metagame_starknet_mock").unwrap().contract_class();
-    let (contract_address, _) = contract.deploy(@array![]).unwrap();
-    let metagame_dispatcher = IMetagameDispatcher { contract_address };
-    let metagame_init_dispatcher = IMetagameStarknetMockInitDispatcher { contract_address };
-    let metagame_mock_dispatcher = IMetagameStarknetMockDispatcher { contract_address };
-    (metagame_dispatcher, metagame_init_dispatcher, metagame_mock_dispatcher)
-}
-
-fn deploy_minigame_registry_contract() -> IMinigameRegistryDispatcher {
-    let contract = declare("MinigameRegistryContract").unwrap().contract_class();
-
-    let mut constructor_calldata = array![];
-    let name: ByteArray = "GameCreatorToken";
-    let symbol: ByteArray = "GCT";
-    let base_uri: ByteArray = "";
-
-    name.serialize(ref constructor_calldata);
-    symbol.serialize(ref constructor_calldata);
-    base_uri.serialize(ref constructor_calldata);
-
-    let (contract_address, _) = contract.deploy(@constructor_calldata).unwrap();
-
-    let minigame_registry_dispatcher = IMinigameRegistryDispatcher { contract_address };
-    minigame_registry_dispatcher
-}
-
-fn deploy_test_token_contract_with_game(
-    game_address: Option<ContractAddress>, game_registry_address: Option<ContractAddress>, event_relay_address: Option<ContractAddress>,
-) -> (IMinigameTokenMixinDispatcher, ERC721ABIDispatcher, ISRC5Dispatcher, ContractAddress) {
-    let contract = declare("OptimizedTokenContract").unwrap().contract_class();
-
-    let mut constructor_calldata = array![];
-    let name: ByteArray = "TestToken";
-    let symbol: ByteArray = "TT";
-    let base_uri: ByteArray = "https://test.com/token/";
-
-    name.serialize(ref constructor_calldata);
-    symbol.serialize(ref constructor_calldata);
-    base_uri.serialize(ref constructor_calldata);
-
-    // Serialize game_address Option
-    match game_address {
-        Option::Some(addr) => {
-            constructor_calldata.append(0); // Some variant
-            constructor_calldata.append(addr.into());
-        },
-        Option::None => {
-            constructor_calldata.append(1); // None variant
-        },
-    }
-
-    // Serialize game_registry_address Option
-    match game_registry_address {
-        Option::Some(addr) => {
-            constructor_calldata.append(0); // Some variant
-            constructor_calldata.append(addr.into());
-        },
-        Option::None => {
-            constructor_calldata.append(1); // None variant
-        },
-    }
-
-    // Serialize event_relay_address Option
-    match event_relay_address {
-        Option::Some(addr) => {
-            constructor_calldata.append(0); // Some variant
-            constructor_calldata.append(addr.into());
-        },
-        Option::None => {
-            constructor_calldata.append(1); // None variant
-        },
-    }
-
-    let (contract_address, _) = contract.deploy(@constructor_calldata).unwrap();
-
-    let test_token_dispatcher = IMinigameTokenMixinDispatcher { contract_address };
-    let erc721_dispatcher = ERC721ABIDispatcher { contract_address };
-    let src5_dispatcher = ISRC5Dispatcher { contract_address };
-
-    (test_token_dispatcher, erc721_dispatcher, src5_dispatcher, contract_address)
-}
-
-fn deploy_test_token_contract() -> (
-    IMinigameTokenMixinDispatcher, ERC721ABIDispatcher, ISRC5Dispatcher, ContractAddress,
-) {
-    deploy_test_token_contract_with_game(Option::None, Option::None, Option::None)
-}
-
-pub fn setup() -> TestContracts {
-    let (minigame_dispatcher, minigame_init_dispatcher, mock_minigame_dispatcher) =
-        deploy_mock_game();
-    let (metagame_dispatcher, metagame_init_dispatcher, metagame_mock_dispatcher) =
-        deploy_mock_metagame_contract();
-    let minigame_registry_dispatcher = deploy_minigame_registry_contract();
-    let (test_token_dispatcher, erc721_dispatcher, src5_dispatcher, _) =
-        deploy_test_token_contract_with_game(
-        Option::Some(minigame_dispatcher.contract_address),
-        Option::Some(minigame_registry_dispatcher.contract_address),
-        Option::None,
-    );
-
-    // Initialize the minigame mock
-    minigame_init_dispatcher
-        .initializer(
-            OWNER(),
-            "TestGame",
-            "TestDescription",
-            "TestDeveloper",
-            "TestPublisher",
-            "TestGenre",
-            "TestImage",
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::Some(minigame_init_dispatcher.contract_address),
-            Option::Some(minigame_init_dispatcher.contract_address),
-            test_token_dispatcher.contract_address,
-        );
-
-    metagame_init_dispatcher
-        .initializer(
-            Option::Some(metagame_dispatcher.contract_address),
-            test_token_dispatcher.contract_address,
-            true,
-        );
-
-    TestContracts {
-        minigame: minigame_dispatcher,
-        mock_minigame: mock_minigame_dispatcher,
-        minigame_registry: minigame_registry_dispatcher,
-        test_token: test_token_dispatcher,
-        erc721: erc721_dispatcher,
-        src5: src5_dispatcher,
-        metagame_mock: metagame_mock_dispatcher,
-    }
-}
-
-pub fn setup_multi_game() -> TestContracts {
-    let minigame_registry_dispatcher = deploy_minigame_registry_contract();
-    let (test_token_dispatcher, erc721_dispatcher, src5_dispatcher, _) =
-        deploy_test_token_contract_with_game(
-        Option::None, Option::Some(minigame_registry_dispatcher.contract_address),
-        Option::None,
-    );
-
-    // Deploy and register multiple games
-    let (game1_dispatcher, game1_init_dispatcher, mock1_dispatcher) = deploy_mock_game();
-    let (_game2_dispatcher, game2_init_dispatcher, _mock2_dispatcher) = deploy_mock_game();
-    let (_metagame_dispatcher, _metagame_init_dispatcher, metagame_mock_dispatcher) =
-        deploy_mock_metagame_contract();
-
-    // Initialize game 1 (registers in init)
-    game1_init_dispatcher
-        .initializer(
-            OWNER(),
-            "Game1",
-            "Description1",
-            "Developer1",
-            "Publisher1",
-            "Genre1",
-            "Image1",
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            test_token_dispatcher.contract_address,
-        );
-
-    // Initialize game 2 (registers in init)
-    game2_init_dispatcher
-        .initializer(
-            OWNER(),
-            "Game2",
-            "Description2",
-            "Developer2",
-            "Publisher2",
-            "Genre2",
-            "Image2",
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            test_token_dispatcher.contract_address,
-        );
-
-    TestContracts {
-        minigame: game1_dispatcher,
-        mock_minigame: mock1_dispatcher,
-        minigame_registry: minigame_registry_dispatcher,
-        test_token: test_token_dispatcher,
-        erc721: erc721_dispatcher,
-        src5: src5_dispatcher,
-        metagame_mock: metagame_mock_dispatcher,
-    }
-}
+// All test constants, deployment helpers, and setup functions are now in setup.cairo
 
 // ================================================================================================
 // MINT FUNCTION TESTS
@@ -357,7 +76,7 @@ fn test_mint_with_all_parameters() { // UT-MINT-002
 
     let objective_ids = array![1, 2, 3].span();
     let game_contexts = array![GameContext { name: "tournament", value: "42" }];
-    let context = GameContextDetails {
+    let _context = GameContextDetails {
         name: "Tournament",
         description: "Tournament mode",
         id: Option::Some(42),
@@ -872,7 +591,6 @@ fn test_sequential_mints_increment_counter() { // UT-MINT-B004
 
 #[test]
 fn test_update_game_with_state_changes() { // UT-UPDATE-001
-    let test_contracts = setup();
     let (_, mock_game) = deploy_basic_mock_game();
 
     let (token_dispatcher, _, _, _) = deploy_test_token_contract_with_game(
@@ -908,7 +626,6 @@ fn test_update_game_with_state_changes() { // UT-UPDATE-001
 
 #[test]
 fn test_update_game_without_state_changes() { // UT-UPDATE-002
-    let test_contracts = setup();
     let (_, mock_game) = deploy_basic_mock_game();
 
     let (token_dispatcher, _, _, _) = deploy_test_token_contract_with_game(
@@ -975,7 +692,6 @@ fn test_update_game_with_objectives_completion() { // UT-UPDATE-003
 
 #[test]
 fn test_update_game_with_game_over_transition() { // UT-UPDATE-004
-    let test_contracts = setup();
     let (_, mock_game) = deploy_basic_mock_game();
 
     let (token_dispatcher, _, _, _) = deploy_test_token_contract_with_game(
@@ -1055,7 +771,6 @@ fn test_update_game_with_blank_token() {
 
 #[test]
 fn test_game_over_false_to_true_transition() { // UT-UPDATE-S001
-    let test_contracts = setup();
     let (_, mock_game) = deploy_basic_mock_game();
 
     let (token_dispatcher, _, _, _) = deploy_test_token_contract_with_game(
@@ -1130,7 +845,6 @@ fn test_objectives_completion_progression() { // UT-UPDATE-S002
 
 #[test]
 fn test_idempotent_updates() { // UT-UPDATE-S003
-    let test_contracts = setup();
     let (_, mock_game) = deploy_basic_mock_game();
 
     let (token_dispatcher, _, _, _) = deploy_test_token_contract_with_game(

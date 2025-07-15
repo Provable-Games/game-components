@@ -1,42 +1,32 @@
-use starknet::{ContractAddress, contract_address_const};
+use starknet::ContractAddress;
 use snforge_std::{
-    declare, ContractClassTrait, DeclareResultTrait, start_cheat_block_timestamp,
-    stop_cheat_block_timestamp, start_cheat_caller_address, stop_cheat_caller_address,
-    cheat_caller_address, CheatSpan,
+    start_cheat_block_timestamp, stop_cheat_block_timestamp, cheat_caller_address, CheatSpan,
 };
 
 use crate::interface::{IMinigameTokenMixinDispatcher, IMinigameTokenMixinDispatcherTrait};
 use crate::examples::minigame_registry_contract::{
-    IMinigameRegistryDispatcher, IMinigameRegistryDispatcherTrait,
+    IMinigameRegistryDispatcherTrait,
 };
-use game_components_minigame::interface::IMinigameDispatcher;
-use game_components_metagame::interface::IMetagameDispatcher;
 
 // Import test contracts
 use game_components_test_starknet::minigame::mocks::minigame_starknet_mock::{
-    IMinigameStarknetMockInitDispatcher, IMinigameStarknetMockInitDispatcherTrait,
-    IMinigameStarknetMockDispatcher, IMinigameStarknetMockDispatcherTrait,
+    IMinigameStarknetMockInitDispatcherTrait,
+    IMinigameStarknetMockDispatcherTrait,
 };
 
-// Import test helpers from optimized_token_contract tests
-use crate::tests::test_optimized_token_contract::{setup, TestContracts, OWNER};
+// Import test helpers from setup module
+use crate::tests::setup::{
+    setup, deploy_optimized_token_with_game, deploy_optimized_token_contract, 
+    deploy_mock_game, deploy_mock_context_provider, deploy_mock_metagame_with_context,
+    deploy_minigame_registry_contract_with_params, deploy_mock_game_standalone,
+    deploy_simple_setup, OWNER, ALICE, BOB, CHARLIE,
+};
 
 // ================================================================================================
 // INTEGRATION & SCENARIO TESTS
 // ================================================================================================
 
-// Helper addresses
-fn ALICE() -> ContractAddress {
-    contract_address_const::<'ALICE'>()
-}
-
-fn BOB() -> ContractAddress {
-    contract_address_const::<'BOB'>()
-}
-
-fn CHARLIE() -> ContractAddress {
-    contract_address_const::<'CHARLIE'>()
-}
+// Helper addresses are now imported from setup module
 
 // ================================================================================================
 // I-01: Tournament Flow
@@ -46,32 +36,18 @@ fn CHARLIE() -> ContractAddress {
 #[ignore] // Requires context provider implementation
 fn test_tournament_flow() {
     // Deploy context provider
-    let context_contract = declare("MockContextProvider").unwrap().contract_class();
-    let (context_address, _) = context_contract.deploy(@array![]).unwrap();
+    let context_address = deploy_mock_context_provider();
 
     // Deploy token contract (registry)
-    let registry_contract = declare("MinigameRegistryContract").unwrap().contract_class();
-    let mut constructor_calldata = array![];
-    let name: ByteArray = "TournamentTokens";
-    let symbol: ByteArray = "TOUR";
-    let base_uri: ByteArray = "";
-
-    name.serialize(ref constructor_calldata);
-    symbol.serialize(ref constructor_calldata);
-    base_uri.serialize(ref constructor_calldata);
-
-    let (registry_address, _) = registry_contract.deploy(@constructor_calldata).unwrap();
-    let _registry_dispatcher = IMinigameRegistryDispatcher { contract_address: registry_address };
+    let registry_dispatcher = deploy_minigame_registry_contract_with_params(
+        "TournamentTokens", "TOUR", ""
+    );
+    let registry_address = registry_dispatcher.contract_address;
 
     // Deploy metagame with context
-    let metagame_contract = declare("MockMetagameWithContext").unwrap().contract_class();
-    let mut metagame_calldata = array![];
-    metagame_calldata.append(0); // Some(context_address)
-    metagame_calldata.append(context_address.into());
-    metagame_calldata.append(registry_address.into());
-
-    let (metagame_address, _) = metagame_contract.deploy(@metagame_calldata).unwrap();
-    let _metagame_dispatcher = IMetagameDispatcher { contract_address: metagame_address };
+    let _metagame_dispatcher = deploy_mock_metagame_with_context(
+        Option::Some(context_address), registry_address
+    );
 
     // Create and register multiple games
     let mut game_addresses = array![];
@@ -167,18 +143,10 @@ fn test_tournament_flow() {
 #[ignore] // Registry integration test - depends on external contracts
 fn test_multi_game_platform() {
     // Deploy registry for multi-game support
-    let registry_contract = declare("MinigameRegistryContract").unwrap().contract_class();
-    let mut constructor_calldata = array![];
-    let name: ByteArray = "GamePlatform";
-    let symbol: ByteArray = "GAME";
-    let base_uri: ByteArray = "";
-
-    name.serialize(ref constructor_calldata);
-    symbol.serialize(ref constructor_calldata);
-    base_uri.serialize(ref constructor_calldata);
-
-    let (registry_address, _) = registry_contract.deploy(@constructor_calldata).unwrap();
-    let registry_dispatcher = IMinigameRegistryDispatcher { contract_address: registry_address };
+    let registry_dispatcher = deploy_minigame_registry_contract_with_params(
+        "GamePlatform", "GAME", ""
+    );
+    let registry_address = registry_dispatcher.contract_address;
 
     // Register 5 different games
     let mut game_ids = array![];
@@ -333,22 +301,16 @@ fn test_time_campaign() {
 fn test_achievement_hunt() {
     // Deploy contracts with objectives support
     let (game, game_init, mock_game) = deploy_mock_game();
-    let token_contract = declare("OptimizedTokenContract").unwrap().contract_class();
-    let mut constructor_calldata = array![];
-    let name: ByteArray = "AchievementToken";
-    let symbol: ByteArray = "ACH";
-    let base_uri: ByteArray = "";
-
-    name.serialize(ref constructor_calldata);
-    symbol.serialize(ref constructor_calldata);
-    base_uri.serialize(ref constructor_calldata);
-    constructor_calldata.append(0); // Some(game_address)
-    constructor_calldata.append(game.contract_address.into());
-    constructor_calldata.append(1); // None for registry
-    constructor_calldata.append(1); // None for event_relayer
-
-    let (token_address, _) = token_contract.deploy(@constructor_calldata).unwrap();
-    let token_dispatcher = IMinigameTokenMixinDispatcher { contract_address: token_address };
+    
+    // Deploy token with custom metadata and game address
+    let (token_dispatcher, _, _, token_address) = deploy_optimized_token_contract(
+        Option::Some("AchievementToken"),
+        Option::Some("ACH"),
+        Option::Some(""),
+        Option::Some(game.contract_address),
+        Option::None,
+        Option::None,
+    );
 
     // Initialize game
     game_init
@@ -521,44 +483,7 @@ fn test_access_escalation_attack() {
 // ================================================================================================
 // HELPER FUNCTIONS
 // ================================================================================================
-
-fn deploy_mock_game() -> (
-    IMinigameDispatcher, IMinigameStarknetMockInitDispatcher, IMinigameStarknetMockDispatcher,
-) {
-    let contract = declare("minigame_starknet_mock").unwrap().contract_class();
-    let (contract_address, _) = contract.deploy(@array![]).unwrap();
-
-    let minigame_dispatcher = IMinigameDispatcher { contract_address };
-    let minigame_init_dispatcher = IMinigameStarknetMockInitDispatcher { contract_address };
-    let minigame_mock_dispatcher = IMinigameStarknetMockDispatcher { contract_address };
-    (minigame_dispatcher, minigame_init_dispatcher, minigame_mock_dispatcher)
-}
-
-fn deploy_simple_setup() -> (IMinigameTokenMixinDispatcher, ContractAddress, ContractAddress) {
-    // Deploy mock game
-    let game_contract = declare("MockGame").unwrap().contract_class();
-    let (game_address, _) = game_contract.deploy(@array![]).unwrap();
-
-    // Deploy token
-    let token_contract = declare("OptimizedTokenContract").unwrap().contract_class();
-    let mut constructor_calldata = array![];
-    let name: ByteArray = "TestToken";
-    let symbol: ByteArray = "TT";
-    let base_uri: ByteArray = "";
-
-    name.serialize(ref constructor_calldata);
-    symbol.serialize(ref constructor_calldata);
-    base_uri.serialize(ref constructor_calldata);
-    constructor_calldata.append(0); // Some(game_address)
-    constructor_calldata.append(game_address.into());
-    constructor_calldata.append(1); // None for registry
-    constructor_calldata.append(1); // None for event_relayer
-
-    let (token_address, _) = token_contract.deploy(@constructor_calldata).unwrap();
-    let token_dispatcher = IMinigameTokenMixinDispatcher { contract_address: token_address };
-
-    (token_dispatcher, token_address, game_address)
-}
+// deploy_mock_game and deploy_simple_setup are now imported from setup module
 
 // ================================================================================================
 // MOCK CONTRACTS
@@ -731,26 +656,10 @@ fn test_multi_minter_scenario() {
 #[test]
 fn test_game_contract_unresponsive() {
     // Deploy a mock game that can become unresponsive
-    let game_contract = declare("MockGame").unwrap().contract_class();
-    let (game_address, _) = game_contract.deploy(@array![]).unwrap();
+    let game_address = deploy_mock_game_standalone();
 
-    // Deploy token with this game
-    let token_contract = declare("OptimizedTokenContract").unwrap().contract_class();
-    let mut constructor_calldata = array![];
-    let name: ByteArray = "TestToken";
-    let symbol: ByteArray = "TT";
-    let base_uri: ByteArray = "";
-
-    name.serialize(ref constructor_calldata);
-    symbol.serialize(ref constructor_calldata);
-    base_uri.serialize(ref constructor_calldata);
-    constructor_calldata.append(0); // Some(game_address)
-    constructor_calldata.append(game_address.into());
-    constructor_calldata.append(1); // None for registry
-    constructor_calldata.append(1); // None for event_relayer
-
-    let (token_address, _) = token_contract.deploy(@constructor_calldata).unwrap();
-    let token_dispatcher = IMinigameTokenMixinDispatcher { contract_address: token_address };
+    // Deploy token with this game using helper function
+    let (token_dispatcher, _, _, _) = deploy_optimized_token_with_game(game_address);
 
     // Mint a token
     let token_id = token_dispatcher
@@ -793,36 +702,20 @@ fn test_game_contract_unresponsive() {
 #[test]
 fn test_registry_lookup_edge_cases() {
     // Deploy registry
-    let registry_contract = declare("MinigameRegistryContract").unwrap().contract_class();
-    let mut constructor_calldata = array![];
-    let name: ByteArray = "Test Registry";
-    let symbol: ByteArray = "REG";
-    let base_uri: ByteArray = "";
+    let registry_dispatcher = deploy_minigame_registry_contract_with_params(
+        "Test Registry", "REG", ""
+    );
+    let registry_address = registry_dispatcher.contract_address;
 
-    name.serialize(ref constructor_calldata);
-    symbol.serialize(ref constructor_calldata);
-    base_uri.serialize(ref constructor_calldata);
-
-    let (registry_address, _) = registry_contract.deploy(@constructor_calldata).unwrap();
-    let registry_dispatcher = IMinigameRegistryDispatcher { contract_address: registry_address };
-
-    // Deploy token with registry
-    let token_contract = declare("OptimizedTokenContract").unwrap().contract_class();
-    let mut token_calldata = array![];
-    let token_name: ByteArray = "Multi Game Token";
-    let token_symbol: ByteArray = "MGT";
-    let token_uri: ByteArray = "";
-
-    token_name.serialize(ref token_calldata);
-    token_symbol.serialize(ref token_calldata);
-    token_uri.serialize(ref token_calldata);
-    token_calldata.append(1); // None for game
-    token_calldata.append(0); // Some(registry)
-    token_calldata.append(registry_address.into());
-    token_calldata.append(1); // None for event_relayer
-
-    let (token_address, _) = token_contract.deploy(@token_calldata).unwrap();
-    let token_dispatcher = IMinigameTokenMixinDispatcher { contract_address: token_address };
+    // Deploy token with registry using helper function
+    let (token_dispatcher, _, _, token_address) = deploy_optimized_token_contract(
+        Option::Some("Multi Game Token"),
+        Option::Some("MGT"),
+        Option::Some(""),
+        Option::None,
+        Option::Some(registry_address),
+        Option::None,
+    );
 
     // Register some games
     let mut games: Array<ContractAddress> = array![];
