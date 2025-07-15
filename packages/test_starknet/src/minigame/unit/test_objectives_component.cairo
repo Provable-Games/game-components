@@ -1,42 +1,49 @@
 use game_components_minigame::extensions::objectives::interface::{
     IMinigameObjectives, IMinigameObjectivesDispatcher, IMinigameObjectivesDispatcherTrait,
+    IMinigameObjectivesSVG, IMinigameObjectivesSVGDispatcher, IMinigameObjectivesSVGDispatcherTrait,
     IMINIGAME_OBJECTIVES_ID,
 };
-use game_components_minigame::extensions::objectives::structs::ObjectiveDetails;
+use game_components_minigame::extensions::objectives::structs::GameObjective;
 use openzeppelin_introspection::interface::{ISRC5Dispatcher, ISRC5DispatcherTrait};
 use starknet::{contract_address_const, get_caller_address};
 use snforge_std::{declare, ContractClassTrait, DeclareResultTrait};
+use core::to_byte_array::FormatAsByteArray;
 
-// Test contract that embeds ObjectivesComponent
+// Test-specific struct for objectives with additional fields
+#[derive(Drop, Serde)]
+pub struct ObjectiveDetails {
+    pub objective_id: u32,
+    pub points: u32,
+    pub name: ByteArray,
+    pub description: ByteArray,
+    pub is_completed: bool,
+    pub is_required: bool,
+}
+
+// Test contract that implements Objectives interfaces
 #[starknet::contract]
 mod MockObjectivesContract {
-    use game_components_minigame::extensions::objectives::objectives::ObjectivesComponent;
     use game_components_minigame::extensions::objectives::interface::{
-        IMinigameObjectives, IMINIGAME_OBJECTIVES_ID,
+        IMinigameObjectives, IMinigameObjectivesSVG, IMINIGAME_OBJECTIVES_ID,
     };
-    use game_components_minigame::extensions::objectives::structs::ObjectiveDetails;
+    use game_components_minigame::extensions::objectives::structs::GameObjective;
+    use super::ObjectiveDetails;
     use openzeppelin_introspection::src5::SRC5Component;
+    use openzeppelin_introspection::interface::ISRC5;
     use starknet::ContractAddress;
     use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess};
 
-    component!(path: ObjectivesComponent, storage: objectives, event: ObjectivesEvent);
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
 
     #[abi(embed_v0)]
-    impl ObjectivesImpl =
-        ObjectivesComponent::MinigameObjectivesImpl<ContractState>;
-    impl ObjectivesInternalImpl = ObjectivesComponent::InternalImpl<ContractState>;
-
-    #[abi(embed_v0)]
     impl SRC5Impl = SRC5Component::SRC5Impl<ContractState>;
+    impl SRC5InternalImpl = SRC5Component::InternalImpl<ContractState>;
 
     #[storage]
     struct Storage {
         #[substorage(v0)]
-        objectives: ObjectivesComponent::Storage,
-        #[substorage(v0)]
         src5: SRC5Component::Storage,
-        // Additional storage for testing
+        // Storage for testing
         objective_exists: Map<u32, bool>,
         objective_details: Map<u32, ObjectiveDetails>,
         token_objectives: Map<(u64, u32), bool> // (token_id, objective_id) => completed
@@ -45,8 +52,6 @@ mod MockObjectivesContract {
     #[event]
     #[derive(Drop, starknet::Event)]
     enum Event {
-        #[flat]
-        ObjectivesEvent: ObjectivesComponent::Event,
         #[flat]
         SRC5Event: SRC5Component::Event,
         ObjectiveCreated: ObjectiveCreated,
@@ -63,7 +68,8 @@ mod MockObjectivesContract {
 
     #[constructor]
     fn constructor(ref self: ContractState) {
-        self.objectives.initializer();
+        // Register SRC5 interface
+        self.src5.register_interface(IMINIGAME_OBJECTIVES_ID);
 
         // Pre-populate some objectives for testing
         self._create_objective(1, 10, "First Blood", "Get the first kill", true);
@@ -96,8 +102,9 @@ mod MockObjectivesContract {
             );
     }
 
-    // Override the objectives implementation to use our test storage
-    impl IMinigameObjectivesImpl of IMinigameObjectives<ContractState> {
+    // Objectives implementation
+    #[abi(embed_v0)]
+    impl ObjectivesImpl of IMinigameObjectives<ContractState> {
         fn objective_exists(self: @ContractState, objective_id: u32) -> bool {
             self.objective_exists.read(objective_id)
         }
@@ -106,30 +113,40 @@ mod MockObjectivesContract {
             self.token_objectives.read((token_id, objective_id))
         }
 
-        fn objectives(self: @ContractState, token_id: u64) -> Span<ObjectiveDetails> {
+        fn objectives(self: @ContractState, token_id: u64) -> Span<GameObjective> {
             // Return mock objectives for the token
             let mut objectives_list = array![];
 
-            // Add some default objectives
-            let mut obj1 = self.objective_details.read(1);
-            obj1.is_completed = self.completed_objective(token_id, 1);
-            objectives_list.append(obj1);
+            // Add some default objectives - convert from ObjectiveDetails to GameObjective
+            let obj1 = self.objective_details.read(1);
+            if self.completed_objective(token_id, 1) {
+                objectives_list.append(GameObjective { name: obj1.name.clone(), value: "completed" });
+            } else {
+                objectives_list.append(GameObjective { name: obj1.name.clone(), value: "pending" });
+            }
 
-            let mut obj2 = self.objective_details.read(2);
-            obj2.is_completed = self.completed_objective(token_id, 2);
-            objectives_list.append(obj2);
+            let obj2 = self.objective_details.read(2);
+            if self.completed_objective(token_id, 2) {
+                objectives_list.append(GameObjective { name: obj2.name.clone(), value: "completed" });
+            } else {
+                objectives_list.append(GameObjective { name: obj2.name.clone(), value: "pending" });
+            }
 
-            let mut obj3 = self.objective_details.read(3);
-            obj3.is_completed = self.completed_objective(token_id, 3);
-            objectives_list.append(obj3);
+            let obj3 = self.objective_details.read(3);
+            if self.completed_objective(token_id, 3) {
+                objectives_list.append(GameObjective { name: obj3.name.clone(), value: "completed" });
+            } else {
+                objectives_list.append(GameObjective { name: obj3.name.clone(), value: "pending" });
+            }
 
             objectives_list.span()
         }
-
+    }
+    
+    #[abi(embed_v0)]
+    impl ObjectivesSVGImpl of IMinigameObjectivesSVG<ContractState> {
         fn objectives_svg(self: @ContractState, token_id: u64) -> ByteArray {
-            let objectives = self.objectives(token_id);
-            // Return mock SVG
-            "<svg><text>Objectives for token " + token_id.to_string() + "</text></svg>"
+            format!("<svg><text>Objectives for token {}</text></svg>", token_id)
         }
     }
 
@@ -213,7 +230,7 @@ fn test_completed_objective() {
     let (contract_address, _) = contract.deploy(@array![]).unwrap();
 
     let objectives_dispatcher = IMinigameObjectivesDispatcher { contract_address };
-    let setter = IObjectivesSetter { contract_address };
+    let setter = IObjectivesSetterDispatcher { contract_address };
 
     // Initially not completed
     assert!(!objectives_dispatcher.completed_objective(1, 1), "Should not be completed initially");
@@ -237,7 +254,7 @@ fn test_get_objectives_for_token() {
     let (contract_address, _) = contract.deploy(@array![]).unwrap();
 
     let objectives_dispatcher = IMinigameObjectivesDispatcher { contract_address };
-    let setter = IObjectivesSetter { contract_address };
+    let setter = IObjectivesSetterDispatcher { contract_address };
 
     // Complete some objectives
     setter.complete_objective(10, 1);
@@ -250,21 +267,18 @@ fn test_get_objectives_for_token() {
 
     // Check first objective
     let obj1 = *objectives.at(0);
-    assert!(obj1.objective_id == 1, "First objective ID mismatch");
-    assert!(obj1.points == 10, "First objective points mismatch");
-    assert!(obj1.is_completed, "First objective should be completed");
-    assert!(obj1.is_required, "First objective should be required");
+    assert!(obj1.name == "First Blood", "First objective name mismatch");
+    assert!(obj1.value == "completed", "First objective should be completed");
 
     // Check second objective
     let obj2 = *objectives.at(1);
-    assert!(obj2.objective_id == 2, "Second objective ID mismatch");
-    assert!(!obj2.is_completed, "Second objective should not be completed");
+    assert!(obj2.name == "Double Kill", "Second objective name mismatch");
+    assert!(obj2.value == "pending", "Second objective should not be completed");
 
     // Check third objective
     let obj3 = *objectives.at(2);
-    assert!(obj3.objective_id == 3, "Third objective ID mismatch");
-    assert!(obj3.is_completed, "Third objective should be completed");
-    assert!(!obj3.is_required, "Third objective should not be required");
+    assert!(obj3.name == "Ace", "Third objective name mismatch");
+    assert!(obj3.value == "completed", "Third objective should be completed");
 }
 
 // Test OBJ-U-06: Create objective with valid data
@@ -274,7 +288,7 @@ fn test_create_objective_valid_data() {
     let (contract_address, _) = contract.deploy(@array![]).unwrap();
 
     let objectives_dispatcher = IMinigameObjectivesDispatcher { contract_address };
-    let setter = IObjectivesSetter { contract_address };
+    let setter = IObjectivesSetterDispatcher { contract_address };
 
     // Create new objective
     setter
@@ -298,7 +312,7 @@ fn test_create_duplicate_objective() {
     let contract = declare("MockObjectivesContract").unwrap().contract_class();
     let (contract_address, _) = contract.deploy(@array![]).unwrap();
 
-    let setter = IObjectivesSetter { contract_address };
+    let setter = IObjectivesSetterDispatcher { contract_address };
 
     // Try to create objective with existing ID
     setter
@@ -318,7 +332,7 @@ fn test_get_objective_ids() {
     let contract = declare("MockObjectivesContract").unwrap().contract_class();
     let (contract_address, _) = contract.deploy(@array![]).unwrap();
 
-    let setter = IObjectivesSetter { contract_address };
+    let setter = IObjectivesSetterDispatcher { contract_address };
     let objective_ids = setter.get_objective_ids(1);
 
     assert!(objective_ids.len() == 3, "Should have 3 objective IDs");
@@ -334,7 +348,7 @@ fn test_objective_with_zero_points() {
     let (contract_address, _) = contract.deploy(@array![]).unwrap();
 
     let objectives_dispatcher = IMinigameObjectivesDispatcher { contract_address };
-    let setter = IObjectivesSetter { contract_address };
+    let setter = IObjectivesSetterDispatcher { contract_address };
 
     // Create objective with 0 points
     setter
@@ -352,9 +366,9 @@ fn test_objectives_svg() {
     let contract = declare("MockObjectivesContract").unwrap().contract_class();
     let (contract_address, _) = contract.deploy(@array![]).unwrap();
 
-    let objectives_dispatcher = IMinigameObjectivesDispatcher { contract_address };
+    let objectives_svg_dispatcher = IMinigameObjectivesSVGDispatcher { contract_address };
 
-    let svg = objectives_dispatcher.objectives_svg(42);
+    let svg = objectives_svg_dispatcher.objectives_svg(42);
     assert!(svg == "<svg><text>Objectives for token 42</text></svg>", "SVG content mismatch");
 }
 

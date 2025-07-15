@@ -154,4 +154,46 @@ pub trait ITokenEventRelayer<TContractState> {
     // Minter extension events
     fn emit_minter_added(ref self: TContractState, minter_id: u64, minter_address: ContractAddress);
     fn emit_minter_counter_update(ref self: TContractState, counter: u64);
+    fn emit_minter_removed(ref self: TContractState, minter_id: u64, minter_address: ContractAddress);
+    
+    // Context extension events
+    fn emit_context_updated(ref self: TContractState, token_id: u64, game_address: ContractAddress, context_data: felt252, timestamp: u64);
+    
+    // Settings extension events
+    fn emit_settings_created(ref self: TContractState, game_address: ContractAddress, settings_id: u32, name: ByteArray, description: ByteArray);
+    fn emit_settings_updated(ref self: TContractState, game_address: ContractAddress, settings_id: u32, name: ByteArray, description: ByteArray);
+    
+    // Additional renderer events
+    fn emit_renderer_removed(ref self: TContractState, token_id: u64);
+    
+    // MinigameRegistry events
+    fn emit_game_registered(
+        ref self: TContractState,
+        game_id: u64,
+        contract_address: ContractAddress,
+        name: ByteArray,
+        creator_token_id: u64,
+    );
+    fn emit_game_counter_update(ref self: TContractState, counter: u64);
+    fn emit_game_metadata_update(
+        ref self: TContractState,
+        game_id: u64,
+        contract_address: ContractAddress,
+        name: ByteArray,
+        description: ByteArray,
+        developer: ByteArray,
+        publisher: ByteArray,
+        genre: ByteArray,
+        image: ByteArray,
+        color: ByteArray,
+        client_url: ByteArray,
+        renderer_address: ContractAddress,
+    );
+    fn emit_game_id_mapping_update(
+        ref self: TContractState,
+        contract_address: ContractAddress,
+        game_id: u64,
+    );
+    fn emit_client_url_set(ref self: TContractState, token_id: u64, client_url: ByteArray);
+    fn emit_creator_token_minted(ref self: TContractState, token_id: u64, creator_address: ContractAddress);
 }

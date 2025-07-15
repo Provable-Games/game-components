@@ -16,12 +16,11 @@ use game_components_minigame::extensions::objectives::interface::{
     IMINIGAME_OBJECTIVES_ID,
 };
 use super::mocks::minigame_starknet_mock::{
-    IMinigameStarknetMock, IMinigameStarknetMockDispatcher, IMinigameStarknetMockDispatcherTrait,
-    IMinigameStarknetMockInit, IMinigameStarknetMockInitDispatcher,
+    IMinigameStarknetMockDispatcher, IMinigameStarknetMockDispatcherTrait,
+    IMinigameStarknetMockInitDispatcher,
     IMinigameStarknetMockInitDispatcherTrait,
 };
 use openzeppelin_introspection::src5::SRC5Component::SRC5Impl;
-use openzeppelin_introspection::interface::{ISRC5Dispatcher, ISRC5DispatcherTrait};
 
 // Test constants
 const GAME_CREATOR: felt252 = 'creator';

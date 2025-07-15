@@ -3,6 +3,7 @@
 ///
 #[starknet::component]
 pub mod MinigameComponent {
+    use core::num::traits::Zero;
     use crate::interface::{IMinigame, IMinigameTokenData, IMINIGAME_ID};
     use crate::libs;
     use game_components_token::core::interface::{
@@ -83,28 +84,30 @@ pub mod MinigameComponent {
                 contract_address: token_address,
             };
             let minigame_registry_address = minigame_token_dispatcher.game_registry_address();
-            let minigame_registry_src5_dispatcher = ISRC5Dispatcher {
-                contract_address: minigame_registry_address,
-            };
-            let supports_minigame_registry = minigame_registry_src5_dispatcher
-                .supports_interface(IMINIGAME_REGISTRY_ID);
-            if supports_minigame_registry {
-                let minigame_registry_dispatcher = IMinigameRegistryDispatcher {
+            if !minigame_registry_address.is_zero() {
+                let minigame_registry_src5_dispatcher = ISRC5Dispatcher {
                     contract_address: minigame_registry_address,
                 };
-                minigame_registry_dispatcher
-                    .register_game(
-                        creator_address,
-                        name,
-                        description,
-                        developer,
-                        publisher,
-                        genre,
-                        image,
-                        color,
-                        client_url,
-                        renderer_address,
-                    );
+                let supports_minigame_registry = minigame_registry_src5_dispatcher
+                    .supports_interface(IMINIGAME_REGISTRY_ID);
+                if supports_minigame_registry {
+                    let minigame_registry_dispatcher = IMinigameRegistryDispatcher {
+                        contract_address: minigame_registry_address,
+                    };
+                    minigame_registry_dispatcher
+                        .register_game(
+                            creator_address,
+                            name,
+                            description,
+                            developer,
+                            publisher,
+                            genre,
+                            image,
+                            color,
+                            client_url,
+                            renderer_address,
+                        );
+                }
             }
 
             // Store the settings and objectives addresses

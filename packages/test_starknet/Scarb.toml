@@ -25,3 +25,8 @@ build-external-contracts = [
     "game_components_token::examples::optimized_token_contract::OptimizedTokenContract",
     "game_components_token::examples::minimal_optimized_example::MinimalOptimizedContract",
 ]
+
+[profile.dev.cairo]
+unstable-add-statements-functions-debug-info = true
+unstable-add-statements-code-locations-debug-info = true
+inlining-strategy = "avoid"

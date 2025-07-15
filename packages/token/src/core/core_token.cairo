@@ -223,7 +223,8 @@ pub mod CoreTokenComponent {
                             if let Option::Some(relayer) = self.get_event_relayer() {
                                 let mut i = 0;
                                 while i < objective_ids.len() {
-                                    relayer.emit_objective_set(token_id, *objective_ids.at(i), false);
+                                    relayer
+                                        .emit_objective_set(token_id, *objective_ids.at(i), false);
                                     i += 1;
                                 };
                             }
@@ -286,20 +287,21 @@ pub mod CoreTokenComponent {
 
                     // Emit relayer events for metadata and counter
                     if let Option::Some(relayer) = self.get_event_relayer() {
-                        relayer.emit_token_metadata_update(
-                            token_id,
-                            metadata.game_id,
-                            metadata.minted_at,
-                            metadata.settings_id,
-                            metadata.lifecycle.start,
-                            metadata.lifecycle.end,
-                            metadata.minted_by,
-                            metadata.soulbound,
-                            metadata.game_over,
-                            metadata.completed_all_objectives,
-                            metadata.has_context,
-                            metadata.objectives_count,
-                        );
+                        relayer
+                            .emit_token_metadata_update(
+                                token_id,
+                                metadata.game_id,
+                                metadata.minted_at,
+                                metadata.settings_id,
+                                metadata.lifecycle.start,
+                                metadata.lifecycle.end,
+                                metadata.minted_by,
+                                metadata.soulbound,
+                                metadata.game_over,
+                                metadata.completed_all_objectives,
+                                metadata.has_context,
+                                metadata.objectives_count,
+                            );
                         relayer.emit_token_counter_update(token_id);
                     }
 
@@ -362,20 +364,21 @@ pub mod CoreTokenComponent {
 
                     // Emit relayer events for metadata and counter
                     if let Option::Some(relayer) = self.get_event_relayer() {
-                        relayer.emit_token_metadata_update(
-                            token_id,
-                            metadata.game_id,
-                            metadata.minted_at,
-                            metadata.settings_id,
-                            metadata.lifecycle.start,
-                            metadata.lifecycle.end,
-                            metadata.minted_by,
-                            metadata.soulbound,
-                            metadata.game_over,
-                            metadata.completed_all_objectives,
-                            metadata.has_context,
-                            metadata.objectives_count,
-                        );
+                        relayer
+                            .emit_token_metadata_update(
+                                token_id,
+                                metadata.game_id,
+                                metadata.minted_at,
+                                metadata.settings_id,
+                                metadata.lifecycle.start,
+                                metadata.lifecycle.end,
+                                metadata.minted_by,
+                                metadata.soulbound,
+                                metadata.game_over,
+                                metadata.completed_all_objectives,
+                                metadata.has_context,
+                                metadata.objectives_count,
+                            );
                         relayer.emit_token_counter_update(token_id);
                     }
 
@@ -511,20 +514,21 @@ pub mod CoreTokenComponent {
 
             // Emit relayer event for metadata update
             if let Option::Some(relayer) = self.get_event_relayer() {
-                relayer.emit_token_metadata_update(
-                    token_id,
-                    metadata.game_id,
-                    metadata.minted_at,
-                    metadata.settings_id,
-                    metadata.lifecycle.start,
-                    metadata.lifecycle.end,
-                    metadata.minted_by,
-                    metadata.soulbound,
-                    metadata.game_over,
-                    metadata.completed_all_objectives,
-                    metadata.has_context,
-                    metadata.objectives_count,
-                );
+                relayer
+                    .emit_token_metadata_update(
+                        token_id,
+                        metadata.game_id,
+                        metadata.minted_at,
+                        metadata.settings_id,
+                        metadata.lifecycle.start,
+                        metadata.lifecycle.end,
+                        metadata.minted_by,
+                        metadata.soulbound,
+                        metadata.game_over,
+                        metadata.completed_all_objectives,
+                        metadata.has_context,
+                        metadata.objectives_count,
+                    );
             }
         }
 
@@ -672,7 +676,9 @@ pub mod CoreTokenComponent {
             if let Option::Some(event_relayer_address) = event_relayer_address {
                 self.event_relayer_address.write(event_relayer_address);
                 // After setting relayer, emit initialization events for addresses
-                let relayer = ITokenEventRelayerDispatcher { contract_address: event_relayer_address };
+                let relayer = ITokenEventRelayerDispatcher {
+                    contract_address: event_relayer_address,
+                };
                 if let Option::Some(game_addr) = game_address {
                     relayer.emit_game_address_update(game_addr);
                 }
@@ -779,7 +785,7 @@ pub mod CoreTokenComponent {
             token_id: u64,
             owner: ContractAddress,
             auth: ContractAddress,
-        ) {// self.emit(Owners { token_id, owner, auth });
+        ) { // self.emit(Owners { token_id, owner, auth });
         }
 
         fn get_token_metadata(
@@ -789,11 +795,13 @@ pub mod CoreTokenComponent {
         }
 
         fn get_event_relayer(
-            self: @ComponentState<TContractState>
+            self: @ComponentState<TContractState>,
         ) -> Option<ITokenEventRelayerDispatcher> {
             let event_relayer_address = self.event_relayer_address.read();
             if !event_relayer_address.is_zero() {
-                Option::Some(ITokenEventRelayerDispatcher { contract_address: event_relayer_address })
+                Option::Some(
+                    ITokenEventRelayerDispatcher { contract_address: event_relayer_address },
+                )
             } else {
                 Option::None
             }

@@ -1,41 +1,37 @@
 use game_components_minigame::extensions::settings::interface::{
     IMinigameSettings, IMinigameSettingsDispatcher, IMinigameSettingsDispatcherTrait,
+    IMinigameSettingsSVG, IMinigameSettingsSVGDispatcher, IMinigameSettingsSVGDispatcherTrait,
     IMINIGAME_SETTINGS_ID,
 };
 use game_components_minigame::extensions::settings::structs::{GameSettingDetails, GameSetting};
 use openzeppelin_introspection::interface::{ISRC5Dispatcher, ISRC5DispatcherTrait};
 use starknet::{contract_address_const, get_caller_address};
 use snforge_std::{declare, ContractClassTrait, DeclareResultTrait};
+use core::to_byte_array::FormatAsByteArray;
 
-// Test contract that embeds SettingsComponent
+// Test contract that implements Settings interfaces
 #[starknet::contract]
 mod MockSettingsContract {
-    use game_components_minigame::extensions::settings::settings::SettingsComponent;
     use game_components_minigame::extensions::settings::interface::{
-        IMinigameSettings, IMINIGAME_SETTINGS_ID,
+        IMinigameSettings, IMinigameSettingsSVG, IMINIGAME_SETTINGS_ID,
     };
     use game_components_minigame::extensions::settings::structs::{GameSettingDetails, GameSetting};
     use openzeppelin_introspection::src5::SRC5Component;
+    use openzeppelin_introspection::interface::ISRC5;
     use starknet::ContractAddress;
     use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess};
 
-    component!(path: SettingsComponent, storage: settings, event: SettingsEvent);
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
 
     #[abi(embed_v0)]
-    impl SettingsImpl = SettingsComponent::MinigameSettingsImpl<ContractState>;
-    impl SettingsInternalImpl = SettingsComponent::InternalImpl<ContractState>;
-
-    #[abi(embed_v0)]
     impl SRC5Impl = SRC5Component::SRC5Impl<ContractState>;
+    impl SRC5InternalImpl = SRC5Component::InternalImpl<ContractState>;
 
     #[storage]
     struct Storage {
         #[substorage(v0)]
-        settings: SettingsComponent::Storage,
-        #[substorage(v0)]
         src5: SRC5Component::Storage,
-        // Additional storage for testing
+        // Storage for testing
         settings_exist: Map<u32, bool>,
         settings_data: Map<u32, GameSettingDetails>,
     }
@@ -44,14 +40,23 @@ mod MockSettingsContract {
     #[derive(Drop, starknet::Event)]
     enum Event {
         #[flat]
-        SettingsEvent: SettingsComponent::Event,
-        #[flat]
         SRC5Event: SRC5Component::Event,
+        SettingsCreated: SettingsCreated,
+    }
+
+    #[derive(Drop, starknet::Event)]
+    struct SettingsCreated {
+        game_id: u32,
+        settings_id: u32,
+        name: ByteArray,
+        description: ByteArray,
+        settings: Span<GameSetting>,
     }
 
     #[constructor]
     fn constructor(ref self: ContractState) {
-        self.settings.initializer();
+        // Register SRC5 interface
+        self.src5.register_interface(IMINIGAME_SETTINGS_ID);
 
         // Pre-populate some settings for testing
         self.settings_exist.write(1, true);
@@ -87,8 +92,9 @@ mod MockSettingsContract {
             );
     }
 
-    // Override the settings implementation to use our test storage
-    impl IMinigameSettingsImpl of IMinigameSettings<ContractState> {
+    // Settings implementation
+    #[abi(embed_v0)]
+    impl SettingsImpl of IMinigameSettings<ContractState> {
         fn settings_exist(self: @ContractState, settings_id: u32) -> bool {
             self.settings_exist.read(settings_id)
         }
@@ -97,7 +103,10 @@ mod MockSettingsContract {
             assert!(self.settings_exist(settings_id), "Settings not found");
             self.settings_data.read(settings_id)
         }
-
+    }
+    
+    #[abi(embed_v0)]
+    impl SettingsSVGImpl of IMinigameSettingsSVG<ContractState> {
         fn settings_svg(self: @ContractState, settings_id: u32) -> ByteArray {
             let settings = self.settings(settings_id);
             // Return mock SVG
@@ -126,15 +135,7 @@ mod MockSettingsContract {
     }
 }
 
-// Event definition for testing
-#[derive(Drop, starknet::Event)]
-struct SettingsCreated {
-    game_id: u32,
-    settings_id: u32,
-    name: ByteArray,
-    description: ByteArray,
-    settings: Span<GameSetting>,
-}
+// Event definition for testing is already in the contract above
 
 // Test SET-U-01: Initialize settings component
 #[test]
@@ -226,7 +227,7 @@ fn test_create_settings_valid_data() {
             .span(),
     };
 
-    let setter = ISettingsSetter { contract_address };
+    let setter = ISettingsSetterDispatcher { contract_address };
     setter.create_test_settings(10, new_settings);
 
     // Verify settings were created
@@ -250,7 +251,7 @@ fn test_create_settings_empty_name() {
         settings: array![GameSetting { name: "test", value: "value" }].span(),
     };
 
-    let setter = ISettingsSetter { contract_address };
+    let setter = ISettingsSetterDispatcher { contract_address };
     setter.create_test_settings(20, empty_name_settings);
 
     let settings_dispatcher = IMinigameSettingsDispatcher { contract_address };
@@ -273,7 +274,7 @@ fn test_create_settings_50_items() {
         }
         settings_items
             .append(
-                GameSetting { name: "setting_" + i.to_string(), value: "value_" + i.to_string() },
+                GameSetting { name: format!("setting_{}", i), value: format!("value_{}", i) },
             );
         i += 1;
     };
@@ -284,7 +285,7 @@ fn test_create_settings_50_items() {
         settings: settings_items.span(),
     };
 
-    let setter = ISettingsSetter { contract_address };
+    let setter = ISettingsSetterDispatcher { contract_address };
     setter.create_test_settings(30, large_settings);
 
     let settings_dispatcher = IMinigameSettingsDispatcher { contract_address };
@@ -301,13 +302,13 @@ fn test_settings_svg() {
     let contract = declare("MockSettingsContract").unwrap().contract_class();
     let (contract_address, _) = contract.deploy(@array![]).unwrap();
 
-    let settings_dispatcher = IMinigameSettingsDispatcher { contract_address };
+    let settings_svg_dispatcher = IMinigameSettingsSVGDispatcher { contract_address };
 
     // Test SVG for existing settings
-    let svg1 = settings_dispatcher.settings_svg(1);
+    let svg1 = settings_svg_dispatcher.settings_svg(1);
     assert!(svg1 == "<svg><text>Easy Mode</text></svg>", "SVG 1 content mismatch");
 
-    let svg2 = settings_dispatcher.settings_svg(2);
+    let svg2 = settings_svg_dispatcher.settings_svg(2);
     assert!(svg2 == "<svg><text>Hard Mode</text></svg>", "SVG 2 content mismatch");
 }
 

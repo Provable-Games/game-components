@@ -39,7 +39,7 @@ fn test_tournament_flow() {
 
     // Deploy token contract (registry)
     let registry_dispatcher = deploy_minigame_registry_contract_with_params(
-        "TournamentTokens", "TOUR", "",
+        "TournamentTokens", "TOUR", "", Option::None
     );
     let registry_address = registry_dispatcher.contract_address;
 
@@ -143,7 +143,7 @@ fn test_tournament_flow() {
 fn test_multi_game_platform() {
     // Deploy registry for multi-game support
     let registry_dispatcher = deploy_minigame_registry_contract_with_params(
-        "GamePlatform", "GAME", "",
+        "GamePlatform", "GAME", "", Option::None
     );
     let registry_address = registry_dispatcher.contract_address;
 
@@ -702,7 +702,7 @@ fn test_game_contract_unresponsive() {
 fn test_registry_lookup_edge_cases() {
     // Deploy registry
     let registry_dispatcher = deploy_minigame_registry_contract_with_params(
-        "Test Registry", "REG", "",
+        "Test Registry", "REG", "", Option::None
     );
     let registry_address = registry_dispatcher.contract_address;
 

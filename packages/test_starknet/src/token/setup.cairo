@@ -111,12 +111,15 @@ pub fn deploy_mock_metagame_contract() -> (
 
 /// Deploy MinigameRegistryContract with default parameters
 pub fn deploy_minigame_registry_contract() -> IMinigameRegistryDispatcher {
-    deploy_minigame_registry_contract_with_params("GameCreatorToken", "GCT", "")
+    deploy_minigame_registry_contract_with_params("GameCreatorToken", "GCT", "", Option::None)
 }
 
 /// Deploy MinigameRegistryContract with custom parameters
 pub fn deploy_minigame_registry_contract_with_params(
-    name: ByteArray, symbol: ByteArray, base_uri: ByteArray,
+    name: ByteArray,
+    symbol: ByteArray, 
+    base_uri: ByteArray, 
+    event_relayer_address: Option<ContractAddress>,
 ) -> IMinigameRegistryDispatcher {
     let contract = declare("MinigameRegistryContract").unwrap().contract_class();
 
@@ -124,6 +127,17 @@ pub fn deploy_minigame_registry_contract_with_params(
     name.serialize(ref constructor_calldata);
     symbol.serialize(ref constructor_calldata);
     base_uri.serialize(ref constructor_calldata);
+
+    // Serialize event_relayer_address Option
+    match event_relayer_address {
+        Option::Some(addr) => {
+            constructor_calldata.append(0); // Some variant
+            constructor_calldata.append(addr.into());
+        },
+        Option::None => {
+            constructor_calldata.append(1); // None variant
+        },
+    }
 
     let (contract_address, _) = contract.deploy(@constructor_calldata).unwrap();
 
