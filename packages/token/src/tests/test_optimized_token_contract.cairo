@@ -16,9 +16,8 @@ use crate::tests::mocks::mock_game::{IMockGameDispatcherTrait};
 // Import setup helpers
 use crate::tests::setup::{
     setup, setup_multi_game, deploy_mock_game, deploy_basic_mock_game,
-    deploy_test_token_contract_with_game, deploy_test_token_contract,
-    ALICE, BOB, CHARLIE, ZERO_ADDRESS, RENDERER_ADDRESS,
-    MAX_U64, PAST_TIME, CURRENT_TIME, FUTURE_TIME, FAR_FUTURE_TIME,
+    deploy_test_token_contract_with_game, deploy_test_token_contract, ALICE, BOB, CHARLIE,
+    ZERO_ADDRESS, RENDERER_ADDRESS, MAX_U64, PAST_TIME, CURRENT_TIME, FUTURE_TIME, FAR_FUTURE_TIME,
 };
 
 // All test constants, deployment helpers, and setup functions are now in setup.cairo

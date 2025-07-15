@@ -97,7 +97,61 @@ pub trait IMinigameTokenMixin<TState> {
 
 #[starknet::interface]
 pub trait ITokenEventRelayer<TContractState> {
-    fn initialize(ref self: TContractState, token_address: ContractAddress, world_owner: ContractAddress);
-    // fn emit_score_update(ref self: TContractState, token_id: u256, score: u32);
-    fn emit_owners(ref self: TContractState, token_id: u64, owner: ContractAddress, auth: ContractAddress);
+    fn initialize(
+        ref self: TContractState, token_address: ContractAddress, world_owner: ContractAddress,
+    );
+
+    // Core token events
+    fn emit_owners(
+        ref self: TContractState, token_id: u64, owner: ContractAddress, auth: ContractAddress,
+    );
+    fn emit_token_metadata_update(
+        ref self: TContractState,
+        token_id: u64,
+        game_id: u64,
+        minted_at: u64,
+        settings_id: u32,
+        lifecycle_start: u64,
+        lifecycle_end: u64,
+        minted_by: u64,
+        soulbound: bool,
+        game_over: bool,
+        completed_all_objectives: bool,
+        has_context: bool,
+        objectives_count: u8,
+    );
+    fn emit_token_counter_update(ref self: TContractState, counter: u64);
+    fn emit_score_update(ref self: TContractState, token_id: u64, score: u64);
+    fn emit_game_updated(
+        ref self: TContractState,
+        token_id: u64,
+        old_game_address: ContractAddress,
+        new_game_address: ContractAddress,
+    );
+    fn emit_player_name_update(ref self: TContractState, token_id: u64, player_name: ByteArray);
+    fn emit_game_address_update(ref self: TContractState, game_address: ContractAddress);
+    fn emit_game_registry_address_update(
+        ref self: TContractState, game_registry_address: ContractAddress,
+    );
+    fn emit_event_relayer_address_update(
+        ref self: TContractState, event_relayer_address: ContractAddress,
+    );
+
+    // Objectives extension events
+    fn emit_objective_set(
+        ref self: TContractState, token_id: u64, objective_id: u32, completed: bool,
+    );
+    fn emit_objective_completed(
+        ref self: TContractState, token_id: u64, objective_id: u32, completion_timestamp: u64,
+    );
+    fn emit_all_objectives_completed(ref self: TContractState, token_id: u64);
+
+    // Renderer extension events
+    fn emit_token_renderer_update(
+        ref self: TContractState, token_id: u64, renderer_address: ContractAddress,
+    );
+
+    // Minter extension events
+    fn emit_minter_added(ref self: TContractState, minter_id: u64, minter_address: ContractAddress);
+    fn emit_minter_counter_update(ref self: TContractState, counter: u64);
 }

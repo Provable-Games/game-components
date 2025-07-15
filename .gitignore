@@ -6,3 +6,4 @@ Scarb.lock
 *.sierra.json
 *.casm.json
 .starknet-foundry/
+deployments/

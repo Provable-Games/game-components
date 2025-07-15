@@ -228,11 +228,11 @@ mod OptimizedTokenContract {
             to: ContractAddress,
             token_id: u256,
             auth: ContractAddress,
-        ) { 
+        ) {
             let contract_state = self.get_contract();
-            if !contract_state.event_relayer_address().is_zero() {    
+            if !contract_state.event_relayer_address().is_zero() {
                 let event_relayer = ITokenEventRelayerDispatcher {
-                        contract_address: contract_state.event_relayer_address(),
+                    contract_address: contract_state.event_relayer_address(),
                 };
                 event_relayer.emit_owners(token_id.try_into().unwrap(), to, auth);
             }

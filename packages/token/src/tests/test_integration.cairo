@@ -4,22 +4,19 @@ use snforge_std::{
 };
 
 use crate::interface::{IMinigameTokenMixinDispatcher, IMinigameTokenMixinDispatcherTrait};
-use crate::examples::minigame_registry_contract::{
-    IMinigameRegistryDispatcherTrait,
-};
+use crate::examples::minigame_registry_contract::{IMinigameRegistryDispatcherTrait};
 
 // Import test contracts
 use game_components_test_starknet::minigame::mocks::minigame_starknet_mock::{
-    IMinigameStarknetMockInitDispatcherTrait,
-    IMinigameStarknetMockDispatcherTrait,
+    IMinigameStarknetMockInitDispatcherTrait, IMinigameStarknetMockDispatcherTrait,
 };
 
 // Import test helpers from setup module
 use crate::tests::setup::{
-    setup, deploy_optimized_token_with_game, deploy_optimized_token_contract, 
-    deploy_mock_game, deploy_mock_context_provider, deploy_mock_metagame_with_context,
-    deploy_minigame_registry_contract_with_params, deploy_mock_game_standalone,
-    deploy_simple_setup, OWNER, ALICE, BOB, CHARLIE,
+    setup, deploy_optimized_token_with_game, deploy_optimized_token_contract, deploy_mock_game,
+    deploy_mock_context_provider, deploy_mock_metagame_with_context,
+    deploy_minigame_registry_contract_with_params, deploy_mock_game_standalone, deploy_simple_setup,
+    OWNER, ALICE, BOB, CHARLIE,
 };
 
 // ================================================================================================
@@ -40,13 +37,13 @@ fn test_tournament_flow() {
 
     // Deploy token contract (registry)
     let registry_dispatcher = deploy_minigame_registry_contract_with_params(
-        "TournamentTokens", "TOUR", ""
+        "TournamentTokens", "TOUR", "",
     );
     let registry_address = registry_dispatcher.contract_address;
 
     // Deploy metagame with context
     let _metagame_dispatcher = deploy_mock_metagame_with_context(
-        Option::Some(context_address), registry_address
+        Option::Some(context_address), registry_address,
     );
 
     // Create and register multiple games
@@ -144,7 +141,7 @@ fn test_tournament_flow() {
 fn test_multi_game_platform() {
     // Deploy registry for multi-game support
     let registry_dispatcher = deploy_minigame_registry_contract_with_params(
-        "GamePlatform", "GAME", ""
+        "GamePlatform", "GAME", "",
     );
     let registry_address = registry_dispatcher.contract_address;
 
@@ -301,7 +298,7 @@ fn test_time_campaign() {
 fn test_achievement_hunt() {
     // Deploy contracts with objectives support
     let (game, game_init, mock_game) = deploy_mock_game();
-    
+
     // Deploy token with custom metadata and game address
     let (token_dispatcher, _, _, token_address) = deploy_optimized_token_contract(
         Option::Some("AchievementToken"),
@@ -703,7 +700,7 @@ fn test_game_contract_unresponsive() {
 fn test_registry_lookup_edge_cases() {
     // Deploy registry
     let registry_dispatcher = deploy_minigame_registry_contract_with_params(
-        "Test Registry", "REG", ""
+        "Test Registry", "REG", "",
     );
     let registry_address = registry_dispatcher.contract_address;
 

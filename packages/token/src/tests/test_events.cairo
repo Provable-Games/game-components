@@ -1,6 +1,5 @@
 use snforge_std::{
-    spy_events, EventSpyAssertionsTrait,
-    EventSpyTrait, cheat_caller_address, CheatSpan,
+    spy_events, EventSpyAssertionsTrait, EventSpyTrait, cheat_caller_address, CheatSpan,
 };
 
 use openzeppelin_token::erc721::interface::{ERC721ABIDispatcherTrait};
@@ -9,15 +8,13 @@ use crate::interface::{IMinigameTokenMixinDispatcherTrait};
 // Import IMockGameDispatcher trait
 use crate::tests::mocks::mock_game::{IMockGameDispatcherTrait};
 use game_components_test_starknet::minigame::mocks::minigame_starknet_mock::{
-    IMinigameStarknetMockDispatcherTrait,
-    IMinigameStarknetMockInitDispatcherTrait,
+    IMinigameStarknetMockDispatcherTrait, IMinigameStarknetMockInitDispatcherTrait,
 };
 
 // Import test helpers from setup module
 use crate::tests::setup::{
-    setup, setup_multi_game, deploy_mock_game, deploy_basic_mock_game, 
-    deploy_optimized_token_with_game,
-    ALICE, BOB, OWNER,
+    setup, setup_multi_game, deploy_mock_game, deploy_basic_mock_game,
+    deploy_optimized_token_with_game, ALICE, BOB, OWNER,
 };
 
 // ================================================================================================
@@ -67,7 +64,9 @@ fn test_update_game_event_emissions() {
     let (minigame, mock_game) = deploy_basic_mock_game();
 
     // Deploy token contract with mock game
-    let (token_dispatcher, _, _, token_address) = deploy_optimized_token_with_game(minigame.contract_address);
+    let (token_dispatcher, _, _, token_address) = deploy_optimized_token_with_game(
+        minigame.contract_address,
+    );
 
     // Mint a token
     let token_id = token_dispatcher
@@ -128,7 +127,9 @@ fn test_update_game_with_metadata_change_events() {
     let (minigame, mock_game) = deploy_basic_mock_game();
 
     // Deploy token contract
-    let (token_dispatcher, _, _, _token_address) = deploy_optimized_token_with_game(minigame.contract_address);
+    let (token_dispatcher, _, _, _token_address) = deploy_optimized_token_with_game(
+        minigame.contract_address,
+    );
 
     // Mint token
     let token_id = token_dispatcher

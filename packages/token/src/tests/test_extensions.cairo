@@ -1,18 +1,14 @@
 use starknet::{contract_address_const};
-use snforge_std::{
-    spy_events,
-};
+use snforge_std::{spy_events};
 
 use crate::interface::{IMinigameTokenMixinDispatcherTrait};
 
 // Import extension interfaces
-use game_components_minigame::extensions::settings::interface::{
-    IMinigameSettingsDispatcher,
-};
+use game_components_minigame::extensions::settings::interface::{IMinigameSettingsDispatcher};
 
 // Import setup helpers
 use crate::tests::setup::{
-    deploy_optimized_token_custom_metadata, deploy_mock_settings_contract, 
+    deploy_optimized_token_custom_metadata, deploy_mock_settings_contract,
     deploy_token_with_settings, ALICE,
 };
 
@@ -59,9 +55,7 @@ fn test_settings_create_from_unauthorized() {
 fn test_mint_soulbound_token() {
     // Deploy token contract
     let (token_dispatcher, _, _, _) = deploy_optimized_token_custom_metadata(
-        "SoulboundTest",
-        "SBT",
-        ""
+        "SoulboundTest", "SBT", "",
     );
 
     // Mint soulbound token
@@ -104,9 +98,7 @@ fn test_transfer_soulbound_token_fails() {
 fn test_transfer_regular_token() {
     // Deploy token contract
     let (token_dispatcher, _, _, _) = deploy_optimized_token_custom_metadata(
-        "RegularToken",
-        "RT",
-        ""
+        "RegularToken", "RT", "",
     );
 
     // Mint regular (non-soulbound) token
@@ -144,9 +136,7 @@ fn test_set_default_renderer() { // This test would require a contract that expo
 fn test_set_token_renderer() {
     // Deploy token contract
     let (token_dispatcher, _, _, _) = deploy_optimized_token_custom_metadata(
-        "RendererTest",
-        "RT",
-        ""
+        "RendererTest", "RT", "",
     );
 
     let renderer_address = contract_address_const::<0x123456>();
@@ -182,9 +172,7 @@ fn test_get_renderer_with_custom() { // Covered by test_set_token_renderer
 fn test_get_renderer_no_custom() {
     // Deploy token contract
     let (token_dispatcher, _, _, _) = deploy_optimized_token_custom_metadata(
-        "NoRenderer",
-        "NR",
-        ""
+        "NoRenderer", "NR", "",
     );
 
     // Mint without renderer
@@ -216,9 +204,7 @@ fn test_get_renderer_no_custom() {
 fn test_zero_address_renderer() {
     // Deploy token contract
     let (token_dispatcher, _, _, _) = deploy_optimized_token_custom_metadata(
-        "ZeroRenderer",
-        "ZR",
-        ""
+        "ZeroRenderer", "ZR", "",
     );
 
     // Mint with zero address renderer
@@ -272,11 +258,7 @@ fn test_all_objectives_completed() { // Deploy contracts and mint token with obj
 #[test]
 fn test_mint_events() {
     // Deploy token contract
-    let (token_dispatcher, _, _, _) = deploy_optimized_token_custom_metadata(
-        "EventTest",
-        "ET",
-        ""
-    );
+    let (token_dispatcher, _, _, _) = deploy_optimized_token_custom_metadata("EventTest", "ET", "");
 
     // Start spying on events
     let mut _spy = spy_events();

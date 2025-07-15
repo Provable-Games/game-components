@@ -1,7 +1,6 @@
 use starknet::contract_address_const;
 use snforge_std::{
-    cheat_caller_address, CheatSpan,
-    start_cheat_block_timestamp, stop_cheat_block_timestamp,
+    cheat_caller_address, CheatSpan, start_cheat_block_timestamp, stop_cheat_block_timestamp,
 };
 
 use openzeppelin_token::erc721::interface::{ERC721ABIDispatcher, ERC721ABIDispatcherTrait};
@@ -28,7 +27,9 @@ fn deploy_test_token() -> (
     let mock_game = IMockGameDispatcher { contract_address: game_address };
 
     // Deploy token contract with game
-    let (token_dispatcher, erc721_dispatcher, _, _) = deploy_optimized_token_with_game(game_address);
+    let (token_dispatcher, erc721_dispatcher, _, _) = deploy_optimized_token_with_game(
+        game_address,
+    );
 
     (token_dispatcher, erc721_dispatcher, mock_game)
 }

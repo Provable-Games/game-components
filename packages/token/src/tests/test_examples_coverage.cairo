@@ -8,9 +8,8 @@ use snforge_std::{
 use crate::interface::{IMinigameTokenMixinDispatcher, IMinigameTokenMixinDispatcherTrait};
 use openzeppelin_token::erc721::interface::{ERC721ABIDispatcher, ERC721ABIDispatcherTrait};
 use crate::tests::setup::{
-    setup, deploy_mock_game, deploy_basic_mock_game,
-    deploy_optimized_token_with_game, deploy_optimized_token_custom_metadata,
-    ALICE, BOB, CHARLIE,
+    setup, deploy_mock_game, deploy_basic_mock_game, deploy_optimized_token_with_game,
+    deploy_optimized_token_custom_metadata, ALICE, BOB, CHARLIE,
 };
 use crate::tests::mocks::mock_game::{IMockGameDispatcher, IMockGameDispatcherTrait};
 
@@ -159,9 +158,7 @@ fn test_optimized_contract_game_integration() {
     let (_, mock_game) = deploy_basic_mock_game();
 
     // Deploy token with mock game
-    let (token_dispatcher, _, _, _) = deploy_optimized_token_custom_metadata(
-        "GameToken", "GT", ""
-    );
+    let (token_dispatcher, _, _, _) = deploy_optimized_token_custom_metadata("GameToken", "GT", "");
     let (token_dispatcher, _, _, _) = deploy_optimized_token_with_game(mock_game.contract_address);
 
     // Mint and play

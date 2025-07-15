@@ -9,8 +9,8 @@ use crate::interface::{IMinigameTokenMixinDispatcher, IMinigameTokenMixinDispatc
 use openzeppelin_token::erc721::interface::{ERC721ABIDispatcher, ERC721ABIDispatcherTrait};
 use crate::tests::setup::{
     setup, setup_multi_game, deploy_mock_game, deploy_basic_mock_game,
-    deploy_optimized_token_with_game, deploy_optimized_token_custom_metadata,
-    ALICE, BOB, CHARLIE, OWNER, ZERO_ADDRESS,
+    deploy_optimized_token_with_game, deploy_optimized_token_custom_metadata, ALICE, BOB, CHARLIE,
+    OWNER, ZERO_ADDRESS,
 };
 use crate::tests::mocks::mock_game::{IMockGameDispatcher, IMockGameDispatcherTrait};
 use crate::examples::minigame_registry_contract::{
@@ -140,7 +140,7 @@ fn test_core_token_update_edge_cases() {
 
     // Deploy token with mock game
     let (token_dispatcher, _, _, _) = deploy_optimized_token_custom_metadata(
-        "UpdateTest", "UT", ""
+        "UpdateTest", "UT", "",
     );
     let (token_dispatcher, _, _, _) = deploy_optimized_token_with_game(mock_game.contract_address);
 

@@ -32,8 +32,8 @@ pub mod CoreTokenComponent {
         IMINIGAME_ID, IMinigameTokenDataDispatcher, IMinigameTokenDataDispatcherTrait,
     };
     use crate::extensions::minter::interface::IMINIGAME_TOKEN_MINTER_ID;
-    use game_components_minigame::extensions::objectives::interface::{};
-    use game_components_minigame::extensions::settings::interface::{};
+
+    use crate::interface::{ITokenEventRelayerDispatcher, ITokenEventRelayerDispatcherTrait};
 
     #[storage]
     pub struct Storage {
@@ -219,6 +219,14 @@ pub mod CoreTokenComponent {
                             ObjectivesOpt::set_token_objectives(
                                 ref contract_self, token_id, objective_ids,
                             );
+                            // Emit relayer events for objectives
+                            if let Option::Some(relayer) = self.get_event_relayer() {
+                                let mut i = 0;
+                                while i < objective_ids.len() {
+                                    relayer.emit_objective_set(token_id, *objective_ids.at(i), false);
+                                    i += 1;
+                                };
+                            }
                             (objectives_count, _validated_objective_ids)
                         },
                         Option::None => (0, array![].span()),
@@ -235,9 +243,22 @@ pub mod CoreTokenComponent {
 
                     // Handle minter tracking if enabled
                     let minted_by = MinterOpt::add_minter(ref contract_self, caller);
+                    // Emit relayer event for minter if added
+                    if minted_by > 0 {
+                        if let Option::Some(relayer) = self.get_event_relayer() {
+                            relayer.emit_minter_added(minted_by, caller);
+                            relayer.emit_minter_counter_update(minted_by);
+                        }
+                    }
 
                     // Handle renderer if provided
                     RendererOpt::set_token_renderer(ref contract_self, token_id, renderer_address);
+                    // Emit relayer event for renderer if set
+                    if let Option::Some(renderer_addr) = renderer_address {
+                        if let Option::Some(relayer) = self.get_event_relayer() {
+                            relayer.emit_token_renderer_update(token_id, renderer_addr);
+                        }
+                    }
 
                     // Create token metadata
                     let current_time = get_block_timestamp();
@@ -257,7 +278,29 @@ pub mod CoreTokenComponent {
 
                     // Set player name if provided
                     if let Option::Some(name) = player_name {
-                        self.token_player_names.entry(token_id).write(name);
+                        self.token_player_names.entry(token_id).write(name.clone());
+                        if let Option::Some(relayer) = self.get_event_relayer() {
+                            relayer.emit_player_name_update(token_id, name);
+                        }
+                    }
+
+                    // Emit relayer events for metadata and counter
+                    if let Option::Some(relayer) = self.get_event_relayer() {
+                        relayer.emit_token_metadata_update(
+                            token_id,
+                            metadata.game_id,
+                            metadata.minted_at,
+                            metadata.settings_id,
+                            metadata.lifecycle.start,
+                            metadata.lifecycle.end,
+                            metadata.minted_by,
+                            metadata.soulbound,
+                            metadata.game_over,
+                            metadata.completed_all_objectives,
+                            metadata.has_context,
+                            metadata.objectives_count,
+                        );
+                        relayer.emit_token_counter_update(token_id);
                     }
 
                     // Mint the ERC721 token
@@ -283,9 +326,22 @@ pub mod CoreTokenComponent {
 
                     // Only handle minter tracking for blank tokens
                     let minted_by = MinterOpt::add_minter(ref contract_self, caller);
+                    // Emit relayer event for minter if added
+                    if minted_by > 0 {
+                        if let Option::Some(relayer) = self.get_event_relayer() {
+                            relayer.emit_minter_added(minted_by, caller);
+                            relayer.emit_minter_counter_update(minted_by);
+                        }
+                    }
 
                     // Handle renderer if provided
                     RendererOpt::set_token_renderer(ref contract_self, token_id, renderer_address);
+                    // Emit relayer event for renderer if set
+                    if let Option::Some(renderer_addr) = renderer_address {
+                        if let Option::Some(relayer) = self.get_event_relayer() {
+                            relayer.emit_token_renderer_update(token_id, renderer_addr);
+                        }
+                    }
 
                     // Create minimal token metadata with empty/default values
                     let current_time = get_block_timestamp();
@@ -298,7 +354,29 @@ pub mod CoreTokenComponent {
 
                     // Set player name if provided
                     if let Option::Some(name) = player_name {
-                        self.token_player_names.entry(token_id).write(name);
+                        self.token_player_names.entry(token_id).write(name.clone());
+                        if let Option::Some(relayer) = self.get_event_relayer() {
+                            relayer.emit_player_name_update(token_id, name);
+                        }
+                    }
+
+                    // Emit relayer events for metadata and counter
+                    if let Option::Some(relayer) = self.get_event_relayer() {
+                        relayer.emit_token_metadata_update(
+                            token_id,
+                            metadata.game_id,
+                            metadata.minted_at,
+                            metadata.settings_id,
+                            metadata.lifecycle.start,
+                            metadata.lifecycle.end,
+                            metadata.minted_by,
+                            metadata.soulbound,
+                            metadata.game_over,
+                            metadata.completed_all_objectives,
+                            metadata.has_context,
+                            metadata.objectives_count,
+                        );
+                        relayer.emit_token_counter_update(token_id);
                     }
 
                     // Mint the ERC721 token
@@ -385,6 +463,14 @@ pub mod CoreTokenComponent {
                         contract, final_game_address, objective_ids,
                     );
                     ObjectivesOpt::set_token_objectives(ref contract_self, token_id, objective_ids);
+                    // Emit relayer events for objectives
+                    if let Option::Some(relayer) = self.get_event_relayer() {
+                        let mut i = 0;
+                        while i < objective_ids.len() {
+                            relayer.emit_objective_set(token_id, *objective_ids.at(i), false);
+                            i += 1;
+                        };
+                    }
                     (objectives_count, _validated_objective_ids)
                 },
                 Option::None => (0, array![].span()),
@@ -417,7 +503,28 @@ pub mod CoreTokenComponent {
 
             // Set player name if provided
             if let Option::Some(name) = player_name {
-                self.token_player_names.entry(token_id).write(name);
+                self.token_player_names.entry(token_id).write(name.clone());
+                if let Option::Some(relayer) = self.get_event_relayer() {
+                    relayer.emit_player_name_update(token_id, name);
+                }
+            }
+
+            // Emit relayer event for metadata update
+            if let Option::Some(relayer) = self.get_event_relayer() {
+                relayer.emit_token_metadata_update(
+                    token_id,
+                    metadata.game_id,
+                    metadata.minted_at,
+                    metadata.settings_id,
+                    metadata.lifecycle.start,
+                    metadata.lifecycle.end,
+                    metadata.minted_by,
+                    metadata.soulbound,
+                    metadata.game_over,
+                    metadata.completed_all_objectives,
+                    metadata.has_context,
+                    metadata.objectives_count,
+                );
             }
         }
 
@@ -452,6 +559,12 @@ pub mod CoreTokenComponent {
                         game_address,
                         token_metadata.objectives_count.into(),
                     );
+                // Emit relayer event if all objectives completed
+                if completed_all_objectives && !token_metadata.completed_all_objectives {
+                    if let Option::Some(relayer) = self.get_event_relayer() {
+                        relayer.emit_all_objectives_completed(token_id);
+                    }
+                }
             }
 
             // Get current game state
@@ -489,6 +602,23 @@ pub mod CoreTokenComponent {
                 };
 
                 self.token_metadata.entry(token_id).write(updated_metadata);
+                if let Option::Some(relayer) = self.get_event_relayer() {
+                    relayer
+                        .emit_token_metadata_update(
+                            token_id,
+                            token_metadata.game_id,
+                            token_metadata.minted_at,
+                            token_metadata.settings_id,
+                            token_metadata.lifecycle.start,
+                            token_metadata.lifecycle.end,
+                            token_metadata.minted_by,
+                            token_metadata.soulbound,
+                            final_game_over,
+                            final_completed_all_objectives,
+                            token_metadata.has_context,
+                            token_metadata.objectives_count,
+                        );
+                }
                 self.emit_metadata_update(token_id);
             }
 
@@ -541,6 +671,15 @@ pub mod CoreTokenComponent {
 
             if let Option::Some(event_relayer_address) = event_relayer_address {
                 self.event_relayer_address.write(event_relayer_address);
+                // After setting relayer, emit initialization events for addresses
+                let relayer = ITokenEventRelayerDispatcher { contract_address: event_relayer_address };
+                if let Option::Some(game_addr) = game_address {
+                    relayer.emit_game_address_update(game_addr);
+                }
+                if let Option::Some(registry_addr) = game_registry_address {
+                    relayer.emit_game_registry_address_update(registry_addr);
+                }
+                relayer.emit_event_relayer_address_update(event_relayer_address);
             }
         }
 
@@ -622,20 +761,42 @@ pub mod CoreTokenComponent {
 
         fn emit_score_update(ref self: ComponentState<TContractState>, token_id: u64, score: u64) {
             self.emit(ScoreUpdate { token_id, score });
+            if let Option::Some(relayer) = self.get_event_relayer() {
+                relayer.emit_score_update(token_id, score);
+            }
         }
 
         fn emit_metadata_update(ref self: ComponentState<TContractState>, token_id: u64) {
             self.emit(MetadataUpdate { token_id });
         }
 
-        fn emit_owners(ref self: ComponentState<TContractState>, token_id: u64, owner: ContractAddress, auth: ContractAddress) {
-            // self.emit(Owners { token_id, owner, auth });
+        // fn emit_token_metadata_update(ref self: ComponentState<TContractState>, token_id: u64) {
+        //     self.emit(TokenMetadataUpdate { token_id });
+        // }
+
+        fn emit_owners(
+            ref self: ComponentState<TContractState>,
+            token_id: u64,
+            owner: ContractAddress,
+            auth: ContractAddress,
+        ) {// self.emit(Owners { token_id, owner, auth });
         }
 
         fn get_token_metadata(
             self: @ComponentState<TContractState>, token_id: u64,
         ) -> TokenMetadata {
             self.token_metadata.entry(token_id).read()
+        }
+
+        fn get_event_relayer(
+            self: @ComponentState<TContractState>
+        ) -> Option<ITokenEventRelayerDispatcher> {
+            let event_relayer_address = self.event_relayer_address.read();
+            if !event_relayer_address.is_zero() {
+                Option::Some(ITokenEventRelayerDispatcher { contract_address: event_relayer_address })
+            } else {
+                Option::None
+            }
         }
     }
 }

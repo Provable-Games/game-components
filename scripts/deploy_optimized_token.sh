@@ -57,13 +57,25 @@ print_warning() {
     echo -e "${YELLOW}[WARNING]${NC} $1"
 }
 
+# Check deployment environment
+DEPLOY_TO_SLOT="${DEPLOY_TO_SLOT:-false}"
+
 # Check if required environment variables are set
 print_info "Checking environment variables..."
-required_vars=("STARKNET_NETWORK" "STARKNET_ACCOUNT" "STARKNET_RPC" "STARKNET_PK")
+
+# Determine required vars based on deployment type
+if [ "$DEPLOY_TO_SLOT" = "true" ]; then
+    print_info "Deploying to Slot - reduced requirements"
+    required_vars=("STARKNET_ACCOUNT" "STARKNET_RPC")
+else
+    required_vars=("STARKNET_NETWORK" "STARKNET_ACCOUNT" "STARKNET_RPC" "STARKNET_PK")
+fi
+
 missing_vars=()
 
 # Debug output for environment variables
 print_info "Environment variables loaded:"
+echo "  DEPLOY_TO_SLOT: $DEPLOY_TO_SLOT"
 echo "  STARKNET_NETWORK: ${STARKNET_NETWORK:-<not set>}"
 echo "  STARKNET_ACCOUNT: ${STARKNET_ACCOUNT:-<not set>}"
 echo "  STARKNET_RPC: ${STARKNET_RPC:-<not set>}"
@@ -84,13 +96,14 @@ if [ ${#missing_vars[@]} -ne 0 ]; then
     exit 1
 fi
 
-# Check that private key is set
-if [ -z "${STARKNET_PK:-}" ]; then
-    print_error "STARKNET_PK environment variable is not set"
-    exit 1
+# Check that private key is set (only for non-Slot deployments)
+if [ "$DEPLOY_TO_SLOT" != "true" ]; then
+    if [ -z "${STARKNET_PK:-}" ]; then
+        print_error "STARKNET_PK environment variable is not set"
+        exit 1
+    fi
+    print_warning "Using private key (insecure for production)"
 fi
-
-print_warning "Using private key (insecure for production)"
 
 # ============================
 # CONFIGURATION PARAMETERS
@@ -104,19 +117,22 @@ TOKEN_BASE_URI="${TOKEN_BASE_URI:-https://api.game.com/token/}"
 # Optional addresses (can be set via environment variables)
 GAME_ADDRESS="${GAME_ADDRESS:-}"
 GAME_REGISTRY_ADDRESS="${GAME_REGISTRY_ADDRESS:-}"
+RELAYER_ADDRESS="${RELAYER_ADDRESS:-}"
 
 # ============================
 # DISPLAY CONFIGURATION
 # ============================
 
 print_info "Optimized Token Contract Deployment Configuration:"
-echo "  Network: $STARKNET_NETWORK"
+echo "  Deployment Type: $(if [ "$DEPLOY_TO_SLOT" = "true" ]; then echo "Slot"; else echo "Standard"; fi)"
+echo "  Network: ${STARKNET_NETWORK:-<not required for Slot>}"
 echo "  Account: $STARKNET_ACCOUNT"
 echo "  Token Name: $TOKEN_NAME"
 echo "  Token Symbol: $TOKEN_SYMBOL"
 echo "  Base URI: $TOKEN_BASE_URI"
 echo "  Game Address: ${GAME_ADDRESS:-<not set>}"
 echo "  Game Registry Address: ${GAME_REGISTRY_ADDRESS:-<not set>}"
+echo "  Relayer Address: ${RELAYER_ADDRESS:-<not set>}"
 
 # Confirm deployment
 if [ "${SKIP_CONFIRMATION:-false}" != "true" ]; then
@@ -148,7 +164,13 @@ fi
 # ============================
 
 print_info "Declaring Optimized Token contract..."
-DECLARE_OUTPUT=$(starkli declare --account $STARKNET_ACCOUNT --rpc $STARKNET_RPC --watch target/dev/game_components_token_OptimizedTokenContract.contract_class.json --private-key $STARKNET_PK 2>&1)
+
+# Build declare command based on deployment type
+if [ "$DEPLOY_TO_SLOT" = "true" ]; then
+    DECLARE_OUTPUT=$(starkli declare --account $STARKNET_ACCOUNT --rpc $STARKNET_RPC --watch target/dev/game_components_token_OptimizedTokenContract.contract_class.json 2>&1)
+else
+    DECLARE_OUTPUT=$(starkli declare --account $STARKNET_ACCOUNT --rpc $STARKNET_RPC --watch target/dev/game_components_token_OptimizedTokenContract.contract_class.json --private-key $STARKNET_PK 2>&1)
+fi
 
 # Extract class hash from output
 CLASS_HASH=$(echo "$DECLARE_OUTPUT" | grep -oE '0x[0-9a-fA-F]+' | tail -1)
@@ -212,18 +234,34 @@ print_info "Class hash: $CLASS_HASH"
 
 # Deploy with starkli bytearray conversion
 # Option format: 0 [value] for Some, 1 for None
-CONTRACT_ADDRESS=$(starkli deploy \
-    --account $STARKNET_ACCOUNT \
-    --rpc $STARKNET_RPC \
-    --private-key $STARKNET_PK \
-    --watch \
-    $CLASS_HASH \
-    "$TOKEN_NAME_ARG" \
-    "$TOKEN_SYMBOL_ARG" \
-    "$TOKEN_BASE_URI_ARG" \
-    $(if [ -n "$GAME_ADDRESS" ]; then echo "0 $GAME_ADDRESS"; else echo "1"; fi) \
-    $(if [ -n "$GAME_REGISTRY_ADDRESS" ]; then echo "0 $GAME_REGISTRY_ADDRESS"; else echo "1"; fi) \
-    2>&1 | tee >(cat >&2) | grep -oE '0x[0-9a-fA-F]{64}' | tail -1)
+if [ "$DEPLOY_TO_SLOT" = "true" ]; then
+    CONTRACT_ADDRESS=$(starkli deploy \
+        --account $STARKNET_ACCOUNT \
+        --rpc $STARKNET_RPC \
+        --watch \
+        $CLASS_HASH \
+        "$TOKEN_NAME_ARG" \
+        "$TOKEN_SYMBOL_ARG" \
+        "$TOKEN_BASE_URI_ARG" \
+        $(if [ -n "$GAME_ADDRESS" ]; then echo "0 $GAME_ADDRESS"; else echo "1"; fi) \
+        $(if [ -n "$GAME_REGISTRY_ADDRESS" ]; then echo "0 $GAME_REGISTRY_ADDRESS"; else echo "1"; fi) \
+        $(if [ -n "$RELAYER_ADDRESS" ]; then echo "0 $RELAYER_ADDRESS"; else echo "1"; fi) \
+        2>&1 | tee >(cat >&2) | grep -oE '0x[0-9a-fA-F]{64}' | tail -1)
+else
+    CONTRACT_ADDRESS=$(starkli deploy \
+        --account $STARKNET_ACCOUNT \
+        --rpc $STARKNET_RPC \
+        --private-key $STARKNET_PK \
+        --watch \
+        $CLASS_HASH \
+        "$TOKEN_NAME_ARG" \
+        "$TOKEN_SYMBOL_ARG" \
+        "$TOKEN_BASE_URI_ARG" \
+        $(if [ -n "$GAME_ADDRESS" ]; then echo "0 $GAME_ADDRESS"; else echo "1"; fi) \
+        $(if [ -n "$GAME_REGISTRY_ADDRESS" ]; then echo "0 $GAME_REGISTRY_ADDRESS"; else echo "1"; fi) \
+        $(if [ -n "$RELAYER_ADDRESS" ]; then echo "0 $RELAYER_ADDRESS"; else echo "1"; fi) \
+        2>&1 | tee >(cat >&2) | grep -oE '0x[0-9a-fA-F]{64}' | tail -1)
+fi
 
 if [ -z "$CONTRACT_ADDRESS" ]; then
     print_error "Failed to deploy contract"
@@ -241,7 +279,7 @@ mkdir -p deployments
 
 cat > "$DEPLOYMENT_FILE" << EOF
 {
-  "network": "$STARKNET_NETWORK",
+  "network": "${STARKNET_NETWORK:-slot}",
   "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
   "contract_address": "$CONTRACT_ADDRESS",
   "class_hash": "$CLASS_HASH",
@@ -250,7 +288,8 @@ cat > "$DEPLOYMENT_FILE" << EOF
     "symbol": "$TOKEN_SYMBOL",
     "base_uri": "$TOKEN_BASE_URI",
     "game_address": "${GAME_ADDRESS:-null}",
-    "game_registry_address": "${GAME_REGISTRY_ADDRESS:-null}"
+    "game_registry_address": "${GAME_REGISTRY_ADDRESS:-null}",
+    "relayer_address": "${RELAYER_ADDRESS:-null}"
   }
 }
 EOF
@@ -281,5 +320,42 @@ echo "  export TOKEN_CONTRACT=$CONTRACT_ADDRESS"
 echo
 
 echo "Example: Mint a token (replace with appropriate parameters):"
-echo "  starkli invoke --account \$STARKNET_ACCOUNT --watch \$TOKEN_CONTRACT mint \\"
-echo "    1 0 0 0 0 0 0 0 0 \$STARKNET_ACCOUNT 0 --private-key \$STARKNET_PK"
+if [ "$DEPLOY_TO_SLOT" = "true" ]; then
+    echo "  starkli invoke --account \$STARKNET_ACCOUNT --watch \$TOKEN_CONTRACT mint \\"
+    echo "    1 0 0 0 0 0 0 0 0 \$STARKNET_ACCOUNT 0"
+else
+    echo "  starkli invoke --account \$STARKNET_ACCOUNT --watch \$TOKEN_CONTRACT mint \\"
+    echo "    1 0 0 0 0 0 0 0 0 \$STARKNET_ACCOUNT 0 --private-key \$STARKNET_PK"
+fi
+
+# If there is an event relayer we need to initialize it with the token address
+if [ -n "$RELAYER_ADDRESS" ]; then
+    echo
+    print_info "Initializing event relayer with token address: $CONTRACT_ADDRESS"
+    
+    if [ "$DEPLOY_TO_SLOT" = "true" ]; then
+        starkli invoke \
+            --account $STARKNET_ACCOUNT \
+            --rpc $STARKNET_RPC \
+            --watch \
+            $RELAYER_ADDRESS \
+            initialize \
+            $CONTRACT_ADDRESS
+    else
+        starkli invoke \
+            --account $STARKNET_ACCOUNT \
+            --rpc $STARKNET_RPC \
+            --private-key $STARKNET_PK \
+            --watch \
+            $RELAYER_ADDRESS \
+            initialize \
+            $CONTRACT_ADDRESS
+    fi
+    
+    if [ $? -eq 0 ]; then
+        print_info "Event relayer initialized successfully"
+    else
+        print_error "Failed to initialize event relayer"
+        exit 1
+    fi
+fi
