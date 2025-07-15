@@ -42,9 +42,7 @@ const PLAYER_NAME: felt252 = 'player1';
 const PLAYER_ADDRESS: felt252 = 'player_addr';
 const TOKEN_ADDRESS: felt252 = 'token_addr';
 
-fn deploy_minigame_starknet_mock(
-    supports_settings: bool, supports_objectives: bool,
-) -> ContractAddress {
+fn deploy_minigame_starknet_mock() -> ContractAddress {
     let contract = declare("minigame_starknet_mock").unwrap().contract_class();
 
     // Deploy with empty constructor calldata since the contract doesn't have a constructor
@@ -64,11 +62,9 @@ fn deploy_minigame_starknet_mock(
             Option::<ByteArray>::None, // game_color
             Option::<ByteArray>::None, // client_url
             Option::<ContractAddress>::None, // renderer_address
-            contract_address, // settings_address (self-reference for mock)
-            contract_address, // objectives_address (self-reference for mock)
-            contract_address_const::<TOKEN_ADDRESS>(), // token_address
-            supports_settings, // supports_settings
-            supports_objectives // supports_objectives
+            Option::Some(contract_address), // settings_address (self-reference for mock)
+            Option::Some(contract_address), // objectives_address (self-reference for mock)
+            contract_address_const::<TOKEN_ADDRESS>() // token_address
         );
 
     contract_address
@@ -76,7 +72,7 @@ fn deploy_minigame_starknet_mock(
 
 #[test]
 fn test_mint_basic() {
-    let contract_address = deploy_minigame_starknet_mock(false, false);
+    let contract_address = deploy_minigame_starknet_mock();
     let mock = IMinigameStarknetMockDispatcher { contract_address };
     let player_addr = contract_address_const::<PLAYER_ADDRESS>();
 
