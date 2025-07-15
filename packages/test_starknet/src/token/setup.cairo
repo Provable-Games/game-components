@@ -14,7 +14,7 @@ use game_components_test_starknet::metagame::mocks::metagame_starknet_mock::{
     IMetagameStarknetMockInitDispatcher, IMetagameStarknetMockInitDispatcherTrait,
     IMetagameStarknetMockDispatcher,
 };
-use super::mocks::mock_game::{IMockGameDispatcher};
+use crate::token::mocks::mock_game::{IMockGameDispatcher};
 
 // ================================================================================================
 // TEST CONSTANTS
@@ -117,8 +117,8 @@ pub fn deploy_minigame_registry_contract() -> IMinigameRegistryDispatcher {
 /// Deploy MinigameRegistryContract with custom parameters
 pub fn deploy_minigame_registry_contract_with_params(
     name: ByteArray,
-    symbol: ByteArray, 
-    base_uri: ByteArray, 
+    symbol: ByteArray,
+    base_uri: ByteArray,
     event_relayer_address: Option<ContractAddress>,
 ) -> IMinigameRegistryDispatcher {
     let contract = declare("MinigameRegistryContract").unwrap().contract_class();

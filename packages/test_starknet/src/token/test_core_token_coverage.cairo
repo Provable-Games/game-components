@@ -1,26 +1,17 @@
 // Tests to improve core_token coverage
-use starknet::{ContractAddress, contract_address_const, get_block_timestamp};
+use starknet::contract_address_const;
 use snforge_std::{
-    declare, ContractClassTrait, DeclareResultTrait, cheat_caller_address, CheatSpan,
-    start_cheat_block_timestamp, stop_cheat_block_timestamp, spy_events, EventSpyTrait,
+    cheat_caller_address, CheatSpan, start_cheat_block_timestamp, stop_cheat_block_timestamp,
+    spy_events, EventSpyTrait,
 };
 
-use game_components_token::interface::{
-    IMinigameTokenMixinDispatcher, IMinigameTokenMixinDispatcherTrait,
+use game_components_token::interface::IMinigameTokenMixinDispatcherTrait;
+use crate::token::setup::{
+    setup, setup_multi_game, deploy_basic_mock_game, deploy_optimized_token_with_game, ALICE, BOB,
+    CHARLIE,
 };
-use openzeppelin_token::erc721::interface::{ERC721ABIDispatcher, ERC721ABIDispatcherTrait};
-use super::setup::{
-    setup, setup_multi_game, deploy_mock_game, deploy_basic_mock_game,
-    deploy_optimized_token_with_game, deploy_optimized_token_custom_metadata, ALICE, BOB, CHARLIE,
-    OWNER, ZERO_ADDRESS,
-};
-use super::mocks::mock_game::{IMockGameDispatcher, IMockGameDispatcherTrait};
-use game_components_token::examples::minigame_registry_contract::{
-    IMinigameRegistryDispatcher, IMinigameRegistryDispatcherTrait,
-};
-use game_components_test_starknet::minigame::mocks::minigame_starknet_mock::{
-    IMinigameStarknetMockDispatcher, IMinigameStarknetMockDispatcherTrait,
-};
+use game_components_token::examples::minigame_registry_contract::IMinigameRegistryDispatcherTrait;
+use game_components_test_starknet::minigame::mocks::minigame_starknet_mock::IMinigameStarknetMockDispatcherTrait;
 
 #[test]
 fn test_core_token_edge_case_minting() {
@@ -28,7 +19,6 @@ fn test_core_token_edge_case_minting() {
 
     // Test minting with max values
     let max_u64 = 18446744073709551615_u64;
-    let max_u32 = 4294967295_u32;
 
     // This should work with max timestamps
     let token_id = test_contracts
@@ -82,7 +72,8 @@ fn test_core_token_batch_operations() {
 
     // Verify sequential IDs
     let mut j = 0;
-    while j < token_ids.len() - 1 {
+    let token_ids_len: usize = token_ids.len();
+    while j < token_ids_len - 1 {
         let current = *token_ids.at(j);
         let next = *token_ids.at(j + 1);
         assert!(next == current + 1, "Token IDs should be sequential");
@@ -91,7 +82,8 @@ fn test_core_token_batch_operations() {
 
     // Batch update games
     let mut k = 0;
-    while k < token_ids.len() {
+    let token_ids_len_2: usize = token_ids.len();
+    while k < token_ids_len_2 {
         let token_id = *token_ids.at(k);
         test_contracts.mock_minigame.end_game(token_id, 50 + k);
         test_contracts.test_token.update_game(token_id);
@@ -137,13 +129,9 @@ fn test_core_token_game_registry_operations() {
 
 #[test]
 fn test_core_token_update_edge_cases() {
-    let test_contracts = setup();
     let (_, mock_game) = deploy_basic_mock_game();
 
     // Deploy token with mock game
-    let (token_dispatcher, _, _, _) = deploy_optimized_token_custom_metadata(
-        "UpdateTest", "UT", "",
-    );
     let (token_dispatcher, _, _, _) = deploy_optimized_token_with_game(mock_game.contract_address);
 
     // Mint token
@@ -249,6 +237,28 @@ fn test_core_token_lifecycle_validation() {
 fn test_core_token_blank_token_operations() {
     let test_contracts = setup();
 
+    // Create settings ID 42 before using it
+    test_contracts
+        .mock_minigame
+        .create_settings_difficulty("Test Settings", "Settings for ID 42", 5);
+    // The mock creates settings with incrementing IDs starting from 1
+    // We need to create enough settings to reach ID 42
+    let mut i = 2_u32;
+    while i <= 42 {
+        test_contracts
+            .mock_minigame
+            .create_settings_difficulty(
+                format!("Settings {}", i),
+                format!("Description for settings {}", i),
+                (i % 10).try_into().unwrap(),
+            );
+        i += 1;
+    };
+
+    // Create objectives 1 and 2 before using them
+    test_contracts.mock_minigame.create_objective_score(50); // Creates objective ID 1
+    test_contracts.mock_minigame.create_objective_score(100); // Creates objective ID 2
+
     // Mint completely blank token
     let blank_token_id = test_contracts
         .test_token
@@ -306,6 +316,24 @@ fn test_core_token_event_emissions() {
     let test_contracts = setup();
     let mut spy = spy_events();
 
+    // Create settings ID 10 before using it
+    let mut i = 1_u32;
+    while i <= 10 {
+        test_contracts
+            .mock_minigame
+            .create_settings_difficulty(
+                format!("Settings {}", i),
+                format!("Description for settings {}", i),
+                (i % 5).try_into().unwrap(),
+            );
+        i += 1;
+    };
+
+    // Create objectives 1, 2, and 3 before using them
+    test_contracts.mock_minigame.create_objective_score(100); // Creates objective ID 1
+    test_contracts.mock_minigame.create_objective_score(200); // Creates objective ID 2
+    test_contracts.mock_minigame.create_objective_score(300); // Creates objective ID 3
+
     // Mint token to trigger events
     let token_id = test_contracts
         .test_token
@@ -333,9 +361,9 @@ fn test_core_token_event_emissions() {
 
     // Check for update events
     let events_after = spy.get_events();
-    assert!(
-        events_after.events.len() > events.events.len(), "Should emit more events after update",
-    );
+    let initial_count: usize = events.events.len();
+    let after_count: usize = events_after.events.len();
+    assert!(after_count > initial_count, "Should emit more events after update");
 }
 
 #[test]
@@ -351,7 +379,8 @@ fn test_core_token_minter_edge_cases() {
     ];
 
     let mut i = 0;
-    while i < edge_addresses.len() {
+    let edge_addresses_len: usize = edge_addresses.len();
+    while i < edge_addresses_len {
         let address = *edge_addresses.at(i);
 
         cheat_caller_address(

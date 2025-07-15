@@ -1,24 +1,8 @@
 use starknet::{ContractAddress, contract_address_const};
 use snforge_std::{declare, ContractClassTrait, DeclareResultTrait};
-use core::serde::Serde;
-
-use game_components_minigame::interface::{
-    IMinigame, IMinigameDispatcher, IMinigameDispatcherTrait, IMinigameTokenData,
-    IMinigameTokenDataDispatcher, IMinigameTokenDataDispatcherTrait, IMinigameDetails,
-    IMinigameDetailsDispatcher, IMinigameDetailsDispatcherTrait, IMINIGAME_ID,
-};
-use game_components_minigame::extensions::settings::interface::{
-    IMinigameSettings, IMinigameSettingsDispatcher, IMinigameSettingsDispatcherTrait,
-    IMINIGAME_SETTINGS_ID,
-};
-use game_components_minigame::extensions::objectives::interface::{
-    IMinigameObjectives, IMinigameObjectivesDispatcher, IMinigameObjectivesDispatcherTrait,
-    IMINIGAME_OBJECTIVES_ID,
-};
 use super::mocks::minigame_starknet_mock::{
     IMinigameStarknetMockDispatcher, IMinigameStarknetMockDispatcherTrait,
-    IMinigameStarknetMockInitDispatcher,
-    IMinigameStarknetMockInitDispatcherTrait,
+    IMinigameStarknetMockInitDispatcher, IMinigameStarknetMockInitDispatcherTrait,
 };
 use openzeppelin_introspection::src5::SRC5Component::SRC5Impl;
 

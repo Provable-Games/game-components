@@ -104,7 +104,7 @@ mod MockSettingsContract {
             self.settings_data.read(settings_id)
         }
     }
-    
+
     #[abi(embed_v0)]
     impl SettingsSVGImpl of IMinigameSettingsSVG<ContractState> {
         fn settings_svg(self: @ContractState, settings_id: u32) -> ByteArray {
@@ -273,9 +273,7 @@ fn test_create_settings_50_items() {
             break;
         }
         settings_items
-            .append(
-                GameSetting { name: format!("setting_{}", i), value: format!("value_{}", i) },
-            );
+            .append(GameSetting { name: format!("setting_{}", i), value: format!("value_{}", i) });
         i += 1;
     };
 

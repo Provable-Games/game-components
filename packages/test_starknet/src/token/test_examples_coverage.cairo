@@ -1,19 +1,22 @@
 // Tests for example contracts to improve coverage
-use starknet::{ContractAddress, contract_address_const};
+use starknet::{contract_address_const};
 use snforge_std::{
-    declare, ContractClassTrait, DeclareResultTrait, cheat_caller_address, CheatSpan,
-    start_cheat_block_timestamp, stop_cheat_block_timestamp,
+    cheat_caller_address, CheatSpan, start_cheat_block_timestamp, stop_cheat_block_timestamp,
 };
 
-use game_components_token::interface::{
-    IMinigameTokenMixinDispatcher, IMinigameTokenMixinDispatcherTrait,
+use game_components_token::interface::{IMinigameTokenMixinDispatcherTrait};
+use crate::token::setup::{
+    setup, deploy_mock_game, deploy_basic_mock_game, deploy_optimized_token_with_game, ALICE, BOB,
+    CHARLIE,
 };
-use openzeppelin_token::erc721::interface::{ERC721ABIDispatcher, ERC721ABIDispatcherTrait};
-use super::setup::{
-    setup, deploy_mock_game, deploy_basic_mock_game, deploy_optimized_token_with_game,
-    deploy_optimized_token_custom_metadata, ALICE, BOB, CHARLIE,
+use crate::token::mocks::mock_game::{IMockGameDispatcherTrait};
+use game_components_test_starknet::metagame::mocks::metagame_starknet_mock::{
+    IMetagameStarknetMockDispatcherTrait,
 };
-use super::mocks::mock_game::{IMockGameDispatcher, IMockGameDispatcherTrait};
+use game_components_test_starknet::minigame::mocks::minigame_starknet_mock::{
+    IMinigameStarknetMockInitDispatcherTrait,
+};
+use game_components_token::examples::minigame_registry_contract::{IMinigameRegistryDispatcherTrait};
 
 // Test optimized token contract specific features
 #[test]
@@ -87,12 +90,12 @@ fn test_optimized_contract_context_operations() {
         .mint_game(
             Option::Some(test_contracts.minigame.contract_address),
             Option::Some("ContextPlayer"),
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
+            Option::None, // settings_id
+            Option::None, // start
+            Option::None, // end
+            Option::None, // objective_ids
+            Option::None, // client_url
+            Option::None, // renderer_address
             ALICE(),
             false,
         );
@@ -156,11 +159,9 @@ fn test_optimized_contract_multi_minter_scenario() {
 
 #[test]
 fn test_optimized_contract_game_integration() {
-    let test_contracts = setup();
     let (_, mock_game) = deploy_basic_mock_game();
 
     // Deploy token with mock game
-    let (token_dispatcher, _, _, _) = deploy_optimized_token_custom_metadata("GameToken", "GT", "");
     let (token_dispatcher, _, _, _) = deploy_optimized_token_with_game(mock_game.contract_address);
 
     // Mint and play

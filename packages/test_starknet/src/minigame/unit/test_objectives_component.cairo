@@ -120,21 +120,24 @@ mod MockObjectivesContract {
             // Add some default objectives - convert from ObjectiveDetails to GameObjective
             let obj1 = self.objective_details.read(1);
             if self.completed_objective(token_id, 1) {
-                objectives_list.append(GameObjective { name: obj1.name.clone(), value: "completed" });
+                objectives_list
+                    .append(GameObjective { name: obj1.name.clone(), value: "completed" });
             } else {
                 objectives_list.append(GameObjective { name: obj1.name.clone(), value: "pending" });
             }
 
             let obj2 = self.objective_details.read(2);
             if self.completed_objective(token_id, 2) {
-                objectives_list.append(GameObjective { name: obj2.name.clone(), value: "completed" });
+                objectives_list
+                    .append(GameObjective { name: obj2.name.clone(), value: "completed" });
             } else {
                 objectives_list.append(GameObjective { name: obj2.name.clone(), value: "pending" });
             }
 
             let obj3 = self.objective_details.read(3);
             if self.completed_objective(token_id, 3) {
-                objectives_list.append(GameObjective { name: obj3.name.clone(), value: "completed" });
+                objectives_list
+                    .append(GameObjective { name: obj3.name.clone(), value: "completed" });
             } else {
                 objectives_list.append(GameObjective { name: obj3.name.clone(), value: "pending" });
             }
@@ -142,7 +145,7 @@ mod MockObjectivesContract {
             objectives_list.span()
         }
     }
-    
+
     #[abi(embed_v0)]
     impl ObjectivesSVGImpl of IMinigameObjectivesSVG<ContractState> {
         fn objectives_svg(self: @ContractState, token_id: u64) -> ByteArray {

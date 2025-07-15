@@ -30,3 +30,5 @@ build-external-contracts = [
 unstable-add-statements-functions-debug-info = true
 unstable-add-statements-code-locations-debug-info = true
 inlining-strategy = "avoid"
+
+[lib]

@@ -1,20 +1,15 @@
-use game_components_minigame::interface::{
-    IMinigameDispatcher, IMinigameDispatcherTrait, IMINIGAME_ID,
-};
+use game_components_minigame::interface::{IMinigameDispatcherTrait, IMINIGAME_ID};
 use openzeppelin_introspection::interface::{ISRC5Dispatcher, ISRC5DispatcherTrait};
 use starknet::{contract_address_const, get_caller_address};
 use core::num::traits::Zero;
 use snforge_std::{
-    start_cheat_caller_address,
-    stop_cheat_caller_address, mock_call, start_cheat_block_timestamp_global,
+    start_cheat_caller_address, stop_cheat_caller_address, mock_call,
+    start_cheat_block_timestamp_global,
 };
 use crate::minigame::mocks::minigame_starknet_mock::{
-    IMinigameStarknetMockInitDispatcherTrait, IMinigameStarknetMockDispatcher,
-    IMinigameStarknetMockDispatcherTrait,
+    IMinigameStarknetMockInitDispatcherTrait, IMinigameStarknetMockDispatcherTrait,
 };
-use game_components_token::interface::{
-    IMinigameTokenMixinDispatcher, IMinigameTokenMixinDispatcherTrait,
-};
+use game_components_token::interface::{IMinigameTokenMixinDispatcherTrait};
 use crate::token::setup::{deploy_mock_game, deploy_optimized_token_with_game};
 
 // Test MN-U-01: Initialize with all addresses
@@ -26,7 +21,7 @@ fn test_initialize_with_all_addresses() {
 
     // Mock the supports_interface call for the token address
     mock_call(token_address, selector!("supports_interface"), true, 100);
-    
+
     // Mock the game_registry_address call to return a dummy registry address
     let registry_address = contract_address_const::<0x0>();
     mock_call(token_address, selector!("game_registry_address"), registry_address, 100);
@@ -53,11 +48,18 @@ fn test_initialize_with_all_addresses() {
 
     // Verify addresses are stored correctly
     assert!(minigame_dispatcher.token_address() == token_address, "Token address mismatch");
-    assert!(minigame_dispatcher.settings_address() == settings_address, "Settings address mismatch");
-    assert!(minigame_dispatcher.objectives_address() == objectives_address, "Objectives address mismatch");
+    assert!(
+        minigame_dispatcher.settings_address() == settings_address, "Settings address mismatch",
+    );
+    assert!(
+        minigame_dispatcher.objectives_address() == objectives_address,
+        "Objectives address mismatch",
+    );
 
     // Verify SRC5 interface registration
-    let src5_dispatcher = ISRC5Dispatcher { contract_address: minigame_dispatcher.contract_address };
+    let src5_dispatcher = ISRC5Dispatcher {
+        contract_address: minigame_dispatcher.contract_address,
+    };
     assert!(src5_dispatcher.supports_interface(IMINIGAME_ID), "Should support IMinigame interface");
 }
 
@@ -68,7 +70,7 @@ fn test_initialize_with_optional_zero() {
 
     // Mock the supports_interface call for the token address
     mock_call(token_address, selector!("supports_interface"), true, 100);
-    
+
     // Mock the game_registry_address call to return a dummy registry address
     let registry_address = contract_address_const::<0x0>();
     mock_call(token_address, selector!("game_registry_address"), registry_address, 100);
@@ -96,7 +98,9 @@ fn test_initialize_with_optional_zero() {
     // Verify addresses
     assert!(minigame_dispatcher.token_address() == token_address, "Token address mismatch");
     assert!(minigame_dispatcher.settings_address().is_zero(), "Settings address should be zero");
-    assert!(minigame_dispatcher.objectives_address().is_zero(), "Objectives address should be zero");
+    assert!(
+        minigame_dispatcher.objectives_address().is_zero(), "Objectives address should be zero",
+    );
 }
 
 // Test MN-U-03: Get token_address
@@ -106,7 +110,7 @@ fn test_get_token_address() {
 
     // Mock the supports_interface call for the token address
     mock_call(token_address, selector!("supports_interface"), true, 100);
-    
+
     // Mock the game_registry_address call to return a dummy registry address
     let registry_address = contract_address_const::<0x0>();
     mock_call(token_address, selector!("game_registry_address"), registry_address, 100);
@@ -143,7 +147,7 @@ fn test_get_settings_address() {
 
     // Mock the supports_interface call for the token address
     mock_call(token_address, selector!("supports_interface"), true, 100);
-    
+
     // Mock the game_registry_address call to return a dummy registry address
     let registry_address = contract_address_const::<0x0>();
     mock_call(token_address, selector!("game_registry_address"), registry_address, 100);
@@ -169,7 +173,9 @@ fn test_get_settings_address() {
         );
 
     // Verify settings_address returns correct value
-    assert!(minigame_dispatcher.settings_address() == settings_address, "Settings address mismatch");
+    assert!(
+        minigame_dispatcher.settings_address() == settings_address, "Settings address mismatch",
+    );
 }
 
 // Test MN-U-05: Get objectives_address
@@ -180,7 +186,7 @@ fn test_get_objectives_address() {
 
     // Mock the supports_interface call for the token address
     mock_call(token_address, selector!("supports_interface"), true, 100);
-    
+
     // Mock the game_registry_address call to return a dummy registry address
     let registry_address = contract_address_const::<0x0>();
     mock_call(token_address, selector!("game_registry_address"), registry_address, 100);
@@ -206,21 +212,23 @@ fn test_get_objectives_address() {
         );
 
     // Verify objectives_address returns correct value
-    assert!(minigame_dispatcher.objectives_address() == objectives_address, "Objectives address mismatch");
+    assert!(
+        minigame_dispatcher.objectives_address() == objectives_address,
+        "Objectives address mismatch",
+    );
 }
 
 // Test MN-U-06: pre_action with owned token
 #[test]
 fn test_pre_action_with_owned_token() {
-    
     // Deploy mock game first
     let (minigame_dispatcher, minigame_init_dispatcher, mock_dispatcher) = deploy_mock_game();
-    
+
     // Deploy token contract with the game address
-    let (token_dispatcher, _, _, token_address) = deploy_optimized_token_with_game(
-        minigame_dispatcher.contract_address
+    let (_, _, _, token_address) = deploy_optimized_token_with_game(
+        minigame_dispatcher.contract_address,
     );
-    
+
     // Initialize minigame with token address
     minigame_init_dispatcher
         .initializer(
@@ -238,7 +246,7 @@ fn test_pre_action_with_owned_token() {
             Option::None,
             token_address,
         );
-    
+
     // Mint a token to the current caller
     let owner_address = get_caller_address();
     let token_id = mock_dispatcher
@@ -252,9 +260,9 @@ fn test_pre_action_with_owned_token() {
             Option::None, // client_url
             Option::None, // renderer_address
             owner_address,
-            false, // soulbound
+            false // soulbound
         );
-    
+
     // Use libs::pre_action to test the internal function
     game_components_minigame::libs::pre_action(token_address, token_id);
 }
@@ -264,12 +272,12 @@ fn test_pre_action_with_owned_token() {
 fn test_pre_action_with_unowned_but_playable_token() {
     // Deploy mock game first
     let (minigame_dispatcher, minigame_init_dispatcher, mock_dispatcher) = deploy_mock_game();
-    
+
     // Deploy token contract with the game address
-    let (token_dispatcher, _, _, token_address) = deploy_optimized_token_with_game(
-        minigame_dispatcher.contract_address
+    let (_, _, _, token_address) = deploy_optimized_token_with_game(
+        minigame_dispatcher.contract_address,
     );
-    
+
     // Initialize minigame with token address
     minigame_init_dispatcher
         .initializer(
@@ -287,7 +295,7 @@ fn test_pre_action_with_unowned_but_playable_token() {
             Option::None,
             token_address,
         );
-    
+
     // Mint a token to a different owner
     let other_owner = contract_address_const::<0x888>();
     let token_id = mock_dispatcher
@@ -303,7 +311,7 @@ fn test_pre_action_with_unowned_but_playable_token() {
             other_owner,
             false,
         );
-    
+
     // pre_action only checks playability, not ownership - should succeed
     let different_caller = contract_address_const::<0x777>();
     start_cheat_caller_address(token_address, different_caller);
@@ -317,12 +325,12 @@ fn test_pre_action_with_unowned_but_playable_token() {
 fn test_pre_action_with_expired_token() {
     // Deploy mock game first
     let (minigame_dispatcher, minigame_init_dispatcher, _) = deploy_mock_game();
-    
+
     // Deploy token contract with the game address
     let (token_dispatcher, _, _, token_address) = deploy_optimized_token_with_game(
-        minigame_dispatcher.contract_address
+        minigame_dispatcher.contract_address,
     );
-    
+
     // Initialize minigame with token address
     minigame_init_dispatcher
         .initializer(
@@ -340,12 +348,12 @@ fn test_pre_action_with_expired_token() {
             Option::None,
             token_address,
         );
-    
+
     // Mint a token with an expired timestamp through the token contract
     let owner_address = contract_address_const::<0x1234>(); // Use a fixed address instead of caller
     let past_time: u64 = 100;
     let expired_time: u64 = 200; // Expired in the past
-    
+
     let token_id = token_dispatcher
         .mint(
             Option::Some(minigame_dispatcher.contract_address), // game_address
@@ -358,16 +366,15 @@ fn test_pre_action_with_expired_token() {
             Option::None, // client_url
             Option::None, // renderer_address
             owner_address,
-            false, // soulbound
+            false // soulbound
         );
-    
+
     // Warp to a time after the token has expired
     start_cheat_block_timestamp_global(300);
-    
+
     // Should panic because token is not playable (expired)
     game_components_minigame::libs::pre_action(token_address, token_id);
 }
-
 // // Test MN-U-09: pre_action with game_over token
 // #[test]
 // #[should_panic(expected: ('Game is not playable',))]
@@ -469,7 +476,8 @@ fn test_pre_action_with_expired_token() {
 //     calldata.append(contract_address_const::<0x0>().into());
 
 //     let (minigame_address, _) = minigame_contract.deploy(@calldata).unwrap();
-//     let token_data_dispatcher = IMinigameTokenDataDispatcher { contract_address: minigame_address };
+//     let token_data_dispatcher = IMinigameTokenDataDispatcher { contract_address: minigame_address
+//     };
 
 //     // Check score
 //     let score = token_data_dispatcher.score(1);
@@ -486,9 +494,12 @@ fn test_pre_action_with_expired_token() {
 //     calldata.append(contract_address_const::<0x0>().into());
 
 //     let (minigame_address, _) = minigame_contract.deploy(@calldata).unwrap();
-//     let token_data_dispatcher = IMinigameTokenDataDispatcher { contract_address: minigame_address };
+//     let token_data_dispatcher = IMinigameTokenDataDispatcher { contract_address: minigame_address
+//     };
 
 //     // Check game over status
 //     let game_over = token_data_dispatcher.game_over(1);
 //     assert!(!game_over, "Initial game_over should be false");
 // }
+
+
