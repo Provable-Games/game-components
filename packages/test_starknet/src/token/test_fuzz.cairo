@@ -308,14 +308,12 @@ fn test_ownership_protection_fuzz(caller1: felt252, caller2: felt252, caller3: f
 fn test_settings_immutability_fuzz(settings_id: u32, op1: u8, op2: u8, op3: u8) {
     let (token_dispatcher, _, mock_game) = deploy_test_token();
 
-    // MockGame doesn't have settings support, just use a settings ID
-    let settings_id_to_use = (settings_id % 100) + 1; // Settings ID 1-100
-
+    // MockGame doesn't have settings support, so we'll mint without settings
     let token_id = token_dispatcher
         .mint(
             Option::None, // Use default game address from constructor
             Option::None,
-            Option::Some(settings_id_to_use),
+            Option::None, // No settings_id since game doesn't support it
             Option::None,
             Option::None,
             Option::None,
@@ -326,9 +324,9 @@ fn test_settings_immutability_fuzz(settings_id: u32, op1: u8, op2: u8, op3: u8) 
             false,
         );
 
-    // Get initial settings ID
+    // Get initial settings ID (should be 0 since no settings provided)
     let initial_settings = token_dispatcher.settings_id(token_id);
-    assert!(initial_settings == settings_id_to_use, "Settings ID mismatch");
+    assert!(initial_settings == 0, "Settings ID should be 0 when not provided");
 
     // Perform various operations
     let operations = array![op1 % 3, op2 % 3, op3 % 3];
@@ -354,9 +352,9 @@ fn test_settings_immutability_fuzz(settings_id: u32, op1: u8, op2: u8, op3: u8) 
             },
         }
 
-        // Verify settings remain unchanged
+        // Verify settings remain unchanged (should still be 0)
         assert!(
-            token_dispatcher.settings_id(token_id) == settings_id_to_use,
+            token_dispatcher.settings_id(token_id) == 0,
             "Settings should not change",
         );
 

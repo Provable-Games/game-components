@@ -1,3 +1,0 @@
-game_components_test_starknet::minigame::test_minigame::test_mint_basic
-game_components_test_starknet::minigame::unit::test_minigame_component::test_pre_action_with_expired_token
-game_components_test_starknet::token::test_fuzz::test_settings_immutability_fuzz

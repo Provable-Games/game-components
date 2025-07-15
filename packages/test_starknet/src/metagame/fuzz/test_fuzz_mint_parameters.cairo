@@ -136,7 +136,7 @@ fn test_fuzz_player_names() {
         let owner = contract_address_const::<0x1000>();
 
         // Mint with this player name
-        let token_id = metagame_dispatcher
+        let _token_id = metagame_dispatcher
             .mint(
                 Option::Some(minigame_address),
                 Option::Some(name.clone()),
@@ -196,7 +196,7 @@ fn test_property_token_id_monotonicity() {
 
         let owner = contract_address_const::<0x2000>();
 
-        let token_id = metagame_dispatcher
+        let _token_id = metagame_dispatcher
             .mint(
                 Option::Some(minigame_address),
                 Option::None,
@@ -233,7 +233,7 @@ fn try_mint_with_lifecycle(
         return Option::None;
     }
 
-    let token_id = dispatcher
+    let _token_id = dispatcher
         .mint(
             Option::Some(game_address),
             Option::None,

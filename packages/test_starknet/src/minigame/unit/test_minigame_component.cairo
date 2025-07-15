@@ -321,7 +321,7 @@ fn test_pre_action_with_unowned_but_playable_token() {
 
 // Test MN-U-08: pre_action with expired token
 #[test]
-#[should_panic(expected: ('Game is not playable',))]
+#[should_panic(expected: "Game is not playable")]
 fn test_pre_action_with_expired_token() {
     // Deploy mock game first
     let (minigame_dispatcher, minigame_init_dispatcher, _) = deploy_mock_game();

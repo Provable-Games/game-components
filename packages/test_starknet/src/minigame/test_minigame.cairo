@@ -1,10 +1,8 @@
 use starknet::{ContractAddress, contract_address_const};
-use snforge_std::{declare, ContractClassTrait, DeclareResultTrait};
 use super::mocks::minigame_starknet_mock::{
-    IMinigameStarknetMockDispatcher, IMinigameStarknetMockDispatcherTrait,
-    IMinigameStarknetMockInitDispatcher, IMinigameStarknetMockInitDispatcherTrait,
+    IMinigameStarknetMockDispatcherTrait, IMinigameStarknetMockInitDispatcherTrait,
 };
-use openzeppelin_introspection::src5::SRC5Component::SRC5Impl;
+use crate::token::setup::{deploy_mock_game, deploy_optimized_token_with_game};
 
 // Test constants
 const GAME_CREATOR: felt252 = 'creator';
@@ -25,15 +23,18 @@ const PLAYER_NAME: felt252 = 'player1';
 const PLAYER_ADDRESS: felt252 = 'player_addr';
 const TOKEN_ADDRESS: felt252 = 'token_addr';
 
-fn deploy_minigame_starknet_mock() -> ContractAddress {
-    let contract = declare("minigame_starknet_mock").unwrap().contract_class();
+#[test]
+fn test_mint_basic() {
+    // Deploy mock game first
+    let (minigame_dispatcher, minigame_init_dispatcher, mock_dispatcher) = deploy_mock_game();
 
-    // Deploy with empty constructor calldata since the contract doesn't have a constructor
-    let (contract_address, _) = contract.deploy(@array![]).unwrap();
+    // Deploy token contract with the game address
+    let (_token_dispatcher, _, _, token_address) = deploy_optimized_token_with_game(
+        minigame_dispatcher.contract_address,
+    );
 
-    // Initialize the contract using the initializer function
-    let initializer = IMinigameStarknetMockInitDispatcher { contract_address };
-    initializer
+    // Initialize minigame with token address
+    minigame_init_dispatcher
         .initializer(
             contract_address_const::<GAME_CREATOR>(), // game_creator
             GAME_NAME(), // game_name
@@ -45,21 +46,14 @@ fn deploy_minigame_starknet_mock() -> ContractAddress {
             Option::<ByteArray>::None, // game_color
             Option::<ByteArray>::None, // client_url
             Option::<ContractAddress>::None, // renderer_address
-            Option::Some(contract_address), // settings_address (self-reference for mock)
-            Option::Some(contract_address), // objectives_address (self-reference for mock)
-            contract_address_const::<TOKEN_ADDRESS>() // token_address
+            Option::Some(minigame_dispatcher.contract_address), // settings_address (self-reference for mock)
+            Option::Some(minigame_dispatcher.contract_address), // objectives_address (self-reference for mock)
+            token_address // token_address
         );
 
-    contract_address
-}
-
-#[test]
-fn test_mint_basic() {
-    let contract_address = deploy_minigame_starknet_mock();
-    let mock = IMinigameStarknetMockDispatcher { contract_address };
     let player_addr = contract_address_const::<PLAYER_ADDRESS>();
 
-    let token_id = mock
+    let token_id = mock_dispatcher
         .mint(
             Option::Some(PLAYER_NAME),
             Option::None, // no settings
