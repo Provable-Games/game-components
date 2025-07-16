@@ -2,7 +2,7 @@
 // Objectives Component
 //
 #[starknet::component]
-pub mod objectives_component {
+pub mod ObjectivesComponent {
     use crate::extensions::objectives::interface::{IMinigameObjectives, IMINIGAME_OBJECTIVES_ID};
     use crate::extensions::objectives::libs;
     use starknet::{ContractAddress, get_contract_address, get_caller_address};

@@ -8,7 +8,6 @@ pub mod interface;
 pub mod libs;
 pub mod core;
 pub mod extensions;
-pub mod integration;
 pub mod examples;
 // pub mod tests; // Tests have been moved to packages/test_starknet/src/token/
 

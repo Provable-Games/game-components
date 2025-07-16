@@ -264,38 +264,3 @@ mod OptimizedTokenContract {
         self.renderer.initializer();
     }
 }
-// ================================================================================================
-// CONFIGURATION EXAMPLES
-// ================================================================================================
-
-// Example 1: Minimal Token (only core features)
-// mod MinimalConfig {
-//     pub const MINTER_ENABLED: bool = false;
-//     pub const MULTI_GAME_ENABLED: bool = false;
-//     pub const OBJECTIVES_ENABLED: bool = false;
-//     pub const CONTEXT_ENABLED: bool = false;
-//     pub const SOULBOUND_ENABLED: bool = false;
-//     pub const RENDERER_ENABLED: bool = false;
-// }
-
-// Example 2: Full-Featured Token (all features enabled)
-// mod FullFeaturedConfig {
-//     pub const MINTER_ENABLED: bool = true;
-//     pub const MULTI_GAME_ENABLED: bool = true;
-//     pub const OBJECTIVES_ENABLED: bool = true;
-//     pub const CONTEXT_ENABLED: bool = true;
-//     pub const SOULBOUND_ENABLED: bool = true;
-//     pub const RENDERER_ENABLED: bool = true;
-// }
-
-// Example 3: Gaming-Focused Token (selective features)
-// mod GamingConfig {
-//     pub const MINTER_ENABLED: bool = true;
-//     pub const MULTI_GAME_ENABLED: bool = true;
-//     pub const OBJECTIVES_ENABLED: bool = true;
-//     pub const CONTEXT_ENABLED: bool = false;
-//     pub const SOULBOUND_ENABLED: bool = false;
-//     pub const RENDERER_ENABLED: bool = false;
-// }
-
-

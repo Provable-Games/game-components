@@ -2,7 +2,7 @@
 // Settings Component
 //
 #[starknet::component]
-pub mod settings_component {
+pub mod SettingsComponent {
     use crate::extensions::settings::interface::{IMinigameSettings, IMINIGAME_SETTINGS_ID};
     use crate::extensions::settings::libs;
     use crate::extensions::settings::structs::{GameSetting};
