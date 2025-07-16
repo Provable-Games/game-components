@@ -13,6 +13,7 @@ pub trait IMinigameTokenObjectives<TState> {
     fn create_objective(
         ref self: TState,
         game_address: ContractAddress,
+        creator_address: ContractAddress,
         objective_id: u32,
         objective_data: GameObjective,
     );

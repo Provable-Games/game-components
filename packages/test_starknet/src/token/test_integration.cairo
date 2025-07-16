@@ -679,7 +679,7 @@ fn test_game_contract_unresponsive() {
     // Token should exist and be valid
     let metadata = token_dispatcher.token_metadata(token_id);
     // Get game address directly
-    let token_game_address = token_dispatcher.game_address(token_id);
+    let token_game_address = token_dispatcher.game_address();
     assert!(token_game_address == game_address, "Token should have game address");
 
     // Even if game becomes unresponsive, token operations should continue
@@ -761,7 +761,7 @@ fn test_registry_lookup_edge_cases() {
     assert!(token_dispatcher.token_metadata(token_id1).game_id == 1, "Should have game ID 1");
 
     // 2. Verify game address resolution
-    let resolved_address = token_dispatcher.game_address(token_id1);
+    let resolved_address = token_dispatcher.token_game_address(token_id1);
     assert!(resolved_address == *games.at(0), "Should resolve to correct game address");
 
     // 3. Test with maximum game ID

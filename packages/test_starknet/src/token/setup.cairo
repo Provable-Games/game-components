@@ -530,3 +530,10 @@ pub fn deploy_minimal_optimized_contract(
 
     (token_dispatcher, erc721_dispatcher)
 }
+
+/// Deploy MockObjectivesContract (for testing objectives functionality)
+pub fn deploy_mock_objectives_contract() -> ContractAddress {
+    let contract = declare("MockObjectivesContract").unwrap().contract_class();
+    let (contract_address, _) = contract.deploy(@array![]).unwrap();
+    contract_address
+}

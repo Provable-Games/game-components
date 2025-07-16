@@ -5,7 +5,7 @@
 pub mod objectives_component {
     use crate::extensions::objectives::interface::{IMinigameObjectives, IMINIGAME_OBJECTIVES_ID};
     use crate::extensions::objectives::libs;
-    use starknet::{ContractAddress, get_contract_address};
+    use starknet::{ContractAddress, get_contract_address, get_caller_address};
 
     use openzeppelin_introspection::src5::SRC5Component;
     use openzeppelin_introspection::src5::SRC5Component::InternalTrait as SRC5InternalTrait;
@@ -46,7 +46,7 @@ pub mod objectives_component {
             minigame_token_address: ContractAddress,
         ) {
             libs::create_objective(
-                minigame_token_address, get_contract_address(), objective_id, name, value,
+                minigame_token_address, get_contract_address(), get_caller_address(), objective_id, name, value,
             );
         }
     }

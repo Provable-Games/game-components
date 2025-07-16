@@ -8,6 +8,13 @@ pub mod RendererComponent {
     use crate::extensions::renderer::interface::IMinigameTokenRenderer;
     use crate::libs::address_utils;
 
+    use crate::extensions::renderer::interface::IMINIGAME_TOKEN_RENDERER_ID;
+
+    use openzeppelin_introspection::src5::SRC5Component;
+    use openzeppelin_introspection::src5::SRC5Component::InternalTrait as SRC5InternalTrait;
+
+    use crate::interface::{ITokenEventRelayerDispatcher, ITokenEventRelayerDispatcherTrait};
+
     #[storage]
     pub struct Storage {
         token_renderers: Map<u64, ContractAddress>,
@@ -50,33 +57,32 @@ pub mod RendererComponent {
         }
 
         fn set_token_renderer(
-            ref self: TContractState, token_id: u64, renderer: Option<ContractAddress>,
+            ref self: TContractState,
+            token_id: u64,
+            renderer: ContractAddress,
+            event_relayer: Option<ITokenEventRelayerDispatcher>,
         ) {
-            match renderer {
-                Option::Some(renderer) => {
-                    let mut component = HasComponent::get_component_mut(ref self);
-                    component.set_renderer(token_id, renderer);
-                },
-                Option::None => {},
+            let mut component = HasComponent::get_component_mut(ref self);
+            component.token_renderers.entry(token_id).write(renderer);
+
+            component.emit(RendererSet { token_id, renderer });
+
+            if let Option::Some(relayer) = event_relayer {
+                relayer.emit_token_renderer_update(token_id, renderer);
             }
         }
     }
 
     #[generate_trait]
     pub impl InternalImpl<
-        TContractState, +HasComponent<TContractState>, +Drop<TContractState>,
+        TContractState,
+        +HasComponent<TContractState>,
+        impl SRC5: SRC5Component::HasComponent<TContractState>,
+        +Drop<TContractState>,
     > of InternalTrait<TContractState> {
-        fn initializer(
-            ref self: ComponentState<TContractState>,
-        ) { // Nothing to initialize for renderer
-        }
-
-        fn set_renderer(
-            ref self: ComponentState<TContractState>, token_id: u64, renderer: ContractAddress,
-        ) {
-            self.token_renderers.entry(token_id).write(renderer);
-
-            self.emit(RendererSet { token_id, renderer });
+        fn initializer(ref self: ComponentState<TContractState>) {
+            let mut src5_component = get_dep_component_mut!(ref self, SRC5);
+            src5_component.register_interface(IMINIGAME_TOKEN_RENDERER_ID);
         }
     }
 }

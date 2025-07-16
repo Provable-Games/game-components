@@ -4,10 +4,15 @@ use crate::core::traits::{
     OptionalRenderer,
 };
 use game_components_metagame::extensions::context::structs::GameContextDetails;
+use crate::interface::ITokenEventRelayerDispatcher;
 
 // No-op implementations for disabled features
 pub impl NoOpMinter<TContractState> of OptionalMinter<TContractState> {
-    fn add_minter(ref self: TContractState, minter: ContractAddress) -> u64 {
+    fn add_minter(
+        ref self: TContractState,
+        minter: ContractAddress,
+        event_relayer: Option<ITokenEventRelayerDispatcher>,
+    ) -> u64 {
         0
     }
 
@@ -22,6 +27,7 @@ pub impl NoOpContext<TContractState> of OptionalContext<TContractState> {
         caller: ContractAddress,
         token_id: u64,
         context: GameContextDetails,
+        event_relayer: Option<ITokenEventRelayerDispatcher>,
     ) { // No-op
     }
 }
@@ -34,7 +40,10 @@ pub impl NoOpObjectives<TContractState> of OptionalObjectives<TContractState> {
     }
 
     fn set_token_objectives(
-        ref self: TContractState, token_id: u64, objective_ids: Span<u32>,
+        ref self: TContractState,
+        token_id: u64,
+        objective_ids: Span<u32>,
+        event_relayer: Option<ITokenEventRelayerDispatcher>,
     ) { // No-op
     }
 
@@ -43,6 +52,7 @@ pub impl NoOpObjectives<TContractState> of OptionalObjectives<TContractState> {
         token_id: u64,
         game_address: ContractAddress,
         objectives_count: u32,
+        event_relayer: Option<ITokenEventRelayerDispatcher>,
     ) -> bool {
         false
     }
@@ -74,7 +84,10 @@ pub impl NoOpRenderer<TContractState> of OptionalRenderer<TContractState> {
     }
 
     fn set_token_renderer(
-        ref self: TContractState, token_id: u64, renderer: Option<ContractAddress>,
+        ref self: TContractState,
+        token_id: u64,
+        renderer: ContractAddress,
+        event_relayer: Option<ITokenEventRelayerDispatcher>,
     ) { // No-op
     }
 }

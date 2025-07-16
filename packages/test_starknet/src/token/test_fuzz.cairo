@@ -353,10 +353,7 @@ fn test_settings_immutability_fuzz(settings_id: u32, op1: u8, op2: u8, op3: u8) 
         }
 
         // Verify settings remain unchanged (should still be 0)
-        assert!(
-            token_dispatcher.settings_id(token_id) == 0,
-            "Settings should not change",
-        );
+        assert!(token_dispatcher.settings_id(token_id) == 0, "Settings should not change");
 
         i += 1;
     };

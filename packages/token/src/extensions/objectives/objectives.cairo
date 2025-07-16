@@ -27,6 +27,8 @@ pub mod ObjectivesComponent {
     use openzeppelin_introspection::src5::SRC5Component::SRC5Impl;
     use openzeppelin_introspection::interface::{ISRC5Dispatcher, ISRC5DispatcherTrait};
 
+    use crate::interface::{ITokenEventRelayerDispatcher, ITokenEventRelayerDispatcherTrait};
+
     #[storage]
     pub struct Storage {
         token_objectives: Map<u64, Map<u32, TokenObjective>>,
@@ -119,27 +121,14 @@ pub mod ObjectivesComponent {
             objectives_logic::are_all_objectives_completed(objectives.span())
         }
 
-        // this shouldn't be an exposed enpoint as anyone could call it and create an objective
-        // (without verification)
         fn create_objective(
             ref self: ComponentState<TContractState>,
             game_address: ContractAddress,
+            creator_address: ContractAddress,
             objective_id: u32,
             objective_data: GameObjective,
         ) {
-            // Check caller is a supported game address (either stored or from game registry)
-            let minigame_token_dispatcher = IMinigameTokenDispatcher {
-                contract_address: get_contract_address(),
-            };
-            let game_registry_address = minigame_token_dispatcher.game_registry_address();
-            let game_registry_dispatcher = IMinigameRegistryDispatcher {
-                contract_address: game_registry_address,
-            };
-            let game_id = game_registry_dispatcher.game_id_from_address(game_address);
-            let _game_metadata_opt = game_registry_dispatcher.game_metadata(game_id);
-            // TODO: check if token supports multi-game, else use the game_address
-            // TODO: check if the address is stored in MultiGameComponent, else throw error
-            // let game_address = match game_metadata_opt {
+            // Check caller is objectives address
             let minigame_dispatcher = IMinigameDispatcher { contract_address: game_address };
             let objectives_address = minigame_dispatcher.objectives_address();
             let objectives_address_display: felt252 = objectives_address.into();
@@ -148,13 +137,42 @@ pub mod ObjectivesComponent {
                 "MinigameTokenObjectives: Objectives address {} not registered by caller",
                 objectives_address_display,
             );
+
+            // Check game address is supported
+            let minigame_token_dispatcher = IMinigameTokenDispatcher {
+                contract_address: get_contract_address(),
+            };
+            let is_single_game = game_address == minigame_token_dispatcher.game_address();
+            let game_registry_address = minigame_token_dispatcher.game_registry_address();
+            let game_registry_dispatcher = IMinigameRegistryDispatcher {
+                contract_address: game_registry_address,
+            };
+            let game_id = game_registry_dispatcher.game_id_from_address(game_address);
+            let is_multi_game = game_id != 0;
+            let game_address_display: felt252 = game_address.into();
+            assert!(
+                is_single_game || is_multi_game,
+                "MinigameTokenObjectives: Game address {} not supported",
+                game_address_display,
+            );
+
             let objective_data_json = create_objectives_json(array![objective_data].span());
             self
                 .emit(
                     ObjectiveCreated {
-                        game_address, objective_id, objective_data: objective_data_json,
+                        game_address, objective_id, objective_data: objective_data_json.clone(),
                     },
                 );
+            let event_relayer_address = minigame_token_dispatcher.event_relayer_address();
+            if !event_relayer_address.is_zero() {
+                let event_relayer_dispatcher = ITokenEventRelayerDispatcher {
+                    contract_address: event_relayer_address,
+                };
+                event_relayer_dispatcher
+                    .emit_objective_created(
+                        game_address, creator_address, objective_id, objective_data_json.clone(),
+                    );
+            }
         }
     }
 
@@ -211,7 +229,12 @@ pub mod ObjectivesComponent {
             (objective_ids.len().try_into().unwrap(), objective_ids)
         }
 
-        fn set_token_objectives(ref self: TContractState, token_id: u64, objective_ids: Span<u32>) {
+        fn set_token_objectives(
+            ref self: TContractState,
+            token_id: u64,
+            objective_ids: Span<u32>,
+            event_relayer: Option<ITokenEventRelayerDispatcher>,
+        ) {
             let mut component = HasComponent::get_component_mut(ref self);
             let mut i = 0;
             while i < objective_ids.len() {
@@ -229,6 +252,10 @@ pub mod ObjectivesComponent {
                         },
                     );
 
+                if let Option::Some(event_relayer) = event_relayer {
+                    event_relayer.emit_objective_update(token_id, objective_id, false);
+                }
+
                 i += 1;
             };
 
@@ -240,6 +267,7 @@ pub mod ObjectivesComponent {
             token_id: u64,
             game_address: ContractAddress,
             objectives_count: u32,
+            event_relayer: Option<ITokenEventRelayerDispatcher>,
         ) -> bool {
             let mut component = HasComponent::get_component_mut(ref self);
             let minigame_dispatcher = IMinigameDispatcher { contract_address: game_address };
@@ -277,6 +305,11 @@ pub mod ObjectivesComponent {
                                 completion_timestamp: get_block_timestamp(),
                             },
                         );
+
+                    if let Option::Some(event_relayer) = event_relayer {
+                        event_relayer.emit_objective_update(token_id, objective.objective_id, true);
+                    }
+
                     completed_count += 1;
                 }
                 index += 1;
@@ -289,6 +322,9 @@ pub mod ObjectivesComponent {
 
             if all_objectives_completed {
                 component.emit(AllObjectivesCompleted { token_id });
+                if let Option::Some(event_relayer) = event_relayer {
+                    event_relayer.emit_all_objectives_completed(token_id);
+                }
             }
             all_objectives_completed
         }

@@ -9,6 +9,7 @@ pub trait IMinigameTokenSettings<TState> {
     fn create_settings(
         ref self: TState,
         game_address: ContractAddress,
+        creator_address: ContractAddress,
         settings_id: u32,
         name: ByteArray,
         description: ByteArray,

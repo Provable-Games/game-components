@@ -114,6 +114,11 @@ TOKEN_NAME="${TOKEN_NAME:-TestGameToken}"
 TOKEN_SYMBOL="${TOKEN_SYMBOL:-TGT}"
 TOKEN_BASE_URI="${TOKEN_BASE_URI:-https://api.game.com/token/}"
 
+# Registry Parameters
+REGISTRY_NAME="${REGISTRY_NAME:-GameRegistry}"
+REGISTRY_SYMBOL="${REGISTRY_SYMBOL:-GREG}"
+REGISTRY_BASE_URI="${REGISTRY_BASE_URI:-https://api.game.com/registry/}"
+
 # Optional addresses (can be set via environment variables)
 GAME_ADDRESS="${GAME_ADDRESS:-}"
 GAME_REGISTRY_ADDRESS="${GAME_REGISTRY_ADDRESS:-}"
@@ -123,16 +128,25 @@ RELAYER_ADDRESS="${RELAYER_ADDRESS:-}"
 # DISPLAY CONFIGURATION
 # ============================
 
-print_info "Optimized Token Contract Deployment Configuration:"
+print_info "Deployment Configuration:"
 echo "  Deployment Type: $(if [ "$DEPLOY_TO_SLOT" = "true" ]; then echo "Slot"; else echo "Standard"; fi)"
 echo "  Network: ${STARKNET_NETWORK:-<not required for Slot>}"
 echo "  Account: $STARKNET_ACCOUNT"
-echo "  Token Name: $TOKEN_NAME"
-echo "  Token Symbol: $TOKEN_SYMBOL"
-echo "  Base URI: $TOKEN_BASE_URI"
-echo "  Game Address: ${GAME_ADDRESS:-<not set>}"
-echo "  Game Registry Address: ${GAME_REGISTRY_ADDRESS:-<not set>}"
-echo "  Relayer Address: ${RELAYER_ADDRESS:-<not set>}"
+echo ""
+echo "  Registry Parameters:"
+echo "    Name: $REGISTRY_NAME"
+echo "    Symbol: $REGISTRY_SYMBOL"
+echo "    Base URI: $REGISTRY_BASE_URI"
+echo ""
+echo "  Token Parameters:"
+echo "    Name: $TOKEN_NAME"
+echo "    Symbol: $TOKEN_SYMBOL"
+echo "    Base URI: $TOKEN_BASE_URI"
+echo ""
+echo "  Optional Addresses:"
+echo "    Game Address: ${GAME_ADDRESS:-<not set>}"
+echo "    Game Registry Address: ${GAME_REGISTRY_ADDRESS:-<not set>}"
+echo "    Relayer Address: ${RELAYER_ADDRESS:-<not set>}"
 
 # Confirm deployment
 if [ "${SKIP_CONFIRMATION:-false}" != "true" ]; then
@@ -145,10 +159,10 @@ if [ "${SKIP_CONFIRMATION:-false}" != "true" ]; then
 fi
 
 # ============================
-# BUILD CONTRACT
+# BUILD CONTRACTS
 # ============================
 
-print_info "Building Optimized Token contract..."
+print_info "Building contracts..."
 scarb build
 
 if [ ! -f "target/dev/game_components_token_OptimizedTokenContract.contract_class.json" ]; then
@@ -159,8 +173,100 @@ if [ ! -f "target/dev/game_components_token_OptimizedTokenContract.contract_clas
     exit 1
 fi
 
+if [ ! -f "target/dev/game_components_token_MinigameRegistryContract.contract_class.json" ]; then
+    print_error "MinigameRegistryContract build failed or contract file not found"
+    print_error "Expected: target/dev/game_components_token_MinigameRegistryContract.contract_class.json"
+    echo "Available contract files:"
+    ls -la target/dev/*.contract_class.json 2>/dev/null || echo "No contract files found"
+    exit 1
+fi
+
 # ============================
-# DECLARE CONTRACT
+# DECLARE AND DEPLOY MINIGAME REGISTRY
+# ============================
+
+# Only deploy registry if GAME_REGISTRY_ADDRESS is not already set
+if [ -z "$GAME_REGISTRY_ADDRESS" ]; then
+    print_info "Declaring MinigameRegistry contract..."
+    
+    # Build declare command based on deployment type
+    if [ "$DEPLOY_TO_SLOT" = "true" ]; then
+        REGISTRY_DECLARE_OUTPUT=$(starkli declare --account $STARKNET_ACCOUNT --rpc $STARKNET_RPC --watch target/dev/game_components_token_MinigameRegistryContract.contract_class.json 2>&1)
+    else
+        REGISTRY_DECLARE_OUTPUT=$(starkli declare --account $STARKNET_ACCOUNT --rpc $STARKNET_RPC --watch target/dev/game_components_token_MinigameRegistryContract.contract_class.json --private-key $STARKNET_PK 2>&1)
+    fi
+    
+    # Extract class hash from output
+    REGISTRY_CLASS_HASH=$(echo "$REGISTRY_DECLARE_OUTPUT" | grep -oE '0x[0-9a-fA-F]+' | tail -1)
+    
+    if [ -z "$REGISTRY_CLASS_HASH" ]; then
+        # Contract might already be declared, try to extract from error message
+        if echo "$REGISTRY_DECLARE_OUTPUT" | grep -q "already declared"; then
+            REGISTRY_CLASS_HASH=$(echo "$REGISTRY_DECLARE_OUTPUT" | grep -oE 'class_hash: 0x[0-9a-fA-F]+' | grep -oE '0x[0-9a-fA-F]+')
+            print_warning "MinigameRegistry contract already declared with class hash: $REGISTRY_CLASS_HASH"
+        else
+            print_error "Failed to declare MinigameRegistry contract"
+            echo "$REGISTRY_DECLARE_OUTPUT"
+            exit 1
+        fi
+    else
+        print_info "MinigameRegistry contract declared with class hash: $REGISTRY_CLASS_HASH"
+    fi
+    
+    # Deploy MinigameRegistry contract
+    print_info "Deploying MinigameRegistry contract..."
+    
+    # MinigameRegistry constructor parameters:
+    # - name: ByteArray
+    # - symbol: ByteArray
+    # - base_uri: ByteArray
+    # - event_relayer_address: Option<ContractAddress>
+    
+    REGISTRY_NAME_ARG="bytearray:str:$REGISTRY_NAME"
+    REGISTRY_SYMBOL_ARG="bytearray:str:$REGISTRY_SYMBOL"
+    REGISTRY_BASE_URI_ARG="bytearray:str:$REGISTRY_BASE_URI"
+    
+    print_info "Registry name: '$REGISTRY_NAME' -> $REGISTRY_NAME_ARG"
+    print_info "Registry symbol: '$REGISTRY_SYMBOL' -> $REGISTRY_SYMBOL_ARG"
+    print_info "Registry base URI: '$REGISTRY_BASE_URI' -> $REGISTRY_BASE_URI_ARG"
+    
+    if [ "$DEPLOY_TO_SLOT" = "true" ]; then
+        GAME_REGISTRY_ADDRESS=$(starkli deploy \
+            --account $STARKNET_ACCOUNT \
+            --rpc $STARKNET_RPC \
+            --watch \
+            $REGISTRY_CLASS_HASH \
+            "$REGISTRY_NAME_ARG" \
+            "$REGISTRY_SYMBOL_ARG" \
+            "$REGISTRY_BASE_URI_ARG" \
+            $(if [ -n "$RELAYER_ADDRESS" ]; then echo "0 $RELAYER_ADDRESS"; else echo "1"; fi) \
+            2>&1 | tee >(cat >&2) | grep -oE '0x[0-9a-fA-F]{64}' | tail -1)
+    else
+        GAME_REGISTRY_ADDRESS=$(starkli deploy \
+            --account $STARKNET_ACCOUNT \
+            --rpc $STARKNET_RPC \
+            --private-key $STARKNET_PK \
+            --watch \
+            $REGISTRY_CLASS_HASH \
+            "$REGISTRY_NAME_ARG" \
+            "$REGISTRY_SYMBOL_ARG" \
+            "$REGISTRY_BASE_URI_ARG" \
+            $(if [ -n "$RELAYER_ADDRESS" ]; then echo "0 $RELAYER_ADDRESS"; else echo "1"; fi) \
+            2>&1 | tee >(cat >&2) | grep -oE '0x[0-9a-fA-F]{64}' | tail -1)
+    fi
+    
+    if [ -z "$GAME_REGISTRY_ADDRESS" ]; then
+        print_error "Failed to deploy MinigameRegistry contract"
+        exit 1
+    fi
+    
+    print_info "MinigameRegistry contract deployed at address: $GAME_REGISTRY_ADDRESS"
+else
+    print_info "Using existing GAME_REGISTRY_ADDRESS: $GAME_REGISTRY_ADDRESS"
+fi
+
+# ============================
+# DECLARE OPTIMIZED TOKEN CONTRACT
 # ============================
 
 print_info "Declaring Optimized Token contract..."
@@ -281,15 +387,27 @@ cat > "$DEPLOYMENT_FILE" << EOF
 {
   "network": "${STARKNET_NETWORK:-slot}",
   "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
-  "contract_address": "$CONTRACT_ADDRESS",
-  "class_hash": "$CLASS_HASH",
-  "parameters": {
-    "name": "$TOKEN_NAME",
-    "symbol": "$TOKEN_SYMBOL",
-    "base_uri": "$TOKEN_BASE_URI",
-    "game_address": "${GAME_ADDRESS:-null}",
-    "game_registry_address": "${GAME_REGISTRY_ADDRESS:-null}",
-    "relayer_address": "${RELAYER_ADDRESS:-null}"
+  "optimized_token_contract": {
+    "address": "$CONTRACT_ADDRESS",
+    "class_hash": "$CLASS_HASH",
+    "parameters": {
+      "name": "$TOKEN_NAME",
+      "symbol": "$TOKEN_SYMBOL",
+      "base_uri": "$TOKEN_BASE_URI",
+      "game_address": "${GAME_ADDRESS:-null}",
+      "game_registry_address": "${GAME_REGISTRY_ADDRESS:-null}",
+      "relayer_address": "${RELAYER_ADDRESS:-null}"
+    }
+  },
+  "minigame_registry_contract": {
+    "address": "${GAME_REGISTRY_ADDRESS:-null}",
+    "class_hash": "${REGISTRY_CLASS_HASH:-null}",
+    "parameters": {
+      "name": "${REGISTRY_NAME:-null}",
+      "symbol": "${REGISTRY_SYMBOL:-null}",
+      "base_uri": "${REGISTRY_BASE_URI:-null}",
+      "event_relayer_address": "${RELAYER_ADDRESS:-null}"
+    }
   }
 }
 EOF
@@ -301,12 +419,20 @@ print_info "Deployment info saved to: $DEPLOYMENT_FILE"
 # ============================
 
 echo
-print_info "=== OPTIMIZED TOKEN CONTRACT DEPLOYMENT SUCCESSFUL ==="
-echo "Contract Address: $CONTRACT_ADDRESS"
-echo "Class Hash: $CLASS_HASH"
-echo "Token Name: $TOKEN_NAME"
-echo "Token Symbol: $TOKEN_SYMBOL"
-echo "Base URI: $TOKEN_BASE_URI"
+print_info "=== DEPLOYMENT SUCCESSFUL ==="
+echo
+echo "MinigameRegistry Contract:"
+echo "  Address: $GAME_REGISTRY_ADDRESS"
+if [ -n "${REGISTRY_CLASS_HASH:-}" ]; then
+    echo "  Class Hash: $REGISTRY_CLASS_HASH"
+fi
+echo
+echo "OptimizedToken Contract:"
+echo "  Address: $CONTRACT_ADDRESS"
+echo "  Class Hash: $CLASS_HASH"
+echo "  Token Name: $TOKEN_NAME"
+echo "  Token Symbol: $TOKEN_SYMBOL"
+echo "  Base URI: $TOKEN_BASE_URI"
 echo
 
 echo "Next steps:"
@@ -315,8 +441,9 @@ echo "2. Configure game address if not set during deployment"
 echo "3. Set up objectives and other extensions as needed"
 echo
 
-echo "To interact with the contract:"
+echo "To interact with the contracts:"
 echo "  export TOKEN_CONTRACT=$CONTRACT_ADDRESS"
+echo "  export GAME_REGISTRY=$GAME_REGISTRY_ADDRESS"
 echo
 
 echo "Example: Mint a token (replace with appropriate parameters):"
@@ -340,7 +467,8 @@ if [ -n "$RELAYER_ADDRESS" ]; then
             --watch \
             $RELAYER_ADDRESS \
             initialize \
-            $CONTRACT_ADDRESS
+            $CONTRACT_ADDRESS \
+            $GAME_REGISTRY_ADDRESS
     else
         starkli invoke \
             --account $STARKNET_ACCOUNT \
@@ -349,7 +477,8 @@ if [ -n "$RELAYER_ADDRESS" ]; then
             --watch \
             $RELAYER_ADDRESS \
             initialize \
-            $CONTRACT_ADDRESS
+            $CONTRACT_ADDRESS \
+            $GAME_REGISTRY_ADDRESS
     fi
     
     if [ $? -eq 0 ]; then

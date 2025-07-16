@@ -4,16 +4,16 @@ use game_components_metagame::interface::{
 use openzeppelin_introspection::interface::{ISRC5Dispatcher, ISRC5DispatcherTrait};
 use starknet::{ContractAddress, contract_address_const};
 use core::num::traits::Zero;
-use snforge_std::{declare, ContractClassTrait, DeclareResultTrait, cheat_caller_address, CheatSpan};
+use snforge_std::{declare, ContractClassTrait, DeclareResultTrait};
 use game_components_token::examples::minigame_registry_contract::{
-    IMinigameRegistryDispatcher, IMinigameRegistryDispatcherTrait,
+    IMinigameRegistryDispatcherTrait,
 };
 use game_components_test_starknet::token::setup::{
     deploy_minigame_registry_contract, deploy_optimized_token_with_registry,
-    deploy_optimized_token_default, deploy_optimized_token_with_game, deploy_mock_game
+    deploy_optimized_token_default, deploy_optimized_token_with_game, deploy_mock_game,
 };
 use game_components_test_starknet::minigame::mocks::minigame_starknet_mock::{
-    IMinigameStarknetMockInitDispatcherTrait
+    IMinigameStarknetMockInitDispatcherTrait,
 };
 
 // Interface for testing mint function
@@ -152,22 +152,21 @@ fn test_context_address_view_when_none() {
 fn test_assert_game_registered_success() {
     // This test is about the assert_game_registered library function
     // We'll use a simpler approach - just check that is_game_registered works
-    
+
     // Deploy registry contract
     let registry = deploy_minigame_registry_contract();
-    
+
     // For this test, we'll manually set a game as registered
     // by calling the internal storage function (if accessible)
     // or by using a different approach
-    
+
     // Instead, let's test the negative case first
     let unregistered_game = contract_address_const::<0x1234>();
     assert!(!registry.is_game_registered(unregistered_game), "Game should not be registered");
-    
     // The positive case requires a proper game registration which needs
-    // the caller to implement IMinigame. Since this is a unit test for
-    // the metagame component, we'll skip the positive case and rely on
-    // integration tests for full flow validation.
+// the caller to implement IMinigame. Since this is a unit test for
+// the metagame component, we'll skip the positive case and rely on
+// integration tests for full flow validation.
 }
 
 // Test T003.2: assert_game_registered reverts for unregistered game
@@ -181,7 +180,9 @@ fn test_assert_game_registered_fails_unregistered() {
     let unregistered_game = contract_address_const::<0x9999>();
 
     // Call libs::assert_game_registered directly
-    game_components_metagame::libs::assert_game_registered(registry.contract_address, unregistered_game);
+    game_components_metagame::libs::assert_game_registered(
+        registry.contract_address, unregistered_game,
+    );
 }
 
 // Test T003.3: assert_game_registered with zero addresses
@@ -238,26 +239,29 @@ fn test_mint_minimal() {
 fn test_mint_with_all_parameters() {
     // Deploy a mock game first
     let (game_dispatcher, game_init_dispatcher, _mock_game_dispatcher) = deploy_mock_game();
-    
+
     // Deploy token contract with the game
-    let (_token_dispatcher, _, _, token_address) = deploy_optimized_token_with_game(game_dispatcher.contract_address);
-    
-    // Initialize the game with the token address
-    game_init_dispatcher.initializer(
-        contract_address_const::<'CREATOR'>(),
-        "Test Game",
-        "A test game",
-        "Test Dev",
-        "Test Pub",
-        "Test Genre",
-        "test.png",
-        Option::None,
-        Option::None,
-        Option::None,
-        Option::None, // settings_address
-        Option::None, // objectives_address
-        token_address,
+    let (_token_dispatcher, _, _, token_address) = deploy_optimized_token_with_game(
+        game_dispatcher.contract_address,
     );
+
+    // Initialize the game with the token address
+    game_init_dispatcher
+        .initializer(
+            contract_address_const::<'CREATOR'>(),
+            "Test Game",
+            "A test game",
+            "Test Dev",
+            "Test Pub",
+            "Test Genre",
+            "test.png",
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None, // settings_address
+            Option::None, // objectives_address
+            token_address,
+        );
 
     // Deploy metagame contract
     let metagame_contract = declare("MockMetagameContract").unwrap().contract_class();
@@ -367,7 +371,7 @@ fn test_mint_with_context_no_provider() {
     let dispatcher = IMockMetagameDispatcher { contract_address: metagame_address };
 
     // Try to mint with context when no provider is set
-    use game_components_metagame::extensions::context::structs::{GameContextDetails, GameContext};
+    use game_components_metagame::extensions::context::structs::{GameContextDetails};
     let context = GameContextDetails {
         name: "Invalid Context",
         description: "Should fail",
@@ -474,13 +478,15 @@ fn test_mint_with_instant_game() {
     assert!(token_id > 0, "Token should be minted successfully");
 }
 
-// Test MG-U-12: Mint with unregistered game - should panic  
+// Test MG-U-12: Mint with unregistered game - should panic
 #[test]
 #[should_panic]
 fn test_mint_with_unregistered_game() {
     // Deploy registry and token contract
     let registry = deploy_minigame_registry_contract();
-    let (_token_dispatcher, _, _, token_address) = deploy_optimized_token_with_registry(registry.contract_address);
+    let (_token_dispatcher, _, _, token_address) = deploy_optimized_token_with_registry(
+        registry.contract_address,
+    );
 
     // Deploy metagame contract WITHOUT context provider
     let metagame_contract = declare("MockMetagameContract").unwrap().contract_class();
@@ -495,9 +501,9 @@ fn test_mint_with_unregistered_game() {
     // This simulates an unregistered game
     let mock_context_contract = declare("MockContextContract").unwrap().contract_class();
     let (unregistered_game_address, _) = mock_context_contract.deploy(@array![]).unwrap();
-    
+
     let to_address = contract_address_const::<0x1234>();
-    
+
     dispatcher
         .mint(
             Option::Some(unregistered_game_address), // This should cause panic

@@ -246,11 +246,6 @@ pub mod MinigameRegistryContract {
 
                 // Emit game counter update
                 relayer.emit_game_counter_update(new_game_id);
-
-                // Emit client URL set event if provided
-                if final_client_url != "" {
-                    relayer.emit_client_url_set(new_game_id, final_client_url);
-                }
             }
 
             self
@@ -276,11 +271,6 @@ pub mod MinigameRegistryContract {
             self.erc721.mint(creator_address, game_id.into());
 
             self.emit(CreatorTokenMinted { token_id: game_id, creator_address });
-
-            // Emit relayer event
-            if let Option::Some(relayer) = self.get_event_relayer() {
-                relayer.emit_creator_token_minted(game_id, creator_address);
-            }
         }
 
         fn get_event_relayer(self: @ContractState) -> Option<ITokenEventRelayerDispatcher> {

@@ -8,7 +8,7 @@ pub mod CoreTokenComponent {
         StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess, Map,
     };
 
-    use crate::core::interface::IMinigameToken;
+    use crate::core::interface::{IMinigameToken, IMINIGAME_TOKEN_ID};
     use crate::examples::minigame_registry_contract::{
         IMinigameRegistryDispatcher, IMinigameRegistryDispatcherTrait,
     };
@@ -130,19 +130,8 @@ pub mod CoreTokenComponent {
             metadata.minted_by
         }
 
-        fn game_address(self: @ComponentState<TContractState>, token_id: u64) -> ContractAddress {
-            let metadata = self.token_metadata.entry(token_id).read();
-            if token_state::is_single_game_token(metadata.game_id) {
-                // Single game token - use component's game address
-                self.game_address.read()
-            } else {
-                // Multi-game token - resolve from game registry
-                let game_registry_dispatcher = IMinigameRegistryDispatcher {
-                    contract_address: self.game_registry_address.read(),
-                };
-                let game_address = game_registry_dispatcher.game_address_from_id(metadata.game_id);
-                game_address
-            }
+        fn game_address(self: @ComponentState<TContractState>) -> ContractAddress {
+            self.game_address.read()
         }
 
         fn game_registry_address(self: @ComponentState<TContractState>) -> ContractAddress {
@@ -166,6 +155,21 @@ pub mod CoreTokenComponent {
             match renderer {
                 Option::Some(addr) => addr,
                 Option::None => starknet::contract_address_const::<0>(),
+            }
+        }
+
+        fn token_game_address(self: @ComponentState<TContractState>, token_id: u64) -> ContractAddress {
+            let metadata = self.token_metadata.entry(token_id).read();
+            if token_state::is_single_game_token(metadata.game_id) {
+                // Single game token - use component's game address
+                self.game_address.read()
+            } else {
+                // Multi-game token - resolve from game registry
+                let game_registry_dispatcher = IMinigameRegistryDispatcher {
+                    contract_address: self.game_registry_address.read(),
+                };
+                let game_address = game_registry_dispatcher.game_address_from_id(metadata.game_id);
+                game_address
             }
         }
 
@@ -217,17 +221,11 @@ pub mod CoreTokenComponent {
                                 contract, final_game_address, objective_ids,
                             );
                             ObjectivesOpt::set_token_objectives(
-                                ref contract_self, token_id, objective_ids,
+                                ref contract_self,
+                                token_id,
+                                objective_ids,
+                                self.get_event_relayer(),
                             );
-                            // Emit relayer events for objectives
-                            if let Option::Some(relayer) = self.get_event_relayer() {
-                                let mut i = 0;
-                                while i < objective_ids.len() {
-                                    relayer
-                                        .emit_objective_set(token_id, *objective_ids.at(i), false);
-                                    i += 1;
-                                };
-                            }
                             (objectives_count, _validated_objective_ids)
                         },
                         Option::None => (0, array![].span()),
@@ -236,14 +234,22 @@ pub mod CoreTokenComponent {
                     // Handle context if provided
                     let has_context = match context {
                         Option::Some(context) => {
-                            ContextOpt::emit_context(ref contract_self, caller, token_id, context);
+                            ContextOpt::emit_context(
+                                ref contract_self,
+                                caller,
+                                token_id,
+                                context,
+                                self.get_event_relayer(),
+                            );
                             true
                         },
                         Option::None => false,
                     };
 
                     // Handle minter tracking if enabled
-                    let minted_by = MinterOpt::add_minter(ref contract_self, caller);
+                    let minted_by = MinterOpt::add_minter(
+                        ref contract_self, caller, self.get_event_relayer(),
+                    );
                     // Emit relayer event for minter if added
                     if minted_by > 0 {
                         if let Option::Some(relayer) = self.get_event_relayer() {
@@ -253,7 +259,14 @@ pub mod CoreTokenComponent {
                     }
 
                     // Handle renderer if provided
-                    RendererOpt::set_token_renderer(ref contract_self, token_id, renderer_address);
+                    match renderer_address {
+                        Option::Some(renderer_address) => {
+                            RendererOpt::set_token_renderer(
+                                ref contract_self, token_id, renderer_address, self.get_event_relayer(),
+                            );
+                        },
+                        Option::None => {},
+                    }
                     // Emit relayer event for renderer if set
                     if let Option::Some(renderer_addr) = renderer_address {
                         if let Option::Some(relayer) = self.get_event_relayer() {
@@ -327,7 +340,9 @@ pub mod CoreTokenComponent {
                     let mut contract_self = self.get_contract_mut();
 
                     // Only handle minter tracking for blank tokens
-                    let minted_by = MinterOpt::add_minter(ref contract_self, caller);
+                    let minted_by = MinterOpt::add_minter(
+                        ref contract_self, caller, self.get_event_relayer(),
+                    );
                     // Emit relayer event for minter if added
                     if minted_by > 0 {
                         if let Option::Some(relayer) = self.get_event_relayer() {
@@ -337,7 +352,14 @@ pub mod CoreTokenComponent {
                     }
 
                     // Handle renderer if provided
-                    RendererOpt::set_token_renderer(ref contract_self, token_id, renderer_address);
+                    match renderer_address {
+                        Option::Some(renderer_address) => {
+                            RendererOpt::set_token_renderer(
+                                ref contract_self, token_id, renderer_address, self.get_event_relayer(),
+                            );
+                        },
+                        Option::None => {},
+                    }
                     // Emit relayer event for renderer if set
                     if let Option::Some(renderer_addr) = renderer_address {
                         if let Option::Some(relayer) = self.get_event_relayer() {
@@ -465,15 +487,9 @@ pub mod CoreTokenComponent {
                         ObjectivesOpt::validate_objectives(
                         contract, final_game_address, objective_ids,
                     );
-                    ObjectivesOpt::set_token_objectives(ref contract_self, token_id, objective_ids);
-                    // Emit relayer events for objectives
-                    if let Option::Some(relayer) = self.get_event_relayer() {
-                        let mut i = 0;
-                        while i < objective_ids.len() {
-                            relayer.emit_objective_set(token_id, *objective_ids.at(i), false);
-                            i += 1;
-                        };
-                    }
+                    ObjectivesOpt::set_token_objectives(
+                        ref contract_self, token_id, objective_ids, self.get_event_relayer(),
+                    );
                     (objectives_count, _validated_objective_ids)
                 },
                 Option::None => (0, array![].span()),
@@ -482,7 +498,9 @@ pub mod CoreTokenComponent {
             // Handle context if provided
             let has_context = match context {
                 Option::Some(context) => {
-                    ContextOpt::emit_context(ref contract_self, caller, token_id, context);
+                    ContextOpt::emit_context(
+                        ref contract_self, caller, token_id, context, self.get_event_relayer(),
+                    );
                     true
                 },
                 Option::None => false,
@@ -562,13 +580,8 @@ pub mod CoreTokenComponent {
                         token_id,
                         game_address,
                         token_metadata.objectives_count.into(),
+                        self.get_event_relayer(),
                     );
-                // Emit relayer event if all objectives completed
-                if completed_all_objectives && !token_metadata.completed_all_objectives {
-                    if let Option::Some(relayer) = self.get_event_relayer() {
-                        relayer.emit_all_objectives_completed(token_id);
-                    }
-                }
             }
 
             // Get current game state
@@ -662,7 +675,7 @@ pub mod CoreTokenComponent {
             // Register token interface
             let mut contract = self.get_contract_mut();
             let mut src5_component = SRC5::get_component_mut(ref contract);
-            src5_component.register_interface(crate::interface::IMINIGAME_TOKEN_ID);
+            src5_component.register_interface(IMINIGAME_TOKEN_ID);
 
             // Set game address if provided
             if let Option::Some(game_address) = game_address {
@@ -675,17 +688,6 @@ pub mod CoreTokenComponent {
 
             if let Option::Some(event_relayer_address) = event_relayer_address {
                 self.event_relayer_address.write(event_relayer_address);
-                // After setting relayer, emit initialization events for addresses
-                let relayer = ITokenEventRelayerDispatcher {
-                    contract_address: event_relayer_address,
-                };
-                if let Option::Some(game_addr) = game_address {
-                    relayer.emit_game_address_update(game_addr);
-                }
-                if let Option::Some(registry_addr) = game_registry_address {
-                    relayer.emit_game_registry_address_update(registry_addr);
-                }
-                relayer.emit_event_relayer_address_update(event_relayer_address);
             }
         }
 

@@ -10,6 +10,8 @@ pub mod MinterComponent {
     use openzeppelin_introspection::src5::SRC5Component;
     use openzeppelin_introspection::src5::SRC5Component::InternalTrait as SRC5InternalTrait;
 
+    use crate::interface::{ITokenEventRelayerDispatcher, ITokenEventRelayerDispatcherTrait};
+
     #[storage]
     pub struct Storage {
         minter_counter: u64,
@@ -65,7 +67,11 @@ pub mod MinterComponent {
             component.get_minter_address(minter_id)
         }
 
-        fn add_minter(ref self: TContractState, minter: ContractAddress) -> u64 {
+        fn add_minter(
+            ref self: TContractState,
+            minter: ContractAddress,
+            event_relayer: Option<ITokenEventRelayerDispatcher>,
+        ) -> u64 {
             let mut component = HasComponent::get_component_mut(ref self);
 
             // Check if minter already exists
@@ -82,6 +88,11 @@ pub mod MinterComponent {
 
             // Emit event
             component.emit(MinterRegistered { minter_id, minter_address: minter });
+
+            if let Option::Some(event_relayer) = event_relayer {
+                event_relayer.emit_minter_added(minter_id, minter);
+                event_relayer.emit_minter_counter_update(minter_id);
+            }
 
             minter_id
         }

@@ -123,7 +123,7 @@ fn test_core_token_game_registry_operations() {
             false,
         );
 
-    let game_address = test_contracts.test_token.game_address(token_id);
+    let game_address = test_contracts.test_token.token_game_address(token_id);
     assert!(game_address == test_contracts.minigame.contract_address, "Game address should match");
 }
 

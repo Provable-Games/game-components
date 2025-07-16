@@ -116,7 +116,7 @@ fn test_mint_with_all_parameters() { // UT-MINT-002
     assert!(
         test_contracts
             .test_token
-            .game_address(token_id) == test_contracts
+            .game_address() == test_contracts
             .minigame
             .contract_address,
         "Game address mismatch",
@@ -1153,7 +1153,7 @@ fn test_game_address_view() { // UT-VIEW-007
             false,
         );
 
-    let game_addr = test_contracts.test_token.game_address(token_id);
+    let game_addr = test_contracts.test_token.game_address();
     assert!(game_addr == test_contracts.minigame.contract_address, "Game address mismatch");
     // Multi-game token would be tested with registry
 // TODO: Add multi-game test once registry is set up

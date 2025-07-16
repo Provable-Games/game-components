@@ -1,13 +1,2 @@
-// #[starknet::interface]
-// pub trait IMinigameTokenContext<TState> {
-//     fn get_context(self: @TState, token_id: u64) -> ContextMetadata;
-//     fn context_exists(self: @TState, token_id: u64) -> bool;
-// }
-
-// #[derive(Copy, Drop, Serde, starknet::Store)]
-// pub struct ContextMetadata {
-//     pub token_id: u64,
-//     pub game_address: starknet::ContractAddress,
-//     pub context_data: felt252,
-//     pub timestamp: u64,
-// }
+pub const IMINIGAME_TOKEN_CONTEXT_ID: felt252 =
+    0x02b329e82f6f6b94f8949b36c5dc95acf86c6083b08d99bc81e399b4b0e8d19a;

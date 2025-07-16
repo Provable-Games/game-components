@@ -46,8 +46,12 @@ fn test_mint_basic() {
             Option::<ByteArray>::None, // game_color
             Option::<ByteArray>::None, // client_url
             Option::<ContractAddress>::None, // renderer_address
-            Option::Some(minigame_dispatcher.contract_address), // settings_address (self-reference for mock)
-            Option::Some(minigame_dispatcher.contract_address), // objectives_address (self-reference for mock)
+            Option::Some(
+                minigame_dispatcher.contract_address,
+            ), // settings_address (self-reference for mock)
+            Option::Some(
+                minigame_dispatcher.contract_address,
+            ), // objectives_address (self-reference for mock)
             token_address // token_address
         );
 
