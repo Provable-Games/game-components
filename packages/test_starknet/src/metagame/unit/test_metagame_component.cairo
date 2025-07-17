@@ -4,7 +4,7 @@ use game_components_metagame::interface::{
 use openzeppelin_introspection::interface::{ISRC5Dispatcher, ISRC5DispatcherTrait};
 use starknet::{ContractAddress, contract_address_const};
 use core::num::traits::Zero;
-use snforge_std::{declare, ContractClassTrait, DeclareResultTrait};
+use snforge_std::{declare, ContractClassTrait, DeclareResultTrait, mock_call};
 use game_components_token::examples::minigame_registry_contract::{
     IMinigameRegistryDispatcherTrait,
 };
@@ -50,12 +50,15 @@ fn test_initialization_with_both_addresses() {
     calldata.append(context_address.into());
     calldata.append(token_address.into());
 
+    mock_call(context_address, selector!("supports_interface"), true, 100);
+    mock_call(token_address, selector!("supports_interface"), true, 100);
+
     let (contract_address, _) = contract.deploy(@calldata).unwrap();
 
     let dispatcher = IMetagameDispatcher { contract_address };
 
     // Verify addresses are stored correctly
-    assert!(dispatcher.minigame_token_address() == token_address, "Token address mismatch");
+    assert!(dispatcher.default_token_address() == token_address, "Token address mismatch");
     assert!(dispatcher.context_address() == context_address, "Context address mismatch");
 
     // Verify SRC5 interface registration
@@ -76,12 +79,14 @@ fn test_initialization_with_token_only() {
     calldata.append(1);
     calldata.append(token_address.into());
 
+    mock_call(token_address, selector!("supports_interface"), true, 100);
+
     let (contract_address, _) = contract.deploy(@calldata).unwrap();
 
     let dispatcher = IMetagameDispatcher { contract_address };
 
     // Verify token address is stored and context is zero
-    assert!(dispatcher.minigame_token_address() == token_address, "Token address mismatch");
+    assert!(dispatcher.default_token_address() == token_address, "Token address mismatch");
     assert!(dispatcher.context_address().is_zero(), "Context address should be zero");
 
     // Verify SRC5 interface registration
@@ -102,11 +107,14 @@ fn test_minigame_token_address_view() {
     calldata.append(context_address.into());
     calldata.append(token_address.into());
 
+    mock_call(context_address, selector!("supports_interface"), true, 100);
+    mock_call(token_address, selector!("supports_interface"), true, 100);
+
     let (contract_address, _) = contract.deploy(@calldata).unwrap();
     let dispatcher = IMetagameDispatcher { contract_address };
 
     // Verify minigame_token_address returns correct value
-    assert!(dispatcher.minigame_token_address() == token_address, "Token address mismatch");
+    assert!(dispatcher.default_token_address() == token_address, "Token address mismatch");
 }
 
 // Test T002.2: context_address returns correct value when set
@@ -121,6 +129,9 @@ fn test_context_address_view_when_set() {
     calldata.append(0); // Some(context_address)
     calldata.append(context_address.into());
     calldata.append(token_address.into());
+
+    mock_call(context_address, selector!("supports_interface"), true, 100);
+    mock_call(token_address, selector!("supports_interface"), true, 100);
 
     let (contract_address, _) = contract.deploy(@calldata).unwrap();
     let dispatcher = IMetagameDispatcher { contract_address };
@@ -139,6 +150,8 @@ fn test_context_address_view_when_none() {
     let mut calldata = array![];
     calldata.append(1); // None
     calldata.append(token_address.into());
+
+    mock_call(token_address, selector!("supports_interface"), true, 100);
 
     let (contract_address, _) = contract.deploy(@calldata).unwrap();
     let dispatcher = IMetagameDispatcher { contract_address };
@@ -181,7 +194,7 @@ fn test_assert_game_registered_fails_unregistered() {
 
     // Call libs::assert_game_registered directly
     game_components_metagame::libs::assert_game_registered(
-        registry.contract_address, unregistered_game,
+        unregistered_game,
     );
 }
 
@@ -196,7 +209,7 @@ fn test_assert_game_registered_zero_address() {
     let zero_address = contract_address_const::<0x0>();
 
     // Call libs::assert_game_registered directly
-    game_components_metagame::libs::assert_game_registered(registry.contract_address, zero_address);
+    game_components_metagame::libs::assert_game_registered(zero_address);
 }
 
 // Test MG-U-04: Mint minimal (to address only)

@@ -1,3 +1,4 @@
+use game_components_minigame::interface::{IMinigameDispatcher, IMinigameDispatcherTrait};
 use game_components_token::core::interface::{
     IMinigameTokenDispatcher, IMinigameTokenDispatcherTrait,
 };
@@ -13,8 +14,10 @@ use starknet::ContractAddress;
 /// * `minigame_token_address` - The address of the minigame token contract
 /// * `game_address` - The address of the game contract to check
 pub fn assert_game_registered(
-    minigame_token_address: ContractAddress, game_address: ContractAddress,
+    game_address: ContractAddress,
 ) {
+    let minigame_dispatcher = IMinigameDispatcher { contract_address: game_address };
+    let minigame_token_address = minigame_dispatcher.token_address();
     let minigame_token_dispatcher = IMinigameRegistryDispatcher {
         contract_address: minigame_token_address,
     };
@@ -41,7 +44,7 @@ pub fn assert_game_registered(
 /// # Returns
 /// * `u64` - The minted token ID
 pub fn mint(
-    minigame_token_address: ContractAddress,
+    default_token_address: ContractAddress,
     game_address: Option<ContractAddress>,
     player_name: Option<ByteArray>,
     settings_id: Option<u32>,
@@ -54,21 +57,48 @@ pub fn mint(
     to: ContractAddress,
     soulbound: bool,
 ) -> u64 {
-    let minigame_token_dispatcher = IMinigameTokenDispatcher {
-        contract_address: minigame_token_address,
-    };
-    minigame_token_dispatcher
-        .mint(
-            game_address,
-            player_name,
-            settings_id,
-            start,
-            end,
-            objective_ids,
-            context,
-            client_url,
-            renderer_address,
-            to,
-            soulbound,
-        )
+    match game_address {
+        // If the game address is provided, mint a token through the token contract the game supports (could include
+        // its own game registry)
+        Option::Some(game_address) => {
+            let minigame_dispatcher = IMinigameDispatcher { contract_address: game_address };
+            let minigame_token_address = minigame_dispatcher.token_address();
+            let minigame_token_dispatcher = IMinigameTokenDispatcher {
+                contract_address: minigame_token_address,
+            };
+            minigame_token_dispatcher
+                .mint(
+                    Option::Some(game_address),
+                    player_name,
+                    settings_id,
+                    start,
+                    end,
+                    objective_ids,
+                    context,
+                    client_url,
+                    renderer_address,
+                    to,
+                    soulbound,
+                )    
+        },
+        // If no game address is provided, mint a token through the default token contract (blank game)
+        Option::None => {
+            let minigame_token_dispatcher = IMinigameTokenDispatcher {
+                contract_address: default_token_address,
+            };
+            minigame_token_dispatcher.mint(
+                Option::None,
+                player_name,
+                settings_id,
+                start,
+                end,
+                objective_ids,
+                context,
+                client_url,
+                renderer_address,
+                to,
+                soulbound,
+            )
+        }
+    }
 }

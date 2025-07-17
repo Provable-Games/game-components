@@ -1,5 +1,5 @@
 use starknet::{ContractAddress, contract_address_const};
-use snforge_std::{declare, ContractClassTrait, DeclareResultTrait};
+use snforge_std::{declare, ContractClassTrait, DeclareResultTrait, mock_call};
 use openzeppelin_token::erc721::interface::{ERC721ABIDispatcher};
 use openzeppelin_introspection::interface::ISRC5Dispatcher;
 use game_components_token::interface::{IMinigameTokenMixinDispatcher};
@@ -402,6 +402,9 @@ pub fn setup() -> TestContracts {
             Option::Some(minigame_init_dispatcher.contract_address),
             test_token_dispatcher.contract_address,
         );
+
+    // Mock the supports_interface call for the context address
+    mock_call(metagame_init_dispatcher.contract_address, selector!("supports_interface"), true, 100);
 
     metagame_init_dispatcher
         .initializer(
