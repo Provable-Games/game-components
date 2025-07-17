@@ -15,7 +15,7 @@ use game_components_test_starknet::minigame::mocks::minigame_starknet_mock::{
 
 // Import test helpers from setup module
 use super::setup::{
-    setup, deploy_optimized_token_with_game, deploy_optimized_token_contract, deploy_mock_game,
+    setup, deploy_optimized_token_with_game, deploy_full_token_contract, deploy_mock_game,
     deploy_mock_context_provider, deploy_mock_metagame_with_context,
     deploy_minigame_registry_contract_with_params, deploy_mock_game_standalone, deploy_simple_setup,
     OWNER, ALICE, BOB, CHARLIE,
@@ -302,7 +302,7 @@ fn test_achievement_hunt() {
     let (game, game_init, mock_game) = deploy_mock_game();
 
     // Deploy token with custom metadata and game address
-    let (token_dispatcher, _, _, token_address) = deploy_optimized_token_contract(
+    let (token_dispatcher, _, _, token_address) = deploy_full_token_contract(
         Option::Some("AchievementToken"),
         Option::Some("ACH"),
         Option::Some(""),
@@ -707,7 +707,7 @@ fn test_registry_lookup_edge_cases() {
     let registry_address = registry_dispatcher.contract_address;
 
     // Deploy token with registry using helper function
-    let (token_dispatcher, _, _, token_address) = deploy_optimized_token_contract(
+    let (token_dispatcher, _, _, token_address) = deploy_full_token_contract(
         Option::Some("Multi Game Token"),
         Option::Some("MGT"),
         Option::Some(""),

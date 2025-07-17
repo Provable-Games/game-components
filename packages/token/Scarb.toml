@@ -21,12 +21,4 @@ test = "snforge test"
 sierra = true
 
 
-[lib] 
-
-[dev-dependencies]
-snforge_std = "0.45.0"
-
-[profile.dev.cairo]
-unstable-add-statements-functions-debug-info = true
-unstable-add-statements-code-locations-debug-info = true
-inlining-strategy = "avoid"
+[lib]

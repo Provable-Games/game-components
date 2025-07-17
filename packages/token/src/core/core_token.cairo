@@ -679,15 +679,23 @@ pub mod CoreTokenComponent {
 
             // Set game address if provided
             if let Option::Some(game_address) = game_address {
+                assert!(!game_address.is_zero(), "CoreToken: Game address is zero");
                 self.game_address.write(game_address);
             }
 
             if let Option::Some(game_registry_address) = game_registry_address {
+                assert!(!game_registry_address.is_zero(), "CoreToken: Game registry address is zero");
                 self.game_registry_address.write(game_registry_address);
             }
 
             if let Option::Some(event_relayer_address) = event_relayer_address {
+                assert!(!event_relayer_address.is_zero(), "CoreToken: Event relayer address is zero");
                 self.event_relayer_address.write(event_relayer_address);
+            }
+
+            // Ensure at least one game address is set
+            if game_address.is_none() && game_registry_address.is_none() {
+                panic!("Either game_address or game_registry_address must be provided");
             }
         }
 

@@ -26,7 +26,7 @@ use crate::interface::{ITokenEventRelayerDispatcher, ITokenEventRelayerDispatche
 
 
 #[starknet::contract]
-pub mod OptimizedTokenContract {
+pub mod FullTokenContract {
     use super::*;
 
     // ================================================================================================

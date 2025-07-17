@@ -22,7 +22,7 @@ snforge_std = "0.45.0"
 sierra = true
 build-external-contracts = [
     "game_components_token::examples::minigame_registry_contract::MinigameRegistryContract",
-    "game_components_token::examples::optimized_token_contract::OptimizedTokenContract",
+    "game_components_token::examples::full_token_contract::FullTokenContract",
     "game_components_token::examples::minimal_optimized_example::MinimalOptimizedContract",
 ]
 
