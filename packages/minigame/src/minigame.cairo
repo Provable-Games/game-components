@@ -12,7 +12,8 @@ pub mod MinigameComponent {
     use game_components_token::examples::minigame_registry_contract::{
         IMINIGAME_REGISTRY_ID, IMinigameRegistryDispatcher, IMinigameRegistryDispatcherTrait,
     };
-    use starknet::{ContractAddress};
+    use game_components_metagame::extensions::context::structs::GameContextDetails;
+    use starknet::{ContractAddress, get_contract_address};
     use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
     use openzeppelin_introspection::src5::SRC5Component;
     use openzeppelin_introspection::src5::SRC5Component::InternalTrait as SRC5InternalTrait;
@@ -44,6 +45,35 @@ pub mod MinigameComponent {
 
         fn objectives_address(self: @ComponentState<TContractState>) -> ContractAddress {
             self.objectives_address.read()
+        }
+
+        fn mint_game(
+            self: @ComponentState<TContractState>,
+            player_name: Option<ByteArray>,
+            settings_id: Option<u32>,
+            start: Option<u64>,
+            end: Option<u64>,
+            objective_ids: Option<Span<u32>>,
+            context: Option<GameContextDetails>,
+            client_url: Option<ByteArray>,
+            renderer_address: Option<ContractAddress>,
+            to: ContractAddress,
+            soulbound: bool,
+        ) -> u64 {
+            libs::mint(
+                self.token_address.read(),
+                get_contract_address(),
+                player_name,
+                settings_id,
+                start,
+                end,
+                objective_ids,
+                context,
+                client_url,
+                renderer_address,
+                to,
+                soulbound,
+            )
         }
     }
 

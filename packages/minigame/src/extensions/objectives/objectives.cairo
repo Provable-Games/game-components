@@ -46,7 +46,12 @@ pub mod ObjectivesComponent {
             minigame_token_address: ContractAddress,
         ) {
             libs::create_objective(
-                minigame_token_address, get_contract_address(), get_caller_address(), objective_id, name, value,
+                minigame_token_address,
+                get_contract_address(),
+                get_caller_address(),
+                objective_id,
+                name,
+                value,
             );
         }
     }

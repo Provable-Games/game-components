@@ -39,7 +39,8 @@ pub fn create_objective(
     let minigame_token_dispatcher = IMinigameTokenObjectivesDispatcher {
         contract_address: minigame_token_address,
     };
-    minigame_token_dispatcher.create_objective(game_address, creator_address, objective_id, objective);
+    minigame_token_dispatcher
+        .create_objective(game_address, creator_address, objective_id, objective);
 }
 // /// Asserts that an objective exists by checking the game contract
 // ///
