@@ -18,10 +18,12 @@ pub fn assert_game_registered(
 ) {
     let minigame_dispatcher = IMinigameDispatcher { contract_address: game_address };
     let minigame_token_address = minigame_dispatcher.token_address();
-    let minigame_token_dispatcher = IMinigameRegistryDispatcher {
-        contract_address: minigame_token_address,
+    let minigame_token_dispatcher = IMinigameTokenDispatcher { contract_address: minigame_token_address };
+    let minigame_registry_address = minigame_token_dispatcher.game_registry_address();
+    let minigame_registry_dispatcher = IMinigameRegistryDispatcher {
+        contract_address: minigame_registry_address,
     };
-    let game_exists = minigame_token_dispatcher.is_game_registered(game_address);
+    let game_exists = minigame_registry_dispatcher.is_game_registered(game_address);
     assert!(game_exists, "Game is not registered");
 }
 
