@@ -9,12 +9,16 @@ pub mod mocks {
     pub mod mock_metagame_contract;
     pub mod mock_token_contract;
     pub mod mock_metagame_with_context;
+    pub mod mock_erc20;
+    pub mod mock_erc721;
 }
 pub mod unit {
     #[cfg(test)]
     pub mod test_metagame_component;
     #[cfg(test)]
     pub mod test_context_component;
+    #[cfg(test)]
+    pub mod test_ticket_booth_component;
 }
 
 pub mod integration {

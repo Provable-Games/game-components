@@ -12,7 +12,6 @@ sierra-replace-ids = true
 starknet.workspace = true
 game_components_metagame = { path = "../metagame" }
 game_components_minigame = { path = "../minigame" }
-game_components_utils = { path = "../utils" }
 openzeppelin_token = "1.0.0"
 openzeppelin_introspection = "1.0.0"
 
