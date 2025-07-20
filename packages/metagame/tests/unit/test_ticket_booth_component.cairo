@@ -433,6 +433,128 @@ fn test_golden_pass_expiration() {
     // in a more comprehensive test with a real game token contract
 }
 
+// Test TB-12: Buy game with burn payment enabled
+#[test]
+fn test_buy_game_with_burn() {
+    // Deploy mock ERC20
+    let erc20_contract = declare("MockERC20").unwrap().contract_class();
+    let (payment_token, _) = erc20_contract.deploy(@array![]).unwrap();
+    
+    let token_contract = declare("MockMinigameToken").unwrap().contract_class();
+    let (game_address, _) = token_contract.deploy(@array![]).unwrap();
+    
+    let cost_to_play = 1000_u128;
+    let settings_id = 5_u32;
+    
+    let contract_address = deploy_ticket_booth(
+        game_address,
+        payment_token,
+        cost_to_play,
+        true, // burn_payment = true
+        settings_id,
+        Option::None,
+        Option::None,
+    );
+    
+    let dispatcher = IMockTicketBoothDispatcher { contract_address };
+    let user = contract_address_const::<0x999>();
+    
+    // Setup: Give user tokens and approve ticket booth for burning
+    use super::super::mocks::mock_erc20::{MockERC20Dispatcher, MockERC20DispatcherTrait};
+    use super::super::mocks::mock_erc20::{IERC20BurnableDispatcher, IERC20BurnableDispatcherTrait};
+    
+    let mock_erc20 = MockERC20Dispatcher { contract_address: payment_token };
+    let erc20_dispatcher = IERC20Dispatcher { contract_address: payment_token };
+    
+    // Mint tokens to user
+    mock_erc20.mint(user, cost_to_play.into());
+    
+    // User approves ticket booth to burn tokens
+    start_cheat_caller_address(payment_token, user);
+    erc20_dispatcher.approve(contract_address, cost_to_play.into());
+    stop_cheat_caller_address(payment_token);
+    
+    // Check initial balance
+    let initial_balance = erc20_dispatcher.balance_of(user);
+    assert!(initial_balance >= cost_to_play.into(), "User should have enough tokens");
+    
+    // Buy game (should burn tokens to null address)
+    start_cheat_caller_address(contract_address, user);
+    let token_id = dispatcher.buy_game("Player One", user, false);
+    stop_cheat_caller_address(contract_address);
+    
+    // Verify token was minted
+    assert!(token_id > 0, "Token ID should be valid");
+    
+    // Verify tokens were burned (balance reduced)
+    let final_balance = erc20_dispatcher.balance_of(user);
+    assert!(final_balance == initial_balance - cost_to_play.into(), "Tokens should be burned");
+    
+    // Verify total supply was reduced (tokens actually burned, not transferred)
+    let final_supply = erc20_dispatcher.total_supply();
+    assert!(final_supply < initial_balance, "Total supply should decrease when tokens are burned");
+}
+
+// Test TB-13: Buy game without burn (collect payment)
+#[test]
+fn test_buy_game_collect_payment() {
+    // Deploy mock ERC20
+    let erc20_contract = declare("MockERC20").unwrap().contract_class();
+    let (payment_token, _) = erc20_contract.deploy(@array![]).unwrap();
+    
+    let token_contract = declare("MockMinigameToken").unwrap().contract_class();
+    let (game_address, _) = token_contract.deploy(@array![]).unwrap();
+    
+    let cost_to_play = 1000_u128;
+    let settings_id = 5_u32;
+    
+    let contract_address = deploy_ticket_booth(
+        game_address,
+        payment_token,
+        cost_to_play,
+        false, // burn_payment = false (collect payment)
+        settings_id,
+        Option::None,
+        Option::None,
+    );
+    
+    let dispatcher = IMockTicketBoothDispatcher { contract_address };
+    let user = contract_address_const::<0x999>();
+    
+    // Setup: Give user tokens and approve ticket booth
+    use super::super::mocks::mock_erc20::{MockERC20Dispatcher, MockERC20DispatcherTrait};
+    
+    let mock_erc20 = MockERC20Dispatcher { contract_address: payment_token };
+    let erc20_dispatcher = IERC20Dispatcher { contract_address: payment_token };
+    
+    // Mint tokens to user
+    mock_erc20.mint(user, cost_to_play.into());
+    
+    // User approves ticket booth
+    start_cheat_caller_address(payment_token, user);
+    erc20_dispatcher.approve(contract_address, cost_to_play.into());
+    stop_cheat_caller_address(payment_token);
+    
+    // Check initial balances
+    let initial_user_balance = erc20_dispatcher.balance_of(user);
+    let initial_booth_balance = erc20_dispatcher.balance_of(contract_address);
+    
+    // Buy game (should transfer tokens to ticket booth)
+    start_cheat_caller_address(contract_address, user);
+    let token_id = dispatcher.buy_game("Player One", user, false);
+    stop_cheat_caller_address(contract_address);
+    
+    // Verify token was minted
+    assert!(token_id > 0, "Token ID should be valid");
+    
+    // Verify tokens were transferred to ticket booth
+    let final_user_balance = erc20_dispatcher.balance_of(user);
+    let final_booth_balance = erc20_dispatcher.balance_of(contract_address);
+    
+    assert!(final_user_balance == initial_user_balance - cost_to_play.into(), "User balance should decrease");
+    assert!(final_booth_balance == initial_booth_balance + cost_to_play.into(), "Booth balance should increase");
+}
+
 // Mock TicketBooth contract for testing
 #[starknet::contract]
 mod MockTicketBooth {

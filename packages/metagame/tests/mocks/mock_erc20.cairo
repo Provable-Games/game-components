@@ -35,7 +35,7 @@ pub mod MockERC20 {
         }
 
         fn allowance(self: @ContractState, owner: ContractAddress, spender: ContractAddress) -> u256 {
-            self.allowances.read((owner, spender))
+            self.allowances.entry((owner, spender)).read()
         }
 
         fn transfer(ref self: ContractState, recipient: ContractAddress, amount: u256) -> bool {
@@ -51,12 +51,12 @@ pub mod MockERC20 {
             amount: u256
         ) -> bool {
             let caller = get_caller_address();
-            let current_allowance = self.allowances.read((sender, caller));
+            let current_allowance = self.allowances.entry((sender, caller)).read();
             
             // For testing purposes, allow unlimited transfers if allowance is max
-            if current_allowance != core::integer::BoundedInt::max() {
+            if current_allowance != core::num::traits::Bounded::<u256>::MAX {
                 assert!(current_allowance >= amount, "ERC20: insufficient allowance");
-                self.allowances.write((sender, caller), current_allowance - amount);
+                self.allowances.entry((sender, caller)).write(current_allowance - amount);
             }
             
             self._transfer(sender, recipient, amount);
@@ -65,7 +65,7 @@ pub mod MockERC20 {
 
         fn approve(ref self: ContractState, spender: ContractAddress, amount: u256) -> bool {
             let owner = get_caller_address();
-            self.allowances.write((owner, spender), amount);
+            self.allowances.entry((owner, spender)).write(amount);
             true
         }
     }

@@ -99,12 +99,9 @@ pub mod TicketBoothComponent {
                 let payment_token = IERC20Dispatcher { contract_address: payment_token_address };
                 
                 if self.burn_payment.read() {
-                    // Transfer tokens to this contract then burn
+                    // TODO: Implement burn functionality
                     payment_token.transfer_from(caller, get_contract_address(), cost.into());
-                    // Note: burn implementation would depend on the token contract supporting burn
-                    // For now, tokens are held by the ticket booth
                 } else {
-                    // Transfer tokens directly to this contract
                     payment_token.transfer_from(caller, get_contract_address(), cost.into());
                 }
             }
