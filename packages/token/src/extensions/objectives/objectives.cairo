@@ -314,19 +314,7 @@ pub mod ObjectivesComponent {
                 }
                 index += 1;
             };
-            // Get all objectives and check if all are completed
-            let objectives = component.get_objectives_array(token_id);
-            let all_objectives_completed = objectives_logic::are_all_objectives_completed(
-                objectives.span(),
-            );
-
-            if all_objectives_completed {
-                component.emit(AllObjectivesCompleted { token_id });
-                if let Option::Some(event_relayer) = event_relayer {
-                    event_relayer.emit_all_objectives_completed(token_id);
-                }
-            }
-            all_objectives_completed
+            completed_count == total_count
         }
 
         fn are_objectives_completed(self: @TContractState, token_id: u64) -> bool {

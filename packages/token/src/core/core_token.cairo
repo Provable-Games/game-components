@@ -256,7 +256,7 @@ pub mod CoreTokenComponent {
                     // Emit relayer event for minter if added
                     if minted_by > 0 {
                         if let Option::Some(relayer) = self.get_event_relayer() {
-                            relayer.emit_minter_added(minted_by, caller);
+                            relayer.emit_minter_registry_update(minted_by, caller);
                             relayer.emit_minter_counter_update(minted_by);
                         }
                     }
@@ -300,7 +300,7 @@ pub mod CoreTokenComponent {
                     if let Option::Some(name) = player_name {
                         self.token_player_names.entry(token_id).write(name.clone());
                         if let Option::Some(relayer) = self.get_event_relayer() {
-                            relayer.emit_player_name_update(token_id, name);
+                            relayer.emit_token_player_name_update(token_id, name);
                         }
                     }
 
@@ -308,7 +308,7 @@ pub mod CoreTokenComponent {
                     if let Option::Some(client_url) = client_url {
                         self.token_client_url.entry(token_id).write(client_url.clone());
                         if let Option::Some(relayer) = self.get_event_relayer() {
-                            relayer.emit_client_url_update(token_id, client_url);
+                            relayer.emit_token_client_url_update(token_id, client_url);
                         }
                     }
 
@@ -360,7 +360,7 @@ pub mod CoreTokenComponent {
                     // Emit relayer event for minter if added
                     if minted_by > 0 {
                         if let Option::Some(relayer) = self.get_event_relayer() {
-                            relayer.emit_minter_added(minted_by, caller);
+                            relayer.emit_minter_registry_update(minted_by, caller);
                             relayer.emit_minter_counter_update(minted_by);
                         }
                     }
@@ -397,7 +397,7 @@ pub mod CoreTokenComponent {
                     if let Option::Some(name) = player_name {
                         self.token_player_names.entry(token_id).write(name.clone());
                         if let Option::Some(relayer) = self.get_event_relayer() {
-                            relayer.emit_player_name_update(token_id, name);
+                            relayer.emit_token_player_name_update(token_id, name);
                         }
                     }
 
@@ -543,7 +543,7 @@ pub mod CoreTokenComponent {
             if let Option::Some(name) = player_name {
                 self.token_player_names.entry(token_id).write(name.clone());
                 if let Option::Some(relayer) = self.get_event_relayer() {
-                    relayer.emit_player_name_update(token_id, name);
+                    relayer.emit_token_player_name_update(token_id, name);
                 }
             }
 
@@ -799,7 +799,7 @@ pub mod CoreTokenComponent {
         fn emit_score_update(ref self: ComponentState<TContractState>, token_id: u64, score: u64) {
             self.emit(ScoreUpdate { token_id, score });
             if let Option::Some(relayer) = self.get_event_relayer() {
-                relayer.emit_score_update(token_id, score);
+                relayer.emit_token_score_update(token_id, score);
             }
         }
 

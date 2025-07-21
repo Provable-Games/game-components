@@ -90,7 +90,7 @@ pub mod MinterComponent {
             component.emit(MinterRegistered { minter_id, minter_address: minter });
 
             if let Option::Some(event_relayer) = event_relayer {
-                event_relayer.emit_minter_added(minter_id, minter);
+                event_relayer.emit_minter_registry_update(minter_id, minter);
                 event_relayer.emit_minter_counter_update(minter_id);
             }
 

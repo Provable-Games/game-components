@@ -52,7 +52,7 @@ pub mod ContextComponent {
             component.emit(TokenContextData { token_id: token_id, data: context_json.clone() });
 
             if let Option::Some(event_relayer) = event_relayer {
-                event_relayer.emit_context_updated(token_id, context_json.clone());
+                event_relayer.emit_token_context_update(token_id, context_json.clone());
             }
         }
     }

@@ -187,7 +187,7 @@ pub mod MinigameRegistryContract {
 
             // Emit relayer event for game ID mapping
             if let Option::Some(relayer) = self.get_event_relayer() {
-                relayer.emit_game_id_mapping_update(caller_address, new_game_id);
+                relayer.emit_game_registry_update(new_game_id, caller_address);
             }
 
             // Mint creator token
