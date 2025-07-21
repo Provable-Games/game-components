@@ -39,6 +39,7 @@ pub mod CoreTokenComponent {
     pub struct Storage {
         token_metadata: Map<u64, TokenMetadata>,
         token_player_names: Map<u64, ByteArray>,
+        token_client_url: Map<u64, ByteArray>,
         token_counter: u64,
         game_address: ContractAddress,
         game_registry_address: ContractAddress,
@@ -154,11 +155,13 @@ pub mod CoreTokenComponent {
             let renderer = RendererOpt::get_token_renderer(contract_self, token_id);
             match renderer {
                 Option::Some(addr) => addr,
-                Option::None => starknet::contract_address_const::<0>(),
+                Option::None => contract_address_const::<0>(),
             }
         }
 
-        fn token_game_address(self: @ComponentState<TContractState>, token_id: u64) -> ContractAddress {
+        fn token_game_address(
+            self: @ComponentState<TContractState>, token_id: u64,
+        ) -> ContractAddress {
             let metadata = self.token_metadata.entry(token_id).read();
             if token_state::is_single_game_token(metadata.game_id) {
                 // Single game token - use component's game address
@@ -262,7 +265,10 @@ pub mod CoreTokenComponent {
                     match renderer_address {
                         Option::Some(renderer_address) => {
                             RendererOpt::set_token_renderer(
-                                ref contract_self, token_id, renderer_address, self.get_event_relayer(),
+                                ref contract_self,
+                                token_id,
+                                renderer_address,
+                                self.get_event_relayer(),
                             );
                         },
                         Option::None => {},
@@ -295,6 +301,14 @@ pub mod CoreTokenComponent {
                         self.token_player_names.entry(token_id).write(name.clone());
                         if let Option::Some(relayer) = self.get_event_relayer() {
                             relayer.emit_player_name_update(token_id, name);
+                        }
+                    }
+
+                    // Set client url if provided
+                    if let Option::Some(client_url) = client_url {
+                        self.token_client_url.entry(token_id).write(client_url.clone());
+                        if let Option::Some(relayer) = self.get_event_relayer() {
+                            relayer.emit_client_url_update(token_id, client_url);
                         }
                     }
 
@@ -355,7 +369,10 @@ pub mod CoreTokenComponent {
                     match renderer_address {
                         Option::Some(renderer_address) => {
                             RendererOpt::set_token_renderer(
-                                ref contract_self, token_id, renderer_address, self.get_event_relayer(),
+                                ref contract_self,
+                                token_id,
+                                renderer_address,
+                                self.get_event_relayer(),
                             );
                         },
                         Option::None => {},
@@ -684,12 +701,16 @@ pub mod CoreTokenComponent {
             }
 
             if let Option::Some(game_registry_address) = game_registry_address {
-                assert!(!game_registry_address.is_zero(), "CoreToken: Game registry address is zero");
+                assert!(
+                    !game_registry_address.is_zero(), "CoreToken: Game registry address is zero",
+                );
                 self.game_registry_address.write(game_registry_address);
             }
 
             if let Option::Some(event_relayer_address) = event_relayer_address {
-                assert!(!event_relayer_address.is_zero(), "CoreToken: Event relayer address is zero");
+                assert!(
+                    !event_relayer_address.is_zero(), "CoreToken: Event relayer address is zero",
+                );
                 self.event_relayer_address.write(event_relayer_address);
             }
 

@@ -90,4 +90,9 @@ pub impl NoOpRenderer<TContractState> of OptionalRenderer<TContractState> {
         event_relayer: Option<ITokenEventRelayerDispatcher>,
     ) { // No-op
     }
+
+    fn reset_token_renderer(
+        ref self: TContractState, token_id: u64, event_relayer: Option<ITokenEventRelayerDispatcher>,
+    ) { // No-op
+    }
 }

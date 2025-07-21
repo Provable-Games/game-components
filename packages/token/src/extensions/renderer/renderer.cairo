@@ -1,6 +1,6 @@
 #[starknet::component]
 pub mod RendererComponent {
-    use starknet::ContractAddress;
+    use starknet::{ContractAddress, contract_address_const};
     use starknet::storage::{
         StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess, Map,
     };
@@ -69,6 +69,21 @@ pub mod RendererComponent {
 
             if let Option::Some(relayer) = event_relayer {
                 relayer.emit_token_renderer_update(token_id, renderer);
+            }
+        }
+
+        fn reset_token_renderer(
+            ref self: TContractState,
+            token_id: u64,
+            event_relayer: Option<ITokenEventRelayerDispatcher>,
+        ) {
+            let mut component = HasComponent::get_component_mut(ref self);
+            component.token_renderers.entry(token_id).write(contract_address_const::<0>());
+
+            component.emit(RendererSet { token_id, renderer: contract_address_const::<0>() });
+
+            if let Option::Some(relayer) = event_relayer {
+                relayer.emit_token_renderer_update(token_id, contract_address_const::<0>());
             }
         }
     }

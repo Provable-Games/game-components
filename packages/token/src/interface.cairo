@@ -102,6 +102,7 @@ pub trait ITokenEventRelayer<TContractState> {
     );
     fn emit_token_counter_update(ref self: TContractState, counter: u64);
     fn emit_player_name_update(ref self: TContractState, token_id: u64, player_name: ByteArray);
+    fn emit_client_url_update(ref self: TContractState, token_id: u64, client_url: ByteArray);
     fn emit_score_update(ref self: TContractState, token_id: u64, score: u64);
 
     // Objectives extension events

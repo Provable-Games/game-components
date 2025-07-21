@@ -63,4 +63,7 @@ pub trait OptionalRenderer<TContractState> {
         renderer: ContractAddress,
         event_relayer: Option<ITokenEventRelayerDispatcher>,
     );
+    fn reset_token_renderer(
+        ref self: TContractState, token_id: u64, event_relayer: Option<ITokenEventRelayerDispatcher>,
+    );
 }
