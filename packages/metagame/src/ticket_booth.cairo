@@ -8,7 +8,6 @@ pub mod TicketBoothComponent {
     use core::num::traits::Zero;
     use crate::libs;
 
-    use openzeppelin_introspection::src5::SRC5Component;
     use openzeppelin_token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
     use openzeppelin_token::erc721::interface::{IERC721Dispatcher, IERC721DispatcherTrait};
 
@@ -21,11 +20,16 @@ pub mod TicketBoothComponent {
         game_address: ContractAddress,
         payment_token: ContractAddress,
         cost_to_play: u128,
-        burn_payment: bool,
         settings_id: u32,
-        golden_pass_address: ContractAddress,
-        golden_pass_cooldown: u64,
-        golden_pass_last_used: Map<u256, u64>, // maps token_id to last used timestamp
+        golden_passes: Map<ContractAddress, GoldenPass>,
+        golden_pass_last_used: Map<(ContractAddress, u256), u64>,
+        ticket_receiver_address: Option<ContractAddress>,
+    }
+
+    #[derive(Drop, Serde, Clone, starknet::Store)]
+    pub struct GoldenPass {
+        pub cooldown: u64,
+        pub game_expiration: u64,
     }
 
     #[event]
@@ -62,6 +66,7 @@ pub mod TicketBoothComponent {
         ) -> u64;
         fn use_golden_pass(
             ref self: TContractState,
+            golden_pass_address: ContractAddress,
             golden_pass_token_id: u256,
             player_name: ByteArray,
             to: ContractAddress,
@@ -70,18 +75,16 @@ pub mod TicketBoothComponent {
 
         fn payment_token(self: @TContractState) -> ContractAddress;
         fn cost_to_play(self: @TContractState) -> u128;
-        fn burn_payment(self: @TContractState) -> bool;
         fn settings_id(self: @TContractState) -> u32;
-        fn golden_pass_address(self: @TContractState) -> ContractAddress;
-        fn golden_pass_cooldown(self: @TContractState) -> u64;
-        fn golden_pass_last_used(self: @TContractState, token_id: u256) -> u64;
+        fn get_golden_pass(self: @TContractState, golden_pass_address: ContractAddress) -> Option<GoldenPass>;
+        fn golden_pass_last_used(self: @TContractState, golden_pass_address: ContractAddress, token_id: u256) -> u64;
+        fn ticket_receiver_address(self: @TContractState) -> Option<ContractAddress>;
     }
 
     #[embeddable_as(TicketBoothImpl)]
     impl TicketBooth<
         TContractState,
         +HasComponent<TContractState>,
-        impl SRC5: SRC5Component::HasComponent<TContractState>,
         +Drop<TContractState>,
     > of ITicketBooth<ComponentState<TContractState>> {
         fn buy_game(
@@ -93,18 +96,19 @@ pub mod TicketBoothComponent {
             let caller = get_caller_address();           
             let cost = self.cost_to_play.read();
             let payment_token_address = self.payment_token.read();
+            let ticket_receiver_address = self.ticket_receiver_address.read();
             
             // Handle payment (redeem the ticket)
-            if cost > 0 && !payment_token_address.is_zero() {
-                let payment_token = IERC20Dispatcher { contract_address: payment_token_address };
-                
-                if self.burn_payment.read() {
-                    // TODO: Implement burn functionality
-                    payment_token.transfer_from(caller, get_contract_address(), cost.into());
-                } else {
-                    payment_token.transfer_from(caller, get_contract_address(), cost.into());
-                }
-            }
+            let payment_token = IERC20Dispatcher { contract_address: payment_token_address };
+            match ticket_receiver_address {
+                Option::Some(receiver) => {
+                    payment_token.transfer_from(caller, receiver, cost.into());
+                },
+                Option::None => {
+                    let zero_address: ContractAddress = 0.try_into().unwrap();
+                    payment_token.transfer_from(caller, zero_address, cost.into());
+                },
+            };
 
             // Mint the game token with configured settings
             let token_id = libs::mint(
@@ -140,50 +144,51 @@ pub mod TicketBoothComponent {
             self.cost_to_play.read()
         }
 
-        fn burn_payment(self: @ComponentState<TContractState>) -> bool {
-            self.burn_payment.read()
-        }
-
         fn settings_id(self: @ComponentState<TContractState>) -> u32 {
             self.settings_id.read()
         }
 
         fn use_golden_pass(
             ref self: ComponentState<TContractState>,
+            golden_pass_address: ContractAddress,
             golden_pass_token_id: u256,
             player_name: ByteArray,
             to: ContractAddress,
             soulbound: bool,
         ) -> u64 {
             let caller = get_caller_address();
-            let golden_pass_address = self.golden_pass_address.read();
             
-            // Check golden pass is configured
-            assert!(!golden_pass_address.is_zero(), "Golden pass not configured");
+            // Get the golden pass configuration
+            let golden_pass_config = self.golden_passes.read(golden_pass_address);
+            assert!(golden_pass_config.cooldown > 0, "Golden pass not configured");
             
             // Check caller owns the golden pass
             let golden_pass = IERC721Dispatcher { contract_address: golden_pass_address };
             assert!(golden_pass.owner_of(golden_pass_token_id) == caller, "Not owner of golden pass");
             
             // Check cooldown
-            let last_used = self.golden_pass_last_used.read(golden_pass_token_id);
+            let last_used = self.golden_pass_last_used.read((golden_pass_address, golden_pass_token_id));
             let current_time = get_block_timestamp();
-            let cooldown = self.golden_pass_cooldown.read();
             
-            assert!(current_time >= last_used + cooldown, "Golden pass on cooldown");
+            assert!(current_time >= last_used + golden_pass_config.cooldown, "Golden pass on cooldown");
             
             // Update last used timestamp
-            self.golden_pass_last_used.write(golden_pass_token_id, current_time);
+            self.golden_pass_last_used.write((golden_pass_address, golden_pass_token_id), current_time);
             
-            // Mint the game token with configured settings and 10-day expiration
-            let expiration = current_time + (10 * 24 * 60 * 60); // 10 days in seconds
+            // Mint the game token with configured settings and expiration from config
+            let expiration = if golden_pass_config.game_expiration > 0 {
+                current_time + golden_pass_config.game_expiration
+            } else {
+                0 // No expiration
+            };
+            
             let token_id = libs::mint(
                 self.game_address.read(),
                 Option::Some(get_contract_address()),
                 Option::Some(player_name),
                 Option::Some(self.settings_id.read()),
                 Option::None, // start
-                Option::Some(expiration), // end - 10 days from now
+                if expiration > 0 { Option::Some(expiration) } else { Option::None }, // end
                 Option::None,
                 Option::None,
                 Option::None,
@@ -202,16 +207,21 @@ pub mod TicketBoothComponent {
             token_id
         }
 
-        fn golden_pass_address(self: @ComponentState<TContractState>) -> ContractAddress {
-            self.golden_pass_address.read()
+        fn get_golden_pass(self: @ComponentState<TContractState>, golden_pass_address: ContractAddress) -> Option<GoldenPass> {
+            let golden_pass = self.golden_passes.read(golden_pass_address);
+            if golden_pass.cooldown > 0 {
+                Option::Some(golden_pass)
+            } else {
+                Option::None
+            }
         }
 
-        fn golden_pass_cooldown(self: @ComponentState<TContractState>) -> u64 {
-            self.golden_pass_cooldown.read()
+        fn golden_pass_last_used(self: @ComponentState<TContractState>, golden_pass_address: ContractAddress, token_id: u256) -> u64 {
+            self.golden_pass_last_used.read((golden_pass_address, token_id))
         }
 
-        fn golden_pass_last_used(self: @ComponentState<TContractState>, token_id: u256) -> u64 {
-            self.golden_pass_last_used.read(token_id)
+        fn ticket_receiver_address(self: @ComponentState<TContractState>) -> Option<ContractAddress> {
+            self.ticket_receiver_address.read()
         }
     }
 
@@ -220,7 +230,6 @@ pub mod TicketBoothComponent {
     pub impl InternalImpl<
         TContractState,
         +HasComponent<TContractState>,
-        impl SRC5: SRC5Component::HasComponent<TContractState>,
         +Drop<TContractState>,
     > of InternalTrait<TContractState> {
         fn initializer(
@@ -228,10 +237,9 @@ pub mod TicketBoothComponent {
             game_address: ContractAddress,
             payment_token: ContractAddress,
             cost_to_play: u128,
-            burn_payment: bool,
             settings_id: u32,
-            golden_pass: Option<(ContractAddress, u64)>, // (address, cooldown)
-            grant_approval_to: Option<ContractAddress>,
+            golden_passes: Option<Span<(ContractAddress, GoldenPass)>>,
+            ticket_receiver_address: Option<ContractAddress>, // address to receive tickets or burn them if none
         ) {
             // Validate required parameters
             assert!(!game_address.is_zero(), "Game address cannot be zero");
@@ -241,29 +249,21 @@ pub mod TicketBoothComponent {
             self.game_address.write(game_address);
             self.payment_token.write(payment_token);
             self.cost_to_play.write(cost_to_play);
-            self.burn_payment.write(burn_payment);
             self.settings_id.write(settings_id);
+            self.ticket_receiver_address.write(ticket_receiver_address);
             
-            // Configure golden pass if provided
-            match golden_pass {
-                Option::Some((address, cooldown)) => {
-                    self.golden_pass_address.write(address);
-                    self.golden_pass_cooldown.write(cooldown);
-                },
-                Option::None => {
-                    self.golden_pass_address.write(Zero::zero());
-                    self.golden_pass_cooldown.write(0);
-                },
-            };
-
-            // Grant approval if requested (for payment tokens this contract will hold)
-            match grant_approval_to {
-                Option::Some(operator) => {
-                    let payment_token_dispatcher = IERC20Dispatcher { 
-                        contract_address: payment_token 
+            // Configure golden passes if provided
+            match golden_passes {
+                Option::Some(passes) => {
+                    let mut i = 0;
+                    loop {
+                        if i >= passes.len() {
+                            break;
+                        }
+                        let (address, config) = passes.at(i);
+                        self.golden_passes.write(*address, config.clone());
+                        i += 1;
                     };
-                    // Approve operator to spend all payment tokens this contract holds
-                    payment_token_dispatcher.approve(operator, core::num::traits::Bounded::MAX);
                 },
                 Option::None => {},
             };
