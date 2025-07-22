@@ -1,4 +1,5 @@
 use game_components_metagame::ticket_booth::{TicketBoothComponent, ITicketBoothDispatcher, ITicketBoothDispatcherTrait, GoldenPass};
+use game_components_metagame::extensions::context::structs::GameContextDetails;
 use openzeppelin_token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
 use openzeppelin_token::erc721::interface::{IERC721Dispatcher, IERC721DispatcherTrait};
 use starknet::{ContractAddress, contract_address_const, get_caller_address, get_contract_address};
@@ -13,6 +14,8 @@ trait IMockTicketBooth<TContractState> {
         player_name: ByteArray,
         to: ContractAddress,
         soulbound: bool,
+        objective_ids: Option<Span<u32>>,
+        context: Option<GameContextDetails>,
     ) -> u64;
     fn use_golden_pass(
         ref self: TContractState,
@@ -21,10 +24,16 @@ trait IMockTicketBooth<TContractState> {
         player_name: ByteArray,
         to: ContractAddress,
         soulbound: bool,
+        objective_ids: Option<Span<u32>>,
+        context: Option<GameContextDetails>,
     ) -> u64;
     fn payment_token(self: @TContractState) -> ContractAddress;
     fn cost_to_play(self: @TContractState) -> u128;
-    fn settings_id(self: @TContractState) -> u32;
+    fn settings_id(self: @TContractState) -> Option<u32>;
+    fn start_time(self: @TContractState) -> Option<u64>;
+    fn expiration_time(self: @TContractState) -> Option<u64>;
+    fn client_url(self: @TContractState) -> Option<ByteArray>;
+    fn renderer_address(self: @TContractState) -> Option<ContractAddress>;
     fn get_golden_pass(self: @TContractState, golden_pass_address: ContractAddress) -> Option<GoldenPass>;
     fn golden_pass_last_used(self: @TContractState, golden_pass_address: ContractAddress, token_id: u256) -> u64;
     fn ticket_receiver_address(self: @TContractState) -> Option<ContractAddress>;
@@ -35,7 +44,11 @@ fn deploy_ticket_booth(
     game_address: ContractAddress,
     payment_token: ContractAddress,
     cost_to_play: u128,
-    settings_id: u32,
+    settings_id: Option<u32>,
+    start_time: Option<u64>,
+    expiration_time: Option<u64>,
+    client_url: Option<ByteArray>,
+    renderer_address: Option<ContractAddress>,
     golden_passes: Option<Span<(ContractAddress, GoldenPass)>>,
     ticket_receiver_address: Option<ContractAddress>,
 ) -> ContractAddress {
@@ -45,7 +58,63 @@ fn deploy_ticket_booth(
     calldata.append(game_address.into());
     calldata.append(payment_token.into());
     calldata.append(cost_to_play.into());
-    calldata.append(settings_id.into());
+    
+    // settings_id option
+    match settings_id {
+        Option::Some(id) => {
+            calldata.append(1); // Some
+            calldata.append(id.into());
+        },
+        Option::None => {
+            calldata.append(0); // None
+        }
+    }
+    
+    // start_time option
+    match start_time {
+        Option::Some(time) => {
+            calldata.append(1); // Some
+            calldata.append(time.into());
+        },
+        Option::None => {
+            calldata.append(0); // None
+        }
+    }
+    
+    // expiration_time option
+    match expiration_time {
+        Option::Some(time) => {
+            calldata.append(1); // Some
+            calldata.append(time.into());
+        },
+        Option::None => {
+            calldata.append(0); // None
+        }
+    }
+    
+    // client_url option
+    match client_url {
+        Option::Some(url) => {
+            calldata.append(1); // Some
+            let data: Span<felt252> = url.serialize();
+            data.serialize(ref calldata);
+        },
+        Option::None => {
+            calldata.append(0); // None
+        }
+    }
+    
+    
+    // renderer_address option
+    match renderer_address {
+        Option::Some(address) => {
+            calldata.append(1); // Some
+            calldata.append(address.into());
+        },
+        Option::None => {
+            calldata.append(0); // None
+        }
+    }
     
     // Golden passes option
     match golden_passes {
@@ -106,7 +175,11 @@ fn test_initialization_success() {
         game_address,
         payment_token,
         cost_to_play,
-        settings_id,
+        Option::Some(settings_id),
+        Option::None, // start_time
+        Option::None, // expiration_time
+        Option::None, // client_url
+        Option::None, // renderer_address
         Option::Some(golden_passes),
         Option::Some(ticket_receiver),
     );
@@ -116,7 +189,7 @@ fn test_initialization_success() {
     // Verify all parameters are set correctly
     assert!(dispatcher.payment_token() == payment_token, "Payment token mismatch");
     assert!(dispatcher.cost_to_play() == cost_to_play, "Cost to play mismatch");
-    assert!(dispatcher.settings_id() == settings_id, "Settings ID mismatch");
+    assert!(dispatcher.settings_id() == Option::Some(settings_id), "Settings ID mismatch");
     
     // Check golden pass configuration
     let retrieved_golden_pass = dispatcher.get_golden_pass(golden_pass_address).unwrap();
@@ -139,7 +212,11 @@ fn test_initialization_no_golden_pass() {
         game_address,
         payment_token,
         cost_to_play,
-        settings_id,
+        Option::Some(settings_id),
+        Option::None, // start_time
+        Option::None, // expiration_time
+        Option::None, // client_url
+        Option::None, // renderer_address
         Option::None, // no golden pass
         Option::None, // burn tokens (no receiver)
     );
@@ -165,7 +242,11 @@ fn test_initialization_zero_game_address() {
         zero_address, // Should fail
         payment_token,
         1000_u128,
-        1_u32,
+        Option::Some(1_u32),
+        Option::None, // start_time
+        Option::None, // expiration_time
+        Option::None, // client_url
+        Option::None, // renderer_address
         Option::None,
         Option::None,
     );
@@ -182,7 +263,11 @@ fn test_initialization_zero_payment_token() {
         game_address,
         zero_address, // Should fail
         1000_u128,
-        1_u32,
+        Option::Some(1_u32),
+        Option::None, // start_time
+        Option::None, // expiration_time
+        Option::None, // client_url
+        Option::None, // renderer_address
         Option::None,
         Option::None,
     );
@@ -199,7 +284,11 @@ fn test_initialization_zero_cost() {
         game_address,
         payment_token,
         0_u128, // Should fail
-        1_u32,
+        Option::Some(1_u32),
+        Option::None, // start_time
+        Option::None, // expiration_time
+        Option::None, // client_url
+        Option::None, // renderer_address
         Option::None,
         Option::None,
     );
@@ -222,7 +311,11 @@ fn test_buy_game_success() {
         game_address,
         payment_token,
         cost_to_play,
-        settings_id,
+        Option::Some(settings_id),
+        Option::None, // start_time
+        Option::None, // expiration_time
+        Option::None, // client_url
+        Option::None, // renderer_address
         Option::None,
         Option::Some(contract_address_const::<0xDEF>()), // Collect payments to this address
     );
@@ -241,7 +334,9 @@ fn test_buy_game_success() {
     let token_id = dispatcher.buy_game(
         "Player One",
         user,
-        false
+        false,
+        Option::None, // objective_ids
+        Option::None, // context
     );
     stop_cheat_caller_address(contract_address);
     
@@ -272,7 +367,11 @@ fn test_use_golden_pass_success() {
         game_address,
         payment_token,
         1000_u128,
-        1_u32,
+        Option::Some(1_u32),
+        Option::None, // start_time
+        Option::None, // expiration_time
+        Option::None, // client_url
+        Option::None, // renderer_address
         Option::Some(golden_passes),
         Option::None,
     );
@@ -294,7 +393,9 @@ fn test_use_golden_pass_success() {
         golden_pass_token_id,
         "Golden Player",
         user,
-        true // soulbound
+        true, // soulbound
+        Option::None, // objective_ids
+        Option::None, // context
     );
     
     stop_cheat_block_timestamp(contract_address);
@@ -332,7 +433,11 @@ fn test_golden_pass_cooldown() {
         game_address,
         payment_token,
         1000_u128,
-        1_u32,
+        Option::Some(1_u32),
+        Option::None, // start_time
+        Option::None, // expiration_time
+        Option::None, // client_url
+        Option::None, // renderer_address
         Option::Some(golden_passes),
         Option::None,
     );
@@ -345,11 +450,11 @@ fn test_golden_pass_cooldown() {
     
     // First use at timestamp 1000
     start_cheat_block_timestamp(contract_address, 1000);
-    dispatcher.use_golden_pass(golden_pass_address, golden_pass_token_id, "Player", user, false);
+    dispatcher.use_golden_pass(golden_pass_address, golden_pass_token_id, "Player", user, false, Option::None, Option::None);
     
     // Try to use again immediately (should fail)
     start_cheat_block_timestamp(contract_address, 1001); // Only 1 second later
-    dispatcher.use_golden_pass(golden_pass_address, golden_pass_token_id, "Player", user, false); // Should panic
+    dispatcher.use_golden_pass(golden_pass_address, golden_pass_token_id, "Player", user, false, Option::None, Option::None); // Should panic
 }
 
 // Test TB-09: Golden pass use after cooldown
@@ -376,7 +481,11 @@ fn test_golden_pass_after_cooldown() {
         game_address,
         payment_token,
         1000_u128,
-        1_u32,
+        Option::Some(1_u32),
+        Option::None, // start_time
+        Option::None, // expiration_time
+        Option::None, // client_url
+        Option::None, // renderer_address
         Option::Some(golden_passes),
         Option::None,
     );
@@ -389,11 +498,11 @@ fn test_golden_pass_after_cooldown() {
     
     // First use at timestamp 1000
     start_cheat_block_timestamp(contract_address, 1000);
-    let token_id_1 = dispatcher.use_golden_pass(golden_pass_address, golden_pass_token_id, "Player", user, false);
+    let token_id_1 = dispatcher.use_golden_pass(golden_pass_address, golden_pass_token_id, "Player", user, false, Option::None, Option::None);
     
     // Use again after cooldown (1 hour + 1 second later)
     start_cheat_block_timestamp(contract_address, 1000 + 3600 + 1);
-    let token_id_2 = dispatcher.use_golden_pass(golden_pass_address, golden_pass_token_id, "Player", user, false);
+    let token_id_2 = dispatcher.use_golden_pass(golden_pass_address, golden_pass_token_id, "Player", user, false, Option::None, Option::None);
     
     stop_cheat_block_timestamp(contract_address);
     stop_cheat_caller_address(contract_address);
@@ -424,7 +533,7 @@ fn test_golden_pass_not_configured() {
     let unconfigured_golden_pass = contract_address_const::<0x789>();
     
     start_cheat_caller_address(contract_address, user);
-    dispatcher.use_golden_pass(unconfigured_golden_pass, 1_u256, "Player", user, false); // Should panic
+    dispatcher.use_golden_pass(unconfigured_golden_pass, 1_u256, "Player", user, false, Option::None, Option::None); // Should panic
 }
 
 // Test TB-11: Golden pass with 10-day expiration
@@ -454,7 +563,11 @@ fn test_golden_pass_expiration() {
         game_address,
         payment_token,
         1000_u128,
-        1_u32,
+        Option::Some(1_u32),
+        Option::None, // start_time
+        Option::None, // expiration_time
+        Option::None, // client_url
+        Option::None, // renderer_address
         Option::Some(golden_passes),
         Option::None,
     );
@@ -465,7 +578,7 @@ fn test_golden_pass_expiration() {
     start_cheat_caller_address(contract_address, user);
     start_cheat_block_timestamp(contract_address, 1000);
     
-    let token_id = dispatcher.use_golden_pass(golden_pass_address, 1_u256, "Player", user, false);
+    let token_id = dispatcher.use_golden_pass(golden_pass_address, 1_u256, "Player", user, false, Option::None, Option::None);
     
     stop_cheat_block_timestamp(contract_address);
     stop_cheat_caller_address(contract_address);
@@ -492,8 +605,12 @@ fn test_buy_game_send_to_zero() {
         game_address,
         payment_token,
         cost_to_play,
-        settings_id,
-        Option::None,
+        Option::Some(settings_id),
+        Option::None, // start_time
+        Option::None, // expiration_time
+        Option::None, // client_url
+        Option::None, // renderer_address
+        Option::None, // golden_passes
         Option::None, // No receiver = send tokens to zero address
     );
     
@@ -522,7 +639,7 @@ fn test_buy_game_send_to_zero() {
     
     // Buy game (should send tokens to zero address)
     start_cheat_caller_address(contract_address, user);
-    let token_id = dispatcher.buy_game("Player One", user, false);
+    let token_id = dispatcher.buy_game("Player One", user, false, Option::None, Option::None);
     stop_cheat_caller_address(contract_address);
     
     // Verify token was minted
@@ -555,8 +672,12 @@ fn test_buy_game_collect_payment() {
         game_address,
         payment_token,
         cost_to_play,
-        settings_id,
-        Option::None,
+        Option::Some(settings_id),
+        Option::None, // start_time
+        Option::None, // expiration_time
+        Option::None, // client_url
+        Option::None, // renderer_address
+        Option::None, // golden_passes
         Option::Some(receiver_address), // Collect payments to this address
     );
     
@@ -583,7 +704,7 @@ fn test_buy_game_collect_payment() {
     
     // Buy game (should transfer tokens to receiver address)
     start_cheat_caller_address(contract_address, user);
-    let token_id = dispatcher.buy_game("Player One", user, false);
+    let token_id = dispatcher.buy_game("Player One", user, false, Option::None, Option::None);
     stop_cheat_caller_address(contract_address);
     
     // Verify token was minted
@@ -628,7 +749,11 @@ mod MockTicketBooth {
         game_address: ContractAddress,
         payment_token: ContractAddress,
         cost_to_play: u128,
-        settings_id: u32,
+        settings_id: Option<u32>,
+        start_time: Option<u64>,
+        expiration_time: Option<u64>,
+        client_url: Option<ByteArray>,
+        renderer_address: Option<ContractAddress>,
         golden_passes: Option<Span<(ContractAddress, GoldenPass)>>,
         ticket_receiver_address: Option<ContractAddress>,
     ) {
@@ -637,6 +762,10 @@ mod MockTicketBooth {
             payment_token,
             cost_to_play,
             settings_id,
+            start_time,
+            expiration_time,
+            client_url,
+            renderer_address,
             golden_passes,
             ticket_receiver_address,
         );
