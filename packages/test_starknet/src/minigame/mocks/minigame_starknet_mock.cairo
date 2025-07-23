@@ -60,7 +60,7 @@ pub mod minigame_starknet_mock {
     use game_components_minigame::extensions::objectives::structs::GameObjective;
     use openzeppelin_introspection::src5::SRC5Component;
 
-    use starknet::ContractAddress;
+    use starknet::{ContractAddress, get_contract_address};
     use starknet::storage::{
         StoragePointerReadAccess, StoragePointerWriteAccess, Map, StoragePathEntry,
     };
@@ -318,9 +318,28 @@ pub mod minigame_starknet_mock {
             objectives_address: Option<ContractAddress>,
             minigame_token_address: ContractAddress,
         ) {
-            // Initialize storage counters
-            self.settings_count.write(0);
-            self.objective_count.write(0);
+            // Initialize optional features - these will only compile if the contract implements the
+            // required traits
+            let settings_address = match settings_address {
+                Option::Some(address) => {
+                    self.settings.initializer();
+                    Option::Some(address)
+                },
+                Option::None => {
+                    self.settings.initializer();
+                    Option::Some(get_contract_address())
+                },
+            };
+            let objectives_address = match objectives_address {
+                Option::Some(address) => {
+                    self.objectives.initializer();
+                    Option::Some(address)
+                },
+                Option::None => {
+                    self.objectives.initializer();
+                    Option::Some(get_contract_address())
+                },
+            };
 
             // Initialize the base minigame component
             self
@@ -340,17 +359,6 @@ pub mod minigame_starknet_mock {
                     objectives_address,
                     minigame_token_address,
                 );
-
-            // Initialize optional features - these will only compile if the contract implements the
-            // required traits
-            match settings_address {
-                Option::Some(_) => self.settings.initializer(),
-                Option::None => {},
-            }
-            match objectives_address {
-                Option::Some(_) => self.objectives.initializer(),
-                Option::None => {},
-            }
         }
     }
 

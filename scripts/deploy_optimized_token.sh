@@ -165,9 +165,9 @@ fi
 print_info "Building contracts..."
 scarb build
 
-if [ ! -f "target/dev/game_components_token_OptimizedTokenContract.contract_class.json" ]; then
+if [ ! -f "target/dev/game_components_token_FullTokenContract.contract_class.json" ]; then
     print_error "Contract build failed or contract file not found"
-    print_error "Expected: target/dev/game_components_token_OptimizedTokenContract.contract_class.json"
+    print_error "Expected: target/dev/game_components_token_FullTokenContract.contract_class.json"
     echo "Available contract files:"
     ls -la target/dev/*.contract_class.json 2>/dev/null || echo "No contract files found"
     exit 1
@@ -273,9 +273,9 @@ print_info "Declaring Optimized Token contract..."
 
 # Build declare command based on deployment type
 if [ "$DEPLOY_TO_SLOT" = "true" ]; then
-    DECLARE_OUTPUT=$(starkli declare --account $STARKNET_ACCOUNT --rpc $STARKNET_RPC --watch target/dev/game_components_token_OptimizedTokenContract.contract_class.json 2>&1)
+    DECLARE_OUTPUT=$(starkli declare --account $STARKNET_ACCOUNT --rpc $STARKNET_RPC --watch target/dev/game_components_token_FullTokenContract.contract_class.json 2>&1)
 else
-    DECLARE_OUTPUT=$(starkli declare --account $STARKNET_ACCOUNT --rpc $STARKNET_RPC --watch target/dev/game_components_token_OptimizedTokenContract.contract_class.json --private-key $STARKNET_PK 2>&1)
+    DECLARE_OUTPUT=$(starkli declare --account $STARKNET_ACCOUNT --rpc $STARKNET_RPC --watch target/dev/game_components_token_FullTokenContract.contract_class.json --private-key $STARKNET_PK 2>&1)
 fi
 
 # Extract class hash from output

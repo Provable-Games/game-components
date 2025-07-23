@@ -253,13 +253,6 @@ pub mod CoreTokenComponent {
                     let minted_by = MinterOpt::add_minter(
                         ref contract_self, caller, self.get_event_relayer(),
                     );
-                    // Emit relayer event for minter if added
-                    if minted_by > 0 {
-                        if let Option::Some(relayer) = self.get_event_relayer() {
-                            relayer.emit_minter_registry_update(minted_by, caller);
-                            relayer.emit_minter_counter_update(minted_by);
-                        }
-                    }
 
                     // Handle renderer if provided
                     match renderer_address {
@@ -272,12 +265,6 @@ pub mod CoreTokenComponent {
                             );
                         },
                         Option::None => {},
-                    }
-                    // Emit relayer event for renderer if set
-                    if let Option::Some(renderer_addr) = renderer_address {
-                        if let Option::Some(relayer) = self.get_event_relayer() {
-                            relayer.emit_token_renderer_update(token_id, renderer_addr);
-                        }
                     }
 
                     // Create token metadata
@@ -357,13 +344,6 @@ pub mod CoreTokenComponent {
                     let minted_by = MinterOpt::add_minter(
                         ref contract_self, caller, self.get_event_relayer(),
                     );
-                    // Emit relayer event for minter if added
-                    if minted_by > 0 {
-                        if let Option::Some(relayer) = self.get_event_relayer() {
-                            relayer.emit_minter_registry_update(minted_by, caller);
-                            relayer.emit_minter_counter_update(minted_by);
-                        }
-                    }
 
                     // Handle renderer if provided
                     match renderer_address {
@@ -376,12 +356,6 @@ pub mod CoreTokenComponent {
                             );
                         },
                         Option::None => {},
-                    }
-                    // Emit relayer event for renderer if set
-                    if let Option::Some(renderer_addr) = renderer_address {
-                        if let Option::Some(relayer) = self.get_event_relayer() {
-                            relayer.emit_token_renderer_update(token_id, renderer_addr);
-                        }
                     }
 
                     // Create minimal token metadata with empty/default values
@@ -805,18 +779,6 @@ pub mod CoreTokenComponent {
 
         fn emit_metadata_update(ref self: ComponentState<TContractState>, token_id: u64) {
             self.emit(MetadataUpdate { token_id });
-        }
-
-        // fn emit_token_metadata_update(ref self: ComponentState<TContractState>, token_id: u64) {
-        //     self.emit(TokenMetadataUpdate { token_id });
-        // }
-
-        fn emit_owners(
-            ref self: ComponentState<TContractState>,
-            token_id: u64,
-            owner: ContractAddress,
-            auth: ContractAddress,
-        ) { // self.emit(Owners { token_id, owner, auth });
         }
 
         fn get_token_metadata(
