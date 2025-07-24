@@ -13,7 +13,13 @@ pub mod TicketBoothComponent {
 
     use starknet::contract_address::ContractAddress;
     use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess, Map, StorageMapReadAccess, StorageMapWriteAccess};
-    use starknet::{get_caller_address, get_contract_address, get_block_timestamp};
+    use starknet::{get_caller_address, get_block_timestamp};
+
+    #[starknet::interface]
+    trait IERC20Burnable<TContractState> {
+        fn burn(ref self: TContractState, amount: u256);
+        fn burn_from(ref self: TContractState, account: ContractAddress, amount: u256);
+    }
 
     #[storage]
     pub struct Storage {
@@ -22,6 +28,7 @@ pub mod TicketBoothComponent {
         game_address: ContractAddress,
         payment_token: ContractAddress,
         cost_to_play: u128,
+        ticket_receiver_address: ContractAddress,
         settings_id: Option<u32>,
         start_time: Option<u64>,
         expiration_time: Option<u64>, // 0 means no expiration
@@ -29,7 +36,6 @@ pub mod TicketBoothComponent {
         renderer_address: Option<ContractAddress>,
         golden_passes: Map<ContractAddress, GoldenPass>,
         golden_pass_last_used: Map<(ContractAddress, u128), u64>,
-        ticket_receiver_address: ContractAddress,
     }
 
     #[derive(Drop, Serde, Clone, starknet::Store)]
@@ -114,17 +120,18 @@ pub mod TicketBoothComponent {
             if !ticket_receiver_address.is_zero() {
                 let _ = payment_token.transfer_from(caller, ticket_receiver_address, cost.into());
             } else {
-                // Try to burn tokens first (not all tokens support burn)
-                // If burn is not supported, fall back to transfer_from
-                let zero_address: ContractAddress = 0.try_into().unwrap();
-                let response = payment_token.transfer_from(caller, zero_address, cost.into());
+                // Try to burn tokens first using burn_from (most common)
+                let burnable_token = IERC20BurnableSafeDispatcher { contract_address: payment_token_address };
+                let burn_from_result = burnable_token.burn_from(caller, cost.into());
                 
-                // Match the result to handle success or failure
-                match response {
-                    Result::Ok(_) => {}, // Burn successful
+                match burn_from_result {
+                    Result::Ok(_) => {
+                        // burn_from was successful
+                    },
                     Result::Err(_) => {
-                        // If burn fails, transfer to contract address instead
-                        let _ = payment_token.transfer_from(caller, get_contract_address(), cost.into());
+                        // burn_from failed, fall back to zero address transfer
+                        let zero_address: ContractAddress = 0.try_into().unwrap();
+                        let _ = payment_token.transfer_from(caller, zero_address, cost.into());
                     },
                 }
             }
@@ -291,7 +298,7 @@ pub mod TicketBoothComponent {
             game_token_address: ContractAddress,
             payment_token: ContractAddress,
             cost_to_play: u128,
-            ticket_receiver_address: ContractAddress, // address to receive tickets or burn if 0x0
+            ticket_receiver_address: ContractAddress,
             game_address: Option<ContractAddress>,
             settings_id: Option<u32>,
             start_time: Option<u64>,
