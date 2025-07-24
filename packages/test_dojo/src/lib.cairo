@@ -1,3 +1,3 @@
 pub mod constants;
-pub mod minigame;
 pub mod metagame;
+pub mod minigame;

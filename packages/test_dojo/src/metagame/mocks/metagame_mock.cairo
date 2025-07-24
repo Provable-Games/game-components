@@ -32,9 +32,8 @@ pub trait IMetagameMockInit<TContractState> {
 mod metagame_mock {
     use game_components_metagame::interface::{IMetagame, IMetagameContext};
     use game_components_metagame::metagame::metagame_component;
-    use game_components_metagame::structs::context::{GameContextDetails, GameContext};
+    use game_components_metagame::structs::context::{GameContext, GameContextDetails};
     use openzeppelin_introspection::src5::SRC5Component;
-
     use starknet::ContractAddress;
 
     component!(path: metagame_component, storage: metagame, event: MetagameEvent);

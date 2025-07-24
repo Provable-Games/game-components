@@ -36,18 +36,16 @@ pub trait IMinigameMockInit<TContractState> {
 #[dojo::contract]
 mod minigame_mock {
     use game_components_minigame::interface::{
-        IMinigameTokenData, IMinigameDetails, IMinigameSettings, IMinigameObjectives,
+        IMinigameDetails, IMinigameObjectives, IMinigameSettings, IMinigameTokenData,
     };
     use game_components_minigame::minigame::minigame_component;
     use game_components_minigame::structs::game_details::GameDetail;
-    use game_components_minigame::structs::settings::{GameSetting, GameSettingDetails};
     use game_components_minigame::structs::objectives::GameObjective;
-    use crate::minigame::models::minigame::{Score, ScoreObjective, Settings, SettingsDetails};
+    use game_components_minigame::structs::settings::{GameSetting, GameSettingDetails};
     use openzeppelin_introspection::src5::SRC5Component;
-
-    use crate::minigame::libs::minigame_store::{Store, StoreTrait};
-
     use starknet::ContractAddress;
+    use crate::minigame::libs::minigame_store::{Store, StoreTrait};
+    use crate::minigame::models::minigame::{Score, ScoreObjective, Settings, SettingsDetails};
 
     component!(path: minigame_component, storage: minigame, event: MinigameEvent);
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
@@ -164,7 +162,7 @@ mod minigame_mock {
                         },
                     );
                 objective_index += 1;
-            };
+            }
             objectives.span()
         }
     }

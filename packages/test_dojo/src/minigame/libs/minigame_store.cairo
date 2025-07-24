@@ -1,9 +1,8 @@
-use dojo::world::{WorldStorage};
-use dojo::model::{ModelStorage};
+use dojo::model::ModelStorage;
+use dojo::world::WorldStorage;
 use crate::constants::VERSION;
-
 use crate::minigame::models::minigame::{
-    Score, ScoreObjective, ScoreObjectiveCount, SettingsDetails, SettingsCounter, Settings,
+    Score, ScoreObjective, ScoreObjectiveCount, Settings, SettingsCounter, SettingsDetails,
 };
 
 #[derive(Copy, Drop)]
