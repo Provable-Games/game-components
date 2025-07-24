@@ -12,7 +12,7 @@ sierra-replace-ids = true
 starknet.workspace = true
 game_components_token = { path = "../token" }
 openzeppelin_introspection = "1.0.0"
-openzeppelin_token = "1.0.0"
+openzeppelin_token = "2.0.0"
 
 [dev-dependencies]
 snforge_std = "0.45.0"
