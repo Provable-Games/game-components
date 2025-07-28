@@ -9,3 +9,4 @@ Scarb.lock
 deployments/
 argent_account.json
 .snfoundry_cache/
+packages/test_dojo/
