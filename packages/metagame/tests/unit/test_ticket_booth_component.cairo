@@ -63,6 +63,7 @@ trait IMockTicketBooth<TContractState> {
 
 // Helper function to deploy ticket booth with all required parameters
 fn deploy_ticket_booth(
+    opening_time: u64,
     game_address: ContractAddress,
     payment_token: ContractAddress,
     cost_to_play: u128,
@@ -77,6 +78,7 @@ fn deploy_ticket_booth(
     let contract = declare("MockTicketBooth").unwrap().contract_class();
     let mut calldata = array![];
 
+    calldata.append(opening_time.into());
     calldata.append(game_address.into());
     calldata.append(payment_token.into());
     calldata.append(cost_to_play.into());
@@ -192,6 +194,7 @@ fn test_initialization_success() {
     let golden_passes = array![(golden_pass_address, golden_pass)].span();
 
     let contract_address = deploy_ticket_booth(
+        0,
         game_address,
         payment_token,
         cost_to_play,
@@ -237,6 +240,7 @@ fn test_initialization_no_golden_pass() {
     let settings_id = 1_u32;
 
     let contract_address = deploy_ticket_booth(
+        0,
         game_address,
         payment_token,
         cost_to_play,
@@ -269,6 +273,7 @@ fn test_initialization_zero_game_address() {
     let payment_token = contract_address_const::<0x456>();
 
     deploy_ticket_booth(
+        0,
         zero_address, // Should fail
         payment_token,
         1000_u128,
@@ -290,6 +295,7 @@ fn test_initialization_zero_payment_token() {
     let zero_address = contract_address_const::<0x0>();
 
     deploy_ticket_booth(
+        0,
         game_address,
         zero_address, // Should fail
         1000_u128,
@@ -311,6 +317,7 @@ fn test_initialization_zero_cost() {
     let payment_token = contract_address_const::<0x456>();
 
     deploy_ticket_booth(
+        0,
         game_address,
         payment_token,
         0_u128, // Should fail
@@ -338,6 +345,7 @@ fn test_buy_game_success() {
     let settings_id = 5_u32;
 
     let contract_address = deploy_ticket_booth(
+        0,
         game_address,
         payment_token,
         cost_to_play,
@@ -391,7 +399,7 @@ fn test_use_golden_pass_success() {
     let golden_passes = array![(golden_pass_address, golden_pass)].span();
 
     let contract_address = deploy_ticket_booth(
-        get_caller_address(), // owner
+        0,
         game_address,
         payment_token,
         1000_u128,
@@ -458,6 +466,7 @@ fn test_golden_pass_cooldown() {
     let golden_passes = array![(golden_pass_address, golden_pass)].span();
 
     let contract_address = deploy_ticket_booth(
+        0,
         game_address,
         payment_token,
         1000_u128,
@@ -523,7 +532,7 @@ fn test_golden_pass_after_cooldown() {
     let golden_passes = array![(golden_pass_address, golden_pass)].span();
 
     let contract_address = deploy_ticket_booth(
-        get_caller_address(), // owner
+        0,
         game_address,
         payment_token,
         1000_u128,
@@ -584,11 +593,15 @@ fn test_golden_pass_not_configured() {
     let payment_token = contract_address_const::<0x456>();
 
     let contract_address = deploy_ticket_booth(
-        get_caller_address(), // owner
+        0,
         game_address,
         payment_token,
         1000_u128,
-        1_u32,
+        Option::Some(1_u32),
+        Option::None, // start_time
+        Option::None, // expiration_time
+        Option::None, // client_url
+        Option::None, // renderer_address
         Option::None, // No golden pass configured
         Option::None,
     );
@@ -627,6 +640,7 @@ fn test_golden_pass_expiration() {
     let golden_passes = array![(golden_pass_address, golden_pass)].span();
 
     let contract_address = deploy_ticket_booth(
+        0,
         game_address,
         payment_token,
         1000_u128,
@@ -672,7 +686,7 @@ fn test_buy_game_send_to_zero() {
     let settings_id = 5_u32;
 
     let contract_address = deploy_ticket_booth(
-        get_caller_address(), // owner
+        0,
         game_address,
         payment_token,
         cost_to_play,
@@ -745,7 +759,7 @@ fn test_buy_game_collect_payment() {
     let receiver_address = contract_address_const::<0xDEF>();
 
     let contract_address = deploy_ticket_booth(
-        get_caller_address(), // owner
+        0,
         game_address,
         payment_token,
         cost_to_play,
@@ -811,7 +825,7 @@ fn test_owner_functions() {
     let ticket_receiver = contract_address_const::<0xABC>();
 
     let contract_address = deploy_ticket_booth(
-        get_caller_address(), // owner
+        0,
         game_address,
         payment_token,
         cost_to_play,
@@ -875,7 +889,7 @@ fn test_owner_functions_after_opening_time() {
     let opening_time = 1000_u64;
 
     let contract_address = deploy_ticket_booth(
-        get_caller_address(), // owner
+        opening_time,
         game_address,
         payment_token,
         cost_to_play,
@@ -906,7 +920,7 @@ fn test_non_owner_cannot_update() {
     let cost_to_play = 1000_u128;
 
     let contract_address = deploy_ticket_booth(
-        get_caller_address(), // owner
+        0,
         game_address,
         payment_token,
         cost_to_play,
@@ -939,6 +953,7 @@ mod MockTicketBooth {
     #[abi(embed_v0)]
     impl TicketBoothImpl = TicketBoothComponent::TicketBoothImpl<ContractState>;
     impl TicketBoothInternalImpl = TicketBoothComponent::InternalImpl<ContractState>;
+    #[abi(embed_v0)]
     impl OwnableImpl = OwnableComponent::OwnableImpl<ContractState>;
 
     #[storage]
@@ -954,11 +969,51 @@ mod MockTicketBooth {
     enum Event {
         #[flat]
         TicketBoothEvent: TicketBoothComponent::Event,
+        #[flat]
+        OwnableEvent: OwnableComponent::Event,
+    }
+
+    // OPTIONAL: Owner-only functions with proper access control
+    // Deployers can choose to implement these for updatable config,
+    // or omit them for immutable configuration
+    #[abi(per_item)]
+    #[generate_trait]
+    impl OwnerFunctions of OwnerFunctionsTrait {
+        #[external(v0)]
+        fn update_opening_time(ref self: ContractState, new_opening_time: u64) {
+            self.ownable.assert_only_owner();
+            self.ticket_booth.update_opening_time_internal(new_opening_time);
+        }
+
+        #[external(v0)]
+        fn update_payment_token(ref self: ContractState, new_payment_token: ContractAddress) {
+            self.ownable.assert_only_owner();
+            self.ticket_booth.update_payment_token_internal(new_payment_token);
+        }
+
+        #[external(v0)]
+        fn update_ticket_receiver_address(ref self: ContractState, new_ticket_receiver_address: ContractAddress) {
+            self.ownable.assert_only_owner();
+            self.ticket_booth.update_ticket_receiver_address_internal(new_ticket_receiver_address);
+        }
+
+        #[external(v0)]
+        fn update_settings_id(ref self: ContractState, new_settings_id: Option<u32>) {
+            self.ownable.assert_only_owner();
+            self.ticket_booth.update_settings_id_internal(new_settings_id);
+        }
+
+        #[external(v0)]
+        fn update_cost_to_play(ref self: ContractState, new_cost_to_play: u128) {
+            self.ownable.assert_only_owner();
+            self.ticket_booth.update_cost_to_play_internal(new_cost_to_play);
+        }
     }
 
     #[constructor]
     fn constructor(
         ref self: ContractState,
+        opening_time: u64,
         game_address: ContractAddress,
         payment_token: ContractAddress,
         cost_to_play: u128,
@@ -970,9 +1025,13 @@ mod MockTicketBooth {
         golden_passes: Option<Span<(ContractAddress, GoldenPass)>>,
         ticket_receiver_address: Option<ContractAddress>,
     ) {
+        // Initialize ownable component with the caller as owner
+        self.ownable.initializer(get_caller_address());
+        
         self
             .ticket_booth
             .initializer(
+                opening_time,
                 game_address,
                 payment_token,
                 cost_to_play,

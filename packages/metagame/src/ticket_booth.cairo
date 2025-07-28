@@ -3,6 +3,12 @@
 ///
 /// A payment-enabled metagame component that charges tokens for game access
 ///
+/// The component provides internal functions for updating configuration.
+/// Contracts using this component have two options:
+///
+/// 1. **Immutable Configuration**: Don't implement update functions
+/// 2. **Updatable Configuration**: Implement update functions with proper access control
+///
 #[feature("safe_dispatcher")]
 #[starknet::component]
 pub mod TicketBoothComponent {
@@ -11,7 +17,6 @@ pub mod TicketBoothComponent {
     use crate::libs;
     use openzeppelin_token::erc20::interface::{IERC20SafeDispatcher, IERC20SafeDispatcherTrait};
     use openzeppelin_token::erc721::interface::{IERC721Dispatcher, IERC721DispatcherTrait};
-    use openzeppelin_access::ownable::OwnableComponent;
 
     use starknet::contract_address::ContractAddress;
     use starknet::storage::{
@@ -28,8 +33,6 @@ pub mod TicketBoothComponent {
 
     #[storage]
     pub struct Storage {
-        #[substorage(v0)]
-        ownable: OwnableComponent::Storage,
         opening_time: u64,
         game_token_address: ContractAddress,
         game_address: ContractAddress,
@@ -103,22 +106,12 @@ pub mod TicketBoothComponent {
         ) -> u64;
         fn ticket_receiver_address(self: @TContractState) -> ContractAddress;
         fn opening_time(self: @TContractState) -> u64;
-
-        // Owner functions
-        fn update_opening_time(ref self: TContractState, new_opening_time: u64);
-        fn update_payment_token(ref self: TContractState, new_payment_token: ContractAddress);
-        fn update_ticket_receiver_address(
-            ref self: TContractState, new_ticket_receiver_address: ContractAddress,
-        );
-        fn update_settings_id(ref self: TContractState, new_settings_id: Option<u32>);
-        fn update_cost_to_play(ref self: TContractState, new_cost_to_play: u128);
     }
 
     #[embeddable_as(TicketBoothImpl)]
     impl TicketBooth<
         TContractState,
         +HasComponent<TContractState>,
-        impl Ownable: OwnableComponent::HasComponent<TContractState>,
         +Drop<TContractState>,
     > of ITicketBooth<ComponentState<TContractState>> {
         fn buy_game(
@@ -313,40 +306,6 @@ pub mod TicketBoothComponent {
         fn opening_time(self: @ComponentState<TContractState>) -> u64 {
             self.opening_time.read()
         }
-
-        fn update_opening_time(ref self: ComponentState<TContractState>, new_opening_time: u64) {
-            self.assert_owner_and_before_opening();
-            self.opening_time.write(new_opening_time);
-        }
-
-        fn update_payment_token(
-            ref self: ComponentState<TContractState>, new_payment_token: ContractAddress,
-        ) {
-            self.assert_owner_and_before_opening();
-            assert!(!new_payment_token.is_zero(), "Payment token cannot be zero address");
-            self.payment_token.write(new_payment_token);
-        }
-
-        fn update_ticket_receiver_address(
-            ref self: ComponentState<TContractState>, new_ticket_receiver_address: ContractAddress,
-        ) {
-            self.assert_owner_and_before_opening();
-            self.ticket_receiver_address.write(new_ticket_receiver_address);
-        }
-
-        fn update_settings_id(
-            ref self: ComponentState<TContractState>, new_settings_id: Option<u32>,
-        ) {
-            self.assert_owner_and_before_opening();
-            self.settings_id.write(new_settings_id);
-        }
-
-        fn update_cost_to_play(ref self: ComponentState<TContractState>, new_cost_to_play: u128) {
-            self.assert_owner_and_before_opening();
-            assert!(new_cost_to_play > 0, "Cost to play must be greater than zero");
-
-            self.cost_to_play.write(new_cost_to_play);
-        }
     }
 
 
@@ -354,7 +313,6 @@ pub mod TicketBoothComponent {
     pub impl InternalImpl<
         TContractState,
         +HasComponent<TContractState>,
-        impl Ownable: OwnableComponent::HasComponent<TContractState>,
         +Drop<TContractState>,
     > of InternalTrait<TContractState> {
         fn initializer(
@@ -377,8 +335,6 @@ pub mod TicketBoothComponent {
             assert!(!payment_token.is_zero(), "Payment token cannot be zero");
             assert!(cost_to_play > 0, "Cost to play must be greater than zero");
 
-            // Initialize ownable component
-            self.ownable.initializer();
 
             self.opening_time.write(opening_time);
             self.game_token_address.write(game_token_address);
@@ -413,12 +369,45 @@ pub mod TicketBoothComponent {
             };
         }
 
-        fn assert_owner_and_before_opening(ref self: ComponentState<TContractState>) {
-            self.ownable.assert_only_owner();
+        fn assert_before_opening(ref self: ComponentState<TContractState>) {
             assert!(
                 get_block_timestamp() < self.opening_time.read(),
                 "Cannot update after opening time",
             );
+        }
+
+        // Internal functions with business logic - called by contract's ownership-checked functions
+        fn update_opening_time_internal(ref self: ComponentState<TContractState>, new_opening_time: u64) {
+            self.assert_before_opening();
+            self.opening_time.write(new_opening_time);
+        }
+
+        fn update_payment_token_internal(
+            ref self: ComponentState<TContractState>, new_payment_token: ContractAddress,
+        ) {
+            self.assert_before_opening();
+            assert!(!new_payment_token.is_zero(), "Payment token cannot be zero address");
+            self.payment_token.write(new_payment_token);
+        }
+
+        fn update_ticket_receiver_address_internal(
+            ref self: ComponentState<TContractState>, new_ticket_receiver_address: ContractAddress,
+        ) {
+            self.assert_before_opening();
+            self.ticket_receiver_address.write(new_ticket_receiver_address);
+        }
+
+        fn update_settings_id_internal(
+            ref self: ComponentState<TContractState>, new_settings_id: Option<u32>,
+        ) {
+            self.assert_before_opening();
+            self.settings_id.write(new_settings_id);
+        }
+
+        fn update_cost_to_play_internal(ref self: ComponentState<TContractState>, new_cost_to_play: u128) {
+            self.assert_before_opening();
+            assert!(new_cost_to_play > 0, "Cost to play must be greater than zero");
+            self.cost_to_play.write(new_cost_to_play);
         }
     }
 }
