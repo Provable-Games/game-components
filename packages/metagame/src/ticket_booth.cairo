@@ -1,18 +1,23 @@
 ///
 /// Ticket Booth Component
-/// 
+///
 /// A payment-enabled metagame component that charges tokens for game access
 ///
 #[feature("safe_dispatcher")]
 #[starknet::component]
 pub mod TicketBoothComponent {
     use core::num::traits::Zero;
+    use core::byte_array::ByteArray;
     use crate::libs;
     use openzeppelin_token::erc20::interface::{IERC20SafeDispatcher, IERC20SafeDispatcherTrait};
     use openzeppelin_token::erc721::interface::{IERC721Dispatcher, IERC721DispatcherTrait};
+    use openzeppelin_access::ownable::OwnableComponent;
 
     use starknet::contract_address::ContractAddress;
-    use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess, Map, StorageMapReadAccess, StorageMapWriteAccess};
+    use starknet::storage::{
+        StoragePointerReadAccess, StoragePointerWriteAccess, Map, StorageMapReadAccess,
+        StorageMapWriteAccess,
+    };
     use starknet::{get_caller_address, get_block_timestamp};
 
     #[starknet::interface]
@@ -23,6 +28,8 @@ pub mod TicketBoothComponent {
 
     #[storage]
     pub struct Storage {
+        #[substorage(v0)]
+        ownable: OwnableComponent::Storage,
         opening_time: u64,
         game_token_address: ContractAddress,
         game_address: ContractAddress,
@@ -41,7 +48,7 @@ pub mod TicketBoothComponent {
     #[derive(Drop, Serde, Clone, starknet::Store)]
     pub struct GoldenPass {
         pub cooldown: u64,
-        pub game_expiration: u64, // 0 means no expiration
+        pub game_expiration: u64 // 0 means no expiration
     }
 
     #[event]
@@ -70,10 +77,7 @@ pub mod TicketBoothComponent {
     #[starknet::interface]
     pub trait ITicketBooth<TContractState> {
         fn buy_game(
-            ref self: TContractState,
-            player_name: ByteArray,
-            to: ContractAddress,
-            soulbound: bool,
+            ref self: TContractState, player_name: ByteArray, to: ContractAddress, soulbound: bool,
         ) -> u64;
         fn use_golden_pass(
             ref self: TContractState,
@@ -91,15 +95,30 @@ pub mod TicketBoothComponent {
         fn expiration_time(self: @TContractState) -> Option<u64>;
         fn client_url(self: @TContractState) -> Option<ByteArray>;
         fn renderer_address(self: @TContractState) -> Option<ContractAddress>;
-        fn get_golden_pass(self: @TContractState, golden_pass_address: ContractAddress) -> Option<GoldenPass>;
-        fn golden_pass_last_used(self: @TContractState, golden_pass_address: ContractAddress, token_id: u128) -> u64;
+        fn get_golden_pass(
+            self: @TContractState, golden_pass_address: ContractAddress,
+        ) -> Option<GoldenPass>;
+        fn golden_pass_last_used(
+            self: @TContractState, golden_pass_address: ContractAddress, token_id: u128,
+        ) -> u64;
         fn ticket_receiver_address(self: @TContractState) -> ContractAddress;
+        fn opening_time(self: @TContractState) -> u64;
+
+        // Owner functions
+        fn update_opening_time(ref self: TContractState, new_opening_time: u64);
+        fn update_payment_token(ref self: TContractState, new_payment_token: ContractAddress);
+        fn update_ticket_receiver_address(
+            ref self: TContractState, new_ticket_receiver_address: ContractAddress,
+        );
+        fn update_settings_id(ref self: TContractState, new_settings_id: Option<u32>);
+        fn update_cost_to_play(ref self: TContractState, new_cost_to_play: u128);
     }
 
     #[embeddable_as(TicketBoothImpl)]
     impl TicketBooth<
         TContractState,
         +HasComponent<TContractState>,
+        impl Ownable: OwnableComponent::HasComponent<TContractState>,
         +Drop<TContractState>,
     > of ITicketBooth<ComponentState<TContractState>> {
         fn buy_game(
@@ -109,24 +128,25 @@ pub mod TicketBoothComponent {
             soulbound: bool,
         ) -> u64 {
             assert!(get_block_timestamp() >= self.opening_time.read(), "Game not open yet");
-            
-            let caller = get_caller_address();           
+
+            let caller = get_caller_address();
             let cost = self.cost_to_play.read();
             let payment_token_address = self.payment_token.read();
             let ticket_receiver_address = self.ticket_receiver_address.read();
-            
+
             // Handle payment (redeem the ticket)
             let payment_token = IERC20SafeDispatcher { contract_address: payment_token_address };
             if !ticket_receiver_address.is_zero() {
                 let _ = payment_token.transfer_from(caller, ticket_receiver_address, cost.into());
             } else {
                 // Try to burn tokens first using burn_from (most common)
-                let burnable_token = IERC20BurnableSafeDispatcher { contract_address: payment_token_address };
+                let burnable_token = IERC20BurnableSafeDispatcher {
+                    contract_address: payment_token_address,
+                };
                 let burn_from_result = burnable_token.burn_from(caller, cost.into());
-                
+
                 match burn_from_result {
-                    Result::Ok(_) => {
-                        // burn_from was successful
+                    Result::Ok(_) => {// burn_from was successful
                     },
                     Result::Err(_) => {
                         // burn_from failed, fall back to zero address transfer
@@ -160,11 +180,7 @@ pub mod TicketBoothComponent {
             );
 
             // Emit event
-            self.emit(TicketRedeemed {
-                player: to,
-                token_id,
-                cost,
-            });
+            self.emit(TicketRedeemed { player: to, token_id, cost });
 
             token_id
         }
@@ -178,26 +194,35 @@ pub mod TicketBoothComponent {
             soulbound: bool,
         ) -> u64 {
             assert!(get_block_timestamp() >= self.opening_time.read(), "Game not open yet");
-            
+
             let caller = get_caller_address();
-            
+
             // Get the golden pass configuration
             let golden_pass_config = self.golden_passes.read(golden_pass_address);
             assert!(golden_pass_config.cooldown > 0, "Golden pass not configured");
-            
+
             // Check caller owns the golden pass
             let golden_pass = IERC721Dispatcher { contract_address: golden_pass_address };
-            assert!(golden_pass.owner_of(golden_pass_token_id.into()) == caller, "Not owner of golden pass");
-            
+            assert!(
+                golden_pass.owner_of(golden_pass_token_id.into()) == caller,
+                "Not owner of golden pass",
+            );
+
             // Check cooldown
-            let last_used = self.golden_pass_last_used.read((golden_pass_address, golden_pass_token_id));
+            let last_used = self
+                .golden_pass_last_used
+                .read((golden_pass_address, golden_pass_token_id));
             let current_time = get_block_timestamp();
-            
-            assert!(current_time >= last_used + golden_pass_config.cooldown, "Golden pass on cooldown");
-            
+
+            assert!(
+                current_time >= last_used + golden_pass_config.cooldown, "Golden pass on cooldown",
+            );
+
             // Update last used timestamp
-            self.golden_pass_last_used.write((golden_pass_address, golden_pass_token_id), current_time);
-            
+            self
+                .golden_pass_last_used
+                .write((golden_pass_address, golden_pass_token_id), current_time);
+
             // Calculate expiration with priority: golden pass expiration > global expiration > 0
             let expiration = if golden_pass_config.game_expiration > 0 {
                 // Golden pass has its own expiration
@@ -207,10 +232,10 @@ pub mod TicketBoothComponent {
                 let exp_time = self.expiration_time.read();
                 match exp_time {
                     Option::Some(duration) => Option::Some(current_time + duration),
-                    Option::None => Option::None, // No expiration at all
+                    Option::None => Option::None // No expiration at all
                 }
             };
-            
+
             let token_id = libs::mint(
                 self.game_token_address.read(),
                 Option::Some(self.game_address.read()),
@@ -227,17 +252,15 @@ pub mod TicketBoothComponent {
             );
 
             // Emit event
-            self.emit(GoldenPassRedeemed {
-                player: to,
-                token_id,
-                golden_pass_token_id,
-            });
+            self.emit(GoldenPassRedeemed { player: to, token_id, golden_pass_token_id });
 
             token_id
         }
 
 
-        fn get_golden_pass(self: @ComponentState<TContractState>, golden_pass_address: ContractAddress) -> Option<GoldenPass> {
+        fn get_golden_pass(
+            self: @ComponentState<TContractState>, golden_pass_address: ContractAddress,
+        ) -> Option<GoldenPass> {
             let golden_pass = self.golden_passes.read(golden_pass_address);
             if golden_pass.cooldown > 0 {
                 Option::Some(golden_pass)
@@ -246,7 +269,11 @@ pub mod TicketBoothComponent {
             }
         }
 
-        fn golden_pass_last_used(self: @ComponentState<TContractState>, golden_pass_address: ContractAddress, token_id: u128) -> u64 {
+        fn golden_pass_last_used(
+            self: @ComponentState<TContractState>,
+            golden_pass_address: ContractAddress,
+            token_id: u128,
+        ) -> u64 {
             self.golden_pass_last_used.read((golden_pass_address, token_id))
         }
 
@@ -283,6 +310,43 @@ pub mod TicketBoothComponent {
             self.renderer_address.read()
         }
 
+        fn opening_time(self: @ComponentState<TContractState>) -> u64 {
+            self.opening_time.read()
+        }
+
+        fn update_opening_time(ref self: ComponentState<TContractState>, new_opening_time: u64) {
+            self.assert_owner_and_before_opening();
+            self.opening_time.write(new_opening_time);
+        }
+
+        fn update_payment_token(
+            ref self: ComponentState<TContractState>, new_payment_token: ContractAddress,
+        ) {
+            self.assert_owner_and_before_opening();
+            assert!(!new_payment_token.is_zero(), "Payment token cannot be zero address");
+            self.payment_token.write(new_payment_token);
+        }
+
+        fn update_ticket_receiver_address(
+            ref self: ComponentState<TContractState>, new_ticket_receiver_address: ContractAddress,
+        ) {
+            self.assert_owner_and_before_opening();
+            self.ticket_receiver_address.write(new_ticket_receiver_address);
+        }
+
+        fn update_settings_id(
+            ref self: ComponentState<TContractState>, new_settings_id: Option<u32>,
+        ) {
+            self.assert_owner_and_before_opening();
+            self.settings_id.write(new_settings_id);
+        }
+
+        fn update_cost_to_play(ref self: ComponentState<TContractState>, new_cost_to_play: u128) {
+            self.assert_owner_and_before_opening();
+            assert!(new_cost_to_play > 0, "Cost to play must be greater than zero");
+
+            self.cost_to_play.write(new_cost_to_play);
+        }
     }
 
 
@@ -290,6 +354,7 @@ pub mod TicketBoothComponent {
     pub impl InternalImpl<
         TContractState,
         +HasComponent<TContractState>,
+        impl Ownable: OwnableComponent::HasComponent<TContractState>,
         +Drop<TContractState>,
     > of InternalTrait<TContractState> {
         fn initializer(
@@ -311,7 +376,10 @@ pub mod TicketBoothComponent {
             assert!(!game_token_address.is_zero(), "Game token address cannot be zero");
             assert!(!payment_token.is_zero(), "Payment token cannot be zero");
             assert!(cost_to_play > 0, "Cost to play must be greater than zero");
-            
+
+            // Initialize ownable component
+            self.ownable.initializer();
+
             self.opening_time.write(opening_time);
             self.game_token_address.write(game_token_address);
             self.payment_token.write(payment_token);
@@ -323,11 +391,11 @@ pub mod TicketBoothComponent {
             self.settings_id.write(settings_id);
             self.start_time.write(start_time);
             self.expiration_time.write(expiration_time);
-            
+
             self.client_url.write(client_url);
             self.renderer_address.write(renderer_address);
             self.ticket_receiver_address.write(ticket_receiver_address);
-            
+
             // Configure golden passes if provided
             match golden_passes {
                 Option::Some(passes) => {
@@ -345,5 +413,12 @@ pub mod TicketBoothComponent {
             };
         }
 
+        fn assert_owner_and_before_opening(ref self: ComponentState<TContractState>) {
+            self.ownable.assert_only_owner();
+            assert!(
+                get_block_timestamp() < self.opening_time.read(),
+                "Cannot update after opening time",
+            );
+        }
     }
 }

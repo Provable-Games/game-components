@@ -20,7 +20,7 @@ pub mod MockERC721 {
     #[constructor]
     fn constructor(ref self: ContractState) {
         self.next_token_id.write(1);
-        
+
         // Mint some test tokens to the deployer
         let deployer = get_caller_address();
         self._mint(deployer, 1);
@@ -47,9 +47,7 @@ pub mod MockERC721 {
         }
 
         fn is_approved_for_all(
-            self: @ContractState, 
-            owner: ContractAddress, 
-            operator: ContractAddress
+            self: @ContractState, owner: ContractAddress, operator: ContractAddress,
         ) -> bool {
             self.operator_approvals.read((owner, operator))
         }
@@ -57,29 +55,31 @@ pub mod MockERC721 {
         fn approve(ref self: ContractState, to: ContractAddress, token_id: u256) {
             let owner = self.owner_of(token_id);
             assert!(to != owner, "ERC721: approval to current owner");
-            
+
             let caller = get_caller_address();
             assert!(
                 caller == owner || self.is_approved_for_all(owner, caller),
-                "ERC721: approve caller is not owner nor approved for all"
+                "ERC721: approve caller is not owner nor approved for all",
             );
-            
+
             self.token_approvals.write(token_id, to);
         }
 
-        fn set_approval_for_all(ref self: ContractState, operator: ContractAddress, approved: bool) {
+        fn set_approval_for_all(
+            ref self: ContractState, operator: ContractAddress, approved: bool,
+        ) {
             let owner = get_caller_address();
             assert!(owner != operator, "ERC721: approve to caller");
             self.operator_approvals.write((owner, operator), approved);
         }
 
         fn transfer_from(
-            ref self: ContractState,
-            from: ContractAddress,
-            to: ContractAddress,
-            token_id: u256
+            ref self: ContractState, from: ContractAddress, to: ContractAddress, token_id: u256,
         ) {
-            assert!(self._is_approved_or_owner(get_caller_address(), token_id), "ERC721: transfer caller is not owner nor approved");
+            assert!(
+                self._is_approved_or_owner(get_caller_address(), token_id),
+                "ERC721: transfer caller is not owner nor approved",
+            );
             self._transfer(from, to, token_id);
         }
 
@@ -88,10 +88,11 @@ pub mod MockERC721 {
             from: ContractAddress,
             to: ContractAddress,
             token_id: u256,
-            data: Span<felt252>
+            data: Span<felt252>,
         ) {
             self.transfer_from(from, to, token_id);
-            // In a real implementation, this would check if `to` is a contract and call onERC721Received
+            // In a real implementation, this would check if `to` is a contract and call
+        // onERC721Received
         }
     }
 
@@ -100,35 +101,39 @@ pub mod MockERC721 {
         fn _mint(ref self: ContractState, to: ContractAddress, token_id: u256) {
             assert!(!to.is_zero(), "ERC721: mint to zero address");
             assert!(self.owners.read(token_id).is_zero(), "ERC721: token already minted");
-            
+
             let balance = self.balances.read(to);
             self.balances.write(to, balance + 1);
             self.owners.write(token_id, to);
         }
 
-        fn _transfer(ref self: ContractState, from: ContractAddress, to: ContractAddress, token_id: u256) {
+        fn _transfer(
+            ref self: ContractState, from: ContractAddress, to: ContractAddress, token_id: u256,
+        ) {
             assert!(self.owner_of(token_id) == from, "ERC721: transfer from incorrect owner");
             assert!(!to.is_zero(), "ERC721: transfer to zero address");
-            
+
             // Clear approvals
             self.token_approvals.write(token_id, starknet::contract_address_const::<0>());
-            
+
             // Update balances
             let from_balance = self.balances.read(from);
             self.balances.write(from, from_balance - 1);
             let to_balance = self.balances.read(to);
             self.balances.write(to, to_balance + 1);
-            
+
             // Update owner
             self.owners.write(token_id, to);
         }
 
-        fn _is_approved_or_owner(self: @ContractState, spender: ContractAddress, token_id: u256) -> bool {
+        fn _is_approved_or_owner(
+            self: @ContractState, spender: ContractAddress, token_id: u256,
+        ) -> bool {
             self._require_minted(token_id);
             let owner = self.owner_of(token_id);
-            spender == owner || 
-            self.get_approved(token_id) == spender || 
-            self.is_approved_for_all(owner, spender)
+            spender == owner
+                || self.get_approved(token_id) == spender
+                || self.is_approved_for_all(owner, spender)
         }
 
         fn _require_minted(self: @ContractState, token_id: u256) {
@@ -153,11 +158,11 @@ pub mod MockERC721 {
                 self.balances.write(current_owner, current_balance - 1);
             }
         }
-        
+
         // Add to new owner's balance
         let new_balance = self.balances.read(owner);
         self.balances.write(owner, new_balance + 1);
-        
+
         // Set owner
         self.owners.write(token_id, owner);
     }
