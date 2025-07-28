@@ -110,9 +110,7 @@ pub mod TicketBoothComponent {
 
     #[embeddable_as(TicketBoothImpl)]
     impl TicketBooth<
-        TContractState,
-        +HasComponent<TContractState>,
-        +Drop<TContractState>,
+        TContractState, +HasComponent<TContractState>, +Drop<TContractState>,
     > of ITicketBooth<ComponentState<TContractState>> {
         fn buy_game(
             ref self: ComponentState<TContractState>,
@@ -311,9 +309,7 @@ pub mod TicketBoothComponent {
 
     #[generate_trait]
     pub impl InternalImpl<
-        TContractState,
-        +HasComponent<TContractState>,
-        +Drop<TContractState>,
+        TContractState, +HasComponent<TContractState>, +Drop<TContractState>,
     > of InternalTrait<TContractState> {
         fn initializer(
             ref self: ComponentState<TContractState>,
@@ -334,7 +330,6 @@ pub mod TicketBoothComponent {
             assert!(!game_token_address.is_zero(), "Game token address cannot be zero");
             assert!(!payment_token.is_zero(), "Payment token cannot be zero");
             assert!(cost_to_play > 0, "Cost to play must be greater than zero");
-
 
             self.opening_time.write(opening_time);
             self.game_token_address.write(game_token_address);
@@ -377,7 +372,9 @@ pub mod TicketBoothComponent {
         }
 
         // Internal functions with business logic - called by contract's ownership-checked functions
-        fn update_opening_time_internal(ref self: ComponentState<TContractState>, new_opening_time: u64) {
+        fn update_opening_time_internal(
+            ref self: ComponentState<TContractState>, new_opening_time: u64,
+        ) {
             self.assert_before_opening();
             self.opening_time.write(new_opening_time);
         }
@@ -404,7 +401,9 @@ pub mod TicketBoothComponent {
             self.settings_id.write(new_settings_id);
         }
 
-        fn update_cost_to_play_internal(ref self: ComponentState<TContractState>, new_cost_to_play: u128) {
+        fn update_cost_to_play_internal(
+            ref self: ComponentState<TContractState>, new_cost_to_play: u128,
+        ) {
             self.assert_before_opening();
             assert!(new_cost_to_play > 0, "Cost to play must be greater than zero");
             self.cost_to_play.write(new_cost_to_play);

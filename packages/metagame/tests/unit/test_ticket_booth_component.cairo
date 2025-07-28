@@ -992,7 +992,9 @@ mod MockTicketBooth {
         }
 
         #[external(v0)]
-        fn update_ticket_receiver_address(ref self: ContractState, new_ticket_receiver_address: ContractAddress) {
+        fn update_ticket_receiver_address(
+            ref self: ContractState, new_ticket_receiver_address: ContractAddress,
+        ) {
             self.ownable.assert_only_owner();
             self.ticket_booth.update_ticket_receiver_address_internal(new_ticket_receiver_address);
         }
@@ -1027,7 +1029,7 @@ mod MockTicketBooth {
     ) {
         // Initialize ownable component with the caller as owner
         self.ownable.initializer(get_caller_address());
-        
+
         self
             .ticket_booth
             .initializer(
