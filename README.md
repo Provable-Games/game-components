@@ -130,11 +130,11 @@ ERC721-based NFT representing playable game instances with:
 - Optimized architecture: <4MB with full feature sophistication
 - Compile-time configuration eliminates unused features while preserving runtime complexity
 
-### Testing Packages
+### Additional Packages
 
 #### 🧪 **test_starknet** (`packages/test_starknet/`)
 StarkNet-native testing environment:
-- **Purpose**: Fast, isolated testing without Dojo dependencies
+- **Purpose**: Fast, isolated testing with comprehensive coverage
 - **Coverage**: 90%+ requirement enforced by cairo-coverage
 - **Test Types**: Unit, integration, fuzz, lifecycle, and event testing
 - **Mock Infrastructure**: Comprehensive mocks for all interfaces
@@ -143,18 +143,6 @@ StarkNet-native testing environment:
 cd packages/test_starknet
 snforge test --coverage
 cairo-coverage  # Generate detailed coverage reports
-```
-
-#### 🎲 **test_dojo** (`packages/test_dojo/`)
-Dojo-based testing environment:
-- **Purpose**: Test components using Dojo's model storage system
-- **Integration**: Tests with Dojo world functionality
-- **Build**: Excluded from main workspace, build separately with `sozo`
-
-```bash
-cd packages/test_dojo
-sozo build
-sozo test
 ```
 
 #### 🛠️ **utils** (`packages/utils/`)
@@ -172,7 +160,6 @@ Shared utilities providing:
 scarb build
 
 # Build specific packages
-cd packages/test_dojo && scarb build
 cd packages/test_starknet && scarb build
 
 # Format code
@@ -188,9 +175,6 @@ cd packages/test_starknet && snforge test
 # Run with coverage (required 90%+)
 snforge test --coverage
 cairo-coverage
-
-# Run Dojo tests
-cd packages/test_dojo && sozo test
 
 # Run specific test
 snforge test test_mint_basic
@@ -315,7 +299,6 @@ if src5_component.supports_interface(IMINIGAME_SETTINGS_ID) {
 See individual package READMEs for detailed examples:
 - [`packages/token/README.md`](packages/token/README.md) - Token optimization patterns
 - [`packages/test_starknet/README.md`](packages/test_starknet/README.md) - Testing approaches
-- [`packages/test_dojo/README.md`](packages/test_dojo/README.md) - Dojo integration
 
 ### Simple Game Implementation
 
@@ -343,7 +326,6 @@ mod TicTacToe {
 - **Cairo Documentation**: [cairo-lang.org](https://cairo-lang.org/)
 - **StarkNet Developer Docs**: [starknet.io/developers](https://starknet.io/developers)
 - **OpenZeppelin Cairo**: [github.com/OpenZeppelin/cairo-contracts](https://github.com/OpenZeppelin/cairo-contracts)
-- **Dojo Framework**: [dojoengine.org](https://dojoengine.org/)
 
 ## 📄 **License**
 

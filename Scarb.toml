@@ -4,7 +4,6 @@ members = [
     "packages/minigame",
     "packages/token",
     # Test packages can be uncommented when needed
-    # "packages/test_dojo",  # Excluded - must be built separately with sozo
     "packages/test_starknet",
     "packages/utils",
 ]
