@@ -146,7 +146,7 @@ pub mod TicketBoothComponent {
                 let burn_from_result = burnable_token.burn_from(caller, cost.into());
 
                 match burn_from_result {
-                    Result::Ok(_) => {// burn_from was successful
+                    Result::Ok(_) => { // burn_from was successful
                     },
                     Result::Err(_) => {
                         // burn_from failed, fall back to zero address transfer
