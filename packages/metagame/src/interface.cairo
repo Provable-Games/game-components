@@ -5,7 +5,7 @@ pub const IMETAGAME_ID: felt252 =
 
 #[starknet::interface]
 pub trait IMetagame<TContractState> {
-    fn minigame_token_address(self: @TContractState) -> ContractAddress;
     fn context_address(self: @TContractState) -> ContractAddress;
+    fn default_token_address(self: @TContractState) -> ContractAddress;
 }
 

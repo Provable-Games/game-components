@@ -3,17 +3,22 @@
 ///
 #[starknet::component]
 pub mod MinigameComponent {
+    use core::num::traits::Zero;
     use crate::interface::{IMinigame, IMinigameTokenData, IMINIGAME_ID};
     use crate::libs;
-    use game_components_token::extensions::multi_game::interface::{
-        IMINIGAME_TOKEN_MULTIGAME_ID, IMinigameTokenMultiGameDispatcher,
-        IMinigameTokenMultiGameDispatcherTrait,
+    use game_components_token::core::interface::{
+        IMinigameTokenDispatcher, IMinigameTokenDispatcherTrait, IMINIGAME_TOKEN_ID,
     };
-    use starknet::{ContractAddress};
+    use game_components_token::examples::minigame_registry_contract::{
+        IMINIGAME_REGISTRY_ID, IMinigameRegistryDispatcher, IMinigameRegistryDispatcherTrait,
+    };
+    use game_components_metagame::extensions::context::structs::GameContextDetails;
+    use starknet::{ContractAddress, get_contract_address};
     use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
     use openzeppelin_introspection::src5::SRC5Component;
     use openzeppelin_introspection::src5::SRC5Component::InternalTrait as SRC5InternalTrait;
     use openzeppelin_introspection::src5::SRC5Component::SRC5Impl;
+    use openzeppelin_introspection::interface::{ISRC5Dispatcher, ISRC5DispatcherTrait};
 
     #[storage]
     pub struct Storage {
@@ -41,6 +46,35 @@ pub mod MinigameComponent {
         fn objectives_address(self: @ComponentState<TContractState>) -> ContractAddress {
             self.objectives_address.read()
         }
+
+        fn mint_game(
+            self: @ComponentState<TContractState>,
+            player_name: Option<ByteArray>,
+            settings_id: Option<u32>,
+            start: Option<u64>,
+            end: Option<u64>,
+            objective_ids: Option<Span<u32>>,
+            context: Option<GameContextDetails>,
+            client_url: Option<ByteArray>,
+            renderer_address: Option<ContractAddress>,
+            to: ContractAddress,
+            soulbound: bool,
+        ) -> u64 {
+            libs::mint(
+                self.token_address.read(),
+                get_contract_address(),
+                player_name,
+                settings_id,
+                start,
+                end,
+                objective_ids,
+                context,
+                client_url,
+                renderer_address,
+                to,
+                soulbound,
+            )
+        }
     }
 
     #[generate_trait]
@@ -62,8 +96,8 @@ pub mod MinigameComponent {
             color: Option<ByteArray>,
             client_url: Option<ByteArray>,
             renderer_address: Option<ContractAddress>,
-            settings_address: ContractAddress,
-            objectives_address: ContractAddress,
+            settings_address: Option<ContractAddress>,
+            objectives_address: Option<ContractAddress>,
             token_address: ContractAddress,
         ) {
             // Register base SRC5 interface
@@ -72,31 +106,47 @@ pub mod MinigameComponent {
             // Store the namespace, token address, and feature flags
             self.token_address.write(token_address.clone());
 
-            let mut src5_component = get_dep_component_mut!(ref self, SRC5);
-            let supports_multi_game = src5_component
-                .supports_interface(IMINIGAME_TOKEN_MULTIGAME_ID);
-            if supports_multi_game {
-                let minigame_token_multi_game_dispatcher = IMinigameTokenMultiGameDispatcher {
-                    contract_address: token_address,
+            let token_src5_dispatcher = ISRC5Dispatcher { contract_address: token_address };
+            let supports_minigame_token = token_src5_dispatcher
+                .supports_interface(IMINIGAME_TOKEN_ID);
+            assert!(supports_minigame_token, "Minigame: Token does not support IMINIGAME_TOKEN_ID");
+            let minigame_token_dispatcher = IMinigameTokenDispatcher {
+                contract_address: token_address,
+            };
+            let minigame_registry_address = minigame_token_dispatcher.game_registry_address();
+            if !minigame_registry_address.is_zero() {
+                let minigame_registry_src5_dispatcher = ISRC5Dispatcher {
+                    contract_address: minigame_registry_address,
                 };
-                minigame_token_multi_game_dispatcher
-                    .register_game(
-                        creator_address,
-                        name,
-                        description,
-                        developer,
-                        publisher,
-                        genre,
-                        image,
-                        color,
-                        client_url,
-                        renderer_address,
-                    );
+                let supports_minigame_registry = minigame_registry_src5_dispatcher
+                    .supports_interface(IMINIGAME_REGISTRY_ID);
+                if supports_minigame_registry {
+                    let minigame_registry_dispatcher = IMinigameRegistryDispatcher {
+                        contract_address: minigame_registry_address,
+                    };
+                    minigame_registry_dispatcher
+                        .register_game(
+                            creator_address,
+                            name,
+                            description,
+                            developer,
+                            publisher,
+                            genre,
+                            image,
+                            color,
+                            client_url,
+                            renderer_address,
+                        );
+                }
             }
 
             // Store the settings and objectives addresses
-            self.settings_address.write(settings_address.clone());
-            self.objectives_address.write(objectives_address.clone());
+            if let Option::Some(settings_address) = settings_address {
+                self.settings_address.write(settings_address);
+            }
+            if let Option::Some(objectives_address) = objectives_address {
+                self.objectives_address.write(objectives_address);
+            }
         }
 
         fn register_game_interface(ref self: ComponentState<TContractState>) {

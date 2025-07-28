@@ -145,6 +145,80 @@ Components use interface-based extensions:
 - Interface IDs are defined as constants (e.g., `IMINIGAME_ID`)
 - Events are emitted for all state changes
 
+
+## Testing Requirements
+
+**CRITICAL: This project enforces a minimum 90% test coverage using cairo-coverage. Any code changes without adequate tests will fail CI validation.**
+
+### ⚠️ CRITICAL WARNING: Test Infrastructure Modifications ⚠️
+
+**NEVER modify existing test infrastructure without understanding all dependencies:**
+
+1. **Before modifying ANY file in `tests/mocks/`**:
+
+   - Run `grep -r "filename" tests/` to find ALL usages
+   - Understand that mock contracts are shared across many tests
+   - Create NEW mocks instead of modifying existing ones
+
+2. **Before enabling ignored tests**:
+
+   - Understand WHY they are ignored (check git history, ask team)
+   - Run `snforge test` to establish baseline of passing tests
+   - Create isolated infrastructure for ignored tests
+   - Run FULL test suite after EACH change
+
+3. **Test Modification Protocol**:
+
+   ```bash
+   # Before ANY test changes:
+   snforge test > baseline.txt
+   grep -c "passed" baseline.txt  # Record baseline count
+
+   # After EACH change:
+   snforge test > current.txt
+   diff baseline.txt current.txt
+   # If ANY previously passing test fails, REVERT immediately
+   ```
+
+4. **Red Flags - STOP if you see**:
+   - `ENTRYPOINT_NOT_FOUND` in previously passing tests
+   - Test count dropping below baseline
+   - Need to modify files outside your specific task
+   - Compilation errors in previously clean files
+
+This project uses [cairo-coverage](https://github.com/software-mansion/cairo-coverage) to measure test coverage. This tool runs in GitHub CI and enforces the 90% threshold.
+
+When implementing features or fixes, you MUST:
+
+- Write comprehensive unit tests for all new functions and modules
+- Include edge cases, boundary conditions, and failure scenarios
+- Add integration tests for cross-contract interactions
+- Create fuzz tests for functions handling user inputs or mathematical operations
+- Ensure all tests pass before considering work complete
+- Run coverage locally to verify you meet the 90% threshold before pushing
+
+Coverage commands:
+
+```bash
+# Run tests with coverage
+snforge test --coverage
+
+# Generate detailed coverage report
+cairo-coverage
+
+# Check coverage percentage meets 90% threshold
+# Coverage reports are generated in coverage/ directory
+```
+
+Test organization:
+
+- Place unit tests in `tests/unit/`
+- Place integration tests in `tests/integration/`
+- Place fuzz tests in `tests/fuzz/`
+- Use descriptive test names following pattern: `test_function_name_scenario_expected_result`
+
+Remember: Untested code is broken code. No exceptions. CI will reject any PR below 90% coverage.
+
 ## Completion Criteria
 
 **Definition of complete**: A task is ONLY complete when `scarb build && scarb test` runs with zero warnings and zero errors.
@@ -176,8 +250,66 @@ Workflow checklist:
 
 - [ ] Code changes implemented
 - [ ] `scarb build` passes with zero warnings
+- [ ] `scarb fmt -w` to format the codebase
 - [ ] `scarb test` passes with all tests green
 - [ ] `cairo-coverage` shows 90%+ coverage for modified files
 - [ ] New tests added for any new functionality
 
 **Do not consider any task complete until ALL criteria are met.**
+
+### Honesty About Results
+
+**ALWAYS provide honest assessment of your work:**
+
+- If you break tests, say so clearly
+- If you reduce passing test count, that's a FAILURE, not a success
+- Record your starting point: note how many tests are passing
+- Success means: MORE passing tests, not fewer
+- Better to admit failure than mislead about results
+
+#### ⚠️ CRITICAL: Test Result Interpretation
+
+**NEVER claim tests are passing without explicit verification:**
+
+1. **Truncated Output = Unknown Status**: If you see "... [X characters truncated] ..." in test output, you CANNOT determine success/failure
+2. **Completion Indicators**: Only trust results that show explicit completion like:
+   ```
+   Tests: X passed, Y failed, Z ignored
+   Test suite completed successfully
+   ```
+3. **Partial Results Don't Count**: Seeing some `[PASS]` messages doesn't mean all tests passed
+4. **When in Doubt, Say So**: If test output is unclear, incomplete, or suspicious, explicitly state "Test status unclear" or "Cannot determine test results"
+
+**Red Flags That Mean Unknown Status:**
+
+- Output truncation messages
+- Missing completion summary
+- Incomplete test result listings
+- Unexpected command termination
+- Error messages in test output
+
+**If you cannot clearly verify test success, you MUST:**
+
+- State that test status is unclear
+- Explain what prevented clear verification
+- Suggest alternative approaches to check test status
+- Never guess or assume success
+
+### Know Your Limits
+
+**It's okay to say "I don't know" or "This is beyond my capabilities":**
+
+- If you don't understand why something exists, ask before changing
+- If errors seem to cascade endlessly, stop and reassess
+- If the solution requires knowledge you don't have, say so
+- Better to leave a problem unsolved than to create new problems
+
+**When to stop and ask for help:**
+
+- When you need to modify core infrastructure you don't fully understand
+- When fixing one test breaks multiple others
+- When you encounter hardcoded values without clear documentation
+- When the "simple" fix becomes a major refactoring
+
+Remember: Breaking working code while trying to fix broken code is worse than leaving the broken code alone.
+

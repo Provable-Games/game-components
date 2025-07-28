@@ -1,4 +1,6 @@
-use game_components_token::interface::{IMinigameTokenDispatcher, IMinigameTokenDispatcherTrait};
+use game_components_token::core::interface::{
+    IMinigameTokenDispatcher, IMinigameTokenDispatcherTrait,
+};
 use game_components_token::extensions::settings::interface::{
     IMinigameTokenSettingsDispatcher, IMinigameTokenSettingsDispatcherTrait,
 };
@@ -30,6 +32,7 @@ pub fn get_settings_id(minigame_token_address: ContractAddress, token_id: u64) -
 pub fn create_settings(
     minigame_token_address: ContractAddress,
     game_address: ContractAddress,
+    creator_address: ContractAddress,
     settings_id: u32,
     name: ByteArray,
     description: ByteArray,
@@ -39,7 +42,7 @@ pub fn create_settings(
         contract_address: minigame_token_address,
     };
     minigame_token_dispatcher
-        .create_settings(game_address, settings_id, name, description, settings);
+        .create_settings(game_address, creator_address, settings_id, name, description, settings);
 }
 // /// Asserts that a setting exists by checking the game contract
 // ///

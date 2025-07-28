@@ -17,3 +17,20 @@ pub struct TokenMetadata {
     pub has_context: bool,
     pub objectives_count: u8,
 }
+
+impl TokenMetadataDefault of Default<TokenMetadata> {
+    fn default() -> TokenMetadata {
+        TokenMetadata {
+            game_id: 0,
+            minted_at: 0,
+            settings_id: 0,
+            lifecycle: Lifecycle { start: 0, end: 0 },
+            minted_by: 0,
+            soulbound: false,
+            game_over: false,
+            completed_all_objectives: false,
+            has_context: false,
+            objectives_count: 0,
+        }
+    }
+}

@@ -1,6 +1,8 @@
-use game_components_token::interface::{IMinigameTokenDispatcher, IMinigameTokenDispatcherTrait};
-use game_components_token::extensions::multi_game::interface::{
-    IMinigameTokenMultiGameDispatcher, IMinigameTokenMultiGameDispatcherTrait,
+use game_components_token::core::interface::{
+    IMinigameTokenDispatcher, IMinigameTokenDispatcherTrait,
+};
+use game_components_token::examples::minigame_registry_contract::{
+    IMinigameRegistryDispatcher, IMinigameRegistryDispatcherTrait,
 };
 use game_components_metagame::extensions::context::structs::GameContextDetails;
 use starknet::ContractAddress;
@@ -79,7 +81,7 @@ pub fn register_game(
     client_url: Option<ByteArray>,
     renderer_address: Option<ContractAddress>,
 ) {
-    let minigame_token_dispatcher = IMinigameTokenMultiGameDispatcher {
+    let minigame_token_dispatcher = IMinigameRegistryDispatcher {
         contract_address: minigame_token_address,
     };
     minigame_token_dispatcher

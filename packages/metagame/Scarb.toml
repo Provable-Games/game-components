@@ -10,6 +10,7 @@ sierra-replace-ids = true
 
 [dependencies]
 starknet.workspace = true
+game_components_minigame = { path = "../minigame" }
 game_components_token = { path = "../token" }
 openzeppelin_introspection = "1.0.0"
 openzeppelin_token = "1.0.0"
@@ -17,7 +18,6 @@ openzeppelin_access = "1.0.0"
 
 [dev-dependencies]
 snforge_std = "0.45.0"
-game_components_minigame = { path = "../minigame" }
 
 [[target.starknet-contract]]
 sierra = true

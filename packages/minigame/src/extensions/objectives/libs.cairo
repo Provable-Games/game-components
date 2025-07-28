@@ -30,6 +30,7 @@ pub fn get_objective_ids(minigame_token_address: ContractAddress, token_id: u64)
 pub fn create_objective(
     minigame_token_address: ContractAddress,
     game_address: ContractAddress,
+    creator_address: ContractAddress,
     objective_id: u32,
     name: ByteArray,
     value: ByteArray,
@@ -38,7 +39,8 @@ pub fn create_objective(
     let minigame_token_dispatcher = IMinigameTokenObjectivesDispatcher {
         contract_address: minigame_token_address,
     };
-    minigame_token_dispatcher.create_objective(game_address, objective_id, objective);
+    minigame_token_dispatcher
+        .create_objective(game_address, creator_address, objective_id, objective);
 }
 // /// Asserts that an objective exists by checking the game contract
 // ///

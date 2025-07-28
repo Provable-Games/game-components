@@ -6,13 +6,29 @@ edition.workspace = true
 [dependencies]
 starknet.workspace = true
 openzeppelin_introspection = "1.0.0"
+openzeppelin_token = "1.0.0"
 game_components_metagame = { path = "../metagame" }
 game_components_minigame = { path = "../minigame" }
 game_components_utils = { path = "../utils" }
+game_components_token = { path = "../token" }
 
 [scripts]
 test = "snforge test"
 
 [dev-dependencies]
-cairo_test = "2.10.1"
 snforge_std = "0.45.0"
+
+[[target.starknet-contract]]
+sierra = true
+build-external-contracts = [
+    "game_components_token::examples::minigame_registry_contract::MinigameRegistryContract",
+    "game_components_token::examples::full_token_contract::FullTokenContract",
+    "game_components_token::examples::minimal_optimized_example::MinimalOptimizedContract",
+]
+
+[profile.dev.cairo]
+unstable-add-statements-functions-debug-info = true
+unstable-add-statements-code-locations-debug-info = true
+inlining-strategy = "avoid"
+
+[lib]

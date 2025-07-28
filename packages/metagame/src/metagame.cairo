@@ -7,6 +7,7 @@ pub mod MetagameComponent {
     use crate::interface::{IMetagame, IMETAGAME_ID};
     use game_components_metagame::extensions::context::interface::IMETAGAME_CONTEXT_ID;
     use game_components_metagame::extensions::context::structs::GameContextDetails;
+    use game_components_token::core::interface::IMINIGAME_TOKEN_ID;
     use crate::libs;
 
     use openzeppelin_introspection::src5::SRC5Component;
@@ -19,8 +20,8 @@ pub mod MetagameComponent {
 
     #[storage]
     pub struct Storage {
-        minigame_token_address: ContractAddress,
         context_address: ContractAddress,
+        default_token_address: ContractAddress,
     }
 
     #[embeddable_as(MetagameImpl)]
@@ -30,12 +31,12 @@ pub mod MetagameComponent {
         impl SRC5: SRC5Component::HasComponent<TContractState>,
         +Drop<TContractState>,
     > of IMetagame<ComponentState<TContractState>> {
-        fn minigame_token_address(self: @ComponentState<TContractState>) -> ContractAddress {
-            self.minigame_token_address.read()
-        }
-
         fn context_address(self: @ComponentState<TContractState>) -> ContractAddress {
             self.context_address.read()
+        }
+
+        fn default_token_address(self: @ComponentState<TContractState>) -> ContractAddress {
+            self.default_token_address.read()
         }
     }
 
@@ -49,14 +50,30 @@ pub mod MetagameComponent {
         fn initializer(
             ref self: ComponentState<TContractState>,
             context_address: Option<ContractAddress>,
-            minigame_token_address: ContractAddress,
+            default_token_address: ContractAddress,
         ) {
             self.register_src5_interfaces();
-            self.minigame_token_address.write(minigame_token_address.clone());
             match context_address {
-                Option::Some(address) => self.context_address.write(address.clone()),
+                Option::Some(context_address) => {
+                    assert!(!context_address.is_zero(), "Metagame: Context address is zero");
+                    let context_src5_dispatcher = ISRC5Dispatcher {
+                        contract_address: context_address,
+                    };
+                    assert!(
+                        context_src5_dispatcher.supports_interface(IMETAGAME_CONTEXT_ID),
+                        "Metagame: Context contract does not support IMetagameContext",
+                    );
+                    self.context_address.write(context_address);
+                },
                 Option::None => {},
-            };
+            }
+            assert!(!default_token_address.is_zero(), "Metagame: Default token address is zero");
+            let minigame_dispatcher = ISRC5Dispatcher { contract_address: default_token_address };
+            assert!(
+                minigame_dispatcher.supports_interface(IMINIGAME_TOKEN_ID),
+                "Metagame: Default token contract does not support IMinigameToken",
+            );
+            self.default_token_address.write(default_token_address);
         }
 
         fn register_src5_interfaces(ref self: ComponentState<TContractState>) {
@@ -67,8 +84,7 @@ pub mod MetagameComponent {
         fn assert_game_registered(
             ref self: ComponentState<TContractState>, game_address: ContractAddress,
         ) {
-            let minigame_token_address = self.minigame_token_address.read();
-            libs::assert_game_registered(minigame_token_address, game_address);
+            libs::assert_game_registered(game_address);
         }
 
         fn mint(
@@ -85,30 +101,8 @@ pub mod MetagameComponent {
             to: ContractAddress,
             soulbound: bool,
         ) -> u64 {
-            match @context {
-                Option::Some(_) => {
-                    let context_address = self.context_address.read();
-                    if !context_address.is_zero() {
-                        let context_src5_dispatcher = ISRC5Dispatcher {
-                            contract_address: context_address,
-                        };
-                        assert!(
-                            context_src5_dispatcher.supports_interface(IMETAGAME_CONTEXT_ID),
-                            "Metagame: Context contract does not support IMetagameContext",
-                        );
-                    } else {
-                        let src5_component = get_dep_component_mut!(ref self, SRC5);
-                        assert!(
-                            src5_component.supports_interface(IMETAGAME_CONTEXT_ID),
-                            "Metagame: Caller does not support IMetagameContext",
-                        );
-                    }
-                },
-                Option::None => {},
-            }
-            let minigame_token_address = self.minigame_token_address.read();
             libs::mint(
-                minigame_token_address,
+                self.default_token_address.read(),
                 game_address,
                 player_name,
                 settings_id,

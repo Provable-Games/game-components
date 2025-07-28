@@ -1,7 +1,5 @@
-pub mod multi_game;
-pub mod objectives;
-pub mod settings;
 pub mod minter;
-// pub mod soulbound;
-
-
+pub mod objectives;
+pub mod context;
+pub mod renderer;
+pub mod settings;

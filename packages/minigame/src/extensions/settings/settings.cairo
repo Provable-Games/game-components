@@ -2,11 +2,11 @@
 // Settings Component
 //
 #[starknet::component]
-pub mod settings_component {
+pub mod SettingsComponent {
     use crate::extensions::settings::interface::{IMinigameSettings, IMINIGAME_SETTINGS_ID};
     use crate::extensions::settings::libs;
     use crate::extensions::settings::structs::{GameSetting};
-    use starknet::{ContractAddress, get_contract_address};
+    use starknet::{ContractAddress, get_contract_address, get_caller_address};
 
     use openzeppelin_introspection::src5::SRC5Component;
     use openzeppelin_introspection::src5::SRC5Component::InternalTrait as SRC5InternalTrait;
@@ -50,6 +50,7 @@ pub mod settings_component {
             libs::create_settings(
                 minigame_token_address,
                 get_contract_address(),
+                get_caller_address(),
                 settings_id,
                 name,
                 description,
