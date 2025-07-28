@@ -7,3 +7,5 @@ Scarb.lock
 *.casm.json
 .starknet-foundry/
 deployments/
+argent_account.json
+.snfoundry_cache/
