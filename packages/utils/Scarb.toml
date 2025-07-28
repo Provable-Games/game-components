@@ -12,5 +12,5 @@ sierra-replace-ids = true
 starknet.workspace = true
 game_components_metagame = { path = "../metagame" }
 game_components_minigame = { path = "../minigame" }
-alexandria_encoding = { git = "https://github.com/keep-starknet-strange/alexandria.git", tag = "v0.5.1" }
+alexandria_encoding = { git = "https://github.com/keep-starknet-strange/alexandria.git", tag = "v0.3.0" }
 graffiti = { git = "https://github.com/ponderingdemocritus/graffiti", rev = "bc569531791dbc71c6cd8d9bc154c34eedad31fe" }
