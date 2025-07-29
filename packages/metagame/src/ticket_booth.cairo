@@ -50,8 +50,9 @@ pub mod TicketBoothComponent {
 
     #[derive(Drop, Serde, Clone, starknet::Store)]
     pub struct GoldenPass {
-        pub cooldown: u64,
-        pub game_expiration: u64 // 0 means no expiration
+        pub cooldown: u64, // Duration after which the pass can be used again, must be greater than 0
+        pub game_expiration: u64, // Duration after which games minted with this pass expires, 0 means no expiration
+        pub pass_expiration: u64, // timestamp when the pass expires (becoming unusable), 0 means no expiration
     }
 
     #[event]
@@ -190,7 +191,13 @@ pub mod TicketBoothComponent {
 
             // Get the golden pass configuration
             let golden_pass_config = self.golden_passes.read(golden_pass_address);
-            assert!(golden_pass_config.cooldown > 0, "Golden pass not configured");
+            assert!(golden_pass_config.cooldown > 0_u64, "Golden pass not configured");
+
+            // Check if the pass is expired
+            let current_time = get_block_timestamp();
+            if golden_pass_config.pass_expiration > 0_u64 {
+                assert!(current_time < golden_pass_config.pass_expiration, "Golden pass expired");
+            }
 
             // Check caller owns the golden pass
             let golden_pass = IERC721Dispatcher { contract_address: golden_pass_address };
@@ -215,7 +222,7 @@ pub mod TicketBoothComponent {
                 .write((golden_pass_address, golden_pass_token_id), current_time);
 
             // Calculate expiration with priority: golden pass expiration > global expiration > 0
-            let expiration = if golden_pass_config.game_expiration > 0 {
+            let expiration = if golden_pass_config.game_expiration > 0_u64 {
                 // Golden pass has its own expiration
                 Option::Some(current_time + golden_pass_config.game_expiration)
             } else {
@@ -253,7 +260,7 @@ pub mod TicketBoothComponent {
             self: @ComponentState<TContractState>, golden_pass_address: ContractAddress,
         ) -> Option<GoldenPass> {
             let golden_pass = self.golden_passes.read(golden_pass_address);
-            if golden_pass.cooldown > 0 {
+            if golden_pass.cooldown > 0_u64 {
                 Option::Some(golden_pass)
             } else {
                 Option::None
@@ -329,7 +336,7 @@ pub mod TicketBoothComponent {
             // Validate required parameters
             assert!(!game_token_address.is_zero(), "Game token address cannot be zero");
             assert!(!payment_token.is_zero(), "Payment token cannot be zero");
-            assert!(cost_to_play > 0, "Cost to play must be greater than zero");
+            assert!(cost_to_play > 0_u128, "Cost to play must be greater than zero");
 
             self.opening_time.write(opening_time);
             self.game_token_address.write(game_token_address);
@@ -356,6 +363,7 @@ pub mod TicketBoothComponent {
                             break;
                         }
                         let (address, config) = passes.at(i);
+                        assert!(*config.cooldown > 0_u64, "Golden pass cooldown must be greater than zero");
                         self.golden_passes.write(*address, config.clone());
                         i += 1;
                     };
@@ -405,7 +413,7 @@ pub mod TicketBoothComponent {
             ref self: ComponentState<TContractState>, new_cost_to_play: u128,
         ) {
             self.assert_before_opening();
-            assert!(new_cost_to_play > 0, "Cost to play must be greater than zero");
+            assert!(new_cost_to_play > 0_u128, "Cost to play must be greater than zero");
             self.cost_to_play.write(new_cost_to_play);
         }
     }
