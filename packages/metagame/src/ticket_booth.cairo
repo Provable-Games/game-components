@@ -416,9 +416,5 @@ pub mod TicketBoothComponent {
             assert!(new_cost_to_play > 0_u128, "Cost to play must be greater than zero");
             self.cost_to_play.write(new_cost_to_play);
         }
-
-        fn get_game_token_address(self: @ComponentState<TContractState>) -> ContractAddress {
-            self.game_token_address.read()
-        }
     }
 }
