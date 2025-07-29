@@ -107,7 +107,6 @@ pub mod TicketBoothComponent {
         ) -> u64;
         fn ticket_receiver_address(self: @TContractState) -> ContractAddress;
         fn opening_time(self: @TContractState) -> u64;
-        fn game_token_address(self: @TContractState) -> ContractAddress;
     }
 
     #[embeddable_as(TicketBoothImpl)]
@@ -275,10 +274,6 @@ pub mod TicketBoothComponent {
         ) -> u64 {
             self.golden_pass_last_used.read((golden_pass_address, token_id))
         }
-
-        fn game_token_address(self: @ComponentState<TContractState>) -> ContractAddress {
-            self.game_token_address.read()
-        }
         
         fn ticket_receiver_address(self: @ComponentState<TContractState>) -> ContractAddress {
             self.ticket_receiver_address.read()
@@ -420,6 +415,10 @@ pub mod TicketBoothComponent {
             self.assert_before_opening();
             assert!(new_cost_to_play > 0_u128, "Cost to play must be greater than zero");
             self.cost_to_play.write(new_cost_to_play);
+        }
+
+        fn get_game_token_address(self: @ComponentState<TContractState>) -> ContractAddress {
+            self.game_token_address.read()
         }
     }
 }
