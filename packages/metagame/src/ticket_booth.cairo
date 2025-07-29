@@ -107,6 +107,7 @@ pub mod TicketBoothComponent {
         ) -> u64;
         fn ticket_receiver_address(self: @TContractState) -> ContractAddress;
         fn opening_time(self: @TContractState) -> u64;
+        fn game_token_address(self: @TContractState) -> ContractAddress;
     }
 
     #[embeddable_as(TicketBoothImpl)]
@@ -275,6 +276,10 @@ pub mod TicketBoothComponent {
             self.golden_pass_last_used.read((golden_pass_address, token_id))
         }
 
+        fn game_token_address(self: @ComponentState<TContractState>) -> ContractAddress {
+            self.game_token_address.read()
+        }
+        
         fn ticket_receiver_address(self: @ComponentState<TContractState>) -> ContractAddress {
             self.ticket_receiver_address.read()
         }
