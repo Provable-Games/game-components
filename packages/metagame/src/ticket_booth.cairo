@@ -49,9 +49,16 @@ pub mod TicketBoothComponent {
     }
 
     #[derive(Drop, Serde, Clone, starknet::Store)]
+    #[allow(starknet::store_no_default_variant)]
+    pub enum GameExpiration {
+        Fixed: u64,
+        Dynamic: u64,
+    }
+
+    #[derive(Drop, Serde, Clone, starknet::Store)]
     pub struct GoldenPass {
         pub cooldown: u64, // Duration after which the pass can be used again, must be greater than 0
-        pub game_expiration: u64, // Duration after which games minted with this pass expires, 0 means no expiration
+        pub game_expiration: GameExpiration, // Duration after which games minted with this pass expires
         pub pass_expiration: u64, // timestamp when the pass expires (becoming unusable), 0 means no expiration
     }
 
@@ -221,17 +228,16 @@ pub mod TicketBoothComponent {
                 .golden_pass_last_used
                 .write((golden_pass_address, golden_pass_token_id), current_time);
 
-            // Calculate expiration with priority: golden pass expiration > global expiration > 0
-            let expiration = if golden_pass_config.game_expiration > 0_u64 {
-                // Golden pass has its own expiration
-                Option::Some(current_time + golden_pass_config.game_expiration)
-            } else {
-                // Use global expiration config if no golden pass expiration
-                let exp_time = self.expiration_time.read();
-                match exp_time {
-                    Option::Some(duration) => Option::Some(current_time + duration),
-                    Option::None => Option::None // No expiration at all
-                }
+            // Calculate expiration based on GameExpiration enum
+            let expiration = match golden_pass_config.game_expiration {
+                GameExpiration::Fixed(expiration_time) => {
+                    // Fixed expiration: set to the exact timestamp
+                    Option::Some(expiration_time)
+                },
+                GameExpiration::Dynamic(duration) => {
+                    // Dynamic expiration: add duration to current_time
+                    Option::Some(current_time + duration)
+                },
             };
 
             let token_id = libs::mint(

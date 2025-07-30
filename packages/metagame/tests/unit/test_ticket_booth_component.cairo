@@ -1,5 +1,5 @@
 use game_components_metagame::ticket_booth::{
-    TicketBoothComponent, ITicketBoothDispatcher, ITicketBoothDispatcherTrait, GoldenPass,
+    TicketBoothComponent, ITicketBoothDispatcher, ITicketBoothDispatcherTrait, GoldenPass, GameExpiration,
 };
 use game_components_metagame::extensions::context::structs::GameContextDetails;
 use openzeppelin_token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
@@ -152,7 +152,17 @@ fn deploy_ticket_booth(
                 let (address, config) = passes.at(i);
                 calldata.append((*address).into());
                 calldata.append(config.cooldown.into());
-                calldata.append(config.game_expiration.into());
+                // Serialize GameExpiration enum
+                match config.game_expiration {
+                    GameExpiration::Fixed(expiration_time) => {
+                        calldata.append(0_u32.into()); // Fixed variant
+                        calldata.append(expiration_time.into());
+                    },
+                    GameExpiration::Dynamic(duration) => {
+                        calldata.append(1_u32.into()); // Dynamic variant
+                        calldata.append(duration.into());
+                    },
+                };
                 i += 1;
             };
         },
@@ -189,7 +199,9 @@ fn test_initialization_success() {
     let ticket_receiver = contract_address_const::<0xABC>();
 
     let golden_pass = GoldenPass {
-        cooldown: golden_pass_cooldown, game_expiration: golden_pass_expiration,
+        cooldown: golden_pass_cooldown, 
+        game_expiration: GameExpiration::Dynamic(golden_pass_expiration),
+        pass_expiration: 0_u64,
     };
     let golden_passes = array![(golden_pass_address, golden_pass)].span();
 
@@ -219,10 +231,14 @@ fn test_initialization_success() {
     assert!(
         retrieved_golden_pass.cooldown == golden_pass_cooldown, "Golden pass cooldown mismatch",
     );
-    assert!(
-        retrieved_golden_pass.game_expiration == golden_pass_expiration,
-        "Golden pass expiration mismatch",
-    );
+    match retrieved_golden_pass.game_expiration {
+        GameExpiration::Dynamic(duration) => {
+            assert!(duration == golden_pass_expiration, "Golden pass expiration mismatch");
+        },
+        _ => {
+            panic!("Expected Dynamic expiration");
+        },
+    };
 
     // Check ticket receiver
     assert!(
@@ -394,7 +410,9 @@ fn test_use_golden_pass_success() {
     let golden_pass_expiration = 864000_u64; // 10 days
 
     let golden_pass = GoldenPass {
-        cooldown: golden_pass_cooldown, game_expiration: golden_pass_expiration,
+        cooldown: golden_pass_cooldown, 
+        game_expiration: GameExpiration::Dynamic(golden_pass_expiration),
+        pass_expiration: 0_u64,
     };
     let golden_passes = array![(golden_pass_address, golden_pass)].span();
 
@@ -461,7 +479,9 @@ fn test_golden_pass_cooldown() {
     let golden_pass_expiration = 864000_u64; // 10 days
 
     let golden_pass = GoldenPass {
-        cooldown: golden_pass_cooldown, game_expiration: golden_pass_expiration,
+        cooldown: golden_pass_cooldown, 
+        game_expiration: GameExpiration::Dynamic(golden_pass_expiration),
+        pass_expiration: 0_u64,
     };
     let golden_passes = array![(golden_pass_address, golden_pass)].span();
 
@@ -527,7 +547,9 @@ fn test_golden_pass_after_cooldown() {
     let golden_pass_expiration = 864000_u64; // 10 days
 
     let golden_pass = GoldenPass {
-        cooldown: golden_pass_cooldown, game_expiration: golden_pass_expiration,
+        cooldown: golden_pass_cooldown, 
+        game_expiration: GameExpiration::Dynamic(golden_pass_expiration),
+        pass_expiration: 0_u64,
     };
     let golden_passes = array![(golden_pass_address, golden_pass)].span();
 
@@ -635,7 +657,9 @@ fn test_golden_pass_expiration() {
     let golden_pass_expiration = 864000_u64; // 10 days
 
     let golden_pass = GoldenPass {
-        cooldown: golden_pass_cooldown, game_expiration: golden_pass_expiration,
+        cooldown: golden_pass_cooldown, 
+        game_expiration: GameExpiration::Dynamic(golden_pass_expiration),
+        pass_expiration: 0_u64,
     };
     let golden_passes = array![(golden_pass_address, golden_pass)].span();
 
@@ -1046,4 +1070,124 @@ mod MockTicketBooth {
                 ticket_receiver_address,
             );
     }
+}
+
+// Test TB-13: Golden pass with Fixed expiration
+#[test]
+fn test_golden_pass_fixed_expiration() {
+    // Deploy mock contracts
+    let erc721_contract = declare("MockERC721").unwrap().contract_class();
+    let (golden_pass_address, _) = erc721_contract.deploy(@array![]).unwrap();
+
+    let token_contract = declare("MockMinigameToken").unwrap().contract_class();
+    let (game_address, _) = token_contract.deploy(@array![]).unwrap();
+
+    let payment_token = contract_address_const::<0x456>();
+    let golden_pass_cooldown = 3600_u64; // 1 hour
+    let fixed_expiration_time = 1000000_u64; // Fixed timestamp
+
+    let golden_pass = GoldenPass {
+        cooldown: golden_pass_cooldown, 
+        game_expiration: GameExpiration::Fixed(fixed_expiration_time),
+        pass_expiration: 0_u64,
+    };
+    let golden_passes = array![(golden_pass_address, golden_pass)].span();
+
+    let contract_address = deploy_ticket_booth(
+        0,
+        game_address,
+        payment_token,
+        1000_u128,
+        Option::Some(1_u32),
+        Option::None, // start_time
+        Option::None, // expiration_time
+        Option::None, // client_url
+        Option::None, // renderer_address
+        Option::Some(golden_passes),
+        Option::None,
+    );
+
+    let dispatcher = IMockTicketBoothDispatcher { contract_address };
+    let user = contract_address_const::<0x999>();
+    let golden_pass_token_id = 1_u256;
+
+    start_cheat_caller_address(contract_address, user);
+    start_cheat_block_timestamp(contract_address, 1000);
+
+    let token_id = dispatcher
+        .use_golden_pass(
+            golden_pass_address,
+            golden_pass_token_id,
+            "Fixed Player",
+            user,
+            false,
+            Option::None,
+            Option::None,
+        );
+
+    stop_cheat_block_timestamp(contract_address);
+    stop_cheat_caller_address(contract_address);
+
+    assert!(token_id > 0, "Token should be minted with fixed expiration");
+    // The token should have the fixed expiration time, not current_time + duration
+}
+
+// Test TB-14: Golden pass with Dynamic expiration
+#[test]
+fn test_golden_pass_dynamic_expiration() {
+    // Deploy mock contracts
+    let erc721_contract = declare("MockERC721").unwrap().contract_class();
+    let (golden_pass_address, _) = erc721_contract.deploy(@array![]).unwrap();
+
+    let token_contract = declare("MockMinigameToken").unwrap().contract_class();
+    let (game_address, _) = token_contract.deploy(@array![]).unwrap();
+
+    let payment_token = contract_address_const::<0x456>();
+    let golden_pass_cooldown = 3600_u64; // 1 hour
+    let dynamic_duration = 864000_u64; // 10 days duration
+
+    let golden_pass = GoldenPass {
+        cooldown: golden_pass_cooldown, 
+        game_expiration: GameExpiration::Dynamic(dynamic_duration),
+        pass_expiration: 0_u64,
+    };
+    let golden_passes = array![(golden_pass_address, golden_pass)].span();
+
+    let contract_address = deploy_ticket_booth(
+        0,
+        game_address,
+        payment_token,
+        1000_u128,
+        Option::Some(1_u32),
+        Option::None, // start_time
+        Option::None, // expiration_time
+        Option::None, // client_url
+        Option::None, // renderer_address
+        Option::Some(golden_passes),
+        Option::None,
+    );
+
+    let dispatcher = IMockTicketBoothDispatcher { contract_address };
+    let user = contract_address_const::<0x999>();
+    let golden_pass_token_id = 1_u256;
+
+    start_cheat_caller_address(contract_address, user);
+    start_cheat_block_timestamp(contract_address, 1000);
+
+    let token_id = dispatcher
+        .use_golden_pass(
+            golden_pass_address,
+            golden_pass_token_id,
+            "Dynamic Player",
+            user,
+            false,
+            Option::None,
+            Option::None,
+        );
+
+    stop_cheat_block_timestamp(contract_address);
+    stop_cheat_caller_address(contract_address);
+
+    assert!(token_id > 0, "Token should be minted with dynamic expiration");
+    // The token should have expiration = current_time + dynamic_duration
 }
