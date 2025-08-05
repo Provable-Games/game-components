@@ -2,7 +2,7 @@
 pub mod CoreTokenComponent {
     use core::num::traits::Zero;
     use starknet::{
-        ContractAddress, contract_address_const, get_caller_address, get_block_timestamp,
+        ContractAddress, get_caller_address, get_block_timestamp,
     };
     use starknet::storage::{
         StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess, Map,
@@ -418,7 +418,7 @@ pub mod CoreTokenComponent {
                     self
                         .emit(
                             TokenMinted {
-                                token_id, to, game_address: contract_address_const::<0>(),
+                                token_id, to, game_address: 0.try_into().unwrap(),
                             },
                         );
 

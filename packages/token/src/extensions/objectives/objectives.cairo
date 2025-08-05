@@ -248,7 +248,7 @@ pub mod ObjectivesComponent {
                         ObjectiveSet {
                             token_id,
                             objective_id,
-                            game_address: starknet::contract_address_const::<0>(),
+                            game_address: 0.try_into().unwrap(),
                         },
                     );
 

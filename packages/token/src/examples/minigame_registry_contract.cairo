@@ -206,7 +206,7 @@ pub mod MinigameRegistryContract {
 
             let final_renderer_address = match renderer_address {
                 Option::Some(renderer_address) => renderer_address,
-                Option::None => starknet::contract_address_const::<0>(),
+                Option::None => 0.try_into().unwrap(),
             };
 
             // Store game metadata

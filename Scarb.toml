@@ -17,7 +17,7 @@ edition.workspace = true
 [workspace.package]
 version = "1.5.1"
 edition = "2024_07"
-cairo-version = "=2.10.1"
+cairo-version = "=2.11.4"
 authors = ["Provable Games <maintainers@provable.games>"]
 keywords = [
     "openzeppelin",
@@ -28,8 +28,8 @@ keywords = [
 ]
 
 [workspace.dependencies]
-starknet = "2.10.1"
-snforge_std = "0.45.0"
+starknet = "2.11.4"
+snforge_std = "0.46.0"
 
 [dependencies]
 starknet.workspace = true

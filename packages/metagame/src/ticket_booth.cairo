@@ -265,7 +265,7 @@ pub mod TicketBoothComponent {
             self.cost_to_play.write(cost_to_play);
             match game_address {
                 Option::Some(addr) => self.game_address.write(addr),
-                Option::None => self.game_address.write(starknet::contract_address_const::<0>()),
+                Option::None => self.game_address.write(0.try_into().unwrap()),
             };
             self.settings_id.write(settings_id);
             self.start_time.write(start_time);
@@ -318,7 +318,7 @@ pub mod TicketBoothComponent {
                     },
                     Result::Err(_) => {
                         // burn_from failed, fall back to zero address transfer
-                        let zero_address: ContractAddress = starknet::contract_address_const::<0>();
+                        let zero_address: ContractAddress = 0.try_into().unwrap();
                         let _ = payment_token.transfer_from(caller, zero_address, cost.into());
                     },
                 }
