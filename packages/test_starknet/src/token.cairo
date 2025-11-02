@@ -21,4 +21,6 @@ pub mod test_context_coverage;
 pub mod test_examples_coverage;
 #[cfg(test)]
 pub mod test_core_token_coverage;
+#[cfg(test)]
+pub mod test_token_uri_settings_address;
 
