@@ -2,34 +2,32 @@
 // This demonstrates how to configure and use the modular components
 
 use core::num::traits::Zero;
-use starknet::{ContractAddress, syscalls::call_contract_syscall};
-use starknet::storage::{StoragePointerReadAccess};
-
-// Core imports
-use openzeppelin_token::erc721::{ERC721Component, interface::IERC721Metadata};
-use openzeppelin_introspection::src5::SRC5Component;
-use openzeppelin_token::common::erc2981::erc2981::{DefaultConfig, ERC2981Component};
-
-// Game components imports
-use crate::core::core_token::CoreTokenComponent;
-use crate::structs::TokenMetadata;
-use crate::extensions::minter::minter::MinterComponent;
-use crate::extensions::objectives::objectives::ObjectivesComponent;
-use crate::extensions::context::context::ContextComponent;
-use crate::extensions::renderer::renderer::RendererComponent;
-use crate::extensions::settings::settings::SettingsComponent;
-
-use crate::examples::minigame_registry_contract::{
-    IMinigameRegistryDispatcher, IMinigameRegistryDispatcherTrait,
-};
-
-use crate::interface::{ITokenEventRelayerDispatcher, ITokenEventRelayerDispatcherTrait};
-
 use game_components_metagame::extensions::context::structs::GameContextDetails;
 use game_components_minigame::extensions::settings::structs::GameSettingDetails;
 use game_components_minigame::interface::{IMinigameDispatcher, IMinigameDispatcherTrait};
 use game_components_minigame::structs::GameDetail;
-use game_components_utils::renderer::{create_default_svg, create_custom_metadata};
+use game_components_utils::renderer::{create_custom_metadata, create_default_svg};
+use openzeppelin_introspection::src5::SRC5Component;
+use openzeppelin_token::common::erc2981::erc2981::{DefaultConfig, ERC2981Component};
+
+// Core imports
+use openzeppelin_token::erc721::{ERC721Component, interface::IERC721Metadata};
+use starknet::ContractAddress;
+use starknet::storage::StoragePointerReadAccess;
+use starknet::syscalls::call_contract_syscall;
+
+// Game components imports
+use crate::core::core_token::CoreTokenComponent;
+use crate::examples::minigame_registry_contract::{
+    IMinigameRegistryDispatcher, IMinigameRegistryDispatcherTrait,
+};
+use crate::extensions::context::context::ContextComponent;
+use crate::extensions::minter::minter::MinterComponent;
+use crate::extensions::objectives::objectives::ObjectivesComponent;
+use crate::extensions::renderer::renderer::RendererComponent;
+use crate::extensions::settings::settings::SettingsComponent;
+use crate::interface::{ITokenEventRelayerDispatcher, ITokenEventRelayerDispatcherTrait};
+use crate::structs::TokenMetadata;
 
 
 #[starknet::contract]
@@ -290,26 +288,30 @@ pub mod FullTokenContract {
                     Result::Err(_) => array![].span(),
                 };
 
-                let mut settings_calldata = array![];
-                settings_calldata.append(token_metadata.settings_id.into());
+                // Check if settings_address is zero before attempting contract call
+                let mut default_settings = GameSettingDetails {
+                    name: "", description: "", settings: array![].span(),
+                };
 
-                let settings_details =
+                let settings_details = if settings_address.is_zero() {
+                    default_settings
+                } else {
+                    let mut settings_calldata = array![];
+                    settings_calldata.append(token_metadata.settings_id.into());
+
                     match call_contract_syscall(
                         settings_address, settings_details_selector, settings_calldata.span(),
                     ) {
-                    Result::Ok(result) => {
-                        // Try to deserialize the result as GameSettingDetails
-                        let mut result_span = result;
-                        match Serde::<GameSettingDetails>::deserialize(ref result_span) {
-                            Option::Some(settings_details) => settings_details,
-                            Option::None => GameSettingDetails {
-                                name: "", description: "", settings: array![].span(),
-                            },
-                        }
-                    },
-                    Result::Err(_) => GameSettingDetails {
-                        name: "", description: "", settings: array![].span(),
-                    },
+                        Result::Ok(result) => {
+                            // Try to deserialize the result as GameSettingDetails
+                            let mut result_span = result;
+                            match Serde::<GameSettingDetails>::deserialize(ref result_span) {
+                                Option::Some(settings_details) => settings_details,
+                                Option::None => default_settings,
+                            }
+                        },
+                        Result::Err(_) => default_settings,
+                    }
                 };
 
                 let minted_by_address = self.minter.get_minter_address(token_metadata.minted_by);
