@@ -289,8 +289,12 @@ pub mod FullTokenContract {
                 };
 
                 // Check if settings_address is zero before attempting contract call
+                let mut default_settings = GameSettingDetails {
+                    name: "", description: "", settings: array![].span(),
+                };
+
                 let settings_details = if settings_address.is_zero() {
-                    GameSettingDetails { name: "", description: "", settings: array![].span() }
+                    default_settings
                 } else {
                     let mut settings_calldata = array![];
                     settings_calldata.append(token_metadata.settings_id.into());
@@ -303,14 +307,10 @@ pub mod FullTokenContract {
                             let mut result_span = result;
                             match Serde::<GameSettingDetails>::deserialize(ref result_span) {
                                 Option::Some(settings_details) => settings_details,
-                                Option::None => GameSettingDetails {
-                                    name: "", description: "", settings: array![].span(),
-                                },
+                                Option::None => default_settings,
                             }
                         },
-                        Result::Err(_) => GameSettingDetails {
-                            name: "", description: "", settings: array![].span(),
-                        },
+                        Result::Err(_) => default_settings,
                     }
                 };
 
