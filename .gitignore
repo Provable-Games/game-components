@@ -1,6 +1,14 @@
+.env
 target/
 .scarb/
 Scarb.lock
-.tool-versions
 *.sierra.json
 *.casm.json
+.starknet-foundry/
+deployments/
+argent_account_sepolia.json
+argent_account_mainnet.json
+.snfoundry_cache/
+packages/test_dojo/
+.DS_Store
+coverage.lcov

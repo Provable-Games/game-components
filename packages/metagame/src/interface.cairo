@@ -1,4 +1,3 @@
-use crate::models::context::GameContextDetails;
 use starknet::ContractAddress;
 
 pub const IMETAGAME_ID: felt252 =
@@ -6,18 +5,7 @@ pub const IMETAGAME_ID: felt252 =
 
 #[starknet::interface]
 pub trait IMetagame<TContractState> {
-    fn namespace(self: @TContractState) -> ByteArray;
-    fn denshokan_address(self: @TContractState) -> ContractAddress;
-}
-
-#[starknet::interface]
-pub trait IMetagameContext<TContractState> {
-    fn has_context(self: @TContractState, token_id: u64) -> bool;
-    fn context(self: @TContractState, token_id: u64) -> GameContextDetails;
-}
-
-#[starknet::interface]
-pub trait IMetagameContextSVG<TContractState> {
-    fn context_svg(self: @TContractState, token_id: u64) -> ByteArray;
+    fn context_address(self: @TContractState) -> ContractAddress;
+    fn default_token_address(self: @TContractState) -> ContractAddress;
 }
 

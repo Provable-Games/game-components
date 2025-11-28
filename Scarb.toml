@@ -1,8 +1,10 @@
 [workspace]
 members = [
-    "packages/denshokan",
-    "packages/minigame",
     "packages/metagame",
+    "packages/minigame",
+    "packages/token",
+    # Test packages can be uncommented when needed
+    "packages/test_starknet",
     "packages/utils",
     "packages/leaderboard",
     "packages/presets",
@@ -11,13 +13,13 @@ members = [
 [package]
 name = "game_components"
 readme = "README.md"
-version = "1.5.1"
-edition = "2024_07"
+version.workspace = true
+edition.workspace = true
 
 [workspace.package]
-version = "0.0.1"
+version = "1.5.1"
 edition = "2024_07"
-cairo-version = "=2.10.1"
+cairo-version = "2.13.1"
 authors = ["Provable Games <maintainers@provable.games>"]
 keywords = [
     "openzeppelin",
@@ -27,19 +29,32 @@ keywords = [
     "standards"
 ]
 
+[workspace.dependencies]
+starknet = "2.13.1"
+snforge_std = { git = "https://github.com/foundry-rs/starknet-foundry", tag = "v0.53.0" }
+openzeppelin_introspection = { git = "https://github.com/OpenZeppelin/cairo-contracts.git", tag = "v3.0.0-alpha.3" }
+openzeppelin_token = { git = "https://github.com/OpenZeppelin/cairo-contracts.git", tag = "v3.0.0-alpha.3" }
+openzeppelin_interfaces = { git = "https://github.com/OpenZeppelin/cairo-contracts.git", tag = "v3.0.0-alpha.3" }
+
 [dependencies]
-game_components_denshokan = { path = "packages/denshokan" }
-game_components_minigame = { path = "packages/minigame" }
+starknet.workspace = true
+# Common packages
 game_components_metagame = { path = "packages/metagame" }
+game_components_minigame = { path = "packages/minigame" }
+game_components_token = { path = "packages/token" }
+# Test packages
+# game_components_test_dojo = { path = "packages/test_dojo" }  # Excluded - must be built separately
+game_components_test_starknet = { path = "packages/test_starknet" }
 game_components_utils = { path = "packages/utils" }
 game_components_leaderboard = { path = "packages/leaderboard" }
 game_components_presets = { path = "packages/presets" }
 
 [dev-dependencies]
-cairo_test = "=2.10.1"
-dojo_cairo_test = { git = "https://github.com/dojoengine/dojo", tag = "v1.5.1" }
+snforge_std.workspace = true
 
 [lib]
 
-[[target.starknet-contract]]
-build-external-contracts = ["dojo::world::world_contract::world"]
+[profile.dev.cairo]
+unstable-add-statements-functions-debug-info = true
+unstable-add-statements-code-locations-debug-info = true
+inlining-strategy = "avoid"

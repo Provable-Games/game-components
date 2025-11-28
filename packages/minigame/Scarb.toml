@@ -5,19 +5,14 @@ edition.workspace = true
 
 [lib]
 
-[cairo]
-sierra-replace-ids = true
-
 [dependencies]
-game_components_denshokan = { path = "../denshokan" }
+starknet.workspace = true
+game_components_metagame = { path = "../metagame" }
+game_components_token = { path = "../token" }
 game_components_utils = { path = "../utils" }
-dojo = { git = "https://github.com/dojoengine/dojo", tag = "v1.5.1" }
-openzeppelin_token = "1.0.0"
-openzeppelin_introspection = "1.0.0"
-
-[[target.starknet-contract]]
-build-external-contracts = ["dojo::world::world_contract::world"]
+openzeppelin_token.workspace = true
+openzeppelin_introspection.workspace = true
+openzeppelin_interfaces.workspace = true
 
 [dev-dependencies]
-cairo_test = "=2.10.1"
-dojo_cairo_test = { git = "https://github.com/dojoengine/dojo", tag = "v1.5.1" }
+snforge_std.workspace = true

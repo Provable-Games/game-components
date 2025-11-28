@@ -1,8 +1,11 @@
-use game_components_minigame::models::settings::GameSetting;
-use game_components_metagame::models::context::GameContext;
+use game_components_minigame::extensions::settings::structs::GameSetting;
+use game_components_minigame::extensions::objectives::structs::GameObjective;
+use game_components_metagame::extensions::context::structs::GameContext;
 use graffiti::json::JsonImpl;
 
-pub fn create_settings_json(name: ByteArray, description: ByteArray, settings: Span<GameSetting>) -> ByteArray {
+pub fn create_settings_json(
+    name: ByteArray, description: ByteArray, settings: Span<GameSetting>,
+) -> ByteArray {
     let mut settings_json = JsonImpl::new();
     let mut settings_index = 0;
     loop {
@@ -24,22 +27,23 @@ pub fn create_settings_json(name: ByteArray, description: ByteArray, settings: S
     metadata
 }
 
-pub fn create_objectives_json(objectives: Span<ByteArray>) -> ByteArray {
+pub fn create_objectives_json(objectives: Span<GameObjective>) -> ByteArray {
     let mut metadata = JsonImpl::new();
     let mut objective_index = 0;
     loop {
         if objective_index == objectives.len() {
             break;
         }
-        let objective_name = format!("Objective {}", objective_index + 1);
-        let objective_value = objectives.at(objective_index);
-        metadata = metadata.add(objective_name, objective_value.clone());
+        let objective = objectives.at(objective_index);
+        metadata = metadata.add(objective.name.clone(), objective.value.clone());
         objective_index += 1;
     };
     metadata.build()
 }
 
-pub fn create_context_json(name: ByteArray, description: ByteArray, contexts: Span<GameContext>) -> ByteArray {
+pub fn create_context_json(
+    name: ByteArray, description: ByteArray, context_id: Option<u32>, contexts: Span<GameContext>,
+) -> ByteArray {
     let mut contexts_json = JsonImpl::new();
     let mut contexts_index = 0;
     loop {
@@ -52,11 +56,16 @@ pub fn create_context_json(name: ByteArray, description: ByteArray, contexts: Sp
     };
     let contexts_json = contexts_json.build();
 
-    let metadata = JsonImpl::new()
-        .add("Name", name)
-        .add("Description", description)
-        .add("Contexts", contexts_json)
-        .build();
+    let mut metadata = JsonImpl::new().add("Name", name).add("Description", description);
+
+    // Conditionally add Context Id if it exists
+    match context_id {
+        Option::Some(id) => { metadata = metadata.add("Context Id", format!("{}", id)); },
+        Option::None => {},
+    };
+
+    // Add Contexts last
+    let metadata = metadata.add("Contexts", contexts_json).build();
 
     metadata
 }
@@ -65,7 +74,7 @@ pub fn create_json_array(values: Span<ByteArray>) -> ByteArray {
     if values.len() == 0 {
         return "[]";
     }
-    
+
     let mut result = "[";
     let mut index = 0;
     loop {
@@ -74,7 +83,7 @@ pub fn create_json_array(values: Span<ByteArray>) -> ByteArray {
         }
         let value = values.at(index);
         result += "\"" + value.clone() + "\"";
-        
+
         // Add comma if not the last element
         if index < values.len() - 1 {
             result += ",";
@@ -92,25 +101,19 @@ mod tests {
     use super::create_context_json;
     use super::create_json_array;
 
-    use game_components_minigame::models::settings::GameSetting;
-    use game_components_metagame::models::context::GameContext;
+    use game_components_minigame::extensions::settings::structs::GameSetting;
+    use game_components_minigame::extensions::objectives::structs::GameObjective;
+    use game_components_metagame::extensions::context::structs::GameContext;
 
     #[test]
     fn test_settings_json() {
         let settings = array![
-            GameSetting {
-                name: "Test Setting 1",
-                value: "Test Setting 1 Value",
-            },
-            GameSetting {
-                name: "Test Setting 2",
-                value: "Test Setting 2 Value",
-            },
-        ].span();
+            GameSetting { name: "Test Setting 1", value: "Test Setting 1 Value" },
+            GameSetting { name: "Test Setting 2", value: "Test Setting 2 Value" },
+        ]
+            .span();
         let _current_1 = create_settings_json(
-            "Test Settings",
-            "Test Settings Description",
-            settings,
+            "Test Settings", "Test Settings Description", settings,
         );
 
         println!("{}", _current_1);
@@ -119,9 +122,10 @@ mod tests {
     #[test]
     fn test_objectives_json() {
         let objectives = array![
-            "Score 100 points",
-            "Kill 10 enemies",
-        ].span();
+            GameObjective { name: "Score 100 points", value: "100 points" },
+            GameObjective { name: "Kill 10 enemies", value: "10 enemies" },
+        ]
+            .span();
         let _current_1 = create_objectives_json(objectives);
         println!("{}", _current_1);
     }
@@ -131,17 +135,17 @@ mod tests {
         let contexts = array![
             GameContext { name: "Test Context 1", value: "Test Context 1 Value" },
             GameContext { name: "Test Context 2", value: "Test Context 2 Value" },
-        ].span();
-        let _current_1 = create_context_json("Test App", "Test App Description", contexts);
+        ]
+            .span();
+        let _current_1 = create_context_json(
+            "Test App", "Test App Description", Option::Some(1), contexts,
+        );
         println!("{}", _current_1);
     }
 
     #[test]
     fn test_json_array() {
-        let values = array![
-            "Test Value 1",
-            "Test Value 2",
-        ].span();
+        let values = array!["Test Value 1", "Test Value 2"].span();
         let _current_1 = create_json_array(values);
         println!("{}", _current_1);
     }
@@ -151,8 +155,11 @@ mod tests {
         let tournament_id: u64 = 12345;
         let context = array![
             GameContext { name: "Tournament Id", value: format!("{}", tournament_id) },
-        ].span();
-        let context_json = create_context_json("Budokan", "The onchain tournament system", context);
+        ]
+            .span();
+        let context_json = create_context_json(
+            "Budokan", "The onchain tournament system", Option::Some(1), context,
+        );
         println!("Budokan context: {}", context_json);
     }
 
@@ -162,8 +169,14 @@ mod tests {
         let context = array![
             GameContext { name: "Quest Id", value: format!("{}", quest_id) },
             GameContext { name: "Reward", value: "1000 Stone" },
-        ].span();
-        let context_json = create_context_json("Eternum", "Multiplayer Civilization with a real economy that never sleeps", context);
+        ]
+            .span();
+        let context_json = create_context_json(
+            "Eternum",
+            "Multiplayer Civilization with a real economy that never sleeps",
+            Option::Some(1),
+            context,
+        );
         println!("Eternum context: {}", context_json);
     }
 }
