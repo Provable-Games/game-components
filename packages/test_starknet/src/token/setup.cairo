@@ -1,7 +1,7 @@
-use starknet::{ContractAddress, contract_address_const};
+use starknet::ContractAddress;
 use snforge_std::{declare, ContractClassTrait, DeclareResultTrait, mock_call};
-use openzeppelin_token::erc721::interface::{ERC721ABIDispatcher};
-use openzeppelin_introspection::interface::ISRC5Dispatcher;
+use openzeppelin_interfaces::erc721::{ERC721ABIDispatcher};
+use openzeppelin_interfaces::introspection::ISRC5Dispatcher;
 use game_components_token::interface::{IMinigameTokenMixinDispatcher};
 use game_components_token::examples::minigame_registry_contract::{IMinigameRegistryDispatcher};
 use game_components_minigame::interface::{IMinigameDispatcher};
@@ -20,29 +20,29 @@ use crate::token::mocks::mock_game::{IMockGameDispatcher};
 // TEST CONSTANTS
 // ================================================================================================
 
-// Test addresses
+// Test addresses - using try_into().unwrap() pattern instead of deprecated contract_address_const
 pub fn ALICE() -> ContractAddress {
-    contract_address_const::<'ALICE'>()
+    'ALICE'.try_into().unwrap()
 }
 
 pub fn BOB() -> ContractAddress {
-    contract_address_const::<'BOB'>()
+    'BOB'.try_into().unwrap()
 }
 
 pub fn CHARLIE() -> ContractAddress {
-    contract_address_const::<'CHARLIE'>()
+    'CHARLIE'.try_into().unwrap()
 }
 
 pub fn ZERO_ADDRESS() -> ContractAddress {
-    contract_address_const::<0>()
+    0.try_into().unwrap()
 }
 
 pub fn OWNER() -> ContractAddress {
-    contract_address_const::<'OWNER'>()
+    'OWNER'.try_into().unwrap()
 }
 
 pub fn RENDERER_ADDRESS() -> ContractAddress {
-    contract_address_const::<'RENDERER'>()
+    'RENDERER'.try_into().unwrap()
 }
 
 // Edge case values

@@ -1,4 +1,4 @@
-use openzeppelin_introspection::interface::ISRC5;
+use openzeppelin_interfaces::introspection::ISRC5;
 
 #[starknet::contract]
 pub mod MockSRC5 {
@@ -13,7 +13,7 @@ pub mod MockSRC5 {
     #[constructor]
     fn constructor(ref self: ContractState) {
         // Always support SRC5 itself
-        self.supported_interfaces.write(openzeppelin_introspection::interface::ISRC5_ID, true);
+        self.supported_interfaces.write(openzeppelin_interfaces::introspection::ISRC5_ID, true);
     }
 
     #[abi(embed_v0)]

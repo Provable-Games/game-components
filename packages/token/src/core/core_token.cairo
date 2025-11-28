@@ -22,7 +22,7 @@ pub mod CoreTokenComponent {
     use openzeppelin_introspection::src5::SRC5Component;
     use openzeppelin_introspection::src5::SRC5Component::InternalTrait as SRC5InternalTrait;
     use openzeppelin_introspection::src5::SRC5Component::SRC5Impl;
-    use openzeppelin_introspection::interface::{ISRC5Dispatcher, ISRC5DispatcherTrait};
+    use openzeppelin_interfaces::introspection::{ISRC5Dispatcher, ISRC5DispatcherTrait};
     use openzeppelin_token::erc721::ERC721Component;
     use openzeppelin_token::erc721::ERC721Component::InternalTrait as ERC721InternalTrait;
     use openzeppelin_token::erc721::ERC721Component::ERC721Impl;

@@ -5,7 +5,7 @@ use game_components_minigame::extensions::settings::interface::{
     IMinigameSettingsSVGDispatcherTrait, IMINIGAME_SETTINGS_ID,
 };
 use game_components_minigame::extensions::settings::structs::{GameSettingDetails, GameSetting};
-use openzeppelin_introspection::interface::{ISRC5Dispatcher, ISRC5DispatcherTrait};
+use openzeppelin_interfaces::introspection::{ISRC5Dispatcher, ISRC5DispatcherTrait};
 use game_components_test_starknet::token::setup::deploy_mock_settings_contract;
 use game_components_test_starknet::minigame::mocks::mock_settings_contract::{
     ISettingsSetterDispatcher, ISettingsSetterDispatcherTrait,
@@ -23,7 +23,7 @@ fn test_initialize_settings_component() {
         "Should support IMinigameSettings",
     );
     assert!(
-        src5_dispatcher.supports_interface(openzeppelin_introspection::interface::ISRC5_ID),
+        src5_dispatcher.supports_interface(openzeppelin_interfaces::introspection::ISRC5_ID),
         "Should support ISRC5",
     );
 }

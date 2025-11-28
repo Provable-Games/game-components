@@ -1,7 +1,7 @@
 use game_components_metagame::interface::{
     IMetagameDispatcher, IMetagameDispatcherTrait, IMETAGAME_ID,
 };
-use openzeppelin_introspection::interface::{ISRC5Dispatcher, ISRC5DispatcherTrait};
+use openzeppelin_interfaces::introspection::{ISRC5Dispatcher, ISRC5DispatcherTrait};
 use starknet::{ContractAddress, contract_address_const};
 use core::num::traits::Zero;
 use snforge_std::{declare, ContractClassTrait, DeclareResultTrait};

@@ -2,7 +2,7 @@ use game_components_minigame::extensions::settings::interface::{
     IMinigameSettings, IMinigameSettingsSVG, IMINIGAME_SETTINGS_ID,
 };
 use game_components_minigame::extensions::settings::structs::{GameSettingDetails, GameSetting};
-use openzeppelin_introspection::interface::ISRC5;
+use openzeppelin_interfaces::introspection::ISRC5;
 
 #[starknet::contract]
 pub mod MockSettings {
@@ -61,9 +61,9 @@ pub mod MockSettings {
         fn supports_interface(self: @ContractState, interface_id: felt252) -> bool {
             if self.supports_settings.read() {
                 interface_id == IMINIGAME_SETTINGS_ID
-                    || interface_id == openzeppelin_introspection::interface::ISRC5_ID
+                    || interface_id == openzeppelin_interfaces::introspection::ISRC5_ID
             } else {
-                interface_id == openzeppelin_introspection::interface::ISRC5_ID
+                interface_id == openzeppelin_interfaces::introspection::ISRC5_ID
             }
         }
     }

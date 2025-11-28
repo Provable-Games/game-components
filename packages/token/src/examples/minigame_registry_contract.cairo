@@ -54,7 +54,7 @@ pub mod MinigameRegistryContract {
 
     use openzeppelin_token::erc721::{ERC721Component, ERC721HooksEmptyImpl};
     use openzeppelin_introspection::src5::SRC5Component;
-    use openzeppelin_introspection::interface::{ISRC5Dispatcher, ISRC5DispatcherTrait};
+    use openzeppelin_interfaces::introspection::{ISRC5Dispatcher, ISRC5DispatcherTrait};
 
     use game_components_minigame::interface::{IMINIGAME_ID};
 
@@ -209,9 +209,9 @@ pub mod MinigameRegistryContract {
                 Option::None => "",
             };
 
-            let final_renderer_address = match renderer_address {
+            let final_renderer_address: ContractAddress = match renderer_address {
                 Option::Some(renderer_address) => renderer_address,
-                Option::None => starknet::contract_address_const::<0>(),
+                Option::None => 0.try_into().unwrap(),
             };
 
             // Store game metadata

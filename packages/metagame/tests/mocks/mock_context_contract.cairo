@@ -2,7 +2,7 @@ use game_components_metagame::extensions::context::interface::{
     IMetagameContext, IMETAGAME_CONTEXT_ID,
 };
 use game_components_metagame::extensions::context::structs::{GameContextDetails, GameContext};
-use openzeppelin_introspection::interface::ISRC5;
+use openzeppelin_interfaces::introspection::ISRC5;
 
 // Interface for setting context in tests
 #[starknet::interface]
@@ -76,9 +76,9 @@ pub mod MockContextContract {
         fn supports_interface(self: @ContractState, interface_id: felt252) -> bool {
             if self.supports_context.read() {
                 interface_id == IMETAGAME_CONTEXT_ID
-                    || interface_id == openzeppelin_introspection::interface::ISRC5_ID
+                    || interface_id == openzeppelin_interfaces::introspection::ISRC5_ID
             } else {
-                interface_id == openzeppelin_introspection::interface::ISRC5_ID
+                interface_id == openzeppelin_interfaces::introspection::ISRC5_ID
             }
         }
     }

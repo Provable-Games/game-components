@@ -7,7 +7,7 @@ use game_components_token::examples::minigame_registry_contract::{
 };
 use game_components_metagame::extensions::context::structs::GameContextDetails;
 use starknet::ContractAddress;
-use openzeppelin_token::erc721::interface::{IERC721Dispatcher, IERC721DispatcherTrait};
+use openzeppelin_interfaces::erc721::{IERC721Dispatcher, IERC721DispatcherTrait};
 
 /// Performs pre-action validation for the game playability
 ///

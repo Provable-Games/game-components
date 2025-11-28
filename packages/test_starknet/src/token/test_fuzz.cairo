@@ -1,9 +1,14 @@
-use starknet::contract_address_const;
+use starknet::ContractAddress;
+
+// Helper function for creating contract addresses from felt252 values
+fn addr(value: felt252) -> ContractAddress {
+    value.try_into().unwrap()
+}
 use snforge_std::{
     cheat_caller_address, CheatSpan, start_cheat_block_timestamp, stop_cheat_block_timestamp,
 };
 
-use openzeppelin_token::erc721::interface::{ERC721ABIDispatcherTrait};
+use openzeppelin_interfaces::erc721::{ERC721ABIDispatcherTrait};
 
 use game_components_token::interface::{
     IMinigameTokenMixinDispatcherTrait,
@@ -34,16 +39,16 @@ fn test_token_id_monotonicity_fuzz(seed: felt252) {
     while i < 10 {
         // Generate different addresses based on index
         let address = match i {
-            0 => contract_address_const::<0x1>(),
-            1 => contract_address_const::<0x2>(),
-            2 => contract_address_const::<0x3>(),
-            3 => contract_address_const::<0x4>(),
-            4 => contract_address_const::<0x5>(),
-            5 => contract_address_const::<0x6>(),
-            6 => contract_address_const::<0x7>(),
-            7 => contract_address_const::<0x8>(),
-            8 => contract_address_const::<0x9>(),
-            _ => contract_address_const::<0xa>(),
+            0 => addr(0x1),
+            1 => addr(0x2),
+            2 => addr(0x3),
+            3 => addr(0x4),
+            4 => addr(0x5),
+            5 => addr(0x6),
+            6 => addr(0x7),
+            7 => addr(0x8),
+            8 => addr(0x9),
+            _ => addr(0xa),
         };
         addresses.append(address);
         i += 1;
@@ -112,7 +117,7 @@ fn test_lifecycle_validity_fuzz(start_offset: u64, duration: u64) {
             Option::None,
             Option::None,
             Option::None,
-            contract_address_const::<0x1>(),
+            addr(0x1),
             false,
         );
 
@@ -157,7 +162,7 @@ fn test_score_monotonicity_fuzz(increment1: u32, increment2: u32, increment3: u3
             Option::None,
             Option::None,
             Option::None,
-            contract_address_const::<0x1>(),
+            addr(0x1),
             false,
         );
 
@@ -208,7 +213,7 @@ fn test_objective_permanence_fuzz(obj_idx1: u32, obj_idx2: u32, obj_idx3: u32) {
             Option::None,
             Option::None,
             Option::None,
-            contract_address_const::<0x1>(),
+            addr(0x1),
             false,
         );
 
@@ -253,7 +258,7 @@ fn test_objective_permanence_fuzz(obj_idx1: u32, obj_idx2: u32, obj_idx3: u32) {
 fn test_ownership_protection_fuzz(caller1: felt252, caller2: felt252, caller3: felt252) {
     let test_contracts = setup();
 
-    let owner = contract_address_const::<0x1>();
+    let owner = addr(0x1);
     let token_id = test_contracts
         .test_token
         .mint(
@@ -281,7 +286,7 @@ fn test_ownership_protection_fuzz(caller1: felt252, caller2: felt252, caller3: f
         let caller_felt = *random_callers.at(i);
         if caller_felt != 0 && caller_felt != owner.into() {
             // Create different contract addresses
-            let _caller = contract_address_const::<0x2>();
+            let _caller = addr(0x2);
 
             // This would panic if we actually tried to transfer without approval
             // For fuzz testing, we just verify the owner remains unchanged
@@ -312,7 +317,7 @@ fn test_settings_immutability_fuzz(settings_id: u32, op1: u8, op2: u8, op3: u8) 
             Option::None,
             Option::None,
             Option::None,
-            contract_address_const::<0x1>(),
+            addr(0x1),
             false,
         );
 
@@ -371,7 +376,7 @@ fn test_objective_completion_one_way_fuzz(seq1: u8, seq2: u8, seq3: u8) {
             Option::None,
             Option::None,
             Option::None,
-            contract_address_const::<0x1>(),
+            addr(0x1),
             false,
         );
 
@@ -434,7 +439,7 @@ fn test_token_id_uniqueness_fuzz(mint_count: u8) {
                 Option::None,
                 Option::None,
                 Option::None,
-                contract_address_const::<0x1>(),
+                addr(0x1),
                 false,
             );
 
@@ -464,9 +469,9 @@ fn test_minter_tracking_consistency_fuzz(mint_count: u8) {
     let test_contracts = setup();
 
     // Test with different minters
-    let minter1 = contract_address_const::<0x200>();
-    let minter2 = contract_address_const::<0x201>();
-    let minter3 = contract_address_const::<0x202>();
+    let minter1 = addr(0x200);
+    let minter2 = addr(0x201);
+    let minter3 = addr(0x202);
 
     let minters = array![minter1, minter2, minter3];
     let num_mints_per_minter = ((mint_count % 3) + 1).into();
@@ -553,7 +558,7 @@ fn test_minter_tracking_consistency_fuzz(mint_count: u8) {
 fn test_soulbound_transfer_block_fuzz(attempt1: felt252, attempt2: felt252, attempt3: felt252) {
     let test_contracts = setup();
 
-    let owner = contract_address_const::<0x1>();
+    let owner = addr(0x1);
 
     // Mint soulbound token
     let token_id = test_contracts
@@ -582,7 +587,7 @@ fn test_soulbound_transfer_block_fuzz(attempt1: felt252, attempt2: felt252, atte
     while i < transfer_attempts.len() {
         let to_felt = *transfer_attempts.at(i);
         if to_felt != 0 && to_felt != owner.into() {
-            let _to_address = contract_address_const::<0x2>();
+            let _to_address = addr(0x2);
 
             // In real test, transfer would panic due to soulbound
             // Here we just verify token remains with original owner
@@ -630,7 +635,7 @@ fn test_invalid_lifecycle_fuzz(start: u64, end_offset: u64) {
             Option::None,
             Option::None,
             Option::None,
-            contract_address_const::<0x1>(),
+            addr(0x1),
             false,
         );
 }
@@ -641,8 +646,8 @@ fn test_invalid_lifecycle_fuzz(start: u64, end_offset: u64) {
 fn test_soulbound_transfer_scenarios_fuzz(scenario: u8) {
     let test_contracts = setup();
 
-    let owner = contract_address_const::<0x1>();
-    let _other = contract_address_const::<0x2>();
+    let owner = addr(0x1);
+    let _other = addr(0x2);
 
     // Mint soulbound token
     let token_id = test_contracts

@@ -1,6 +1,11 @@
 use game_components_metagame::interface::{IMetagameDispatcher, IMetagameDispatcherTrait};
 use game_components_token::interface::{IMinigameTokenDispatcher, IMinigameTokenDispatcherTrait};
-use starknet::{contract_address_const, ContractAddress};
+use starknet::ContractAddress;
+
+// Helper function for creating contract addresses from felt252 values
+fn addr(value: felt252) -> ContractAddress {
+    value.try_into().unwrap()
+}
 use snforge_std::{declare, ContractClassTrait, DeclareResultTrait};
 
 // Interface for testing mint function
@@ -34,8 +39,8 @@ fn test_fuzz_mint_parameters() {
         .deploy(
             @array![
                 token_address.into(),
-                contract_address_const::<0x0>().into(),
-                contract_address_const::<0x0>().into(),
+                addr(0x0).into(),
+                addr(0x0).into(),
             ],
         )
         .unwrap();
@@ -100,8 +105,8 @@ fn test_fuzz_player_names() {
         .deploy(
             @array![
                 token_address.into(),
-                contract_address_const::<0x0>().into(),
-                contract_address_const::<0x0>().into(),
+                addr(0x0).into(),
+                addr(0x0).into(),
             ],
         )
         .unwrap();
@@ -133,7 +138,7 @@ fn test_fuzz_player_names() {
         }
 
         let name = test_names.at(i);
-        let owner = contract_address_const::<0x1000>();
+        let owner = addr(0x1000);
 
         // Mint with this player name
         let _token_id = metagame_dispatcher
@@ -171,8 +176,8 @@ fn test_property_token_id_monotonicity() {
         .deploy(
             @array![
                 token_address.into(),
-                contract_address_const::<0x0>().into(),
-                contract_address_const::<0x0>().into(),
+                addr(0x0).into(),
+                addr(0x0).into(),
             ],
         )
         .unwrap();
@@ -194,7 +199,7 @@ fn test_property_token_id_monotonicity() {
             break;
         }
 
-        let owner = contract_address_const::<0x2000>();
+        let owner = addr(0x2000);
 
         let _token_id = metagame_dispatcher
             .mint(
@@ -244,7 +249,7 @@ fn try_mint_with_lifecycle(
             Option::None,
             Option::None,
             Option::None,
-            contract_address_const::<0x9999>(),
+            addr(0x9999),
             false,
         );
 

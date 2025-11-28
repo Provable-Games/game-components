@@ -1,7 +1,7 @@
 use starknet::ContractAddress;
 use game_components_metagame::interface::IMetagame;
 use game_components_metagame::extensions::context::structs::GameContextDetails;
-use openzeppelin_introspection::interface::ISRC5;
+use openzeppelin_interfaces::introspection::ISRC5;
 
 #[starknet::contract]
 pub mod MockMetagameWithContext {

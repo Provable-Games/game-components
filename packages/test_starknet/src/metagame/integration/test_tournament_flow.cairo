@@ -5,7 +5,12 @@ use game_components_metagame::extensions::context::interface::{
 use game_components_metagame::extensions::context::structs::{GameContextDetails, GameContext};
 use game_components_token::interface::{IMinigameTokenDispatcher, IMinigameTokenDispatcherTrait};
 use game_components_minigame::interface::{IMinigameDispatcher, IMinigameDispatcherTrait};
-use starknet::{contract_address_const, get_caller_address, get_block_timestamp, ContractAddress};
+use starknet::{get_caller_address, get_block_timestamp, ContractAddress};
+
+// Helper function for creating contract addresses from felt252 values
+fn addr(value: felt252) -> ContractAddress {
+    value.try_into().unwrap()
+}
 use snforge_std::{
     declare, ContractClassTrait, DeclareResultTrait, start_cheat_block_timestamp,
     start_cheat_caller_address, stop_cheat_caller_address,
@@ -36,8 +41,8 @@ fn test_tournament_flow() {
         .deploy(
             @array![
                 token_address.into(),
-                contract_address_const::<0x0>().into(),
-                contract_address_const::<0x0>().into(),
+                addr(0x0).into(),
+                addr(0x0).into(),
             ],
         )
         .unwrap();
@@ -46,8 +51,8 @@ fn test_tournament_flow() {
         .deploy(
             @array![
                 token_address.into(),
-                contract_address_const::<0x0>().into(),
-                contract_address_const::<0x0>().into(),
+                addr(0x0).into(),
+                addr(0x0).into(),
             ],
         )
         .unwrap();
@@ -56,8 +61,8 @@ fn test_tournament_flow() {
         .deploy(
             @array![
                 token_address.into(),
-                contract_address_const::<0x0>().into(),
-                contract_address_const::<0x0>().into(),
+                addr(0x0).into(),
+                addr(0x0).into(),
             ],
         )
         .unwrap();
@@ -122,9 +127,9 @@ fn test_tournament_flow() {
     };
 
     // 7. Create players
-    let player1 = contract_address_const::<0x1001>();
-    let player2 = contract_address_const::<0x1002>();
-    let player3 = contract_address_const::<0x1003>();
+    let player1 = addr(0x1001);
+    let player2 = addr(0x1002);
+    let player3 = addr(0x1003);
 
     // 8. Mint tokens for players across games using the metagame dispatcher
     let metagame_dispatcher = IMockMetagameDispatcher { contract_address: metagame_address };

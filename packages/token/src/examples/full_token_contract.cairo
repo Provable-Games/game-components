@@ -6,7 +6,8 @@ use starknet::{ContractAddress, syscalls::call_contract_syscall};
 use starknet::storage::{StoragePointerReadAccess};
 
 // Core imports
-use openzeppelin_token::erc721::{ERC721Component, interface::IERC721Metadata};
+use openzeppelin_token::erc721::ERC721Component;
+use openzeppelin_interfaces::erc721::IERC721Metadata;
 use openzeppelin_introspection::src5::SRC5Component;
 use openzeppelin_token::common::erc2981::erc2981::{DefaultConfig, ERC2981Component};
 

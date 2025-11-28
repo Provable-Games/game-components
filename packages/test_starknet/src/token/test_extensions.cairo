@@ -1,4 +1,9 @@
-use starknet::{contract_address_const};
+use starknet::ContractAddress;
+
+// Helper function for creating contract addresses from felt252 values
+fn addr(value: felt252) -> ContractAddress {
+    value.try_into().unwrap()
+}
 use snforge_std::{spy_events};
 
 use game_components_token::interface::{IMinigameTokenMixinDispatcherTrait};
@@ -86,7 +91,7 @@ fn test_set_token_renderer() {
         "RendererTest", "RT", "",
     );
 
-    let renderer_address = contract_address_const::<0x123456>();
+    let renderer_address = addr(0x123456);
 
     // Mint with custom renderer
     let token_id = token_dispatcher
@@ -141,7 +146,7 @@ fn test_get_renderer_no_custom() {
     // Verify no custom renderer
     assert!(!token_dispatcher.has_custom_renderer(token_id), "Should not have custom renderer");
     assert!(
-        token_dispatcher.renderer_address(token_id) == contract_address_const::<0x0>(),
+        token_dispatcher.renderer_address(token_id) == addr(0x0),
         "Renderer should be zero",
     );
 }
@@ -154,7 +159,7 @@ fn test_reset_token_renderer() {
         "ResetRenderer", "RR", "",
     );
 
-    let custom_renderer = contract_address_const::<0x999>();
+    let custom_renderer = addr(0x999);
 
     // Mint token with custom renderer
     let token_id = token_dispatcher
@@ -190,7 +195,7 @@ fn test_reset_token_renderer() {
         "Should not have custom renderer after reset",
     );
     assert!(
-        token_dispatcher.renderer_address(token_id) == contract_address_const::<0x0>(),
+        token_dispatcher.renderer_address(token_id) == addr(0x0),
         "Renderer should be zero after reset",
     );
 }
@@ -204,7 +209,7 @@ fn test_reset_token_renderer_unauthorized() {
         "ResetUnauthorized", "RU", "",
     );
 
-    let custom_renderer = contract_address_const::<0x999>();
+    let custom_renderer = addr(0x999);
 
     // Mint token with custom renderer to ALICE
     let token_id = token_dispatcher
@@ -236,7 +241,7 @@ fn test_reset_token_renderer_event() {
         "ResetRendererEvent", "RRE", "",
     );
 
-    let custom_renderer = contract_address_const::<0x999>();
+    let custom_renderer = addr(0x999);
 
     // Mint token with custom renderer
     let token_id = token_dispatcher
@@ -262,7 +267,7 @@ fn test_reset_token_renderer_event() {
     // Verify renderer was reset
     assert!(!token_dispatcher.has_custom_renderer(token_id), "Renderer should be reset");
     assert!(
-        token_dispatcher.renderer_address(token_id) == contract_address_const::<0x0>(),
+        token_dispatcher.renderer_address(token_id) == addr(0x0),
         "Renderer address should be zero",
     );
 }
@@ -286,7 +291,7 @@ fn test_zero_address_renderer() {
             Option::None,
             Option::None,
             Option::None,
-            Option::Some(contract_address_const::<0x0>()),
+            Option::Some(addr(0x0)),
             ALICE(),
             false,
         );

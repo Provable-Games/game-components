@@ -6,7 +6,7 @@ pub mod ContextComponent {
     use game_components_metagame::extensions::context::interface::IMETAGAME_CONTEXT_ID;
     use game_components_utils::json::create_context_json;
 
-    use openzeppelin_introspection::interface::{ISRC5Dispatcher, ISRC5DispatcherTrait};
+    use openzeppelin_interfaces::introspection::{ISRC5Dispatcher, ISRC5DispatcherTrait};
     use openzeppelin_introspection::src5::SRC5Component;
     use openzeppelin_introspection::src5::SRC5Component::InternalTrait as SRC5InternalTrait;
 

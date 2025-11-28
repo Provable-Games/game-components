@@ -1,4 +1,4 @@
-use openzeppelin_introspection::interface::ISRC5;
+use openzeppelin_interfaces::introspection::ISRC5;
 use game_components_minigame::extensions::objectives::interface::{
     IMinigameObjectives, IMinigameObjectivesSVG, IMINIGAME_OBJECTIVES_ID,
 };
@@ -57,9 +57,9 @@ pub mod MockObjectives {
         fn supports_interface(self: @ContractState, interface_id: felt252) -> bool {
             if self.supports_objectives.read() {
                 interface_id == IMINIGAME_OBJECTIVES_ID
-                    || interface_id == openzeppelin_introspection::interface::ISRC5_ID
+                    || interface_id == openzeppelin_interfaces::introspection::ISRC5_ID
             } else {
-                interface_id == openzeppelin_introspection::interface::ISRC5_ID
+                interface_id == openzeppelin_interfaces::introspection::ISRC5_ID
             }
         }
     }

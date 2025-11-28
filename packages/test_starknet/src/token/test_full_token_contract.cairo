@@ -1,9 +1,14 @@
-use starknet::contract_address_const;
+use starknet::ContractAddress;
+
+// Helper function for creating contract addresses from felt252 values
+fn addr(value: felt252) -> ContractAddress {
+    value.try_into().unwrap()
+}
 use snforge_std::{
     start_cheat_block_timestamp, stop_cheat_block_timestamp, cheat_caller_address, CheatSpan,
 };
 
-use openzeppelin_token::erc721::interface::ERC721ABIDispatcherTrait;
+use openzeppelin_interfaces::erc721::ERC721ABIDispatcherTrait;
 use game_components_token::interface::IMinigameTokenMixinDispatcherTrait;
 use game_components_metagame::extensions::context::structs::{GameContextDetails, GameContext};
 use game_components_test_starknet::minigame::mocks::minigame_starknet_mock::{
@@ -910,7 +915,7 @@ fn test_renderer_address_view() { // UT-VIEW-010
         );
 
     assert!(
-        test_contracts.test_token.renderer_address(token_id1) == contract_address_const::<0>(),
+        test_contracts.test_token.renderer_address(token_id1) == addr(0),
         "Should have no renderer",
     );
 
@@ -974,7 +979,7 @@ fn test_get_minter_address() { // UT-EXT-001
     // Test non-existent minter
     let minter_addr2 = test_contracts.test_token.get_minter_address(999);
     assert!(
-        minter_addr2 == contract_address_const::<0>(),
+        minter_addr2 == addr(0),
         "Non-existent minter should return zero address",
     );
 }
@@ -1095,7 +1100,7 @@ fn test_has_custom_renderer() { // UT-EXT-003
         "Should not have custom renderer",
     );
     assert!(
-        test_contracts.test_token.get_renderer(token_id1) == contract_address_const::<0>(),
+        test_contracts.test_token.get_renderer(token_id1) == addr(0),
         "Renderer should be zero address",
     );
 

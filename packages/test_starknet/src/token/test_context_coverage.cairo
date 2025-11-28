@@ -1,5 +1,10 @@
 // Tests for context extension coverage
-use starknet::{contract_address_const};
+use starknet::ContractAddress;
+
+// Helper function for creating contract addresses from felt252 values
+fn addr(value: felt252) -> ContractAddress {
+    value.try_into().unwrap()
+}
 use snforge_std::{spy_events, EventSpyTrait};
 
 use game_components_token::interface::{IMinigameTokenMixinDispatcherTrait};
@@ -194,7 +199,7 @@ fn test_context_extension_edge_cases() {
             Option::Some(2000), // end
             Option::None, // No objectives
             Option::Some("https://client.url"), // client URL
-            Option::Some(contract_address_const::<'RENDERER'>()), // renderer
+            Option::Some(addr('RENDERER')), // renderer
             BOB(),
             false,
         );

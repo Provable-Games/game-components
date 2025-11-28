@@ -1,5 +1,10 @@
 // Tests to improve core_token coverage
-use starknet::contract_address_const;
+use starknet::ContractAddress;
+
+// Helper function for creating contract addresses from felt252 values
+fn addr(value: felt252) -> ContractAddress {
+    value.try_into().unwrap()
+}
 use snforge_std::{
     cheat_caller_address, CheatSpan, start_cheat_block_timestamp, stop_cheat_block_timestamp,
 
@@ -239,10 +244,8 @@ fn test_core_token_minter_edge_cases() {
 
     // Test minter operations with edge addresses
     let edge_addresses = array![
-        contract_address_const::<0x1>(),
-        contract_address_const::<
-            0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF,
-        >(),
+        addr(0x1),
+        0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF.try_into().unwrap(),
     ];
 
     let mut i = 0;
@@ -338,7 +341,7 @@ fn test_mint_with_zero_game_address_should_panic() {
     let test_contracts = setup();
 
     // Try to mint with zero game address - this should trigger validation
-    let zero_address = contract_address_const::<0>();
+    let zero_address = addr(0);
 
     test_contracts
         .test_token

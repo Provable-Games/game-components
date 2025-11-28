@@ -1,6 +1,6 @@
 use starknet::ContractAddress;
 use game_components_minigame::interface::{IMinigame, IMinigameTokenData, IMINIGAME_ID};
-use openzeppelin_introspection::interface::ISRC5;
+use openzeppelin_interfaces::introspection::ISRC5;
 
 #[starknet::contract]
 pub mod MockMinigame {
@@ -80,7 +80,7 @@ pub mod MockMinigame {
     impl SRC5Impl of ISRC5<ContractState> {
         fn supports_interface(self: @ContractState, interface_id: felt252) -> bool {
             interface_id == IMINIGAME_ID
-                || interface_id == openzeppelin_introspection::interface::ISRC5_ID
+                || interface_id == openzeppelin_interfaces::introspection::ISRC5_ID
         }
     }
 

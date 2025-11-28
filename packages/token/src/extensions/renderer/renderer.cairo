@@ -1,9 +1,7 @@
 #[starknet::component]
 pub mod RendererComponent {
     use core::num::traits::Zero;
-    use starknet::{
-        ContractAddress, contract_address_const, get_caller_address, get_contract_address,
-    };
+    use starknet::{ContractAddress, get_caller_address, get_contract_address};
     use starknet::storage::{
         StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess, Map,
     };
@@ -17,7 +15,7 @@ pub mod RendererComponent {
     use openzeppelin_introspection::src5::SRC5Component;
     use openzeppelin_introspection::src5::SRC5Component::InternalTrait as SRC5InternalTrait;
     use openzeppelin_introspection::src5::SRC5Component::SRC5Impl;
-    use openzeppelin_token::erc721::interface::{IERC721Dispatcher, IERC721DispatcherTrait};
+    use openzeppelin_interfaces::erc721::{IERC721Dispatcher, IERC721DispatcherTrait};
     use openzeppelin_token::erc721::ERC721Component::ERC721Impl;
 
     use crate::interface::{ITokenEventRelayerDispatcher, ITokenEventRelayerDispatcherTrait};
@@ -59,7 +57,8 @@ pub mod RendererComponent {
             let token_owner = erc721.owner_of(token_id.into());
             let caller = get_caller_address();
             assert!(token_owner == caller, "MinigameToken: Caller is not owner of token");
-            self.token_renderers.entry(token_id).write(contract_address_const::<0>());
+            let zero_address: ContractAddress = 0.try_into().unwrap();
+            self.token_renderers.entry(token_id).write(zero_address);
 
             let minigame_token_dispatcher = IMinigameTokenDispatcher { contract_address };
             let event_relayer_address = minigame_token_dispatcher.event_relayer_address();
@@ -68,12 +67,9 @@ pub mod RendererComponent {
                 let relayer = ITokenEventRelayerDispatcher {
                     contract_address: event_relayer_address,
                 };
-                relayer.emit_token_renderer_update(token_id, contract_address_const::<0>());
+                relayer.emit_token_renderer_update(token_id, zero_address);
             } else {
-                self
-                    .emit(
-                        TokenRendererUpdate { token_id, renderer: contract_address_const::<0>() },
-                    );
+                self.emit(TokenRendererUpdate { token_id, renderer: zero_address });
             }
         }
     }

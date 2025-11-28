@@ -1,4 +1,4 @@
-use starknet::{ContractAddress, contract_address_const};
+use starknet::ContractAddress;
 use crate::core::traits::{
     OptionalMinter, OptionalContext, OptionalObjectives, OptionalSettings, OptionalSoulbound,
     OptionalRenderer,
@@ -17,7 +17,7 @@ pub impl NoOpMinter<TContractState> of OptionalMinter<TContractState> {
     }
 
     fn get_minter_address(self: @TContractState, minter_id: u64) -> starknet::ContractAddress {
-        contract_address_const::<0>()
+        0.try_into().unwrap()
     }
 }
 

@@ -3,7 +3,7 @@ use game_components_metagame::extensions::context::interface::{
     IMetagameContextSVGDispatcherTrait, IMETAGAME_CONTEXT_ID,
 };
 use game_components_metagame::extensions::context::structs::{GameContextDetails, GameContext};
-use openzeppelin_introspection::interface::{ISRC5Dispatcher, ISRC5DispatcherTrait};
+use openzeppelin_interfaces::introspection::{ISRC5Dispatcher, ISRC5DispatcherTrait};
 use snforge_std::{declare, ContractClassTrait, DeclareResultTrait};
 
 // Helper interface for testing
@@ -218,7 +218,7 @@ fn test_initialize_context_component() {
         src5_dispatcher.supports_interface(IMETAGAME_CONTEXT_ID), "Should support IMetagameContext",
     );
     assert!(
-        src5_dispatcher.supports_interface(openzeppelin_introspection::interface::ISRC5_ID),
+        src5_dispatcher.supports_interface(openzeppelin_interfaces::introspection::ISRC5_ID),
         "Should support ISRC5",
     );
 }

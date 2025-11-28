@@ -4,8 +4,13 @@ use game_components_minigame::extensions::objectives::interface::{
     IMINIGAME_OBJECTIVES_ID,
 };
 use game_components_minigame::extensions::objectives::structs::GameObjective;
-use openzeppelin_introspection::interface::{ISRC5Dispatcher, ISRC5DispatcherTrait};
-use starknet::{contract_address_const, get_caller_address};
+use openzeppelin_interfaces::introspection::{ISRC5Dispatcher, ISRC5DispatcherTrait};
+use starknet::{ContractAddress, get_caller_address};
+
+// Helper function for creating contract addresses from felt252 values
+fn addr(value: felt252) -> ContractAddress {
+    value.try_into().unwrap()
+}
 use snforge_std::{declare, ContractClassTrait, DeclareResultTrait};
 use core::to_byte_array::FormatAsByteArray;
 use game_components_test_starknet::token::setup::deploy_mock_objectives_contract;
@@ -25,7 +30,7 @@ fn test_initialize_objectives_component() {
         "Should support IMinigameObjectives",
     );
     assert!(
-        src5_dispatcher.supports_interface(openzeppelin_introspection::interface::ISRC5_ID),
+        src5_dispatcher.supports_interface(openzeppelin_interfaces::introspection::ISRC5_ID),
         "Should support ISRC5",
     );
 }

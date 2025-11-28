@@ -9,6 +9,7 @@ pub mod libs;
 pub mod core;
 pub mod extensions;
 pub mod examples;
+pub mod denshokan;
 // pub mod tests; // Tests have been moved to packages/test_starknet/src/token/
 
 

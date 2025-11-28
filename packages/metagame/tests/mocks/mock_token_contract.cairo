@@ -6,7 +6,7 @@ use game_components_token::structs::{TokenMetadata, Lifecycle};
 use game_components_token::extensions::multi_game::interface::IMinigameTokenMultiGame;
 use game_components_token::extensions::multi_game::structs::GameMetadata;
 use game_components_metagame::extensions::context::structs::GameContextDetails;
-use openzeppelin_introspection::interface::ISRC5;
+use openzeppelin_interfaces::introspection::ISRC5;
 
 #[starknet::contract]
 pub mod MockTokenContract {
@@ -196,7 +196,7 @@ pub mod MockTokenContract {
         fn supports_interface(self: @ContractState, interface_id: felt252) -> bool {
             interface_id == game_components_token::interface::IMINIGAME_TOKEN_ID
                 || interface_id == game_components_token::extensions::multi_game::interface::IMINIGAME_TOKEN_MULTIGAME_ID
-                || interface_id == openzeppelin_introspection::interface::ISRC5_ID
+                || interface_id == openzeppelin_interfaces::introspection::ISRC5_ID
         }
     }
 

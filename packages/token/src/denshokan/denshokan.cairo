@@ -1,7 +1,5 @@
-// Example: Single Game Token Contract
-// This contract is optimized for single-game scenarios where each token collection
-// is associated with exactly one game. It includes all the same components as
-// FullTokenContract but initializes with a specific game address rather than a registry.
+// Example: Optimized Token Contract using the new component system
+// This demonstrates how to configure and use the modular components
 
 use core::num::traits::Zero;
 use starknet::{ContractAddress, syscalls::call_contract_syscall};
@@ -22,17 +20,21 @@ use crate::extensions::context::context::ContextComponent;
 use crate::extensions::renderer::renderer::RendererComponent;
 use crate::extensions::settings::settings::SettingsComponent;
 
+use crate::examples::minigame_registry_contract::{
+    IMinigameRegistryDispatcher, IMinigameRegistryDispatcherTrait,
+};
+
 use crate::interface::{ITokenEventRelayerDispatcher, ITokenEventRelayerDispatcherTrait};
 
-use game_components_minigame::structs::GameDetail;
-use game_components_minigame::extensions::settings::structs::GameSettingDetails;
 use game_components_metagame::extensions::context::structs::GameContextDetails;
-use game_components_token::examples::minigame_registry_contract::GameMetadata;
-use game_components_utils::renderer::create_custom_metadata;
+use game_components_minigame::extensions::settings::structs::GameSettingDetails;
+use game_components_minigame::interface::{IMinigameDispatcher, IMinigameDispatcherTrait};
+use game_components_minigame::structs::GameDetail;
+use game_components_utils::renderer::{create_default_svg, create_custom_metadata};
 
 
 #[starknet::contract]
-pub mod SingleGameTokenContract {
+pub mod Denshokan {
     use super::*;
 
     // ================================================================================================
@@ -41,11 +43,11 @@ pub mod SingleGameTokenContract {
 
     // Core components (always included)
     component!(path: ERC721Component, storage: erc721, event: ERC721Event);
-    component!(path: ERC2981Component, storage: erc2981, event: ERC2981Event);
+    component!(path: ERC2981Component, storage: erc721, event: ERC2981Event);
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
     component!(path: CoreTokenComponent, storage: core_token, event: CoreTokenEvent);
 
-    // Optional components
+    // Optional components (only included if enabled)
     component!(path: MinterComponent, storage: minter, event: MinterEvent);
     component!(path: ObjectivesComponent, storage: objectives, event: ObjectivesEvent);
     component!(path: SettingsComponent, storage: settings, event: SettingsEvent);
@@ -67,7 +69,7 @@ pub mod SingleGameTokenContract {
         src5: SRC5Component::Storage,
         #[substorage(v0)]
         core_token: CoreTokenComponent::Storage,
-        // Optional storage
+        // Optional storage (only included if features are enabled)
         #[substorage(v0)]
         minter: MinterComponent::Storage,
         #[substorage(v0)]
@@ -123,7 +125,7 @@ pub mod SingleGameTokenContract {
     #[abi(embed_v0)]
     impl CoreTokenImpl = CoreTokenComponent::CoreTokenImpl<ContractState>;
 
-    // Optional implementations
+    // Optional implementations (conditional based on feature flags)
     #[abi(embed_v0)]
     impl MinterImpl = MinterComponent::MinterImpl<ContractState>;
     #[abi(embed_v0)]
@@ -148,11 +150,19 @@ pub mod SingleGameTokenContract {
     // OPTIONAL TRAIT IMPLEMENTATIONS
     // ================================================================================================
 
+    // These implementations are chosen based on compile-time feature flags
+    // If a feature is disabled, the NoOp implementation is used (zero runtime cost)
+
     impl MinterOptionalImpl = MinterComponent::MinterOptionalImpl<ContractState>;
     impl ObjectivesOptionalImpl = ObjectivesComponent::ObjectivesOptionalImpl<ContractState>;
     impl SettingsOptionalImpl = SettingsComponent::SettingsOptionalImpl<ContractState>;
     impl ContextOptionalImpl = ContextComponent::ContextOptionalImpl<ContractState>;
     impl RendererOptionalImpl = RendererComponent::RendererOptionalImpl<ContractState>;
+
+    // Alternative: Use NoOp implementations for disabled features
+    // impl MinterOptionalImpl = NoOpMinter<ContractState>;
+    // impl MultiGameOptionalImpl = NoOpMultiGame<ContractState>;
+    // etc.
 
     #[abi(embed_v0)]
     impl ERC721Metadata of IERC721Metadata<ContractState> {
@@ -173,40 +183,38 @@ pub mod SingleGameTokenContract {
                 .core_token
                 .get_token_metadata(token_id.try_into().unwrap());
 
-            // For single-game tokens, we get the game address directly
-            let game_address = self.core_token.game_address();
-
-            if !game_address.is_zero() {
+            // Try to get the token URI from the game contract if available
+            if token_metadata.game_id != 0 {
+                let game_registry_address = self.core_token.game_registry_address();
+                let game_registry_dispatcher = IMinigameRegistryDispatcher {
+                    contract_address: game_registry_address,
+                };
+                let game_metadata = game_registry_dispatcher.game_metadata(token_metadata.game_id);
+                let game_address = game_metadata.contract_address;
                 let renderer_address = self
                     .core_token
                     .renderer_address(token_id.try_into().unwrap());
+                let player_name = self.core_token.player_name(token_id.try_into().unwrap());
+                let game_dispatcher = IMinigameDispatcher { contract_address: game_address };
+                let settings_address = game_dispatcher.settings_address();
 
                 let score_selector = selector!("score");
                 let token_name_selector = selector!("token_name");
                 let token_description_selector = selector!("token_description");
-                let details_svg_selector = selector!("game_details_svg");
-                let details_selector = selector!("game_details");
-                let mut calldata = array![];
-                calldata.append(token_id.low.into());
+                let game_details_svg_selector = selector!("game_details_svg");
+                let game_details_selector = selector!("game_details");
+                let settings_details_selector = selector!("settings_details");
+                let context_details_selector = selector!("context_details");
 
-                // For single-game tokens, we need to get game metadata from the game contract
-                // In production, you'd get these from the game contract or store them
-                let game_metadata = GameMetadata {
-                    contract_address: game_address,
-                    name: "Game",
-                    description: "A sample game",
-                    developer: "Developer",
-                    publisher: "Publisher",
-                    genre: "Strategy",
-                    image: "https://example.com/image.png",
-                    color: "#ffffff",
-                    client_url: "https://example.com/game",
-                    renderer_address: renderer_address,
-                };
+                let mut token_calldata = array![];
+                token_calldata.append(token_id.low.into());
 
                 let score =
-                    match call_contract_syscall(game_address, score_selector, calldata.span()) {
+                    match call_contract_syscall(
+                        game_address, score_selector, token_calldata.span(),
+                    ) {
                     Result::Ok(result) => {
+                        // Try to deserialize the result as u32
                         let mut result_span = result;
                         match Serde::<u32>::deserialize(ref result_span) {
                             Option::Some(score) => score,
@@ -218,7 +226,7 @@ pub mod SingleGameTokenContract {
 
                 let token_name =
                     match call_contract_syscall(
-                        renderer_address, token_name_selector, calldata.span(),
+                        renderer_address, token_name_selector, token_calldata.span(),
                     ) {
                     Result::Ok(result) => {
                         // Try to deserialize the result as ByteArray
@@ -233,12 +241,13 @@ pub mod SingleGameTokenContract {
 
                 let token_description =
                     match call_contract_syscall(
-                        renderer_address, token_description_selector, calldata.span(),
+                        renderer_address, token_description_selector, token_calldata.span(),
                     ) {
                     Result::Ok(result) => {
+                        // Try to deserialize the result as ByteArray
                         let mut result_span = result;
                         match Serde::<ByteArray>::deserialize(ref result_span) {
-                            Option::Some(description) => description,
+                            Option::Some(token_description) => token_description,
                             Option::None => "An NFT representing ownership of an embeddable game.",
                         }
                     },
@@ -247,47 +256,87 @@ pub mod SingleGameTokenContract {
 
                 let game_details_svg =
                     match call_contract_syscall(
-                        renderer_address, details_svg_selector, calldata.span(),
+                        renderer_address, game_details_svg_selector, token_calldata.span(),
                     ) {
                     Result::Ok(result) => {
+                        // Try to deserialize the result as ByteArray
                         let mut result_span = result;
                         match Serde::<ByteArray>::deserialize(ref result_span) {
-                            Option::Some(svg) => svg,
-                            Option::None => "https://denshokan.dev/game/1",
+                            Option::Some(game_details_svg) => game_details_svg,
+                            Option::None => create_default_svg(
+                                token_id.try_into().unwrap(),
+                                game_metadata.clone(),
+                                score,
+                                player_name,
+                            ),
                         }
                     },
-                    Result::Err(_) => "https://denshokan.dev/game/1",
+                    Result::Err(_) => create_default_svg(
+                        token_id.try_into().unwrap(), game_metadata.clone(), score, player_name,
+                    ),
                 };
 
                 let game_details =
                     match call_contract_syscall(
-                        renderer_address, details_selector, calldata.span(),
+                        renderer_address, game_details_selector, token_calldata.span(),
                     ) {
                     Result::Ok(result) => {
+                        // Try to deserialize the result as Span<GameDetail>
                         let mut result_span = result;
                         match Serde::<Span<GameDetail>>::deserialize(ref result_span) {
-                            Option::Some(details) => details,
-                            Option::None => [].span(),
+                            Option::Some(game_details) => game_details,
+                            Option::None => array![].span(),
                         }
                     },
-                    Result::Err(_) => [].span(),
+                    Result::Err(_) => array![].span(),
                 };
 
-                let _state = 0; // Unused for now, but may be needed for future game state tracking
-                let player_name = self.core_token.player_name(token_id.try_into().unwrap());
+                let mut settings_calldata = array![];
+                settings_calldata.append(token_metadata.settings_id.into());
 
-                // Default settings details - empty
-                let settings_details = GameSettingDetails {
-                    name: "", description: "", settings: [].span(),
-                };
-
-                // Default context details - empty
-                let context_details = GameContextDetails {
-                    name: "", description: "", id: Option::None, context: [].span(),
+                let settings_details =
+                    match call_contract_syscall(
+                        settings_address, settings_details_selector, settings_calldata.span(),
+                    ) {
+                    Result::Ok(result) => {
+                        // Try to deserialize the result as GameSettingDetails
+                        let mut result_span = result;
+                        match Serde::<GameSettingDetails>::deserialize(ref result_span) {
+                            Option::Some(settings_details) => settings_details,
+                            Option::None => GameSettingDetails {
+                                name: "", description: "", settings: array![].span(),
+                            },
+                        }
+                    },
+                    Result::Err(_) => GameSettingDetails {
+                        name: "", description: "", settings: array![].span(),
+                    },
                 };
 
                 let minted_by_address = self.minter.get_minter_address(token_metadata.minted_by);
-                let objective_ids: Span<u32> = [].span(); // Default empty objectives
+
+                let context_details =
+                    match call_contract_syscall(
+                        minted_by_address, context_details_selector, token_calldata.span(),
+                    ) {
+                    Result::Ok(result) => {
+                        // Try to deserialize the result as GameContextDetails
+                        let mut result_span = result;
+                        match Serde::<GameContextDetails>::deserialize(ref result_span) {
+                            Option::Some(settings_details) => settings_details,
+                            Option::None => GameContextDetails {
+                                name: "",
+                                description: "",
+                                id: Option::None,
+                                context: array![].span(),
+                            },
+                        }
+                    },
+                    Result::Err(_) => GameContextDetails {
+                        name: "", description: "", id: Option::None, context: array![].span(),
+                    },
+                };
+                let objective_ids = self.objectives.objective_ids(token_id.try_into().unwrap());
 
                 create_custom_metadata(
                     token_id.try_into().unwrap(),
@@ -305,10 +354,10 @@ pub mod SingleGameTokenContract {
                     objective_ids,
                 )
             } else {
-                // Fallback if no game address is set
-                let base_uri = self.erc721.ERC721_base_uri.read();
-                format!("{}{}", base_uri, token_id)
+                // return the blank NFT renderer
+                "https://denshokan.dev/game/1"
             }
+            // ""
         }
     }
 
@@ -325,6 +374,7 @@ pub mod SingleGameTokenContract {
             auth: ContractAddress,
         ) {
             // Only check soulbound restriction for transfers, not mints or burns
+            // For mints, the current owner would be zero
             let current_owner = self._owner_of(token_id);
             if current_owner.into() != 0 && to.into() != 0 {
                 // This is a transfer (not mint or burn)
@@ -341,12 +391,10 @@ pub mod SingleGameTokenContract {
             token_id: u256,
             auth: ContractAddress,
         ) {
-            // Emit events to event relayer if configured
             let contract_state = self.get_contract();
-            let event_relayer_address = contract_state.core_token.event_relayer_address();
-            if !event_relayer_address.is_zero() {
+            if !contract_state.event_relayer_address().is_zero() {
                 let event_relayer = ITokenEventRelayerDispatcher {
-                    contract_address: event_relayer_address,
+                    contract_address: contract_state.event_relayer_address(),
                 };
                 event_relayer.emit_owners(token_id.try_into().unwrap(), to, auth);
             }
@@ -365,24 +413,15 @@ pub mod SingleGameTokenContract {
         base_uri: ByteArray,
         royalty_receiver: ContractAddress,
         royalty_fraction: u128,
-        game_address: ContractAddress,
-        creator_address: ContractAddress,
+        game_registry_address: Option<ContractAddress>,
         event_relayer_address: Option<ContractAddress>,
     ) {
         // Initialize core components
         self.erc721.initializer(name, symbol, base_uri);
         self.erc2981.initializer(royalty_receiver, royalty_fraction);
-
-        // For single-game token, initialize with game_address and creator_address
-        // No registry is needed for single-game scenarios
         self
             .core_token
-            .initializer(
-                Option::Some(game_address),
-                Option::Some(creator_address),
-                Option::None, // No registry for single-game
-                event_relayer_address,
-            );
+            .initializer(Option::None, Option::None, game_registry_address, event_relayer_address);
 
         self.minter.initializer();
         self.objectives.initializer();

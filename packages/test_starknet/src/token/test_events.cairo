@@ -2,7 +2,7 @@ use snforge_std::{
     spy_events, EventSpyTrait, cheat_caller_address, CheatSpan,
 };
 
-use openzeppelin_token::erc721::interface::{ERC721ABIDispatcherTrait};
+use openzeppelin_interfaces::erc721::{ERC721ABIDispatcherTrait};
 use game_components_token::interface::{IMinigameTokenMixinDispatcherTrait};
 
 // Import IMockGameDispatcher trait

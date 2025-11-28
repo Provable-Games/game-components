@@ -1,8 +1,13 @@
-use starknet::{ContractAddress, contract_address_const};
+use starknet::ContractAddress;
 use super::mocks::minigame_starknet_mock::{
     IMinigameStarknetMockDispatcherTrait, IMinigameStarknetMockInitDispatcherTrait,
 };
 use crate::token::setup::{deploy_mock_game, deploy_optimized_token_with_game};
+
+// Helper function for creating contract addresses from felt252 values
+fn addr(value: felt252) -> ContractAddress {
+    value.try_into().unwrap()
+}
 
 // Test constants
 const GAME_CREATOR: felt252 = 'creator';
@@ -36,7 +41,7 @@ fn test_mint_basic() {
     // Initialize minigame with token address
     minigame_init_dispatcher
         .initializer(
-            contract_address_const::<GAME_CREATOR>(), // game_creator
+            addr(GAME_CREATOR), // game_creator
             GAME_NAME(), // game_name
             "Test Game Description", // game_description
             GAME_DEVELOPER(), // game_developer
@@ -55,7 +60,7 @@ fn test_mint_basic() {
             token_address // token_address
         );
 
-    let player_addr = contract_address_const::<PLAYER_ADDRESS>();
+    let player_addr = addr(PLAYER_ADDRESS);
 
     let token_id = mock_dispatcher
         .mint(

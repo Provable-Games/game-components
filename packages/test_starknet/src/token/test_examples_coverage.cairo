@@ -1,5 +1,10 @@
 // Tests for example contracts to improve coverage
-use starknet::{contract_address_const};
+use starknet::ContractAddress;
+
+// Helper function for creating contract addresses from felt252 values
+fn addr(value: felt252) -> ContractAddress {
+    value.try_into().unwrap()
+}
 use snforge_std::{
     cheat_caller_address, CheatSpan, start_cheat_block_timestamp, stop_cheat_block_timestamp,
 };
@@ -22,7 +27,7 @@ use game_components_token::examples::minigame_registry_contract::{};
 #[test]
 fn test_optimized_contract_with_renderer() {
     let test_contracts = setup();
-    let renderer_address = contract_address_const::<'RENDERER'>();
+    let renderer_address = addr('RENDERER');
 
     // Mint token with custom renderer
     let token_id = test_contracts

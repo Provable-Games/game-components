@@ -1,13 +1,13 @@
 [package]
 name = "game_components_token"
-version = "1.5.1"
-edition = "2024_07"
-cairo-version = "=2.10.1"
+version.workspace = true
+edition.workspace = true
 
 [dependencies]
-starknet = "2.10.1"
-openzeppelin_token = "1.0.0"
-openzeppelin_introspection = "1.0.0"
+starknet.workspace = true
+openzeppelin_token.workspace = true
+openzeppelin_introspection.workspace = true
+openzeppelin_interfaces.workspace = true
 # Game components dependencies
 game_components_minigame = { path = "../minigame" }
 game_components_metagame = { path = "../metagame" }
