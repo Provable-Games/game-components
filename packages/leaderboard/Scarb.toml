@@ -1,0 +1,18 @@
+[package]
+name = "game_components_leaderboard"
+version.workspace = true
+edition.workspace = true
+
+[lib]
+
+[cairo]
+sierra-replace-ids = true
+
+[dependencies]
+starknet.workspace = true
+openzeppelin_introspection.workspace = true
+
+[[target.starknet-contract]]
+
+[dev-dependencies]
+snforge_std.workspace = true
