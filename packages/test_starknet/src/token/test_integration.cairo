@@ -1,7 +1,5 @@
 // Import test contracts
-use game_components_test_starknet::minigame::mocks::minigame_starknet_mock::{
-    IMinigameStarknetMockInitDispatcherTrait,
-};
+use game_components_test_starknet::minigame::mocks::minigame_starknet_mock::IMinigameStarknetMockInitDispatcherTrait;
 use game_components_token::examples::minigame_registry_contract::IMinigameRegistryDispatcherTrait;
 use game_components_token::interface::IMinigameTokenMixinDispatcherTrait;
 use snforge_std::{
