@@ -1,13 +1,13 @@
-use game_components_metagame::interface::{
-    IMetagameDispatcher, IMetagameDispatcherTrait, IMETAGAME_ID,
-};
-use openzeppelin_interfaces::introspection::{ISRC5Dispatcher, ISRC5DispatcherTrait};
-use starknet::{ContractAddress, contract_address_const};
 use core::num::traits::Zero;
-use snforge_std::{declare, ContractClassTrait, DeclareResultTrait};
+use game_components_metagame::interface::{
+    IMETAGAME_ID, IMetagameDispatcher, IMetagameDispatcherTrait,
+};
 use game_components_token::extensions::multi_game::interface::{
     IMinigameTokenMultiGameDispatcher, IMinigameTokenMultiGameDispatcherTrait,
 };
+use openzeppelin_interfaces::introspection::{ISRC5Dispatcher, ISRC5DispatcherTrait};
+use snforge_std::{ContractClassTrait, DeclareResultTrait, declare};
+use starknet::{ContractAddress, contract_address_const};
 
 // Interface for testing mint function
 #[starknet::interface]
@@ -304,8 +304,7 @@ fn test_mint_with_context_provider_set() {
 
     let (metagame_address, _) = metagame_contract.deploy(@calldata).unwrap();
     let dispatcher = IMockMetagameDispatcher { contract_address: metagame_address };
-
-    use game_components_metagame::extensions::context::structs::{GameContextDetails, GameContext};
+    use game_components_metagame::extensions::context::structs::{GameContext, GameContextDetails};
     let context = GameContextDetails {
         name: "Test Tournament",
         description: "A test tournament",
@@ -354,7 +353,7 @@ fn test_mint_with_context_no_provider() {
     let dispatcher = IMockMetagameDispatcher { contract_address: metagame_address };
 
     // Try to mint with context when no provider is set
-    use game_components_metagame::extensions::context::structs::{GameContextDetails, GameContext};
+    use game_components_metagame::extensions::context::structs::{GameContext, GameContextDetails};
     let context = GameContextDetails {
         name: "Invalid Context",
         description: "Should fail",
@@ -404,7 +403,7 @@ fn test_mint_with_max_objectives() {
         }
         objectives.append(i);
         i += 1;
-    };
+    }
 
     let to_address = contract_address_const::<0x1234>();
     let token_id = dispatcher
@@ -466,10 +465,10 @@ fn test_mint_with_instant_game() {
 // Mock contract that embeds MetagameComponent for testing
 #[starknet::contract]
 mod MockMetagameContract {
+    use game_components_metagame::extensions::context::structs::GameContextDetails;
     use game_components_metagame::metagame::MetagameComponent;
     use openzeppelin_introspection::src5::SRC5Component;
     use starknet::ContractAddress;
-    use game_components_metagame::extensions::context::structs::GameContextDetails;
 
     component!(path: MetagameComponent, storage: metagame, event: MetagameEvent);
     component!(path: SRC5Component, storage: src5, event: SRC5Event);

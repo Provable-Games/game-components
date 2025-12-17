@@ -1,33 +1,32 @@
 #[starknet::component]
 pub mod ObjectivesComponent {
     use core::num::traits::Zero;
-    use starknet::{ContractAddress, get_caller_address, get_contract_address};
-    use starknet::storage::{
-        StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess, Map,
-    };
-    // use crate::token::TokenComponent;
-    use crate::core::traits::OptionalObjectives;
-    use crate::extensions::objectives::interface::{
-        IMinigameTokenObjectives, TokenObjective, IMINIGAME_TOKEN_OBJECTIVES_ID,
-    };
-    use crate::examples::minigame_registry_contract::{
-        IMinigameRegistryDispatcher, IMinigameRegistryDispatcherTrait,
-    };
-    use crate::core::interface::{IMinigameTokenDispatcher, IMinigameTokenDispatcherTrait};
-    use game_components_minigame::extensions::objectives::structs::GameObjective;
-    use game_components_minigame::interface::{IMinigameDispatcher, IMinigameDispatcherTrait};
     use game_components_minigame::extensions::objectives::interface::{
         IMINIGAME_OBJECTIVES_ID, IMinigameObjectivesDispatcher, IMinigameObjectivesDispatcherTrait,
     };
+    use game_components_minigame::extensions::objectives::structs::GameObjective;
+    use game_components_minigame::interface::{IMinigameDispatcher, IMinigameDispatcherTrait};
     use game_components_utils::json::create_objectives_json;
-    use crate::libs::objectives_logic;
-
-    use openzeppelin_introspection::src5::SRC5Component;
-    use openzeppelin_introspection::src5::SRC5Component::InternalTrait as SRC5InternalTrait;
-    use openzeppelin_introspection::src5::SRC5Component::SRC5Impl;
     use openzeppelin_interfaces::introspection::{ISRC5Dispatcher, ISRC5DispatcherTrait};
-
+    use openzeppelin_introspection::src5::SRC5Component;
+    use openzeppelin_introspection::src5::SRC5Component::{
+        InternalTrait as SRC5InternalTrait, SRC5Impl,
+    };
+    use starknet::storage::{
+        Map, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess,
+    };
+    use starknet::{ContractAddress, get_caller_address, get_contract_address};
+    use crate::core::interface::{IMinigameTokenDispatcher, IMinigameTokenDispatcherTrait};
+    // use crate::token::TokenComponent;
+    use crate::core::traits::OptionalObjectives;
+    use crate::examples::minigame_registry_contract::{
+        IMinigameRegistryDispatcher, IMinigameRegistryDispatcherTrait,
+    };
+    use crate::extensions::objectives::interface::{
+        IMINIGAME_TOKEN_OBJECTIVES_ID, IMinigameTokenObjectives, TokenObjective,
+    };
     use crate::interface::{ITokenEventRelayerDispatcher, ITokenEventRelayerDispatcherTrait};
+    use crate::libs::objectives_logic;
 
     #[storage]
     pub struct Storage {
@@ -76,7 +75,7 @@ pub mod ObjectivesComponent {
                 let objective = self.token_objectives.entry(token_id).entry(i).read();
                 objectives.append(objective);
                 i += 1;
-            };
+            }
 
             objectives
         }
@@ -90,7 +89,7 @@ pub mod ObjectivesComponent {
                 let objective = self.token_objectives.entry(token_id).entry(i).read();
                 objective_ids.append(objective.objective_id);
                 i += 1;
-            };
+            }
 
             objective_ids.span()
         }
@@ -105,7 +104,7 @@ pub mod ObjectivesComponent {
                 let objective = self.token_objectives.entry(token_id).entry(index).read();
                 objectives.append(objective);
                 index += 1;
-            };
+            }
 
             objectives_logic::are_all_objectives_completed(objectives.span())
         }
@@ -244,7 +243,7 @@ pub mod ObjectivesComponent {
                 }
 
                 i += 1;
-            };
+            }
 
             component.token_objectives_count.entry(token_id).write(objective_ids.len());
         }
@@ -299,7 +298,7 @@ pub mod ObjectivesComponent {
                     completed_count += 1;
                 }
                 index += 1;
-            };
+            }
             completed_count == total_count
         }
 
@@ -342,7 +341,7 @@ pub mod ObjectivesComponent {
                 let objective = self.token_objectives.entry(token_id).entry(index).read();
                 objectives.append(objective);
                 index += 1;
-            };
+            }
 
             objectives
         }

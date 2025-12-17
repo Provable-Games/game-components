@@ -1,7 +1,7 @@
 use game_components_metagame::extensions::context::interface::{
-    IMetagameContext, IMETAGAME_CONTEXT_ID,
+    IMETAGAME_CONTEXT_ID, IMetagameContext,
 };
-use game_components_metagame::extensions::context::structs::{GameContextDetails, GameContext};
+use game_components_metagame::extensions::context::structs::{GameContext, GameContextDetails};
 use openzeppelin_interfaces::introspection::ISRC5;
 
 // Interface for setting context in tests
@@ -12,11 +12,11 @@ trait IContextSetter<TContractState> {
 
 #[starknet::contract]
 pub mod MockContextContract {
-    use super::*;
     use starknet::storage::{
         Map, StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess,
         StoragePointerWriteAccess,
     };
+    use super::*;
 
     #[storage]
     struct Storage {

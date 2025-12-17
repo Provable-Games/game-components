@@ -1,18 +1,18 @@
-use starknet::{ContractAddress, contract_address_const};
-use game_components_token::interface::IMinigameToken;
-use game_components_token::structs::{TokenMetadata, Lifecycle};
+use game_components_metagame::extensions::context::structs::GameContextDetails;
 use game_components_token::extensions::multi_game::interface::IMinigameTokenMultiGame;
 use game_components_token::extensions::multi_game::structs::GameMetadata;
-use game_components_metagame::extensions::context::structs::GameContextDetails;
+use game_components_token::interface::IMinigameToken;
+use game_components_token::structs::{Lifecycle, TokenMetadata};
 use openzeppelin_interfaces::introspection::ISRC5;
+use starknet::{ContractAddress, contract_address_const};
 
 #[starknet::contract]
 pub mod MockMinigameToken {
-    use super::*;
     use starknet::storage::{
         Map, StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess,
         StoragePointerWriteAccess,
     };
+    use super::*;
 
     #[storage]
     struct Storage {

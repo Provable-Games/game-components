@@ -2,35 +2,33 @@
 // This demonstrates how to configure and use the modular components
 
 use core::num::traits::Zero;
-use starknet::{ContractAddress, syscalls::call_contract_syscall};
-use starknet::storage::{StoragePointerReadAccess};
-
-// Core imports
-use openzeppelin_token::erc721::ERC721Component;
-use openzeppelin_interfaces::erc721::IERC721Metadata;
-use openzeppelin_introspection::src5::SRC5Component;
-use openzeppelin_token::common::erc2981::erc2981::{DefaultConfig, ERC2981Component};
-
-// Game components imports
-use crate::core::core_token::CoreTokenComponent;
-use crate::structs::TokenMetadata;
-use crate::extensions::minter::minter::MinterComponent;
-use crate::extensions::objectives::objectives::ObjectivesComponent;
-use crate::extensions::context::context::ContextComponent;
-use crate::extensions::renderer::renderer::RendererComponent;
-use crate::extensions::settings::settings::SettingsComponent;
-
-use crate::examples::minigame_registry_contract::{
-    IMinigameRegistryDispatcher, IMinigameRegistryDispatcherTrait,
-};
-
-use crate::interface::{ITokenEventRelayerDispatcher, ITokenEventRelayerDispatcherTrait};
-
 use game_components_metagame::extensions::context::structs::GameContextDetails;
 use game_components_minigame::extensions::settings::structs::GameSettingDetails;
 use game_components_minigame::interface::{IMinigameDispatcher, IMinigameDispatcherTrait};
 use game_components_minigame::structs::GameDetail;
-use game_components_utils::renderer::{create_default_svg, create_custom_metadata};
+use game_components_utils::renderer::{create_custom_metadata, create_default_svg};
+use openzeppelin_interfaces::erc721::IERC721Metadata;
+use openzeppelin_introspection::src5::SRC5Component;
+use openzeppelin_token::common::erc2981::erc2981::{DefaultConfig, ERC2981Component};
+
+// Core imports
+use openzeppelin_token::erc721::ERC721Component;
+use starknet::ContractAddress;
+use starknet::storage::StoragePointerReadAccess;
+use starknet::syscalls::call_contract_syscall;
+
+// Game components imports
+use crate::core::core_token::CoreTokenComponent;
+use crate::examples::minigame_registry_contract::{
+    IMinigameRegistryDispatcher, IMinigameRegistryDispatcherTrait,
+};
+use crate::extensions::context::context::ContextComponent;
+use crate::extensions::minter::minter::MinterComponent;
+use crate::extensions::objectives::objectives::ObjectivesComponent;
+use crate::extensions::renderer::renderer::RendererComponent;
+use crate::extensions::settings::settings::SettingsComponent;
+use crate::interface::{ITokenEventRelayerDispatcher, ITokenEventRelayerDispatcherTrait};
+use crate::structs::TokenMetadata;
 
 
 #[starknet::contract]
@@ -43,7 +41,7 @@ pub mod FullTokenContract {
 
     // Core components (always included)
     component!(path: ERC721Component, storage: erc721, event: ERC721Event);
-    component!(path: ERC2981Component, storage: erc721, event: ERC2981Event);
+    component!(path: ERC2981Component, storage: erc2981, event: ERC2981Event);
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
     component!(path: CoreTokenComponent, storage: core_token, event: CoreTokenEvent);
 

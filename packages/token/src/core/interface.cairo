@@ -1,6 +1,6 @@
+use game_components_metagame::extensions::context::structs::GameContextDetails;
 use starknet::ContractAddress;
 use crate::structs::TokenMetadata;
-use game_components_metagame::extensions::context::structs::GameContextDetails;
 
 pub const IMINIGAME_TOKEN_ID: felt252 =
     0xa08df7e54b63300eeacf85a0f3289c405351278620b5af7e5d868b91f4d43d;

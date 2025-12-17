@@ -1,16 +1,16 @@
 use alexandria_encoding::base64::Base64Encoder;
-use core::array::{SpanTrait};
+use core::array::SpanTrait;
 use core::clone::Clone;
-use core::traits::Into;
 use core::num::traits::Zero;
-use crate::encoding::{U256BytesUsedTraitImpl, bytes_base64_encode};
-use graffiti::json::JsonImpl;
-use game_components_minigame::structs::GameDetail;
-use game_components_minigame::extensions::settings::structs::GameSettingDetails;
-use starknet::{ContractAddress, get_block_timestamp};
-use game_components_token::structs::TokenMetadata;
-use game_components_token::examples::minigame_registry_contract::GameMetadata;
+use core::traits::Into;
 use game_components_metagame::extensions::context::structs::GameContextDetails;
+use game_components_minigame::extensions::settings::structs::GameSettingDetails;
+use game_components_minigame::structs::GameDetail;
+use game_components_token::examples::minigame_registry_contract::GameMetadata;
+use game_components_token::structs::TokenMetadata;
+use graffiti::json::JsonImpl;
+use starknet::{ContractAddress, get_block_timestamp};
+use crate::encoding::{U256BytesUsedTraitImpl, bytes_base64_encode};
 
 fn logo(image: ByteArray) -> ByteArray {
     format!(
@@ -55,7 +55,7 @@ fn combine_elements(ref elements: Span<ByteArray>) -> ByteArray {
             },
             Option::None(()) => { break; },
         };
-    };
+    }
 
     combined
 }
@@ -99,8 +99,7 @@ pub fn create_default_svg(
     let _token_id = format!("{}", token_id);
 
     let mut elements = array![
-        rect,
-        logo_element,
+        rect, logo_element,
         // Header section - Game ID and State
         create_text("#" + _token_id.clone(), "140", "50", "24", "middle", "left"),
         // Game information section - starting after logo
@@ -158,13 +157,10 @@ pub fn create_custom_metadata(
 
     // Core game metadata traits
     let mut attributes = array![
-        create_trait("Game ID", _game_id),
-        create_trait("Game Name", game_metadata.name),
+        create_trait("Game ID", _game_id), create_trait("Game Name", game_metadata.name),
         create_trait("Game Developer", game_metadata.developer),
-        create_trait("Minted By", _minted_by),
-        create_trait("Score", _score),
-        create_trait("Minted Time", _minted_at),
-        create_trait("Start Time", _start),
+        create_trait("Minted By", _minted_by), create_trait("Score", _score),
+        create_trait("Minted Time", _minted_at), create_trait("Start Time", _start),
         create_trait("End Time", _end),
         create_trait("Expired", if _expired {
             "True"
@@ -214,7 +210,7 @@ pub fn create_custom_metadata(
             }
             objective_ids_str += format!("{}", *objective_ids.at(i));
             i += 1;
-        };
+        }
         objective_ids_str += "]";
 
         attributes.append(create_trait("Objective IDs", objective_ids_str));
@@ -252,7 +248,7 @@ pub fn create_custom_metadata(
         attributes.append(create_trait(game_detail.name.clone(), game_detail.value.clone()));
 
         game_details_index += 1;
-    };
+    }
 
     let metadata = metadata.add_array("attributes", attributes.span()).build();
 
@@ -261,13 +257,13 @@ pub fn create_custom_metadata(
 
 #[cfg(test)]
 mod tests {
-    use super::{create_default_svg, create_custom_metadata};
-    use starknet::contract_address_const;
+    use game_components_metagame::extensions::context::structs::{GameContext, GameContextDetails};
+    use game_components_minigame::extensions::settings::structs::{GameSetting, GameSettingDetails};
     use game_components_minigame::structs::GameDetail;
-    use game_components_minigame::extensions::settings::structs::{GameSettingDetails, GameSetting};
-    use game_components_metagame::extensions::context::structs::{GameContextDetails, GameContext};
     use game_components_token::examples::minigame_registry_contract::GameMetadata;
-    use game_components_token::structs::{TokenMetadata, Lifecycle};
+    use game_components_token::structs::{Lifecycle, TokenMetadata};
+    use starknet::contract_address_const;
+    use super::{create_custom_metadata, create_default_svg};
 
     #[test]
     fn test_default_svg() {

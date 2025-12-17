@@ -5,13 +5,10 @@ use starknet::ContractAddress;
 fn addr(value: felt252) -> ContractAddress {
     value.try_into().unwrap()
 }
-use snforge_std::{spy_events, EventSpyTrait};
-
-use game_components_token::interface::{IMinigameTokenMixinDispatcherTrait};
-use super::setup::{setup, ALICE, BOB};
-use game_components_test_starknet::metagame::mocks::metagame_starknet_mock::{
-    IMetagameStarknetMockDispatcherTrait,
-};
+use game_components_test_starknet::metagame::mocks::metagame_starknet_mock::IMetagameStarknetMockDispatcherTrait;
+use game_components_token::interface::IMinigameTokenMixinDispatcherTrait;
+use snforge_std::{EventSpyTrait, spy_events};
+use super::setup::{ALICE, BOB, setup};
 
 #[test]
 fn test_context_extension_operations() {
@@ -99,7 +96,7 @@ fn test_multiple_context_mints() {
 
         token_ids.append(token_id);
         i += 1;
-    };
+    }
 
     // Verify all tokens have context
     let mut j = 0;

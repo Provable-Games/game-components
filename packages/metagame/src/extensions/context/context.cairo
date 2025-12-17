@@ -3,9 +3,9 @@
 //
 #[starknet::component]
 pub mod ContextComponent {
-    use crate::extensions::context::interface::{IMetagameContext, IMETAGAME_CONTEXT_ID};
     use openzeppelin_introspection::src5::SRC5Component;
     use openzeppelin_introspection::src5::SRC5Component::InternalTrait as SRC5InternalTrait;
+    use crate::extensions::context::interface::{IMETAGAME_CONTEXT_ID, IMetagameContext};
 
     #[storage]
     pub struct Storage {}

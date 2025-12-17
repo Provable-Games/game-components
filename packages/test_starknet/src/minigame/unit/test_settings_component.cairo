@@ -1,15 +1,15 @@
 use game_components_minigame::extensions::settings::interface::{
-    IMinigameSettingsDispatcher, IMinigameSettingsDispatcherTrait,
-    IMinigameSettingsDetailsDispatcher,
-    IMinigameSettingsDetailsDispatcherTrait, IMinigameSettingsSVGDispatcher,
-    IMinigameSettingsSVGDispatcherTrait, IMINIGAME_SETTINGS_ID,
+    IMINIGAME_SETTINGS_ID, IMinigameSettingsDetailsDispatcher,
+    IMinigameSettingsDetailsDispatcherTrait, IMinigameSettingsDispatcher,
+    IMinigameSettingsDispatcherTrait, IMinigameSettingsSVGDispatcher,
+    IMinigameSettingsSVGDispatcherTrait,
 };
-use game_components_minigame::extensions::settings::structs::{GameSettingDetails, GameSetting};
-use openzeppelin_interfaces::introspection::{ISRC5Dispatcher, ISRC5DispatcherTrait};
-use game_components_test_starknet::token::setup::deploy_mock_settings_contract;
+use game_components_minigame::extensions::settings::structs::{GameSetting, GameSettingDetails};
 use game_components_test_starknet::minigame::mocks::mock_settings_contract::{
     ISettingsSetterDispatcher, ISettingsSetterDispatcherTrait,
 };
+use game_components_test_starknet::token::setup::deploy_mock_settings_contract;
+use openzeppelin_interfaces::introspection::{ISRC5Dispatcher, ISRC5DispatcherTrait};
 
 // Test SET-U-01: Initialize settings component
 #[test]
@@ -146,7 +146,7 @@ fn test_create_settings_50_items() {
         let mut value_bytes = "v";
         settings_items.append(GameSetting { name: name_bytes, value: value_bytes });
         i += 1;
-    };
+    }
 
     let large_settings = GameSettingDetails {
         name: "Large Settings",

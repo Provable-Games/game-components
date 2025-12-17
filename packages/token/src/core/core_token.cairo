@@ -1,38 +1,34 @@
 #[starknet::component]
 pub mod CoreTokenComponent {
     use core::num::traits::Zero;
-    use starknet::{ContractAddress, get_caller_address, get_block_timestamp};
-    use starknet::storage::{
-        StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess, Map,
-    };
-
-
-    use crate::core::interface::{IMinigameToken, IMINIGAME_TOKEN_ID};
-    use crate::examples::minigame_registry_contract::{
-        IMinigameRegistryDispatcher, IMinigameRegistryDispatcherTrait,
-    };
-    use crate::core::traits::{
-        OptionalMinter, OptionalContext, OptionalObjectives, OptionalRenderer, OptionalSettings,
-    };
-    use crate::structs::TokenMetadata;
-    use crate::libs::{LifecycleTrait, token_state};
-
     use game_components_metagame::extensions::context::structs::GameContextDetails;
-
-    use openzeppelin_introspection::src5::SRC5Component;
-    use openzeppelin_introspection::src5::SRC5Component::InternalTrait as SRC5InternalTrait;
-    use openzeppelin_introspection::src5::SRC5Component::SRC5Impl;
-    use openzeppelin_interfaces::introspection::{ISRC5Dispatcher, ISRC5DispatcherTrait};
-    use openzeppelin_token::erc721::ERC721Component;
-    use openzeppelin_token::erc721::ERC721Component::InternalTrait as ERC721InternalTrait;
-    use openzeppelin_token::erc721::ERC721Component::ERC721Impl;
-
     use game_components_minigame::interface::{
         IMINIGAME_ID, IMinigameTokenDataDispatcher, IMinigameTokenDataDispatcherTrait,
     };
+    use openzeppelin_interfaces::introspection::{ISRC5Dispatcher, ISRC5DispatcherTrait};
+    use openzeppelin_introspection::src5::SRC5Component;
+    use openzeppelin_introspection::src5::SRC5Component::{
+        InternalTrait as SRC5InternalTrait, SRC5Impl,
+    };
+    use openzeppelin_token::erc721::ERC721Component;
+    use openzeppelin_token::erc721::ERC721Component::{
+        ERC721Impl, InternalTrait as ERC721InternalTrait,
+    };
+    use starknet::storage::{
+        Map, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess,
+    };
+    use starknet::{ContractAddress, get_block_timestamp, get_caller_address};
+    use crate::core::interface::{IMINIGAME_TOKEN_ID, IMinigameToken};
+    use crate::core::traits::{
+        OptionalContext, OptionalMinter, OptionalObjectives, OptionalRenderer, OptionalSettings,
+    };
+    use crate::examples::minigame_registry_contract::{
+        IMinigameRegistryDispatcher, IMinigameRegistryDispatcherTrait,
+    };
     use crate::extensions::minter::interface::IMINIGAME_TOKEN_MINTER_ID;
-
     use crate::interface::{ITokenEventRelayerDispatcher, ITokenEventRelayerDispatcherTrait};
+    use crate::libs::{LifecycleTrait, token_state};
+    use crate::structs::TokenMetadata;
 
     #[storage]
     pub struct Storage {

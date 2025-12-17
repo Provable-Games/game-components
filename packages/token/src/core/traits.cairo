@@ -1,6 +1,5 @@
-use starknet::ContractAddress;
 use game_components_metagame::extensions::context::structs::GameContextDetails;
-
+use starknet::ContractAddress;
 use crate::interface::ITokenEventRelayerDispatcher;
 
 // Optional trait implementations for features that may or may not be enabled

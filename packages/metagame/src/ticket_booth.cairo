@@ -12,18 +12,17 @@
 #[feature("safe_dispatcher")]
 #[starknet::component]
 pub mod TicketBoothComponent {
-    use core::num::traits::Zero;
     use core::byte_array::ByteArray;
-    use crate::libs;
+    use core::num::traits::Zero;
     use openzeppelin_interfaces::erc20::{IERC20Dispatcher, IERC20DispatcherTrait};
     use openzeppelin_interfaces::erc721::{IERC721Dispatcher, IERC721DispatcherTrait};
-
     use starknet::contract_address::ContractAddress;
     use starknet::storage::{
-        StoragePointerReadAccess, StoragePointerWriteAccess, Map, StorageMapReadAccess,
-        StorageMapWriteAccess,
+        Map, StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess,
+        StoragePointerWriteAccess,
     };
-    use starknet::{get_caller_address, get_block_timestamp};
+    use starknet::{get_block_timestamp, get_caller_address};
+    use crate::libs;
 
     #[starknet::interface]
     trait IERC20Burnable<TContractState> {
@@ -279,7 +278,7 @@ pub mod TicketBoothComponent {
             match game_address {
                 Option::Some(addr) => self.game_address.write(addr),
                 Option::None => self.game_address.write(0.try_into().unwrap()),
-            };
+            }
             self.settings_id.write(settings_id);
             self.start_time.write(start_time);
             self.expiration_time.write(expiration_time);
@@ -447,7 +446,7 @@ pub mod TicketBoothComponent {
         ) {
             self.ticket_receiver_address.write(new_ticket_receiver_address);
         }
-        
+
         fn update_cost_to_play_internal(
             ref self: ComponentState<TContractState>, new_cost_to_play: u128,
         ) {
@@ -461,6 +460,5 @@ pub mod TicketBoothComponent {
             self.assert_before_opening();
             self.settings_id.write(new_settings_id);
         }
-
     }
 }

@@ -4,15 +4,14 @@ use starknet::ContractAddress;
 fn addr(value: felt252) -> ContractAddress {
     value.try_into().unwrap()
 }
-use snforge_std::{cheat_caller_address, CheatSpan};
-
 use game_components_token::interface::{
     IMinigameTokenMixinDispatcher, IMinigameTokenMixinDispatcherTrait,
 };
 use openzeppelin_interfaces::erc721::{ERC721ABIDispatcher, ERC721ABIDispatcherTrait};
+use snforge_std::{CheatSpan, cheat_caller_address};
 
 // Import setup helpers
-use super::setup::{deploy_mock_game, deploy_minimal_optimized_contract, ALICE, BOB};
+use super::setup::{ALICE, BOB, deploy_minimal_optimized_contract, deploy_mock_game};
 
 // Deploy helper
 fn deploy_minimal_token() -> (IMinigameTokenMixinDispatcher, ERC721ABIDispatcher) {
@@ -33,10 +32,7 @@ fn test_minimal_contract_deployment() {
     // Verify basic token interface is working
     // Note: The minimal contract may not expose all metadata functions
     // Let's just verify the contract was deployed correctly
-    assert!(
-        token_dispatcher.contract_address != addr(0),
-        "Contract should be deployed",
-    );
+    assert!(token_dispatcher.contract_address != addr(0), "Contract should be deployed");
 }
 
 #[test]

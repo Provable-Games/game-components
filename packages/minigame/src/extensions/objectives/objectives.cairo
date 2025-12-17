@@ -3,12 +3,11 @@
 //
 #[starknet::component]
 pub mod ObjectivesComponent {
-    use crate::extensions::objectives::interface::{IMinigameObjectives, IMINIGAME_OBJECTIVES_ID};
-    use crate::extensions::objectives::libs;
-    use starknet::{ContractAddress, get_contract_address, get_caller_address};
-
     use openzeppelin_introspection::src5::SRC5Component;
     use openzeppelin_introspection::src5::SRC5Component::InternalTrait as SRC5InternalTrait;
+    use starknet::{ContractAddress, get_caller_address, get_contract_address};
+    use crate::extensions::objectives::interface::{IMINIGAME_OBJECTIVES_ID, IMinigameObjectives};
+    use crate::extensions::objectives::libs;
 
     #[storage]
     pub struct Storage {}

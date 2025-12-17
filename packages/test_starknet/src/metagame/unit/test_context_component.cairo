@@ -1,10 +1,10 @@
 use game_components_metagame::extensions::context::interface::{
-    IMetagameContextDispatcher, IMetagameContextDispatcherTrait, IMetagameContextDetailsDispatcher,
-    IMetagameContextDetailsDispatcherTrait, IMETAGAME_CONTEXT_ID,
+    IMETAGAME_CONTEXT_ID, IMetagameContextDetailsDispatcher, IMetagameContextDetailsDispatcherTrait,
+    IMetagameContextDispatcher, IMetagameContextDispatcherTrait,
 };
-use game_components_metagame::extensions::context::structs::{GameContextDetails, GameContext};
+use game_components_metagame::extensions::context::structs::{GameContext, GameContextDetails};
 use openzeppelin_interfaces::introspection::{ISRC5Dispatcher, ISRC5DispatcherTrait};
-use snforge_std::{declare, ContractClassTrait, DeclareResultTrait};
+use snforge_std::{ContractClassTrait, DeclareResultTrait, declare};
 
 // Helper interface for testing
 #[starknet::interface]
@@ -20,7 +20,7 @@ mod MockContextContract {
     use game_components_metagame::extensions::context::interface::{
         IMetagameContext, IMetagameContextDetails, IMetagameContextSVG,
     };
-    use game_components_metagame::extensions::context::structs::{GameContextDetails, GameContext};
+    use game_components_metagame::extensions::context::structs::{GameContext, GameContextDetails};
     use openzeppelin_introspection::src5::SRC5Component;
     use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
     use super::IContextSetter;
@@ -381,7 +381,7 @@ fn test_context_with_100_items() {
         }
         context_items.append(GameContext { name: "Item", value: "Value" });
         i += 1;
-    };
+    }
 
     let context_details = GameContextDetails {
         name: "Large Context",

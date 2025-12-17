@@ -45,25 +45,24 @@ pub trait IMinigameStarknetMockInit<TContractState> {
 
 #[starknet::contract]
 pub mod minigame_starknet_mock {
-    use game_components_minigame::interface::{IMinigameTokenData, IMinigameDetails};
     use game_components_minigame::extensions::objectives::interface::{
-        IMinigameObjectives, IMinigameObjectivesDetails, IMINIGAME_OBJECTIVES_ID,
+        IMINIGAME_OBJECTIVES_ID, IMinigameObjectives, IMinigameObjectivesDetails,
     };
-    use game_components_minigame::extensions::settings::interface::{
-        IMinigameSettings, IMinigameSettingsDetails, IMINIGAME_SETTINGS_ID,
-    };
-    use game_components_minigame::minigame::MinigameComponent;
     use game_components_minigame::extensions::objectives::objectives::ObjectivesComponent;
-    use game_components_minigame::extensions::settings::settings::SettingsComponent;
-    use game_components_minigame::structs::GameDetail;
-    use game_components_minigame::extensions::settings::structs::{GameSetting, GameSettingDetails};
     use game_components_minigame::extensions::objectives::structs::GameObjective;
-    use openzeppelin_introspection::src5::SRC5Component;
-
-    use starknet::{ContractAddress, get_contract_address};
-    use starknet::storage::{
-        StoragePointerReadAccess, StoragePointerWriteAccess, Map, StoragePathEntry,
+    use game_components_minigame::extensions::settings::interface::{
+        IMINIGAME_SETTINGS_ID, IMinigameSettings, IMinigameSettingsDetails,
     };
+    use game_components_minigame::extensions::settings::settings::SettingsComponent;
+    use game_components_minigame::extensions::settings::structs::{GameSetting, GameSettingDetails};
+    use game_components_minigame::interface::{IMinigameDetails, IMinigameTokenData};
+    use game_components_minigame::minigame::MinigameComponent;
+    use game_components_minigame::structs::GameDetail;
+    use openzeppelin_introspection::src5::SRC5Component;
+    use starknet::storage::{
+        Map, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess,
+    };
+    use starknet::{ContractAddress, get_contract_address};
 
     component!(path: MinigameComponent, storage: minigame, event: MinigameEvent);
     component!(path: ObjectivesComponent, storage: objectives, event: ObjectivesEvent);
@@ -208,7 +207,7 @@ pub mod minigame_starknet_mock {
                         },
                     );
                 i += 1;
-            };
+            }
 
             objectives.span()
         }

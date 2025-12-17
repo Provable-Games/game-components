@@ -1,14 +1,14 @@
-use starknet::ContractAddress;
-use game_components_metagame::interface::IMetagame;
 use game_components_metagame::extensions::context::structs::GameContextDetails;
+use game_components_metagame::interface::IMetagame;
 use openzeppelin_interfaces::introspection::ISRC5;
+use starknet::ContractAddress;
 
 #[starknet::contract]
 pub mod MockMetagameWithContext {
+    use game_components_metagame::extensions::context::structs::GameContextDetails;
     use game_components_metagame::metagame::MetagameComponent;
     use openzeppelin_introspection::src5::SRC5Component;
     use starknet::ContractAddress;
-    use game_components_metagame::extensions::context::structs::GameContextDetails;
 
     component!(path: MetagameComponent, storage: metagame, event: MetagameEvent);
     component!(path: SRC5Component, storage: src5, event: SRC5Event);

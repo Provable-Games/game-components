@@ -1,4 +1,3 @@
-
 // Test-specific struct for objectives with additional fields
 #[derive(Drop, Serde, starknet::Store)]
 pub struct ObjectiveDetails {
@@ -28,13 +27,13 @@ pub trait IObjectivesSetter<TContractState> {
 #[starknet::contract]
 pub mod MockObjectivesContract {
     use game_components_minigame::extensions::objectives::interface::{
-        IMinigameObjectives, IMinigameObjectivesDetails, IMinigameObjectivesSVG,
-        IMINIGAME_OBJECTIVES_ID,
+        IMINIGAME_OBJECTIVES_ID, IMinigameObjectives, IMinigameObjectivesDetails,
+        IMinigameObjectivesSVG,
     };
     use game_components_minigame::extensions::objectives::structs::GameObjective;
-    use super::ObjectiveDetails;
     use openzeppelin_introspection::src5::SRC5Component;
     use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess};
+    use super::ObjectiveDetails;
 
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
 

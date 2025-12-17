@@ -1,5 +1,5 @@
-use starknet::ContractAddress;
 use game_components_minigame::extensions::settings::structs::GameSetting;
+use starknet::ContractAddress;
 
 pub const IMINIGAME_TOKEN_SETTINGS_ID: felt252 =
     0x02e0b4b2324e3b0a64da1d2c55dbbcaf8c369f0dd3f44e23babe98f8de7d6a89;

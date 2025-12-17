@@ -1,8 +1,8 @@
 use starknet::ContractAddress;
+use crate::token::setup::{deploy_mock_game, deploy_optimized_token_with_game};
 use super::mocks::minigame_starknet_mock::{
     IMinigameStarknetMockDispatcherTrait, IMinigameStarknetMockInitDispatcherTrait,
 };
-use crate::token::setup::{deploy_mock_game, deploy_optimized_token_with_game};
 
 // Helper function for creating contract addresses from felt252 values
 fn addr(value: felt252) -> ContractAddress {

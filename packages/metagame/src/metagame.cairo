@@ -4,19 +4,18 @@
 #[starknet::component]
 pub mod MetagameComponent {
     use core::num::traits::Zero;
-    use crate::interface::{IMetagame, IMETAGAME_ID};
     use game_components_metagame::extensions::context::interface::IMETAGAME_CONTEXT_ID;
     use game_components_metagame::extensions::context::structs::GameContextDetails;
     use game_components_token::core::interface::IMINIGAME_TOKEN_ID;
-    use crate::libs;
-
-    use openzeppelin_introspection::src5::SRC5Component;
-    use openzeppelin_introspection::src5::SRC5Component::InternalTrait as SRC5InternalTrait;
-    use openzeppelin_introspection::src5::SRC5Component::SRC5Impl;
     use openzeppelin_interfaces::introspection::{ISRC5Dispatcher, ISRC5DispatcherTrait};
-
+    use openzeppelin_introspection::src5::SRC5Component;
+    use openzeppelin_introspection::src5::SRC5Component::{
+        InternalTrait as SRC5InternalTrait, SRC5Impl,
+    };
     use starknet::contract_address::ContractAddress;
     use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
+    use crate::interface::{IMETAGAME_ID, IMetagame};
+    use crate::libs;
 
     #[storage]
     pub struct Storage {

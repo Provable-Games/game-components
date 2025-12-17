@@ -1,8 +1,8 @@
-use starknet::ContractAddress;
-use crate::extensions::objectives::structs::GameObjective;
 use game_components_token::extensions::objectives::interface::{
     IMinigameTokenObjectivesDispatcher, IMinigameTokenObjectivesDispatcherTrait,
 };
+use starknet::ContractAddress;
+use crate::extensions::objectives::structs::GameObjective;
 
 
 /// Gets the objective IDs for a game token

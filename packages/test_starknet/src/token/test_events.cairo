@@ -1,20 +1,15 @@
-use snforge_std::{
-    spy_events, EventSpyTrait, cheat_caller_address, CheatSpan,
-};
-
-use openzeppelin_interfaces::erc721::{ERC721ABIDispatcherTrait};
-use game_components_token::interface::{IMinigameTokenMixinDispatcherTrait};
+use game_components_test_starknet::minigame::mocks::minigame_starknet_mock::IMinigameStarknetMockInitDispatcherTrait;
+use game_components_token::interface::IMinigameTokenMixinDispatcherTrait;
+use openzeppelin_interfaces::erc721::ERC721ABIDispatcherTrait;
+use snforge_std::{CheatSpan, EventSpyTrait, cheat_caller_address, spy_events};
 
 // Import IMockGameDispatcher trait
 use super::mocks::mock_game::{IMockGameDispatcherTrait};
-use game_components_test_starknet::minigame::mocks::minigame_starknet_mock::{
-    IMinigameStarknetMockInitDispatcherTrait,
-};
 
 // Import test helpers from setup module
 use super::setup::{
-    setup, setup_multi_game, deploy_mock_game, deploy_basic_mock_game,
-    deploy_optimized_token_with_game, ALICE, BOB, OWNER,
+    ALICE, BOB, OWNER, deploy_basic_mock_game, deploy_mock_game, deploy_optimized_token_with_game,
+    setup, setup_multi_game,
 };
 
 // ================================================================================================
@@ -102,7 +97,7 @@ fn test_update_game_event_emissions() {
             }
         }
         i += 1;
-    };
+    }
 
     assert!(found_score_update || found_game_updated, "Should emit update events");
 }
@@ -274,7 +269,7 @@ fn test_batch_operations_event_count() {
             );
         token_ids.append(token_id);
         i += 1;
-    };
+    }
 
     // Should emit 3 TokenMinted events
     let events = spy.get_events();

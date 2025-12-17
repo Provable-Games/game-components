@@ -1,16 +1,16 @@
 use game_components_minigame::extensions::settings::interface::{
-    IMinigameSettings, IMinigameSettingsSVG, IMINIGAME_SETTINGS_ID,
+    IMINIGAME_SETTINGS_ID, IMinigameSettings, IMinigameSettingsSVG,
 };
-use game_components_minigame::extensions::settings::structs::{GameSettingDetails, GameSetting};
+use game_components_minigame::extensions::settings::structs::{GameSetting, GameSettingDetails};
 use openzeppelin_interfaces::introspection::ISRC5;
 
 #[starknet::contract]
 pub mod MockSettings {
-    use super::*;
     use starknet::storage::{
         Map, StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess,
         StoragePointerWriteAccess,
     };
+    use super::*;
 
     #[storage]
     struct Storage {

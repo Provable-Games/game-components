@@ -7,7 +7,7 @@ pub mod leaderboard {
     #[derive(Drop, Serde, Copy)]
     pub struct LeaderboardConfig {
         /// Maximum number of entries allowed
-        pub max_entries: u8,
+        pub max_entries: u32,
         /// Whether lower scores are better (true) or higher scores are better (false)
         pub ascending: bool,
         /// Whether to allow ties (same score, different entries)
@@ -226,7 +226,7 @@ pub mod leaderboard {
                         }
                         cloned_entries.append(*entries.at(i));
                         i += 1;
-                    };
+                    }
                     return (cloned_entries, validation_result);
                 },
             }
@@ -243,7 +243,7 @@ pub mod leaderboard {
                 }
                 new_leaderboard.append(*entries.at(i));
                 i += 1;
-            };
+            }
 
             // Insert the new entry
             new_leaderboard.append(*new_entry);
@@ -255,7 +255,7 @@ pub mod leaderboard {
                 }
                 new_leaderboard.append(*entries.at(i));
                 i += 1;
-            };
+            }
 
             (new_leaderboard, LeaderboardResult::Success)
         }
@@ -366,7 +366,7 @@ pub mod leaderboard {
                 }
                 result.append(*entries.at(i));
                 i += 1;
-            };
+            }
 
             result
         }

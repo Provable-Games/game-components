@@ -1,13 +1,13 @@
 use core::num::traits::Zero;
+use game_components_metagame::extensions::context::structs::GameContextDetails;
 use game_components_token::core::interface::{
     IMinigameTokenDispatcher, IMinigameTokenDispatcherTrait,
 };
 use game_components_token::examples::minigame_registry_contract::{
     IMinigameRegistryDispatcher, IMinigameRegistryDispatcherTrait,
 };
-use game_components_metagame::extensions::context::structs::GameContextDetails;
-use starknet::ContractAddress;
 use openzeppelin_interfaces::erc721::{IERC721Dispatcher, IERC721DispatcherTrait};
+use starknet::ContractAddress;
 
 /// Performs pre-action validation for the game playability
 ///

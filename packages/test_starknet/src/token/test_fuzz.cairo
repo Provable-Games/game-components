@@ -4,21 +4,14 @@ use starknet::ContractAddress;
 fn addr(value: felt252) -> ContractAddress {
     value.try_into().unwrap()
 }
-use snforge_std::{
-    cheat_caller_address, CheatSpan, start_cheat_block_timestamp, stop_cheat_block_timestamp,
-};
-
-use openzeppelin_interfaces::erc721::{ERC721ABIDispatcherTrait};
-
-use game_components_token::interface::{
-    IMinigameTokenMixinDispatcherTrait,
-};
-use super::mocks::mock_game::{};
 use game_components_minigame::interface::{
     IMinigameTokenDataDispatcher, IMinigameTokenDataDispatcherTrait,
 };
-use game_components_test_starknet::minigame::mocks::minigame_starknet_mock::{
-    IMinigameStarknetMockDispatcherTrait,
+use game_components_test_starknet::minigame::mocks::minigame_starknet_mock::IMinigameStarknetMockDispatcherTrait;
+use game_components_token::interface::IMinigameTokenMixinDispatcherTrait;
+use openzeppelin_interfaces::erc721::ERC721ABIDispatcherTrait;
+use snforge_std::{
+    CheatSpan, cheat_caller_address, start_cheat_block_timestamp, stop_cheat_block_timestamp,
 };
 // Import setup helpers
 use super::setup::{setup};
@@ -52,7 +45,7 @@ fn test_token_id_monotonicity_fuzz(seed: felt252) {
         };
         addresses.append(address);
         i += 1;
-    };
+    }
 
     let mut previous_id: u64 = 0;
     let mut j: u32 = 0;
@@ -448,11 +441,11 @@ fn test_token_id_uniqueness_fuzz(mint_count: u8) {
         while j < token_ids.len() {
             assert!(*token_ids.at(j) != token_id, "Token ID {} was duplicated", token_id);
             j += 1;
-        };
+        }
 
         token_ids.append(token_id);
         i += 1;
-    };
+    }
 
     // Also verify they're sequential (starting from 1)
     let mut k: u32 = 0;
@@ -532,7 +525,7 @@ fn test_minter_tracking_consistency_fuzz(mint_count: u8) {
                         break;
                     }
                     k += 1;
-                };
+                }
 
                 // Same minter should have same ID
                 if minter == minter1 {
@@ -543,9 +536,9 @@ fn test_minter_tracking_consistency_fuzz(mint_count: u8) {
             }
 
             j += 1;
-        };
+        }
         i += 1;
-    };
+    }
 
     // Verify total minter count
     let total_minters = test_contracts.test_token.total_minters();
@@ -601,7 +594,6 @@ fn test_soulbound_transfer_block_fuzz(attempt1: felt252, attempt2: felt252, atte
 }
 
 // Negative Fuzz Tests
-
 
 // NF-03: Lifecycle with start > end, random values
 #[test]

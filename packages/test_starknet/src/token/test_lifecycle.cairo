@@ -1,6 +1,6 @@
-use game_components_token::structs::Lifecycle;
-use game_components_token::libs::LifecycleTrait;
 use core::num::traits::Bounded;
+use game_components_token::libs::LifecycleTrait;
+use game_components_token::structs::Lifecycle;
 
 // ================================================================================================
 // LIFECYCLE TESTS (UT-LIFE-*)

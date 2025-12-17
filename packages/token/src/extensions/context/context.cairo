@@ -1,17 +1,14 @@
 #[starknet::component]
 pub mod ContextComponent {
-    use starknet::ContractAddress;
-    use crate::core::traits::OptionalContext;
-    use game_components_metagame::extensions::context::structs::GameContextDetails;
     use game_components_metagame::extensions::context::interface::IMETAGAME_CONTEXT_ID;
+    use game_components_metagame::extensions::context::structs::GameContextDetails;
     use game_components_utils::json::create_context_json;
-
     use openzeppelin_interfaces::introspection::{ISRC5Dispatcher, ISRC5DispatcherTrait};
     use openzeppelin_introspection::src5::SRC5Component;
     use openzeppelin_introspection::src5::SRC5Component::InternalTrait as SRC5InternalTrait;
-
+    use starknet::ContractAddress;
+    use crate::core::traits::OptionalContext;
     use crate::extensions::context::interface::IMINIGAME_TOKEN_CONTEXT_ID;
-
     use crate::interface::{ITokenEventRelayerDispatcher, ITokenEventRelayerDispatcherTrait};
 
     #[storage]

@@ -6,7 +6,7 @@ use starknet::ContractAddress;
 fn addr(value: felt252) -> ContractAddress {
     value.try_into().unwrap()
 }
-use snforge_std::{declare, ContractClassTrait, DeclareResultTrait};
+use snforge_std::{ContractClassTrait, DeclareResultTrait, declare};
 
 // Interface for testing mint function
 #[starknet::interface]
@@ -36,13 +36,7 @@ fn test_fuzz_mint_parameters() {
 
     let minigame_contract = declare("MockMinigame").unwrap().contract_class();
     let (minigame_address, _) = minigame_contract
-        .deploy(
-            @array![
-                token_address.into(),
-                addr(0x0).into(),
-                addr(0x0).into(),
-            ],
-        )
+        .deploy(@array![token_address.into(), addr(0x0).into(), addr(0x0).into()])
         .unwrap();
 
     let metagame_contract = declare("MockMetagame").unwrap().contract_class();
@@ -102,13 +96,7 @@ fn test_fuzz_player_names() {
 
     let minigame_contract = declare("MockMinigame").unwrap().contract_class();
     let (minigame_address, _) = minigame_contract
-        .deploy(
-            @array![
-                token_address.into(),
-                addr(0x0).into(),
-                addr(0x0).into(),
-            ],
-        )
+        .deploy(@array![token_address.into(), addr(0x0).into(), addr(0x0).into()])
         .unwrap();
 
     let metagame_contract = declare("MockMetagame").unwrap().contract_class();
@@ -173,13 +161,7 @@ fn test_property_token_id_monotonicity() {
 
     let minigame_contract = declare("MockMinigame").unwrap().contract_class();
     let (minigame_address, _) = minigame_contract
-        .deploy(
-            @array![
-                token_address.into(),
-                addr(0x0).into(),
-                addr(0x0).into(),
-            ],
-        )
+        .deploy(@array![token_address.into(), addr(0x0).into(), addr(0x0).into()])
         .unwrap();
 
     let metagame_contract = declare("MockMetagame").unwrap().contract_class();
@@ -259,10 +241,10 @@ fn try_mint_with_lifecycle(
 // Mock Metagame contract for testing
 #[starknet::contract]
 mod MockMetagame {
+    use game_components_metagame::extensions::context::structs::GameContextDetails;
     use game_components_metagame::metagame::MetagameComponent;
     use openzeppelin_introspection::src5::SRC5Component;
     use starknet::ContractAddress;
-    use game_components_metagame::extensions::context::structs::GameContextDetails;
 
     component!(path: MetagameComponent, storage: metagame, event: MetagameEvent);
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
