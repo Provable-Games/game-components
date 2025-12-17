@@ -1,15 +1,13 @@
 #[starknet::component]
 pub mod MinterComponent {
-    use starknet::ContractAddress;
-    use starknet::storage::{
-        StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess, Map,
-    };
-    use crate::core::traits::OptionalMinter;
-    use crate::extensions::minter::interface::{IMinigameTokenMinter, IMINIGAME_TOKEN_MINTER_ID};
-
     use openzeppelin_introspection::src5::SRC5Component;
     use openzeppelin_introspection::src5::SRC5Component::InternalTrait as SRC5InternalTrait;
-
+    use starknet::ContractAddress;
+    use starknet::storage::{
+        Map, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess,
+    };
+    use crate::core::traits::OptionalMinter;
+    use crate::extensions::minter::interface::{IMINIGAME_TOKEN_MINTER_ID, IMinigameTokenMinter};
     use crate::interface::{ITokenEventRelayerDispatcher, ITokenEventRelayerDispatcherTrait};
 
     #[storage]

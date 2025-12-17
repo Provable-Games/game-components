@@ -1,15 +1,15 @@
-use game_components_metagame::interface::{IMetagameDispatcher, IMetagameDispatcherTrait};
 use game_components_metagame::extensions::context::interface::{
     IMetagameContextDispatcher, IMetagameContextDispatcherTrait,
 };
-use game_components_metagame::extensions::context::structs::{GameContextDetails, GameContext};
-use game_components_token::interface::{IMinigameTokenDispatcher, IMinigameTokenDispatcherTrait};
+use game_components_metagame::extensions::context::structs::{GameContext, GameContextDetails};
+use game_components_metagame::interface::{IMetagameDispatcher, IMetagameDispatcherTrait};
 use game_components_minigame::interface::{IMinigameDispatcher, IMinigameDispatcherTrait};
-use starknet::{contract_address_const, get_caller_address, get_block_timestamp, ContractAddress};
+use game_components_token::interface::{IMinigameTokenDispatcher, IMinigameTokenDispatcherTrait};
 use snforge_std::{
-    declare, ContractClassTrait, DeclareResultTrait, start_cheat_block_timestamp,
+    ContractClassTrait, DeclareResultTrait, declare, start_cheat_block_timestamp,
     start_cheat_caller_address, stop_cheat_caller_address,
 };
+use starknet::{ContractAddress, contract_address_const, get_block_timestamp, get_caller_address};
 
 // Integration test I-01: Tournament Flow
 #[test]
@@ -35,8 +35,7 @@ fn test_tournament_flow() {
     let (game1_address, _) = game1
         .deploy(
             @array![
-                token_address.into(),
-                contract_address_const::<0x0>().into(),
+                token_address.into(), contract_address_const::<0x0>().into(),
                 contract_address_const::<0x0>().into(),
             ],
         )
@@ -45,8 +44,7 @@ fn test_tournament_flow() {
     let (game2_address, _) = game1
         .deploy(
             @array![
-                token_address.into(),
-                contract_address_const::<0x0>().into(),
+                token_address.into(), contract_address_const::<0x0>().into(),
                 contract_address_const::<0x0>().into(),
             ],
         )
@@ -55,8 +53,7 @@ fn test_tournament_flow() {
     let (game3_address, _) = game1
         .deploy(
             @array![
-                token_address.into(),
-                contract_address_const::<0x0>().into(),
+                token_address.into(), contract_address_const::<0x0>().into(),
                 contract_address_const::<0x0>().into(),
             ],
         )
@@ -262,10 +259,10 @@ fn test_tournament_flow() {
 // Mock contracts for integration testing
 #[starknet::contract]
 mod MockMetagameWithContext {
+    use game_components_metagame::extensions::context::structs::GameContextDetails;
     use game_components_metagame::metagame::MetagameComponent;
     use openzeppelin_introspection::src5::SRC5Component;
     use starknet::ContractAddress;
-    use game_components_metagame::extensions::context::structs::GameContextDetails;
 
     component!(path: MetagameComponent, storage: metagame, event: MetagameEvent);
     component!(path: SRC5Component, storage: src5, event: SRC5Event);

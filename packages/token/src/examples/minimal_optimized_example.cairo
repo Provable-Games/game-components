@@ -1,16 +1,16 @@
 // Minimal Optimized Token Contract Example
 // This demonstrates the optimal configurable direct components architecture
 
-use starknet::ContractAddress;
-use openzeppelin_token::erc721::ERC721Component;
 use openzeppelin_introspection::src5::SRC5Component;
+use openzeppelin_token::erc721::ERC721Component;
+use starknet::ContractAddress;
 
 // Import the optimal components
 use crate::core::core_token::CoreTokenComponent;
-use crate::extensions::minter::minter::MinterComponent;
 use crate::core::noop_traits::{
-    NoOpObjectives, NoOpContext, NoOpSoulbound, NoOpRenderer, NoOpSettings,
+    NoOpContext, NoOpObjectives, NoOpRenderer, NoOpSettings, NoOpSoulbound,
 };
+use crate::extensions::minter::minter::MinterComponent;
 
 // Override default configuration for minimal contract
 mod config {
@@ -25,8 +25,8 @@ mod config {
 
 #[starknet::contract]
 mod MinimalOptimizedContract {
-    use super::*;
     use openzeppelin_token::erc721::ERC721HooksEmptyImpl;
+    use super::*;
 
     // Only include enabled components
     component!(path: ERC721Component, storage: erc721, event: ERC721Event);

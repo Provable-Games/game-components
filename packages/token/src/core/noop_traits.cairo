@@ -1,9 +1,9 @@
+use game_components_metagame::extensions::context::structs::GameContextDetails;
 use starknet::ContractAddress;
 use crate::core::traits::{
-    OptionalMinter, OptionalContext, OptionalObjectives, OptionalSettings, OptionalSoulbound,
-    OptionalRenderer,
+    OptionalContext, OptionalMinter, OptionalObjectives, OptionalRenderer, OptionalSettings,
+    OptionalSoulbound,
 };
-use game_components_metagame::extensions::context::structs::GameContextDetails;
 use crate::interface::ITokenEventRelayerDispatcher;
 
 // No-op implementations for disabled features

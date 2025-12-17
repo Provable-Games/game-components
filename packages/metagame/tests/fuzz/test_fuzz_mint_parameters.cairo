@@ -1,7 +1,7 @@
 use game_components_metagame::interface::{IMetagameDispatcher, IMetagameDispatcherTrait};
 use game_components_token::interface::{IMinigameTokenDispatcher, IMinigameTokenDispatcherTrait};
-use starknet::{contract_address_const, ContractAddress};
-use snforge_std::{declare, ContractClassTrait, DeclareResultTrait};
+use snforge_std::{ContractClassTrait, DeclareResultTrait, declare};
+use starknet::{ContractAddress, contract_address_const};
 
 // Interface for testing mint function
 #[starknet::interface]
@@ -33,8 +33,7 @@ fn test_fuzz_mint_parameters() {
     let (minigame_address, _) = minigame_contract
         .deploy(
             @array![
-                token_address.into(),
-                contract_address_const::<0x0>().into(),
+                token_address.into(), contract_address_const::<0x0>().into(),
                 contract_address_const::<0x0>().into(),
             ],
         )
@@ -99,8 +98,7 @@ fn test_fuzz_player_names() {
     let (minigame_address, _) = minigame_contract
         .deploy(
             @array![
-                token_address.into(),
-                contract_address_const::<0x0>().into(),
+                token_address.into(), contract_address_const::<0x0>().into(),
                 contract_address_const::<0x0>().into(),
             ],
         )
@@ -170,8 +168,7 @@ fn test_property_token_id_monotonicity() {
     let (minigame_address, _) = minigame_contract
         .deploy(
             @array![
-                token_address.into(),
-                contract_address_const::<0x0>().into(),
+                token_address.into(), contract_address_const::<0x0>().into(),
                 contract_address_const::<0x0>().into(),
             ],
         )
@@ -254,10 +251,10 @@ fn try_mint_with_lifecycle(
 // Mock Metagame contract for testing
 #[starknet::contract]
 mod MockMetagame {
+    use game_components_metagame::extensions::context::structs::GameContextDetails;
     use game_components_metagame::metagame::MetagameComponent;
     use openzeppelin_introspection::src5::SRC5Component;
     use starknet::ContractAddress;
-    use game_components_metagame::extensions::context::structs::GameContextDetails;
 
     component!(path: MetagameComponent, storage: metagame, event: MetagameEvent);
     component!(path: SRC5Component, storage: src5, event: SRC5Event);

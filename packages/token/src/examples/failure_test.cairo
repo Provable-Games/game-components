@@ -1,24 +1,22 @@
 // Example: Optimized Token Contract using the new component system
 // This demonstrates how to configure and use the modular components
 
-use starknet::ContractAddress;
+use openzeppelin_introspection::src5::SRC5Component;
 
 // Core imports
 use openzeppelin_token::erc721::ERC721Component;
-use openzeppelin_introspection::src5::SRC5Component;
+use starknet::ContractAddress;
+use crate::config;
 
 // Game components imports
 use crate::core::core_token::CoreTokenComponent;
+use crate::core::noop_traits::NoOpMultiGame;
+use crate::extensions::context::ContextComponent;
 use crate::extensions::minter::MinterComponent;
 use crate::extensions::multi_game::MultiGameComponent;
 use crate::extensions::objectives::ObjectivesComponent;
-use crate::extensions::context::ContextComponent;
-use crate::extensions::soulbound::SoulboundComponent;
 use crate::extensions::renderer::RendererComponent;
-
-use crate::core::noop_traits::{NoOpMultiGame};
-
-use crate::config;
+use crate::extensions::soulbound::SoulboundComponent;
 
 #[starknet::contract]
 mod OptimizedTokenContract {

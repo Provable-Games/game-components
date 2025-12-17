@@ -1,8 +1,8 @@
 // Pure Cairo library for address utilities
 // Contains common address manipulation and validation functions
 
-use starknet::ContractAddress;
 use core::num::traits::Zero;
+use starknet::ContractAddress;
 
 /// Converts a contract address to an Option, returning None for zero address
 ///
@@ -118,7 +118,7 @@ pub fn has_non_zero_address(addresses: @Array<ContractAddress>) -> bool {
             break;
         }
         i += 1;
-    };
+    }
 
     has_non_zero
 }

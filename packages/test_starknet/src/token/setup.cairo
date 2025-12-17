@@ -1,20 +1,20 @@
-use starknet::ContractAddress;
-use snforge_std::{declare, ContractClassTrait, DeclareResultTrait, mock_call};
-use openzeppelin_interfaces::erc721::{ERC721ABIDispatcher};
-use openzeppelin_interfaces::introspection::ISRC5Dispatcher;
-use game_components_token::interface::{IMinigameTokenMixinDispatcher};
-use game_components_token::examples::minigame_registry_contract::{IMinigameRegistryDispatcher};
-use game_components_minigame::interface::{IMinigameDispatcher};
-use game_components_metagame::interface::{IMetagameDispatcher};
-use game_components_test_starknet::minigame::mocks::minigame_starknet_mock::{
-    IMinigameStarknetMockInitDispatcher, IMinigameStarknetMockInitDispatcherTrait,
-    IMinigameStarknetMockDispatcher,
-};
+use game_components_metagame::interface::IMetagameDispatcher;
+use game_components_minigame::interface::IMinigameDispatcher;
 use game_components_test_starknet::metagame::mocks::metagame_starknet_mock::{
-    IMetagameStarknetMockInitDispatcher, IMetagameStarknetMockInitDispatcherTrait,
-    IMetagameStarknetMockDispatcher,
+    IMetagameStarknetMockDispatcher, IMetagameStarknetMockInitDispatcher,
+    IMetagameStarknetMockInitDispatcherTrait,
 };
-use crate::token::mocks::mock_game::{IMockGameDispatcher};
+use game_components_test_starknet::minigame::mocks::minigame_starknet_mock::{
+    IMinigameStarknetMockDispatcher, IMinigameStarknetMockInitDispatcher,
+    IMinigameStarknetMockInitDispatcherTrait,
+};
+use game_components_token::examples::minigame_registry_contract::IMinigameRegistryDispatcher;
+use game_components_token::interface::IMinigameTokenMixinDispatcher;
+use openzeppelin_interfaces::erc721::ERC721ABIDispatcher;
+use openzeppelin_interfaces::introspection::ISRC5Dispatcher;
+use snforge_std::{ContractClassTrait, DeclareResultTrait, declare, mock_call};
+use starknet::ContractAddress;
+use crate::token::mocks::mock_game::IMockGameDispatcher;
 
 // ================================================================================================
 // TEST CONSTANTS

@@ -29,18 +29,17 @@ pub trait IMetagameStarknetMockInit<TContractState> {
 
 #[starknet::contract]
 pub mod metagame_starknet_mock {
+    use game_components_metagame::extensions::context::context::ContextComponent;
     use game_components_metagame::extensions::context::interface::{
         IMetagameContext, IMetagameContextDetails,
     };
+    use game_components_metagame::extensions::context::structs::{GameContext, GameContextDetails};
     use game_components_metagame::metagame::MetagameComponent;
     use game_components_metagame::metagame::MetagameComponent::InternalTrait as MetagameInternalTrait;
-    use game_components_metagame::extensions::context::context::ContextComponent;
-    use game_components_metagame::extensions::context::structs::{GameContextDetails, GameContext};
     use openzeppelin_introspection::src5::SRC5Component;
-
     use starknet::ContractAddress;
     use starknet::storage::{
-        StoragePointerWriteAccess, Map, StorageMapReadAccess, StorageMapWriteAccess,
+        Map, StorageMapReadAccess, StorageMapWriteAccess, StoragePointerWriteAccess,
     };
 
     component!(path: MetagameComponent, storage: metagame, event: MetagameEvent);
@@ -104,7 +103,7 @@ pub mod metagame_starknet_mock {
                 let game_context = GameContext { name: context_name, value: context_value };
                 contexts.append(game_context);
                 i += 1;
-            };
+            }
 
             GameContextDetails {
                 name: "Test Game Context",

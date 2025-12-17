@@ -2,8 +2,8 @@ use openzeppelin_interfaces::introspection::ISRC5;
 
 #[starknet::contract]
 pub mod MockSRC5 {
-    use super::*;
     use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess};
+    use super::*;
 
     #[storage]
     struct Storage {

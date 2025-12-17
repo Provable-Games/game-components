@@ -1,14 +1,14 @@
-use starknet::ContractAddress;
-use game_components_minigame::interface::{IMinigame, IMinigameTokenData, IMINIGAME_ID};
+use game_components_minigame::interface::{IMINIGAME_ID, IMinigame, IMinigameTokenData};
 use openzeppelin_interfaces::introspection::ISRC5;
+use starknet::ContractAddress;
 
 #[starknet::contract]
 pub mod MockMinigame {
-    use super::*;
     use starknet::storage::{
         Map, StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess,
         StoragePointerWriteAccess,
     };
+    use super::*;
 
     #[storage]
     struct Storage {

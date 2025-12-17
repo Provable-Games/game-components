@@ -1,6 +1,6 @@
-use game_components_minigame::extensions::settings::structs::GameSetting;
-use game_components_minigame::extensions::objectives::structs::GameObjective;
 use game_components_metagame::extensions::context::structs::GameContext;
+use game_components_minigame::extensions::objectives::structs::GameObjective;
+use game_components_minigame::extensions::settings::structs::GameSetting;
 use graffiti::json::JsonImpl;
 
 pub fn create_settings_json(
@@ -15,7 +15,7 @@ pub fn create_settings_json(
         let setting = settings.at(settings_index);
         settings_json = settings_json.add(setting.name.clone(), setting.value.clone());
         settings_index += 1;
-    };
+    }
     let settings_json = settings_json.build();
 
     let metadata = JsonImpl::new()
@@ -37,7 +37,7 @@ pub fn create_objectives_json(objectives: Span<GameObjective>) -> ByteArray {
         let objective = objectives.at(objective_index);
         metadata = metadata.add(objective.name.clone(), objective.value.clone());
         objective_index += 1;
-    };
+    }
     metadata.build()
 }
 
@@ -53,7 +53,7 @@ pub fn create_context_json(
         let context = contexts.at(contexts_index);
         contexts_json = contexts_json.add(context.name.clone(), context.value.clone());
         contexts_index += 1;
-    };
+    }
     let contexts_json = contexts_json.build();
 
     let mut metadata = JsonImpl::new().add("Name", name).add("Description", description);
@@ -62,7 +62,7 @@ pub fn create_context_json(
     match context_id {
         Option::Some(id) => { metadata = metadata.add("Context Id", format!("{}", id)); },
         Option::None => {},
-    };
+    }
 
     // Add Contexts last
     let metadata = metadata.add("Contexts", contexts_json).build();
@@ -89,21 +89,19 @@ pub fn create_json_array(values: Span<ByteArray>) -> ByteArray {
             result += ",";
         }
         index += 1;
-    };
+    }
     result += "]";
     result
 }
 
 #[cfg(test)]
 mod tests {
-    use super::create_settings_json;
-    use super::create_objectives_json;
-    use super::create_context_json;
-    use super::create_json_array;
-
-    use game_components_minigame::extensions::settings::structs::GameSetting;
-    use game_components_minigame::extensions::objectives::structs::GameObjective;
     use game_components_metagame::extensions::context::structs::GameContext;
+    use game_components_minigame::extensions::objectives::structs::GameObjective;
+    use game_components_minigame::extensions::settings::structs::GameSetting;
+    use super::{
+        create_context_json, create_json_array, create_objectives_json, create_settings_json,
+    };
 
     #[test]
     fn test_settings_json() {

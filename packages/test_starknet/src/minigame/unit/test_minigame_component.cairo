@@ -1,15 +1,13 @@
-use starknet::ContractAddress;
-use game_components_minigame::interface::{IMinigameDispatcherTrait, IMINIGAME_ID};
+use game_components_minigame::interface::{IMINIGAME_ID, IMinigameDispatcherTrait};
+use game_components_token::interface::IMinigameTokenMixinDispatcherTrait;
 use openzeppelin_interfaces::introspection::{ISRC5Dispatcher, ISRC5DispatcherTrait};
 use snforge_std::{
-    start_cheat_caller_address, stop_cheat_caller_address, mock_call,
-    start_cheat_block_timestamp_global,
+    mock_call, start_cheat_block_timestamp_global, start_cheat_caller_address,
+    stop_cheat_caller_address,
 };
-use crate::minigame::mocks::minigame_starknet_mock::{
-    IMinigameStarknetMockInitDispatcherTrait,
-};
-use game_components_token::interface::{IMinigameTokenMixinDispatcherTrait};
-use crate::token::setup::{setup, deploy_mock_game};
+use starknet::ContractAddress;
+use crate::minigame::mocks::minigame_starknet_mock::IMinigameStarknetMockInitDispatcherTrait;
+use crate::token::setup::{deploy_mock_game, setup};
 
 // Helper function for creating contract addresses from felt252 values
 fn addr(value: felt252) -> ContractAddress {

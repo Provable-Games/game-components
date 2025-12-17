@@ -1,5 +1,5 @@
 use game_components_leaderboard::leaderboard::leaderboard::{
-    LeaderboardConfig, LeaderboardEntry, LeaderboardResult, LeaderboardOperationsImpl,
+    LeaderboardConfig, LeaderboardEntry, LeaderboardOperationsImpl, LeaderboardResult,
     LeaderboardUtilsImpl, ScoreComparatorImpl,
 };
 
@@ -9,9 +9,7 @@ fn test_empty_leaderboard_insertion() {
     let mut entries = LeaderboardUtilsImpl::new();
     let new_entry = LeaderboardEntry { id: 1, score: 100 };
 
-    let position = LeaderboardOperationsImpl::find_insert_position(
-        @config, @entries, @new_entry,
-    );
+    let position = LeaderboardOperationsImpl::find_insert_position(@config, @entries, @new_entry);
     assert!(position == Option::Some(0), "Should insert at position 0 in empty leaderboard");
 
     let (updated, result) = LeaderboardOperationsImpl::insert_entry(
@@ -34,9 +32,7 @@ fn test_leaderboard_ordering_descending() {
     entries.append(LeaderboardEntry { id: 3, score: 60 });
 
     let new_entry = LeaderboardEntry { id: 4, score: 90 };
-    let position = LeaderboardOperationsImpl::find_insert_position(
-        @config, @entries, @new_entry,
-    );
+    let position = LeaderboardOperationsImpl::find_insert_position(@config, @entries, @new_entry);
     assert!(position == Option::Some(1), "Should insert at position 1");
 
     let (updated, result) = LeaderboardOperationsImpl::insert_entry(
@@ -88,14 +84,10 @@ fn test_tie_breaking() {
     entries.append(LeaderboardEntry { id: 2, score: 100 });
 
     let new_entry = LeaderboardEntry { id: 1, score: 100 };
-    let position = LeaderboardOperationsImpl::find_insert_position(
-        @config, @entries, @new_entry,
-    );
+    let position = LeaderboardOperationsImpl::find_insert_position(@config, @entries, @new_entry);
     assert!(position == Option::Some(0), "Lower ID should win tie");
 
-    let (updated, _) = LeaderboardOperationsImpl::insert_entry(
-        @config, @entries, @new_entry, 0,
-    );
+    let (updated, _) = LeaderboardOperationsImpl::insert_entry(@config, @entries, @new_entry, 0);
     assert!(*updated.at(0).id == 1, "ID 1 should be first");
     assert!(*updated.at(1).id == 2, "ID 2 should be second");
 }
@@ -131,9 +123,7 @@ fn test_position_validation() {
 
     // Try to insert with wrong score for position
     let wrong_score = LeaderboardEntry { id: 4, score: 40 };
-    let (_, result) = LeaderboardOperationsImpl::insert_entry(
-        @config, @entries, @wrong_score, 0,
-    );
+    let (_, result) = LeaderboardOperationsImpl::insert_entry(@config, @entries, @wrong_score, 0);
     match result {
         LeaderboardResult::ScoreTooLow => {},
         _ => panic!("Should return ScoreTooLow"),
@@ -203,7 +193,7 @@ fn test_500_player_leaderboard() {
 
         entries = updated;
         i += 1;
-    };
+    }
 
     // Verify leaderboard has 500 entries
     assert!(entries.len() == 500, "Leaderboard should have 500 entries");

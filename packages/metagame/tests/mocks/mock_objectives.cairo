@@ -1,16 +1,16 @@
-use openzeppelin_interfaces::introspection::ISRC5;
 use game_components_minigame::extensions::objectives::interface::{
-    IMinigameObjectives, IMinigameObjectivesSVG, IMINIGAME_OBJECTIVES_ID,
+    IMINIGAME_OBJECTIVES_ID, IMinigameObjectives, IMinigameObjectivesSVG,
 };
 use game_components_minigame::extensions::objectives::structs::GameObjective;
+use openzeppelin_interfaces::introspection::ISRC5;
 
 #[starknet::contract]
 pub mod MockObjectives {
-    use super::*;
     use starknet::storage::{
         Map, StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess,
         StoragePointerWriteAccess,
     };
+    use super::*;
 
     #[storage]
     struct Storage {

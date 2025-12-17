@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 
+use starknet::ContractAddress;
 use crate::leaderboard::leaderboard::{LeaderboardEntry, LeaderboardResult};
 use crate::leaderboard_store::LeaderboardStoreConfig;
-use starknet::ContractAddress;
 
 pub const ILEADERBOARD_ID: felt252 =
     0x03c0f9265d397c10970f24822e4b57cac7d8895f8c449b7c9caaa26910499705;
@@ -18,22 +18,14 @@ pub trait IGameDetails<TState> {
 pub trait ILeaderboard<TState> {
     /// Submit a score to a tournament's leaderboard
     fn submit_score(
-        ref self: TState,
-        tournament_id: u64,
-        token_id: u64,
-        score: u32,
-        position: u8,
+        ref self: TState, tournament_id: u64, token_id: u64, score: u32, position: u8,
     ) -> LeaderboardResult;
 
     /// Get all leaderboard entries with scores for a tournament
-    fn get_entries(
-        self: @TState, tournament_id: u64,
-    ) -> Array<LeaderboardEntry>;
+    fn get_entries(self: @TState, tournament_id: u64) -> Array<LeaderboardEntry>;
 
     /// Get top N entries for a tournament
-    fn get_top_entries(
-        self: @TState, tournament_id: u64, count: u32,
-    ) -> Array<LeaderboardEntry>;
+    fn get_top_entries(self: @TState, tournament_id: u64, count: u32) -> Array<LeaderboardEntry>;
 
     /// Get the position of a specific token in a tournament
     fn get_position(self: @TState, tournament_id: u64, token_id: u64) -> Option<u8>;

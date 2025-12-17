@@ -4,15 +4,12 @@ use starknet::ContractAddress;
 fn addr(value: felt252) -> ContractAddress {
     value.try_into().unwrap()
 }
-use snforge_std::{
-    start_cheat_block_timestamp, stop_cheat_block_timestamp, cheat_caller_address, CheatSpan,
-};
-
-use openzeppelin_interfaces::erc721::ERC721ABIDispatcherTrait;
+use game_components_metagame::extensions::context::structs::{GameContext, GameContextDetails};
+use game_components_test_starknet::minigame::mocks::minigame_starknet_mock::IMinigameStarknetMockDispatcherTrait;
 use game_components_token::interface::IMinigameTokenMixinDispatcherTrait;
-use game_components_metagame::extensions::context::structs::{GameContextDetails, GameContext};
-use game_components_test_starknet::minigame::mocks::minigame_starknet_mock::{
-    IMinigameStarknetMockDispatcherTrait,
+use openzeppelin_interfaces::erc721::ERC721ABIDispatcherTrait;
+use snforge_std::{
+    CheatSpan, cheat_caller_address, start_cheat_block_timestamp, stop_cheat_block_timestamp,
 };
 
 // Import mocks
@@ -20,9 +17,8 @@ use super::mocks::mock_game::{};
 
 // Import setup helpers
 use super::setup::{
-    setup_multi_game, deploy_mock_game,
-    ALICE, BOB, CHARLIE,
-    ZERO_ADDRESS, RENDERER_ADDRESS, MAX_U64, CURRENT_TIME, FUTURE_TIME, FAR_FUTURE_TIME,
+    ALICE, BOB, CHARLIE, CURRENT_TIME, FAR_FUTURE_TIME, FUTURE_TIME, MAX_U64, RENDERER_ADDRESS,
+    ZERO_ADDRESS, deploy_mock_game, setup_multi_game,
 };
 
 // All test constants, deployment helpers, and setup functions are now in setup.cairo
@@ -585,8 +581,6 @@ fn test_sequential_mints_increment_counter() { // UT-MINT-B004
 
 // Happy Path Tests
 
-
-
 #[test]
 fn test_update_game_with_objectives_completion() { // UT-UPDATE-003
     let test_contracts = setup_multi_game();
@@ -636,7 +630,6 @@ fn test_update_nonexistent_token() { // UT-UPDATE-R001
 
 
 // State Transition Tests
-
 
 #[test]
 // #[ignore] // TODO: Fix objective creation
@@ -915,8 +908,7 @@ fn test_renderer_address_view() { // UT-VIEW-010
         );
 
     assert!(
-        test_contracts.test_token.renderer_address(token_id1) == addr(0),
-        "Should have no renderer",
+        test_contracts.test_token.renderer_address(token_id1) == addr(0), "Should have no renderer",
     );
 
     // With custom renderer
@@ -978,10 +970,7 @@ fn test_get_minter_address() { // UT-EXT-001
 
     // Test non-existent minter
     let minter_addr2 = test_contracts.test_token.get_minter_address(999);
-    assert!(
-        minter_addr2 == addr(0),
-        "Non-existent minter should return zero address",
-    );
+    assert!(minter_addr2 == addr(0), "Non-existent minter should return zero address");
 }
 
 #[test]

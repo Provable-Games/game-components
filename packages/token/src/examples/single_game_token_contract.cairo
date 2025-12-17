@@ -4,31 +4,30 @@
 // FullTokenContract but initializes with a specific game address rather than a registry.
 
 use core::num::traits::Zero;
-use starknet::{ContractAddress, syscalls::call_contract_syscall};
-use starknet::storage::{StoragePointerReadAccess};
-
-// Core imports
-use openzeppelin_token::erc721::ERC721Component;
+use game_components_metagame::extensions::context::structs::GameContextDetails;
+use game_components_minigame::extensions::settings::structs::GameSettingDetails;
+use game_components_minigame::structs::GameDetail;
+use game_components_token::examples::minigame_registry_contract::GameMetadata;
+use game_components_utils::renderer::create_custom_metadata;
 use openzeppelin_interfaces::erc721::IERC721Metadata;
 use openzeppelin_introspection::src5::SRC5Component;
 use openzeppelin_token::common::erc2981::erc2981::{DefaultConfig, ERC2981Component};
 
+// Core imports
+use openzeppelin_token::erc721::ERC721Component;
+use starknet::ContractAddress;
+use starknet::storage::StoragePointerReadAccess;
+use starknet::syscalls::call_contract_syscall;
+
 // Game components imports
 use crate::core::core_token::CoreTokenComponent;
-use crate::structs::TokenMetadata;
+use crate::extensions::context::context::ContextComponent;
 use crate::extensions::minter::minter::MinterComponent;
 use crate::extensions::objectives::objectives::ObjectivesComponent;
-use crate::extensions::context::context::ContextComponent;
 use crate::extensions::renderer::renderer::RendererComponent;
 use crate::extensions::settings::settings::SettingsComponent;
-
 use crate::interface::{ITokenEventRelayerDispatcher, ITokenEventRelayerDispatcherTrait};
-
-use game_components_minigame::structs::GameDetail;
-use game_components_minigame::extensions::settings::structs::GameSettingDetails;
-use game_components_metagame::extensions::context::structs::GameContextDetails;
-use game_components_token::examples::minigame_registry_contract::GameMetadata;
-use game_components_utils::renderer::create_custom_metadata;
+use crate::structs::TokenMetadata;
 
 
 #[starknet::contract]

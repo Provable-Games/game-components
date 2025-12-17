@@ -1,31 +1,28 @@
 #[starknet::component]
 pub mod SettingsComponent {
     use core::num::traits::Zero;
-    use starknet::{ContractAddress, get_caller_address, get_contract_address};
-    // use crate::token::TokenComponent;
-    use crate::core::traits::OptionalSettings;
-
-    use crate::extensions::settings::interface::{
-        IMinigameTokenSettings, IMINIGAME_TOKEN_SETTINGS_ID,
-    };
-
-    use game_components_minigame::interface::{IMinigameDispatcher, IMinigameDispatcherTrait};
-    use game_components_minigame::extensions::settings::structs::GameSetting;
     use game_components_minigame::extensions::settings::interface::{
         IMINIGAME_SETTINGS_ID, IMinigameSettingsDispatcher, IMinigameSettingsDispatcherTrait,
     };
-
-    use openzeppelin_introspection::src5::SRC5Component;
-    use openzeppelin_introspection::src5::SRC5Component::InternalTrait as SRC5InternalTrait;
-    use openzeppelin_introspection::src5::SRC5Component::SRC5Impl;
+    use game_components_minigame::extensions::settings::structs::GameSetting;
+    use game_components_minigame::interface::{IMinigameDispatcher, IMinigameDispatcherTrait};
+    use game_components_utils::json::create_settings_json;
     use openzeppelin_interfaces::introspection::{ISRC5Dispatcher, ISRC5DispatcherTrait};
-
+    use openzeppelin_introspection::src5::SRC5Component;
+    use openzeppelin_introspection::src5::SRC5Component::{
+        InternalTrait as SRC5InternalTrait, SRC5Impl,
+    };
+    use starknet::{ContractAddress, get_caller_address, get_contract_address};
+    use crate::core::interface::{IMinigameTokenDispatcher, IMinigameTokenDispatcherTrait};
+    // use crate::token::TokenComponent;
+    use crate::core::traits::OptionalSettings;
     use crate::examples::minigame_registry_contract::{
         IMinigameRegistryDispatcher, IMinigameRegistryDispatcherTrait,
     };
-    use crate::core::interface::{IMinigameTokenDispatcher, IMinigameTokenDispatcherTrait};
+    use crate::extensions::settings::interface::{
+        IMINIGAME_TOKEN_SETTINGS_ID, IMinigameTokenSettings,
+    };
     use crate::interface::{ITokenEventRelayerDispatcher, ITokenEventRelayerDispatcherTrait};
-    use game_components_utils::json::create_settings_json;
 
     #[storage]
     pub struct Storage {}

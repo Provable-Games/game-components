@@ -1,2 +1,2 @@
-pub mod objectives;
 pub mod interface;
+pub mod objectives;

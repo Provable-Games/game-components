@@ -21,11 +21,10 @@
 
 #[starknet::contract]
 mod LeaderboardPreset {
-    use game_components_leaderboard::leaderboard_component::{
-        LeaderboardComponent, LeaderboardComponent::LeaderboardAdminImpl,
-        LeaderboardComponent::LeaderboardImpl, LeaderboardComponent::LeaderboardInternalTrait,
+    use game_components_leaderboard::leaderboard_component::LeaderboardComponent;
+    use game_components_leaderboard::leaderboard_component::LeaderboardComponent::{
+        LeaderboardAdminImpl, LeaderboardImpl, LeaderboardInternalTrait,
     };
-
     use openzeppelin_introspection::src5::SRC5Component;
     use starknet::ContractAddress;
 
@@ -34,9 +33,11 @@ mod LeaderboardPreset {
 
     // Leaderboard Mixin
     #[abi(embed_v0)]
-    impl LeaderboardMixinImpl = LeaderboardComponent::LeaderboardImpl<ContractState>;
+    impl LeaderboardMixinImpl =
+        LeaderboardComponent::LeaderboardImpl<ContractState>;
     #[abi(embed_v0)]
-    impl LeaderboardAdminMixinImpl = LeaderboardComponent::LeaderboardAdminImpl<ContractState>;
+    impl LeaderboardAdminMixinImpl =
+        LeaderboardComponent::LeaderboardAdminImpl<ContractState>;
 
     // SRC5 Mixin
     #[abi(embed_v0)]

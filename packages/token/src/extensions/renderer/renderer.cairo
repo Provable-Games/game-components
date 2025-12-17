@@ -1,24 +1,23 @@
 #[starknet::component]
 pub mod RendererComponent {
     use core::num::traits::Zero;
-    use starknet::{ContractAddress, get_caller_address, get_contract_address};
-    use starknet::storage::{
-        StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess, Map,
-    };
-    use crate::core::traits::OptionalRenderer;
-    use crate::core::interface::{IMinigameTokenDispatcher, IMinigameTokenDispatcherTrait};
-    use crate::extensions::renderer::interface::IMinigameTokenRenderer;
-    use crate::libs::address_utils;
-
-    use crate::extensions::renderer::interface::IMINIGAME_TOKEN_RENDERER_ID;
-
-    use openzeppelin_introspection::src5::SRC5Component;
-    use openzeppelin_introspection::src5::SRC5Component::InternalTrait as SRC5InternalTrait;
-    use openzeppelin_introspection::src5::SRC5Component::SRC5Impl;
     use openzeppelin_interfaces::erc721::{IERC721Dispatcher, IERC721DispatcherTrait};
+    use openzeppelin_introspection::src5::SRC5Component;
+    use openzeppelin_introspection::src5::SRC5Component::{
+        InternalTrait as SRC5InternalTrait, SRC5Impl,
+    };
     use openzeppelin_token::erc721::ERC721Component::ERC721Impl;
-
+    use starknet::storage::{
+        Map, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess,
+    };
+    use starknet::{ContractAddress, get_caller_address, get_contract_address};
+    use crate::core::interface::{IMinigameTokenDispatcher, IMinigameTokenDispatcherTrait};
+    use crate::core::traits::OptionalRenderer;
+    use crate::extensions::renderer::interface::{
+        IMINIGAME_TOKEN_RENDERER_ID, IMinigameTokenRenderer,
+    };
     use crate::interface::{ITokenEventRelayerDispatcher, ITokenEventRelayerDispatcherTrait};
+    use crate::libs::address_utils;
 
     #[storage]
     pub struct Storage {

@@ -5,23 +5,15 @@ use starknet::ContractAddress;
 fn addr(value: felt252) -> ContractAddress {
     value.try_into().unwrap()
 }
+use game_components_test_starknet::metagame::mocks::metagame_starknet_mock::IMetagameStarknetMockDispatcherTrait;
+use game_components_token::interface::IMinigameTokenMixinDispatcherTrait;
 use snforge_std::{
-    cheat_caller_address, CheatSpan, start_cheat_block_timestamp, stop_cheat_block_timestamp,
+    CheatSpan, cheat_caller_address, start_cheat_block_timestamp, stop_cheat_block_timestamp,
 };
-
-use game_components_token::interface::{IMinigameTokenMixinDispatcherTrait};
+use crate::token::mocks::mock_game::IMockGameDispatcherTrait;
 use crate::token::setup::{
-    setup, deploy_basic_mock_game, deploy_optimized_token_with_game, ALICE, BOB,
-    CHARLIE,
+    ALICE, BOB, CHARLIE, deploy_basic_mock_game, deploy_optimized_token_with_game, setup,
 };
-use crate::token::mocks::mock_game::{IMockGameDispatcherTrait};
-use game_components_test_starknet::metagame::mocks::metagame_starknet_mock::{
-    IMetagameStarknetMockDispatcherTrait,
-};
-use game_components_test_starknet::minigame::mocks::minigame_starknet_mock::{
-
-};
-use game_components_token::examples::minigame_registry_contract::{};
 
 // Test optimized token contract specific features
 #[test]
@@ -143,7 +135,7 @@ fn test_optimized_contract_multi_minter_scenario() {
 
         token_ids.append(token_id);
         i += 1;
-    };
+    }
 
     // Verify all minters are tracked
     assert!(test_contracts.test_token.total_minters() >= 3, "Should have at least 3 minters");

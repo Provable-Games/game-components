@@ -226,7 +226,7 @@ pub mod leaderboard {
                         }
                         cloned_entries.append(*entries.at(i));
                         i += 1;
-                    };
+                    }
                     return (cloned_entries, validation_result);
                 },
             }
@@ -243,7 +243,7 @@ pub mod leaderboard {
                 }
                 new_leaderboard.append(*entries.at(i));
                 i += 1;
-            };
+            }
 
             // Insert the new entry
             new_leaderboard.append(*new_entry);
@@ -255,7 +255,7 @@ pub mod leaderboard {
                 }
                 new_leaderboard.append(*entries.at(i));
                 i += 1;
-            };
+            }
 
             (new_leaderboard, LeaderboardResult::Success)
         }
@@ -366,7 +366,7 @@ pub mod leaderboard {
                 }
                 result.append(*entries.at(i));
                 i += 1;
-            };
+            }
 
             result
         }

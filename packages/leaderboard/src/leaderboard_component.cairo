@@ -5,18 +5,6 @@
 /// Supports multiple tournaments with separate leaderboards per tournament_id
 #[starknet::component]
 pub mod LeaderboardComponent {
-    use crate::interface::{ILeaderboard, ILeaderboardAdmin, ILEADERBOARD_ID};
-
-    use crate::leaderboard::leaderboard::{
-        LeaderboardEntry, LeaderboardResult, LeaderboardOperationsImpl, LeaderboardUtilsImpl,
-    };
-    use crate::leaderboard_store::{
-        LeaderboardStoreConfig, LeaderboardStoreHelpersTrait, LeaderboardStoreHelpersImpl,
-        LeaderboardStoreImpl, LeaderboardStoreTrait,
-    };
-    use crate::models::Leaderboard;
-    use crate::store::Store;
-
     use core::num::traits::Zero;
     use openzeppelin_introspection::src5::SRC5Component;
     use openzeppelin_introspection::src5::SRC5Component::InternalTrait as SRC5InternalTrait;
@@ -25,6 +13,16 @@ pub mod LeaderboardComponent {
         StoragePointerWriteAccess,
     };
     use starknet::{ContractAddress, get_caller_address};
+    use crate::interface::{ILEADERBOARD_ID, ILeaderboard, ILeaderboardAdmin};
+    use crate::leaderboard::leaderboard::{
+        LeaderboardEntry, LeaderboardOperationsImpl, LeaderboardResult, LeaderboardUtilsImpl,
+    };
+    use crate::leaderboard_store::{
+        LeaderboardStoreConfig, LeaderboardStoreHelpersImpl, LeaderboardStoreHelpersTrait,
+        LeaderboardStoreImpl, LeaderboardStoreTrait,
+    };
+    use crate::models::Leaderboard;
+    use crate::store::Store;
 
     #[storage]
     pub struct Storage {
@@ -36,7 +34,7 @@ pub mod LeaderboardComponent {
         // Per-tournament configuration
         max_entries: Map<u64, u32>, // tournament_id -> max_entries
         ascending: Map<u64, bool>, // tournament_id -> ascending
-        game_address: Map<u64, ContractAddress>, // tournament_id -> game_address
+        game_address: Map<u64, ContractAddress> // tournament_id -> game_address
     }
 
     #[event]
@@ -85,9 +83,7 @@ pub mod LeaderboardComponent {
     impl ComponentStore<
         TContractState, +HasComponent<TContractState>,
     > of Store<ComponentState<TContractState>> {
-        fn get_leaderboard(
-            self: @ComponentState<TContractState>, tournament_id: u64,
-        ) -> Span<u64> {
+        fn get_leaderboard(self: @ComponentState<TContractState>, tournament_id: u64) -> Span<u64> {
             let count = self.entries_count.read(tournament_id);
             let mut result = ArrayTrait::new();
             let mut i = 0_u32;
@@ -99,14 +95,12 @@ pub mod LeaderboardComponent {
                 let token_id = self.entries.read((tournament_id, i));
                 result.append(token_id);
                 i += 1;
-            };
+            }
 
             result.span()
         }
 
-        fn set_leaderboard(
-            ref self: ComponentState<TContractState>, leaderboard: @Leaderboard,
-        ) {
+        fn set_leaderboard(ref self: ComponentState<TContractState>, leaderboard: @Leaderboard) {
             let tournament_id = *leaderboard.tournament_id;
 
             // Clear existing entries
@@ -118,7 +112,7 @@ pub mod LeaderboardComponent {
                 }
                 self.entries.write((tournament_id, i), 0);
                 i += 1;
-            };
+            }
 
             // Write new entries
             let new_count = leaderboard.token_ids.len();
@@ -171,17 +165,14 @@ pub mod LeaderboardComponent {
         }
 
         fn get_entries(
-            self: @ComponentState<TContractState>,
-            tournament_id: u64,
+            self: @ComponentState<TContractState>, tournament_id: u64,
         ) -> Array<LeaderboardEntry> {
             let game_address = self.game_address.read(tournament_id);
             self.get_leaderboard_entries(tournament_id, game_address)
         }
 
         fn get_top_entries(
-            self: @ComponentState<TContractState>,
-            tournament_id: u64,
-            count: u32,
+            self: @ComponentState<TContractState>, tournament_id: u64, count: u32,
         ) -> Array<LeaderboardEntry> {
             let game_address = self.game_address.read(tournament_id);
             let entries = self.get_leaderboard_entries(tournament_id, game_address);
@@ -195,9 +186,7 @@ pub mod LeaderboardComponent {
         }
 
         fn qualifies(
-            self: @ComponentState<TContractState>,
-            tournament_id: u64,
-            score: u32,
+            self: @ComponentState<TContractState>, tournament_id: u64, score: u32,
         ) -> bool {
             let config = LeaderboardStoreConfig {
                 max_entries: self.max_entries.read(tournament_id),
@@ -207,9 +196,7 @@ pub mod LeaderboardComponent {
             self.qualifies_for_leaderboard(tournament_id, score, config)
         }
 
-        fn is_full(
-            self: @ComponentState<TContractState>, tournament_id: u64,
-        ) -> bool {
+        fn is_full(self: @ComponentState<TContractState>, tournament_id: u64) -> bool {
             let max_entries = self.max_entries.read(tournament_id);
             self.is_leaderboard_full(tournament_id, max_entries)
         }
@@ -248,10 +235,7 @@ pub mod LeaderboardComponent {
             self.ascending.write(tournament_id, ascending);
             self.game_address.write(tournament_id, game_address);
 
-            self
-                .emit(
-                    TournamentConfigured { tournament_id, max_entries, ascending, game_address },
-                );
+            self.emit(TournamentConfigured { tournament_id, max_entries, ascending, game_address });
         }
 
         fn clear_leaderboard(ref self: ComponentState<TContractState>, tournament_id: u64) {
@@ -266,7 +250,7 @@ pub mod LeaderboardComponent {
                 }
                 self.entries.write((tournament_id, i), 0);
                 i += 1;
-            };
+            }
             self.entries_count.write(tournament_id, 0);
 
             self.emit(LeaderboardCleared { tournament_id });
@@ -319,10 +303,7 @@ pub mod LeaderboardComponent {
             self.ascending.write(tournament_id, ascending);
             self.game_address.write(tournament_id, game_address);
 
-            self
-                .emit(
-                    TournamentConfigured { tournament_id, max_entries, ascending, game_address },
-                );
+            self.emit(TournamentConfigured { tournament_id, max_entries, ascending, game_address });
         }
     }
 

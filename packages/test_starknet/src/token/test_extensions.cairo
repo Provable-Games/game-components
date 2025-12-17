@@ -4,14 +4,11 @@ use starknet::ContractAddress;
 fn addr(value: felt252) -> ContractAddress {
     value.try_into().unwrap()
 }
-use snforge_std::{spy_events};
-
-use game_components_token::interface::{IMinigameTokenMixinDispatcherTrait};
+use game_components_token::interface::IMinigameTokenMixinDispatcherTrait;
+use snforge_std::spy_events;
 
 // Import setup helpers
-use super::setup::{
-    deploy_optimized_token_custom_metadata, ALICE, BOB,
-};
+use super::setup::{ALICE, BOB, deploy_optimized_token_custom_metadata};
 
 // ================================================================================================
 // EXTENSION COMPONENT TESTS
@@ -145,10 +142,7 @@ fn test_get_renderer_no_custom() {
 
     // Verify no custom renderer
     assert!(!token_dispatcher.has_custom_renderer(token_id), "Should not have custom renderer");
-    assert!(
-        token_dispatcher.renderer_address(token_id) == addr(0x0),
-        "Renderer should be zero",
-    );
+    assert!(token_dispatcher.renderer_address(token_id) == addr(0x0), "Renderer should be zero");
 }
 
 // Test RND-U-05: Reset token renderer
@@ -267,8 +261,7 @@ fn test_reset_token_renderer_event() {
     // Verify renderer was reset
     assert!(!token_dispatcher.has_custom_renderer(token_id), "Renderer should be reset");
     assert!(
-        token_dispatcher.renderer_address(token_id) == addr(0x0),
-        "Renderer address should be zero",
+        token_dispatcher.renderer_address(token_id) == addr(0x0), "Renderer address should be zero",
     );
 }
 
@@ -378,7 +371,7 @@ mod MockSettingsContract {
     use game_components_minigame::extensions::settings::interface::{
         IMinigameSettings, IMinigameSettingsDetails,
     };
-    use game_components_minigame::extensions::settings::structs::{GameSettingDetails};
+    use game_components_minigame::extensions::settings::structs::GameSettingDetails;
 
     #[storage]
     struct Storage {}
@@ -409,7 +402,7 @@ mod MockSettingsContract {
 #[starknet::contract]
 mod TokenWithSettings {
     use starknet::ContractAddress;
-    use starknet::storage::{StoragePointerWriteAccess};
+    use starknet::storage::StoragePointerWriteAccess;
 
     #[storage]
     struct Storage {

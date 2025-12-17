@@ -1,7 +1,7 @@
 use game_components_minigame::extensions::objectives::interface::{
-    IMinigameObjectives, IMinigameObjectivesDispatcher, IMinigameObjectivesDispatcherTrait,
-    IMinigameObjectivesSVG, IMinigameObjectivesSVGDispatcher, IMinigameObjectivesSVGDispatcherTrait,
-    IMINIGAME_OBJECTIVES_ID,
+    IMINIGAME_OBJECTIVES_ID, IMinigameObjectives, IMinigameObjectivesDispatcher,
+    IMinigameObjectivesDispatcherTrait, IMinigameObjectivesSVG, IMinigameObjectivesSVGDispatcher,
+    IMinigameObjectivesSVGDispatcherTrait,
 };
 use game_components_minigame::extensions::objectives::structs::GameObjective;
 use openzeppelin_interfaces::introspection::{ISRC5Dispatcher, ISRC5DispatcherTrait};
@@ -11,12 +11,12 @@ use starknet::{ContractAddress, get_caller_address};
 fn addr(value: felt252) -> ContractAddress {
     value.try_into().unwrap()
 }
-use snforge_std::{declare, ContractClassTrait, DeclareResultTrait};
 use core::to_byte_array::FormatAsByteArray;
-use game_components_test_starknet::token::setup::deploy_mock_objectives_contract;
 use game_components_test_starknet::minigame::mocks::mock_objectives_contract::{
     IObjectivesSetterDispatcher, IObjectivesSetterDispatcherTrait,
 };
+use game_components_test_starknet::token::setup::deploy_mock_objectives_contract;
+use snforge_std::{ContractClassTrait, DeclareResultTrait, declare};
 
 // Test OBJ-U-01: Initialize objectives component
 #[test]

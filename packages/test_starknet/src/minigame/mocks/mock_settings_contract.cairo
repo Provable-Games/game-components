@@ -1,4 +1,4 @@
-use game_components_minigame::extensions::settings::structs::{GameSettingDetails};
+use game_components_minigame::extensions::settings::structs::GameSettingDetails;
 
 #[starknet::interface]
 pub trait ISettingsSetter<TContractState> {
@@ -10,9 +10,9 @@ pub trait ISettingsSetter<TContractState> {
 #[starknet::contract]
 pub mod MockSettingsContract {
     use game_components_minigame::extensions::settings::interface::{
-        IMinigameSettings, IMinigameSettingsDetails, IMinigameSettingsSVG, IMINIGAME_SETTINGS_ID,
+        IMINIGAME_SETTINGS_ID, IMinigameSettings, IMinigameSettingsDetails, IMinigameSettingsSVG,
     };
-    use game_components_minigame::extensions::settings::structs::{GameSettingDetails, GameSetting};
+    use game_components_minigame::extensions::settings::structs::{GameSetting, GameSettingDetails};
     use openzeppelin_introspection::src5::SRC5Component;
     use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess};
 
@@ -110,7 +110,7 @@ pub mod MockSettingsContract {
                 settings_array.append(GameSetting { name: key, value: value });
 
                 i += 1;
-            };
+            }
 
             GameSettingDetails { name, description, settings: settings_array.span() }
         }
@@ -150,7 +150,7 @@ pub mod MockSettingsContract {
                 self.settings_values.write((settings_id, i), setting.value.clone());
 
                 i += 1;
-            };
+            }
 
             // Emit event like the real implementation would
             self

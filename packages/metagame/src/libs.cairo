@@ -1,3 +1,4 @@
+use game_components_metagame::extensions::context::structs::GameContextDetails;
 use game_components_minigame::interface::{IMinigameDispatcher, IMinigameDispatcherTrait};
 use game_components_token::core::interface::{
     IMinigameTokenDispatcher, IMinigameTokenDispatcherTrait,
@@ -5,7 +6,6 @@ use game_components_token::core::interface::{
 use game_components_token::examples::minigame_registry_contract::{
     IMinigameRegistryDispatcher, IMinigameRegistryDispatcherTrait,
 };
-use game_components_metagame::extensions::context::structs::GameContextDetails;
 use starknet::ContractAddress;
 
 /// Asserts that a game is registered in the minigame token contract

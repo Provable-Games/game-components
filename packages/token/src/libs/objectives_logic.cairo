@@ -21,7 +21,7 @@ pub fn count_completed_objectives(objectives: Span<TokenObjective>) -> u32 {
             count += 1;
         }
         i += 1;
-    };
+    }
 
     count
 }
@@ -50,7 +50,7 @@ pub fn are_all_objectives_completed(objectives: Span<TokenObjective>) -> bool {
             break;
         }
         i += 1;
-    };
+    }
 
     all_completed
 }
@@ -97,7 +97,7 @@ pub fn filter_completed_objectives(objectives: Span<TokenObjective>) -> Array<u3
             completed_ids.append(*objective.objective_id);
         }
         i += 1;
-    };
+    }
 
     completed_ids
 }
@@ -124,7 +124,7 @@ pub fn get_objective_by_id(
             break;
         }
         i += 1;
-    };
+    }
 
     result
 }
@@ -161,7 +161,7 @@ pub fn extract_objective_ids(objectives: Span<TokenObjective>) -> Array<u32> {
         let objective = objectives.at(i);
         ids.append(*objective.objective_id);
         i += 1;
-    };
+    }
 
     ids
 }

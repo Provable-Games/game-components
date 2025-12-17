@@ -4,21 +4,22 @@
 #[starknet::component]
 pub mod MinigameComponent {
     use core::num::traits::Zero;
-    use crate::interface::{IMinigame, IMinigameTokenData, IMINIGAME_ID};
-    use crate::libs;
+    use game_components_metagame::extensions::context::structs::GameContextDetails;
     use game_components_token::core::interface::{
-        IMinigameTokenDispatcher, IMinigameTokenDispatcherTrait, IMINIGAME_TOKEN_ID,
+        IMINIGAME_TOKEN_ID, IMinigameTokenDispatcher, IMinigameTokenDispatcherTrait,
     };
     use game_components_token::examples::minigame_registry_contract::{
         IMINIGAME_REGISTRY_ID, IMinigameRegistryDispatcher, IMinigameRegistryDispatcherTrait,
     };
-    use game_components_metagame::extensions::context::structs::GameContextDetails;
-    use starknet::{ContractAddress, get_contract_address};
-    use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
-    use openzeppelin_introspection::src5::SRC5Component;
-    use openzeppelin_introspection::src5::SRC5Component::InternalTrait as SRC5InternalTrait;
-    use openzeppelin_introspection::src5::SRC5Component::SRC5Impl;
     use openzeppelin_interfaces::introspection::{ISRC5Dispatcher, ISRC5DispatcherTrait};
+    use openzeppelin_introspection::src5::SRC5Component;
+    use openzeppelin_introspection::src5::SRC5Component::{
+        InternalTrait as SRC5InternalTrait, SRC5Impl,
+    };
+    use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
+    use starknet::{ContractAddress, get_contract_address};
+    use crate::interface::{IMINIGAME_ID, IMinigame, IMinigameTokenData};
+    use crate::libs;
 
     #[storage]
     pub struct Storage {

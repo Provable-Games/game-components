@@ -42,21 +42,18 @@ pub trait IMinigameRegistry<TState> {
 #[starknet::contract]
 pub mod MinigameRegistryContract {
     use core::num::traits::Zero;
-    use starknet::{ContractAddress, get_caller_address};
+    use game_components_minigame::interface::IMINIGAME_ID;
+    use openzeppelin_interfaces::introspection::{ISRC5Dispatcher, ISRC5DispatcherTrait};
+    use openzeppelin_introspection::src5::SRC5Component;
+    use openzeppelin_token::erc721::{ERC721Component, ERC721HooksEmptyImpl};
     use starknet::storage::{
-        StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess, Map,
+        Map, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess,
     };
+    use starknet::{ContractAddress, get_caller_address};
+    use crate::interface::{ITokenEventRelayerDispatcher, ITokenEventRelayerDispatcherTrait};
     // use crate::extensions::multi_game::interface::{IMinigameTokenMultiGame};
     use super::GameMetadata;
-    use super::IMinigameRegistry;
-    use super::IMINIGAME_REGISTRY_ID;
-    use crate::interface::{ITokenEventRelayerDispatcher, ITokenEventRelayerDispatcherTrait};
-
-    use openzeppelin_token::erc721::{ERC721Component, ERC721HooksEmptyImpl};
-    use openzeppelin_introspection::src5::SRC5Component;
-    use openzeppelin_interfaces::introspection::{ISRC5Dispatcher, ISRC5DispatcherTrait};
-
-    use game_components_minigame::interface::{IMINIGAME_ID};
+    use super::{IMINIGAME_REGISTRY_ID, IMinigameRegistry};
 
     component!(path: ERC721Component, storage: erc721, event: ERC721Event);
     component!(path: SRC5Component, storage: src5, event: SRC5Event);

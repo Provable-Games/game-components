@@ -1,11 +1,9 @@
-use starknet::ContractAddress;
-
-use crate::structs::TokenMetadata;
-use crate::extensions::objectives::interface::TokenObjective;
-
+use game_components_metagame::extensions::context::structs::GameContextDetails;
 use game_components_minigame::extensions::objectives::structs::GameObjective;
 use game_components_minigame::extensions::settings::structs::GameSetting;
-use game_components_metagame::extensions::context::structs::GameContextDetails;
+use starknet::ContractAddress;
+use crate::extensions::objectives::interface::TokenObjective;
+use crate::structs::TokenMetadata;
 
 #[starknet::interface]
 pub trait IMinigameTokenMixin<TState> {

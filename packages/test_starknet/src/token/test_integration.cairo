@@ -1,24 +1,19 @@
-use starknet::ContractAddress;
-use snforge_std::{
-    start_cheat_block_timestamp, stop_cheat_block_timestamp, cheat_caller_address, CheatSpan,
-};
-
-use game_components_token::interface::{
-    IMinigameTokenMixinDispatcherTrait,
-};
-use game_components_token::examples::minigame_registry_contract::{IMinigameRegistryDispatcherTrait};
-
 // Import test contracts
 use game_components_test_starknet::minigame::mocks::minigame_starknet_mock::{
     IMinigameStarknetMockInitDispatcherTrait,
 };
+use game_components_token::examples::minigame_registry_contract::IMinigameRegistryDispatcherTrait;
+use game_components_token::interface::IMinigameTokenMixinDispatcherTrait;
+use snforge_std::{
+    CheatSpan, cheat_caller_address, start_cheat_block_timestamp, stop_cheat_block_timestamp,
+};
+use starknet::ContractAddress;
 
 // Import test helpers from setup module
 use super::setup::{
-    setup, deploy_optimized_token_with_game, deploy_full_token_contract, deploy_mock_game,
-    
-    deploy_minigame_registry_contract_with_params, deploy_mock_game_standalone, deploy_simple_setup,
-    OWNER, ALICE, BOB, CHARLIE,
+    ALICE, BOB, CHARLIE, OWNER, deploy_full_token_contract,
+    deploy_minigame_registry_contract_with_params, deploy_mock_game, deploy_mock_game_standalone,
+    deploy_optimized_token_with_game, deploy_simple_setup, setup,
 };
 
 // ================================================================================================
@@ -26,7 +21,6 @@ use super::setup::{
 // ================================================================================================
 
 // Helper addresses are now imported from setup module
-
 
 // ================================================================================================
 // I-03: Time Campaign
@@ -164,7 +158,7 @@ fn test_update_game_any_caller() {
 
     // This should NOT panic - anyone can sync game state
     token_dispatcher.update_game(token_id);
-    
+
     // Verify token still exists and is owned by ALICE
     let metadata = token_dispatcher.token_metadata(token_id);
     assert!(metadata.game_id == 0, "Token should still have same game");
@@ -184,7 +178,7 @@ mod MockContextProvider {
     use game_components_metagame::extensions::context::interface::{
         IMetagameContext, IMetagameContextDetails,
     };
-    use game_components_metagame::extensions::context::structs::{GameContextDetails, GameContext};
+    use game_components_metagame::extensions::context::structs::{GameContext, GameContextDetails};
 
     #[storage]
     struct Storage {}
@@ -313,16 +307,16 @@ fn test_multi_minter_scenario() {
                     break;
                 }
                 k += 1;
-            };
+            }
 
             if is_new_minter {
                 minter_ids.append(minter_id);
             }
 
             j += 1;
-        };
+        }
         i += 1;
-    };
+    }
 
     // Verify results
     assert!(token_ids.len() == 8, "Should have minted 8 tokens");
@@ -433,7 +427,7 @@ fn test_registry_lookup_edge_cases() {
             );
         games.append(game.contract_address);
         i += 1;
-    };
+    }
 
     // Test edge cases
 
@@ -523,9 +517,9 @@ fn test_concurrent_operations() {
 
             all_tokens.append(token_id);
             user_idx += 1;
-        };
+        }
         round += 1;
-    };
+    }
 
     // Verify all tokens are unique and sequential
     assert!(all_tokens.len() == 9, "Should have 9 tokens");
