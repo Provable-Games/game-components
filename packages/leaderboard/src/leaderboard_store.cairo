@@ -18,7 +18,7 @@ use game_components_leaderboard::interface::{IGameDetailsDispatcher, IGameDetail
 #[derive(Drop, Serde, Copy)]
 pub struct LeaderboardStoreConfig {
     /// Maximum number of entries allowed
-    pub max_entries: u8,
+    pub max_entries: u32,
     /// Whether lower scores are better (true) or higher scores are better (false)
     pub ascending: bool,
     /// Game contract address for score retrieval
@@ -169,7 +169,7 @@ pub trait LeaderboardStoreHelpersTrait<T> {
     fn get_top_winners(self: @T, tournament_id: u64, count: u32) -> Array<u64>;
 
     /// Check if the leaderboard is full
-    fn is_leaderboard_full(self: @T, tournament_id: u64, max_entries: u8) -> bool;
+    fn is_leaderboard_full(self: @T, tournament_id: u64, max_entries: u32) -> bool;
 
     /// Get the minimum qualifying score for the leaderboard
     fn get_minimum_qualifying_score(
@@ -214,9 +214,9 @@ pub impl LeaderboardStoreHelpersImpl<T, +Store<T>, +Drop<T>> of LeaderboardStore
     }
 
     /// Check if the leaderboard is full
-    fn is_leaderboard_full(self: @T, tournament_id: u64, max_entries: u8) -> bool {
+    fn is_leaderboard_full(self: @T, tournament_id: u64, max_entries: u32) -> bool {
         let token_ids = self.get_leaderboard(tournament_id);
-        token_ids.len() >= max_entries.into()
+        token_ids.len() >= max_entries
     }
 
     /// Get the minimum qualifying score for the leaderboard

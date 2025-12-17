@@ -166,3 +166,72 @@ fn test_utils_functions() {
     assert!(*top_2.at(0).score == 100, "First should be 100");
     assert!(*top_2.at(1).score == 80, "Second should be 80");
 }
+
+#[test]
+fn test_500_player_leaderboard() {
+    let config = LeaderboardConfig { max_entries: 500, ascending: false, allow_ties: true };
+    let mut entries = LeaderboardUtilsImpl::new();
+
+    // Insert 500 players with descending scores (player 1 = score 500, player 500 = score 1)
+    let mut i: u32 = 1;
+    loop {
+        if i > 500 {
+            break;
+        }
+
+        let score = 501 - i; // Score from 500 down to 1
+        let new_entry = LeaderboardEntry { id: i.into(), score };
+
+        // Find correct position and insert
+        let position = LeaderboardOperationsImpl::find_insert_position(
+            @config, @entries, @new_entry,
+        );
+
+        let pos_idx = match position {
+            Option::Some(p) => p,
+            Option::None => panic!("Should find a valid position"),
+        };
+
+        let (updated, result) = LeaderboardOperationsImpl::insert_entry(
+            @config, @entries, @new_entry, pos_idx,
+        );
+
+        match result {
+            LeaderboardResult::Success => {},
+            _ => panic!("Should successfully insert entry"),
+        }
+
+        entries = updated;
+        i += 1;
+    };
+
+    // Verify leaderboard has 500 entries
+    assert!(entries.len() == 500, "Leaderboard should have 500 entries");
+
+    // Verify first place has highest score (500)
+    let first_entry = entries.at(0);
+    assert!(*first_entry.score == 500, "First place should have score 500");
+    assert!(*first_entry.id == 1, "First place should have ID 1");
+
+    // Verify last place has lowest score (1)
+    let last_entry = entries.at(499);
+    assert!(*last_entry.score == 1, "Last place (position 500) should have score 1");
+    assert!(*last_entry.id == 500, "Last place should have ID 500");
+
+    // Verify middle entry (position 250)
+    let middle_entry = entries.at(249);
+    assert!(*middle_entry.score == 251, "Position 250 should have score 251");
+    assert!(*middle_entry.id == 250, "Position 250 should have ID 250");
+
+    // Verify ordering is correct throughout
+    let mut j: u32 = 0;
+    loop {
+        if j >= 499 {
+            break;
+        }
+        let current = entries.at(j);
+        let next = entries.at(j + 1);
+        assert!(*current.score >= *next.score, "Scores should be in descending order");
+        j += 1;
+    };
+}

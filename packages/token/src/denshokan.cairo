@@ -43,7 +43,7 @@ pub mod Denshokan {
 
     // Core components (always included)
     component!(path: ERC721Component, storage: erc721, event: ERC721Event);
-    component!(path: ERC2981Component, storage: erc721, event: ERC2981Event);
+    component!(path: ERC2981Component, storage: erc2981, event: ERC2981Event);
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
     component!(path: CoreTokenComponent, storage: core_token, event: CoreTokenEvent);
 
