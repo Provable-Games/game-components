@@ -72,6 +72,7 @@ A reusable component that provides leaderboard functionality. Can be embedded in
 
 **Usage in Custom Contracts:**
 ```cairo
+<<<<<<< HEAD
 use game_components_leaderboard::leaderboard_component::LeaderboardComponent;
 
 #[starknet::contract]
@@ -80,6 +81,16 @@ mod MyCustomContract {
 
     #[abi(embed_v0)]
     impl LeaderboardImpl = LeaderboardComponent::LeaderboardImpl<ContractState>;
+=======
+use game_components_leaderboard::leaderboard_component::leaderboard_component;
+
+#[starknet::contract]
+mod MyCustomContract {
+    component!(path: leaderboard_component, storage: leaderboard, event: LeaderboardEvent);
+    
+    #[abi(embed_v0)]
+    impl LeaderboardImpl = leaderboard_component::LeaderboardImpl<ContractState>;
+>>>>>>> main
 }
 ```
 
