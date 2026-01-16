@@ -14,15 +14,11 @@ pub mod SettingsComponent {
     };
     use starknet::{ContractAddress, get_caller_address, get_contract_address};
     use crate::core::interface::{IMinigameTokenDispatcher, IMinigameTokenDispatcherTrait};
-    // use crate::token::TokenComponent;
     use crate::core::traits::OptionalSettings;
-    use crate::examples::minigame_registry_contract::{
-        IMinigameRegistryDispatcher, IMinigameRegistryDispatcherTrait,
-    };
     use crate::extensions::settings::interface::{
         IMINIGAME_TOKEN_SETTINGS_ID, IMinigameTokenSettings,
     };
-    use crate::interface::{ITokenEventRelayerDispatcher, ITokenEventRelayerDispatcherTrait};
+    use crate::interface::{IMinigameRegistryDispatcher, IMinigameRegistryDispatcherTrait};
 
     #[storage]
     pub struct Storage {}
@@ -45,9 +41,7 @@ pub mod SettingsComponent {
 
     #[embeddable_as(SettingsImpl)]
     impl Settings<
-        TContractState,
-        +HasComponent<TContractState>, // impl Token: TokenComponent::HasComponent<TContractState>,
-        +Drop<TContractState>,
+        TContractState, +HasComponent<TContractState>, +Drop<TContractState>,
     > of IMinigameTokenSettings<ComponentState<TContractState>> {
         fn create_settings(
             ref self: ComponentState<TContractState>,
@@ -94,26 +88,16 @@ pub mod SettingsComponent {
                 name.clone(), description.clone(), settings_data.clone(),
             );
 
-            let event_relayer_address = minigame_token_dispatcher.event_relayer_address();
-            if !event_relayer_address.is_zero() {
-                let event_relayer_dispatcher = ITokenEventRelayerDispatcher {
-                    contract_address: event_relayer_address,
-                };
-                event_relayer_dispatcher
-                    .emit_settings_created(
-                        game_address, creator_address, settings_id, settings_data_json.clone(),
-                    );
-            } else {
-                self
-                    .emit(
-                        SettingsCreated {
-                            game_address,
-                            settings_id,
-                            creator_address,
-                            settings_data: settings_data_json.clone(),
-                        },
-                    );
-            }
+            // Emit native event
+            self
+                .emit(
+                    SettingsCreated {
+                        game_address,
+                        settings_id,
+                        creator_address,
+                        settings_data: settings_data_json,
+                    },
+                );
         }
     }
 

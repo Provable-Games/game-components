@@ -1,10 +1,10 @@
 use core::num::traits::Zero;
 use game_components_metagame::extensions::context::structs::GameContextDetails;
+use game_components_registry::interface::{
+    IMinigameRegistryDispatcher, IMinigameRegistryDispatcherTrait,
+};
 use game_components_token::core::interface::{
     IMinigameTokenDispatcher, IMinigameTokenDispatcherTrait,
-};
-use game_components_token::examples::minigame_registry_contract::{
-    IMinigameRegistryDispatcher, IMinigameRegistryDispatcherTrait,
 };
 use openzeppelin_interfaces::erc721::{IERC721Dispatcher, IERC721DispatcherTrait};
 use starknet::ContractAddress;
@@ -120,7 +120,7 @@ pub fn register_game(
 /// * `settings_id` - Optional settings ID
 /// * `start` - Optional start time
 /// * `end` - Optional end time
-/// * `objective_ids` - Optional objective IDs
+/// * `objective_id` - Optional objective ID
 /// * `context` - Optional context data
 /// * `client_url` - Optional client URL
 /// * `renderer_address` - Optional renderer contract address
@@ -136,7 +136,7 @@ pub fn mint(
     settings_id: Option<u32>,
     start: Option<u64>,
     end: Option<u64>,
-    objective_ids: Option<Span<u32>>,
+    objective_id: Option<u32>,
     context: Option<GameContextDetails>,
     client_url: Option<ByteArray>,
     renderer_address: Option<ContractAddress>,
@@ -153,7 +153,7 @@ pub fn mint(
             settings_id,
             start,
             end,
-            objective_ids,
+            objective_id,
             context,
             client_url,
             renderer_address,

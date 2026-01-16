@@ -5,21 +5,6 @@ use starknet::ContractAddress;
 use crate::extensions::objectives::structs::GameObjective;
 
 
-/// Gets the objective IDs for a game token
-///
-/// # Arguments
-/// * `minigame_token_address` - The address of the minigame token contract
-/// * `token_id` - The token ID to get objectives for
-///
-/// # Returns
-/// * `Span<u32>` - The objective IDs
-pub fn get_objective_ids(minigame_token_address: ContractAddress, token_id: u64) -> Span<u32> {
-    let token_objectives_dispatcher = IMinigameTokenObjectivesDispatcher {
-        contract_address: minigame_token_address,
-    };
-    token_objectives_dispatcher.objective_ids(token_id)
-}
-
 /// Creates an objective in the minigame token contract
 ///
 /// # Arguments

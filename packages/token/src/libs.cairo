@@ -3,7 +3,6 @@
 
 pub mod address_utils;
 pub mod lifecycle;
-pub mod objectives_logic;
 pub mod token_state;
 
 // Re-export commonly used traits

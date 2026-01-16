@@ -1,6 +1,9 @@
 #[starknet::component]
 pub mod CoreTokenComponent {
     use core::num::traits::Zero;
+    use game_components_metagame::extensions::callback::interface::{
+        IMETAGAME_CALLBACK_ID, IMetagameCallbackDispatcher, IMetagameCallbackDispatcherTrait,
+    };
     use game_components_metagame::extensions::context::structs::GameContextDetails;
     use game_components_minigame::interface::{
         IMINIGAME_ID, IMinigameTokenDataDispatcher, IMinigameTokenDataDispatcherTrait,
@@ -17,16 +20,14 @@ pub mod CoreTokenComponent {
     use starknet::storage::{
         Map, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess,
     };
+    use starknet::syscalls::call_contract_syscall;
     use starknet::{ContractAddress, get_block_timestamp, get_caller_address};
     use crate::core::interface::{IMINIGAME_TOKEN_ID, IMinigameToken};
     use crate::core::traits::{
         OptionalContext, OptionalMinter, OptionalObjectives, OptionalRenderer, OptionalSettings,
     };
-    use crate::examples::minigame_registry_contract::{
-        IMinigameRegistryDispatcher, IMinigameRegistryDispatcherTrait,
-    };
     use crate::extensions::minter::interface::IMINIGAME_TOKEN_MINTER_ID;
-    use crate::interface::{ITokenEventRelayerDispatcher, ITokenEventRelayerDispatcherTrait};
+    use crate::interface::{IMinigameRegistryDispatcher, IMinigameRegistryDispatcherTrait};
     use crate::libs::{LifecycleTrait, token_state};
     use crate::structs::TokenMetadata;
 
@@ -38,40 +39,67 @@ pub mod CoreTokenComponent {
         token_counter: u64,
         game_address: ContractAddress,
         game_registry_address: ContractAddress,
-        event_relayer_address: ContractAddress,
     }
+
+    // ==========================================================================
+    // NATIVE EVENTS - Optimized for indexing with proper #[key] fields
+    // ==========================================================================
+    // Events are emitted directly as native Starknet events for gas efficiency.
+    // All indexed fields use #[key] for efficient filtering in indexers.
 
     #[event]
     #[derive(Drop, starknet::Event)]
     pub enum Event {
+        // Core token lifecycle events
+        TokenMinted: TokenMinted,
         ScoreUpdate: ScoreUpdate,
+        GameOver: GameOver,
+        TokenMetadataUpdate: TokenMetadataUpdate,
+        // Player events
         TokenPlayerNameUpdate: TokenPlayerNameUpdate,
         TokenClientUrlUpdate: TokenClientUrlUpdate,
-        TokenMetadataUpdate: TokenMetadataUpdate,
+        // ERC721 standard
         MetadataUpdate: MetadataUpdate,
     }
 
+    /// Emitted when a new token is minted
+    #[derive(Drop, starknet::Event)]
+    pub struct TokenMinted {
+        #[key]
+        pub token_id: u256,
+        #[key]
+        pub owner: ContractAddress,
+        #[key]
+        pub game_id: u16,
+        pub minted_by: u16,
+        pub settings_id: u16,
+        pub minted_at: u64,
+        pub soulbound: bool,
+    }
+
+    /// Emitted when a token's score is updated
     #[derive(Drop, starknet::Event)]
     pub struct ScoreUpdate {
         #[key]
-        pub token_id: u64,
-        pub score: u64,
-    }
-
-    #[derive(Drop, starknet::Event)]
-    pub struct TokenPlayerNameUpdate {
+        pub token_id: u256,
         #[key]
-        pub id: u64,
-        pub player_name: felt252,
+        pub game_id: u16,
+        pub score: u32,
+        pub block_timestamp: u64,
     }
 
+    /// Emitted when a game ends (game_over transitions to true)
     #[derive(Drop, starknet::Event)]
-    pub struct TokenClientUrlUpdate {
+    pub struct GameOver {
         #[key]
-        pub id: u64,
-        pub client_url: ByteArray,
+        pub token_id: u256,
+        #[key]
+        pub game_id: u16,
+        pub final_score: u32,
+        pub completed_objectives: bool,
     }
 
+    /// Emitted when token metadata is updated
     #[derive(Drop, starknet::Event)]
     pub struct TokenMetadataUpdate {
         #[key]
@@ -84,11 +112,28 @@ pub mod CoreTokenComponent {
         pub minted_by: u64,
         pub soulbound: bool,
         pub game_over: bool,
-        pub completed_all_objectives: bool,
+        pub completed_objective: bool,
         pub has_context: bool,
-        pub objectives_count: u8,
+        pub objective_id: u32,
     }
 
+    /// Emitted when player name is updated
+    #[derive(Drop, starknet::Event)]
+    pub struct TokenPlayerNameUpdate {
+        #[key]
+        pub id: u64,
+        pub player_name: felt252,
+    }
+
+    /// Emitted when client URL is updated
+    #[derive(Drop, starknet::Event)]
+    pub struct TokenClientUrlUpdate {
+        #[key]
+        pub id: u64,
+        pub client_url: ByteArray,
+    }
+
+    /// ERC721 standard metadata update event
     #[derive(Drop, starknet::Event)]
     pub struct MetadataUpdate {
         #[key]
@@ -128,9 +173,9 @@ pub mod CoreTokenComponent {
             self.token_player_names.entry(token_id).read()
         }
 
-        fn objectives_count(self: @ComponentState<TContractState>, token_id: u64) -> u32 {
+        fn objective_id(self: @ComponentState<TContractState>, token_id: u64) -> u32 {
             let metadata = self.token_metadata.entry(token_id).read();
-            metadata.objectives_count.into()
+            metadata.objective_id
         }
 
         fn minted_by(self: @ComponentState<TContractState>, token_id: u64) -> u64 {
@@ -144,10 +189,6 @@ pub mod CoreTokenComponent {
 
         fn game_registry_address(self: @ComponentState<TContractState>) -> ContractAddress {
             self.game_registry_address.read()
-        }
-
-        fn event_relayer_address(self: @ComponentState<TContractState>) -> ContractAddress {
-            self.event_relayer_address.read()
         }
 
         fn is_soulbound(self: @ComponentState<TContractState>, token_id: u64) -> bool {
@@ -204,7 +245,7 @@ pub mod CoreTokenComponent {
             settings_id: Option<u32>,
             start: Option<u64>,
             end: Option<u64>,
-            objective_ids: Option<Span<u32>>,
+            objective_id: Option<u32>,
             context: Option<GameContextDetails>,
             client_url: Option<ByteArray>,
             renderer_address: Option<ContractAddress>,
@@ -218,7 +259,7 @@ pub mod CoreTokenComponent {
                     settings_id,
                     start,
                     end,
-                    objective_ids,
+                    objective_id,
                     context,
                     client_url,
                     renderer_address,
@@ -234,7 +275,7 @@ pub mod CoreTokenComponent {
             settings_id: Option<u32>,
             start: Option<u64>,
             end: Option<u64>,
-            objective_ids: Option<Span<u32>>,
+            objective_id: Option<u32>,
             context: Option<GameContextDetails>,
             client_url: Option<ByteArray>,
             renderer_address: Option<ContractAddress>,
@@ -264,7 +305,7 @@ pub mod CoreTokenComponent {
                         settings_id,
                         start,
                         end,
-                        objective_ids,
+                        objective_id,
                         context_copy,
                         client_url_copy,
                         renderer_address,
@@ -283,7 +324,7 @@ pub mod CoreTokenComponent {
             settings_id: Option<u32>,
             start: Option<u64>,
             end: Option<u64>,
-            objective_ids: Option<Span<u32>>,
+            objective_id: Option<u32>,
             context: Option<GameContextDetails>,
         ) {
             // This function only becomes relavant if we are keeping track of the minter address
@@ -335,27 +376,19 @@ pub mod CoreTokenComponent {
                 Option::None => 0,
             };
 
-            // Validate and process objectives if provided
-            let (objectives_count, _validated_objective_ids) = match objective_ids {
-                Option::Some(objective_ids) => {
-                    let (objectives_count, _validated_objective_ids) =
-                        ObjectivesOpt::validate_objectives(
-                        contract, final_game_address, objective_ids,
-                    );
-                    ObjectivesOpt::set_token_objectives(
-                        ref contract_self, token_id, objective_ids, self.get_event_relayer(),
-                    );
-                    (objectives_count, _validated_objective_ids)
+            // Validate objective if provided
+            let validated_objective_id: u32 = match objective_id {
+                Option::Some(obj_id) => {
+                    ObjectivesOpt::validate_objective(contract, final_game_address, obj_id);
+                    obj_id
                 },
-                Option::None => (0, array![].span()),
+                Option::None => 0,
             };
 
             // Handle context if provided
             let has_context = match context {
                 Option::Some(context) => {
-                    ContextOpt::emit_context(
-                        ref contract_self, caller, token_id, context, self.get_event_relayer(),
-                    );
+                    ContextOpt::emit_context(ref contract_self, caller, token_id, context);
                     true
                 },
                 Option::None => false,
@@ -371,7 +404,7 @@ pub mod CoreTokenComponent {
                 token_metadata.minted_by,
                 token_metadata.soulbound,
                 has_context,
-                objectives_count.try_into().unwrap(),
+                validated_objective_id,
                 current_time,
             );
 
@@ -383,7 +416,7 @@ pub mod CoreTokenComponent {
                 self.emit_token_player_name_update(token_id, name);
             }
 
-            // Emit relayer event for metadata update
+            // Emit native event for metadata update
             self
                 .emit_token_metadata_update(
                     token_id,
@@ -395,9 +428,9 @@ pub mod CoreTokenComponent {
                     metadata.minted_by,
                     metadata.soulbound,
                     metadata.game_over,
-                    metadata.completed_all_objectives,
+                    metadata.completed_objective,
                     metadata.has_context,
-                    metadata.objectives_count,
+                    metadata.objective_id,
                 );
         }
 
@@ -422,18 +455,9 @@ pub mod CoreTokenComponent {
                 "MinigameToken: Game does not support IMinigame interface",
             );
 
-            // Check objectives completion if token has objectives
-            let mut completed_all_objectives = token_metadata.completed_all_objectives;
-            if !completed_all_objectives && token_metadata.objectives_count > 0 {
-                completed_all_objectives =
-                    ObjectivesOpt::update_objectives(
-                        ref contract,
-                        token_id,
-                        game_address,
-                        token_metadata.objectives_count.into(),
-                        self.get_event_relayer(),
-                    );
-            }
+            // Note: Objectives completion is tracked by the metadata's completed_objective field
+            // which can be updated externally. The objective_id indicates which objective is set.
+            let completed_objective = token_metadata.completed_objective;
 
             // Get current game state
             let minigame_token_data_dispatcher = IMinigameTokenDataDispatcher {
@@ -443,17 +467,21 @@ pub mod CoreTokenComponent {
             let game_over = minigame_token_data_dispatcher.game_over(token_id);
             let score = minigame_token_data_dispatcher.score(token_id);
 
-            // Ensure game_over and completed_all_objectives can only transition from false to true
+            // Ensure game_over and completed_objective can only transition from false to true
             let final_game_over = token_state::ensure_game_over_transition(
                 token_metadata.game_over, game_over,
             );
-            let final_completed_all_objectives =
-                token_state::ensure_objectives_completion_transition(
-                token_metadata.completed_all_objectives, completed_all_objectives,
+            let final_completed_objective = token_state::ensure_objectives_completion_transition(
+                token_metadata.completed_objective, completed_objective,
             );
 
+            // Track state transitions for callbacks
+            let game_over_transition = final_game_over && !token_metadata.game_over;
+            let objectives_completed_transition = final_completed_objective
+                && !token_metadata.completed_objective;
+
             // Update metadata if game state changed
-            if final_completed_all_objectives != token_metadata.completed_all_objectives
+            if final_completed_objective != token_metadata.completed_objective
                 || final_game_over != token_metadata.game_over {
                 // Create updated metadata preserving original values
                 let updated_metadata = TokenMetadata {
@@ -464,9 +492,9 @@ pub mod CoreTokenComponent {
                     minted_by: token_metadata.minted_by,
                     soulbound: token_metadata.soulbound,
                     game_over: final_game_over,
-                    completed_all_objectives: final_completed_all_objectives,
+                    completed_objective: final_completed_objective,
                     has_context: token_metadata.has_context,
-                    objectives_count: token_metadata.objectives_count,
+                    objective_id: token_metadata.objective_id,
                 };
 
                 self.token_metadata.entry(token_id).write(updated_metadata);
@@ -481,17 +509,90 @@ pub mod CoreTokenComponent {
                         updated_metadata.minted_by,
                         updated_metadata.soulbound,
                         final_game_over,
-                        final_completed_all_objectives,
+                        final_completed_objective,
                         updated_metadata.has_context,
-                        updated_metadata.objectives_count,
+                        updated_metadata.objective_id,
                     );
             }
 
-            // Always emit score update
-            self.emit_score_update(token_id, score.into());
+            // Emit native score update event (always)
+            let current_time = get_block_timestamp();
+            self
+                .emit(
+                    ScoreUpdate {
+                        token_id: token_id.into(),
+                        game_id: token_metadata.game_id.try_into().unwrap_or(0),
+                        score,
+                        block_timestamp: current_time,
+                    },
+                );
+
+            // Emit GameOver event if game just ended
+            if game_over_transition {
+                self
+                    .emit(
+                        GameOver {
+                            token_id: token_id.into(),
+                            game_id: token_metadata.game_id.try_into().unwrap_or(0),
+                            final_score: score,
+                            completed_objectives: final_completed_objective,
+                        },
+                    );
+            }
 
             // Always emit metadata update
             self.emit_metadata_update(token_id.into());
+
+            // =================================================================
+            // METAGAME CALLBACKS - Notify minter contract of state changes
+            // =================================================================
+            // If the minter (metagame contract) implements IMetagameCallback,
+            // invoke callbacks to enable automatic score aggregation.
+            // Safe SRC5 check handles contracts that don't implement SRC5.
+
+            let contract_ref = self.get_contract();
+            let minter_address = MinterOpt::get_minter_address(
+                contract_ref, token_metadata.minted_by,
+            );
+
+            if !minter_address.is_zero() {
+                // Safe SRC5 check using call_contract_syscall to handle contracts
+                // that don't implement SRC5 (will return Err instead of panicking)
+                let supports_interface_selector = selector!("supports_interface");
+                let mut calldata = array![];
+                calldata.append(IMETAGAME_CALLBACK_ID);
+
+                let supports_callback =
+                    match call_contract_syscall(
+                        minter_address, supports_interface_selector, calldata.span(),
+                    ) {
+                    Result::Ok(result) => {
+                        let mut result_span = result;
+                        match Serde::<bool>::deserialize(ref result_span) {
+                            Option::Some(val) => val,
+                            Option::None => false,
+                        }
+                    },
+                    Result::Err(_) => false,
+                };
+
+                if supports_callback {
+                    let callback = IMetagameCallbackDispatcher { contract_address: minter_address };
+
+                    // Always notify score update (callback can filter if needed)
+                    callback.on_score_update(token_id.into(), score);
+
+                    // Notify game over if transitioned
+                    if game_over_transition {
+                        callback.on_game_over(token_id.into(), score);
+                    }
+
+                    // Notify objectives completed if transitioned
+                    if objectives_completed_transition {
+                        callback.on_objectives_completed(token_id.into());
+                    }
+                }
+            }
         }
 
         fn update_player_name(
@@ -530,7 +631,6 @@ pub mod CoreTokenComponent {
             game_address: Option<ContractAddress>,
             creator_address: Option<ContractAddress>,
             game_registry_address: Option<ContractAddress>,
-            event_relayer_address: Option<ContractAddress>,
         ) {
             // Register token interface
             let mut contract = self.get_contract_mut();
@@ -565,14 +665,6 @@ pub mod CoreTokenComponent {
                 erc721_component.mint(creator_address.unwrap(), 0);
             }
 
-            if let Option::Some(event_relayer_address) = event_relayer_address {
-                assert!(
-                    !event_relayer_address.is_zero(),
-                    "MinigameToken: Event relayer address is zero",
-                );
-                self.event_relayer_address.write(event_relayer_address);
-            }
-
             // Ensure at least one game address is set
             if game_address.is_none() && game_registry_address.is_none() {
                 panic!(
@@ -592,7 +684,7 @@ pub mod CoreTokenComponent {
             settings_id: Option<u32>,
             start: Option<u64>,
             end: Option<u64>,
-            objective_ids: Option<Span<u32>>,
+            objective_id: Option<u32>,
             context: Option<GameContextDetails>,
             client_url: Option<ByteArray>,
             renderer_address: Option<ContractAddress>,
@@ -625,52 +717,32 @@ pub mod CoreTokenComponent {
                         Option::None => 0,
                     };
 
-                    // Validate and process objectives if provided
-                    let (objectives_count, _validated_objective_ids) = match objective_ids {
-                        Option::Some(objective_ids) => {
-                            let (objectives_count, _validated_objective_ids) =
-                                ObjectivesOpt::validate_objectives(
-                                contract, final_game_address, objective_ids,
-                            );
-                            ObjectivesOpt::set_token_objectives(
-                                ref contract_self,
-                                token_id,
-                                objective_ids,
-                                self.get_event_relayer(),
-                            );
-                            (objectives_count, _validated_objective_ids)
+                    // Validate objective if provided
+                    let validated_objective_id: u32 = match objective_id {
+                        Option::Some(obj_id) => {
+                            ObjectivesOpt::validate_objective(contract, final_game_address, obj_id);
+                            obj_id
                         },
-                        Option::None => (0, array![].span()),
+                        Option::None => 0,
                     };
 
                     // Handle context if provided
                     let has_context = match context {
                         Option::Some(context) => {
-                            ContextOpt::emit_context(
-                                ref contract_self,
-                                caller,
-                                token_id,
-                                context,
-                                self.get_event_relayer(),
-                            );
+                            ContextOpt::emit_context(ref contract_self, caller, token_id, context);
                             true
                         },
                         Option::None => false,
                     };
 
                     // Handle minter tracking if enabled
-                    let minted_by = MinterOpt::add_minter(
-                        ref contract_self, caller, self.get_event_relayer(),
-                    );
+                    let minted_by = MinterOpt::add_minter(ref contract_self, caller);
 
                     // Handle renderer if provided
                     match renderer_address {
                         Option::Some(renderer_address) => {
                             RendererOpt::set_token_renderer(
-                                ref contract_self,
-                                token_id,
-                                renderer_address,
-                                self.get_event_relayer(),
+                                ref contract_self, token_id, renderer_address,
                             );
                         },
                         Option::None => {},
@@ -685,7 +757,7 @@ pub mod CoreTokenComponent {
                         minted_by,
                         soulbound,
                         has_context,
-                        objectives_count.try_into().unwrap(),
+                        validated_objective_id,
                         current_time,
                     );
 
@@ -704,7 +776,7 @@ pub mod CoreTokenComponent {
                         self.emit_token_client_url_update(token_id, url);
                     }
 
-                    // Emit events for token metadata
+                    // Emit native events for token metadata
                     self
                         .emit_token_metadata_update(
                             token_id,
@@ -716,15 +788,27 @@ pub mod CoreTokenComponent {
                             metadata.minted_by,
                             metadata.soulbound,
                             metadata.game_over,
-                            metadata.completed_all_objectives,
+                            metadata.completed_objective,
                             metadata.has_context,
-                            metadata.objectives_count,
+                            metadata.objective_id,
                         );
 
                     // Mint the ERC721 token
                     let mut contract = self.get_contract_mut();
                     let mut erc721_component = ERC721::get_component_mut(ref contract);
                     erc721_component.mint(to, token_id.into());
+
+                    // Emit native TokenMinted event
+                    self
+                        .emit_token_minted(
+                            token_id.into(),
+                            to,
+                            game_id.try_into().unwrap_or(0),
+                            minted_by.try_into().unwrap_or(0),
+                            validated_settings_id.try_into().unwrap_or(0),
+                            current_time,
+                            soulbound,
+                        );
 
                     token_id
                 },
@@ -740,18 +824,13 @@ pub mod CoreTokenComponent {
                     let mut contract_self = self.get_contract_mut();
 
                     // Only handle minter tracking for blank tokens
-                    let minted_by = MinterOpt::add_minter(
-                        ref contract_self, caller, self.get_event_relayer(),
-                    );
+                    let minted_by = MinterOpt::add_minter(ref contract_self, caller);
 
                     // Handle renderer if provided
                     match renderer_address {
                         Option::Some(renderer_address) => {
                             RendererOpt::set_token_renderer(
-                                ref contract_self,
-                                token_id,
-                                renderer_address,
-                                self.get_event_relayer(),
+                                ref contract_self, token_id, renderer_address,
                             );
                         },
                         Option::None => {},
@@ -772,7 +851,7 @@ pub mod CoreTokenComponent {
                         self.emit_token_player_name_update(token_id, name);
                     }
 
-                    // Emit relayer events for metadata and counter
+                    // Emit native events for metadata
                     self
                         .emit_token_metadata_update(
                             token_id,
@@ -784,14 +863,26 @@ pub mod CoreTokenComponent {
                             metadata.minted_by,
                             metadata.soulbound,
                             metadata.game_over,
-                            metadata.completed_all_objectives,
+                            metadata.completed_objective,
                             metadata.has_context,
-                            metadata.objectives_count,
+                            metadata.objective_id,
                         );
 
                     // Mint the ERC721 token
                     let mut erc721_component = ERC721::get_component_mut(ref contract_self);
                     erc721_component.mint(to, token_id.into());
+
+                    // Emit native TokenMinted event for blank token (game_id = 0)
+                    self
+                        .emit_token_minted(
+                            token_id.into(),
+                            to,
+                            0, // game_id is 0 for blank tokens
+                            minted_by.try_into().unwrap_or(0),
+                            0, // settings_id is 0 for blank tokens
+                            current_time,
+                            soulbound,
+                        );
 
                     token_id
                 },
@@ -865,27 +956,27 @@ pub mod CoreTokenComponent {
             let current_time = get_block_timestamp();
             let is_active = metadata.lifecycle.is_playable(current_time);
             assert!(
-                is_active && !metadata.completed_all_objectives && !metadata.game_over,
+                is_active && !metadata.completed_objective && !metadata.game_over,
                 "MinigameToken: Token is not playable",
             );
         }
 
+        // =================================================================
+        // NATIVE EVENT EMITTERS
+        // =================================================================
+        // All events are now emitted directly as native Starknet events.
+        // The relayer pattern has been removed for gas efficiency.
+
         fn emit_token_player_name_update(
             ref self: ComponentState<TContractState>, id: u64, player_name: felt252,
         ) {
-            match self.get_event_relayer() {
-                Option::Some(relayer) => relayer.emit_token_player_name_update(id, player_name),
-                Option::None => self.emit(TokenPlayerNameUpdate { id, player_name }),
-            }
+            self.emit(TokenPlayerNameUpdate { id, player_name });
         }
 
         fn emit_token_client_url_update(
             ref self: ComponentState<TContractState>, id: u64, client_url: ByteArray,
         ) {
-            match self.get_event_relayer() {
-                Option::Some(relayer) => relayer.emit_token_client_url_update(id, client_url),
-                Option::None => self.emit(TokenClientUrlUpdate { id, client_url }),
-            }
+            self.emit(TokenClientUrlUpdate { id, client_url });
         }
 
         fn emit_token_metadata_update(
@@ -899,51 +990,46 @@ pub mod CoreTokenComponent {
             minted_by: u64,
             soulbound: bool,
             game_over: bool,
-            completed_all_objectives: bool,
+            completed_objective: bool,
             has_context: bool,
-            objectives_count: u8,
+            objective_id: u32,
         ) {
-            match self.get_event_relayer() {
-                Option::Some(relayer) => relayer
-                    .emit_token_metadata_update(
+            self
+                .emit(
+                    TokenMetadataUpdate {
                         id,
                         game_id,
                         minted_at,
                         settings_id,
-                        start,
-                        end,
+                        lifecycle_start: start,
+                        lifecycle_end: end,
                         minted_by,
                         soulbound,
                         game_over,
-                        completed_all_objectives,
+                        completed_objective,
                         has_context,
-                        objectives_count,
-                    ),
-                Option::None => self
-                    .emit(
-                        TokenMetadataUpdate {
-                            id,
-                            game_id,
-                            minted_at,
-                            settings_id,
-                            lifecycle_start: start,
-                            lifecycle_end: end,
-                            minted_by,
-                            soulbound,
-                            game_over,
-                            completed_all_objectives,
-                            has_context,
-                            objectives_count,
-                        },
-                    ),
-            }
+                        objective_id,
+                    },
+                );
         }
 
-        fn emit_score_update(ref self: ComponentState<TContractState>, token_id: u64, score: u64) {
-            match self.get_event_relayer() {
-                Option::Some(relayer) => relayer.emit_token_score_update(token_id, score),
-                Option::None => self.emit(ScoreUpdate { token_id, score }),
-            }
+        /// Emit TokenMinted event for new tokens
+        fn emit_token_minted(
+            ref self: ComponentState<TContractState>,
+            token_id: u256,
+            owner: ContractAddress,
+            game_id: u16,
+            minted_by: u16,
+            settings_id: u16,
+            minted_at: u64,
+            soulbound: bool,
+        ) {
+            self
+                .emit(
+                    TokenMinted {
+                        token_id, owner, game_id, minted_by, settings_id, minted_at, soulbound,
+                    },
+                );
         }
 
         fn emit_metadata_update(ref self: ComponentState<TContractState>, token_id: u256) {
@@ -954,19 +1040,6 @@ pub mod CoreTokenComponent {
             self: @ComponentState<TContractState>, token_id: u64,
         ) -> TokenMetadata {
             self.token_metadata.entry(token_id).read()
-        }
-
-        fn get_event_relayer(
-            self: @ComponentState<TContractState>,
-        ) -> Option<ITokenEventRelayerDispatcher> {
-            let event_relayer_address = self.event_relayer_address.read();
-            if !event_relayer_address.is_zero() {
-                Option::Some(
-                    ITokenEventRelayerDispatcher { contract_address: event_relayer_address },
-                )
-            } else {
-                Option::None
-            }
         }
     }
 }

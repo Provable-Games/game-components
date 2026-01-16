@@ -6,7 +6,7 @@ use core::traits::Into;
 use game_components_metagame::extensions::context::structs::GameContextDetails;
 use game_components_minigame::extensions::settings::structs::GameSettingDetails;
 use game_components_minigame::structs::GameDetail;
-use game_components_token::examples::minigame_registry_contract::GameMetadata;
+use game_components_registry::interface::GameMetadata;
 use game_components_token::structs::TokenMetadata;
 use graffiti::json::JsonImpl;
 use starknet::{ContractAddress, get_block_timestamp};
@@ -218,7 +218,7 @@ pub fn create_custom_metadata(
             .append(
                 create_trait(
                     "Objectives Completed",
-                    if token_metadata.completed_all_objectives {
+                    if token_metadata.completed_objective {
                         "True"
                     } else {
                         "False"
@@ -260,7 +260,7 @@ mod tests {
     use game_components_metagame::extensions::context::structs::{GameContext, GameContextDetails};
     use game_components_minigame::extensions::settings::structs::{GameSetting, GameSettingDetails};
     use game_components_minigame::structs::GameDetail;
-    use game_components_token::examples::minigame_registry_contract::GameMetadata;
+    use game_components_registry::interface::GameMetadata;
     use game_components_token::structs::{Lifecycle, TokenMetadata};
     use starknet::contract_address_const;
     use super::{create_custom_metadata, create_default_svg};
@@ -339,7 +339,7 @@ mod tests {
             lifecycle: Lifecycle { start: 1640995200, end: 1672531200 }, // 2022-2023
             game_over: false,
             soulbound: false,
-            completed_all_objectives: true,
+            completed_objective: true,
             has_context: true,
             objectives_count: 5,
         };
@@ -409,7 +409,7 @@ mod tests {
             lifecycle: Lifecycle { start: 1640995200, end: 1672531200 },
             game_over: true,
             soulbound: true,
-            completed_all_objectives: false,
+            completed_objective: false,
             has_context: false,
             objectives_count: 0,
         };
@@ -476,7 +476,7 @@ mod tests {
             lifecycle: Lifecycle { start: 1650000000, end: 1680000000 },
             game_over: false,
             soulbound: false,
-            completed_all_objectives: false,
+            completed_objective: false,
             has_context: true,
             objectives_count: 2,
         };
@@ -550,7 +550,7 @@ mod tests {
             lifecycle: Lifecycle { start: 1660000000, end: 1690000000 },
             game_over: false,
             soulbound: true,
-            completed_all_objectives: true,
+            completed_objective: true,
             has_context: true,
             objectives_count: 1,
         };
@@ -631,7 +631,7 @@ mod tests {
             lifecycle: Lifecycle { start: 0, end: 4294967295 }, // Max u32
             game_over: true,
             soulbound: true,
-            completed_all_objectives: true,
+            completed_objective: true,
             has_context: true,
             objectives_count: 4,
         };

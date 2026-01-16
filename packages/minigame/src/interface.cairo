@@ -16,7 +16,7 @@ pub trait IMinigame<TState> {
         settings_id: Option<u32>,
         start: Option<u64>,
         end: Option<u64>,
-        objective_ids: Option<Span<u32>>,
+        objective_id: Option<u32>,
         context: Option<GameContextDetails>,
         client_url: Option<ByteArray>,
         renderer_address: Option<ContractAddress>,

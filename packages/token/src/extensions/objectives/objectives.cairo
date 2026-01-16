@@ -12,33 +12,21 @@ pub mod ObjectivesComponent {
     use openzeppelin_introspection::src5::SRC5Component::{
         InternalTrait as SRC5InternalTrait, SRC5Impl,
     };
-    use starknet::storage::{
-        Map, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess,
-    };
     use starknet::{ContractAddress, get_caller_address, get_contract_address};
     use crate::core::interface::{IMinigameTokenDispatcher, IMinigameTokenDispatcherTrait};
-    // use crate::token::TokenComponent;
     use crate::core::traits::OptionalObjectives;
-    use crate::examples::minigame_registry_contract::{
-        IMinigameRegistryDispatcher, IMinigameRegistryDispatcherTrait,
-    };
     use crate::extensions::objectives::interface::{
-        IMINIGAME_TOKEN_OBJECTIVES_ID, IMinigameTokenObjectives, TokenObjective,
+        IMINIGAME_TOKEN_OBJECTIVES_ID, IMinigameTokenObjectives,
     };
-    use crate::interface::{ITokenEventRelayerDispatcher, ITokenEventRelayerDispatcherTrait};
-    use crate::libs::objectives_logic;
+    use crate::interface::{IMinigameRegistryDispatcher, IMinigameRegistryDispatcherTrait};
 
     #[storage]
-    pub struct Storage {
-        token_objectives: Map<u64, Map<u32, TokenObjective>>,
-        token_objectives_count: Map<u64, u32>,
-    }
+    pub struct Storage {}
 
     #[event]
     #[derive(Drop, starknet::Event)]
     pub enum Event {
         ObjectiveCreated: ObjectiveCreated,
-        ObjectiveUpdate: ObjectiveUpdate,
     }
 
     #[derive(Drop, starknet::Event)]
@@ -51,64 +39,10 @@ pub mod ObjectivesComponent {
         pub objective_data: ByteArray,
     }
 
-    #[derive(Drop, starknet::Event)]
-    pub struct ObjectiveUpdate {
-        #[key]
-        pub token_id: u64,
-        #[key]
-        pub objective_id: u32,
-        pub completed: bool,
-    }
-
     #[embeddable_as(ObjectivesImpl)]
     pub impl Objectives<
         TContractState, +HasComponent<TContractState>, +Drop<TContractState>,
     > of IMinigameTokenObjectives<ComponentState<TContractState>> {
-        fn objectives(
-            self: @ComponentState<TContractState>, token_id: u64,
-        ) -> Array<TokenObjective> {
-            let mut objectives = ArrayTrait::new();
-            let count = self.token_objectives_count.entry(token_id).read();
-
-            let mut i = 0;
-            while i < count {
-                let objective = self.token_objectives.entry(token_id).entry(i).read();
-                objectives.append(objective);
-                i += 1;
-            }
-
-            objectives
-        }
-
-        fn objective_ids(self: @ComponentState<TContractState>, token_id: u64) -> Span<u32> {
-            let count = self.token_objectives_count.entry(token_id).read();
-            let mut objective_ids = ArrayTrait::new();
-
-            let mut i = 0;
-            while i < count {
-                let objective = self.token_objectives.entry(token_id).entry(i).read();
-                objective_ids.append(objective.objective_id);
-                i += 1;
-            }
-
-            objective_ids.span()
-        }
-
-        fn all_objectives_completed(self: @ComponentState<TContractState>, token_id: u64) -> bool {
-            // Inline the get_objectives_array logic
-            let total_count = self.token_objectives_count.entry(token_id).read();
-            let mut objectives = array![];
-            let mut index = 0;
-
-            while index < total_count {
-                let objective = self.token_objectives.entry(token_id).entry(index).read();
-                objectives.append(objective);
-                index += 1;
-            }
-
-            objectives_logic::are_all_objectives_completed(objectives.span())
-        }
-
         fn create_objective(
             ref self: ComponentState<TContractState>,
             game_address: ContractAddress,
@@ -120,8 +54,9 @@ pub mod ObjectivesComponent {
             let minigame_dispatcher = IMinigameDispatcher { contract_address: game_address };
             let objectives_address = minigame_dispatcher.objectives_address();
             let objectives_address_display: felt252 = objectives_address.into();
+            let caller = get_caller_address();
             assert!(
-                objectives_address == get_caller_address(),
+                objectives_address == caller,
                 "MinigameTokenObjectives: Objectives address {} not registered by caller",
                 objectives_address_display,
             );
@@ -131,12 +66,15 @@ pub mod ObjectivesComponent {
                 contract_address: get_contract_address(),
             };
             let is_single_game = game_address == minigame_token_dispatcher.game_address();
+            let mut is_multi_game = false;
             let game_registry_address = minigame_token_dispatcher.game_registry_address();
-            let game_registry_dispatcher = IMinigameRegistryDispatcher {
-                contract_address: game_registry_address,
-            };
-            let game_id = game_registry_dispatcher.game_id_from_address(game_address);
-            let is_multi_game = game_id != 0;
+            if !game_registry_address.is_zero() {
+                let game_registry_dispatcher = IMinigameRegistryDispatcher {
+                    contract_address: game_registry_address,
+                };
+                let game_id = game_registry_dispatcher.game_id_from_address(game_address);
+                is_multi_game = game_id != 0;
+            }
             let game_address_display: felt252 = game_address.into();
             assert!(
                 is_single_game || is_multi_game,
@@ -145,26 +83,17 @@ pub mod ObjectivesComponent {
             );
 
             let objective_data_json = create_objectives_json(array![objective_data].span());
-            let event_relayer_address = minigame_token_dispatcher.event_relayer_address();
-            if !event_relayer_address.is_zero() {
-                let event_relayer_dispatcher = ITokenEventRelayerDispatcher {
-                    contract_address: event_relayer_address,
-                };
-                event_relayer_dispatcher
-                    .emit_objective_created(
-                        game_address, creator_address, objective_id, objective_data_json.clone(),
-                    );
-            } else {
-                self
-                    .emit(
-                        ObjectiveCreated {
-                            game_address,
-                            creator_address,
-                            objective_id,
-                            objective_data: objective_data_json.clone(),
-                        },
-                    );
-            }
+
+            // Emit native event
+            self
+                .emit(
+                    ObjectiveCreated {
+                        game_address,
+                        objective_id,
+                        creator_address,
+                        objective_data: objective_data_json,
+                    },
+                );
         }
     }
 
@@ -175,17 +104,18 @@ pub mod ObjectivesComponent {
         impl SRC5: SRC5Component::HasComponent<TContractState>,
         +Drop<TContractState>,
     > of OptionalObjectives<TContractState> {
-        fn validate_objectives(
-            self: @TContractState, game_address: ContractAddress, objective_ids: Span<u32>,
-        ) -> (u32, Span<u32>) {
+        fn validate_objective(
+            self: @TContractState, game_address: ContractAddress, objective_id: u32,
+        ) {
             let objectives_component = HasComponent::get_component(self);
             let mut src5_component = get_dep_component!(objectives_component, SRC5);
             let supports_objectives = src5_component
                 .supports_interface(IMINIGAME_TOKEN_OBJECTIVES_ID);
             assert!(
                 supports_objectives,
-                "MinigameTokenObjectives: Contract does not support IMinigameTokenObjectives",
+                "MinigameTokenObjectives: Contract does not support objectives",
             );
+
             // Get objectives address from game
             let minigame_dispatcher = IMinigameDispatcher { contract_address: game_address };
             let objectives_address = minigame_dispatcher.objectives_address();
@@ -200,112 +130,34 @@ pub mod ObjectivesComponent {
                     "MinigameTokenObjectives: Objectives contract does not support IMinigameObjectives interface",
                 );
 
-                // Validate all objectives exist
+                // Validate objective exists
                 let objectives_dispatcher = IMinigameObjectivesDispatcher {
                     contract_address: objectives_address,
                 };
-                let mut index = 0;
-                loop {
-                    if index >= objective_ids.len() {
-                        break;
-                    }
-                    let objective_id = *objective_ids.at(index);
-                    assert!(
-                        objectives_dispatcher.objective_exists(objective_id),
-                        "MinigameTokenObjectives: Objective ID does not exist",
-                    );
-                    index += 1;
-                }
+                assert!(
+                    objectives_dispatcher.objective_exists(objective_id),
+                    "MinigameTokenObjectives: Objective ID {} does not exist",
+                    objective_id,
+                );
             }
-
-            (objective_ids.len().try_into().unwrap(), objective_ids)
         }
 
-        fn set_token_objectives(
-            ref self: TContractState,
-            token_id: u64,
-            objective_ids: Span<u32>,
-            event_relayer: Option<ITokenEventRelayerDispatcher>,
-        ) {
-            let mut component = HasComponent::get_component_mut(ref self);
-            let mut i = 0;
-            while i < objective_ids.len() {
-                let objective_id = *objective_ids.at(i);
-                let _objective = TokenObjective { objective_id, completed: false };
-
-                component.token_objectives.entry(token_id).entry(i).write(_objective);
-
-                match event_relayer {
-                    Option::Some(relayer) => relayer
-                        .emit_objective_update(token_id, objective_id, false),
-                    Option::None => component
-                        .emit(ObjectiveUpdate { token_id, objective_id, completed: false }),
-                }
-
-                i += 1;
-            }
-
-            component.token_objectives_count.entry(token_id).write(objective_ids.len());
-        }
-
-        fn update_objectives(
-            ref self: TContractState,
-            token_id: u64,
-            game_address: ContractAddress,
-            objectives_count: u32,
-            event_relayer: Option<ITokenEventRelayerDispatcher>,
+        fn is_objective_completed(
+            self: @TContractState, game_address: ContractAddress, token_id: u64, objective_id: u32,
         ) -> bool {
-            let mut component = HasComponent::get_component_mut(ref self);
+            // Get objectives address from game
             let minigame_dispatcher = IMinigameDispatcher { contract_address: game_address };
             let objectives_address = minigame_dispatcher.objectives_address();
-            let game_objectives_dispatcher = IMinigameObjectivesDispatcher {
+
+            if objectives_address.is_zero() {
+                return false;
+            }
+
+            // Call back to minigame objectives to check completion
+            let objectives_dispatcher = IMinigameObjectivesDispatcher {
                 contract_address: objectives_address,
             };
-            let total_count = objectives_count;
-            let mut index = 0;
-            let mut completed_count = 0;
-
-            while index < total_count {
-                let objective: TokenObjective = component
-                    .token_objectives
-                    .entry(token_id)
-                    .entry(index)
-                    .read();
-                let is_objective_completed = game_objectives_dispatcher
-                    .completed_objective(token_id, objective.objective_id);
-                if is_objective_completed && !objective.completed {
-                    component
-                        .token_objectives
-                        .entry(token_id)
-                        .entry(index)
-                        .write(
-                            TokenObjective {
-                                objective_id: objective.objective_id, completed: true,
-                            },
-                        );
-
-                    match event_relayer {
-                        Option::Some(relayer) => relayer
-                            .emit_objective_update(token_id, objective.objective_id, true),
-                        Option::None => component
-                            .emit(
-                                ObjectiveUpdate {
-                                    token_id, objective_id: objective.objective_id, completed: true,
-                                },
-                            ),
-                    }
-
-                    completed_count += 1;
-                }
-                index += 1;
-            }
-            completed_count == total_count
-        }
-
-        fn are_objectives_completed(self: @TContractState, token_id: u64) -> bool {
-            let component = HasComponent::get_component(self);
-            let objectives = component.get_objectives_array(token_id);
-            objectives_logic::are_all_objectives_completed(objectives.span())
+            objectives_dispatcher.completed_objective(token_id, objective_id)
         }
     }
 
@@ -319,31 +171,6 @@ pub mod ObjectivesComponent {
         fn initializer(ref self: ComponentState<TContractState>) {
             let mut src5_component = get_dep_component_mut!(ref self, SRC5);
             src5_component.register_interface(IMINIGAME_TOKEN_OBJECTIVES_ID);
-        }
-
-        fn set_objective(
-            ref self: ComponentState<TContractState>,
-            token_id: u64,
-            objective_index: u32,
-            objective: TokenObjective,
-        ) {
-            self.token_objectives.entry(token_id).entry(objective_index).write(objective);
-        }
-
-        fn get_objectives_array(
-            self: @ComponentState<TContractState>, token_id: u64,
-        ) -> Array<TokenObjective> {
-            let total_count = self.token_objectives_count.entry(token_id).read();
-            let mut objectives = array![];
-            let mut index = 0;
-
-            while index < total_count {
-                let objective = self.token_objectives.entry(token_id).entry(index).read();
-                objectives.append(objective);
-                index += 1;
-            }
-
-            objectives
         }
     }
 }

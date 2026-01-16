@@ -11,11 +11,10 @@ pub trait IMinigameToken<TState> {
     fn is_playable(self: @TState, token_id: u64) -> bool;
     fn settings_id(self: @TState, token_id: u64) -> u32;
     fn player_name(self: @TState, token_id: u64) -> felt252;
-    fn objectives_count(self: @TState, token_id: u64) -> u32;
+    fn objective_id(self: @TState, token_id: u64) -> u32;
     fn minted_by(self: @TState, token_id: u64) -> u64;
     fn game_address(self: @TState) -> ContractAddress;
     fn game_registry_address(self: @TState) -> ContractAddress;
-    fn event_relayer_address(self: @TState) -> ContractAddress;
     fn is_soulbound(self: @TState, token_id: u64) -> bool;
     fn renderer_address(self: @TState, token_id: u64) -> ContractAddress;
     fn token_game_address(self: @TState, token_id: u64) -> ContractAddress;
@@ -27,7 +26,7 @@ pub trait IMinigameToken<TState> {
         settings_id: Option<u32>,
         start: Option<u64>,
         end: Option<u64>,
-        objective_ids: Option<Span<u32>>,
+        objective_id: Option<u32>,
         context: Option<GameContextDetails>,
         client_url: Option<ByteArray>,
         renderer_address: Option<ContractAddress>,
@@ -41,7 +40,7 @@ pub trait IMinigameToken<TState> {
         settings_id: Option<u32>,
         start: Option<u64>,
         end: Option<u64>,
-        objective_ids: Option<Span<u32>>,
+        objective_id: Option<u32>,
         context: Option<GameContextDetails>,
         client_url: Option<ByteArray>,
         renderer_address: Option<ContractAddress>,
@@ -57,7 +56,7 @@ pub trait IMinigameToken<TState> {
         settings_id: Option<u32>,
         start: Option<u64>,
         end: Option<u64>,
-        objective_ids: Option<Span<u32>>,
+        objective_id: Option<u32>,
         context: Option<GameContextDetails>,
     );
     fn update_game(ref self: TState, token_id: u64);

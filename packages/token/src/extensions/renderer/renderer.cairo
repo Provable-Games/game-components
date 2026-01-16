@@ -16,7 +16,6 @@ pub mod RendererComponent {
     use crate::extensions::renderer::interface::{
         IMINIGAME_TOKEN_RENDERER_ID, IMinigameTokenRenderer,
     };
-    use crate::interface::{ITokenEventRelayerDispatcher, ITokenEventRelayerDispatcherTrait};
     use crate::libs::address_utils;
 
     #[storage]
@@ -32,8 +31,9 @@ pub mod RendererComponent {
 
     #[derive(Drop, starknet::Event)]
     pub struct TokenRendererUpdate {
-        token_id: u64,
-        renderer: ContractAddress,
+        #[key]
+        pub token_id: u64,
+        pub renderer: ContractAddress,
     }
 
     #[embeddable_as(RendererImpl)]
@@ -59,17 +59,8 @@ pub mod RendererComponent {
             let zero_address: ContractAddress = 0.try_into().unwrap();
             self.token_renderers.entry(token_id).write(zero_address);
 
-            let minigame_token_dispatcher = IMinigameTokenDispatcher { contract_address };
-            let event_relayer_address = minigame_token_dispatcher.event_relayer_address();
-
-            if !event_relayer_address.is_zero() {
-                let relayer = ITokenEventRelayerDispatcher {
-                    contract_address: event_relayer_address,
-                };
-                relayer.emit_token_renderer_update(token_id, zero_address);
-            } else {
-                self.emit(TokenRendererUpdate { token_id, renderer: zero_address });
-            }
+            // Emit native event
+            self.emit(TokenRendererUpdate { token_id, renderer: zero_address });
         }
     }
 
@@ -83,19 +74,12 @@ pub mod RendererComponent {
             address_utils::address_to_option(renderer)
         }
 
-        fn set_token_renderer(
-            ref self: TContractState,
-            token_id: u64,
-            renderer: ContractAddress,
-            event_relayer: Option<ITokenEventRelayerDispatcher>,
-        ) {
+        fn set_token_renderer(ref self: TContractState, token_id: u64, renderer: ContractAddress) {
             let mut component = HasComponent::get_component_mut(ref self);
             component.token_renderers.entry(token_id).write(renderer);
 
-            match event_relayer {
-                Option::Some(relayer) => relayer.emit_token_renderer_update(token_id, renderer),
-                Option::None => component.emit(TokenRendererUpdate { token_id, renderer }),
-            }
+            // Emit native event
+            component.emit(TokenRendererUpdate { token_id, renderer });
         }
     }
 
