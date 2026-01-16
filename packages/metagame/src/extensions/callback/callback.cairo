@@ -39,7 +39,7 @@ pub mod MetagameCallbackComponent {
 
         /// Called when all objectives are completed.
         /// @param token_id The token ID (packed u256)
-        fn on_objectives_completed(ref self: TContractState, token_id: u256);
+        fn on_objective_complete(ref self: TContractState, token_id: u256);
     }
 
     // ==========================================================================
@@ -67,9 +67,9 @@ pub mod MetagameCallbackComponent {
             MetagameCallbackHooksTrait::on_game_over(ref contract, token_id, final_score);
         }
 
-        fn on_objectives_completed(ref self: ComponentState<TContractState>, token_id: u256) {
+        fn on_objective_complete(ref self: ComponentState<TContractState>, token_id: u256) {
             let mut contract = self.get_contract_mut();
-            MetagameCallbackHooksTrait::on_objectives_completed(ref contract, token_id);
+            MetagameCallbackHooksTrait::on_objective_complete(ref contract, token_id);
         }
     }
 
@@ -108,6 +108,6 @@ pub impl MetagameCallbackHooksEmptyImpl<
     fn on_game_over(ref self: TContractState, token_id: u256, final_score: u32) {// No-op: contracts can override for custom game over handling
     }
 
-    fn on_objectives_completed(ref self: TContractState, token_id: u256) {// No-op: contracts can override for custom objectives handling
+    fn on_objective_complete(ref self: TContractState, token_id: u256) {// No-op: contracts can override for custom objectives handling
     }
 }

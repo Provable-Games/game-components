@@ -477,7 +477,7 @@ pub mod CoreTokenComponent {
 
             // Track state transitions for callbacks
             let game_over_transition = final_game_over && !token_metadata.game_over;
-            let objectives_completed_transition = final_completed_objective
+            let objective_complete_transition = final_completed_objective
                 && !token_metadata.completed_objective;
 
             // Update metadata if game state changed
@@ -587,9 +587,9 @@ pub mod CoreTokenComponent {
                         callback.on_game_over(token_id.into(), score);
                     }
 
-                    // Notify objectives completed if transitioned
-                    if objectives_completed_transition {
-                        callback.on_objectives_completed(token_id.into());
+                    // Notify objective complete if transitioned
+                    if objective_complete_transition {
+                        callback.on_objective_complete(token_id.into());
                     }
                 }
             }

@@ -6,7 +6,7 @@
 // completed). This enables tournament score aggregation without manual sync.
 
 /// Interface ID for IMetagameCallback (SRC5 compliant)
-/// Computed as: H(on_score_update) XOR H(on_game_over) XOR H(on_objectives_completed)
+/// Computed as: H(on_score_update) XOR H(on_game_over) XOR H(on_objective_complete)
 pub const IMETAGAME_CALLBACK_ID: felt252 =
     0x04d4f4758b99dcb4f1e2dc37c3a6e8c7a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6;
 
@@ -23,7 +23,7 @@ pub trait IMetagameCallback<TState> {
     /// @param final_score The final score when game ended
     fn on_game_over(ref self: TState, token_id: u256, final_score: u32);
 
-    /// Called when all objectives are completed
+    /// Called when the objective is completed
     /// @param token_id The token ID (packed u256)
-    fn on_objectives_completed(ref self: TState, token_id: u256);
+    fn on_objective_complete(ref self: TState, token_id: u256);
 }
