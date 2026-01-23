@@ -32,11 +32,7 @@ fn test_fuzz_mint_parameters() {
 
     let minigame_contract = declare("MockMinigame").unwrap().contract_class();
     let (minigame_address, _) = minigame_contract
-        .deploy(
-            @array![
-                token_address.into(), 0, 0,
-            ],
-        )
+        .deploy(@array![token_address.into(), 0, 0])
         .unwrap();
 
     let metagame_contract = declare("MockMetagame").unwrap().contract_class();
@@ -96,11 +92,7 @@ fn test_fuzz_player_names() {
 
     let minigame_contract = declare("MockMinigame").unwrap().contract_class();
     let (minigame_address, _) = minigame_contract
-        .deploy(
-            @array![
-                token_address.into(), 0, 0,
-            ],
-        )
+        .deploy(@array![token_address.into(), 0, 0])
         .unwrap();
 
     let metagame_contract = declare("MockMetagame").unwrap().contract_class();
@@ -165,11 +157,7 @@ fn test_property_token_id_monotonicity() {
 
     let minigame_contract = declare("MockMinigame").unwrap().contract_class();
     let (minigame_address, _) = minigame_contract
-        .deploy(
-            @array![
-                token_address.into(), 0, 0,
-            ],
-        )
+        .deploy(@array![token_address.into(), 0, 0])
         .unwrap();
 
     let metagame_contract = declare("MockMetagame").unwrap().contract_class();

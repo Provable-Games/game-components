@@ -10,7 +10,7 @@ use game_components_minigame::interface::{
 use game_components_tests::minigame::mocks::minigame_starknet_mock::IMinigameStarknetMockDispatcherTrait;
 use game_components_token::interface::IMinigameTokenMixinDispatcherTrait;
 use openzeppelin_interfaces::erc721::ERC721ABIDispatcherTrait;
-use snforge_std::{start_cheat_block_timestamp, stop_cheat_block_timestamp};
+use snforge_std::{mock_call, start_cheat_block_timestamp, stop_cheat_block_timestamp};
 // Import setup helpers
 use super::setup::{setup};
 
@@ -395,10 +395,17 @@ fn test_objective_id_persistence_fuzz(objective_id_input: u32) {
     // Use modulo to keep objective_id reasonable
     let objective_id = objective_id_input % 1000;
 
+    // Need to provide game_address for objective_id to be stored (blank tokens ignore objective_id)
+    let game_address = test_contracts.minigame.contract_address;
+
+    // Mock objective_exists to return true - the mock minigame uses itself as objectives_address
+    // but doesn't actually track objectives, so we need to mock this validation
+    mock_call(game_address, selector!("objective_exists"), true, 1);
+
     let token_id = test_contracts
         .test_token
         .mint(
-            Option::None,
+            Option::Some(game_address),
             Option::None,
             Option::None,
             Option::None,

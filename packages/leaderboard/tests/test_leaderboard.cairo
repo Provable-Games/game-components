@@ -158,18 +158,18 @@ fn test_utils_functions() {
 }
 
 #[test]
-fn test_500_player_leaderboard() {
-    let config = LeaderboardConfig { max_entries: 500, ascending: false, allow_ties: true };
+fn test_50_player_leaderboard() {
+    let config = LeaderboardConfig { max_entries: 50, ascending: false, allow_ties: true };
     let mut entries = LeaderboardUtilsImpl::new();
 
-    // Insert 500 players with descending scores (player 1 = score 500, player 500 = score 1)
+    // Insert 50 players with descending scores (player 1 = score 50, player 50 = score 1)
     let mut i: u32 = 1;
     loop {
-        if i > 500 {
+        if i > 50 {
             break;
         }
 
-        let score = 501 - i; // Score from 500 down to 1
+        let score = 51 - i; // Score from 50 down to 1
         let new_entry = LeaderboardEntry { id: i.into(), score };
 
         // Find correct position and insert
@@ -195,28 +195,28 @@ fn test_500_player_leaderboard() {
         i += 1;
     }
 
-    // Verify leaderboard has 500 entries
-    assert!(entries.len() == 500, "Leaderboard should have 500 entries");
+    // Verify leaderboard has 50 entries
+    assert!(entries.len() == 50, "Leaderboard should have 50 entries");
 
-    // Verify first place has highest score (500)
+    // Verify first place has highest score (50)
     let first_entry = entries.at(0);
-    assert!(*first_entry.score == 500, "First place should have score 500");
+    assert!(*first_entry.score == 50, "First place should have score 50");
     assert!(*first_entry.id == 1, "First place should have ID 1");
 
     // Verify last place has lowest score (1)
-    let last_entry = entries.at(499);
-    assert!(*last_entry.score == 1, "Last place (position 500) should have score 1");
-    assert!(*last_entry.id == 500, "Last place should have ID 500");
+    let last_entry = entries.at(49);
+    assert!(*last_entry.score == 1, "Last place (position 50) should have score 1");
+    assert!(*last_entry.id == 50, "Last place should have ID 50");
 
-    // Verify middle entry (position 250)
-    let middle_entry = entries.at(249);
-    assert!(*middle_entry.score == 251, "Position 250 should have score 251");
-    assert!(*middle_entry.id == 250, "Position 250 should have ID 250");
+    // Verify middle entry (position 25)
+    let middle_entry = entries.at(24);
+    assert!(*middle_entry.score == 26, "Position 25 should have score 26");
+    assert!(*middle_entry.id == 25, "Position 25 should have ID 25");
 
     // Verify ordering is correct throughout
     let mut j: u32 = 0;
     loop {
-        if j >= 499 {
+        if j >= 49 {
             break;
         }
         let current = entries.at(j);

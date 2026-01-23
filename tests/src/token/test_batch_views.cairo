@@ -820,7 +820,7 @@ fn test_update_player_name_batch_empty_panics() {
 fn test_update_player_name_batch_multiple() {
     let test_contracts = setup();
 
-    // Mint tokens first
+    // Mint both tokens to ALICE so she can update them in batch
     let token_id1 = test_contracts
         .test_token
         .mint(
@@ -849,7 +849,7 @@ fn test_update_player_name_batch_multiple() {
             Option::None,
             Option::None,
             Option::None,
-            BOB(),
+            ALICE(), // Changed from BOB() to ALICE() so same owner can update batch
             false,
         );
 
@@ -857,12 +857,14 @@ fn test_update_player_name_batch_multiple() {
     assert!(test_contracts.test_token.player_name(token_id1) == 'OldName1', "Initial name 1");
     assert!(test_contracts.test_token.player_name(token_id2) == 'OldName2', "Initial name 2");
 
-    // Update names in batch
+    // Update names in batch - ALICE is the owner and caller
+    snforge_std::start_cheat_caller_address(test_contracts.test_token.contract_address, ALICE());
     let updates: Array<PlayerNameUpdate> = array![
         PlayerNameUpdate { token_id: token_id1, name: 'NewName1' },
         PlayerNameUpdate { token_id: token_id2, name: 'NewName2' },
     ];
     test_contracts.test_token.update_player_name_batch(updates.span());
+    snforge_std::stop_cheat_caller_address(test_contracts.test_token.contract_address);
 
     // Verify new names
     assert!(test_contracts.test_token.player_name(token_id1) == 'NewName1', "Updated name 1");

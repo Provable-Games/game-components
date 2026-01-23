@@ -12,8 +12,8 @@ use snforge_std::{
     CheatSpan, cheat_caller_address, start_cheat_block_timestamp, stop_cheat_block_timestamp,
 };
 use crate::token::setup::{
-    ALICE, BOB, CHARLIE, deploy_basic_mock_game, deploy_optimized_token_with_game, setup,
-    setup_multi_game,
+    ALICE, BOB, CHARLIE, MAX_LIFECYCLE_TIMESTAMP, deploy_basic_mock_game,
+    deploy_optimized_token_with_game, setup, setup_multi_game,
 };
 
 #[test]
@@ -21,7 +21,8 @@ fn test_core_token_edge_case_minting() {
     let test_contracts = setup();
 
     // Test minting with max values
-    let max_u64 = 18446744073709551615_u64;
+    // Note: TokenMetadata uses 35-bit packing for lifecycle timestamps
+    // MAX_LIFECYCLE_TIMESTAMP = 2^35 - 1 = 34359738367
 
     // This should work with max timestamps
     let token_id = test_contracts
@@ -31,7 +32,7 @@ fn test_core_token_edge_case_minting() {
             Option::Some('MaxPlayer'),
             Option::None,
             Option::Some(0),
-            Option::Some(max_u64),
+            Option::Some(MAX_LIFECYCLE_TIMESTAMP),
             Option::None,
             Option::None,
             Option::None,
@@ -41,7 +42,7 @@ fn test_core_token_edge_case_minting() {
         );
 
     let metadata = test_contracts.test_token.token_metadata(token_id);
-    assert!(metadata.lifecycle.end == max_u64, "Max end time should be set");
+    assert!(metadata.lifecycle.end == MAX_LIFECYCLE_TIMESTAMP, "Max end time should be set");
 }
 
 #[test]

@@ -1,6 +1,5 @@
 #[starknet::component]
 pub mod RendererComponent {
-    use core::num::traits::Zero;
     use openzeppelin_interfaces::erc721::{IERC721Dispatcher, IERC721DispatcherTrait};
     use openzeppelin_introspection::src5::SRC5Component;
     use openzeppelin_introspection::src5::SRC5Component::{
@@ -11,7 +10,6 @@ pub mod RendererComponent {
         Map, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess,
     };
     use starknet::{ContractAddress, get_caller_address, get_contract_address};
-    use crate::core::interface::{IMinigameTokenDispatcher, IMinigameTokenDispatcherTrait};
     use crate::core::traits::OptionalRenderer;
     use crate::extensions::renderer::interface::{
         IMINIGAME_TOKEN_RENDERER_ID, IMinigameTokenRenderer,

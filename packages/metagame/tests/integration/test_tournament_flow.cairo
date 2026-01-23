@@ -33,29 +33,11 @@ fn test_tournament_flow() {
 
     // 4. Deploy 3 different games
     let game1 = declare("MockMinigame").unwrap().contract_class();
-    let (game1_address, _) = game1
-        .deploy(
-            @array![
-                token_address.into(), 0, 0,
-            ],
-        )
-        .unwrap();
+    let (game1_address, _) = game1.deploy(@array![token_address.into(), 0, 0]).unwrap();
 
-    let (game2_address, _) = game1
-        .deploy(
-            @array![
-                token_address.into(), 0, 0,
-            ],
-        )
-        .unwrap();
+    let (game2_address, _) = game1.deploy(@array![token_address.into(), 0, 0]).unwrap();
 
-    let (game3_address, _) = game1
-        .deploy(
-            @array![
-                token_address.into(), 0, 0,
-            ],
-        )
-        .unwrap();
+    let (game3_address, _) = game1.deploy(@array![token_address.into(), 0, 0]).unwrap();
 
     // 5. Game registration is no longer needed with the new architecture
     // Games are associated with tokens at mint time via game_address parameter
@@ -197,12 +179,14 @@ fn test_tournament_flow() {
     token_dispatcher.update_game(p2_g2_token);
     token_dispatcher.update_game(p2_g3_token);
 
-    // 12. Verify game isolation
+    // 12. Verify token metadata exists (game_id is 0 for single-game tokens in new architecture)
+    // Note: game_id is only non-zero for multi-game tokens registered with a registry
     let p1_g1_metadata = token_dispatcher.token_metadata(p1_g1_token);
     let p2_g3_metadata = token_dispatcher.token_metadata(p2_g3_token);
 
-    assert!(p1_g1_metadata.game_id == 1, "P1 G1 should be game 1");
-    assert!(p2_g3_metadata.game_id == 3, "P2 G3 should be game 3");
+    // Verify tokens were created (game_id=0 for single-game architecture)
+    assert!(p1_g1_metadata.game_id == 0, "Single-game tokens have game_id 0");
+    assert!(p2_g3_metadata.game_id == 0, "Single-game tokens have game_id 0");
 
     // 13. Verify context consistency across all tokens
     let context_details_dispatcher = IMetagameContextDetailsDispatcher {

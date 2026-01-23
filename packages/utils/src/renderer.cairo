@@ -355,9 +355,7 @@ mod tests {
             context_details,
             token_metadata,
             95000,
-            0x065d2AB17338b5AffdEbAF95E2D79834B5f30Bac596fF55563c62C3c98700150
-                .try_into()
-                .unwrap(),
+            0x065d2AB17338b5AffdEbAF95E2D79834B5f30Bac596fF55563c62C3c98700150.try_into().unwrap(),
             'ProGamer2024',
             objective_ids,
         );
@@ -415,9 +413,7 @@ mod tests {
             context_details,
             token_metadata,
             1200,
-            0x065d2AB17338b5AffdEbAF95E2D79834B5f30Bac596fF55563c62C3c98700150
-                .try_into()
-                .unwrap(),
+            0x065d2AB17338b5AffdEbAF95E2D79834B5f30Bac596fF55563c62C3c98700150.try_into().unwrap(),
             0, // No player name
             [].span() // No objectives
         );
@@ -479,9 +475,7 @@ mod tests {
             context_details,
             token_metadata,
             7500,
-            0x065d2AB17338b5AffdEbAF95E2D79834B5f30Bac596fF55563c62C3c98700150
-                .try_into()
-                .unwrap(),
+            0x065d2AB17338b5AffdEbAF95E2D79834B5f30Bac596fF55563c62C3c98700150.try_into().unwrap(),
             'CasualPlayer',
             array![10, 20].span(),
         );
@@ -555,9 +549,7 @@ mod tests {
             context_details,
             token_metadata,
             85000,
-            0x065d2AB17338b5AffdEbAF95E2D79834B5f30Bac596fF55563c62C3c98700150
-                .try_into()
-                .unwrap(),
+            0x065d2AB17338b5AffdEbAF95E2D79834B5f30Bac596fF55563c62C3c98700150.try_into().unwrap(),
             'AdventureSeeker',
             array![100].span() // Single objective
         );

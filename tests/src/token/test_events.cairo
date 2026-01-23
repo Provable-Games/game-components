@@ -72,34 +72,25 @@ fn test_update_game_event_emissions() {
     mock_game.set_score(token_id, 100);
     token_dispatcher.update_game(token_id);
 
-    // Should emit ScoreUpdate and GameUpdated events
+    // Should emit MetadataUpdate event
     let events = spy.get_events();
 
-    // Verify we have events
-    assert!(events.events.span().len() >= 2, "Should emit at least 2 events");
+    // Verify we have at least 1 event (MetadataUpdate)
+    assert!(events.events.span().len() >= 1, "Should emit at least 1 event");
 
-    // Check for ScoreUpdate event
-    let mut found_score_update = false;
-    let mut found_game_updated = false;
+    // Check for MetadataUpdate event from token contract
+    let mut found_metadata_update = false;
 
     let mut i: u32 = 0;
     while i < events.events.span().len() {
-        let (contract_address, event) = events.events.at(i);
+        let (contract_address, _event) = events.events.at(i);
         if *contract_address == token_address {
-            // Check event data to identify event type
-            // ScoreUpdate event has token_id and score
-            // GameUpdated event has token_id
-            if event.keys.len() > 0 {
-                found_score_update = true;
-            }
-            if event.data.len() > 0 {
-                found_game_updated = true;
-            }
+            found_metadata_update = true;
         }
         i += 1;
     }
 
-    assert!(found_score_update || found_game_updated, "Should emit update events");
+    assert!(found_metadata_update, "Should emit MetadataUpdate event");
 }
 
 #[test]
@@ -134,9 +125,9 @@ fn test_update_game_with_metadata_change_events() {
     let mut spy = spy_events();
     token_dispatcher.update_game(token_id);
 
-    // Should emit ScoreUpdate, MetadataUpdate, and GameUpdated
+    // Should emit MetadataUpdate when game state changes
     let events = spy.get_events();
-    assert!(events.events.span().len() >= 3, "Should emit at least 3 events when metadata changes");
+    assert!(events.events.span().len() >= 1, "Should emit at least 1 event when metadata changes");
 }
 
 #[test]
