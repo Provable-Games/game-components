@@ -11,9 +11,9 @@
 /// - No admin/owner after deployment (fully autonomous)
 #[starknet::contract]
 pub mod StreamToken {
+    use game_components_interfaces::tokenomics::stream::{DistributionOrder, LiquidityConfig};
     use openzeppelin_token::erc20::{ERC20Component, ERC20HooksEmptyImpl};
     use starknet::ContractAddress;
-    use crate::stream::interface::{DistributionOrder, LiquidityConfig};
     use crate::stream::stream::StreamComponent;
 
     // Embed components

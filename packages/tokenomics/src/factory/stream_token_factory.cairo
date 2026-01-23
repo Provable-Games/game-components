@@ -16,6 +16,10 @@
 pub mod StreamTokenFactory {
     use core::num::traits::Zero;
     use ekubo::interfaces::positions::IPositionsDispatcher;
+    use game_components_interfaces::tokenomics::stream::{
+        CreateTokenParams, IStreamTokenFactory, IStreamTokenFactoryAdmin,
+        IStreamTokenSetupDispatcher, IStreamTokenSetupDispatcherTrait,
+    };
     use openzeppelin_access::ownable::OwnableComponent;
     use openzeppelin_interfaces::token::erc20::{IERC20Dispatcher, IERC20DispatcherTrait};
     use starknet::storage::{
@@ -25,10 +29,6 @@ pub mod StreamTokenFactory {
     use starknet::syscalls::deploy_syscall;
     use starknet::{ClassHash, ContractAddress, get_caller_address, get_contract_address};
     use crate::constants::{ERC20_UNIT, Errors};
-    use crate::stream::interface::{
-        CreateTokenParams, IStreamTokenFactory, IStreamTokenFactoryAdmin,
-        IStreamTokenSetupDispatcher, IStreamTokenSetupDispatcherTrait,
-    };
 
     // Embed Ownable component for admin functions
     component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);

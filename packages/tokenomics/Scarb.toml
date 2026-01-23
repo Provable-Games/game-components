@@ -9,6 +9,7 @@ openzeppelin_access.workspace = true
 openzeppelin_token.workspace = true
 openzeppelin_interfaces.workspace = true
 ekubo.workspace = true
+game_components_interfaces = { path = "../interfaces" }
 
 [dev-dependencies]
 snforge_std.workspace = true

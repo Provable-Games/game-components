@@ -1,8 +1,8 @@
 /// Stream module re-exports
-pub mod interface;
 pub mod stream;
 
-pub use interface::{
+// Re-export interfaces from game_components_interfaces
+pub use game_components_interfaces::tokenomics::stream::{
     CreateTokenParams, DistributionOrder, IStreamToken, IStreamTokenDispatcher,
     IStreamTokenDispatcherTrait, IStreamTokenFactory, IStreamTokenFactoryAdmin,
     IStreamTokenFactoryAdminDispatcher, IStreamTokenFactoryAdminDispatcherTrait,
@@ -10,4 +10,5 @@ pub use interface::{
     IStreamTokenSetupDispatcher, IStreamTokenSetupDispatcherTrait, LiquidityConfig,
     StoredDistributionOrder,
 };
+
 pub use stream::StreamComponent;

@@ -1,9 +1,10 @@
 /// Buyback module re-exports
 pub mod buyback;
-pub mod interface;
 
 pub use buyback::BuybackComponent;
-pub use interface::{
+
+// Re-export interfaces from game_components_interfaces
+pub use game_components_interfaces::tokenomics::buyback::{
     BuybackParams, GlobalBuybackConfig, IBuyback, IBuybackAdmin, IBuybackAdminDispatcher,
     IBuybackAdminDispatcherTrait, IBuybackDispatcher, IBuybackDispatcherTrait, OrderInfo,
     PackedOrderInfo, TokenBuybackConfig,

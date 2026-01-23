@@ -20,15 +20,15 @@ pub mod BuybackComponent {
     use core::num::traits::Zero;
     use ekubo::interfaces::extensions::twamm::OrderKey;
     use ekubo::interfaces::positions::{IPositionsDispatcher, IPositionsDispatcherTrait};
+    use game_components_interfaces::tokenomics::buyback::{
+        BuybackParams, GlobalBuybackConfig, OrderInfo, PackedOrderInfo, TokenBuybackConfig,
+    };
     use openzeppelin_interfaces::token::erc20::{IERC20Dispatcher, IERC20DispatcherTrait};
     use starknet::storage::{
         Map, StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess,
         StoragePointerWriteAccess,
     };
     use starknet::{ContractAddress, get_block_timestamp, get_contract_address};
-    use crate::buyback::interface::{
-        BuybackParams, GlobalBuybackConfig, OrderInfo, PackedOrderInfo, TokenBuybackConfig,
-    };
     use crate::constants::Errors;
 
     /// Storage for the Buyback component
@@ -126,7 +126,7 @@ pub mod BuybackComponent {
     #[embeddable_as(BuybackImpl)]
     impl Buyback<
         TContractState, +HasComponent<TContractState>, +Drop<TContractState>,
-    > of crate::buyback::interface::IBuyback<ComponentState<TContractState>> {
+    > of game_components_interfaces::tokenomics::buyback::IBuyback<ComponentState<TContractState>> {
         /// Execute a buyback using all tokens of `sell_token` in the contract
         fn buy_back(ref self: ComponentState<TContractState>, params: BuybackParams) {
             let config = self._get_effective_config(params.sell_token);

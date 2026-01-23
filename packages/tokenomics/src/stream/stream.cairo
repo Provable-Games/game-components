@@ -21,6 +21,9 @@ pub mod StreamComponent {
     use ekubo::lens::token_registry::{ITokenRegistryDispatcher, ITokenRegistryDispatcherTrait};
     use ekubo::types::i129::i129;
     use ekubo::types::keys::PoolKey;
+    use game_components_interfaces::tokenomics::stream::{
+        DistributionOrder, LiquidityConfig, StoredDistributionOrder,
+    };
     use openzeppelin_token::erc20::ERC20Component;
     use starknet::storage::{
         Map, StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess,
@@ -28,7 +31,6 @@ pub mod StreamComponent {
     };
     use starknet::{ContractAddress, get_caller_address, get_contract_address};
     use crate::constants::{Errors, TWAMM_BOUNDS, TWAMM_TICK_SPACING};
-    use crate::stream::interface::{DistributionOrder, LiquidityConfig, StoredDistributionOrder};
 
     /// Storage for the Stream component
     /// All storage keys are prefixed with `Stream_` to avoid collisions
@@ -121,7 +123,9 @@ pub mod StreamComponent {
         +Drop<TContractState>,
         impl ERC20: ERC20Component::HasComponent<TContractState>,
         +ERC20Component::ERC20HooksTrait<TContractState>,
-    > of crate::stream::interface::IStreamToken<ComponentState<TContractState>> {
+    > of game_components_interfaces::tokenomics::stream::IStreamToken<
+        ComponentState<TContractState>,
+    > {
         fn burn(ref self: ComponentState<TContractState>, amount: u256) {
             let mut contract = self.get_contract_mut();
             let mut erc20_component = ERC20::get_component_mut(ref contract);
@@ -234,7 +238,9 @@ pub mod StreamComponent {
         +HasComponent<TContractState>,
         +Drop<TContractState>,
         impl ERC20: ERC20Component::HasComponent<TContractState>,
-    > of crate::stream::interface::IStreamTokenSetup<ComponentState<TContractState>> {
+    > of game_components_interfaces::tokenomics::stream::IStreamTokenSetup<
+        ComponentState<TContractState>,
+    > {
         fn provide_initial_liquidity(
             ref self: ComponentState<TContractState>,
         ) -> (u64, u128, u256, u256) {

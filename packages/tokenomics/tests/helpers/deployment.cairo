@@ -1,7 +1,6 @@
 use ekubo::types::i129::i129;
-use game_components_tokenomics::GlobalBuybackConfig;
-use game_components_tokenomics::stream::interface::{
-    DistributionOrder, IStreamTokenDispatcher, LiquidityConfig,
+use game_components_tokenomics::{
+    DistributionOrder, GlobalBuybackConfig, IStreamTokenDispatcher, LiquidityConfig,
 };
 use openzeppelin_interfaces::erc20::IERC20Dispatcher;
 use snforge_std::{ContractClassTrait, DeclareResultTrait, declare};

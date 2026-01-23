@@ -20,10 +20,12 @@
 /// each sell token with appropriate timing constraints and fees.
 #[starknet::contract]
 pub mod AutonomousBuyback {
+    use game_components_interfaces::tokenomics::buyback::{
+        GlobalBuybackConfig, IBuybackAdmin, TokenBuybackConfig,
+    };
     use openzeppelin_access::ownable::OwnableComponent;
     use starknet::ContractAddress;
     use crate::buyback::buyback::BuybackComponent;
-    use crate::buyback::interface::{GlobalBuybackConfig, IBuybackAdmin, TokenBuybackConfig};
 
     // Embed components
     component!(path: BuybackComponent, storage: buyback, event: BuybackEvent);

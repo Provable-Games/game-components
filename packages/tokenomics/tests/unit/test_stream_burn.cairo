@@ -8,7 +8,7 @@
 /// - Allowance is correctly deducted after burn_from
 /// - Transfer event is emitted correctly (to zero address)
 
-use game_components_tokenomics::stream::interface::IStreamTokenDispatcherTrait;
+use game_components_tokenomics::IStreamTokenDispatcherTrait;
 use openzeppelin_interfaces::erc20::{IERC20Dispatcher, IERC20DispatcherTrait};
 use openzeppelin_token::erc20::ERC20Component;
 use snforge_std::{
