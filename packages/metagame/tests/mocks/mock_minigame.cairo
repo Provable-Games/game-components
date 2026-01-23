@@ -1,4 +1,6 @@
+use game_components_metagame::extensions::context::structs::GameContextDetails;
 use game_components_minigame::interface::{IMINIGAME_ID, IMinigame, IMinigameTokenData};
+use game_components_minigame::structs::MintGameParams;
 use openzeppelin_interfaces::introspection::ISRC5;
 use starknet::ContractAddress;
 
@@ -54,6 +56,39 @@ pub mod MockMinigame {
 
         fn objectives_address(self: @ContractState) -> ContractAddress {
             self.objectives_address.read()
+        }
+
+        fn mint_game(
+            self: @ContractState,
+            player_name: Option<felt252>,
+            settings_id: Option<u32>,
+            start: Option<u64>,
+            end: Option<u64>,
+            objective_id: Option<u32>,
+            context: Option<GameContextDetails>,
+            client_url: Option<ByteArray>,
+            renderer_address: Option<ContractAddress>,
+            to: ContractAddress,
+            soulbound: bool,
+        ) -> u64 {
+            // Mock implementation - just return a token ID
+            1
+        }
+
+        fn mint_game_batch(self: @ContractState, mints: Array<MintGameParams>) -> Array<u64> {
+            // Mock implementation - return sequential IDs
+            let mut results = array![];
+            let mut i: u64 = 1;
+            let mut index = 0;
+            loop {
+                if index >= mints.len() {
+                    break;
+                }
+                results.append(i);
+                i += 1;
+                index += 1;
+            }
+            results
         }
     }
 

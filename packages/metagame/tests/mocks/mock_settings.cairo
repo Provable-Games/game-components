@@ -1,5 +1,5 @@
 use game_components_minigame::extensions::settings::interface::{
-    IMINIGAME_SETTINGS_ID, IMinigameSettings, IMinigameSettingsSVG,
+    IMINIGAME_SETTINGS_ID, IMinigameSettings, IMinigameSettingsDetails, IMinigameSettingsSVG,
 };
 use game_components_minigame::extensions::settings::structs::{GameSetting, GameSettingDetails};
 use openzeppelin_interfaces::introspection::ISRC5;
@@ -29,7 +29,23 @@ pub mod MockSettings {
             self.settings_exists.read(settings_id)
         }
 
-        fn settings(self: @ContractState, settings_id: u32) -> GameSettingDetails {
+        fn settings_exist_batch(self: @ContractState, settings_ids: Span<u32>) -> Array<bool> {
+            let mut results = array![];
+            let mut i = 0;
+            loop {
+                if i >= settings_ids.len() {
+                    break;
+                }
+                results.append(self.settings_exist(*settings_ids.at(i)));
+                i += 1;
+            }
+            results
+        }
+    }
+
+    #[abi(embed_v0)]
+    impl MinigameSettingsDetailsImpl of IMinigameSettingsDetails<ContractState> {
+        fn settings_details(self: @ContractState, settings_id: u32) -> GameSettingDetails {
             if !self.settings_exists.read(settings_id) {
                 panic!("Settings not found");
             }
@@ -43,6 +59,21 @@ pub mod MockSettings {
                 ]
                     .span(),
             }
+        }
+
+        fn settings_details_batch(
+            self: @ContractState, settings_ids: Span<u32>,
+        ) -> Array<GameSettingDetails> {
+            let mut results = array![];
+            let mut i = 0;
+            loop {
+                if i >= settings_ids.len() {
+                    break;
+                }
+                results.append(self.settings_details(*settings_ids.at(i)));
+                i += 1;
+            }
+            results
         }
     }
 

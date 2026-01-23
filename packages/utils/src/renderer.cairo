@@ -262,15 +262,12 @@ mod tests {
     use game_components_minigame::structs::GameDetail;
     use game_components_registry::interface::GameMetadata;
     use game_components_token::structs::{Lifecycle, TokenMetadata};
-    use starknet::contract_address_const;
     use super::{create_custom_metadata, create_default_svg};
 
     #[test]
     fn test_default_svg() {
         let game_metadata = GameMetadata {
-            contract_address: contract_address_const::<
-                0x1234567890123456789012345678901234567890,
-            >(),
+            contract_address: 0x1234567890123456789012345678901234567890.try_into().unwrap(),
             name: "zKube",
             description: "A puzzle game on Starknet",
             developer: "zKorp",
@@ -279,9 +276,7 @@ mod tests {
             image: "https://zkube.vercel.app/assets/pwa-512x512.png",
             color: "white",
             client_url: "https://zkube.vercel.app",
-            renderer_address: contract_address_const::<
-                0x9876543210987654321098765432109876543210,
-            >(),
+            renderer_address: 0x9876543210987654321098765432109876543210.try_into().unwrap(),
             royalty_fraction: 500,
         };
 
@@ -293,9 +288,7 @@ mod tests {
     #[test]
     fn test_custom_metadata_full() {
         let game_metadata = GameMetadata {
-            contract_address: contract_address_const::<
-                0x1234567890123456789012345678901234567890,
-            >(),
+            contract_address: 0x1234567890123456789012345678901234567890.try_into().unwrap(),
             name: "zKube",
             description: "A puzzle game on Starknet",
             developer: "zKorp",
@@ -304,9 +297,7 @@ mod tests {
             image: "https://zkube.vercel.app/assets/pwa-512x512.png",
             color: "#4f46e5",
             client_url: "https://zkube.vercel.app",
-            renderer_address: contract_address_const::<
-                0x9876543210987654321098765432109876543210,
-            >(),
+            renderer_address: 0x9876543210987654321098765432109876543210.try_into().unwrap(),
             royalty_fraction: 500,
         };
 
@@ -364,9 +355,9 @@ mod tests {
             context_details,
             token_metadata,
             95000,
-            contract_address_const::<
-                0x065d2AB17338b5AffdEbAF95E2D79834B5f30Bac596fF55563c62C3c98700150,
-            >(),
+            0x065d2AB17338b5AffdEbAF95E2D79834B5f30Bac596fF55563c62C3c98700150
+                .try_into()
+                .unwrap(),
             'ProGamer2024',
             objective_ids,
         );
@@ -377,9 +368,7 @@ mod tests {
     #[test]
     fn test_custom_metadata_empty_settings() {
         let game_metadata = GameMetadata {
-            contract_address: contract_address_const::<
-                0x1234567890123456789012345678901234567890,
-            >(),
+            contract_address: 0x1234567890123456789012345678901234567890.try_into().unwrap(),
             name: "Simple Game",
             description: "A basic game",
             developer: "Indie Dev",
@@ -388,9 +377,7 @@ mod tests {
             image: "https://example.com/game.png",
             color: "#ffffff",
             client_url: "https://example.com/play",
-            renderer_address: contract_address_const::<
-                0x9876543210987654321098765432109876543210,
-            >(),
+            renderer_address: 0x9876543210987654321098765432109876543210.try_into().unwrap(),
             royalty_fraction: 250,
         };
 
@@ -428,9 +415,9 @@ mod tests {
             context_details,
             token_metadata,
             1200,
-            contract_address_const::<
-                0x065d2AB17338b5AffdEbAF95E2D79834B5f30Bac596fF55563c62C3c98700150,
-            >(),
+            0x065d2AB17338b5AffdEbAF95E2D79834B5f30Bac596fF55563c62C3c98700150
+                .try_into()
+                .unwrap(),
             0, // No player name
             [].span() // No objectives
         );
@@ -441,9 +428,7 @@ mod tests {
     #[test]
     fn test_custom_metadata_partial_context() {
         let game_metadata = GameMetadata {
-            contract_address: contract_address_const::<
-                0x1111111111111111111111111111111111111111,
-            >(),
+            contract_address: 0x1111111111111111111111111111111111111111.try_into().unwrap(),
             name: "Context Game",
             description: "Game with partial context",
             developer: "Context Dev",
@@ -452,9 +437,7 @@ mod tests {
             image: "https://example.com/context-game.png",
             color: "#00ff00",
             client_url: "https://example.com/context",
-            renderer_address: contract_address_const::<
-                0x2222222222222222222222222222222222222222,
-            >(),
+            renderer_address: 0x2222222222222222222222222222222222222222.try_into().unwrap(),
             royalty_fraction: 750,
         };
 
@@ -496,9 +479,9 @@ mod tests {
             context_details,
             token_metadata,
             7500,
-            contract_address_const::<
-                0x065d2AB17338b5AffdEbAF95E2D79834B5f30Bac596fF55563c62C3c98700150,
-            >(),
+            0x065d2AB17338b5AffdEbAF95E2D79834B5f30Bac596fF55563c62C3c98700150
+                .try_into()
+                .unwrap(),
             'CasualPlayer',
             array![10, 20].span(),
         );
@@ -509,9 +492,7 @@ mod tests {
     #[test]
     fn test_custom_metadata_single_objective() {
         let game_metadata = GameMetadata {
-            contract_address: contract_address_const::<
-                0x3333333333333333333333333333333333333333,
-            >(),
+            contract_address: 0x3333333333333333333333333333333333333333.try_into().unwrap(),
             name: "Single Objective Game",
             description: "Game with one objective",
             developer: "Solo Dev",
@@ -520,9 +501,7 @@ mod tests {
             image: "https://example.com/adventure.png",
             color: "#ff6600",
             client_url: "https://example.com/adventure",
-            renderer_address: contract_address_const::<
-                0x4444444444444444444444444444444444444444,
-            >(),
+            renderer_address: 0x4444444444444444444444444444444444444444.try_into().unwrap(),
             royalty_fraction: 1000,
         };
 
@@ -576,9 +555,9 @@ mod tests {
             context_details,
             token_metadata,
             85000,
-            contract_address_const::<
-                0x065d2AB17338b5AffdEbAF95E2D79834B5f30Bac596fF55563c62C3c98700150,
-            >(),
+            0x065d2AB17338b5AffdEbAF95E2D79834B5f30Bac596fF55563c62C3c98700150
+                .try_into()
+                .unwrap(),
             'AdventureSeeker',
             array![100].span() // Single objective
         );
@@ -589,9 +568,7 @@ mod tests {
     #[test]
     fn test_custom_metadata_edge_cases() {
         let game_metadata = GameMetadata {
-            contract_address: contract_address_const::<
-                0x5555555555555555555555555555555555555555,
-            >(),
+            contract_address: 0x5555555555555555555555555555555555555555.try_into().unwrap(),
             name: "Edge Case Game",
             description: "Testing edge cases",
             developer: "Test Dev",
@@ -600,9 +577,7 @@ mod tests {
             image: "https://example.com/test.png",
             color: "#000000",
             client_url: "https://example.com/test",
-            renderer_address: contract_address_const::<
-                0x6666666666666666666666666666666666666666,
-            >(),
+            renderer_address: 0x6666666666666666666666666666666666666666.try_into().unwrap(),
             royalty_fraction: 10000,
         };
 
@@ -661,7 +636,7 @@ mod tests {
             context_details,
             token_metadata,
             4294967295, // Max u32 score
-            contract_address_const::<0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF>(), // Max address
+            0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF.try_into().unwrap(), // Max address
             'MAX_FELT_VALUE_TEST',
             array![1, 4294967295, 2147483647, 0].span() // Mix of values including max/min
         );

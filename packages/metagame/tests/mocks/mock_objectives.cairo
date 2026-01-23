@@ -1,5 +1,6 @@
 use game_components_minigame::extensions::objectives::interface::{
-    IMINIGAME_OBJECTIVES_ID, IMinigameObjectives, IMinigameObjectivesSVG,
+    IMINIGAME_OBJECTIVES_ID, IMinigameObjectives, IMinigameObjectivesDetails,
+    IMinigameObjectivesSVG,
 };
 use game_components_minigame::extensions::objectives::structs::GameObjective;
 use openzeppelin_interfaces::introspection::ISRC5;
@@ -34,7 +35,23 @@ pub mod MockObjectives {
             self.token_objectives_completed.read((token_id, objective_id))
         }
 
-        fn objectives(self: @ContractState, token_id: u64) -> Span<GameObjective> {
+        fn objective_exists_batch(self: @ContractState, objective_ids: Span<u32>) -> Array<bool> {
+            let mut results = array![];
+            let mut i = 0;
+            loop {
+                if i >= objective_ids.len() {
+                    break;
+                }
+                results.append(self.objective_exists(*objective_ids.at(i)));
+                i += 1;
+            }
+            results
+        }
+    }
+
+    #[abi(embed_v0)]
+    impl MinigameObjectivesDetailsImpl of IMinigameObjectivesDetails<ContractState> {
+        fn objectives_details(self: @ContractState, token_id: u64) -> Span<GameObjective> {
             // Return mock objectives for testing
             array![
                 GameObjective { name: "Objective 1", value: "Complete level 1" },
@@ -42,6 +59,21 @@ pub mod MockObjectives {
                 GameObjective { name: "Objective 3", value: "Defeat boss" },
             ]
                 .span()
+        }
+
+        fn objectives_details_batch(
+            self: @ContractState, token_ids: Span<u64>,
+        ) -> Array<Span<GameObjective>> {
+            let mut results = array![];
+            let mut i = 0;
+            loop {
+                if i >= token_ids.len() {
+                    break;
+                }
+                results.append(self.objectives_details(*token_ids.at(i)));
+                i += 1;
+            }
+            results
         }
     }
 

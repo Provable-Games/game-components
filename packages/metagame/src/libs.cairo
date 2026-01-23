@@ -6,7 +6,6 @@ use game_components_registry::interface::{
 use game_components_token::core::interface::{
     IMinigameTokenDispatcher, IMinigameTokenDispatcherTrait,
 };
-use game_components_token::structs::MintParams;
 use starknet::ContractAddress;
 use crate::structs::MintMetagameParams;
 

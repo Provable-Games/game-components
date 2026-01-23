@@ -1,15 +1,16 @@
 use game_components_metagame::extensions::context::interface::{
+    IMetagameContextDetailsDispatcher, IMetagameContextDetailsDispatcherTrait,
     IMetagameContextDispatcher, IMetagameContextDispatcherTrait,
 };
 use game_components_metagame::extensions::context::structs::{GameContext, GameContextDetails};
-use game_components_metagame::interface::{IMetagameDispatcher, IMetagameDispatcherTrait};
-use game_components_minigame::interface::{IMinigameDispatcher, IMinigameDispatcherTrait};
-use game_components_token::interface::{IMinigameTokenDispatcher, IMinigameTokenDispatcherTrait};
-use snforge_std::{
-    ContractClassTrait, DeclareResultTrait, declare, start_cheat_block_timestamp,
-    start_cheat_caller_address, stop_cheat_caller_address,
+use game_components_token::core::interface::{
+    IMinigameTokenDispatcher, IMinigameTokenDispatcherTrait,
 };
-use starknet::{ContractAddress, contract_address_const, get_block_timestamp, get_caller_address};
+use snforge_std::{
+    ContractClassTrait, DeclareResultTrait, declare, start_cheat_caller_address,
+    stop_cheat_caller_address,
+};
+use starknet::ContractAddress;
 
 // Integration test I-01: Tournament Flow
 #[test]
@@ -35,8 +36,7 @@ fn test_tournament_flow() {
     let (game1_address, _) = game1
         .deploy(
             @array![
-                token_address.into(), contract_address_const::<0x0>().into(),
-                contract_address_const::<0x0>().into(),
+                token_address.into(), 0, 0,
             ],
         )
         .unwrap();
@@ -44,8 +44,7 @@ fn test_tournament_flow() {
     let (game2_address, _) = game1
         .deploy(
             @array![
-                token_address.into(), contract_address_const::<0x0>().into(),
-                contract_address_const::<0x0>().into(),
+                token_address.into(), 0, 0,
             ],
         )
         .unwrap();
@@ -53,57 +52,13 @@ fn test_tournament_flow() {
     let (game3_address, _) = game1
         .deploy(
             @array![
-                token_address.into(), contract_address_const::<0x0>().into(),
-                contract_address_const::<0x0>().into(),
+                token_address.into(), 0, 0,
             ],
         )
         .unwrap();
 
-    // 5. Register games with token contract
-    let multi_game_dispatcher = IMinigameTokenMultiGameDispatcher {
-        contract_address: token_address,
-    };
-    multi_game_dispatcher
-        .register_game(
-            game1_address,
-            "Game 1",
-            "First tournament game",
-            "Dev1",
-            "Publisher1",
-            "Action",
-            "game1.png",
-            Option::None,
-            Option::None,
-            Option::None,
-        );
-
-    multi_game_dispatcher
-        .register_game(
-            game2_address,
-            "Game 2",
-            "Second tournament game",
-            "Dev2",
-            "Publisher2",
-            "Strategy",
-            "game2.png",
-            Option::None,
-            Option::None,
-            Option::None,
-        );
-
-    multi_game_dispatcher
-        .register_game(
-            game3_address,
-            "Game 3",
-            "Third tournament game",
-            "Dev3",
-            "Publisher3",
-            "Puzzle",
-            "game3.png",
-            Option::None,
-            Option::None,
-            Option::None,
-        );
+    // 5. Game registration is no longer needed with the new architecture
+    // Games are associated with tokens at mint time via game_address parameter
 
     // 6. Create tournament context
     let tournament_context = GameContextDetails {
@@ -119,9 +74,8 @@ fn test_tournament_flow() {
     };
 
     // 7. Create players
-    let player1 = contract_address_const::<0x1001>();
-    let player2 = contract_address_const::<0x1002>();
-    let player3 = contract_address_const::<0x1003>();
+    let player1 = 0x1001.try_into().unwrap();
+    let player2 = 0x1002.try_into().unwrap();
 
     // 8. Mint tokens for players across games using the metagame dispatcher
     let metagame_dispatcher = IMockMetagameDispatcher { contract_address: metagame_address };
@@ -131,7 +85,7 @@ fn test_tournament_flow() {
     let p1_g1_token = metagame_dispatcher
         .mint(
             Option::Some(game1_address),
-            Option::Some("Player1"),
+            Option::Some('Player1'),
             Option::None,
             Option::Some(1000),
             Option::Some(10000),
@@ -146,7 +100,7 @@ fn test_tournament_flow() {
     let p1_g2_token = metagame_dispatcher
         .mint(
             Option::Some(game2_address),
-            Option::Some("Player1"),
+            Option::Some('Player1'),
             Option::None,
             Option::Some(1000),
             Option::Some(10000),
@@ -164,7 +118,7 @@ fn test_tournament_flow() {
     let p2_g1_token = metagame_dispatcher
         .mint(
             Option::Some(game1_address),
-            Option::Some("Player2"),
+            Option::Some('Player2'),
             Option::None,
             Option::Some(1000),
             Option::Some(10000),
@@ -179,7 +133,7 @@ fn test_tournament_flow() {
     let p2_g2_token = metagame_dispatcher
         .mint(
             Option::Some(game2_address),
-            Option::Some("Player2"),
+            Option::Some('Player2'),
             Option::None,
             Option::Some(1000),
             Option::Some(10000),
@@ -194,7 +148,7 @@ fn test_tournament_flow() {
     let p2_g3_token = metagame_dispatcher
         .mint(
             Option::Some(game3_address),
-            Option::Some("Player2"),
+            Option::Some('Player2'),
             Option::None,
             Option::Some(1000),
             Option::Some(10000),
@@ -251,7 +205,10 @@ fn test_tournament_flow() {
     assert!(p2_g3_metadata.game_id == 3, "P2 G3 should be game 3");
 
     // 13. Verify context consistency across all tokens
-    let retrieved_context = context_dispatcher.context(p1_g1_token);
+    let context_details_dispatcher = IMetagameContextDetailsDispatcher {
+        contract_address: context_address,
+    };
+    let retrieved_context = context_details_dispatcher.context_details(p1_g1_token);
     assert!(retrieved_context.name == "Winter Tournament 2024", "Context name mismatch");
     assert!(retrieved_context.context.len() == 3, "Should have 3 tournament rounds");
 }
@@ -303,11 +260,11 @@ mod MockMetagameWithContext {
         fn mint(
             ref self: ContractState,
             game_address: Option<ContractAddress>,
-            player_name: Option<ByteArray>,
+            player_name: Option<felt252>,
             settings_id: Option<u32>,
             start: Option<u64>,
             end: Option<u64>,
-            objective_ids: Option<Span<u32>>,
+            objective_id: Option<u32>,
             context: Option<GameContextDetails>,
             client_url: Option<ByteArray>,
             renderer_address: Option<ContractAddress>,
@@ -322,7 +279,7 @@ mod MockMetagameWithContext {
                     settings_id,
                     start,
                     end,
-                    objective_ids,
+                    objective_id,
                     context,
                     client_url,
                     renderer_address,
@@ -334,10 +291,7 @@ mod MockMetagameWithContext {
 }
 
 // Helper interfaces
-use game_components_token::extensions::multi_game::interface::{
-    IMinigameTokenMultiGame, IMinigameTokenMultiGameDispatcher,
-    IMinigameTokenMultiGameDispatcherTrait,
-};
+// NOTE: multi_game extension has been removed - registration not needed
 
 // Interface for testing mint function
 #[starknet::interface]
@@ -345,11 +299,11 @@ trait IMockMetagame<TContractState> {
     fn mint(
         ref self: TContractState,
         game_address: Option<ContractAddress>,
-        player_name: Option<ByteArray>,
+        player_name: Option<felt252>,
         settings_id: Option<u32>,
         start: Option<u64>,
         end: Option<u64>,
-        objective_ids: Option<Span<u32>>,
+        objective_id: Option<u32>,
         context: Option<GameContextDetails>,
         client_url: Option<ByteArray>,
         renderer_address: Option<ContractAddress>,
