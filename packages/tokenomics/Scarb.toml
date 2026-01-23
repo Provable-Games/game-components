@@ -1,0 +1,27 @@
+[package]
+name = "game_components_tokenomics"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+starknet.workspace = true
+openzeppelin_access.workspace = true
+openzeppelin_token.workspace = true
+openzeppelin_interfaces.workspace = true
+ekubo.workspace = true
+
+[dev-dependencies]
+snforge_std.workspace = true
+
+[scripts]
+test = "snforge test"
+
+[[target.starknet-contract]]
+sierra = true
+
+[profile.dev.cairo]
+unstable-add-statements-functions-debug-info = true
+unstable-add-statements-code-locations-debug-info = true
+inlining-strategy = "avoid"
+
+[lib]

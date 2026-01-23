@@ -1,9 +1,11 @@
 [workspace]
 members = [
+    "packages/interfaces",
     "packages/metagame",
     "packages/minigame",
     "packages/registry",
     "packages/token",
+    "packages/tokenomics",
     # Test packages
     "tests",
     "packages/utils",
@@ -37,14 +39,17 @@ openzeppelin_access = { git = "https://github.com/OpenZeppelin/cairo-contracts.g
 openzeppelin_introspection = { git = "https://github.com/OpenZeppelin/cairo-contracts.git", tag = "v3.0.0" }
 openzeppelin_token = { git = "https://github.com/OpenZeppelin/cairo-contracts.git", tag = "v3.0.0" }
 openzeppelin_interfaces = { git = "https://github.com/OpenZeppelin/cairo-contracts.git", tag = "v3.0.0" }
+ekubo = { git = "https://github.com/EkuboProtocol/starknet-contracts.git", tag = "v4.0.1" }
 
 [dependencies]
 starknet.workspace = true
 # Common packages
+game_components_interfaces = { path = "packages/interfaces" }
 game_components_metagame = { path = "packages/metagame" }
 game_components_minigame = { path = "packages/minigame" }
 game_components_registry = { path = "packages/registry" }
 game_components_token = { path = "packages/token" }
+game_components_tokenomics = { path = "packages/tokenomics" }
 game_components_tests = { path = "tests" }
 game_components_utils = { path = "packages/utils" }
 game_components_leaderboard = { path = "packages/leaderboard" }
@@ -59,3 +64,14 @@ snforge_std.workspace = true
 unstable-add-statements-functions-debug-info = true
 unstable-add-statements-code-locations-debug-info = true
 inlining-strategy = "avoid"
+
+[tool.scarb]
+allow-prebuilt-plugins = ["snforge_std"]
+
+[tool.snforge]
+fuzzer_runs = 256
+
+[[tool.snforge.fork]]
+name = "MAINNET"
+url = "https://api.cartridge.gg/x/starknet/mainnet/rpc/v0_9"
+block_id.tag = "latest"
