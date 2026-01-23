@@ -20,7 +20,7 @@ edition.workspace = true
 [workspace.package]
 version = "1.5.1"
 edition = "2024_07"
-cairo-version = "2.13.1"
+cairo-version = "2.15.1"
 authors = ["Provable Games <maintainers@provable.games>"]
 keywords = [
     "openzeppelin",
@@ -31,12 +31,12 @@ keywords = [
 ]
 
 [workspace.dependencies]
-starknet = "2.13.1"
-snforge_std = { git = "https://github.com/foundry-rs/starknet-foundry", tag = "v0.53.0" }
-openzeppelin_access = { git = "https://github.com/OpenZeppelin/cairo-contracts.git", tag = "v3.0.0-alpha.3" }
-openzeppelin_introspection = { git = "https://github.com/OpenZeppelin/cairo-contracts.git", tag = "v3.0.0-alpha.3" }
-openzeppelin_token = { git = "https://github.com/OpenZeppelin/cairo-contracts.git", tag = "v3.0.0-alpha.3" }
-openzeppelin_interfaces = { git = "https://github.com/OpenZeppelin/cairo-contracts.git", tag = "v3.0.0-alpha.3" }
+starknet = "2.15.1"
+snforge_std = { git = "https://github.com/foundry-rs/starknet-foundry", tag = "v0.55.0" }
+openzeppelin_access = { git = "https://github.com/OpenZeppelin/cairo-contracts.git", tag = "v3.0.0" }
+openzeppelin_introspection = { git = "https://github.com/OpenZeppelin/cairo-contracts.git", tag = "v3.0.0" }
+openzeppelin_token = { git = "https://github.com/OpenZeppelin/cairo-contracts.git", tag = "v3.0.0" }
+openzeppelin_interfaces = { git = "https://github.com/OpenZeppelin/cairo-contracts.git", tag = "v3.0.0" }
 
 [dependencies]
 starknet.workspace = true
@@ -45,8 +45,6 @@ game_components_metagame = { path = "packages/metagame" }
 game_components_minigame = { path = "packages/minigame" }
 game_components_registry = { path = "packages/registry" }
 game_components_token = { path = "packages/token" }
-# Test packages
-# game_components_test_dojo = { path = "packages/test_dojo" }  # Excluded - must be built separately
 game_components_tests = { path = "tests" }
 game_components_utils = { path = "packages/utils" }
 game_components_leaderboard = { path = "packages/leaderboard" }

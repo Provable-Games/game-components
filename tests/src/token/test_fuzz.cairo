@@ -10,9 +10,7 @@ use game_components_minigame::interface::{
 use game_components_tests::minigame::mocks::minigame_starknet_mock::IMinigameStarknetMockDispatcherTrait;
 use game_components_token::interface::IMinigameTokenMixinDispatcherTrait;
 use openzeppelin_interfaces::erc721::ERC721ABIDispatcherTrait;
-use snforge_std::{
-    CheatSpan, cheat_caller_address, start_cheat_block_timestamp, stop_cheat_block_timestamp,
-};
+use snforge_std::{start_cheat_block_timestamp, stop_cheat_block_timestamp};
 // Import setup helpers
 use super::setup::{setup};
 
