@@ -299,6 +299,7 @@ fn test_multi_game_registry_events() {
             Option::None,
             Option::None,
             test_contracts.test_token.contract_address,
+            Option::None // royalty_fraction
         );
 
     // Mint token for new game

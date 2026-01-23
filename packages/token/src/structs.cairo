@@ -1,3 +1,4 @@
+use starknet::ContractAddress;
 use starknet::storage_access::StorePacking;
 
 #[derive(Copy, Drop, Serde)]
@@ -31,19 +32,29 @@ pub impl LifecycleStorePacking of StorePacking<Lifecycle, felt252> {
 // ==============================================================================
 //
 // Bit Layout (250 bits used, fits in felt252's ~252 bits):
-// | Bits      | Field            | Size     | Max Value                    |
-// |-----------|------------------|----------|------------------------------|
-// | 0-29      | game_id          | 30 bits  | 1,073,741,823 games          |
-// | 30-69     | minted_by        | 40 bits  | 1,099,511,627,775 minters    |
-// | 70-99     | settings_id      | 30 bits  | 1,073,741,823 settings       |
-// | 100-134   | minted_at        | 35 bits  | Unix timestamp (~1000 years) |
+// | Bits      | Field            | Size     | Max Value                      |
+// |-----------|------------------|----------|--------------------------------|
+// | 0-29      | game_id          | 30 bits  | 1,073,741,823 games            |
+// | 30-69     | minted_by        | 40 bits  | 1,099,511,627,775 minters      |
+// | 70-99     | settings_id      | 30 bits  | 1,073,741,823 settings         |
+// | 100-134   | minted_at        | 35 bits  | Unix timestamp (~1000 years)   |
 // | 135-159   | start_delay      | 25 bits  | 33,554,431 seconds (~388 days) |
 // | 160-184   | end_delay        | 25 bits  | 33,554,431 seconds (~388 days) |
-// | 185-214   | objective_id     | 30 bits  | 1,073,741,823 objectives     |
-// | 215       | soulbound        | 1 bit    | bool                         |
-// | 216       | has_context      | 1 bit    | bool                         |
-// | 217       | paymaster        | 1 bit    | bool                         |
-// | 218-249   | token_count      | 32 bits  | 4,294,967,295 tokens         |
+// | 185-214   | objective_id     | 30 bits  | 1,073,741,823 objectives       |
+// | 215       | soulbound        | 1 bit    | bool                           |
+// | 216       | has_context      | 1 bit    | bool                           |
+// | 217       | paymaster        | 1 bit    | bool                           |
+// | 218-227   | tx_hash          | 10 bits  | 1,024 unique per second        |
+// | 228-237   | salt             | 10 bits  | 1,024 tokens per tx (multicall)|
+// | 238-250   | metadata         | 13 bits  | 8,191 (reserved for future)    |
+// Total: 251 bits (max for felt252)
+//
+// COLLISION PROTECTION:
+// - tx_hash: Last 10 bits of starknet transaction hash. Since tx_hash includes
+//   the sender's nonce (unique per tx), different transactions have different
+//   hashes. This protects against same-block collisions.
+// - salt: Client-provided value for multicall scenarios. Client must increment
+//   salt for each mint within the same transaction to avoid collisions.
 //
 // This eliminates storage reads for immutable metadata - just decode from token_id!
 // Using felt252 (Cairo's native field element) is more gas efficient than u256.
@@ -61,7 +72,9 @@ pub struct PackedTokenId {
     pub soulbound: bool, // 1 bit
     pub has_context: bool, // 1 bit
     pub paymaster: bool, // 1 bit
-    pub token_count: u32 // 32 bits
+    pub tx_hash: u16, // 10 bits - last 10 bits of transaction hash for collision protection
+    pub salt: u16, // 10 bits - client-provided salt for multicall collision protection
+    pub metadata: u16 // 12 bits - reserved for future use
 }
 
 /// Mutable state that still needs storage (only 2 fields!)
@@ -119,7 +132,9 @@ pub mod PackedTokenIdBits {
     pub const SOULBOUND_BITS: u8 = 1;
     pub const HAS_CONTEXT_BITS: u8 = 1;
     pub const PAYMASTER_BITS: u8 = 1;
-    pub const TOKEN_COUNT_BITS: u8 = 32;
+    pub const TX_HASH_BITS: u8 = 10;
+    pub const SALT_BITS: u8 = 10;
+    pub const METADATA_BITS: u8 = 13;
 
     // Bit offsets (cumulative)
     pub const GAME_ID_OFFSET: u8 = 0; // 0
@@ -132,7 +147,10 @@ pub mod PackedTokenIdBits {
     pub const SOULBOUND_OFFSET: u8 = 215; // 185 + 30
     pub const HAS_CONTEXT_OFFSET: u8 = 216; // 215 + 1
     pub const PAYMASTER_OFFSET: u8 = 217; // 216 + 1
-    pub const TOKEN_COUNT_OFFSET: u8 = 218; // 217 + 1
+    pub const TX_HASH_OFFSET: u8 = 218; // 217 + 1
+    pub const SALT_OFFSET: u8 = 228; // 218 + 10
+    pub const METADATA_OFFSET: u8 = 238; // 228 + 10
+    // Total: 238 + 13 = 251 bits (max for felt252)
 
     // Masks (using u256 for intermediate calculations, result fits in felt252)
     pub const GAME_ID_MASK: u256 = 0x3FFFFFFF; // 30 bits
@@ -145,7 +163,9 @@ pub mod PackedTokenIdBits {
     pub const SOULBOUND_MASK: u256 = 0x1; // 1 bit
     pub const HAS_CONTEXT_MASK: u256 = 0x1; // 1 bit
     pub const PAYMASTER_MASK: u256 = 0x1; // 1 bit
-    pub const TOKEN_COUNT_MASK: u256 = 0xFFFFFFFF; // 32 bits
+    pub const TX_HASH_MASK: u256 = 0x3FF; // 10 bits
+    pub const SALT_MASK: u256 = 0x3FF; // 10 bits
+    pub const METADATA_MASK: u256 = 0x1FFF; // 13 bits
 
     // Power-of-2 constants for bit shifting
     pub const POW2_30: u256 = 0x40000000; // 2^30
@@ -153,16 +173,25 @@ pub mod PackedTokenIdBits {
     pub const POW2_100: u256 = 0x10000000000000000000000000; // 2^100
     pub const POW2_135: u256 = 0x8000000000000000000000000000000000; // 2^135
     pub const POW2_160: u256 = 0x10000000000000000000000000000000000000000; // 2^160
-    pub const POW2_185: u256 = 0x2000000000000000000000000000000000000000000000; // 2^185
-    pub const POW2_215: u256 = 0x80000000000000000000000000000000000000000000000000000; // 2^215
-    pub const POW2_216: u256 = 0x100000000000000000000000000000000000000000000000000000; // 2^216
-    pub const POW2_217: u256 = 0x200000000000000000000000000000000000000000000000000000; // 2^217
-    pub const POW2_218: u256 = 0x400000000000000000000000000000000000000000000000000000; // 2^218
+    pub const POW2_185: u256 = 0x20000000000000000000000000000000000000000000000; // 2^185
+    pub const POW2_215: u256 = 0x800000000000000000000000000000000000000000000000000000; // 2^215
+    pub const POW2_216: u256 = 0x1000000000000000000000000000000000000000000000000000000; // 2^216
+    pub const POW2_217: u256 = 0x2000000000000000000000000000000000000000000000000000000; // 2^217
+    pub const POW2_218: u256 = 0x4000000000000000000000000000000000000000000000000000000; // 2^218
+    pub const POW2_228: u256 =
+        0x1000000000000000000000000000000000000000000000000000000000; // 2^228
+    pub const POW2_238: u256 =
+        0x400000000000000000000000000000000000000000000000000000000000; // 2^238
 }
 
 /// Packs token metadata into a felt252 token_id
 /// This is a pure function - no storage access needed
 /// Using felt252 (native field element) for gas efficiency
+///
+/// # Arguments
+/// * `tx_hash` - Last 10 bits of transaction hash (for collision protection across txs)
+/// * `salt` - Client-provided salt (for collision protection within multicalls)
+/// * `metadata` - Reserved for future use
 #[inline(always)]
 pub fn pack_token_id(
     game_id: u32,
@@ -175,11 +204,13 @@ pub fn pack_token_id(
     soulbound: bool,
     has_context: bool,
     paymaster: bool,
-    token_count: u32,
+    tx_hash: u16,
+    salt: u16,
+    metadata: u16,
 ) -> felt252 {
     use PackedTokenIdBits::{
-        POW2_100, POW2_135, POW2_160, POW2_185, POW2_215, POW2_216, POW2_217, POW2_218, POW2_30,
-        POW2_70,
+        METADATA_MASK, POW2_100, POW2_135, POW2_160, POW2_185, POW2_215, POW2_216, POW2_217,
+        POW2_218, POW2_228, POW2_238, POW2_30, POW2_70, SALT_MASK, TX_HASH_MASK,
     };
 
     // Build packed value using u256 for intermediate calculations
@@ -208,7 +239,12 @@ pub fn pack_token_id(
     } else {
         0
     });
-    packed = packed | (Into::<u32, u256>::into(token_count) * POW2_218);
+    // tx_hash: mask to 10 bits and shift to offset 218
+    packed = packed | ((Into::<u16, u256>::into(tx_hash) & TX_HASH_MASK) * POW2_218);
+    // salt: mask to 10 bits and shift to offset 228
+    packed = packed | ((Into::<u16, u256>::into(salt) & SALT_MASK) * POW2_228);
+    // metadata: mask to 12 bits and shift to offset 238
+    packed = packed | ((Into::<u16, u256>::into(metadata) & METADATA_MASK) * POW2_238);
 
     // Convert to felt252 - safe because we only use 250 bits (fits in ~252 bit felt252)
     packed.try_into().unwrap()
@@ -219,10 +255,10 @@ pub fn pack_token_id(
 #[inline(always)]
 pub fn unpack_token_id(token_id: felt252) -> PackedTokenId {
     use PackedTokenIdBits::{
-        END_DELAY_MASK, GAME_ID_MASK, HAS_CONTEXT_MASK, MINTED_AT_MASK, MINTED_BY_MASK,
-        OBJECTIVE_ID_MASK, PAYMASTER_MASK, POW2_100, POW2_135, POW2_160, POW2_185, POW2_215,
-        POW2_216, POW2_217, POW2_218, POW2_30, POW2_70, SETTINGS_ID_MASK, SOULBOUND_MASK,
-        START_DELAY_MASK, TOKEN_COUNT_MASK,
+        END_DELAY_MASK, GAME_ID_MASK, HAS_CONTEXT_MASK, METADATA_MASK, MINTED_AT_MASK,
+        MINTED_BY_MASK, OBJECTIVE_ID_MASK, PAYMASTER_MASK, POW2_100, POW2_135, POW2_160, POW2_185,
+        POW2_215, POW2_216, POW2_217, POW2_218, POW2_228, POW2_238, POW2_30, POW2_70, SALT_MASK,
+        SETTINGS_ID_MASK, SOULBOUND_MASK, START_DELAY_MASK, TX_HASH_MASK,
     };
 
     // Convert felt252 to u256 for bit operations
@@ -239,7 +275,9 @@ pub fn unpack_token_id(token_id: felt252) -> PackedTokenId {
         soulbound: ((packed / POW2_215) & SOULBOUND_MASK) == 1,
         has_context: ((packed / POW2_216) & HAS_CONTEXT_MASK) == 1,
         paymaster: ((packed / POW2_217) & PAYMASTER_MASK) == 1,
-        token_count: ((packed / POW2_218) & TOKEN_COUNT_MASK).try_into().unwrap(),
+        tx_hash: ((packed / POW2_218) & TX_HASH_MASK).try_into().unwrap(),
+        salt: ((packed / POW2_228) & SALT_MASK).try_into().unwrap(),
+        metadata: ((packed / POW2_238) & METADATA_MASK).try_into().unwrap(),
     }
 }
 
@@ -319,13 +357,32 @@ pub fn unpack_paymaster(token_id: felt252) -> bool {
     ((packed / PackedTokenIdBits::POW2_217) & PackedTokenIdBits::PAYMASTER_MASK) == 1
 }
 
-/// Helper to unpack token_count from token_id
+/// Helper to unpack tx_hash from token_id (last 10 bits of transaction hash)
 #[inline(always)]
-pub fn unpack_token_count(token_id: felt252) -> u32 {
+pub fn unpack_tx_hash(token_id: felt252) -> u16 {
     let packed: u256 = token_id.into();
-    ((packed / PackedTokenIdBits::POW2_218) & PackedTokenIdBits::TOKEN_COUNT_MASK)
-        .try_into()
-        .unwrap()
+    ((packed / PackedTokenIdBits::POW2_218) & PackedTokenIdBits::TX_HASH_MASK).try_into().unwrap()
+}
+
+/// Helper to unpack salt from token_id (client-provided collision protection)
+#[inline(always)]
+pub fn unpack_salt(token_id: felt252) -> u16 {
+    let packed: u256 = token_id.into();
+    ((packed / PackedTokenIdBits::POW2_228) & PackedTokenIdBits::SALT_MASK).try_into().unwrap()
+}
+
+/// Helper to unpack metadata from token_id (reserved for future use)
+#[inline(always)]
+pub fn unpack_metadata(token_id: felt252) -> u16 {
+    let packed: u256 = token_id.into();
+    ((packed / PackedTokenIdBits::POW2_238) & PackedTokenIdBits::METADATA_MASK).try_into().unwrap()
+}
+
+/// Helper to extract the last 10 bits from a transaction hash for use in pack_token_id
+#[inline(always)]
+pub fn extract_tx_hash_bits(tx_hash: felt252) -> u16 {
+    let hash_u256: u256 = tx_hash.into();
+    (hash_u256 & PackedTokenIdBits::TX_HASH_MASK).try_into().unwrap()
 }
 
 // ==============================================================================
@@ -487,6 +544,51 @@ pub impl TokenMetadataStorePacking of StorePacking<TokenMetadata, felt252> {
             objective_id: ((packed / POW2_211) & OBJECTIVE_ID_MASK).try_into().unwrap(),
         }
     }
+}
+
+// ==============================================================================
+// BATCH OPERATION PARAMETERS
+// ==============================================================================
+
+use game_components_metagame::extensions::context::structs::GameContextDetails;
+
+/// Per-token mint parameters for batch minting.
+/// Contains all parameters for a single mint operation.
+/// Note: Not Copy because it contains ByteArray and GameContextDetails.
+#[derive(Drop, Serde)]
+pub struct MintParams {
+    pub game_address: Option<ContractAddress>,
+    pub player_name: Option<felt252>,
+    pub settings_id: Option<u32>,
+    pub start: Option<u64>,
+    pub end: Option<u64>,
+    pub objective_id: Option<u32>,
+    pub context: Option<GameContextDetails>,
+    pub client_url: Option<ByteArray>,
+    pub renderer_address: Option<ContractAddress>,
+    pub to: ContractAddress,
+    pub soulbound: bool,
+}
+
+/// Per-token name update parameters for batch name updates
+#[derive(Copy, Drop, Serde)]
+pub struct PlayerNameUpdate {
+    pub token_id: u64,
+    pub name: felt252,
+}
+
+/// Per-token metadata update parameters for batch metadata updates
+/// Note: Not Copy because it contains GameContextDetails.
+#[derive(Drop, Serde)]
+pub struct SetTokenMetadataParams {
+    pub token_id: u64,
+    pub game_address: ContractAddress,
+    pub player_name: Option<felt252>,
+    pub settings_id: Option<u32>,
+    pub start: Option<u64>,
+    pub end: Option<u64>,
+    pub objective_id: Option<u32>,
+    pub context: Option<GameContextDetails>,
 }
 
 /// Convert PackedTokenId + TokenMutableState to TokenMetadata

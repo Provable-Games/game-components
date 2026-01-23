@@ -2,6 +2,8 @@ pub mod mocks;
 #[cfg(test)]
 pub mod setup;
 #[cfg(test)]
+pub mod test_batch_views;
+#[cfg(test)]
 pub mod test_context_coverage;
 #[cfg(test)]
 pub mod test_core_token_coverage;

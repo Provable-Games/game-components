@@ -282,6 +282,7 @@ mod tests {
             renderer_address: contract_address_const::<
                 0x9876543210987654321098765432109876543210,
             >(),
+            royalty_fraction: 500,
         };
 
         let svg_result = create_default_svg(1000000, game_metadata, 100, 'test Player');
@@ -306,6 +307,7 @@ mod tests {
             renderer_address: contract_address_const::<
                 0x9876543210987654321098765432109876543210,
             >(),
+            royalty_fraction: 500,
         };
 
         let settings_details = GameSettingDetails {
@@ -341,7 +343,7 @@ mod tests {
             soulbound: false,
             completed_objective: true,
             has_context: true,
-            objectives_count: 5,
+            objective_id: 5,
         };
 
         let objective_ids = array![1, 2, 3, 5, 8].span();
@@ -389,6 +391,7 @@ mod tests {
             renderer_address: contract_address_const::<
                 0x9876543210987654321098765432109876543210,
             >(),
+            royalty_fraction: 250,
         };
 
         // Empty settings
@@ -411,7 +414,7 @@ mod tests {
             soulbound: true,
             completed_objective: false,
             has_context: false,
-            objectives_count: 0,
+            objective_id: 0,
         };
 
         let metadata = create_custom_metadata(
@@ -452,6 +455,7 @@ mod tests {
             renderer_address: contract_address_const::<
                 0x2222222222222222222222222222222222222222,
             >(),
+            royalty_fraction: 750,
         };
 
         let settings_details = GameSettingDetails {
@@ -478,7 +482,7 @@ mod tests {
             soulbound: false,
             completed_objective: false,
             has_context: true,
-            objectives_count: 2,
+            objective_id: 10,
         };
 
         let metadata = create_custom_metadata(
@@ -519,6 +523,7 @@ mod tests {
             renderer_address: contract_address_const::<
                 0x4444444444444444444444444444444444444444,
             >(),
+            royalty_fraction: 1000,
         };
 
         let settings_details = GameSettingDetails {
@@ -552,7 +557,7 @@ mod tests {
             soulbound: true,
             completed_objective: true,
             has_context: true,
-            objectives_count: 1,
+            objective_id: 100,
         };
 
         let metadata = create_custom_metadata(
@@ -598,6 +603,7 @@ mod tests {
             renderer_address: contract_address_const::<
                 0x6666666666666666666666666666666666666666,
             >(),
+            royalty_fraction: 10000,
         };
 
         let settings_details = GameSettingDetails {
@@ -633,7 +639,7 @@ mod tests {
             soulbound: true,
             completed_objective: true,
             has_context: true,
-            objectives_count: 4,
+            objective_id: 1,
         };
 
         let metadata = create_custom_metadata(

@@ -19,6 +19,9 @@ pub struct GameMetadata {
     pub color: ByteArray,
     pub client_url: ByteArray,
     pub renderer_address: ContractAddress,
+    /// Royalty fraction in basis points (e.g., 500 = 5%)
+    /// Used by token contracts for ERC2981 royalty_info
+    pub royalty_fraction: u128,
 }
 
 #[starknet::interface]
@@ -40,5 +43,10 @@ pub trait IMinigameRegistry<TState> {
         color: Option<ByteArray>,
         client_url: Option<ByteArray>,
         renderer_address: Option<ContractAddress>,
+        royalty_fraction: Option<u128>,
     ) -> u64;
+    /// Set the royalty fraction for a game.
+    /// Only the owner of the game creator token (game_id) can call this.
+    /// royalty_fraction is in basis points (e.g., 500 = 5%)
+    fn set_game_royalty(ref self: TState, game_id: u64, royalty_fraction: u128);
 }

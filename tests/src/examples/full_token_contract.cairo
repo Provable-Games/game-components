@@ -1,23 +1,24 @@
-// Example: Optimized Token Contract using the new component system
-// This demonstrates how to configure and use the modular components
+// Example: Full Token Contract using the component system
+// This demonstrates how to configure and use the modular components with ERC2981
 
 use game_components_metagame::extensions::context::structs::GameContextDetails;
 use game_components_minigame::extensions::settings::structs::GameSettingDetails;
 use game_components_minigame::interface::{IMinigameDispatcher, IMinigameDispatcherTrait};
 use game_components_minigame::structs::GameDetail;
 
-// Game components imports - use the actual package paths
+// Game components imports - using full package paths
+use game_components_registry::interface::{
+    IMinigameRegistryDispatcher, IMinigameRegistryDispatcherTrait,
+};
 use game_components_token::core::core_token::CoreTokenComponent;
 use game_components_token::extensions::context::context::ContextComponent;
 use game_components_token::extensions::minter::minter::MinterComponent;
 use game_components_token::extensions::objectives::objectives::ObjectivesComponent;
 use game_components_token::extensions::renderer::renderer::RendererComponent;
 use game_components_token::extensions::settings::settings::SettingsComponent;
-use game_components_token::interface::{
-    IMinigameRegistryDispatcher, IMinigameRegistryDispatcherTrait,
-};
 use game_components_token::structs::TokenMetadata;
 use game_components_utils::renderer::{create_custom_metadata, create_default_svg};
+use openzeppelin_interfaces::erc2981::IERC2981;
 use openzeppelin_interfaces::erc721::IERC721Metadata;
 use openzeppelin_introspection::src5::SRC5Component;
 use openzeppelin_token::common::erc2981::erc2981::{DefaultConfig, ERC2981Component};
@@ -31,6 +32,7 @@ use starknet::syscalls::call_contract_syscall;
 
 #[starknet::contract]
 pub mod FullTokenContract {
+    use core::num::traits::Zero;
     use super::*;
 
     // ================================================================================================
@@ -113,13 +115,73 @@ pub mod FullTokenContract {
     #[abi(embed_v0)]
     impl ERC721Impl = ERC721Component::ERC721Impl<ContractState>;
     #[abi(embed_v0)]
-    impl ERC2981Impl = ERC2981Component::ERC2981Impl<ContractState>;
-    #[abi(embed_v0)]
     impl ERC2981InfoImpl = ERC2981Component::ERC2981InfoImpl<ContractState>;
     #[abi(embed_v0)]
     impl SRC5Impl = SRC5Component::SRC5Impl<ContractState>;
     #[abi(embed_v0)]
     impl CoreTokenImpl = CoreTokenComponent::CoreTokenImpl<ContractState>;
+
+    // Custom ERC2981 implementation with dynamic royalty receiver
+    // For multi-game tokens: queries registry for royalty_fraction and current game creator token
+    // owner
+    #[abi(embed_v0)]
+    impl ERC2981Impl of IERC2981<ContractState> {
+        fn royalty_info(
+            self: @ContractState, token_id: u256, sale_price: u256,
+        ) -> (ContractAddress, u256) {
+            let token_id_u64: u64 = token_id.try_into().unwrap();
+            let metadata = self.core_token.get_token_metadata(token_id_u64);
+            let game_registry_address = self.core_token.game_registry_address();
+
+            let (royalty_fraction, receiver) = if !game_registry_address.is_zero()
+                && metadata.game_id != 0 {
+                // Multi-game token: get royalty info from registry with dynamic receiver
+                let registry = IMinigameRegistryDispatcher {
+                    contract_address: game_registry_address,
+                };
+                let game_metadata = registry.game_metadata(metadata.game_id.into());
+                let fraction = game_metadata.royalty_fraction;
+
+                // Query current owner of game_id token in registry (game creator token holder)
+                // This makes royalty receiver DYNAMIC - follows token ownership
+                let owner_of_selector = selector!("owner_of");
+                let mut calldata = array![];
+                let game_id_u256: u256 = metadata.game_id.into();
+                calldata.append(game_id_u256.low.into());
+                calldata.append(game_id_u256.high.into());
+
+                let owner =
+                    match call_contract_syscall(
+                        game_registry_address, owner_of_selector, calldata.span(),
+                    ) {
+                    Result::Ok(result) => {
+                        let mut result_span = result;
+                        match Serde::<ContractAddress>::deserialize(ref result_span) {
+                            Option::Some(addr) => addr,
+                            Option::None => 0.try_into().unwrap(),
+                        }
+                    },
+                    Result::Err(_) => 0.try_into().unwrap(),
+                };
+
+                (fraction, owner)
+            } else {
+                // Single-game token or no registry: use ERC2981Component's default royalty
+                let (receiver, _, fraction) = self.erc2981.default_royalty();
+                (fraction, receiver)
+            };
+
+            // Calculate royalty amount: (sale_price * royalty_fraction) / 10000
+            // royalty_fraction is in basis points (e.g., 500 = 5%)
+            let royalty_amount = if royalty_fraction > 0 && !receiver.is_zero() {
+                (sale_price * royalty_fraction.into()) / 10000
+            } else {
+                0
+            };
+
+            (receiver, royalty_amount)
+        }
+    }
 
     // Optional implementations (conditional based on feature flags)
     #[abi(embed_v0)]
@@ -146,19 +208,11 @@ pub mod FullTokenContract {
     // OPTIONAL TRAIT IMPLEMENTATIONS
     // ================================================================================================
 
-    // These implementations are chosen based on compile-time feature flags
-    // If a feature is disabled, the NoOp implementation is used (zero runtime cost)
-
     impl MinterOptionalImpl = MinterComponent::MinterOptionalImpl<ContractState>;
     impl ObjectivesOptionalImpl = ObjectivesComponent::ObjectivesOptionalImpl<ContractState>;
     impl SettingsOptionalImpl = SettingsComponent::SettingsOptionalImpl<ContractState>;
     impl ContextOptionalImpl = ContextComponent::ContextOptionalImpl<ContractState>;
     impl RendererOptionalImpl = RendererComponent::RendererOptionalImpl<ContractState>;
-
-    // Alternative: Use NoOp implementations for disabled features
-    // impl MinterOptionalImpl = NoOpMinter<ContractState>;
-    // impl MultiGameOptionalImpl = NoOpMultiGame<ContractState>;
-    // etc.
 
     #[abi(embed_v0)]
     impl ERC721Metadata of IERC721Metadata<ContractState> {
@@ -353,7 +407,6 @@ pub mod FullTokenContract {
                 // return the blank NFT renderer
                 "https://denshokan.dev/game/1"
             }
-            // ""
         }
     }
 
@@ -400,6 +453,7 @@ pub mod FullTokenContract {
         name: ByteArray,
         symbol: ByteArray,
         base_uri: ByteArray,
+        owner: ContractAddress,
         royalty_receiver: ContractAddress,
         royalty_fraction: u128,
         game_registry_address: Option<ContractAddress>,

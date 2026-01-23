@@ -40,6 +40,7 @@ pub trait IMinigameStarknetMockInit<TContractState> {
         settings_address: Option<ContractAddress>,
         objectives_address: Option<ContractAddress>,
         minigame_token_address: ContractAddress,
+        royalty_fraction: Option<u128>,
     );
 }
 
@@ -129,6 +130,32 @@ pub mod minigame_starknet_mock {
         fn game_over(self: @ContractState, token_id: u64) -> bool {
             self.game_over.entry(token_id).read()
         }
+
+        fn score_batch(self: @ContractState, token_ids: Span<u64>) -> Array<u32> {
+            let mut results = array![];
+            let mut index = 0;
+            loop {
+                if index >= token_ids.len() {
+                    break;
+                }
+                results.append(self.score(*token_ids.at(index)));
+                index += 1;
+            }
+            results
+        }
+
+        fn game_over_batch(self: @ContractState, token_ids: Span<u64>) -> Array<bool> {
+            let mut results = array![];
+            let mut index = 0;
+            loop {
+                if index >= token_ids.len() {
+                    break;
+                }
+                results.append(self.game_over(*token_ids.at(index)));
+                index += 1;
+            }
+            results
+        }
     }
 
     #[abi(embed_v0)]
@@ -148,6 +175,47 @@ pub mod minigame_starknet_mock {
             ]
                 .span()
         }
+
+        fn token_name_batch(self: @ContractState, token_ids: Span<u64>) -> Array<ByteArray> {
+            let mut results = array![];
+            let mut index = 0;
+            loop {
+                if index >= token_ids.len() {
+                    break;
+                }
+                results.append(self.token_name(*token_ids.at(index)));
+                index += 1;
+            }
+            results
+        }
+
+        fn token_description_batch(self: @ContractState, token_ids: Span<u64>) -> Array<ByteArray> {
+            let mut results = array![];
+            let mut index = 0;
+            loop {
+                if index >= token_ids.len() {
+                    break;
+                }
+                results.append(self.token_description(*token_ids.at(index)));
+                index += 1;
+            }
+            results
+        }
+
+        fn game_details_batch(
+            self: @ContractState, token_ids: Span<u64>,
+        ) -> Array<Span<GameDetail>> {
+            let mut results = array![];
+            let mut index = 0;
+            loop {
+                if index >= token_ids.len() {
+                    break;
+                }
+                results.append(self.game_details(*token_ids.at(index)));
+                index += 1;
+            }
+            results
+        }
     }
 
     #[abi(embed_v0)]
@@ -155,6 +223,19 @@ pub mod minigame_starknet_mock {
         fn settings_exist(self: @ContractState, settings_id: u32) -> bool {
             let (_, _, exists) = self.settings_details.entry(settings_id).read();
             exists
+        }
+
+        fn settings_exist_batch(self: @ContractState, settings_ids: Span<u32>) -> Array<bool> {
+            let mut results = array![];
+            let mut index = 0;
+            loop {
+                if index >= settings_ids.len() {
+                    break;
+                }
+                results.append(self.settings_exist(*settings_ids.at(index)));
+                index += 1;
+            }
+            results
         }
     }
 
@@ -173,6 +254,21 @@ pub mod minigame_starknet_mock {
                     .span(),
             }
         }
+
+        fn settings_details_batch(
+            self: @ContractState, settings_ids: Span<u32>,
+        ) -> Array<GameSettingDetails> {
+            let mut results = array![];
+            let mut index = 0;
+            loop {
+                if index >= settings_ids.len() {
+                    break;
+                }
+                results.append(self.settings_details(*settings_ids.at(index)));
+                index += 1;
+            }
+            results
+        }
     }
 
     #[abi(embed_v0)]
@@ -186,6 +282,19 @@ pub mod minigame_starknet_mock {
             let (target_score, _) = self.objective_scores.entry(objective_id).read();
             let player_score = self.scores.entry(token_id).read();
             player_score >= target_score
+        }
+
+        fn objective_exists_batch(self: @ContractState, objective_ids: Span<u32>) -> Array<bool> {
+            let mut results = array![];
+            let mut index = 0;
+            loop {
+                if index >= objective_ids.len() {
+                    break;
+                }
+                results.append(self.objective_exists(*objective_ids.at(index)));
+                index += 1;
+            }
+            results
         }
     }
 
@@ -210,6 +319,21 @@ pub mod minigame_starknet_mock {
             }
 
             objectives.span()
+        }
+
+        fn objectives_details_batch(
+            self: @ContractState, token_ids: Span<u64>,
+        ) -> Array<Span<GameObjective>> {
+            let mut results = array![];
+            let mut index = 0;
+            loop {
+                if index >= token_ids.len() {
+                    break;
+                }
+                results.append(self.objectives_details(*token_ids.at(index)));
+                index += 1;
+            }
+            results
         }
     }
 
@@ -327,6 +451,7 @@ pub mod minigame_starknet_mock {
             settings_address: Option<ContractAddress>,
             objectives_address: Option<ContractAddress>,
             minigame_token_address: ContractAddress,
+            royalty_fraction: Option<u128>,
         ) {
             // Initialize optional features - these will only compile if the contract implements the
             // required traits
@@ -368,6 +493,7 @@ pub mod minigame_starknet_mock {
                     settings_address,
                     objectives_address,
                     minigame_token_address,
+                    royalty_fraction,
                 );
         }
     }

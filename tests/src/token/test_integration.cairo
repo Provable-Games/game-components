@@ -396,8 +396,9 @@ fn test_registry_lookup_edge_cases() {
         Option::Some("Multi Game Token"),
         Option::Some("MGT"),
         Option::Some(""),
-        Option::None,
-        Option::None,
+        Option::None, // owner
+        Option::None, // royalty_receiver
+        Option::None, // royalty_fraction
         Option::Some(registry_address),
     );
 
@@ -421,6 +422,7 @@ fn test_registry_lookup_edge_cases() {
                 Option::None,
                 Option::None,
                 token_address,
+                Option::None // royalty_fraction
             );
         games.append(game.contract_address);
         i += 1;

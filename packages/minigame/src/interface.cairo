@@ -1,6 +1,6 @@
 use game_components_metagame::extensions::context::structs::GameContextDetails;
 use starknet::ContractAddress;
-use crate::structs::GameDetail;
+use crate::structs::{GameDetail, MintGameParams};
 
 pub const IMINIGAME_ID: felt252 =
     0x02c0f9265d397c10970f24822e4b57cac7d8895f8c449b7c9caaa26910499704;
@@ -23,12 +23,18 @@ pub trait IMinigame<TState> {
         to: ContractAddress,
         soulbound: bool,
     ) -> u64;
+    /// Batch mint games with per-token parameters
+    fn mint_game_batch(self: @TState, mints: Array<MintGameParams>) -> Array<u64>;
 }
 
 #[starknet::interface]
 pub trait IMinigameTokenData<TState> {
     fn score(self: @TState, token_id: u64) -> u32;
     fn game_over(self: @TState, token_id: u64) -> bool;
+
+    // Batch operations
+    fn score_batch(self: @TState, token_ids: Span<u64>) -> Array<u32>;
+    fn game_over_batch(self: @TState, token_ids: Span<u64>) -> Array<bool>;
 }
 
 #[starknet::interface]
@@ -36,6 +42,11 @@ pub trait IMinigameDetails<TState> {
     fn token_name(self: @TState, token_id: u64) -> ByteArray;
     fn token_description(self: @TState, token_id: u64) -> ByteArray;
     fn game_details(self: @TState, token_id: u64) -> Span<GameDetail>;
+
+    // Batch operations
+    fn token_name_batch(self: @TState, token_ids: Span<u64>) -> Array<ByteArray>;
+    fn token_description_batch(self: @TState, token_ids: Span<u64>) -> Array<ByteArray>;
+    fn game_details_batch(self: @TState, token_ids: Span<u64>) -> Array<Span<GameDetail>>;
 }
 
 #[starknet::interface]

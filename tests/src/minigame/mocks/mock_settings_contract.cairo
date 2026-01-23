@@ -85,6 +85,22 @@ pub mod MockSettingsContract {
         fn settings_exist(self: @ContractState, settings_id: u32) -> bool {
             self.settings_exist.read(settings_id)
         }
+
+        fn settings_exist_batch(self: @ContractState, settings_ids: Span<u32>) -> Array<bool> {
+            let mut results = array![];
+            let mut index = 0;
+
+            loop {
+                if index >= settings_ids.len() {
+                    break;
+                }
+                let settings_id = *settings_ids.at(index);
+                results.append(self.settings_exist(settings_id));
+                index += 1;
+            }
+
+            results
+        }
     }
 
     #[abi(embed_v0)]
@@ -113,6 +129,24 @@ pub mod MockSettingsContract {
             }
 
             GameSettingDetails { name, description, settings: settings_array.span() }
+        }
+
+        fn settings_details_batch(
+            self: @ContractState, settings_ids: Span<u32>,
+        ) -> Array<GameSettingDetails> {
+            let mut results = array![];
+            let mut index = 0;
+
+            loop {
+                if index >= settings_ids.len() {
+                    break;
+                }
+                let settings_id = *settings_ids.at(index);
+                results.append(self.settings_details(settings_id));
+                index += 1;
+            }
+
+            results
         }
     }
 

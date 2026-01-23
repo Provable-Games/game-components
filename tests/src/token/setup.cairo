@@ -194,8 +194,9 @@ pub fn deploy_mock_game_standalone() -> ContractAddress {
 /// * `name` - Token name (defaults to "TestToken" if None)
 /// * `symbol` - Token symbol (defaults to "TT" if None)
 /// * `base_uri` - Base URI for token metadata (defaults to "https://test.com/" if None)
-/// * `royalty_receiver` - Address to receive royalties
-/// * `royalty_fraction` - Royalty fraction (basis points)
+/// * `owner` - Contract owner address (defaults to OWNER if None)
+/// * `royalty_receiver` - Royalty receiver address (defaults to OWNER if None)
+/// * `royalty_fraction` - Royalty fraction in basis points (defaults to 500 = 5% if None)
 /// * `game_registry_address` - Optional game registry address
 ///
 /// # Returns
@@ -204,6 +205,7 @@ pub fn deploy_full_token_contract(
     name: Option<ByteArray>,
     symbol: Option<ByteArray>,
     base_uri: Option<ByteArray>,
+    owner: Option<ContractAddress>,
     royalty_receiver: Option<ContractAddress>,
     royalty_fraction: Option<u128>,
     game_registry_address: Option<ContractAddress>,
@@ -228,23 +230,28 @@ pub fn deploy_full_token_contract(
         Option::None => "https://test.com/",
     };
 
+    let contract_owner: ContractAddress = match owner {
+        Option::Some(addr) => addr,
+        Option::None => OWNER(),
+    };
+
+    let royalty_recv: ContractAddress = match royalty_receiver {
+        Option::Some(addr) => addr,
+        Option::None => OWNER(),
+    };
+
+    let royalty_frac: u128 = match royalty_fraction {
+        Option::Some(frac) => frac,
+        Option::None => 500 // Default 5%
+    };
+
     // Serialize basic parameters
     token_name.serialize(ref constructor_calldata);
     token_symbol.serialize(ref constructor_calldata);
     token_base_uri.serialize(ref constructor_calldata);
-
-    let royalty_receiver = match royalty_receiver {
-        Option::Some(addr) => { addr },
-        Option::None => OWNER(),
-    };
-
-    let royalty_fraction = match royalty_fraction {
-        Option::Some(fraction) => { fraction },
-        Option::None => 0,
-    };
-
-    royalty_receiver.serialize(ref constructor_calldata);
-    royalty_fraction.serialize(ref constructor_calldata);
+    contract_owner.serialize(ref constructor_calldata);
+    royalty_recv.serialize(ref constructor_calldata);
+    royalty_frac.serialize(ref constructor_calldata);
 
     // Serialize game_registry_address Option
     match game_registry_address {
@@ -276,8 +283,7 @@ pub fn deploy_full_token_contract(
 /// * `name` - Token name (defaults to "TestToken" if None)
 /// * `symbol` - Token symbol (defaults to "TT" if None)
 /// * `base_uri` - Base URI for token metadata (defaults to "https://test.com/" if None)
-/// * `royalty_receiver` - Address to receive royalties
-/// * `royalty_fraction` - Royalty fraction (basis points)
+/// * `royalty_fraction` - Royalty fraction in basis points (defaults to 0 if None)
 /// * `game_address` - Game contract address (required for single-game tokens)
 /// * `creator_address` - Creator address for initial mint
 ///
@@ -287,7 +293,6 @@ pub fn deploy_single_game_token_contract(
     name: Option<ByteArray>,
     symbol: Option<ByteArray>,
     base_uri: Option<ByteArray>,
-    royalty_receiver: Option<ContractAddress>,
     royalty_fraction: Option<u128>,
     game_address: ContractAddress,
     creator_address: ContractAddress,
@@ -312,22 +317,16 @@ pub fn deploy_single_game_token_contract(
         Option::None => "https://test.com/",
     };
 
-    // Serialize basic parameters
-    token_name.serialize(ref constructor_calldata);
-    token_symbol.serialize(ref constructor_calldata);
-    token_base_uri.serialize(ref constructor_calldata);
-
-    let royalty_receiver = match royalty_receiver {
-        Option::Some(addr) => addr,
-        Option::None => OWNER(),
-    };
-
     let royalty_fraction = match royalty_fraction {
         Option::Some(fraction) => fraction,
         Option::None => 0,
     };
 
-    royalty_receiver.serialize(ref constructor_calldata);
+    // Serialize parameters in order: name, symbol, base_uri, royalty_fraction, game_address,
+    // creator_address
+    token_name.serialize(ref constructor_calldata);
+    token_symbol.serialize(ref constructor_calldata);
+    token_base_uri.serialize(ref constructor_calldata);
     royalty_fraction.serialize(ref constructor_calldata);
     game_address.serialize(ref constructor_calldata);
     creator_address.serialize(ref constructor_calldata);
@@ -346,7 +345,7 @@ pub fn deploy_single_game_token_default(
     game_address: ContractAddress,
 ) -> (IMinigameTokenMixinDispatcher, ERC721ABIDispatcher, ISRC5Dispatcher, ContractAddress) {
     deploy_single_game_token_contract(
-        Option::None, Option::None, Option::None, Option::None, Option::None, game_address, OWNER(),
+        Option::None, Option::None, Option::None, Option::None, game_address, OWNER(),
     )
 }
 
@@ -364,8 +363,9 @@ pub fn deploy_optimized_token_default() -> (
         Option::None,
         Option::None,
         Option::None,
-        Option::None,
-        Option::None,
+        Option::None, // owner - defaults to OWNER
+        Option::None, // royalty_receiver - defaults to OWNER
+        Option::None, // royalty_fraction - defaults to 500 (5%)
         Option::Some(registry.contract_address),
     )
 }
@@ -377,7 +377,7 @@ pub fn deploy_optimized_token_with_game(
     // For single-game token scenarios, use SingleGameTokenContract which supports
     // direct game address without requiring a registry
     deploy_single_game_token_contract(
-        Option::None, Option::None, Option::None, Option::None, Option::None, game_address, OWNER(),
+        Option::None, Option::None, Option::None, Option::None, game_address, OWNER(),
     )
 }
 
@@ -389,8 +389,9 @@ pub fn deploy_optimized_token_with_game_and_registry(
         Option::None,
         Option::None,
         Option::None,
-        Option::None,
-        Option::None,
+        Option::None, // owner
+        Option::None, // royalty_receiver
+        Option::None, // royalty_fraction
         Option::Some(registry_address),
     )
 }
@@ -403,8 +404,9 @@ pub fn deploy_optimized_token_with_registry(
         Option::None,
         Option::None,
         Option::None,
-        Option::None,
-        Option::None,
+        Option::None, // owner
+        Option::None, // royalty_receiver
+        Option::None, // royalty_fraction
         Option::Some(registry_address),
     )
 }
@@ -418,8 +420,9 @@ pub fn deploy_optimized_token_custom_metadata(
         Option::Some(name),
         Option::Some(symbol),
         Option::Some(base_uri),
-        Option::None,
-        Option::None,
+        Option::None, // owner
+        Option::None, // royalty_receiver
+        Option::None, // royalty_fraction
         Option::Some(minigame_registry_dispatcher.contract_address),
     )
 }
@@ -436,8 +439,9 @@ pub fn deploy_test_token_contract_with_game_registry(
         Option::Some("TestToken"),
         Option::Some("TT"),
         Option::Some("https://test.com/token/"),
-        Option::None,
-        Option::None,
+        Option::None, // owner
+        Option::None, // royalty_receiver
+        Option::None, // royalty_fraction
         game_registry_address,
     )
 }
@@ -450,8 +454,7 @@ pub fn deploy_test_token_contract_with_game(
         Option::Some("TestToken"),
         Option::Some("TT"),
         Option::Some("https://test.com/token/"),
-        Option::None,
-        Option::None,
+        Option::None, // royalty_fraction
         game_address,
         OWNER(),
     )
@@ -479,8 +482,7 @@ pub fn setup() -> TestContracts {
         Option::Some("TestToken"),
         Option::Some("TT"),
         Option::Some("https://test.com/token/"),
-        Option::None,
-        Option::None,
+        Option::None, // royalty_fraction
         minigame_dispatcher.contract_address,
         OWNER(),
     );
@@ -501,6 +503,7 @@ pub fn setup() -> TestContracts {
             Option::Some(minigame_init_dispatcher.contract_address),
             Option::Some(minigame_init_dispatcher.contract_address),
             test_token_dispatcher.contract_address,
+            Option::None // royalty_fraction
         );
 
     // Mock the supports_interface call for the context address
@@ -556,6 +559,7 @@ pub fn setup_multi_game() -> TestContracts {
             Option::None,
             Option::None,
             test_token_dispatcher.contract_address,
+            Option::None // royalty_fraction
         );
 
     // Initialize game 2 (registers in init)
@@ -574,6 +578,7 @@ pub fn setup_multi_game() -> TestContracts {
             Option::None,
             Option::None,
             test_token_dispatcher.contract_address,
+            Option::None // royalty_fraction
         );
 
     TestContracts {

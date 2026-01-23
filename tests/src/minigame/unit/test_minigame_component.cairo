@@ -46,6 +46,7 @@ fn test_initialize_with_all_addresses() {
             Option::Some(settings_address),
             Option::Some(objectives_address),
             token_address,
+            Option::None // royalty_fraction
         );
 
     // Verify addresses are stored correctly
@@ -96,6 +97,7 @@ fn test_get_token_address() {
             Option::None,
             Option::None,
             token_address,
+            Option::None // royalty_fraction
         );
 
     // Verify token_address returns correct value
@@ -133,6 +135,7 @@ fn test_get_settings_address() {
             Option::Some(settings_address),
             Option::None,
             token_address,
+            Option::None // royalty_fraction
         );
 
     // Verify settings_address returns correct value
@@ -172,6 +175,7 @@ fn test_get_objectives_address() {
             Option::None,
             Option::Some(objectives_address),
             token_address,
+            Option::None // royalty_fraction
         );
 
     // Verify objectives_address returns correct value

@@ -1,15 +1,10 @@
 use game_components_metagame::extensions::context::structs::GameContextDetails;
 use starknet::ContractAddress;
 
+/// Parameters for minting a token in batch operations through metagame
 #[derive(Drop, Serde)]
-pub struct GameDetail {
-    pub name: ByteArray,
-    pub value: ByteArray,
-}
-
-/// Parameters for minting a game token in batch operations
-#[derive(Drop, Serde)]
-pub struct MintGameParams {
+pub struct MintMetagameParams {
+    pub game_address: Option<ContractAddress>,
     pub player_name: Option<felt252>,
     pub settings_id: Option<u32>,
     pub start: Option<u64>,

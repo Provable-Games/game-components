@@ -147,6 +147,19 @@ pub mod MockObjectivesContract {
         fn completed_objective(self: @ContractState, token_id: u64, objective_id: u32) -> bool {
             self.token_objectives.read((token_id, objective_id))
         }
+
+        fn objective_exists_batch(self: @ContractState, objective_ids: Span<u32>) -> Array<bool> {
+            let mut results = array![];
+            let mut index = 0;
+            loop {
+                if index >= objective_ids.len() {
+                    break;
+                }
+                results.append(self.objective_exists(*objective_ids.at(index)));
+                index += 1;
+            }
+            results
+        }
     }
 
     #[abi(embed_v0)]
@@ -181,6 +194,21 @@ pub mod MockObjectivesContract {
             }
 
             objectives_list.span()
+        }
+
+        fn objectives_details_batch(
+            self: @ContractState, token_ids: Span<u64>,
+        ) -> Array<Span<GameObjective>> {
+            let mut results = array![];
+            let mut index = 0;
+            loop {
+                if index >= token_ids.len() {
+                    break;
+                }
+                results.append(self.objectives_details(*token_ids.at(index)));
+                index += 1;
+            }
+            results
         }
     }
 

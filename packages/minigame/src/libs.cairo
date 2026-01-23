@@ -6,8 +6,10 @@ use game_components_registry::interface::{
 use game_components_token::core::interface::{
     IMinigameTokenDispatcher, IMinigameTokenDispatcherTrait,
 };
+use game_components_token::structs::MintParams;
 use openzeppelin_interfaces::erc721::{IERC721Dispatcher, IERC721DispatcherTrait};
 use starknet::ContractAddress;
+use crate::structs::MintGameParams;
 
 /// Performs pre-action validation for the game playability
 ///
@@ -79,7 +81,9 @@ pub fn assert_game_token_playable(minigame_token_address: ContractAddress, token
 /// * `genre` - The genre of the game
 /// * `image` - The image URL of the game
 /// * `color` - Optional color theme for the game
+/// * `client_url` - Optional client URL
 /// * `renderer_address` - Optional renderer contract address
+/// * `royalty_fraction` - Optional royalty fraction in basis points (e.g., 500 = 5%)
 pub fn register_game(
     minigame_token_address: ContractAddress,
     creator_address: ContractAddress,
@@ -92,6 +96,7 @@ pub fn register_game(
     color: Option<ByteArray>,
     client_url: Option<ByteArray>,
     renderer_address: Option<ContractAddress>,
+    royalty_fraction: Option<u128>,
 ) {
     let minigame_token_dispatcher = IMinigameRegistryDispatcher {
         contract_address: minigame_token_address,
@@ -108,6 +113,7 @@ pub fn register_game(
             color,
             client_url,
             renderer_address,
+            royalty_fraction,
         );
 }
 
@@ -160,6 +166,66 @@ pub fn mint(
             to,
             soulbound,
         )
+}
+
+/// Mints multiple game tokens in batch through the denshokan contract
+///
+/// # Arguments
+/// * `minigame_token_address` - The address of the minigame token contract
+/// * `game_address` - The address of the game contract minting the tokens
+/// * `mints` - Array of mint parameters for each token
+///
+/// # Returns
+/// * `Array<u64>` - Array of minted token IDs
+pub fn mint_batch(
+    minigame_token_address: ContractAddress,
+    game_address: ContractAddress,
+    mints: Array<MintGameParams>,
+) -> Array<u64> {
+    let minigame_token_dispatcher = IMinigameTokenDispatcher {
+        contract_address: minigame_token_address,
+    };
+
+    // Convert MintGameParams to MintParams
+    let mut mint_params_array = array![];
+    let mut index = 0;
+    loop {
+        if index >= mints.len() {
+            break;
+        }
+        let mint_game_param = mints.at(index);
+
+        // Clone non-copyable Option types
+        let context_clone = match mint_game_param.context {
+            Option::Some(ctx) => Option::Some(ctx.clone()),
+            Option::None => Option::None,
+        };
+
+        let client_url_clone = match mint_game_param.client_url {
+            Option::Some(url) => Option::Some(url.clone()),
+            Option::None => Option::None,
+        };
+
+        mint_params_array
+            .append(
+                MintParams {
+                    game_address: Option::Some(game_address),
+                    player_name: *mint_game_param.player_name,
+                    settings_id: *mint_game_param.settings_id,
+                    start: *mint_game_param.start,
+                    end: *mint_game_param.end,
+                    objective_id: *mint_game_param.objective_id,
+                    context: context_clone,
+                    client_url: client_url_clone,
+                    renderer_address: *mint_game_param.renderer_address,
+                    to: *mint_game_param.to,
+                    soulbound: *mint_game_param.soulbound,
+                },
+            );
+        index += 1;
+    }
+
+    minigame_token_dispatcher.mint_batch(mint_params_array)
 }
 
 /// Gets the player name for a game token

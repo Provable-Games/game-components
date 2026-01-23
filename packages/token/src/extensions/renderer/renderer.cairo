@@ -62,6 +62,39 @@ pub mod RendererComponent {
             // Emit native event
             self.emit(TokenRendererUpdate { token_id, renderer: zero_address });
         }
+
+        fn reset_token_renderer_batch(
+            ref self: ComponentState<TContractState>, token_ids: Span<u64>,
+        ) {
+            let mut index = 0;
+            loop {
+                if index >= token_ids.len() {
+                    break;
+                }
+                let token_id = *token_ids.at(index);
+                self.reset_token_renderer(token_id);
+                index += 1;
+            }
+        }
+
+        fn get_renderer_batch(
+            self: @ComponentState<TContractState>, token_ids: Span<u64>,
+        ) -> Array<ContractAddress> {
+            let mut results = array![];
+            let mut index = 0;
+
+            loop {
+                if index >= token_ids.len() {
+                    break;
+                }
+                let token_id = *token_ids.at(index);
+                let renderer = self.get_renderer(token_id);
+                results.append(renderer);
+                index += 1;
+            }
+
+            results
+        }
     }
 
     // Implementation of the OptionalRenderer trait for integration with CoreTokenComponent

@@ -18,6 +18,7 @@ use game_components_token::extensions::renderer::renderer::RendererComponent;
 use game_components_token::extensions::settings::settings::SettingsComponent;
 use game_components_token::structs::TokenMetadata;
 use game_components_utils::renderer::create_custom_metadata;
+use openzeppelin_interfaces::erc2981::IERC2981;
 use openzeppelin_interfaces::erc721::IERC721Metadata;
 use openzeppelin_introspection::src5::SRC5Component;
 use openzeppelin_token::common::erc2981::erc2981::{DefaultConfig, ERC2981Component};
@@ -113,13 +114,31 @@ pub mod SingleGameTokenContract {
     #[abi(embed_v0)]
     impl ERC721Impl = ERC721Component::ERC721Impl<ContractState>;
     #[abi(embed_v0)]
-    impl ERC2981Impl = ERC2981Component::ERC2981Impl<ContractState>;
-    #[abi(embed_v0)]
     impl ERC2981InfoImpl = ERC2981Component::ERC2981InfoImpl<ContractState>;
     #[abi(embed_v0)]
     impl SRC5Impl = SRC5Component::SRC5Impl<ContractState>;
     #[abi(embed_v0)]
     impl CoreTokenImpl = CoreTokenComponent::CoreTokenImpl<ContractState>;
+
+    // Simple ERC2981 implementation using default royalty from ERC2981Component
+    #[abi(embed_v0)]
+    impl ERC2981Impl of IERC2981<ContractState> {
+        fn royalty_info(
+            self: @ContractState, token_id: u256, sale_price: u256,
+        ) -> (ContractAddress, u256) {
+            // Single-game token: use ERC2981Component's default royalty
+            let (receiver, _, royalty_fraction) = self.erc2981.default_royalty();
+
+            // Calculate royalty amount: (sale_price * royalty_fraction) / 10000
+            let royalty_amount = if royalty_fraction > 0 && !receiver.is_zero() {
+                (sale_price * royalty_fraction.into()) / 10000
+            } else {
+                0
+            };
+
+            (receiver, royalty_amount)
+        }
+    }
 
     // Optional implementations
     #[abi(embed_v0)]
@@ -189,6 +208,8 @@ pub mod SingleGameTokenContract {
 
                 // For single-game tokens, we need to get game metadata from the game contract
                 // In production, you'd get these from the game contract or store them
+                // Get royalty fraction from ERC2981Component default royalty
+                let (_, _, royalty_frac) = self.erc2981.default_royalty();
                 let game_metadata = GameMetadata {
                     contract_address: game_address,
                     name: "Game",
@@ -200,6 +221,7 @@ pub mod SingleGameTokenContract {
                     color: "#ffffff",
                     client_url: "https://example.com/game",
                     renderer_address: renderer_address,
+                    royalty_fraction: royalty_frac,
                 };
 
                 let score =
@@ -352,14 +374,14 @@ pub mod SingleGameTokenContract {
         name: ByteArray,
         symbol: ByteArray,
         base_uri: ByteArray,
-        royalty_receiver: ContractAddress,
         royalty_fraction: u128,
         game_address: ContractAddress,
         creator_address: ContractAddress,
     ) {
         // Initialize core components
         self.erc721.initializer(name, symbol, base_uri);
-        self.erc2981.initializer(royalty_receiver, royalty_fraction);
+        // Initialize ERC2981 with creator as royalty receiver
+        self.erc2981.initializer(creator_address, royalty_fraction);
 
         // For single-game token, initialize with game_address and creator_address
         // No registry is needed for single-game scenarios

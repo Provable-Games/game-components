@@ -250,6 +250,7 @@ fn test_mint_with_all_parameters() {
             Option::None, // settings_address
             Option::None, // objectives_address
             token_address,
+            Option::None // royalty_fraction
         );
 
     // Deploy metagame contract

@@ -20,6 +20,7 @@ pub mod MinigameComponent {
     use starknet::{ContractAddress, get_contract_address};
     use crate::interface::{IMINIGAME_ID, IMinigame, IMinigameTokenData};
     use crate::libs;
+    use crate::structs::MintGameParams;
 
     #[storage]
     pub struct Storage {
@@ -76,6 +77,12 @@ pub mod MinigameComponent {
                 soulbound,
             )
         }
+
+        fn mint_game_batch(
+            self: @ComponentState<TContractState>, mints: Array<MintGameParams>,
+        ) -> Array<u64> {
+            libs::mint_batch(self.token_address.read(), get_contract_address(), mints)
+        }
     }
 
     #[generate_trait]
@@ -100,6 +107,7 @@ pub mod MinigameComponent {
             settings_address: Option<ContractAddress>,
             objectives_address: Option<ContractAddress>,
             token_address: ContractAddress,
+            royalty_fraction: Option<u128>,
         ) {
             // Register base SRC5 interface
             self.register_game_interface();
@@ -137,6 +145,7 @@ pub mod MinigameComponent {
                             color,
                             client_url,
                             renderer_address,
+                            royalty_fraction,
                         );
                 }
             }

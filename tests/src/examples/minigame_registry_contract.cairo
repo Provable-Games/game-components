@@ -131,6 +131,7 @@ pub mod MinigameRegistryContract {
             color: Option<ByteArray>,
             client_url: Option<ByteArray>,
             renderer_address: Option<ContractAddress>,
+            royalty_fraction: Option<u128>,
         ) -> u64 {
             let game_count = self.game_counter.read();
             let new_game_id = game_count + 1;
@@ -177,6 +178,11 @@ pub mod MinigameRegistryContract {
                 Option::None => 0.try_into().unwrap(),
             };
 
+            let final_royalty_fraction: u128 = match royalty_fraction {
+                Option::Some(fraction) => fraction,
+                Option::None => 0,
+            };
+
             // Store game metadata
             let metadata = GameMetadata {
                 contract_address: caller_address,
@@ -189,6 +195,7 @@ pub mod MinigameRegistryContract {
                 color: final_color.clone(),
                 client_url: final_client_url.clone(),
                 renderer_address: final_renderer_address,
+                royalty_fraction: final_royalty_fraction,
             };
 
             self.game_metadata.entry(new_game_id).write(metadata);
@@ -229,6 +236,22 @@ pub mod MinigameRegistryContract {
             }
 
             new_game_id
+        }
+
+        fn set_game_royalty(ref self: ContractState, game_id: u64, royalty_fraction: u128) {
+            // Validate game_id exists
+            let game_count = self.game_counter.read();
+            assert!(game_id > 0 && game_id <= game_count, "Registry: invalid game id");
+
+            // Check caller owns the game creator token (game_id)
+            let caller = get_caller_address();
+            let owner = self.erc721.owner_of(game_id.into());
+            assert!(caller == owner, "Registry: not game owner");
+
+            // Update the royalty_fraction in game metadata
+            let mut metadata = self.game_metadata.entry(game_id).read();
+            metadata.royalty_fraction = royalty_fraction;
+            self.game_metadata.entry(game_id).write(metadata);
         }
     }
 

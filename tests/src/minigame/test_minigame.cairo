@@ -57,7 +57,8 @@ fn test_mint_basic() {
             Option::Some(
                 minigame_dispatcher.contract_address,
             ), // objectives_address (self-reference for mock)
-            token_address // token_address
+            token_address, // token_address
+            Option::None // royalty_fraction
         );
 
     let player_addr = addr(PLAYER_ADDRESS);

@@ -17,7 +17,8 @@ pub mod MinigameRegistryComponent {
     use starknet::storage::{
         Map, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess,
     };
-    use starknet::{ContractAddress, get_caller_address};
+    use starknet::syscalls::call_contract_syscall;
+    use starknet::{ContractAddress, get_caller_address, get_contract_address};
     use crate::interface::{GameMetadata, IMINIGAME_REGISTRY_ID, IMinigameRegistry};
 
     // ==========================================================================
@@ -43,6 +44,7 @@ pub mod MinigameRegistryComponent {
     pub enum Event {
         GameMetadataUpdate: GameMetadataUpdate,
         GameRegistryUpdate: GameRegistryUpdate,
+        GameRoyaltyUpdate: GameRoyaltyUpdate,
     }
 
     #[derive(Drop, starknet::Event)]
@@ -59,6 +61,7 @@ pub mod MinigameRegistryComponent {
         pub color: ByteArray,
         pub client_url: ByteArray,
         pub renderer_address: ContractAddress,
+        pub royalty_fraction: u128,
     }
 
     #[derive(Drop, starknet::Event)]
@@ -68,6 +71,13 @@ pub mod MinigameRegistryComponent {
         pub contract_address: ContractAddress,
     }
 
+    #[derive(Drop, starknet::Event)]
+    pub struct GameRoyaltyUpdate {
+        #[key]
+        pub game_id: u64,
+        pub royalty_fraction: u128,
+    }
+
     // ==========================================================================
     // ERRORS
     // ==========================================================================
@@ -75,6 +85,8 @@ pub mod MinigameRegistryComponent {
     pub mod Errors {
         pub const CALLER_NOT_MINIGAME: felt252 = 'Registry: not IMinigame';
         pub const GAME_ALREADY_REGISTERED: felt252 = 'Registry: already registered';
+        pub const NOT_GAME_OWNER: felt252 = 'Registry: not game owner';
+        pub const INVALID_GAME_ID: felt252 = 'Registry: invalid game id';
     }
 
     // ==========================================================================
@@ -149,6 +161,7 @@ pub mod MinigameRegistryComponent {
             color: Option<ByteArray>,
             client_url: Option<ByteArray>,
             renderer_address: Option<ContractAddress>,
+            royalty_fraction: Option<u128>,
         ) -> u64 {
             let game_count = self.game_counter.read();
             let new_game_id = game_count + 1;
@@ -192,6 +205,11 @@ pub mod MinigameRegistryComponent {
                 Option::None => 0.try_into().unwrap(),
             };
 
+            let final_royalty_fraction: u128 = match royalty_fraction {
+                Option::Some(fraction) => fraction,
+                Option::None => 0,
+            };
+
             // Store game metadata
             let metadata = GameMetadata {
                 contract_address: caller_address,
@@ -204,6 +222,7 @@ pub mod MinigameRegistryComponent {
                 color: final_color.clone(),
                 client_url: final_client_url.clone(),
                 renderer_address: final_renderer_address,
+                royalty_fraction: final_royalty_fraction,
             };
 
             self.game_metadata.entry(new_game_id).write(metadata);
@@ -224,6 +243,7 @@ pub mod MinigameRegistryComponent {
                         color: final_color,
                         client_url: final_client_url,
                         renderer_address: final_renderer_address,
+                        royalty_fraction: final_royalty_fraction,
                     },
                 );
 
@@ -234,6 +254,46 @@ pub mod MinigameRegistryComponent {
             );
 
             new_game_id
+        }
+
+        fn set_game_royalty(
+            ref self: ComponentState<TContractState>, game_id: u64, royalty_fraction: u128,
+        ) {
+            // Validate game_id exists
+            let game_count = self.game_counter.read();
+            assert!(game_id > 0 && game_id <= game_count, "{}", Errors::INVALID_GAME_ID);
+
+            // Check caller owns the game creator token (game_id)
+            // Call owner_of on this contract to check token ownership
+            let caller = get_caller_address();
+            let contract_address = get_contract_address();
+            let owner_of_selector = selector!("owner_of");
+            let mut calldata = array![];
+            let game_id_u256: u256 = game_id.into();
+            calldata.append(game_id_u256.low.into());
+            calldata.append(game_id_u256.high.into());
+
+            let owner =
+                match call_contract_syscall(contract_address, owner_of_selector, calldata.span()) {
+                Result::Ok(result) => {
+                    let mut result_span = result;
+                    match Serde::<ContractAddress>::deserialize(ref result_span) {
+                        Option::Some(addr) => addr,
+                        Option::None => panic!("{}", Errors::NOT_GAME_OWNER),
+                    }
+                },
+                Result::Err(_) => panic!("{}", Errors::NOT_GAME_OWNER),
+            };
+
+            assert!(caller == owner, "{}", Errors::NOT_GAME_OWNER);
+
+            // Update the royalty_fraction in game metadata
+            let mut metadata = self.game_metadata.entry(game_id).read();
+            metadata.royalty_fraction = royalty_fraction;
+            self.game_metadata.entry(game_id).write(metadata);
+
+            // Emit royalty update event
+            self.emit(GameRoyaltyUpdate { game_id, royalty_fraction });
         }
     }
 

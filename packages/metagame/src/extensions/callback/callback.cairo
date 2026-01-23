@@ -102,12 +102,18 @@ pub mod MetagameCallbackComponent {
 pub impl MetagameCallbackHooksEmptyImpl<
     TContractState,
 > of MetagameCallbackComponent::MetagameCallbackHooksTrait<TContractState> {
-    fn on_score_update(ref self: TContractState, token_id: u256, score: u32) {// No-op: contracts can override for custom score handling
+    fn on_score_update(
+        ref self: TContractState, token_id: u256, score: u32,
+    ) { // No-op: contracts can override for custom score handling
     }
 
-    fn on_game_over(ref self: TContractState, token_id: u256, final_score: u32) {// No-op: contracts can override for custom game over handling
+    fn on_game_over(
+        ref self: TContractState, token_id: u256, final_score: u32,
+    ) { // No-op: contracts can override for custom game over handling
     }
 
-    fn on_objective_complete(ref self: TContractState, token_id: u256) {// No-op: contracts can override for custom objectives handling
+    fn on_objective_complete(
+        ref self: TContractState, token_id: u256,
+    ) { // No-op: contracts can override for custom objectives handling
     }
 }
