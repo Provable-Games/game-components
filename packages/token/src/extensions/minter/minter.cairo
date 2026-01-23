@@ -8,7 +8,6 @@ pub mod MinterComponent {
     };
     use crate::core::traits::OptionalMinter;
     use crate::extensions::minter::interface::{IMINIGAME_TOKEN_MINTER_ID, IMinigameTokenMinter};
-    use crate::interface::{ITokenEventRelayerDispatcher, ITokenEventRelayerDispatcherTrait};
 
     #[storage]
     pub struct Storage {
@@ -25,8 +24,9 @@ pub mod MinterComponent {
 
     #[derive(Drop, starknet::Event)]
     pub struct MinterRegistryUpdate {
-        minter_id: u64,
-        minter_address: ContractAddress,
+        #[key]
+        pub minter_id: u64,
+        pub minter_address: ContractAddress,
     }
 
     #[embeddable_as(MinterImpl)]
@@ -65,11 +65,7 @@ pub mod MinterComponent {
             component.get_minter_address(minter_id)
         }
 
-        fn add_minter(
-            ref self: TContractState,
-            minter: ContractAddress,
-            event_relayer: Option<ITokenEventRelayerDispatcher>,
-        ) -> u64 {
+        fn add_minter(ref self: TContractState, minter: ContractAddress) -> u64 {
             let mut component = HasComponent::get_component_mut(ref self);
 
             // Check if minter already exists
@@ -84,12 +80,8 @@ pub mod MinterComponent {
             component.minter_id_by_address.entry(minter).write(minter_id);
             component.minter_counter.write(minter_id);
 
-            // Emit event
-            match event_relayer {
-                Option::Some(relayer) => relayer.emit_minter_registry_update(minter_id, minter),
-                Option::None => component
-                    .emit(MinterRegistryUpdate { minter_id, minter_address: minter }),
-            }
+            // Emit native event
+            component.emit(MinterRegistryUpdate { minter_id, minter_address: minter });
 
             minter_id
         }

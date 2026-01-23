@@ -2,9 +2,10 @@
 members = [
     "packages/metagame",
     "packages/minigame",
+    "packages/registry",
     "packages/token",
-    # Test packages can be uncommented when needed
-    "packages/test_starknet",
+    # Test packages
+    "tests",
     "packages/utils",
     "packages/leaderboard",
     "packages/presets",
@@ -32,6 +33,7 @@ keywords = [
 [workspace.dependencies]
 starknet = "2.13.1"
 snforge_std = { git = "https://github.com/foundry-rs/starknet-foundry", tag = "v0.53.0" }
+openzeppelin_access = { git = "https://github.com/OpenZeppelin/cairo-contracts.git", tag = "v3.0.0-alpha.3" }
 openzeppelin_introspection = { git = "https://github.com/OpenZeppelin/cairo-contracts.git", tag = "v3.0.0-alpha.3" }
 openzeppelin_token = { git = "https://github.com/OpenZeppelin/cairo-contracts.git", tag = "v3.0.0-alpha.3" }
 openzeppelin_interfaces = { git = "https://github.com/OpenZeppelin/cairo-contracts.git", tag = "v3.0.0-alpha.3" }
@@ -41,10 +43,11 @@ starknet.workspace = true
 # Common packages
 game_components_metagame = { path = "packages/metagame" }
 game_components_minigame = { path = "packages/minigame" }
+game_components_registry = { path = "packages/registry" }
 game_components_token = { path = "packages/token" }
 # Test packages
 # game_components_test_dojo = { path = "packages/test_dojo" }  # Excluded - must be built separately
-game_components_test_starknet = { path = "packages/test_starknet" }
+game_components_tests = { path = "tests" }
 game_components_utils = { path = "packages/utils" }
 game_components_leaderboard = { path = "packages/leaderboard" }
 game_components_presets = { path = "packages/presets" }

@@ -4,15 +4,10 @@ use crate::core::traits::{
     OptionalContext, OptionalMinter, OptionalObjectives, OptionalRenderer, OptionalSettings,
     OptionalSoulbound,
 };
-use crate::interface::ITokenEventRelayerDispatcher;
 
 // No-op implementations for disabled features
 pub impl NoOpMinter<TContractState> of OptionalMinter<TContractState> {
-    fn add_minter(
-        ref self: TContractState,
-        minter: ContractAddress,
-        event_relayer: Option<ITokenEventRelayerDispatcher>,
-    ) -> u64 {
+    fn add_minter(ref self: TContractState, minter: ContractAddress) -> u64 {
         0
     }
 
@@ -27,38 +22,20 @@ pub impl NoOpContext<TContractState> of OptionalContext<TContractState> {
         caller: ContractAddress,
         token_id: u64,
         context: GameContextDetails,
-        event_relayer: Option<ITokenEventRelayerDispatcher>,
     ) { // No-op
     }
 }
 
 pub impl NoOpObjectives<TContractState> of OptionalObjectives<TContractState> {
-    fn validate_objectives(
-        self: @TContractState, game_address: ContractAddress, objective_ids: Span<u32>,
-    ) -> (u32, Span<u32>) {
-        (0, objective_ids)
-    }
-
-    fn set_token_objectives(
-        ref self: TContractState,
-        token_id: u64,
-        objective_ids: Span<u32>,
-        event_relayer: Option<ITokenEventRelayerDispatcher>,
+    fn validate_objective(
+        self: @TContractState, game_address: ContractAddress, objective_id: u32,
     ) { // No-op
     }
 
-    fn update_objectives(
-        ref self: TContractState,
-        token_id: u64,
-        game_address: ContractAddress,
-        objectives_count: u32,
-        event_relayer: Option<ITokenEventRelayerDispatcher>,
+    fn is_objective_completed(
+        self: @TContractState, game_address: ContractAddress, token_id: u64, objective_id: u32,
     ) -> bool {
         false
-    }
-
-    fn are_objectives_completed(self: @TContractState, token_id: u64) -> bool {
-        true
     }
 }
 
@@ -84,10 +61,7 @@ pub impl NoOpRenderer<TContractState> of OptionalRenderer<TContractState> {
     }
 
     fn set_token_renderer(
-        ref self: TContractState,
-        token_id: u64,
-        renderer: ContractAddress,
-        event_relayer: Option<ITokenEventRelayerDispatcher>,
+        ref self: TContractState, token_id: u64, renderer: ContractAddress,
     ) { // No-op
     }
 }

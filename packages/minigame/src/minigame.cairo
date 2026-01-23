@@ -5,11 +5,11 @@
 pub mod MinigameComponent {
     use core::num::traits::Zero;
     use game_components_metagame::extensions::context::structs::GameContextDetails;
+    use game_components_registry::interface::{
+        IMINIGAME_REGISTRY_ID, IMinigameRegistryDispatcher, IMinigameRegistryDispatcherTrait,
+    };
     use game_components_token::core::interface::{
         IMINIGAME_TOKEN_ID, IMinigameTokenDispatcher, IMinigameTokenDispatcherTrait,
-    };
-    use game_components_token::examples::minigame_registry_contract::{
-        IMINIGAME_REGISTRY_ID, IMinigameRegistryDispatcher, IMinigameRegistryDispatcherTrait,
     };
     use openzeppelin_interfaces::introspection::{ISRC5Dispatcher, ISRC5DispatcherTrait};
     use openzeppelin_introspection::src5::SRC5Component;
@@ -20,6 +20,7 @@ pub mod MinigameComponent {
     use starknet::{ContractAddress, get_contract_address};
     use crate::interface::{IMINIGAME_ID, IMinigame, IMinigameTokenData};
     use crate::libs;
+    use crate::structs::MintGameParams;
 
     #[storage]
     pub struct Storage {
@@ -54,7 +55,7 @@ pub mod MinigameComponent {
             settings_id: Option<u32>,
             start: Option<u64>,
             end: Option<u64>,
-            objective_ids: Option<Span<u32>>,
+            objective_id: Option<u32>,
             context: Option<GameContextDetails>,
             client_url: Option<ByteArray>,
             renderer_address: Option<ContractAddress>,
@@ -68,13 +69,19 @@ pub mod MinigameComponent {
                 settings_id,
                 start,
                 end,
-                objective_ids,
+                objective_id,
                 context,
                 client_url,
                 renderer_address,
                 to,
                 soulbound,
             )
+        }
+
+        fn mint_game_batch(
+            self: @ComponentState<TContractState>, mints: Array<MintGameParams>,
+        ) -> Array<u64> {
+            libs::mint_batch(self.token_address.read(), get_contract_address(), mints)
         }
     }
 
@@ -100,6 +107,7 @@ pub mod MinigameComponent {
             settings_address: Option<ContractAddress>,
             objectives_address: Option<ContractAddress>,
             token_address: ContractAddress,
+            royalty_fraction: Option<u128>,
         ) {
             // Register base SRC5 interface
             self.register_game_interface();
@@ -137,6 +145,7 @@ pub mod MinigameComponent {
                             color,
                             client_url,
                             renderer_address,
+                            royalty_fraction,
                         );
                 }
             }

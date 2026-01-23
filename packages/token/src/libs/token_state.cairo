@@ -20,7 +20,7 @@ pub fn is_token_playable(metadata: @TokenMetadata, current_time: u64) -> bool {
     }
 
     // Can't play if all objectives are completed
-    if *metadata.completed_all_objectives {
+    if *metadata.completed_objective {
         return false;
     }
 
@@ -46,11 +46,11 @@ pub fn ensure_game_over_transition(old_state: bool, new_state: bool) -> bool {
     }
 }
 
-/// Ensures completed_all_objectives state only transitions from false to true
+/// Ensures completed_objective state only transitions from false to true
 ///
 /// # Arguments
-/// * `old_state` - The previous completed_all_objectives state
-/// * `new_state` - The new completed_all_objectives state
+/// * `old_state` - The previous completed_objective state
+/// * `new_state` - The new completed_objective state
 ///
 /// # Returns
 /// * `bool` - The validated new state
@@ -84,8 +84,8 @@ pub fn create_blank_token_metadata(
         game_over: false,
         settings_id: 0,
         // Objectives
-        objectives_count: 0,
-        completed_all_objectives: false,
+        objective_id: 0,
+        completed_objective: false,
         // Metadata
         lifecycle,
         soulbound,
@@ -105,7 +105,7 @@ pub fn create_blank_token_metadata(
 /// * `minted_by` - The minter ID
 /// * `soulbound` - Whether the token is soulbound
 /// * `has_context` - Whether the token has context
-/// * `objectives_count` - The number of objectives
+/// * `objective_id` - The objective ID
 /// * `current_time` - The current block timestamp
 ///
 /// # Returns
@@ -118,7 +118,7 @@ pub fn create_game_token_metadata(
     minted_by: u64,
     soulbound: bool,
     has_context: bool,
-    objectives_count: u8,
+    objective_id: u32,
     current_time: u64,
 ) -> TokenMetadata {
     TokenMetadata {
@@ -127,8 +127,8 @@ pub fn create_game_token_metadata(
         game_over: false,
         settings_id,
         // Objectives
-        objectives_count,
-        completed_all_objectives: false,
+        objective_id,
+        completed_objective: false,
         // Metadata
         lifecycle,
         soulbound,

@@ -73,6 +73,32 @@ pub mod MockMinigame {
             }
             self.token_game_over.read(token_id)
         }
+
+        fn score_batch(self: @ContractState, token_ids: Span<u64>) -> Array<u32> {
+            let mut results = array![];
+            let mut index = 0;
+            loop {
+                if index >= token_ids.len() {
+                    break;
+                }
+                results.append(self.score(*token_ids.at(index)));
+                index += 1;
+            }
+            results
+        }
+
+        fn game_over_batch(self: @ContractState, token_ids: Span<u64>) -> Array<bool> {
+            let mut results = array![];
+            let mut index = 0;
+            loop {
+                if index >= token_ids.len() {
+                    break;
+                }
+                results.append(self.game_over(*token_ids.at(index)));
+                index += 1;
+            }
+            results
+        }
     }
 
     // Implement ISRC5

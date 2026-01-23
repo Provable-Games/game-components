@@ -1,12 +1,14 @@
 use game_components_metagame::extensions::context::structs::GameContextDetails;
 use game_components_minigame::interface::{IMinigameDispatcher, IMinigameDispatcherTrait};
+use game_components_registry::interface::{
+    IMinigameRegistryDispatcher, IMinigameRegistryDispatcherTrait,
+};
 use game_components_token::core::interface::{
     IMinigameTokenDispatcher, IMinigameTokenDispatcherTrait,
 };
-use game_components_token::examples::minigame_registry_contract::{
-    IMinigameRegistryDispatcher, IMinigameRegistryDispatcherTrait,
-};
+use game_components_token::structs::MintParams;
 use starknet::ContractAddress;
+use crate::structs::MintMetagameParams;
 
 /// Asserts that a game is registered in the minigame token contract
 ///
@@ -36,7 +38,7 @@ pub fn assert_game_registered(game_address: ContractAddress) {
 /// * `settings_id` - Optional settings ID
 /// * `start` - Optional start time
 /// * `end` - Optional end time
-/// * `objective_ids` - Optional objective IDs
+/// * `objective_id` - Optional objective ID
 /// * `context` - Optional context data
 /// * `client_url` - Optional client URL
 /// * `renderer_address` - Optional renderer contract address
@@ -52,7 +54,7 @@ pub fn mint(
     settings_id: Option<u32>,
     start: Option<u64>,
     end: Option<u64>,
-    objective_ids: Option<Span<u32>>,
+    objective_id: Option<u32>,
     context: Option<GameContextDetails>,
     client_url: Option<ByteArray>,
     renderer_address: Option<ContractAddress>,
@@ -75,7 +77,7 @@ pub fn mint(
                     settings_id,
                     start,
                     end,
-                    objective_ids,
+                    objective_id,
                     context,
                     client_url,
                     renderer_address,
@@ -96,7 +98,7 @@ pub fn mint(
                     settings_id,
                     start,
                     end,
-                    objective_ids,
+                    objective_id,
                     context,
                     client_url,
                     renderer_address,
@@ -105,4 +107,58 @@ pub fn mint(
                 )
         },
     }
+}
+
+/// Mints multiple game tokens in batch through minigame token contracts
+///
+/// # Arguments
+/// * `default_token_address` - The default token address for minting when no game_address is
+/// provided * `mints` - Array of mint parameters for each token
+///
+/// # Returns
+/// * `Array<u64>` - Array of minted token IDs
+pub fn mint_batch(
+    default_token_address: ContractAddress, mints: Array<MintMetagameParams>,
+) -> Array<u64> {
+    let mut token_ids = array![];
+    let mut index = 0;
+
+    loop {
+        if index >= mints.len() {
+            break;
+        }
+
+        let mint_param = mints.at(index);
+
+        // Clone non-copyable Option types
+        let context_clone = match mint_param.context {
+            Option::Some(ctx) => Option::Some(ctx.clone()),
+            Option::None => Option::None,
+        };
+
+        let client_url_clone = match mint_param.client_url {
+            Option::Some(url) => Option::Some(url.clone()),
+            Option::None => Option::None,
+        };
+
+        let token_id = mint(
+            default_token_address,
+            *mint_param.game_address,
+            *mint_param.player_name,
+            *mint_param.settings_id,
+            *mint_param.start,
+            *mint_param.end,
+            *mint_param.objective_id,
+            context_clone,
+            client_url_clone,
+            *mint_param.renderer_address,
+            *mint_param.to,
+            *mint_param.soulbound,
+        );
+
+        token_ids.append(token_id);
+        index += 1;
+    }
+
+    token_ids
 }

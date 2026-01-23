@@ -8,4 +8,3 @@ pub trait IMetagame<TContractState> {
     fn context_address(self: @TContractState) -> ContractAddress;
     fn default_token_address(self: @TContractState) -> ContractAddress;
 }
-

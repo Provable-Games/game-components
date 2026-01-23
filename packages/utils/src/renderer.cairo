@@ -6,7 +6,7 @@ use core::traits::Into;
 use game_components_metagame::extensions::context::structs::GameContextDetails;
 use game_components_minigame::extensions::settings::structs::GameSettingDetails;
 use game_components_minigame::structs::GameDetail;
-use game_components_token::examples::minigame_registry_contract::GameMetadata;
+use game_components_registry::interface::GameMetadata;
 use game_components_token::structs::TokenMetadata;
 use graffiti::json::JsonImpl;
 use starknet::{ContractAddress, get_block_timestamp};
@@ -218,7 +218,7 @@ pub fn create_custom_metadata(
             .append(
                 create_trait(
                     "Objectives Completed",
-                    if token_metadata.completed_all_objectives {
+                    if token_metadata.completed_objective {
                         "True"
                     } else {
                         "False"
@@ -260,7 +260,7 @@ mod tests {
     use game_components_metagame::extensions::context::structs::{GameContext, GameContextDetails};
     use game_components_minigame::extensions::settings::structs::{GameSetting, GameSettingDetails};
     use game_components_minigame::structs::GameDetail;
-    use game_components_token::examples::minigame_registry_contract::GameMetadata;
+    use game_components_registry::interface::GameMetadata;
     use game_components_token::structs::{Lifecycle, TokenMetadata};
     use starknet::contract_address_const;
     use super::{create_custom_metadata, create_default_svg};
@@ -282,6 +282,7 @@ mod tests {
             renderer_address: contract_address_const::<
                 0x9876543210987654321098765432109876543210,
             >(),
+            royalty_fraction: 500,
         };
 
         let svg_result = create_default_svg(1000000, game_metadata, 100, 'test Player');
@@ -306,6 +307,7 @@ mod tests {
             renderer_address: contract_address_const::<
                 0x9876543210987654321098765432109876543210,
             >(),
+            royalty_fraction: 500,
         };
 
         let settings_details = GameSettingDetails {
@@ -339,9 +341,9 @@ mod tests {
             lifecycle: Lifecycle { start: 1640995200, end: 1672531200 }, // 2022-2023
             game_over: false,
             soulbound: false,
-            completed_all_objectives: true,
+            completed_objective: true,
             has_context: true,
-            objectives_count: 5,
+            objective_id: 5,
         };
 
         let objective_ids = array![1, 2, 3, 5, 8].span();
@@ -389,6 +391,7 @@ mod tests {
             renderer_address: contract_address_const::<
                 0x9876543210987654321098765432109876543210,
             >(),
+            royalty_fraction: 250,
         };
 
         // Empty settings
@@ -409,9 +412,9 @@ mod tests {
             lifecycle: Lifecycle { start: 1640995200, end: 1672531200 },
             game_over: true,
             soulbound: true,
-            completed_all_objectives: false,
+            completed_objective: false,
             has_context: false,
-            objectives_count: 0,
+            objective_id: 0,
         };
 
         let metadata = create_custom_metadata(
@@ -452,6 +455,7 @@ mod tests {
             renderer_address: contract_address_const::<
                 0x2222222222222222222222222222222222222222,
             >(),
+            royalty_fraction: 750,
         };
 
         let settings_details = GameSettingDetails {
@@ -476,9 +480,9 @@ mod tests {
             lifecycle: Lifecycle { start: 1650000000, end: 1680000000 },
             game_over: false,
             soulbound: false,
-            completed_all_objectives: false,
+            completed_objective: false,
             has_context: true,
-            objectives_count: 2,
+            objective_id: 10,
         };
 
         let metadata = create_custom_metadata(
@@ -519,6 +523,7 @@ mod tests {
             renderer_address: contract_address_const::<
                 0x4444444444444444444444444444444444444444,
             >(),
+            royalty_fraction: 1000,
         };
 
         let settings_details = GameSettingDetails {
@@ -550,9 +555,9 @@ mod tests {
             lifecycle: Lifecycle { start: 1660000000, end: 1690000000 },
             game_over: false,
             soulbound: true,
-            completed_all_objectives: true,
+            completed_objective: true,
             has_context: true,
-            objectives_count: 1,
+            objective_id: 100,
         };
 
         let metadata = create_custom_metadata(
@@ -598,6 +603,7 @@ mod tests {
             renderer_address: contract_address_const::<
                 0x6666666666666666666666666666666666666666,
             >(),
+            royalty_fraction: 10000,
         };
 
         let settings_details = GameSettingDetails {
@@ -631,9 +637,9 @@ mod tests {
             lifecycle: Lifecycle { start: 0, end: 4294967295 }, // Max u32
             game_over: true,
             soulbound: true,
-            completed_all_objectives: true,
+            completed_objective: true,
             has_context: true,
-            objectives_count: 4,
+            objective_id: 1,
         };
 
         let metadata = create_custom_metadata(

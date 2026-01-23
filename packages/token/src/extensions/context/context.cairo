@@ -9,7 +9,6 @@ pub mod ContextComponent {
     use starknet::ContractAddress;
     use crate::core::traits::OptionalContext;
     use crate::extensions::context::interface::IMINIGAME_TOKEN_CONTEXT_ID;
-    use crate::interface::{ITokenEventRelayerDispatcher, ITokenEventRelayerDispatcherTrait};
 
     #[storage]
     pub struct Storage {}
@@ -22,6 +21,7 @@ pub mod ContextComponent {
 
     #[derive(Drop, starknet::Event)]
     pub struct TokenContextUpdate {
+        #[key]
         pub token_id: u64,
         pub data: ByteArray,
     }
@@ -35,7 +35,6 @@ pub mod ContextComponent {
             caller: ContractAddress,
             token_id: u64,
             context: GameContextDetails,
-            event_relayer: Option<ITokenEventRelayerDispatcher>,
         ) {
             let src5_dispatcher = ISRC5Dispatcher { contract_address: caller };
             assert!(
@@ -46,18 +45,9 @@ pub mod ContextComponent {
                 context.name, context.description, context.id, context.context,
             );
 
-            // Emit event
-            match event_relayer {
-                Option::Some(relayer) => relayer
-                    .emit_token_context_update(token_id, context_json.clone()),
-                Option::None => {
-                    let mut component = HasComponent::get_component_mut(ref self);
-                    component
-                        .emit(
-                            TokenContextUpdate { token_id: token_id, data: context_json.clone() },
-                        );
-                },
-            }
+            // Emit native event
+            let mut component = HasComponent::get_component_mut(ref self);
+            component.emit(TokenContextUpdate { token_id: token_id, data: context_json });
         }
     }
 

@@ -16,6 +16,7 @@ pub mod MetagameComponent {
     use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
     use crate::interface::{IMETAGAME_ID, IMetagame};
     use crate::libs;
+    use crate::structs::MintMetagameParams;
 
     #[storage]
     pub struct Storage {
@@ -93,7 +94,7 @@ pub mod MetagameComponent {
             settings_id: Option<u32>,
             start: Option<u64>,
             end: Option<u64>,
-            objective_ids: Option<Span<u32>>,
+            objective_id: Option<u32>,
             context: Option<GameContextDetails>,
             client_url: Option<ByteArray>,
             renderer_address: Option<ContractAddress>,
@@ -107,13 +108,19 @@ pub mod MetagameComponent {
                 settings_id,
                 start,
                 end,
-                objective_ids,
+                objective_id,
                 context,
                 client_url,
                 renderer_address,
                 to,
                 soulbound,
             )
+        }
+
+        fn mint_batch(
+            ref self: ComponentState<TContractState>, mints: Array<MintMetagameParams>,
+        ) -> Array<u64> {
+            libs::mint_batch(self.default_token_address.read(), mints)
         }
     }
 }

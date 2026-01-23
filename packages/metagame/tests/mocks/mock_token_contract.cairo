@@ -56,7 +56,7 @@ pub mod MockTokenContract {
                 minted_by: 0,
                 soulbound: false,
                 game_over: false,
-                completed_all_objectives: false,
+                completed_objective: false,
                 has_context: false,
                 objectives_count: 0,
             }

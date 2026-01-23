@@ -24,14 +24,6 @@ pub mod ObjectivesComponent {
             self.register_objectives_interface();
         }
 
-        fn get_objective_ids(
-            self: @ComponentState<TContractState>,
-            token_id: u64,
-            minigame_token_address: ContractAddress,
-        ) -> Span<u32> {
-            libs::get_objective_ids(minigame_token_address, token_id)
-        }
-
         fn register_objectives_interface(ref self: ComponentState<TContractState>) {
             let mut src5_component = get_dep_component_mut!(ref self, SRC5);
             src5_component.register_interface(IMINIGAME_OBJECTIVES_ID);
