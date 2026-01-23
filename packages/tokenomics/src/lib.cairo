@@ -28,7 +28,6 @@
 pub mod buyback;
 pub mod constants;
 pub mod factory;
-pub mod presets;
 pub mod stream;
 
 // Re-exports for convenience - Buyback
@@ -39,7 +38,7 @@ pub use buyback::{
 };
 
 // Re-exports for convenience - Constants
-pub use constants::Errors;
+pub use constants::{ERC20_UNIT, Errors};
 
 // Re-exports for convenience - Factory
 pub use factory::StreamTokenFactory;

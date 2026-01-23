@@ -12,9 +12,10 @@
 #[starknet::contract]
 pub mod StreamToken {
     use game_components_interfaces::tokenomics::stream::{DistributionOrder, LiquidityConfig};
+    use game_components_tokenomics::ERC20_UNIT;
+    use game_components_tokenomics::stream::StreamComponent;
     use openzeppelin_token::erc20::{ERC20Component, ERC20HooksEmptyImpl};
     use starknet::ContractAddress;
-    use crate::stream::stream::StreamComponent;
 
     // Embed components
     component!(path: ERC20Component, storage: erc20, event: ERC20Event);
@@ -102,7 +103,6 @@ pub mod StreamToken {
             );
 
         // Mint tokens to registry for registration (1 token = 10^18 units)
-        use crate::constants::ERC20_UNIT;
         self.erc20.mint(registry_address, ERC20_UNIT.into());
 
         // Register token with Ekubo

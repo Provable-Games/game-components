@@ -23,9 +23,9 @@ pub mod AutonomousBuyback {
     use game_components_interfaces::tokenomics::buyback::{
         GlobalBuybackConfig, IBuybackAdmin, TokenBuybackConfig,
     };
+    use game_components_tokenomics::buyback::BuybackComponent;
     use openzeppelin_access::ownable::OwnableComponent;
     use starknet::ContractAddress;
-    use crate::buyback::buyback::BuybackComponent;
 
     // Embed components
     component!(path: BuybackComponent, storage: buyback, event: BuybackEvent);
