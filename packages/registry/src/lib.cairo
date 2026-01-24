@@ -3,3 +3,6 @@
 
 pub mod component;
 pub mod interface;
+
+#[cfg(test)]
+mod tests;

@@ -6,3 +6,6 @@ pub mod leaderboard_component;
 pub mod leaderboard_store;
 pub mod models;
 pub mod store;
+
+#[cfg(test)]
+mod tests;

@@ -6,11 +6,12 @@ members = [
     "packages/registry",
     "packages/token",
     "packages/tokenomics",
-    # Test packages
-    "tests",
     "packages/utils",
     "packages/leaderboard",
     "packages/presets",
+    # Shared testing infrastructure
+    "packages/testing",
+    "packages/test_common",
 ]
 
 [package]
@@ -43,17 +44,19 @@ ekubo = { git = "https://github.com/EkuboProtocol/starknet-contracts.git", tag =
 
 [dependencies]
 starknet.workspace = true
-# Common packages
+# Core packages
 game_components_interfaces = { path = "packages/interfaces" }
 game_components_metagame = { path = "packages/metagame" }
 game_components_minigame = { path = "packages/minigame" }
 game_components_registry = { path = "packages/registry" }
 game_components_token = { path = "packages/token" }
 game_components_tokenomics = { path = "packages/tokenomics" }
-game_components_tests = { path = "tests" }
 game_components_utils = { path = "packages/utils" }
 game_components_leaderboard = { path = "packages/leaderboard" }
 game_components_presets = { path = "packages/presets" }
+# Shared testing infrastructure
+game_components_testing = { path = "packages/testing" }
+game_components_test_common = { path = "packages/test_common" }
 
 [dev-dependencies]
 snforge_std.workspace = true

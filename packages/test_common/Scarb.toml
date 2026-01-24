@@ -1,0 +1,26 @@
+[package]
+name = "game_components_test_common"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+starknet.workspace = true
+snforge_std.workspace = true
+openzeppelin_access.workspace = true
+openzeppelin_token.workspace = true
+openzeppelin_introspection.workspace = true
+openzeppelin_interfaces.workspace = true
+game_components_interfaces = { path = "../interfaces" }
+game_components_minigame = { path = "../minigame" }
+game_components_metagame = { path = "../metagame" }
+game_components_registry = { path = "../registry" }
+game_components_token = { path = "../token" }
+game_components_leaderboard = { path = "../leaderboard" }
+game_components_utils = { path = "../utils" }
+game_components_testing = { path = "../testing" }
+
+[lib]
+
+[[target.starknet-contract]]
+sierra = true
+casm = true

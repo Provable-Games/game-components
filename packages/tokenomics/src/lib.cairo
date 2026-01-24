@@ -49,3 +49,6 @@ pub use stream::{
     IStreamTokenDispatcherTrait, IStreamTokenFactory, IStreamTokenFactoryDispatcher,
     IStreamTokenFactoryDispatcherTrait, LiquidityConfig, StoredDistributionOrder, StreamComponent,
 };
+
+#[cfg(test)]
+mod tests;
