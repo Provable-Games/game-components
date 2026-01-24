@@ -62,6 +62,14 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-scarb-deps-
 
+      - name: Cache Cargo (snforge plugin)
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo
+          key: ${{ runner.os }}-cargo-snforge-${{ env.FOUNDRY_VERSION }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-snforge-
+
       - name: Build workspace
         run: scarb build --workspace
 
@@ -69,7 +77,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: build-artifacts
-          path: target/
+          path: |
+            target/
+            ~/.cache/scarb/
           retention-days: 1
 
   test:
@@ -109,7 +119,21 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: build-artifacts
-          path: target/
+          path: .artifacts/
+
+      - name: Restore build artifacts
+        run: |
+          cp -r .artifacts/target ./
+          mkdir -p ~/.cache
+          cp -r .artifacts/.cache/scarb ~/.cache/ || true
+
+      - name: Cache Cargo (snforge plugin)
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo
+          key: ${{ runner.os }}-cargo-snforge-${{ env.FOUNDRY_VERSION }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-snforge-
 
       - name: Cache tools
         uses: actions/cache@v4
