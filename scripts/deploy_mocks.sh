@@ -170,14 +170,12 @@ fi
 # ============================
 
 print_info "Building contracts..."
-cd tests
-scarb build
-# Return to scripts directory
-cd ../..
+# Build from repo root - test_common package contains the minigame mock
+scarb build -p game_components_test_common
 
-if [ ! -f "target/dev/game_components_tests_minigame_starknet_mock.contract_class.json" ]; then
+if [ ! -f "target/dev/game_components_test_common_minigame_starknet_mock.contract_class.json" ]; then
     print_error "Contract build failed or contract file not found"
-    print_error "Expected: target/dev/game_components_tests_minigame_starknet_mock.contract_class.json"
+    print_error "Expected: target/dev/game_components_test_common_minigame_starknet_mock.contract_class.json"
     echo "Available contract files:"
     ls -la target/dev/*.contract_class.json 2>/dev/null || echo "No contract files found"
     exit 1
@@ -190,7 +188,7 @@ fi
 print_info "Declaring Minigame Mock contract..."
 
 # Build declare command based on deployment type
-CONTRACT_PATH="target/dev/game_components_tests_minigame_starknet_mock.contract_class.json"
+CONTRACT_PATH="target/dev/game_components_test_common_minigame_starknet_mock.contract_class.json"
 if [ "$DEPLOY_TO_SLOT" = "true" ]; then
     DECLARE_OUTPUT=$(starkli declare --account $STARKNET_ACCOUNT --rpc $STARKNET_RPC --watch "$CONTRACT_PATH" 2>&1)
 else

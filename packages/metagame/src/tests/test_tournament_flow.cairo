@@ -390,7 +390,6 @@ mod MockContextProvider {
 #[starknet::contract]
 mod MockTokenContract {
     use core::num::traits::Zero;
-    use game_components_metagame::extensions::context::structs::GameContextDetails;
     use game_components_token::core::interface::{IMINIGAME_TOKEN_ID, IMinigameToken};
     use game_components_token::structs::{
         Lifecycle, MintParams, PlayerNameUpdate, SetTokenMetadataParams, TokenMetadata,
@@ -401,6 +400,7 @@ mod MockTokenContract {
         Map, StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess,
         StoragePointerWriteAccess,
     };
+    use crate::extensions::context::structs::GameContextDetails;
 
     #[storage]
     struct Storage {
