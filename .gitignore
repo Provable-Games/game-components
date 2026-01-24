@@ -13,3 +13,4 @@ packages/test_dojo/
 .DS_Store
 coverage.lcov
 **/snfoundry_trace/
+**/coverage_html/

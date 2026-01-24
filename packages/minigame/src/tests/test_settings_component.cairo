@@ -185,3 +185,238 @@ fn test_settings_svg() {
     let svg2 = settings_svg_dispatcher.settings_svg(2);
     assert!(svg2 == "<svg><text>Hard Mode</text></svg>", "SVG 2 content mismatch");
 }
+
+// =============================================================================
+// Batch Operation Tests
+// =============================================================================
+
+// Test SET-U-11: settings_exist_batch with multiple IDs
+#[test]
+fn test_settings_exist_batch() {
+    let contract_address = deploy_mock_settings_contract();
+
+    let settings_dispatcher = IMinigameSettingsDispatcher { contract_address };
+
+    let settings_ids: Array<u32> = array![1, 2, 3, 999];
+    let results = settings_dispatcher.settings_exist_batch(settings_ids.span());
+
+    assert!(results.len() == 4, "Should return 4 results");
+    assert!(*results.at(0) == true, "Settings 1 should exist");
+    assert!(*results.at(1) == true, "Settings 2 should exist");
+    assert!(*results.at(2) == false, "Settings 3 should not exist");
+    assert!(*results.at(3) == false, "Settings 999 should not exist");
+}
+
+// Test SET-U-12: settings_exist_batch with empty array
+#[test]
+fn test_settings_exist_batch_empty() {
+    let contract_address = deploy_mock_settings_contract();
+
+    let settings_dispatcher = IMinigameSettingsDispatcher { contract_address };
+
+    let empty_ids: Array<u32> = array![];
+    let results = settings_dispatcher.settings_exist_batch(empty_ids.span());
+
+    assert!(results.len() == 0, "Should return empty array");
+}
+
+// Test SET-U-13: settings_exist_batch with single item
+#[test]
+fn test_settings_exist_batch_single() {
+    let contract_address = deploy_mock_settings_contract();
+
+    let settings_dispatcher = IMinigameSettingsDispatcher { contract_address };
+
+    let single_id: Array<u32> = array![1];
+    let results = settings_dispatcher.settings_exist_batch(single_id.span());
+
+    assert!(results.len() == 1, "Should return 1 result");
+    assert!(*results.at(0) == true, "Settings 1 should exist");
+}
+
+// Test SET-U-14: settings_details_batch with multiple IDs
+#[test]
+fn test_settings_details_batch() {
+    let contract_address = deploy_mock_settings_contract();
+
+    let settings_details_dispatcher = IMinigameSettingsDetailsDispatcher { contract_address };
+
+    let settings_ids: Array<u32> = array![1, 2];
+    let results = settings_details_dispatcher.settings_details_batch(settings_ids.span());
+
+    assert!(results.len() == 2, "Should return 2 results");
+
+    let settings1 = results.at(0);
+    assert!(settings1.name == @"Easy Mode", "Settings 1 name mismatch");
+
+    let settings2 = results.at(1);
+    assert!(settings2.name == @"Hard Mode", "Settings 2 name mismatch");
+}
+
+// Test SET-U-15: settings_details_batch with single item
+#[test]
+fn test_settings_details_batch_single() {
+    let contract_address = deploy_mock_settings_contract();
+
+    let settings_details_dispatcher = IMinigameSettingsDetailsDispatcher { contract_address };
+
+    let single_id: Array<u32> = array![2];
+    let results = settings_details_dispatcher.settings_details_batch(single_id.span());
+
+    assert!(results.len() == 1, "Should return 1 result");
+
+    let settings = results.at(0);
+    assert!(settings.name == @"Hard Mode", "Settings name mismatch");
+    assert!(settings.description == @"Expert settings", "Settings description mismatch");
+}
+
+// =============================================================================
+// Edge Case Tests
+// =============================================================================
+
+// Test SET-E-01: Create settings with long strings
+#[test]
+fn test_create_settings_long_strings() {
+    let contract_address = deploy_mock_settings_contract();
+
+    let long_name: ByteArray =
+        "This is a very long settings name that tests the limits of ByteArray storage";
+    let long_description: ByteArray =
+        "This is a very long description that contains multiple sentences and tests the limits of ByteArray storage";
+
+    let new_settings = GameSettingDetails {
+        name: long_name.clone(),
+        description: long_description.clone(),
+        settings: array![GameSetting { name: "key", value: "value" }].span(),
+    };
+
+    let setter = ISettingsSetterDispatcher { contract_address };
+    setter.create_test_settings(100, new_settings);
+
+    let settings_dispatcher = IMinigameSettingsDispatcher { contract_address };
+    let settings_details_dispatcher = IMinigameSettingsDetailsDispatcher { contract_address };
+
+    assert!(settings_dispatcher.settings_exist(100), "Long string settings should exist");
+
+    let retrieved = settings_details_dispatcher.settings_details(100);
+    assert!(retrieved.name == long_name, "Long name mismatch");
+    assert!(retrieved.description == long_description, "Long description mismatch");
+}
+
+// Test SET-E-02: Create settings with special characters
+#[test]
+fn test_create_settings_special_chars() {
+    let contract_address = deploy_mock_settings_contract();
+
+    let special_name: ByteArray = "Special: !@#$%^&*()";
+    let special_description: ByteArray = "Tabs\tand\nnewlines";
+
+    let new_settings = GameSettingDetails {
+        name: special_name.clone(),
+        description: special_description.clone(),
+        settings: array![].span(),
+    };
+
+    let setter = ISettingsSetterDispatcher { contract_address };
+    setter.create_test_settings(101, new_settings);
+
+    let settings_details_dispatcher = IMinigameSettingsDetailsDispatcher { contract_address };
+    let retrieved = settings_details_dispatcher.settings_details(101);
+
+    assert!(retrieved.name == special_name, "Special char name mismatch");
+}
+
+// =============================================================================
+// Fuzz Tests
+// =============================================================================
+
+// Test SET-F-01: Fuzz settings_exist with random IDs
+#[test]
+#[fuzzer]
+fn test_settings_exist_fuzz(settings_id: u32) {
+    let contract_address = deploy_mock_settings_contract();
+
+    let settings_dispatcher = IMinigameSettingsDispatcher { contract_address };
+
+    // Should not panic for any settings_id
+    let exists = settings_dispatcher.settings_exist(settings_id);
+
+    // Only IDs 1 and 2 are pre-populated in the mock
+    if settings_id == 1 || settings_id == 2 {
+        assert!(exists, "Settings 1 or 2 should exist");
+    }
+}
+
+// Test SET-F-02: Fuzz settings_exist_batch with single random ID
+#[test]
+#[fuzzer]
+fn test_settings_exist_batch_fuzz(settings_id: u32) {
+    let contract_address = deploy_mock_settings_contract();
+
+    let settings_dispatcher = IMinigameSettingsDispatcher { contract_address };
+
+    let ids: Array<u32> = array![settings_id];
+    let results = settings_dispatcher.settings_exist_batch(ids.span());
+
+    assert!(results.len() == 1, "Should return 1 result");
+}
+
+// =============================================================================
+// Additional Coverage Tests for Mock Contract
+// =============================================================================
+
+// Test SET-MOCK-01: Test settings details loop iteration
+#[test]
+fn test_settings_details_iteration() {
+    let contract_address = deploy_mock_settings_contract();
+
+    let setter = ISettingsSetterDispatcher { contract_address };
+    let settings_details_dispatcher = IMinigameSettingsDetailsDispatcher { contract_address };
+
+    // Create settings with multiple items to cover loop
+    let settings = GameSettingDetails {
+        name: "Iteration Test",
+        description: "Testing loop iteration",
+        settings: array![
+            GameSetting { name: "item1", value: "value1" },
+            GameSetting { name: "item2", value: "value2" },
+            GameSetting { name: "item3", value: "value3" },
+            GameSetting { name: "item4", value: "value4" },
+            GameSetting { name: "item5", value: "value5" },
+        ]
+            .span(),
+    };
+
+    setter.create_test_settings(200, settings);
+
+    let retrieved = settings_details_dispatcher.settings_details(200);
+    assert!(retrieved.settings.len() == 5, "Should have 5 settings items");
+}
+
+// Test SET-MOCK-02: Test settings_exist_batch loop
+#[test]
+fn test_settings_exist_batch_iteration() {
+    let contract_address = deploy_mock_settings_contract();
+
+    let settings_dispatcher = IMinigameSettingsDispatcher { contract_address };
+
+    // Test with many IDs to cover loop iterations
+    let ids: Array<u32> = array![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+    let results = settings_dispatcher.settings_exist_batch(ids.span());
+
+    assert!(results.len() == 10, "Should return 10 results");
+}
+
+// Test SET-MOCK-03: Test settings_details_batch loop
+#[test]
+fn test_settings_details_batch_iteration() {
+    let contract_address = deploy_mock_settings_contract();
+
+    let settings_details_dispatcher = IMinigameSettingsDetailsDispatcher { contract_address };
+
+    // Both IDs 1 and 2 are pre-populated
+    let ids: Array<u32> = array![1, 2, 1, 2, 1];
+    let results = settings_details_dispatcher.settings_details_batch(ids.span());
+
+    assert!(results.len() == 5, "Should return 5 results");
+}

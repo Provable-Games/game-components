@@ -177,3 +177,64 @@ fn test_lifecycle_validate_invalid_edge_case() {
     let lifecycle = Lifecycle { start: Bounded::<u64>::MAX, end: Bounded::<u64>::MAX - 1 };
     lifecycle.validate(); // Should panic
 }
+
+// ================================================================================================
+// LIFECYCLE FUZZ TESTS (FZ-LIFE-*)
+// ================================================================================================
+
+#[test]
+#[fuzzer]
+fn test_fuzz_has_expired(end: u64, current_time: u64) {
+    // FZ-LIFE-001: Fuzz has_expired consistency
+    let lifecycle = Lifecycle { start: 0, end };
+    let result = lifecycle.has_expired(current_time);
+
+    if end == 0 {
+        assert!(!result, "Should never expire when end is 0");
+    } else {
+        assert!(result == (current_time >= end), "Expiration logic mismatch");
+    }
+}
+
+#[test]
+#[fuzzer]
+fn test_fuzz_can_start(start: u64, current_time: u64) {
+    // FZ-LIFE-002: Fuzz can_start consistency
+    let lifecycle = Lifecycle { start, end: 0 };
+    let result = lifecycle.can_start(current_time);
+
+    if start == 0 {
+        assert!(result, "Should always start when start is 0");
+    } else {
+        assert!(result == (current_time >= start), "Start logic mismatch");
+    }
+}
+
+#[test]
+#[fuzzer]
+fn test_fuzz_is_playable(start: u64, end: u64, current_time: u64) {
+    // FZ-LIFE-003: Fuzz is_playable consistency
+    // Only test valid lifecycles (skip if start > end && end != 0)
+    if end != 0 && start > end {
+        return;
+    }
+
+    let lifecycle = Lifecycle { start, end };
+    let result = lifecycle.is_playable(current_time);
+    let expected = lifecycle.can_start(current_time) && !lifecycle.has_expired(current_time);
+
+    assert!(result == expected, "is_playable should equal can_start && !has_expired");
+}
+
+#[test]
+#[fuzzer]
+fn test_fuzz_validate_valid(start: u64, end: u64) {
+    // FZ-LIFE-004: Fuzz validate (valid cases only)
+    // Only test valid lifecycles
+    if end != 0 && start > end {
+        return;
+    }
+
+    let lifecycle = Lifecycle { start, end };
+    lifecycle.validate(); // Should not panic
+}

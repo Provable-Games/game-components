@@ -225,3 +225,160 @@ fn test_50_player_leaderboard() {
         j += 1;
     };
 }
+
+// ==============================================================================
+// ASCENDING ORDER TESTS
+// ==============================================================================
+
+#[test]
+fn test_ascending_leaderboard_insertion() {
+    let config = LeaderboardConfig { max_entries: 5, ascending: true, allow_ties: true };
+    let mut entries = ArrayTrait::new();
+    entries.append(LeaderboardEntry { id: 1, score: 10 });
+    entries.append(LeaderboardEntry { id: 2, score: 30 });
+
+    // Insert score 20 (middle)
+    let new_entry = LeaderboardEntry { id: 3, score: 20 };
+    let position = LeaderboardOperationsImpl::find_insert_position(@config, @entries, @new_entry);
+    assert!(position == Option::Some(1), "Should insert at position 1 in ascending");
+
+    let (updated, result) = LeaderboardOperationsImpl::insert_entry(
+        @config, @entries, @new_entry, 1,
+    );
+
+    match result {
+        LeaderboardResult::Success => {},
+        _ => panic!("Should succeed"),
+    }
+
+    assert!(*updated.at(0).score == 10, "First should be 10");
+    assert!(*updated.at(1).score == 20, "Second should be 20");
+    assert!(*updated.at(2).score == 30, "Third should be 30");
+}
+
+#[test]
+fn test_ascending_full_leaderboard_replacement() {
+    let config = LeaderboardConfig { max_entries: 2, ascending: true, allow_ties: true };
+    let mut entries = ArrayTrait::new();
+    entries.append(LeaderboardEntry { id: 1, score: 10 });
+    entries.append(LeaderboardEntry { id: 2, score: 20 });
+
+    // Check that bad score doesn't qualify
+    assert!(
+        !LeaderboardOperationsImpl::qualifies_for_leaderboard(@config, @entries, 30),
+        "Score 30 shouldn't qualify",
+    );
+
+    // Insert a better score (lower in ascending)
+    let good_entry = LeaderboardEntry { id: 4, score: 15 };
+    let (updated, result) = LeaderboardOperationsImpl::insert_entry(
+        @config, @entries, @good_entry, 1,
+    );
+
+    match result {
+        LeaderboardResult::Success => {},
+        _ => panic!("Should succeed"),
+    }
+
+    assert!(updated.len() == 2, "Should have 2 entries");
+    assert!(*updated.at(0).score == 10, "First should be 10");
+    assert!(*updated.at(1).score == 15, "Second should be 15 (20 displaced)");
+}
+
+#[test]
+fn test_qualifies_descending_full() {
+    let config = LeaderboardConfig { max_entries: 2, ascending: false, allow_ties: true };
+    let mut entries = ArrayTrait::new();
+    entries.append(LeaderboardEntry { id: 1, score: 100 });
+    entries.append(LeaderboardEntry { id: 2, score: 50 });
+
+    // Must beat 50 to qualify
+    assert!(
+        LeaderboardOperationsImpl::qualifies_for_leaderboard(@config, @entries, 60), "60 qualifies",
+    );
+    assert!(
+        !LeaderboardOperationsImpl::qualifies_for_leaderboard(@config, @entries, 50),
+        "50 doesn't qualify",
+    );
+    assert!(
+        !LeaderboardOperationsImpl::qualifies_for_leaderboard(@config, @entries, 40),
+        "40 doesn't qualify",
+    );
+}
+
+#[test]
+fn test_qualifies_ascending_full() {
+    let config = LeaderboardConfig { max_entries: 2, ascending: true, allow_ties: true };
+    let mut entries = ArrayTrait::new();
+    entries.append(LeaderboardEntry { id: 1, score: 10 });
+    entries.append(LeaderboardEntry { id: 2, score: 30 });
+
+    // Must beat 30 (be lower) to qualify
+    assert!(
+        LeaderboardOperationsImpl::qualifies_for_leaderboard(@config, @entries, 20), "20 qualifies",
+    );
+    assert!(
+        !LeaderboardOperationsImpl::qualifies_for_leaderboard(@config, @entries, 30),
+        "30 doesn't qualify",
+    );
+    assert!(
+        !LeaderboardOperationsImpl::qualifies_for_leaderboard(@config, @entries, 40),
+        "40 doesn't qualify",
+    );
+}
+
+#[test]
+fn test_is_better_score_descending() {
+    let config = LeaderboardConfig { max_entries: 5, ascending: false, allow_ties: true };
+
+    assert!(ScoreComparatorImpl::is_better_score(@config, 100, 50), "100 > 50 in descending");
+    assert!(!ScoreComparatorImpl::is_better_score(@config, 50, 100), "50 < 100 in descending");
+}
+
+#[test]
+fn test_is_better_score_ascending() {
+    let config = LeaderboardConfig { max_entries: 5, ascending: true, allow_ties: true };
+
+    assert!(ScoreComparatorImpl::is_better_score(@config, 10, 50), "10 < 50 in ascending (better)");
+    assert!(!ScoreComparatorImpl::is_better_score(@config, 50, 10), "50 > 10 in ascending (worse)");
+}
+
+#[test]
+fn test_break_tie() {
+    let config = LeaderboardConfig { max_entries: 5, ascending: false, allow_ties: true };
+    let lower_id = LeaderboardEntry { id: 1, score: 100 };
+    let higher_id = LeaderboardEntry { id: 5, score: 100 };
+
+    assert!(ScoreComparatorImpl::break_tie(@config, @lower_id, @higher_id), "Lower ID wins");
+    assert!(!ScoreComparatorImpl::break_tie(@config, @higher_id, @lower_id), "Higher ID loses");
+}
+
+#[test]
+fn test_new_creates_empty() {
+    let entries = LeaderboardUtilsImpl::new();
+    assert!(entries.len() == 0, "New should create empty array");
+}
+
+#[test]
+fn test_is_full_partial() {
+    let config = LeaderboardConfig { max_entries: 5, ascending: false, allow_ties: true };
+    let mut entries = ArrayTrait::new();
+    entries.append(LeaderboardEntry { id: 1, score: 100 });
+    entries.append(LeaderboardEntry { id: 2, score: 80 });
+
+    assert!(!LeaderboardUtilsImpl::is_full(@config, @entries), "2/5 should not be full");
+}
+
+#[test]
+fn test_get_range_middle() {
+    let mut entries = ArrayTrait::new();
+    entries.append(LeaderboardEntry { id: 1, score: 100 });
+    entries.append(LeaderboardEntry { id: 2, score: 80 });
+    entries.append(LeaderboardEntry { id: 3, score: 60 });
+    entries.append(LeaderboardEntry { id: 4, score: 40 });
+
+    let range = LeaderboardUtilsImpl::get_range(@entries, 1, 2);
+    assert!(range.len() == 2, "Should return 2 entries");
+    assert!(*range.at(0).id == 2, "First should be ID 2");
+    assert!(*range.at(1).id == 3, "Second should be ID 3");
+}
