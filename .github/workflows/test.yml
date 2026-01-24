@@ -115,9 +115,9 @@ jobs:
       - name: Cairo lint
         run: scarb fmt --check --workspace
 
-      # Run tests once with both fuzzing and coverage
+      # Run tests with fuzzing and coverage
       - name: Run tests with fuzzing and coverage
-        run: snforge test --workspace --features fuzzing --fuzzer-runs 500 --coverage
+        run: snforge test --workspace --fuzzer-runs 500 --coverage
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
