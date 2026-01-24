@@ -39,7 +39,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     strategy:
-      fail-fast: false
+      fail-fast: true
       matrix:
         package:
           - metagame
@@ -62,7 +62,7 @@ jobs:
         with:
           scarb-version: ${{ env.SCARB_VERSION }}
 
-      - uses: foundry-rs/setup-snfoundry@v5
+      - uses: foundry-rs/setup-snfoundry@v4
         with:
           starknet-foundry-version: ${{ env.FOUNDRY_VERSION }}
 
