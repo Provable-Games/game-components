@@ -1,9 +1,13 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-use game_components_leaderboard::interface::{IGameDetailsDispatcher, IGameDetailsDispatcherTrait};
+// Import types and interfaces from interfaces package
+// Re-export LeaderboardStoreConfig for backward compatibility
+pub use game_components_interfaces::leaderboard::{
+    IGameDetailsDispatcher, IGameDetailsDispatcherTrait, LeaderboardConfig, LeaderboardEntry,
+    LeaderboardResult, LeaderboardStoreConfig,
+};
 use game_components_leaderboard::leaderboard::leaderboard::{
-    LeaderboardConfig, LeaderboardEntry, LeaderboardOperationsImpl, LeaderboardResult,
-    LeaderboardUtilsImpl,
+    LeaderboardOperationsImpl, LeaderboardUtilsImpl,
 };
 use game_components_leaderboard::models::Leaderboard;
 use game_components_leaderboard::store::Store;
@@ -12,17 +16,6 @@ use game_components_leaderboard::store::Store;
 /// store. It replaces the component approach with direct store operations
 
 use starknet::ContractAddress;
-
-/// Configuration for leaderboard behavior
-#[derive(Drop, Serde, Copy)]
-pub struct LeaderboardStoreConfig {
-    /// Maximum number of entries allowed
-    pub max_entries: u32,
-    /// Whether lower scores are better (true) or higher scores are better (false)
-    pub ascending: bool,
-    /// Game contract address for score retrieval
-    pub game_address: ContractAddress,
-}
 
 /// Main trait for leaderboard store operations
 pub trait LeaderboardStoreTrait<T> {

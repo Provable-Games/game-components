@@ -16,8 +16,12 @@ pub mod registry;
 pub mod token;
 pub mod tokenomics;
 
-// Leaderboard (only ID and structs - interfaces remain in leaderboard package)
-pub use leaderboard::ILEADERBOARD_ID;
+// Leaderboard
+pub use leaderboard::{
+    IGameDetails, IGameDetailsDispatcher, IGameDetailsDispatcherTrait, ILEADERBOARD_ID,
+    ILeaderboard, ILeaderboardAdmin, ILeaderboardAdminDispatcher, ILeaderboardAdminDispatcherTrait,
+    ILeaderboardDispatcher, ILeaderboardDispatcherTrait,
+};
 
 // Re-export commonly used items at top level for convenience
 // Metagame

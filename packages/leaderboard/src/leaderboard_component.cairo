@@ -6,6 +6,10 @@
 #[starknet::component]
 pub mod LeaderboardComponent {
     use core::num::traits::Zero;
+    use game_components_interfaces::leaderboard::{
+        ILEADERBOARD_ID, ILeaderboard, ILeaderboardAdmin, LeaderboardEntry, LeaderboardResult,
+        LeaderboardStoreConfig,
+    };
     use openzeppelin_introspection::src5::SRC5Component;
     use openzeppelin_introspection::src5::SRC5Component::InternalTrait as SRC5InternalTrait;
     use starknet::storage::{
@@ -13,13 +17,10 @@ pub mod LeaderboardComponent {
         StoragePointerWriteAccess,
     };
     use starknet::{ContractAddress, get_caller_address};
-    use crate::interface::{ILEADERBOARD_ID, ILeaderboard, ILeaderboardAdmin};
-    use crate::leaderboard::leaderboard::{
-        LeaderboardEntry, LeaderboardOperationsImpl, LeaderboardResult, LeaderboardUtilsImpl,
-    };
+    use crate::leaderboard::leaderboard::{LeaderboardOperationsImpl, LeaderboardUtilsImpl};
     use crate::leaderboard_store::{
-        LeaderboardStoreConfig, LeaderboardStoreHelpersImpl, LeaderboardStoreHelpersTrait,
-        LeaderboardStoreImpl, LeaderboardStoreTrait,
+        LeaderboardStoreHelpersImpl, LeaderboardStoreHelpersTrait, LeaderboardStoreImpl,
+        LeaderboardStoreTrait,
     };
     use crate::models::Leaderboard;
     use crate::store::Store;
