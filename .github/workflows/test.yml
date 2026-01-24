@@ -63,7 +63,7 @@ jobs:
             ${{ runner.os }}-scarb-deps-
 
       - name: Build workspace
-        run: snforge build --workspace
+        run: scarb build --workspace
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
