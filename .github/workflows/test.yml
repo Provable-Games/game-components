@@ -81,14 +81,14 @@ jobs:
       fail-fast: false
       matrix:
         package:
-          - metagame
-          - minigame
-          - registry
-          - token
-          - tokenomics
-          - utils
-          - leaderboard
-          - presets
+          - game_components_metagame
+          - game_components_minigame
+          - game_components_registry
+          - game_components_token
+          - game_components_tokenomics
+          - game_components_utils
+          - game_components_leaderboard
+          - game_components_presets
     steps:
       - uses: actions/checkout@v6
 
