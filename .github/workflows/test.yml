@@ -6,15 +6,10 @@ on:
       - main
       - next
     paths-ignore:
-      - "ui/**"
-      - "**/manifest.json"
-      - ".github/**"
-      - "pnpm-lock.yaml"
+      - "scripts/**"
   pull_request:
     paths-ignore:
-      - "ui/**"
-      - "**/manifest.json"
-      - "pnpm-lock.yaml"
+      - "scripts/**"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
