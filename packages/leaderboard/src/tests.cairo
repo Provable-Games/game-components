@@ -3,3 +3,4 @@ mod mocks;
 mod test_leaderboard;
 mod test_leaderboard_component;
 mod test_leaderboard_pure;
+mod test_models;

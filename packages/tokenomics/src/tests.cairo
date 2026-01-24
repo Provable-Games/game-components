@@ -12,5 +12,8 @@ pub mod mocks;
 /// - mocks: Mock contracts for isolated testing
 /// - fixtures: Test constants and configurations
 mod test_buyback;
+mod test_constants;
+mod test_factory;
 mod test_preset;
+mod test_stream;
 mod test_stream_burn;
