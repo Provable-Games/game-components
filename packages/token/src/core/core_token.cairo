@@ -918,7 +918,7 @@ pub mod CoreTokenComponent {
 
                     // Set player name if provided
                     if let Option::Some(name) = player_name {
-                        self.token_player_names.entry(token_id).write(name.clone());
+                        self.token_player_names.entry(token_id).write(name);
                         self.emit_token_player_name_update(token_id, name);
                     }
 
