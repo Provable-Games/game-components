@@ -15,32 +15,49 @@ on:
       - "**/manifest.json"
       - "pnpm-lock.yaml"
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  lint_and_test:
-    name: lint and test contracts
+  lint:
+    name: lint
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
 
       - name: Extract scarb version
-        run: |
-          SCARB_VERSION=$(grep '^scarb ' .tool-versions | awk '{print $2}')
-          echo "SCARB_VERSION=$SCARB_VERSION" >> "$GITHUB_ENV"
+        run: echo "SCARB_VERSION=$(grep '^scarb ' .tool-versions | awk '{print $2}')" >> "$GITHUB_ENV"
 
       - uses: software-mansion/setup-scarb@v1
         with:
           scarb-version: ${{ env.SCARB_VERSION }}
 
-      - name: Extract foundry version
+      - name: Cairo lint
+        run: scarb fmt --check --workspace
+
+  test:
+    name: test
+    needs: lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract tool versions
         run: |
-          FOUNDRY_VERSION=$(grep '^starknet-foundry ' .tool-versions | awk '{print $2}')
-          echo "FOUNDRY_VERSION=$FOUNDRY_VERSION" >> "$GITHUB_ENV"
+          echo "SCARB_VERSION=$(grep '^scarb ' .tool-versions | awk '{print $2}')" >> "$GITHUB_ENV"
+          echo "FOUNDRY_VERSION=$(grep '^starknet-foundry ' .tool-versions | awk '{print $2}')" >> "$GITHUB_ENV"
+
+      - uses: software-mansion/setup-scarb@v1
+        with:
+          scarb-version: ${{ env.SCARB_VERSION }}
 
       - uses: foundry-rs/setup-snfoundry@v4
         with:
           starknet-foundry-version: ${{ env.FOUNDRY_VERSION }}
 
-      # Cache scarb dependencies
       - name: Cache Scarb dependencies
         uses: actions/cache@v4
         with:
@@ -50,8 +67,8 @@ jobs:
           key: ${{ runner.os }}-scarb-${{ hashFiles('**/Scarb.toml', '**/Scarb.lock') }}
           restore-keys: |
             ${{ runner.os }}-scarb-
+          save-always: true
 
-      # Cache tool installations
       - name: Cache tools
         uses: actions/cache@v4
         id: cache-tools
@@ -63,20 +80,13 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-tools-
 
-      # Install tools in parallel if not cached
       - name: Install tools
         if: steps.cache-tools.outputs.cache-hit != 'true'
         run: |
-          # Run installations in parallel
           (curl -L https://raw.githubusercontent.com/software-mansion/cairo-coverage/main/scripts/install.sh | sh) &
           (curl -L https://raw.githubusercontent.com/software-mansion/universal-sierra-compiler/master/scripts/install.sh | sh) &
-          # Wait for all background jobs to complete
           wait
 
-      - name: Cairo lint
-        run: scarb fmt --check --workspace
-
-      # Run tests once with both fuzzing and coverage
       - name: Run tests with fuzzing and coverage
         run: snforge test --workspace --fuzzer-runs 500 --coverage
 
