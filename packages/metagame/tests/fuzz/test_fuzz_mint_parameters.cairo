@@ -1,7 +1,8 @@
-use game_components_metagame::interface::{IMetagameDispatcher, IMetagameDispatcherTrait};
-use game_components_token::interface::{IMinigameTokenDispatcher, IMinigameTokenDispatcherTrait};
+use game_components_token::core::interface::{
+    IMinigameTokenDispatcher, IMinigameTokenDispatcherTrait,
+};
 use snforge_std::{ContractClassTrait, DeclareResultTrait, declare};
-use starknet::{ContractAddress, contract_address_const};
+use starknet::ContractAddress;
 
 // Interface for testing mint function
 #[starknet::interface]
@@ -9,11 +10,11 @@ trait IMockMetagame<TContractState> {
     fn mint(
         ref self: TContractState,
         game_address: Option<ContractAddress>,
-        player_name: Option<ByteArray>,
+        player_name: Option<felt252>,
         settings_id: Option<u32>,
         start: Option<u64>,
         end: Option<u64>,
-        objective_ids: Option<Span<u32>>,
+        objective_id: Option<u32>,
         context: Option<game_components_metagame::extensions::context::structs::GameContextDetails>,
         client_url: Option<ByteArray>,
         renderer_address: Option<ContractAddress>,
@@ -31,12 +32,7 @@ fn test_fuzz_mint_parameters() {
 
     let minigame_contract = declare("MockMinigame").unwrap().contract_class();
     let (minigame_address, _) = minigame_contract
-        .deploy(
-            @array![
-                token_address.into(), contract_address_const::<0x0>().into(),
-                contract_address_const::<0x0>().into(),
-            ],
-        )
+        .deploy(@array![token_address.into(), 0, 0])
         .unwrap();
 
     let metagame_contract = declare("MockMetagame").unwrap().contract_class();
@@ -96,12 +92,7 @@ fn test_fuzz_player_names() {
 
     let minigame_contract = declare("MockMinigame").unwrap().contract_class();
     let (minigame_address, _) = minigame_contract
-        .deploy(
-            @array![
-                token_address.into(), contract_address_const::<0x0>().into(),
-                contract_address_const::<0x0>().into(),
-            ],
-        )
+        .deploy(@array![token_address.into(), 0, 0])
         .unwrap();
 
     let metagame_contract = declare("MockMetagame").unwrap().contract_class();
@@ -113,15 +104,15 @@ fn test_fuzz_player_names() {
     let metagame_dispatcher = IMockMetagameDispatcher { contract_address: metagame_address };
     let token_dispatcher = IMinigameTokenDispatcher { contract_address: token_address };
 
-    // Test various player names (removed unicode characters)
-    let test_names = array![
-        "", // Empty
-        "A", // Single char
-        "Player123", // Alphanumeric
-        "GamePlayer", // Regular name
-        "Very Long Player Name That Exceeds Normal Length", // Long name
-        "PlayerWithNewlines", // Without special chars
-        "   Spaces   " // Whitespace
+    // Test various player names as felt252 shortstrings (max 31 chars)
+    let test_names: Array<felt252> = array![
+        0, // Empty (zero)
+        'A', // Single char
+        'Player123', // Alphanumeric
+        'GamePlayer', // Regular name
+        'VeryLongPlayerName12345', // Long name (within 31 char limit)
+        'PlayerWithNewlines', // Without special chars
+        'Spaces' // Whitespace trimmed
     ];
 
     let mut i = 0;
@@ -130,14 +121,14 @@ fn test_fuzz_player_names() {
             break;
         }
 
-        let name = test_names.at(i);
-        let owner = contract_address_const::<0x1000>();
+        let name = *test_names.at(i);
+        let owner = 0x1000.try_into().unwrap();
 
         // Mint with this player name
         let token_id = metagame_dispatcher
             .mint(
                 Option::Some(minigame_address),
-                Option::Some(name.clone()),
+                Option::Some(name),
                 Option::None,
                 Option::None,
                 Option::None,
@@ -151,7 +142,7 @@ fn test_fuzz_player_names() {
 
         // Verify name was stored correctly
         let retrieved_name = token_dispatcher.player_name(token_id);
-        assert!(retrieved_name == name.clone(), "Name mismatch for case {}", i);
+        assert!(retrieved_name == name, "Name mismatch for case {}", i);
 
         i += 1;
     };
@@ -166,12 +157,7 @@ fn test_property_token_id_monotonicity() {
 
     let minigame_contract = declare("MockMinigame").unwrap().contract_class();
     let (minigame_address, _) = minigame_contract
-        .deploy(
-            @array![
-                token_address.into(), contract_address_const::<0x0>().into(),
-                contract_address_const::<0x0>().into(),
-            ],
-        )
+        .deploy(@array![token_address.into(), 0, 0])
         .unwrap();
 
     let metagame_contract = declare("MockMetagame").unwrap().contract_class();
@@ -191,7 +177,7 @@ fn test_property_token_id_monotonicity() {
             break;
         }
 
-        let owner = contract_address_const::<0x2000>();
+        let owner = 0x2000.try_into().unwrap();
 
         let token_id = metagame_dispatcher
             .mint(
@@ -241,7 +227,7 @@ fn try_mint_with_lifecycle(
             Option::None,
             Option::None,
             Option::None,
-            contract_address_const::<0x9999>(),
+            0x9999.try_into().unwrap(),
             false,
         );
 
@@ -295,11 +281,11 @@ mod MockMetagame {
         fn mint(
             ref self: ContractState,
             game_address: Option<ContractAddress>,
-            player_name: Option<ByteArray>,
+            player_name: Option<felt252>,
             settings_id: Option<u32>,
             start: Option<u64>,
             end: Option<u64>,
-            objective_ids: Option<Span<u32>>,
+            objective_id: Option<u32>,
             context: Option<GameContextDetails>,
             client_url: Option<ByteArray>,
             renderer_address: Option<ContractAddress>,
@@ -314,7 +300,7 @@ mod MockMetagame {
                     settings_id,
                     start,
                     end,
-                    objective_ids,
+                    objective_id,
                     context,
                     client_url,
                     renderer_address,

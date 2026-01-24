@@ -13,7 +13,6 @@ pub mod MockRegistryContract {
     };
     use game_components_registry::interface::IMinigameRegistry;
     use openzeppelin_introspection::src5::SRC5Component;
-    use starknet::ContractAddress;
 
     component!(path: MinigameRegistryComponent, storage: registry, event: RegistryEvent);
     component!(path: SRC5Component, storage: src5, event: SRC5Event);

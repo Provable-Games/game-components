@@ -1,8 +1,3 @@
-use game_components_metagame::extensions::context::structs::GameContextDetails;
-use game_components_metagame::interface::IMetagame;
-use openzeppelin_interfaces::introspection::ISRC5;
-use starknet::ContractAddress;
-
 #[starknet::contract]
 pub mod MockMetagameContract {
     use game_components_metagame::extensions::context::structs::GameContextDetails;
@@ -52,11 +47,11 @@ pub mod MockMetagameContract {
         fn mint(
             ref self: TContractState,
             game_address: Option<ContractAddress>,
-            player_name: Option<ByteArray>,
+            player_name: Option<felt252>,
             settings_id: Option<u32>,
             start: Option<u64>,
             end: Option<u64>,
-            objective_ids: Option<Span<u32>>,
+            objective_id: Option<u32>,
             context: Option<GameContextDetails>,
             client_url: Option<ByteArray>,
             renderer_address: Option<ContractAddress>,
@@ -71,11 +66,11 @@ pub mod MockMetagameContract {
         fn mint(
             ref self: ContractState,
             game_address: Option<ContractAddress>,
-            player_name: Option<ByteArray>,
+            player_name: Option<felt252>,
             settings_id: Option<u32>,
             start: Option<u64>,
             end: Option<u64>,
-            objective_ids: Option<Span<u32>>,
+            objective_id: Option<u32>,
             context: Option<GameContextDetails>,
             client_url: Option<ByteArray>,
             renderer_address: Option<ContractAddress>,
@@ -90,7 +85,7 @@ pub mod MockMetagameContract {
                     settings_id,
                     start,
                     end,
-                    objective_ids,
+                    objective_id,
                     context,
                     client_url,
                     renderer_address,

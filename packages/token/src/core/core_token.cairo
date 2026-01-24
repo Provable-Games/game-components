@@ -552,9 +552,15 @@ pub mod CoreTokenComponent {
                 "MinigameToken: Game does not support IMinigame interface",
             );
 
-            // Note: Objectives completion is tracked by the metadata's completed_objective field
-            // which can be updated externally. The objective_id indicates which objective is set.
-            let completed_objective = token_metadata.completed_objective;
+            // Check objective completion if token has an objective
+            let completed_objective = if token_metadata.objective_id != 0 {
+                let contract_ref = self.get_contract();
+                ObjectivesOpt::is_objective_completed(
+                    contract_ref, game_address, token_id, token_metadata.objective_id,
+                )
+            } else {
+                token_metadata.completed_objective
+            };
 
             // Get current game state
             let minigame_token_data_dispatcher = IMinigameTokenDataDispatcher {
@@ -912,7 +918,7 @@ pub mod CoreTokenComponent {
 
                     // Set player name if provided
                     if let Option::Some(name) = player_name {
-                        self.token_player_names.entry(token_id).write(name.clone());
+                        self.token_player_names.entry(token_id).write(name);
                         self.emit_token_player_name_update(token_id, name);
                     }
 

@@ -48,6 +48,8 @@ pub fn RENDERER_ADDRESS() -> ContractAddress {
 // Edge case values
 pub const MAX_U64: u64 = 18446744073709551615;
 pub const MAX_U32: u32 = 4294967295;
+// Max 35-bit timestamp - maximum value that fits in TokenMetadata lifecycle packing
+pub const MAX_LIFECYCLE_TIMESTAMP: u64 = 34359738367; // 2^35 - 1 = 0x7FFFFFFFF
 
 // Time constants
 pub const PAST_TIME: u64 = 100;

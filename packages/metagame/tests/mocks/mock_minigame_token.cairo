@@ -1,13 +1,14 @@
 use game_components_metagame::extensions::context::structs::GameContextDetails;
-use game_components_token::extensions::multi_game::interface::IMinigameTokenMultiGame;
-use game_components_token::extensions::multi_game::structs::GameMetadata;
-use game_components_token::interface::IMinigameToken;
-use game_components_token::structs::{Lifecycle, TokenMetadata};
+use game_components_token::core::interface::{IMINIGAME_TOKEN_ID, IMinigameToken};
+use game_components_token::structs::{
+    Lifecycle, MintParams, PlayerNameUpdate, SetTokenMetadataParams, TokenMetadata,
+};
 use openzeppelin_interfaces::introspection::ISRC5;
-use starknet::{ContractAddress, contract_address_const};
+use starknet::ContractAddress;
 
 #[starknet::contract]
 pub mod MockMinigameToken {
+    use core::num::traits::Zero;
     use starknet::storage::{
         Map, StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess,
         StoragePointerWriteAccess,
@@ -16,17 +17,14 @@ pub mod MockMinigameToken {
 
     #[storage]
     struct Storage {
-        // Maps for game registration
-        game_addresses: Map<u32, ContractAddress>,
-        address_to_game_id: Map<ContractAddress, u32>,
-        game_registered: Map<ContractAddress, bool>,
-        game_count: u32,
         // Token storage
         next_token_id: u64,
         token_game_address: Map<u64, ContractAddress>,
-        token_player_names: Map<u64, ByteArray>,
+        token_player_names: Map<u64, felt252>,
         token_lifecycle_start: Map<u64, u64>,
         token_lifecycle_end: Map<u64, u64>,
+        game_address: ContractAddress,
+        game_registry_address: ContractAddress,
         // Mock behavior flags
         should_fail_mint: bool,
     }
@@ -34,17 +32,13 @@ pub mod MockMinigameToken {
     #[constructor]
     fn constructor(ref self: ContractState) {
         self.next_token_id.write(1);
-        self.game_count.write(0);
     }
 
     #[abi(embed_v0)]
     impl MinigameTokenImpl of IMinigameToken<ContractState> {
         fn token_metadata(self: @ContractState, token_id: u64) -> TokenMetadata {
-            let game_address = self.token_game_address.read(token_id);
-            let game_id = self.address_to_game_id.read(game_address);
-
             TokenMetadata {
-                game_id: game_id.into(),
+                game_id: 0,
                 minted_at: 0,
                 settings_id: 0,
                 lifecycle: Lifecycle {
@@ -56,7 +50,7 @@ pub mod MockMinigameToken {
                 game_over: false,
                 completed_objective: false,
                 has_context: false,
-                objectives_count: 0,
+                objective_id: 0,
             }
         }
 
@@ -68,18 +62,170 @@ pub mod MockMinigameToken {
             0
         }
 
-        fn player_name(self: @ContractState, token_id: u64) -> ByteArray {
+        fn player_name(self: @ContractState, token_id: u64) -> felt252 {
             self.token_player_names.read(token_id)
+        }
+
+        fn objective_id(self: @ContractState, token_id: u64) -> u32 {
+            0
+        }
+
+        fn minted_by(self: @ContractState, token_id: u64) -> u64 {
+            0
+        }
+
+        fn game_address(self: @ContractState) -> ContractAddress {
+            self.game_address.read()
+        }
+
+        fn game_registry_address(self: @ContractState) -> ContractAddress {
+            self.game_registry_address.read()
+        }
+
+        fn is_soulbound(self: @ContractState, token_id: u64) -> bool {
+            false
+        }
+
+        fn renderer_address(self: @ContractState, token_id: u64) -> ContractAddress {
+            Zero::zero()
+        }
+
+        fn token_game_address(self: @ContractState, token_id: u64) -> ContractAddress {
+            self.token_game_address.read(token_id)
+        }
+
+        // Batch view functions
+        fn token_metadata_batch(
+            self: @ContractState, token_ids: Span<u64>,
+        ) -> Array<TokenMetadata> {
+            let mut results = array![];
+            let mut i = 0;
+            loop {
+                if i >= token_ids.len() {
+                    break;
+                }
+                results.append(self.token_metadata(*token_ids.at(i)));
+                i += 1;
+            }
+            results
+        }
+
+        fn is_playable_batch(self: @ContractState, token_ids: Span<u64>) -> Array<bool> {
+            let mut results = array![];
+            let mut i = 0;
+            loop {
+                if i >= token_ids.len() {
+                    break;
+                }
+                results.append(self.is_playable(*token_ids.at(i)));
+                i += 1;
+            }
+            results
+        }
+
+        fn settings_id_batch(self: @ContractState, token_ids: Span<u64>) -> Array<u32> {
+            let mut results = array![];
+            let mut i = 0;
+            loop {
+                if i >= token_ids.len() {
+                    break;
+                }
+                results.append(self.settings_id(*token_ids.at(i)));
+                i += 1;
+            }
+            results
+        }
+
+        fn player_name_batch(self: @ContractState, token_ids: Span<u64>) -> Array<felt252> {
+            let mut results = array![];
+            let mut i = 0;
+            loop {
+                if i >= token_ids.len() {
+                    break;
+                }
+                results.append(self.player_name(*token_ids.at(i)));
+                i += 1;
+            }
+            results
+        }
+
+        fn objective_id_batch(self: @ContractState, token_ids: Span<u64>) -> Array<u32> {
+            let mut results = array![];
+            let mut i = 0;
+            loop {
+                if i >= token_ids.len() {
+                    break;
+                }
+                results.append(self.objective_id(*token_ids.at(i)));
+                i += 1;
+            }
+            results
+        }
+
+        fn minted_by_batch(self: @ContractState, token_ids: Span<u64>) -> Array<u64> {
+            let mut results = array![];
+            let mut i = 0;
+            loop {
+                if i >= token_ids.len() {
+                    break;
+                }
+                results.append(self.minted_by(*token_ids.at(i)));
+                i += 1;
+            }
+            results
+        }
+
+        fn is_soulbound_batch(self: @ContractState, token_ids: Span<u64>) -> Array<bool> {
+            let mut results = array![];
+            let mut i = 0;
+            loop {
+                if i >= token_ids.len() {
+                    break;
+                }
+                results.append(self.is_soulbound(*token_ids.at(i)));
+                i += 1;
+            }
+            results
+        }
+
+        fn renderer_address_batch(
+            self: @ContractState, token_ids: Span<u64>,
+        ) -> Array<ContractAddress> {
+            let mut results = array![];
+            let mut i = 0;
+            loop {
+                if i >= token_ids.len() {
+                    break;
+                }
+                results.append(self.renderer_address(*token_ids.at(i)));
+                i += 1;
+            }
+            results
+        }
+
+        fn token_game_address_batch(
+            self: @ContractState, token_ids: Span<u64>,
+        ) -> Array<ContractAddress> {
+            let mut results = array![];
+            let mut i = 0;
+            loop {
+                if i >= token_ids.len() {
+                    break;
+                }
+                results.append(self.token_game_address(*token_ids.at(i)));
+                i += 1;
+            }
+            results
         }
 
         fn mint(
             ref self: ContractState,
             game_address: Option<ContractAddress>,
-            player_name: Option<ByteArray>,
+            player_name: Option<felt252>,
             settings_id: Option<u32>,
             start: Option<u64>,
             end: Option<u64>,
-            objective_ids: Option<Span<u32>>,
+            objective_id: Option<u32>,
             context: Option<GameContextDetails>,
             client_url: Option<ByteArray>,
             renderer_address: Option<ContractAddress>,
@@ -115,85 +261,89 @@ pub mod MockMinigameToken {
             token_id
         }
 
+        fn mint_batch(ref self: ContractState, mints: Array<MintParams>) -> Array<u64> {
+            let mut results = array![];
+            let mut i = 0;
+            loop {
+                if i >= mints.len() {
+                    break;
+                }
+                let params = mints.at(i);
+                let context_clone = match params.context {
+                    Option::Some(ctx) => Option::Some(ctx.clone()),
+                    Option::None => Option::None,
+                };
+                let client_url_clone = match params.client_url {
+                    Option::Some(url) => Option::Some(url.clone()),
+                    Option::None => Option::None,
+                };
+                let token_id = self
+                    .mint(
+                        *params.game_address,
+                        *params.player_name,
+                        *params.settings_id,
+                        *params.start,
+                        *params.end,
+                        *params.objective_id,
+                        context_clone,
+                        client_url_clone,
+                        *params.renderer_address,
+                        *params.to,
+                        *params.soulbound,
+                    );
+                results.append(token_id);
+                i += 1;
+            }
+            results
+        }
+
+        fn set_token_metadata(
+            ref self: ContractState,
+            token_id: u64,
+            game_address: ContractAddress,
+            player_name: Option<felt252>,
+            settings_id: Option<u32>,
+            start: Option<u64>,
+            end: Option<u64>,
+            objective_id: Option<u32>,
+            context: Option<GameContextDetails>,
+        ) { // Mock implementation - no-op
+        }
+
         fn update_game(ref self: ContractState, token_id: u64) { // Mock implementation - no-op
         }
-    }
 
-    #[abi(embed_v0)]
-    impl MinigameTokenMultiGameImpl of IMinigameTokenMultiGame<ContractState> {
-        fn game_count(self: @ContractState) -> u64 {
-            self.game_count.read().into()
+        fn update_player_name(ref self: ContractState, token_id: u64, name: felt252) {
+            self.token_player_names.write(token_id, name);
         }
 
-        fn game_id_from_address(self: @ContractState, contract_address: ContractAddress) -> u64 {
-            self.address_to_game_id.read(contract_address).into()
+        fn set_token_metadata_batch(
+            ref self: ContractState, updates: Array<SetTokenMetadataParams>,
+        ) { // Mock implementation - no-op
         }
 
-        fn game_address_from_id(self: @ContractState, game_id: u64) -> ContractAddress {
-            self.game_addresses.read(game_id.try_into().unwrap())
+        fn update_game_batch(
+            ref self: ContractState, token_ids: Span<u64>,
+        ) { // Mock implementation - no-op
         }
 
-        fn game_metadata(self: @ContractState, game_id: u64) -> GameMetadata {
-            GameMetadata {
-                creator_token_id: 0,
-                contract_address: contract_address_const::<0x0>(),
-                name: "Mock Game",
-                description: "Mock Description",
-                developer: "Mock Developer",
-                publisher: "Mock Publisher",
-                genre: "Mock Genre",
-                image: "Mock Image",
-                color: "",
-                client_url: "",
-                renderer_address: contract_address_const::<0x0>(),
-                settings_address: contract_address_const::<0x0>(),
-                objectives_address: contract_address_const::<0x0>(),
-            }
-        }
-
-        fn is_game_registered(self: @ContractState, contract_address: ContractAddress) -> bool {
-            self.game_registered.read(contract_address)
-        }
-
-        fn game_address(self: @ContractState, token_id: u64) -> ContractAddress {
-            self.token_game_address.read(token_id)
-        }
-
-        fn creator_token_id(self: @ContractState, game_id: u64) -> u64 {
-            0
-        }
-
-        fn client_url(self: @ContractState, token_id: u64) -> ByteArray {
-            ""
-        }
-
-        fn register_game(
-            ref self: ContractState,
-            creator_address: ContractAddress,
-            name: ByteArray,
-            description: ByteArray,
-            developer: ByteArray,
-            publisher: ByteArray,
-            genre: ByteArray,
-            image: ByteArray,
-            color: Option<ByteArray>,
-            client_url: Option<ByteArray>,
-            renderer_address: Option<ContractAddress>,
-        ) -> u64 {
-            let game_id = self.game_count.read() + 1;
-            self.game_count.write(game_id);
-            self.game_addresses.write(game_id, creator_address);
-            self.address_to_game_id.write(creator_address, game_id);
-            self.game_registered.write(creator_address, true);
-            game_id.into()
+        fn update_player_name_batch(ref self: ContractState, updates: Span<PlayerNameUpdate>) {
+            let mut i = 0;
+            loop {
+                if i >= updates.len() {
+                    break;
+                }
+                let update = *updates.at(i);
+                self.update_player_name(update.token_id, update.name);
+                i += 1;
+            };
         }
     }
 
     #[abi(embed_v0)]
     impl SRC5Impl of ISRC5<ContractState> {
         fn supports_interface(self: @ContractState, interface_id: felt252) -> bool {
-            interface_id == game_components_token::interface::IMINIGAME_TOKEN_ID
-                || interface_id == game_components_token::extensions::multi_game::interface::IMINIGAME_TOKEN_MULTIGAME_ID
+            interface_id == IMINIGAME_TOKEN_ID
                 || interface_id == openzeppelin_interfaces::introspection::ISRC5_ID
         }
     }

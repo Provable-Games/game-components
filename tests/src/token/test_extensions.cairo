@@ -385,6 +385,19 @@ mod MockSettingsContract {
         fn settings_exist(self: @ContractState, settings_id: u32) -> bool {
             true // Mock always returns true
         }
+
+        fn settings_exist_batch(self: @ContractState, settings_ids: Span<u32>) -> Array<bool> {
+            let mut results = array![];
+            let mut i = 0;
+            loop {
+                if i >= settings_ids.len() {
+                    break;
+                }
+                results.append(self.settings_exist(*settings_ids.at(i)));
+                i += 1;
+            }
+            results
+        }
     }
 
     #[abi(embed_v0)]
@@ -395,6 +408,21 @@ mod MockSettingsContract {
                 description: "Mock settings for testing",
                 settings: array![].span(),
             }
+        }
+
+        fn settings_details_batch(
+            self: @ContractState, settings_ids: Span<u32>,
+        ) -> Array<GameSettingDetails> {
+            let mut results = array![];
+            let mut i = 0;
+            loop {
+                if i >= settings_ids.len() {
+                    break;
+                }
+                results.append(self.settings_details(*settings_ids.at(i)));
+                i += 1;
+            }
+            results
         }
     }
 }

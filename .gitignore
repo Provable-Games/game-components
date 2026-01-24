@@ -12,3 +12,4 @@ argent_account_mainnet.json
 packages/test_dojo/
 .DS_Store
 coverage.lcov
+**/snfoundry_trace/

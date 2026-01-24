@@ -1,5 +1,5 @@
 use game_components_metagame::extensions::context::interface::{
-    IMETAGAME_CONTEXT_ID, IMetagameContext,
+    IMETAGAME_CONTEXT_ID, IMetagameContext, IMetagameContextDetails,
 };
 use game_components_metagame::extensions::context::structs::{GameContext, GameContextDetails};
 use openzeppelin_interfaces::introspection::ISRC5;
@@ -41,8 +41,11 @@ pub mod MockContextContract {
         fn has_context(self: @ContractState, token_id: u64) -> bool {
             self.has_context_map.read(token_id)
         }
+    }
 
-        fn context(self: @ContractState, token_id: u64) -> GameContextDetails {
+    #[abi(embed_v0)]
+    impl MetagameContextDetailsImpl of IMetagameContextDetails<ContractState> {
+        fn context_details(self: @ContractState, token_id: u64) -> GameContextDetails {
             if !self.has_context_map.read(token_id) {
                 panic!("Context not found for token");
             }

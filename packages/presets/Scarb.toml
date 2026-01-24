@@ -5,15 +5,12 @@ edition.workspace = true
 
 [lib]
 
-[cairo]
-sierra-replace-ids = true
-
 [dependencies]
 game_components_leaderboard = { path = "../leaderboard" }
 starknet.workspace = true
 openzeppelin_token.workspace = true
 openzeppelin_introspection.workspace = true
-openzeppelin_access = { git = "https://github.com/OpenZeppelin/cairo-contracts.git", tag = "v3.0.0-alpha.3" }
+openzeppelin_access.workspace = true
 
 [[target.starknet-contract]]
 

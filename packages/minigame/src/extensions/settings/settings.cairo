@@ -5,7 +5,7 @@
 pub mod SettingsComponent {
     use openzeppelin_introspection::src5::SRC5Component;
     use openzeppelin_introspection::src5::SRC5Component::InternalTrait as SRC5InternalTrait;
-    use starknet::{ContractAddress, get_caller_address, get_contract_address};
+    use starknet::{ContractAddress, get_caller_address};
     use crate::extensions::settings::interface::{IMINIGAME_SETTINGS_ID, IMinigameSettings};
     use crate::extensions::settings::libs;
     use crate::extensions::settings::structs::GameSetting;
