@@ -8,9 +8,10 @@ pub use game_components_interfaces::leaderboard::{
     ILEADERBOARD_ID, // IGameDetails trait and dispatchers
     IGameDetails, IGameDetailsDispatcher,
     IGameDetailsDispatcherTrait, // ILeaderboard trait and dispatchers
-    ILeaderboard, ILeaderboardDispatcher,
-    ILeaderboardDispatcherTrait, // ILeaderboardAdmin trait and dispatchers
-    ILeaderboardAdmin,
-    ILeaderboardAdminDispatcher, ILeaderboardAdminDispatcherTrait, // Struct types
-    LeaderboardConfig, LeaderboardEntry, LeaderboardResult, LeaderboardStoreConfig,
+    ILeaderboard,
+    ILeaderboardDispatcher, ILeaderboardDispatcherTrait, // ILeaderboardAdmin trait and dispatchers
+    ILeaderboardAdmin, ILeaderboardAdminDispatcher,
+    ILeaderboardAdminDispatcherTrait, // Struct types
+    LeaderboardConfig, LeaderboardEntry,
+    LeaderboardResult, LeaderboardStoreConfig,
 };
