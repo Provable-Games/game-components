@@ -10,8 +10,6 @@ on:
       - ".github/**"
       - "pnpm-lock.yaml"
   pull_request:
-    branches:
-      - main
     paths-ignore:
       - "ui/**"
       - "**/manifest.json"
@@ -80,7 +78,7 @@ jobs:
 
       # Run tests once with both fuzzing and coverage
       - name: Run tests with fuzzing and coverage
-        run: snforge test --workspace --features fuzzing --fuzzer-runs 500 --coverage
+        run: snforge test --workspace --fuzzer-runs 500 --coverage
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4

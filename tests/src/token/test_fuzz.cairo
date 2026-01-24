@@ -20,7 +20,7 @@ use super::setup::{setup};
 
 // P-01: Token ID Monotonicity - Fuzz 1000 mints, verify each ID = previous + 1
 #[test]
-#[fuzzer(runs: 100)]
+#[fuzzer]
 fn test_token_id_monotonicity_fuzz(seed: felt252) {
     let test_contracts = setup();
 
@@ -80,7 +80,7 @@ fn test_token_id_monotonicity_fuzz(seed: felt252) {
 
 // P-02: Lifecycle Validity - Fuzz timestamps, verify is_playable() consistency
 #[test]
-#[fuzzer(runs: 50)]
+#[fuzzer]
 fn test_lifecycle_validity_fuzz(start_offset: u64, duration: u64) {
     let test_contracts = setup();
 
@@ -145,7 +145,7 @@ fn test_lifecycle_validity_fuzz(start_offset: u64, duration: u64) {
 
 // P-03: Score Monotonicity - Fuzz score updates, verify non-decreasing
 #[test]
-#[fuzzer(runs: 50)]
+#[fuzzer]
 fn test_score_monotonicity_fuzz(score1: u32, score2: u32, score3: u32) {
     let test_contracts = setup();
 
@@ -197,7 +197,7 @@ fn test_score_monotonicity_fuzz(score1: u32, score2: u32, score3: u32) {
 
 // P-05: Ownership Protection - Fuzz non-owner calls, verify all revert
 #[test]
-#[fuzzer(runs: 20)]
+#[fuzzer]
 fn test_ownership_protection_fuzz(caller1: felt252, caller2: felt252, caller3: felt252) {
     let test_contracts = setup();
 
@@ -243,7 +243,7 @@ fn test_ownership_protection_fuzz(caller1: felt252, caller2: felt252, caller3: f
 
 // P-07: Settings Immutability - Fuzz post-mint ops, verify settings unchanged
 #[test]
-#[fuzzer(runs: 30)]
+#[fuzzer]
 fn test_settings_immutability_fuzz(settings_id: u32, op1: u8, op2: u8, op3: u8) {
     let test_contracts = setup();
 
@@ -301,7 +301,7 @@ fn test_settings_immutability_fuzz(settings_id: u32, op1: u8, op2: u8, op3: u8) 
 
 // P-08: Game Over Irreversibility - Fuzz post-game ops, verify game_over stays true
 #[test]
-#[fuzzer(runs: 30)]
+#[fuzzer]
 fn test_game_over_irreversibility_fuzz(op1: u8, op2: u8, op3: u8) {
     let test_contracts = setup();
 
@@ -344,7 +344,7 @@ fn test_game_over_irreversibility_fuzz(op1: u8, op2: u8, op3: u8) {
 
 // P-10: Soulbound Immutability - Fuzz transfer attempts on soulbound tokens
 #[test]
-#[fuzzer(runs: 20)]
+#[fuzzer]
 fn test_soulbound_immutability_fuzz(attempt1: u8, attempt2: u8, attempt3: u8) {
     let test_contracts = setup();
 
@@ -388,7 +388,7 @@ fn test_soulbound_immutability_fuzz(attempt1: u8, attempt2: u8, attempt3: u8) {
 
 // P-12: Objective ID Persistence - Fuzz with single objective_id
 #[test]
-#[fuzzer(runs: 20)]
+#[fuzzer]
 fn test_objective_id_persistence_fuzz(objective_id_input: u32) {
     let test_contracts = setup();
 

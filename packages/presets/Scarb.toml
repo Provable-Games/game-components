@@ -7,10 +7,13 @@ edition.workspace = true
 
 [dependencies]
 game_components_leaderboard = { path = "../leaderboard" }
+game_components_tokenomics = { path = "../tokenomics" }
+game_components_interfaces = { path = "../interfaces" }
 starknet.workspace = true
 openzeppelin_token.workspace = true
 openzeppelin_introspection.workspace = true
 openzeppelin_access.workspace = true
+ekubo.workspace = true
 
 [[target.starknet-contract]]
 
