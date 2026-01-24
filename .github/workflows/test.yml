@@ -33,13 +33,52 @@ jobs:
       - name: Cairo lint
         run: scarb fmt --check --workspace
 
-  test:
-    name: test (${{ matrix.package }})
+  build:
+    name: build
     needs: lint
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Extract tool versions
+        run: |
+          echo "SCARB_VERSION=$(grep '^scarb ' .tool-versions | awk '{print $2}')" >> "$GITHUB_ENV"
+          echo "FOUNDRY_VERSION=$(grep '^starknet-foundry ' .tool-versions | awk '{print $2}')" >> "$GITHUB_ENV"
+
+      - uses: software-mansion/setup-scarb@v1
+        with:
+          scarb-version: ${{ env.SCARB_VERSION }}
+
+      - uses: foundry-rs/setup-snfoundry@v4
+        with:
+          starknet-foundry-version: ${{ env.FOUNDRY_VERSION }}
+
+      - name: Cache Scarb dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/scarb
+          key: ${{ runner.os }}-scarb-deps-${{ hashFiles('**/Scarb.toml', '**/Scarb.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-scarb-deps-
+
+      - name: Build workspace
+        run: snforge build --workspace
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: target/
+          retention-days: 1
+
+  test:
+    name: test (${{ matrix.package }})
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
     strategy:
-      fail-fast: true
+      fail-fast: false
       matrix:
         package:
           - metagame
@@ -66,17 +105,11 @@ jobs:
         with:
           starknet-foundry-version: ${{ env.FOUNDRY_VERSION }}
 
-      - name: Cache Scarb dependencies
-        uses: actions/cache@v4
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
         with:
-          path: |
-            ~/.cache/scarb
-            target/
-          key: ${{ runner.os }}-scarb-${{ matrix.package }}-${{ hashFiles('**/Scarb.toml', '**/Scarb.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-scarb-${{ matrix.package }}-
-            ${{ runner.os }}-scarb-
-          save-always: true
+          name: build-artifacts
+          path: target/
 
       - name: Cache tools
         uses: actions/cache@v4
