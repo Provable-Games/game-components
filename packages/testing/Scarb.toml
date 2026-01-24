@@ -1,0 +1,10 @@
+[package]
+name = "game_components_testing"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+starknet.workspace = true
+snforge_std.workspace = true
+
+[lib]

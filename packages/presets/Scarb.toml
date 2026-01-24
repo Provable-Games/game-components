@@ -19,3 +19,6 @@ ekubo.workspace = true
 
 [dev-dependencies]
 snforge_std.workspace = true
+game_components_testing = { path = "../testing" }
+game_components_test_common = { path = "../test_common" }
+openzeppelin_interfaces.workspace = true

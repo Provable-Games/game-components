@@ -17,3 +17,6 @@ pub mod stream_token;
 
 pub use autonomous_buyback::AutonomousBuyback;
 pub use stream_token::StreamToken;
+
+#[cfg(test)]
+mod tests;

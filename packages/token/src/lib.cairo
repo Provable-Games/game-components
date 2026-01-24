@@ -8,6 +8,6 @@ pub mod extensions;
 pub mod interface;
 pub mod libs;
 pub mod structs;
-// pub mod tests; // Tests have been moved to tests/src/token/
 
-
+#[cfg(test)]
+mod tests;

@@ -17,3 +17,8 @@ openzeppelin_interfaces.workspace = true
 
 [dev-dependencies]
 snforge_std.workspace = true
+game_components_testing = { path = "../testing" }
+
+[[target.starknet-contract]]
+sierra = true
+casm = true
