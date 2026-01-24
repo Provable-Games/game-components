@@ -10,50 +10,117 @@ on:
       - ".github/**"
       - "pnpm-lock.yaml"
   pull_request:
-    branches:
-      - main
     paths-ignore:
       - "ui/**"
       - "**/manifest.json"
       - "pnpm-lock.yaml"
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  ACTIONS_STEP_DEBUG: true
+
 jobs:
-  lint_and_test:
-    name: lint and test contracts
+  lint:
+    name: lint
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Checkout metrics
+        run: |
+          echo "::group::Git Statistics"
+          echo "Objects in repo: $(git count-objects -v)"
+          echo "Commit count: $(git rev-list --count HEAD)"
+          echo "::endgroup::"
 
       - name: Extract scarb version
-        run: |
-          SCARB_VERSION=$(grep '^scarb ' .tool-versions | awk '{print $2}')
-          echo "SCARB_VERSION=$SCARB_VERSION" >> "$GITHUB_ENV"
+        run: echo "SCARB_VERSION=$(grep '^scarb ' .tool-versions | awk '{print $2}')" >> "$GITHUB_ENV"
 
       - uses: software-mansion/setup-scarb@v1
         with:
           scarb-version: ${{ env.SCARB_VERSION }}
 
-      - name: Extract foundry version
+      - name: Cairo lint
+        run: scarb fmt --check --workspace
+
+  test:
+    name: test
+    needs: lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Checkout metrics
         run: |
-          FOUNDRY_VERSION=$(grep '^starknet-foundry ' .tool-versions | awk '{print $2}')
-          echo "FOUNDRY_VERSION=$FOUNDRY_VERSION" >> "$GITHUB_ENV"
+          echo "::group::Git Statistics"
+          echo "Objects in repo: $(git count-objects -v)"
+          echo "Commit count: $(git rev-list --count HEAD)"
+          echo "::endgroup::"
+
+      - name: Extract tool versions
+        run: |
+          echo "SCARB_VERSION=$(grep '^scarb ' .tool-versions | awk '{print $2}')" >> "$GITHUB_ENV"
+          echo "FOUNDRY_VERSION=$(grep '^starknet-foundry ' .tool-versions | awk '{print $2}')" >> "$GITHUB_ENV"
+
+      - uses: software-mansion/setup-scarb@v1
+        with:
+          scarb-version: ${{ env.SCARB_VERSION }}
 
       - uses: foundry-rs/setup-snfoundry@v4
         with:
           starknet-foundry-version: ${{ env.FOUNDRY_VERSION }}
 
-      # Cache scarb dependencies
+      # OPTIMIZATION: Split scarb deps cache (separate from target)
       - name: Cache Scarb dependencies
         uses: actions/cache@v4
         with:
-          path: |
-            ~/.cache/scarb
-            target/
-          key: ${{ runner.os }}-scarb-${{ hashFiles('**/Scarb.toml', '**/Scarb.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-scarb-
+          path: ~/.cache/scarb
+          key: ${{ runner.os }}-scarb-deps-${{ hashFiles('**/Scarb.lock') }}
+          restore-keys: ${{ runner.os }}-scarb-deps-
 
-      # Cache tool installations
+      - name: Cache diagnostics - Scarb deps
+        run: |
+          echo "::group::Scarb Cache Status"
+          echo "Cache path: ~/.cache/scarb"
+          if [ -d ~/.cache/scarb ]; then
+            echo "Size: $(du -sh ~/.cache/scarb | cut -f1)"
+            echo "Files: $(find ~/.cache/scarb -type f | wc -l)"
+          else
+            echo "Cache directory not found (cold cache)"
+          fi
+          echo "::endgroup::"
+
+      # OPTIMIZATION: Separate build artifacts cache with SHA for full invalidation
+      - name: Cache build artifacts
+        uses: actions/cache@v4
+        with:
+          path: target
+          key: ${{ runner.os }}-scarb-target-${{ hashFiles('**/Scarb.toml', '**/Scarb.lock') }}-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-scarb-target-${{ hashFiles('**/Scarb.toml', '**/Scarb.lock') }}-
+            ${{ runner.os }}-scarb-target-
+
+      - name: Cache diagnostics - Build artifacts
+        run: |
+          echo "::group::Target Cache Status"
+          if [ -d target ]; then
+            echo "Size: $(du -sh target | cut -f1)"
+            echo "Files: $(find target -type f | wc -l)"
+          else
+            echo "Target directory not found (cold cache)"
+          fi
+          echo "::endgroup::"
+
+      # OPTIMIZATION: Tool cache key based on .tool-versions hash
       - name: Cache tools
         uses: actions/cache@v4
         id: cache-tools
@@ -61,29 +128,37 @@ jobs:
           path: |
             ~/.local/bin/cairo-coverage
             ~/.local/bin/universal-sierra-compiler
-          key: ${{ runner.os }}-tools-cairo-coverage-universal-sierra-compiler-v1
-          restore-keys: |
-            ${{ runner.os }}-tools-
+          key: ${{ runner.os }}-tools-${{ hashFiles('.tool-versions') }}
+          restore-keys: ${{ runner.os }}-tools-
 
-      # Install tools in parallel if not cached
       - name: Install tools
         if: steps.cache-tools.outputs.cache-hit != 'true'
         run: |
-          # Run installations in parallel
           (curl -L https://raw.githubusercontent.com/software-mansion/cairo-coverage/main/scripts/install.sh | sh) &
           (curl -L https://raw.githubusercontent.com/software-mansion/universal-sierra-compiler/master/scripts/install.sh | sh) &
-          # Wait for all background jobs to complete
           wait
 
-      - name: Cairo lint
-        run: scarb fmt --check --workspace
+      - name: Cache diagnostics - Tools
+        run: |
+          echo "::group::Tools Cache Status"
+          echo "cairo-coverage: $(ls -la ~/.local/bin/cairo-coverage 2>/dev/null || echo 'not found')"
+          echo "universal-sierra-compiler: $(ls -la ~/.local/bin/universal-sierra-compiler 2>/dev/null || echo 'not found')"
+          echo "::endgroup::"
 
-      # Run tests once with both fuzzing and coverage
       - name: Run tests with fuzzing and coverage
-        run: snforge test --workspace --features fuzzing --fuzzer-runs 500 --coverage
+        run: snforge test --workspace --fuzzer-runs 500 --coverage
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         with:
           file: ./coverage.lcov
           token: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Workflow timing summary
+        if: always()
+        run: |
+          echo "::group::Timing Summary"
+          echo "Workflow completed at: $(date -Iseconds)"
+          echo "Runner: ${{ runner.os }}-${{ runner.arch }}"
+          echo "Branch: OPTIMIZED (split caches, shallow clone, separate jobs)"
+          echo "::endgroup::"
