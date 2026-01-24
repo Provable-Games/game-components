@@ -3,13 +3,13 @@
 use starknet::ContractAddress;
 use super::metagame::GameContextDetails;
 
-#[derive(Copy, Drop, Serde, starknet::Store)]
+#[derive(Copy, Drop, Serde)]
 pub struct Lifecycle {
     pub start: u64,
     pub end: u64,
 }
 
-#[derive(Copy, Drop, Serde, starknet::Store)]
+#[derive(Copy, Drop, Serde)]
 pub struct TokenMetadata {
     pub game_id: u64,
     pub minted_at: u64,
