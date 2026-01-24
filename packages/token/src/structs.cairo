@@ -1,11 +1,10 @@
-use starknet::ContractAddress;
-use starknet::storage_access::StorePacking;
+pub use game_components_interfaces::structs::metagame::GameContextDetails;
 
-#[derive(Copy, Drop, Serde)]
-pub struct Lifecycle {
-    pub start: u64,
-    pub end: u64,
-}
+// Re-export structs from interfaces for backward compatibility
+pub use game_components_interfaces::structs::token::{
+    Lifecycle, MintParams, PlayerNameUpdate, SetTokenMetadataParams, TokenMetadata,
+};
+use starknet::storage_access::StorePacking;
 
 // StorePacking for Lifecycle - packs two u64 into single felt252
 // This saves 1 storage slot compared to default Store derive
@@ -407,37 +406,6 @@ pub fn extract_tx_hash_bits(tx_hash: felt252) -> u16 {
 //
 // Gas savings: Reduces from ~6 storage slots to 1 slot per token.
 
-#[derive(Copy, Drop, Serde)]
-pub struct TokenMetadata {
-    pub game_id: u64,
-    pub minted_at: u64,
-    pub settings_id: u32,
-    pub lifecycle: Lifecycle,
-    pub minted_by: u64,
-    pub soulbound: bool,
-    pub game_over: bool,
-    pub completed_objective: bool,
-    pub has_context: bool,
-    pub objective_id: u32,
-}
-
-impl TokenMetadataDefault of Default<TokenMetadata> {
-    fn default() -> TokenMetadata {
-        TokenMetadata {
-            game_id: 0,
-            minted_at: 0,
-            settings_id: 0,
-            lifecycle: Lifecycle { start: 0, end: 0 },
-            minted_by: 0,
-            soulbound: false,
-            game_over: false,
-            completed_objective: false,
-            has_context: false,
-            objective_id: 0,
-        }
-    }
-}
-
 // TokenMetadata packing constants
 pub mod TokenMetadataBits {
     // Power-of-2 shift constants
@@ -544,51 +512,6 @@ pub impl TokenMetadataStorePacking of StorePacking<TokenMetadata, felt252> {
             objective_id: ((packed / POW2_211) & OBJECTIVE_ID_MASK).try_into().unwrap(),
         }
     }
-}
-
-// ==============================================================================
-// BATCH OPERATION PARAMETERS
-// ==============================================================================
-
-use game_components_metagame::extensions::context::structs::GameContextDetails;
-
-/// Per-token mint parameters for batch minting.
-/// Contains all parameters for a single mint operation.
-/// Note: Not Copy because it contains ByteArray and GameContextDetails.
-#[derive(Drop, Serde)]
-pub struct MintParams {
-    pub game_address: Option<ContractAddress>,
-    pub player_name: Option<felt252>,
-    pub settings_id: Option<u32>,
-    pub start: Option<u64>,
-    pub end: Option<u64>,
-    pub objective_id: Option<u32>,
-    pub context: Option<GameContextDetails>,
-    pub client_url: Option<ByteArray>,
-    pub renderer_address: Option<ContractAddress>,
-    pub to: ContractAddress,
-    pub soulbound: bool,
-}
-
-/// Per-token name update parameters for batch name updates
-#[derive(Copy, Drop, Serde)]
-pub struct PlayerNameUpdate {
-    pub token_id: u64,
-    pub name: felt252,
-}
-
-/// Per-token metadata update parameters for batch metadata updates
-/// Note: Not Copy because it contains GameContextDetails.
-#[derive(Drop, Serde)]
-pub struct SetTokenMetadataParams {
-    pub token_id: u64,
-    pub game_address: ContractAddress,
-    pub player_name: Option<felt252>,
-    pub settings_id: Option<u32>,
-    pub start: Option<u64>,
-    pub end: Option<u64>,
-    pub objective_id: Option<u32>,
-    pub context: Option<GameContextDetails>,
 }
 
 /// Convert PackedTokenId + TokenMutableState to TokenMetadata

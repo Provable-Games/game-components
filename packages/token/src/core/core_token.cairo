@@ -30,7 +30,10 @@ pub mod CoreTokenComponent {
     use crate::extensions::minter::interface::IMINIGAME_TOKEN_MINTER_ID;
     use crate::interface::{IMinigameRegistryDispatcher, IMinigameRegistryDispatcherTrait};
     use crate::libs::{LifecycleTrait, token_state};
-    use crate::structs::{MintParams, PlayerNameUpdate, SetTokenMetadataParams, TokenMetadata};
+    use crate::structs::{
+        LifecycleStorePacking, MintParams, PlayerNameUpdate, SetTokenMetadataParams, TokenMetadata,
+        TokenMetadataStorePacking,
+    };
 
     #[storage]
     pub struct Storage {

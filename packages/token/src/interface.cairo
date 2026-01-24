@@ -1,17 +1,10 @@
-use game_components_metagame::extensions::context::structs::GameContextDetails;
-use game_components_minigame::extensions::objectives::structs::GameObjective;
-use game_components_minigame::extensions::settings::structs::GameSetting;
-
-// ==============================================================================
-// MINIGAME REGISTRY - Re-exported from game_components_registry
-// ==============================================================================
-// These types are re-exported for backward compatibility.
-// New code should import directly from game_components_registry::interface.
-
-pub use game_components_registry::interface::{
+// Re-export from interfaces package for backward compatibility
+pub use game_components_interfaces::registry::{
     GameMetadata, IMINIGAME_REGISTRY_ID, IMinigameRegistry, IMinigameRegistryDispatcher,
     IMinigameRegistryDispatcherTrait,
 };
+pub use game_components_interfaces::structs::metagame::GameContextDetails;
+pub use game_components_interfaces::structs::minigame::{GameObjective, GameSetting};
 use starknet::ContractAddress;
 use crate::structs::{MintParams, PlayerNameUpdate, SetTokenMetadataParams, TokenMetadata};
 

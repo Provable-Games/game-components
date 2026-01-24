@@ -10,6 +10,7 @@ openzeppelin_introspection.workspace = true
 openzeppelin_interfaces.workspace = true
 openzeppelin_access.workspace = true
 # Game components dependencies
+game_components_interfaces = { path = "../interfaces" }
 game_components_minigame = { path = "../minigame" }
 game_components_metagame = { path = "../metagame" }
 game_components_registry = { path = "../registry" }

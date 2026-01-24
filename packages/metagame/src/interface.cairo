@@ -1,10 +1,4 @@
-use starknet::ContractAddress;
-
-pub const IMETAGAME_ID: felt252 =
-    0x0260d5160a283a03815f6c3799926c7bdbec5f22e759f992fb8faf172243ab20;
-
-#[starknet::interface]
-pub trait IMetagame<TContractState> {
-    fn context_address(self: @TContractState) -> ContractAddress;
-    fn default_token_address(self: @TContractState) -> ContractAddress;
-}
+// Re-export from interfaces package for backward compatibility
+pub use game_components_interfaces::metagame::{
+    IMETAGAME_ID, IMetagame, IMetagameDispatcher, IMetagameDispatcherTrait,
+};

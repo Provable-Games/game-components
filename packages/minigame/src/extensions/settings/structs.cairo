@@ -1,12 +1,2 @@
-#[derive(Drop, Serde)]
-pub struct GameSettingDetails {
-    pub name: ByteArray,
-    pub description: ByteArray,
-    pub settings: Span<GameSetting>,
-}
-
-#[derive(Drop, Serde)]
-pub struct GameSetting {
-    pub name: ByteArray,
-    pub value: ByteArray,
-}
+// Re-export from interfaces package for backward compatibility
+pub use game_components_interfaces::structs::minigame::{GameSetting, GameSettingDetails};
