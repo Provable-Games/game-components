@@ -34,10 +34,22 @@ jobs:
         run: scarb fmt --check --workspace
 
   test:
-    name: test
+    name: test (${{ matrix.package }})
     needs: lint
     runs-on: ubuntu-8
-    timeout-minutes: 15
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        package:
+          - metagame
+          - minigame
+          - registry
+          - token
+          - tokenomics
+          - utils
+          - leaderboard
+          - presets
     steps:
       - uses: actions/checkout@v6
 
@@ -60,8 +72,9 @@ jobs:
           path: |
             ~/.cache/scarb
             target/
-          key: ${{ runner.os }}-scarb-${{ hashFiles('**/Scarb.toml', '**/Scarb.lock') }}
+          key: ${{ runner.os }}-scarb-${{ matrix.package }}-${{ hashFiles('**/Scarb.toml', '**/Scarb.lock') }}
           restore-keys: |
+            ${{ runner.os }}-scarb-${{ matrix.package }}-
             ${{ runner.os }}-scarb-
           save-always: true
 
@@ -83,11 +96,12 @@ jobs:
           (curl -L https://raw.githubusercontent.com/software-mansion/universal-sierra-compiler/master/scripts/install.sh | sh) &
           wait
 
-      - name: Run tests with fuzzing and coverage
-        run: snforge test --workspace --fuzzer-runs 500 --coverage
+      - name: Run tests with coverage
+        run: snforge test -p ${{ matrix.package }} --fuzzer-runs 500 --coverage
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
         with:
           file: ./coverage.lcov
+          flags: ${{ matrix.package }}
           token: ${{ secrets.CODECOV_TOKEN }}
