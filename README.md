@@ -3,7 +3,7 @@
 [![Cairo](https://img.shields.io/badge/Cairo-2.10.1-blue)](https://github.com/starkware-libs/cairo)
 [![StarkNet](https://img.shields.io/badge/StarkNet-2.10.1-orange)](https://starknet.io/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Coverage](https://img.shields.io/badge/Coverage-90%25+-brightgreen)](./packages/test_starknet/coverage/)
+[![codecov](https://codecov.io/gh/Provable-Games/game-components/branch/next/graph/badge.svg?token=YNYQOJ76VV)](https://codecov.io/gh/Provable-Games/game-components)
 
 A modular Cairo smart contract library for building on-chain games on StarkNet. Provides reusable components for managing game state, player tokens, and tournament/event systems with comprehensive testing and deployment tools.
 
