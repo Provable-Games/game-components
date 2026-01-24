@@ -7,15 +7,15 @@ on:
     paths-ignore:
       - "ui/**"
       - "**/manifest.json"
-      - ".github/**"
       - "pnpm-lock.yaml"
   pull_request:
-    branches:
-      - main
     paths-ignore:
       - "ui/**"
       - "**/manifest.json"
       - "pnpm-lock.yaml"
+
+env:
+  ACTIONS_STEP_DEBUG: true
 
 jobs:
   lint_and_test:
@@ -23,6 +23,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Checkout metrics
+        run: |
+          echo "::group::Git Statistics"
+          echo "Objects in repo: $(git count-objects -v)"
+          echo "Commit count: $(git rev-list --count HEAD)"
+          echo "::endgroup::"
 
       - name: Extract scarb version
         run: |
@@ -42,7 +49,7 @@ jobs:
         with:
           starknet-foundry-version: ${{ env.FOUNDRY_VERSION }}
 
-      # Cache scarb dependencies
+      # Cache scarb dependencies (combined cache - original approach)
       - name: Cache Scarb dependencies
         uses: actions/cache@v4
         with:
@@ -53,7 +60,30 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-scarb-
 
-      # Cache tool installations
+      - name: Cache diagnostics - Scarb deps
+        run: |
+          echo "::group::Scarb Cache Status"
+          echo "Cache path: ~/.cache/scarb"
+          if [ -d ~/.cache/scarb ]; then
+            echo "Size: $(du -sh ~/.cache/scarb | cut -f1)"
+            echo "Files: $(find ~/.cache/scarb -type f | wc -l)"
+          else
+            echo "Cache directory not found (cold cache)"
+          fi
+          echo "::endgroup::"
+
+      - name: Cache diagnostics - Build artifacts
+        run: |
+          echo "::group::Target Cache Status"
+          if [ -d target ]; then
+            echo "Size: $(du -sh target | cut -f1)"
+            echo "Files: $(find target -type f | wc -l)"
+          else
+            echo "Target directory not found (cold cache)"
+          fi
+          echo "::endgroup::"
+
+      # Cache tool installations (static key - original approach)
       - name: Cache tools
         uses: actions/cache@v4
         id: cache-tools
@@ -75,6 +105,13 @@ jobs:
           # Wait for all background jobs to complete
           wait
 
+      - name: Cache diagnostics - Tools
+        run: |
+          echo "::group::Tools Cache Status"
+          echo "cairo-coverage: $(ls -la ~/.local/bin/cairo-coverage 2>/dev/null || echo 'not found')"
+          echo "universal-sierra-compiler: $(ls -la ~/.local/bin/universal-sierra-compiler 2>/dev/null || echo 'not found')"
+          echo "::endgroup::"
+
       - name: Cairo lint
         run: scarb fmt --check --workspace
 
@@ -87,3 +124,12 @@ jobs:
         with:
           file: ./coverage.lcov
           token: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Workflow timing summary
+        if: always()
+        run: |
+          echo "::group::Timing Summary"
+          echo "Workflow completed at: $(date -Iseconds)"
+          echo "Runner: ${{ runner.os }}-${{ runner.arch }}"
+          echo "Branch: BASELINE (original workflow + logging)"
+          echo "::endgroup::"
