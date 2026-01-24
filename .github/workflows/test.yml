@@ -117,13 +117,12 @@ jobs:
 
       # Run tests with fuzzing and coverage
       - name: Run tests with fuzzing and coverage
-        working-directory: packages/test_starknet
-        run: snforge test --fuzzer-runs 500 --coverage
+        run: snforge test -p game_components_test_starknet --fuzzer-runs 500 --coverage
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         with:
-          file: packages/test_starknet/coverage.lcov
+          file: ./coverage.lcov
           token: ${{ secrets.CODECOV_TOKEN }}
 
       - name: Workflow timing summary
