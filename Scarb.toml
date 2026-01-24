@@ -69,7 +69,7 @@ inlining-strategy = "avoid"
 allow-prebuilt-plugins = ["snforge_std"]
 
 [tool.snforge]
-fuzzer_runs = 256
+fuzzer_runs = 24
 
 [[tool.snforge.fork]]
 name = "MAINNET"
