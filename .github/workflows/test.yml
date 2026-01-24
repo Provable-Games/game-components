@@ -10,8 +10,6 @@ on:
       - ".github/**"
       - "pnpm-lock.yaml"
   pull_request:
-    branches:
-      - main
     paths-ignore:
       - "ui/**"
       - "**/manifest.json"
