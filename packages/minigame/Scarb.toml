@@ -7,6 +7,7 @@ edition.workspace = true
 
 [dependencies]
 starknet.workspace = true
+game_components_interfaces = { path = "../interfaces" }
 game_components_metagame = { path = "../metagame" }
 game_components_registry = { path = "../registry" }
 game_components_token = { path = "../token" }

@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: BUSL-1.1
 
+// Re-export ID constant from interfaces package
+pub use game_components_interfaces::leaderboard::ILEADERBOARD_ID;
 use starknet::ContractAddress;
 use crate::leaderboard::leaderboard::{LeaderboardEntry, LeaderboardResult};
 use crate::leaderboard_store::LeaderboardStoreConfig;
-
-pub const ILEADERBOARD_ID: felt252 =
-    0x03c0f9265d397c10970f24822e4b57cac7d8895f8c449b7c9caaa26910499705;
 
 #[starknet::interface]
 pub trait IGameDetails<TState> {

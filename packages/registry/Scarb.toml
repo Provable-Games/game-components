@@ -7,6 +7,7 @@ edition.workspace = true
 
 [dependencies]
 starknet.workspace = true
+game_components_interfaces = { path = "../interfaces" }
 game_components_minigame = { path = "../minigame" }
 openzeppelin_interfaces.workspace = true
 openzeppelin_introspection.workspace = true
