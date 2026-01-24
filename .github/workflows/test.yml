@@ -33,11 +33,11 @@ jobs:
       - name: Cairo lint
         run: scarb fmt --check --workspace
 
-  build:
-    name: build
+  setup:
+    name: setup
     needs: lint
     runs-on: ubuntu-latest-8
-    timeout-minutes: 10
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v6
 
@@ -54,6 +54,7 @@ jobs:
         with:
           starknet-foundry-version: ${{ env.FOUNDRY_VERSION }}
 
+      # Populate Scarb registry cache (git repos, crates)
       - name: Cache Scarb dependencies
         uses: actions/cache@v4
         with:
@@ -62,6 +63,10 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-scarb-deps-
 
+      - name: Fetch dependencies
+        run: scarb fetch
+
+      # Compile snforge plugin so test jobs don't have to
       - name: Cache Cargo (snforge plugin)
         uses: actions/cache@v4
         with:
@@ -70,21 +75,12 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-cargo-snforge-
 
-      - name: Build workspace
-        run: scarb build --workspace
-
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-artifacts
-          path: |
-            target/
-            ~/.cache/scarb/
-          retention-days: 1
+      - name: Warm snforge plugin cache
+        run: snforge --version
 
   test:
     name: test (${{ matrix.package }})
-    needs: build
+    needs: setup
     runs-on: ubuntu-latest
     timeout-minutes: 10
     strategy:
@@ -115,18 +111,16 @@ jobs:
         with:
           starknet-foundry-version: ${{ env.FOUNDRY_VERSION }}
 
-      - name: Download build artifacts
-        uses: actions/download-artifact@v4
+      # Restore Scarb deps cache (populated by setup job)
+      - name: Cache Scarb dependencies
+        uses: actions/cache@v4
         with:
-          name: build-artifacts
-          path: .artifacts/
+          path: ~/.cache/scarb
+          key: ${{ runner.os }}-scarb-deps-${{ hashFiles('**/Scarb.toml', '**/Scarb.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-scarb-deps-
 
-      - name: Restore build artifacts
-        run: |
-          cp -r .artifacts/target ./
-          mkdir -p ~/.cache
-          cp -r .artifacts/.cache/scarb ~/.cache/ || true
-
+      # Restore Cargo cache (snforge plugin already compiled)
       - name: Cache Cargo (snforge plugin)
         uses: actions/cache@v4
         with:
@@ -143,8 +137,6 @@ jobs:
             ~/.local/bin/cairo-coverage
             ~/.local/bin/universal-sierra-compiler
           key: ${{ runner.os }}-tools-cairo-coverage-universal-sierra-compiler-v1
-          restore-keys: |
-            ${{ runner.os }}-tools-
 
       - name: Install tools
         if: steps.cache-tools.outputs.cache-hit != 'true'
@@ -153,6 +145,7 @@ jobs:
           (curl -L https://raw.githubusercontent.com/software-mansion/universal-sierra-compiler/master/scripts/install.sh | sh) &
           wait
 
+      # snforge test auto-builds the package before testing
       - name: Run tests with coverage
         run: snforge test -p ${{ matrix.package }} --fuzzer-runs 500 --coverage
 
