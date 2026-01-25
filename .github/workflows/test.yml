@@ -29,6 +29,7 @@ jobs:
       - uses: software-mansion/setup-scarb@v1
         with:
           scarb-version: ${{ env.SCARB_VERSION }}
+          cache: false # We handle caching manually via actions/cache
 
       - name: Cairo lint
         run: scarb fmt --check --workspace
@@ -75,6 +76,7 @@ jobs:
       - uses: software-mansion/setup-scarb@v1
         with:
           scarb-version: ${{ env.SCARB_VERSION }}
+          cache: false # We handle caching manually via actions/cache
 
       - uses: foundry-rs/setup-snfoundry@v4
         with:
@@ -147,6 +149,7 @@ jobs:
       - uses: software-mansion/setup-scarb@v1
         with:
           scarb-version: ${{ env.SCARB_VERSION }}
+          cache: false # We handle caching manually via actions/cache
 
       - uses: foundry-rs/setup-snfoundry@v4
         with:
