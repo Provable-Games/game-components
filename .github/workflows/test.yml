@@ -127,6 +127,8 @@ jobs:
           - game_components_presets
         runner:
           - ubuntu-latest
+        fuzzer_runs:
+          - 256
         exclude:
           - package: game_components_token
             runner: ubuntu-latest
@@ -135,8 +137,10 @@ jobs:
         include:
           - package: game_components_token
             runner: ubuntu-latest-32
+            fuzzer_runs: 64
           - package: game_components_minigame
             runner: ubuntu-latest-4
+            fuzzer_runs: 128
     steps:
       - uses: actions/checkout@v6
 
@@ -190,11 +194,11 @@ jobs:
 
       # snforge test auto-builds the package before testing
       - name: Run tests with coverage
-        run: snforge test -p ${{ matrix.package }} --fuzzer-runs 100 --coverage
+        run: snforge test -p ${{ matrix.package }} --fuzzer-runs ${{ matrix.fuzzer_runs }} --coverage
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
         with:
-          file: ./coverage.lcov
+          files: ./coverage.lcov
           flags: ${{ matrix.package }}
           token: ${{ secrets.CODECOV_TOKEN }}

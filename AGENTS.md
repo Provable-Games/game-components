@@ -100,13 +100,13 @@ When adding a new package with tests, update **both** files:
 
 ### Current Matrix (8 packages)
 
-| Package                       | Runner             |
-| ----------------------------- | ------------------ |
-| `game_components_metagame`    | `ubuntu-latest`    |
-| `game_components_minigame`    | `ubuntu-latest-4`  |
-| `game_components_registry`    | `ubuntu-latest`    |
-| `game_components_token`       | `ubuntu-latest-32` |
-| `game_components_tokenomics`  | `ubuntu-latest`    |
-| `game_components_utils`       | `ubuntu-latest`    |
-| `game_components_leaderboard` | `ubuntu-latest`    |
-| `game_components_presets`     | `ubuntu-latest`    |
+| Package | Runner | Fuzzer Runs |
+|---------|--------|-------------|
+| `game_components_metagame` | `ubuntu-latest` | 256 |
+| `game_components_minigame` | `ubuntu-latest-4` | 256 |
+| `game_components_registry` | `ubuntu-latest` | 256 |
+| `game_components_token` | `ubuntu-latest-32` | 50 |
+| `game_components_tokenomics` | `ubuntu-latest` | 256 |
+| `game_components_utils` | `ubuntu-latest` | 256 |
+| `game_components_leaderboard` | `ubuntu-latest` | 256 |
+| `game_components_presets` | `ubuntu-latest` | 256 |
