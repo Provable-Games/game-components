@@ -2,7 +2,7 @@
 
 <!-- Version badges - keep in sync with Scarb.toml -->
 
-[![Scarb](https://img.shields.io/badge/Scarb-2.15.0-blue)](https://github.com/software-mansion/scarb)
+[![Scarb](https://img.shields.io/badge/Scarb-2.15.1-blue)](https://github.com/software-mansion/scarb)
 [![Starknet Foundry](https://img.shields.io/badge/snforge-0.55.0-purple)](https://foundry-rs.github.io/starknet-foundry/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Docs](https://img.shields.io/badge/Docs-Embeddable%20Game%20Standard-blue)](https://docs.provable.games/embeddable-game-standard)
