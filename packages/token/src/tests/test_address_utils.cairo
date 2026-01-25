@@ -13,22 +13,20 @@ use crate::libs::address_utils::{
 // =============================================================================
 
 fn ADDR_1() -> ContractAddress {
-    starknet::contract_address_const::<0x123>()
+    0x123.try_into().unwrap()
 }
 
 fn ADDR_2() -> ContractAddress {
-    starknet::contract_address_const::<0x456>()
+    0x456.try_into().unwrap()
 }
 
 fn ADDR_3() -> ContractAddress {
-    starknet::contract_address_const::<0x789>()
+    0x789.try_into().unwrap()
 }
 
 fn MAX_ADDR() -> ContractAddress {
     // Use a large address value for edge case testing
-    starknet::contract_address_const::<
-        0x7ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff,
-    >()
+    0x7ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff.try_into().unwrap()
 }
 
 // =============================================================================

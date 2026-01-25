@@ -15,8 +15,8 @@ use game_components_interfaces::tokenomics::stream::{
 use openzeppelin_interfaces::access::ownable::{IOwnableDispatcher, IOwnableDispatcherTrait};
 use openzeppelin_interfaces::token::erc20::{IERC20Dispatcher, IERC20DispatcherTrait};
 use snforge_std::{
-    ContractClassTrait, DeclareResultTrait, declare, mock_call, spy_events,
-    start_cheat_caller_address, stop_cheat_caller_address,
+    ContractClassTrait, DeclareResultTrait, declare, start_cheat_caller_address,
+    stop_cheat_caller_address,
 };
 use starknet::{ClassHash, ContractAddress};
 use super::fixtures::constants::{OWNER, TREASURY, USER1, USER2, ZERO_ADDRESS, amounts, defaults};
@@ -94,7 +94,7 @@ fn default_create_params(paired_token: ContractAddress) -> CreateTokenParams {
 
 #[test]
 fn test_constructor_initializes_correctly() {
-    let (factory_address, dispatcher) = deploy_factory();
+    let (_, dispatcher) = deploy_factory();
 
     // Verify all getters return correct values
     let mock_positions: ContractAddress = 'POSITIONS'.try_into().unwrap();
@@ -487,47 +487,6 @@ fn test_non_owner_cannot_transfer_ownership() {
 // ============================================================================
 // Edge Case Tests
 // ============================================================================
-
-#[test]
-fn test_create_token_single_distribution_order() {
-    // This is a happy path test but requires Ekubo mocking
-    // For now, just validate the validation passes with correct params
-    let (factory_address, dispatcher) = deploy_factory();
-    let paired_token = deploy_mock_erc20("Paired", "PAIR");
-    let mock_paired = IMockERC20Dispatcher { contract_address: paired_token };
-    let mock_positions: ContractAddress = 'POSITIONS'.try_into().unwrap();
-
-    // Mint and approve sufficient paired tokens
-    let paired_amount = 100_u128 * 1_000_000_000_000_000_000;
-    mock_paired.mint(USER1(), paired_amount.into());
-    start_cheat_caller_address(paired_token, USER1());
-    IERC20Dispatcher { contract_address: paired_token }
-        .approve(factory_address, paired_amount.into());
-    stop_cheat_caller_address(paired_token);
-
-    // Mock the Ekubo positions contract calls
-    // This allows the test to pass through validation and transfer stages
-    mock_call(
-        mock_positions,
-        selector!("mint_and_deposit_and_clear_both"),
-        (1_u64, 100_u128, 100_u256, 100_u256),
-        1,
-    );
-    mock_call(mock_positions, selector!("mint_and_increase_sell_amount"), (1_u64, 100_u128), 1);
-
-    let params = default_create_params(paired_token);
-
-    let mut spy = spy_events();
-
-    // This test will fail at the actual Ekubo interaction, but validates the parameter checking
-    // In a real test with proper mocking, this would succeed
-    start_cheat_caller_address(factory_address, USER1());
-    // Uncomment when full mocking is available:
-    // let token_address = dispatcher.create_token(params);
-    // assert!(dispatcher.is_valid_token(token_address), "Token should be valid");
-    // assert!(dispatcher.get_token_count() == 1, "Token count should be 1");
-    stop_cheat_caller_address(factory_address);
-}
 
 #[test]
 fn test_factory_getters_return_constructor_values() {
