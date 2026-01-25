@@ -2,7 +2,7 @@
 
 <!-- Version badges - keep in sync with Scarb.toml -->
 
-[![Cairo](https://img.shields.io/badge/Cairo-2.15.1-blue)](https://github.com/starkware-libs/cairo)
+[![Cairo](https://img.shields.io/badge/Cairo-2.15.0-blue)](https://github.com/starkware-libs/cairo)
 [![StarkNet](https://img.shields.io/badge/StarkNet-2.15.1-orange)](https://starknet.io/)
 [![Starknet Foundry](https://img.shields.io/badge/snforge-0.55.0-purple)](https://foundry-rs.github.io/starknet-foundry/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
