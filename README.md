@@ -8,7 +8,7 @@
 [![Docs](https://img.shields.io/badge/Docs-Embeddable%20Game%20Standard-blue)](https://docs.provable.games/embeddable-game-standard)
 [![codecov](https://codecov.io/gh/Provable-Games/game-components/branch/next/graph/badge.svg?token=YNYQOJ76VV)](https://codecov.io/gh/Provable-Games/game-components)
 
-A modular Cairo smart contract library for building on-chain games on StarkNet. Provides reusable components for managing game state, player tokens, and tournament/event systems with comprehensive testing and deployment tools.
+A modular Cairo smart contract library for building on-chain games on Starknet. Provides reusable components for managing game state, player tokens, and tournament/event systems with comprehensive testing and deployment tools.
 
 ## 🎯 **Overview**
 
@@ -54,7 +54,7 @@ Minigame
 <!-- Keep versions in sync with Scarb.toml -->
 
 - **Cairo**: 2.15.0
-- **StarkNet**: 2.15.1
+- **Starknet**: 2.15.1
 - **Starknet Foundry**: 0.55.0
 - **Scarb**: Latest compatible version
 
@@ -140,7 +140,7 @@ ERC721-based NFT representing playable game instances with:
 
 **Revolutionary Size Optimization:**
 
-- Traditional contracts: 7-9MB (exceeded StarkNet 4MB limit)
+- Traditional contracts: 7-9MB (exceeded Starknet 4MB limit)
 - Optimized architecture: <4MB with full feature sophistication
 - Compile-time configuration eliminates unused features while preserving runtime complexity
 
@@ -148,7 +148,7 @@ ERC721-based NFT representing playable game instances with:
 
 #### 🧪 **test_starknet** (`packages/test_starknet/`)
 
-StarkNet-native testing environment:
+Starknet-native testing environment:
 
 - **Purpose**: Fast, isolated testing with comprehensive coverage
 - **Coverage**: 90%+ requirement enforced by cairo-coverage
@@ -187,7 +187,7 @@ scarb fmt -w
 ### Testing Commands
 
 ```bash
-# Run StarkNet Foundry tests
+# Run Starknet Foundry tests
 cd packages/test_starknet && snforge test
 
 # Run with coverage (required 90%+)
@@ -275,7 +275,7 @@ if src5_component.supports_interface(IMINIGAME_SETTINGS_ID) {
 
 - **Rapid Development**: Pre-built components eliminate boilerplate
 - **Modular Design**: Pick only the extensions you need
-- **Size Optimized**: Compile-time optimization stays under StarkNet limits
+- **Size Optimized**: Compile-time optimization stays under Starknet limits
 - **Battle Tested**: 90%+ test coverage with comprehensive edge case handling
 
 ### For Players
