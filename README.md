@@ -136,28 +136,7 @@ ERC721-based NFT representing playable game instances with:
 - **Lifecycle Management**: Start/end times, playability validation
 - **Game State Tracking**: Score, objectives, completion status
 
-**Revolutionary Size Optimization:**
-
-- Traditional contracts: 7-9MB (exceeded Starknet 4MB limit)
-- Optimized architecture: <4MB with full feature sophistication
-- Compile-time configuration eliminates unused features while preserving runtime complexity
-
 ### Additional Packages
-
-#### 🧪 **test_starknet** (`packages/test_starknet/`)
-
-Starknet-native testing environment:
-
-- **Purpose**: Fast, isolated testing with comprehensive coverage
-- **Coverage**: 90%+ requirement enforced by cairo-coverage
-- **Test Types**: Unit, integration, fuzz, lifecycle, and event testing
-- **Mock Infrastructure**: Comprehensive mocks for all interfaces
-
-```bash
-cd packages/test_starknet
-snforge test --coverage
-cairo-coverage  # Generate detailed coverage reports
-```
 
 #### 🛠️ **utils** (`packages/utils/`)
 
@@ -195,25 +174,6 @@ cairo-coverage
 # Run specific test
 snforge test test_mint_basic
 ```
-
-### ⚠️ **Critical Testing Requirements**
-
-This project enforces **90% minimum test coverage** using cairo-coverage. Any code changes without adequate tests will fail CI validation.
-
-**Test Coverage Protocol:**
-
-1. Write comprehensive unit tests for all new functions
-2. Include edge cases, boundary conditions, and failure scenarios
-3. Add integration tests for cross-contract interactions
-4. Create fuzz tests for user inputs and mathematical operations
-5. Run `cairo-coverage` locally before pushing
-
-**Test Infrastructure Warnings:**
-
-- **NEVER** modify existing test infrastructure without understanding all dependencies
-- Run `grep -r "filename" tests/` before modifying any mock contracts
-- Create NEW mocks instead of modifying existing ones
-- Establish passing test baseline before making changes
 
 ## 🎨 **Extension System**
 
@@ -260,42 +220,26 @@ if src5_component.supports_interface(IMINIGAME_SETTINGS_ID) {
 ./scripts/mint_games.sh
 ```
 
-### Configuration Files
-
-- `Scarb.toml`: Workspace configuration and dependencies
-- `CLAUDE.md`: Development guidelines and AI assistant instructions
-- `argent_account.json`: Account configuration for deployments
-- `deployments/`: Deployment artifacts and contract addresses
-
 ## 🌟 **Key Features**
 
 ### For Game Developers
 
 - **Rapid Development**: Pre-built components eliminate boilerplate
 - **Modular Design**: Pick only the extensions you need
-- **Size Optimized**: Compile-time optimization stays under Starknet limits
-- **Battle Tested**: 90%+ test coverage with comprehensive edge case handling
+- **Gas Optimized**: Designed to be gas efficient and stay under Starknet limits
 
 ### For Players
 
 - **True Ownership**: ERC721 tokens represent actual game instances
 - **Interoperability**: Games can interact through shared interfaces
 - **Tournament Support**: Participate in cross-game events and competitions
-- **Achievement System**: Objectives and progress tracking across games
 
 ### For Tournament Organizers
 
+- **Flexible Configuration**: Support for various tournament formats
 - **Metagame Integration**: Coordinate multiple games in single events
 - **Context Management**: Rich metadata for tournaments and competitions
 - **Player Tracking**: Cross-game player statistics and achievements
-- **Flexible Configuration**: Support for various tournament formats
-
-## 📚 **Examples**
-
-See individual package READMEs for detailed examples:
-
-- [`packages/token/README.md`](packages/token/README.md) - Token optimization patterns
-- [`packages/test_starknet/README.md`](packages/test_starknet/README.md) - Testing approaches
 
 ## 📄 **License**
 
