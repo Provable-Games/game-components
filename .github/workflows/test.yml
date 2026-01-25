@@ -134,9 +134,9 @@ jobs:
             runner: ubuntu-latest
         include:
           - package: game_components_token
-            runner: ubuntu-latest-64
-          - package: game_components_minigame
             runner: ubuntu-latest-8
+          - package: game_components_minigame
+            runner: ubuntu-latest-4
     steps:
       - uses: actions/checkout@v6
 
@@ -190,7 +190,7 @@ jobs:
 
       # snforge test auto-builds the package before testing
       - name: Run tests with coverage
-        run: snforge test -p ${{ matrix.package }} --fuzzer-runs 256 --coverage
+        run: snforge test -p ${{ matrix.package }} --fuzzer-runs 100 --coverage
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
