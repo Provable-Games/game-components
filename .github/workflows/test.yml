@@ -84,7 +84,7 @@ jobs:
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 10
     strategy:
-      fail-fast: false
+      fail-fast: true
       matrix:
         package:
           - game_components_metagame
@@ -104,9 +104,9 @@ jobs:
             runner: ubuntu-latest
         include:
           - package: game_components_token
-            runner: ubuntu-latest-8
+            runner: ubuntu-latest-16
           - package: game_components_minigame
-            runner: ubuntu-latest-4
+            runner: ubuntu-latest-8
     steps:
       - uses: actions/checkout@v6
 
