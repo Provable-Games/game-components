@@ -292,31 +292,6 @@ if src5_component.supports_interface(IMINIGAME_SETTINGS_ID) {
 - **Player Tracking**: Cross-game player statistics and achievements
 - **Flexible Configuration**: Support for various tournament formats
 
-## 🤝 **Contributing**
-
-### Development Guidelines
-
-1. **Security First**: Thorough edge case analysis prevents fund losses
-2. **Gas Optimization**: Efficient transactions without sacrificing readability
-3. **Comprehensive Testing**: 90%+ coverage requirement with no exceptions
-4. **Clear Documentation**: Enable team collaboration and maintainability
-
-### Code Standards
-
-- Follow existing Cairo patterns and component architecture
-- Use SRC5 interface discovery for capability detection
-- Implement proper storage isolation via `#[substorage(v0)]`
-- Maintain dispatcher pattern for cross-contract calls
-- Extensive use of Option types for optional parameters
-
-### Pull Request Process
-
-1. Ensure `scarb build && scarb test` passes with zero warnings
-2. Verify 90%+ test coverage with `cairo-coverage`
-3. Run `scarb fmt -w` to format code
-4. Update documentation for any new features
-5. Test deployment scripts if contract changes are made
-
 ## 📚 **Examples**
 
 See individual package READMEs for detailed examples:
@@ -324,37 +299,10 @@ See individual package READMEs for detailed examples:
 - [`packages/token/README.md`](packages/token/README.md) - Token optimization patterns
 - [`packages/test_starknet/README.md`](packages/test_starknet/README.md) - Testing approaches
 
-### Simple Game Implementation
-
-```cairo
-#[starknet::contract]
-mod TicTacToe {
-    use game_components_minigame::interface::{IMinigameTokenData};
-
-    impl GameLogic of IMinigameTokenData<ContractState> {
-        fn score(self: @ContractState, token_id: u64) -> u32 {
-            // Return current game score
-            self.game_scores.read(token_id)
-        }
-
-        fn game_over(self: @ContractState, token_id: u64) -> bool {
-            // Check if game is complete
-            self.check_win_condition(token_id) || self.is_board_full(token_id)
-        }
-    }
-}
-```
-
-## 🔗 **Resources**
-
-- **Cairo Documentation**: [cairo-lang.org](https://cairo-lang.org/)
-- **StarkNet Developer Docs**: [starknet.io/developers](https://starknet.io/developers)
-- **OpenZeppelin Cairo**: [github.com/OpenZeppelin/cairo-contracts](https://github.com/OpenZeppelin/cairo-contracts)
-
 ## 📄 **License**
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ---
 
-**Built with ❤️ for the StarkNet gaming ecosystem by [Provable Games](https://provable.games)**
+**Built with ❤️ for the Starknet gaming ecosystem by [Provable Games](https://provable.games)**
