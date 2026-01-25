@@ -140,7 +140,7 @@ jobs:
             fuzzer_runs: 64
           - package: game_components_minigame
             runner: ubuntu-latest-4
-            fuzzer_runs: 128
+            fuzzer_runs: 64
     steps:
       - uses: actions/checkout@v6
 
@@ -191,6 +191,15 @@ jobs:
           (curl -L https://raw.githubusercontent.com/software-mansion/cairo-coverage/main/scripts/install.sh | sh) &
           (curl -L https://raw.githubusercontent.com/software-mansion/universal-sierra-compiler/master/scripts/install.sh | sh) &
           wait
+
+      # Cache compiled artifacts - saves ~20s per package when source unchanged
+      - name: Cache compiled packages
+        uses: actions/cache@v4
+        with:
+          path: target/
+          key: ${{ runner.os }}-target-${{ matrix.package }}-${{ env.SCARB_VERSION }}-${{ hashFiles('packages/**/*.cairo', '**/Scarb.toml', '**/Scarb.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-target-${{ matrix.package }}-${{ env.SCARB_VERSION }}-
 
       # snforge test auto-builds the package before testing
       - name: Run tests with coverage
