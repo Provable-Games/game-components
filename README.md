@@ -53,10 +53,8 @@ Minigame
 
 <!-- Keep versions in sync with Scarb.toml -->
 
-- **Cairo**: 2.15.0
-- **Starknet**: 2.15.1
+- **Scarb**: 2.15.1
 - **Starknet Foundry**: 0.55.0
-- **Scarb**: Latest compatible version
 
 ### Installation
 
