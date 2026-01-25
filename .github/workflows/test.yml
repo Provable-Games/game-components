@@ -29,15 +29,42 @@ jobs:
       - uses: software-mansion/setup-scarb@v1
         with:
           scarb-version: ${{ env.SCARB_VERSION }}
+          cache: false # We handle caching manually via actions/cache
 
       - name: Cairo lint
         run: scarb fmt --check --workspace
 
-  test:
-    name: test
+  validate-config:
+    name: validate config
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Validate package count matches codecov config
+        run: |
+          # Count packages in matrix (lines starting with "- game_components_")
+          matrix_count=$(grep -cE '^\s+- game_components_' .github/workflows/test.yml)
+
+          # Extract after_n_builds value from codecov.yml
+          codecov_count=$(grep 'after_n_builds:' codecov.yml | grep -oE '[0-9]+')
+
+          echo "Matrix packages: $matrix_count"
+          echo "Codecov after_n_builds: $codecov_count"
+
+          if [ "$matrix_count" != "$codecov_count" ]; then
+            echo "::error::Matrix has $matrix_count packages but codecov.yml expects $codecov_count builds"
+            echo "::error::Update codecov.yml after_n_builds to match package count"
+            exit 1
+          fi
+
+          echo "Configuration validated: $matrix_count packages"
+
+  setup:
+    name: setup
     needs: lint
-    runs-on: ubuntu-8
-    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v6
 
@@ -49,21 +76,105 @@ jobs:
       - uses: software-mansion/setup-scarb@v1
         with:
           scarb-version: ${{ env.SCARB_VERSION }}
+          cache: false # We handle caching manually via actions/cache
 
-      - uses: foundry-rs/setup-snfoundry@v5
+      - uses: foundry-rs/setup-snfoundry@v4
         with:
           starknet-foundry-version: ${{ env.FOUNDRY_VERSION }}
 
+      # Restore caches before fetching dependencies
       - name: Cache Scarb dependencies
         uses: actions/cache@v4
         with:
-          path: |
-            ~/.cache/scarb
-            target/
-          key: ${{ runner.os }}-scarb-${{ hashFiles('**/Scarb.toml', '**/Scarb.lock') }}
+          path: ~/.cache/scarb
+          key: ${{ runner.os }}-scarb-deps-${{ hashFiles('**/Scarb.toml', '**/Scarb.lock') }}
           restore-keys: |
-            ${{ runner.os }}-scarb-
-          save-always: true
+            ${{ runner.os }}-scarb-deps-
+
+      - name: Cache Cargo (snforge plugin + Scarb Rust deps)
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo
+          key: ${{ runner.os }}-cargo-snforge-${{ env.FOUNDRY_VERSION }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-snforge-
+
+      - name: Fetch dependencies
+        run: scarb fetch
+
+      - name: Warm snforge plugin cache
+        run: snforge --version
+
+  test:
+    name: test (${{ matrix.package }})
+    needs: setup
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 10
+    strategy:
+      fail-fast: true
+      matrix:
+        # NOTE: When adding/removing packages, also update:
+        #   - codecov.yml: after_n_builds must equal package count
+        #   - AGENTS.md: CI Configuration section
+        package:
+          - game_components_metagame
+          - game_components_minigame
+          - game_components_registry
+          - game_components_token
+          - game_components_tokenomics
+          - game_components_utils
+          - game_components_leaderboard
+          - game_components_presets
+        runner:
+          - ubuntu-latest
+        fuzzer_runs:
+          - 256
+        exclude:
+          - package: game_components_token
+            runner: ubuntu-latest
+          - package: game_components_minigame
+            runner: ubuntu-latest
+        include:
+          - package: game_components_token
+            runner: ubuntu-latest-32
+            fuzzer_runs: 32
+          - package: game_components_minigame
+            runner: ubuntu-latest-4
+            fuzzer_runs: 64
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Extract tool versions
+        run: |
+          echo "SCARB_VERSION=$(grep '^scarb ' .tool-versions | awk '{print $2}')" >> "$GITHUB_ENV"
+          echo "FOUNDRY_VERSION=$(grep '^starknet-foundry ' .tool-versions | awk '{print $2}')" >> "$GITHUB_ENV"
+
+      - uses: software-mansion/setup-scarb@v1
+        with:
+          scarb-version: ${{ env.SCARB_VERSION }}
+          cache: false # We handle caching manually via actions/cache
+
+      - uses: foundry-rs/setup-snfoundry@v4
+        with:
+          starknet-foundry-version: ${{ env.FOUNDRY_VERSION }}
+
+      # Restore Scarb deps cache (populated by setup job)
+      - name: Cache Scarb dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/scarb
+          key: ${{ runner.os }}-scarb-deps-${{ hashFiles('**/Scarb.toml', '**/Scarb.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-scarb-deps-
+
+      # Restore Cargo cache (snforge plugin already compiled)
+      - name: Cache Cargo (snforge plugin)
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo
+          key: ${{ runner.os }}-cargo-snforge-${{ env.FOUNDRY_VERSION }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-snforge-
 
       - name: Cache tools
         uses: actions/cache@v4
@@ -73,8 +184,6 @@ jobs:
             ~/.local/bin/cairo-coverage
             ~/.local/bin/universal-sierra-compiler
           key: ${{ runner.os }}-tools-cairo-coverage-universal-sierra-compiler-v1
-          restore-keys: |
-            ${{ runner.os }}-tools-
 
       - name: Install tools
         if: steps.cache-tools.outputs.cache-hit != 'true'
@@ -83,11 +192,22 @@ jobs:
           (curl -L https://raw.githubusercontent.com/software-mansion/universal-sierra-compiler/master/scripts/install.sh | sh) &
           wait
 
-      - name: Run tests with fuzzing and coverage
-        run: snforge test --workspace --fuzzer-runs 500 --coverage
+      # Cache compiled artifacts - saves ~20s per package when source unchanged
+      - name: Cache compiled packages
+        uses: actions/cache@v4
+        with:
+          path: target/
+          key: ${{ runner.os }}-target-${{ matrix.package }}-${{ env.SCARB_VERSION }}-${{ hashFiles('packages/**/*.cairo', '**/Scarb.toml', '**/Scarb.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-target-${{ matrix.package }}-${{ env.SCARB_VERSION }}-
+
+      # snforge test auto-builds the package before testing
+      - name: Run tests with coverage
+        run: snforge test -p ${{ matrix.package }} --fuzzer-runs ${{ matrix.fuzzer_runs }} --coverage
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
         with:
-          file: ./coverage.lcov
+          files: ./coverage.lcov
+          flags: ${{ matrix.package }}
           token: ${{ secrets.CODECOV_TOKEN }}

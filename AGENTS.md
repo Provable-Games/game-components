@@ -38,19 +38,19 @@ scarb fmt -w                                   # Format code
 
 Each package has its own `AGENTS.md` with detailed documentation.
 
-| Package | Purpose |
-|---------|---------|
-| **interfaces** | Centralized interface/struct definitions for all components |
-| **metagame** | High-level game coordination, token delegation, context management |
-| **minigame** | Individual game logic foundation (MUST implement `IMinigameTokenData`) |
-| **token** | ERC721 with compile-time feature flags (<4MB optimization) |
-| **leaderboard** | Tournament scoring and ranking |
-| **registry** | Game registration and discovery |
-| **tokenomics** | Ekubo TWAMM buyback and stream token distribution |
-| **presets** | Ready-to-deploy contracts (LeaderboardPreset, AutonomousBuyback, StreamToken) |
-| **utils** | Pure utilities: encoding, JSON, rendering |
-| **test_common** | Shared mocks and example contracts (**do not modify existing mocks**) |
-| **testing** | Test constants and addresses |
+| Package         | Purpose                                                                       |
+| --------------- | ----------------------------------------------------------------------------- |
+| **interfaces**  | Centralized interface/struct definitions for all components                   |
+| **metagame**    | High-level game coordination, token delegation, context management            |
+| **minigame**    | Individual game logic foundation (MUST implement `IMinigameTokenData`)        |
+| **token**       | ERC721 with compile-time feature flags (<4MB optimization)                    |
+| **leaderboard** | Tournament scoring and ranking                                                |
+| **registry**    | Game registration and discovery                                               |
+| **tokenomics**  | Ekubo TWAMM buyback and stream token distribution                             |
+| **presets**     | Ready-to-deploy contracts (LeaderboardPreset, AutonomousBuyback, StreamToken) |
+| **utils**       | Pure utilities: encoding, JSON, rendering                                     |
+| **test_common** | Shared mocks and example contracts (**do not modify existing mocks**)         |
+| **testing**     | Test constants and addresses                                                  |
 
 ## Architecture Overview
 
@@ -70,3 +70,43 @@ Metagame ──→ MinigameToken (ERC721) ──→ Minigame
 - `#[substorage(v0)]` for storage isolation
 - Dispatcher pattern for cross-contract calls
 - Interface IDs as constants (e.g., `IMINIGAME_ID`)
+
+## CI Configuration
+
+The `validate-config` job in CI automatically verifies that the package count matches `codecov.yml`. If they diverge, CI will fail with an actionable error message.
+
+### Adding a New Package
+
+When adding a new package with tests, update **both** files:
+
+1. **`.github/workflows/test.yml`** - Add the package to the matrix:
+
+   ```yaml
+   matrix:
+     package:
+       - game_components_metagame
+       - game_components_minigame
+       # ... existing packages ...
+       - game_components_NEW_PACKAGE # ← Add here
+   ```
+
+   For memory-intensive packages (like `token` or `minigame`), use the `include`/`exclude` pattern to assign a larger runner (e.g., `ubuntu-latest-4` or `ubuntu-latest-16`).
+
+2. **`codecov.yml`** - Update the build count:
+   ```yaml
+   notify:
+     after_n_builds: 9 # ← Must equal total package count in matrix
+   ```
+
+### Current Matrix (8 packages)
+
+| Package | Runner | Fuzzer Runs |
+|---------|--------|-------------|
+| `game_components_metagame` | `ubuntu-latest` | 256 |
+| `game_components_minigame` | `ubuntu-latest-4` | 256 |
+| `game_components_registry` | `ubuntu-latest` | 256 |
+| `game_components_token` | `ubuntu-latest-32` | 50 |
+| `game_components_tokenomics` | `ubuntu-latest` | 256 |
+| `game_components_utils` | `ubuntu-latest` | 256 |
+| `game_components_leaderboard` | `ubuntu-latest` | 256 |
+| `game_components_presets` | `ubuntu-latest` | 256 |

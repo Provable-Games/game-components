@@ -345,7 +345,7 @@ fn test_supports_minigame_token_interface() {
 
 #[test]
 fn test_update_game_no_state_change() {
-    let (minigame_dispatcher, mock_game) = deploy_basic_mock_game();
+    let (minigame_dispatcher, _) = deploy_basic_mock_game();
     let (token_dispatcher, _, _, _) = deploy_optimized_token_with_game(
         minigame_dispatcher.contract_address,
     );
@@ -442,7 +442,7 @@ fn test_renderer_address_custom() {
 
     // With custom renderer, should have custom renderer or check has_custom_renderer
     let has_custom = test_contracts.test_token.has_custom_renderer(token_id);
-    // Token may have custom renderer depending on implementation
+    assert!(has_custom, "Token should have custom renderer");
 }
 
 #[test]
@@ -466,7 +466,7 @@ fn test_get_renderer() {
         );
 
     let renderer = test_contracts.test_token.get_renderer(token_id);
-    // Renderer should be set
+    assert!(renderer == RENDERER_ADDRESS(), "Renderer should be set");
 }
 
 // ============================================================================
