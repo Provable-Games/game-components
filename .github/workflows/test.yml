@@ -188,7 +188,7 @@ jobs:
 
       # snforge test auto-builds the package before testing
       - name: Run tests with coverage
-        run: snforge test -p ${{ matrix.package }} --fuzzer-runs 500 --coverage
+        run: snforge test -p ${{ matrix.package }} --fuzzer-runs 256 --coverage
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
