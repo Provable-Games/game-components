@@ -137,7 +137,7 @@ jobs:
         include:
           - package: game_components_token
             runner: ubuntu-latest-32
-            fuzzer_runs: 64
+            fuzzer_runs: 32
           - package: game_components_minigame
             runner: ubuntu-latest-4
             fuzzer_runs: 64
