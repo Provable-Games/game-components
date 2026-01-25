@@ -36,7 +36,7 @@ jobs:
   setup:
     name: setup
     needs: lint
-    runs-on: ubuntu-latest-8
+    runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v6
