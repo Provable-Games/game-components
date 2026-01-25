@@ -134,7 +134,7 @@ jobs:
             runner: ubuntu-latest
         include:
           - package: game_components_token
-            runner: ubuntu-latest-8
+            runner: ubuntu-latest-32
           - package: game_components_minigame
             runner: ubuntu-latest-4
     steps:

@@ -103,9 +103,9 @@ When adding a new package with tests, update **both** files:
 | Package                       | Runner             |
 | ----------------------------- | ------------------ |
 | `game_components_metagame`    | `ubuntu-latest`    |
-| `game_components_minigame`    | `ubuntu-latest-8`  |
+| `game_components_minigame`    | `ubuntu-latest-4`  |
 | `game_components_registry`    | `ubuntu-latest`    |
-| `game_components_token`       | `ubuntu-latest-16` |
+| `game_components_token`       | `ubuntu-latest-32` |
 | `game_components_tokenomics`  | `ubuntu-latest`    |
 | `game_components_utils`       | `ubuntu-latest`    |
 | `game_components_leaderboard` | `ubuntu-latest`    |
