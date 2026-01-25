@@ -82,7 +82,7 @@ jobs:
         with:
           starknet-foundry-version: ${{ env.FOUNDRY_VERSION }}
 
-      # Populate Scarb registry cache (git repos, crates)
+      # Restore caches before fetching dependencies
       - name: Cache Scarb dependencies
         uses: actions/cache@v4
         with:
@@ -91,17 +91,16 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-scarb-deps-
 
-      - name: Fetch dependencies
-        run: scarb fetch
-
-      # Compile snforge plugin so test jobs don't have to
-      - name: Cache Cargo (snforge plugin)
+      - name: Cache Cargo (snforge plugin + Scarb Rust deps)
         uses: actions/cache@v4
         with:
           path: ~/.cargo
           key: ${{ runner.os }}-cargo-snforge-${{ env.FOUNDRY_VERSION }}
           restore-keys: |
             ${{ runner.os }}-cargo-snforge-
+
+      - name: Fetch dependencies
+        run: scarb fetch
 
       - name: Warm snforge plugin cache
         run: snforge --version
