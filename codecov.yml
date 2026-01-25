@@ -1,7 +1,9 @@
 codecov:
   require_ci_to_pass: true
   notify:
-    after_n_builds: 8  # Wait for all 8 package test jobs before posting status
+    # Must equal package count in .github/workflows/test.yml matrix
+    # See AGENTS.md "CI Configuration" section when adding packages
+    after_n_builds: 8
 
 comment:
   layout: "diff, files, header, footer"

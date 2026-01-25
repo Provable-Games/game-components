@@ -33,6 +33,32 @@ jobs:
       - name: Cairo lint
         run: scarb fmt --check --workspace
 
+  validate-config:
+    name: validate config
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Validate package count matches codecov config
+        run: |
+          # Count packages in matrix (lines starting with "- game_components_")
+          matrix_count=$(grep -cE '^\s+- game_components_' .github/workflows/test.yml)
+
+          # Extract after_n_builds value from codecov.yml
+          codecov_count=$(grep 'after_n_builds:' codecov.yml | grep -oE '[0-9]+')
+
+          echo "Matrix packages: $matrix_count"
+          echo "Codecov after_n_builds: $codecov_count"
+
+          if [ "$matrix_count" != "$codecov_count" ]; then
+            echo "::error::Matrix has $matrix_count packages but codecov.yml expects $codecov_count builds"
+            echo "::error::Update codecov.yml after_n_builds to match package count"
+            exit 1
+          fi
+
+          echo "Configuration validated: $matrix_count packages"
+
   setup:
     name: setup
     needs: lint
@@ -86,6 +112,9 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
+        # NOTE: When adding/removing packages, also update:
+        #   - codecov.yml: after_n_builds must equal package count
+        #   - AGENTS.md: CI Configuration section
         package:
           - game_components_metagame
           - game_components_minigame
@@ -104,9 +133,9 @@ jobs:
             runner: ubuntu-latest
         include:
           - package: game_components_token
-            runner: ubuntu-latest-16
+            runner: ubuntu-latest-32
           - package: game_components_minigame
-            runner: ubuntu-latest-8
+            runner: ubuntu-latest-4
     steps:
       - uses: actions/checkout@v6
 
