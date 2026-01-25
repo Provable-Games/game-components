@@ -81,7 +81,7 @@ jobs:
   test:
     name: test (${{ matrix.package }})
     needs: setup
-    runs-on: ubuntu-latest-4
+    runs-on: ${{ matrix.runner }}
     timeout-minutes: 10
     strategy:
       fail-fast: false
@@ -95,6 +95,18 @@ jobs:
           - game_components_utils
           - game_components_leaderboard
           - game_components_presets
+        runner:
+          - ubuntu-latest
+        exclude:
+          - package: game_components_token
+            runner: ubuntu-latest
+          - package: game_components_minigame
+            runner: ubuntu-latest
+        include:
+          - package: game_components_token
+            runner: ubuntu-latest-8
+          - package: game_components_minigame
+            runner: ubuntu-latest-4
     steps:
       - uses: actions/checkout@v6
 
