@@ -19,3 +19,4 @@ mod test_premint;
 mod test_preset;
 mod test_stream;
 mod test_stream_burn;
+mod test_stream_fork;
