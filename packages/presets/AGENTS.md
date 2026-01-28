@@ -76,11 +76,13 @@ fn constructor(
     extension_address: ContractAddress,
     liquidity_config: LiquidityConfig,
     distribution_orders: Span<DistributionOrder>,
+    premint_allocations: Span<PremintAllocation>,
 )
 ```
 
 **Features:**
 - Standard ERC20 (OpenZeppelin)
+- Premint allocations to specified recipients at deployment
 - Multiple concurrent distribution orders
 - Permissionless proceeds claiming
 - No admin/owner after deployment
