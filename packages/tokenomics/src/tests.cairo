@@ -20,3 +20,4 @@ mod test_preset;
 mod test_stream;
 mod test_stream_burn;
 mod test_stream_fork;
+mod test_stream_lifecycle;
