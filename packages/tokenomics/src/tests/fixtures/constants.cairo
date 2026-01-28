@@ -30,16 +30,24 @@ pub fn ZERO_ADDRESS() -> ContractAddress {
 pub mod mainnet {
     use starknet::ContractAddress;
 
+    /// Ekubo Core contract on mainnet
+    pub fn EKUBO_CORE() -> ContractAddress {
+        0x00000005dd3D2F4429AF886cD1a3b08289DBcEa99A294197E9eB43b0e0325b4b.try_into().unwrap()
+    }
+
     /// Ekubo Positions contract on mainnet
     pub fn EKUBO_POSITIONS() -> ContractAddress {
-        // Ekubo Positions contract address
         0x02e0af29598b407c8716b17f6d2795eca1b471413fa03fb145a5e33722184067.try_into().unwrap()
     }
 
     /// Ekubo TWAMM extension on mainnet
     pub fn EKUBO_TWAMM_EXTENSION() -> ContractAddress {
-        // TWAMM extension address
         0x043e4f09c32d13d43a880e85f69f7de93ceda62d6cf2581a582c6db635548fdc.try_into().unwrap()
+    }
+
+    /// Ekubo Token Registry on mainnet
+    pub fn EKUBO_REGISTRY() -> ContractAddress {
+        0x064bdb4094881140bc39340146c5fcc5a187a98aec5a53f448ac702e5de5067e.try_into().unwrap()
     }
 
     /// USDC token on mainnet
@@ -55,6 +63,11 @@ pub mod mainnet {
     /// STRK token on mainnet
     pub fn STRK() -> ContractAddress {
         0x04718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d.try_into().unwrap()
+    }
+
+    /// LORDS token on mainnet (useful for testing as paired token)
+    pub fn LORDS() -> ContractAddress {
+        0x0124aeb495b947201f5fac96fd1138e326ad86195b98df6dec9009158a533b49.try_into().unwrap()
     }
 }
 
