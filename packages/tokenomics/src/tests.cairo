@@ -14,6 +14,7 @@ pub mod mocks;
 mod test_buyback;
 mod test_constants;
 mod test_factory;
+mod test_premint;
 mod test_preset;
 mod test_stream;
 mod test_stream_burn;

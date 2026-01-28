@@ -85,6 +85,7 @@ fn default_create_params(paired_token: ContractAddress) -> CreateTokenParams {
         total_supply: 10000_u128 * 1_000_000_000_000_000_000,
         liquidity_config,
         distribution_orders: distribution_orders.span(),
+        premint_allocations: array![].span(),
     }
 }
 
@@ -311,6 +312,7 @@ fn test_create_token_no_distribution_orders_fails() {
         total_supply: 10000_u128 * 1_000_000_000_000_000_000,
         liquidity_config,
         distribution_orders: empty_orders.span(),
+        premint_allocations: array![].span(),
     };
 
     start_cheat_caller_address(factory_address, USER1());
@@ -366,6 +368,7 @@ fn test_create_token_too_many_orders_fails() {
         total_supply: 100000_u128 * 1_000_000_000_000_000_000,
         liquidity_config,
         distribution_orders: orders.span(),
+        premint_allocations: array![].span(),
     };
 
     start_cheat_caller_address(factory_address, USER1());
@@ -415,6 +418,7 @@ fn test_create_token_supply_too_low_fails() {
         total_supply: 100_u128 * 1_000_000_000_000_000_000, // Too low
         liquidity_config,
         distribution_orders: distribution_orders.span(),
+        premint_allocations: array![].span(),
     };
 
     start_cheat_caller_address(factory_address, USER1());

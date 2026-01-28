@@ -22,7 +22,7 @@ pub mod StreamComponent {
     use ekubo::types::i129::i129;
     use ekubo::types::keys::PoolKey;
     use game_components_interfaces::tokenomics::stream::{
-        DistributionOrder, LiquidityConfig, StoredDistributionOrder,
+        DistributionOrder, LiquidityConfig, PremintAllocation, StoredDistributionOrder,
     };
     use openzeppelin_token::erc20::ERC20Component;
     use starknet::storage::{
@@ -74,6 +74,15 @@ pub mod StreamComponent {
         LiquidityProvided: LiquidityProvided,
         DistributionStarted: DistributionStarted,
         ProceedsClaimed: ProceedsClaimed,
+        Preminted: Preminted,
+    }
+
+    /// Emitted when tokens are preminted to a recipient during deployment
+    #[derive(Drop, starknet::Event)]
+    pub struct Preminted {
+        #[key]
+        pub recipient: ContractAddress,
+        pub amount: u128,
     }
 
     /// Emitted when a pool is initialized
@@ -347,6 +356,7 @@ pub mod StreamComponent {
         /// * `extension_address` - TWAMM extension address
         /// * `liquidity_config` - Primary pool liquidity configuration
         /// * `distribution_orders` - Distribution orders to create
+        /// * `premint_allocations` - Premint allocations for tokens minted directly to recipients
         fn initializer(
             ref self: ComponentState<TContractState>,
             factory: ContractAddress,
@@ -356,6 +366,7 @@ pub mod StreamComponent {
             extension_address: ContractAddress,
             liquidity_config: LiquidityConfig,
             distribution_orders: Span<DistributionOrder>,
+            premint_allocations: Span<PremintAllocation>,
         ) {
             // Validate addresses
             let zero_address: ContractAddress = Zero::zero();
@@ -424,6 +435,15 @@ pub mod StreamComponent {
             }
 
             self.Stream_order_count.write(order_count);
+
+            // Validate premint allocations (no storage - one-time operation)
+            for premint in premint_allocations {
+                assert(
+                    *premint.recipient != zero_address, Errors::STREAM_INVALID_PREMINT_RECIPIENT,
+                );
+                assert(*premint.amount > 0, Errors::STREAM_INVALID_PREMINT_AMOUNT);
+            }
+
             self.Stream_deployment_state.write(0);
         }
 

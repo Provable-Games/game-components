@@ -47,7 +47,8 @@ pub use factory::StreamTokenFactory;
 pub use stream::{
     CreateTokenParams, DistributionOrder, IStreamToken, IStreamTokenDispatcher,
     IStreamTokenDispatcherTrait, IStreamTokenFactory, IStreamTokenFactoryDispatcher,
-    IStreamTokenFactoryDispatcherTrait, LiquidityConfig, StoredDistributionOrder, StreamComponent,
+    IStreamTokenFactoryDispatcherTrait, LiquidityConfig, PremintAllocation, StoredDistributionOrder,
+    StreamComponent,
 };
 
 #[cfg(test)]

@@ -1,6 +1,7 @@
 use ekubo::types::i129::i129;
 use game_components_tokenomics::{
     DistributionOrder, GlobalBuybackConfig, IStreamTokenDispatcher, LiquidityConfig,
+    PremintAllocation,
 };
 use openzeppelin_interfaces::erc20::IERC20Dispatcher;
 use snforge_std::{ContractClassTrait, DeclareResultTrait, declare};
@@ -162,6 +163,96 @@ pub fn deploy_stream_token() -> StreamTokenSetup {
     mock_extension.serialize(ref calldata);
     liquidity_config.serialize(ref calldata);
     distribution_orders.span().serialize(ref calldata);
+    let empty_premints: Array<PremintAllocation> = array![];
+    empty_premints.span().serialize(ref calldata);
+
+    let (token_address, _) = contract.deploy(@calldata).unwrap();
+
+    StreamTokenSetup {
+        token_address,
+        token: IStreamTokenDispatcher { contract_address: token_address },
+        erc20: IERC20Dispatcher { contract_address: token_address },
+        factory,
+    }
+}
+
+/// Deploy a StreamToken with premint allocations for testing
+/// Uses mock Ekubo addresses (for unit testing only)
+pub fn deploy_stream_token_with_premints(
+    premint_allocations: Span<PremintAllocation>,
+) -> StreamTokenSetup {
+    let contract = declare("StreamToken").unwrap().contract_class();
+
+    // Factory is the caller/deployer - use OWNER for tests
+    let factory = OWNER();
+
+    // Deploy mock registry (real deployed contract to accept register_token call)
+    let mock_registry = deploy_mock_registry();
+
+    // Mock Ekubo addresses (not real contracts - for unit testing only)
+    let mock_positions: ContractAddress = 'POSITIONS'.try_into().unwrap();
+    let mock_core: ContractAddress = 'CORE'.try_into().unwrap();
+    let mock_extension: ContractAddress = 'EXTENSION'.try_into().unwrap();
+
+    // Paired token for liquidity
+    let paired_token: ContractAddress = 'PAIRED'.try_into().unwrap();
+
+    // Buy token for distribution
+    let buy_token: ContractAddress = 'BUY_TOKEN'.try_into().unwrap();
+
+    // Liquidity config
+    let liquidity_config = LiquidityConfig {
+        paired_token,
+        fee: defaults::DEFAULT_FEE,
+        initial_tick: i129 { mag: 0, sign: false },
+        stream_token_amount: 1000_u128 * 1_000_000_000_000_000_000, // 1000 tokens
+        paired_token_amount: 100_u128 * 1_000_000_000_000_000_000, // 100 tokens
+        min_liquidity: 1,
+    };
+
+    // Distribution order - sells stream tokens for buy_token
+    let distribution_orders: Array<DistributionOrder> = array![
+        DistributionOrder {
+            buy_token,
+            fee: defaults::DEFAULT_FEE,
+            start_time: 0,
+            end_time: 86400 * 7, // 1 week
+            amount: 500_u128 * 1_000_000_000_000_000_000, // 500 tokens
+            proceeds_recipient: TREASURY(),
+        },
+    ];
+
+    // Calculate premint total for supply calculation
+    let mut premint_total: u128 = 0;
+    for premint in premint_allocations {
+        premint_total += *premint.amount;
+    }
+
+    // Total supply needs to cover:
+    // - 1 token for registry
+    // - 1000 tokens for liquidity
+    // - 500 tokens for distribution
+    // - premint_total tokens for premints
+    // Plus extra for testing
+    let base_supply: u128 = 10000_u128 * 1_000_000_000_000_000_000;
+    let total_supply: u128 = base_supply + premint_total;
+
+    let mut calldata: Array<felt252> = array![];
+
+    // Serialize constructor arguments
+    let name: ByteArray = "Stream Token";
+    let symbol: ByteArray = "STREAM";
+    name.serialize(ref calldata);
+    symbol.serialize(ref calldata);
+    total_supply.serialize(ref calldata);
+    factory.serialize(ref calldata);
+    mock_positions.serialize(ref calldata);
+    mock_core.serialize(ref calldata);
+    mock_registry.serialize(ref calldata);
+    mock_extension.serialize(ref calldata);
+    liquidity_config.serialize(ref calldata);
+    distribution_orders.span().serialize(ref calldata);
+    premint_allocations.serialize(ref calldata);
 
     let (token_address, _) = contract.deploy(@calldata).unwrap();
 

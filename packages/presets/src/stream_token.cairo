@@ -11,7 +11,9 @@
 /// - No admin/owner after deployment (fully autonomous)
 #[starknet::contract]
 pub mod StreamToken {
-    use game_components_interfaces::tokenomics::stream::{DistributionOrder, LiquidityConfig};
+    use game_components_interfaces::tokenomics::stream::{
+        DistributionOrder, LiquidityConfig, PremintAllocation,
+    };
     use game_components_tokenomics::ERC20_UNIT;
     use game_components_tokenomics::stream::StreamComponent;
     use openzeppelin_token::erc20::{ERC20Component, ERC20HooksEmptyImpl};
@@ -72,6 +74,7 @@ pub mod StreamToken {
     /// * `extension_address` - TWAMM extension address
     /// * `liquidity_config` - Primary pool liquidity configuration
     /// * `distribution_orders` - Distribution orders to create
+    /// * `premint_allocations` - Premint allocations for tokens minted directly to recipients
     #[constructor]
     fn constructor(
         ref self: ContractState,
@@ -85,6 +88,7 @@ pub mod StreamToken {
         extension_address: ContractAddress,
         liquidity_config: LiquidityConfig,
         distribution_orders: Span<DistributionOrder>,
+        premint_allocations: Span<PremintAllocation>,
     ) {
         // Initialize ERC20
         self.erc20.initializer(name, symbol);
@@ -100,6 +104,7 @@ pub mod StreamToken {
                 extension_address,
                 liquidity_config,
                 distribution_orders,
+                premint_allocations,
             );
 
         // Mint tokens to registry for registration (1 token = 10^18 units)
@@ -108,9 +113,23 @@ pub mod StreamToken {
         // Register token with Ekubo
         self.stream.register_token();
 
+        // Mint premint allocations directly to recipients
+        let mut premint_total: u128 = 0;
+        for premint in premint_allocations {
+            self.erc20.mint(*premint.recipient, (*premint.amount).into());
+            self
+                .stream
+                .emit(
+                    StreamComponent::Preminted {
+                        recipient: *premint.recipient, amount: *premint.amount,
+                    },
+                );
+            premint_total += *premint.amount;
+        }
+
         // Mint remaining tokens to factory for distribution
         // Factory will transfer to positions contract for liquidity and distribution
-        let remaining_supply: u256 = (total_supply - ERC20_UNIT).into();
+        let remaining_supply: u256 = (total_supply - ERC20_UNIT - premint_total).into();
         self.erc20.mint(factory, remaining_supply);
     }
 }
