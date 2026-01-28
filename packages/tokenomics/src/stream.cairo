@@ -8,7 +8,7 @@ pub use game_components_interfaces::tokenomics::stream::{
     IStreamTokenFactoryAdminDispatcher, IStreamTokenFactoryAdminDispatcherTrait,
     IStreamTokenFactoryDispatcher, IStreamTokenFactoryDispatcherTrait, IStreamTokenSetup,
     IStreamTokenSetupDispatcher, IStreamTokenSetupDispatcherTrait, LiquidityConfig,
-    StoredDistributionOrder,
+    PremintAllocation, StoredDistributionOrder,
 };
 
 pub use stream::StreamComponent;

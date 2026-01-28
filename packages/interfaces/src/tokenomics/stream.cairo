@@ -36,6 +36,15 @@ pub struct StoredDistributionOrder {
     pub proceeds_recipient: ContractAddress,
 }
 
+/// Allocation for preminting tokens to a recipient during deployment
+#[derive(Copy, Drop, Serde)]
+pub struct PremintAllocation {
+    /// Address to receive preminted tokens
+    pub recipient: ContractAddress,
+    /// Amount of tokens to premint (in base units)
+    pub amount: u128,
+}
+
 /// Initial liquidity configuration for the primary pool
 #[derive(Copy, Drop, Serde)]
 pub struct LiquidityConfig {
@@ -66,6 +75,8 @@ pub struct CreateTokenParams {
     pub liquidity_config: LiquidityConfig,
     /// Distribution orders to create
     pub distribution_orders: Span<DistributionOrder>,
+    /// Premint allocations for tokens to be minted directly to recipients
+    pub premint_allocations: Span<PremintAllocation>,
 }
 
 /// Permissionless interface for StreamToken

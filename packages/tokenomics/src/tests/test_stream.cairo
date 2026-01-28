@@ -13,6 +13,7 @@ use game_components_interfaces::tokenomics::stream::{
 };
 use game_components_tokenomics::{
     DistributionOrder, IStreamTokenDispatcher, IStreamTokenDispatcherTrait, LiquidityConfig,
+    PremintAllocation,
 };
 use openzeppelin_interfaces::erc20::{
     IERC20Dispatcher, IERC20DispatcherTrait, IERC20MetadataDispatcher,
@@ -84,6 +85,8 @@ fn deploy_stream_token_with_orders(order_count: u32) -> StreamTokenSetup {
     mock_extension.serialize(ref calldata);
     liquidity_config.serialize(ref calldata);
     distribution_orders.span().serialize(ref calldata);
+    let empty_premints: Array<PremintAllocation> = array![];
+    empty_premints.span().serialize(ref calldata);
 
     let (token_address, _) = contract.deploy(@calldata).unwrap();
 

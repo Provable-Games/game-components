@@ -22,3 +22,11 @@ test = "snforge test"
 sierra = true
 
 [lib]
+
+[tool.snforge]
+fuzzer_runs = 24
+
+[[tool.snforge.fork]]
+name = "MAINNET"
+url = "https://api.cartridge.gg/x/starknet/mainnet/rpc/v0_10"
+block_id.number = "1100000"

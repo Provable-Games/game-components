@@ -142,8 +142,14 @@ pub mod StreamTokenFactory {
                 i += 1;
             }
 
+            // Calculate total premint amount
+            let mut premint_total: u128 = 0;
+            for premint in params.premint_allocations {
+                premint_total += *premint.amount;
+            }
+
             let lp_amount = params.liquidity_config.stream_token_amount;
-            let total_needed = ERC20_UNIT + lp_amount + distribution_total;
+            let total_needed = ERC20_UNIT + lp_amount + distribution_total + premint_total;
             assert(params.total_supply >= total_needed, Errors::STREAM_SUPPLY_TOO_LOW);
 
             // Transfer paired tokens from caller to positions contract
@@ -171,6 +177,7 @@ pub mod StreamTokenFactory {
             self.extension_address.read().serialize(ref calldata);
             params.liquidity_config.serialize(ref calldata);
             params.distribution_orders.serialize(ref calldata);
+            params.premint_allocations.serialize(ref calldata);
 
             // Deploy the token contract
             let class_hash = self.stream_token_class_hash.read();

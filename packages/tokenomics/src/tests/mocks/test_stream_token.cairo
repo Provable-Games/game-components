@@ -3,7 +3,9 @@
 /// so tokenomics tests can use `declare("StreamToken")`.
 #[starknet::contract]
 pub mod StreamToken {
-    use game_components_interfaces::tokenomics::stream::{DistributionOrder, LiquidityConfig};
+    use game_components_interfaces::tokenomics::stream::{
+        DistributionOrder, LiquidityConfig, PremintAllocation,
+    };
     use game_components_tokenomics::ERC20_UNIT;
     use game_components_tokenomics::stream::StreamComponent;
     use openzeppelin_token::erc20::{ERC20Component, ERC20HooksEmptyImpl};
@@ -58,6 +60,7 @@ pub mod StreamToken {
         extension_address: ContractAddress,
         liquidity_config: LiquidityConfig,
         distribution_orders: Span<DistributionOrder>,
+        premint_allocations: Span<PremintAllocation>,
     ) {
         self.erc20.initializer(name, symbol);
         self
@@ -70,12 +73,27 @@ pub mod StreamToken {
                 extension_address,
                 liquidity_config,
                 distribution_orders,
+                premint_allocations,
             );
 
         self.erc20.mint(registry_address, ERC20_UNIT.into());
         self.stream.register_token();
 
-        let remaining_supply: u256 = (total_supply - ERC20_UNIT).into();
+        // Mint premint allocations directly to recipients
+        let mut premint_total: u128 = 0;
+        for premint in premint_allocations {
+            self.erc20.mint(*premint.recipient, (*premint.amount).into());
+            self
+                .stream
+                .emit(
+                    StreamComponent::Preminted {
+                        recipient: *premint.recipient, amount: *premint.amount,
+                    },
+                );
+            premint_total += *premint.amount;
+        }
+
+        let remaining_supply: u256 = (total_supply - ERC20_UNIT - premint_total).into();
         self.erc20.mint(factory, remaining_supply);
     }
 }
