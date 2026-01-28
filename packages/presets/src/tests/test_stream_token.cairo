@@ -16,6 +16,7 @@ use ekubo::types::i129::i129;
 use game_components_interfaces::tokenomics::stream::{
     DistributionOrder, IStreamTokenDispatcher, IStreamTokenDispatcherTrait,
     IStreamTokenSetupDispatcher, IStreamTokenSetupDispatcherTrait, LiquidityConfig,
+    PremintAllocation,
 };
 use game_components_testing::constants::{OWNER, USER1, USER2};
 use openzeppelin_interfaces::erc20::{
@@ -133,6 +134,8 @@ fn deploy_stream_token() -> StreamTokenSetup {
     mock_extension.serialize(ref calldata);
     liquidity_config.serialize(ref calldata);
     distribution_orders.span().serialize(ref calldata);
+    let empty_premints: Array<PremintAllocation> = array![];
+    empty_premints.span().serialize(ref calldata);
 
     let (token_address, _) = contract.deploy(@calldata).unwrap();
 
@@ -210,6 +213,8 @@ fn deploy_stream_token_with_multiple_orders() -> StreamTokenSetup {
     mock_extension.serialize(ref calldata);
     liquidity_config.serialize(ref calldata);
     distribution_orders.span().serialize(ref calldata);
+    let empty_premints: Array<PremintAllocation> = array![];
+    empty_premints.span().serialize(ref calldata);
 
     let (token_address, _) = contract.deploy(@calldata).unwrap();
 
