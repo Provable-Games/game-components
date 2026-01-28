@@ -10,14 +10,94 @@
 use game_components_interfaces::tokenomics::stream::{
     IStreamTokenSetupDispatcher, IStreamTokenSetupDispatcherTrait,
 };
-use game_components_tokenomics::IStreamTokenDispatcherTrait;
 use game_components_tokenomics::stream::StreamComponent;
-use snforge_std::{
-    EventSpyAssertionsTrait, spy_events, start_cheat_caller_address, start_mock_call,
-    stop_cheat_caller_address, stop_mock_call,
+use game_components_tokenomics::{
+    DistributionOrder, IStreamTokenDispatcherTrait, LiquidityConfig, PremintAllocation,
 };
-use super::fixtures::constants::TREASURY;
-use super::helpers::deployment::deploy_stream_token;
+use openzeppelin_interfaces::erc20::IERC20Dispatcher;
+use snforge_std::{
+    ContractClassTrait, DeclareResultTrait, EventSpyAssertionsTrait, declare, spy_events,
+    start_cheat_caller_address, start_mock_call, stop_cheat_caller_address, stop_mock_call,
+};
+use starknet::ContractAddress;
+use super::fixtures::constants::{OWNER, TREASURY, defaults};
+use super::helpers::deployment::{StreamTokenSetup, deploy_mock_registry, deploy_stream_token};
+
+// ============================================================================
+// Helper for Multiple Orders Test
+// ============================================================================
+
+/// Deploy a stream token with multiple distribution orders (same buy_token/fee)
+/// This tests the `increase_sell_amount` branch in start_distributions
+fn deploy_stream_token_with_multiple_orders() -> StreamTokenSetup {
+    let contract = declare("StreamToken").unwrap().contract_class();
+
+    let factory = OWNER();
+    let mock_registry = deploy_mock_registry();
+    let mock_positions: ContractAddress = 'POSITIONS'.try_into().unwrap();
+    let mock_core: ContractAddress = 'CORE'.try_into().unwrap();
+    let mock_extension: ContractAddress = 'EXTENSION'.try_into().unwrap();
+    let paired_token: ContractAddress = 'PAIRED'.try_into().unwrap();
+    let buy_token: ContractAddress = 'BUY_TOKEN'.try_into().unwrap();
+
+    let liquidity_config = LiquidityConfig {
+        paired_token,
+        fee: defaults::DEFAULT_FEE,
+        initial_tick: ekubo::types::i129::i129 { mag: 0, sign: false },
+        stream_token_amount: 1000_u128 * 1_000_000_000_000_000_000,
+        paired_token_amount: 100_u128 * 1_000_000_000_000_000_000,
+        min_liquidity: 1,
+    };
+
+    // Create 2 orders with SAME buy_token and fee to trigger increase_sell_amount
+    let distribution_orders: Array<DistributionOrder> = array![
+        DistributionOrder {
+            buy_token,
+            fee: defaults::DEFAULT_FEE,
+            start_time: 0,
+            end_time: 86400 * 7,
+            amount: 100_u128 * 1_000_000_000_000_000_000,
+            proceeds_recipient: TREASURY(),
+        },
+        DistributionOrder {
+            buy_token, // Same buy_token
+            fee: defaults::DEFAULT_FEE, // Same fee
+            start_time: 0,
+            end_time: 86400 * 14, // Different end time
+            amount: 100_u128 * 1_000_000_000_000_000_000,
+            proceeds_recipient: TREASURY(),
+        },
+    ];
+
+    let total_supply: u128 = 10000_u128 * 1_000_000_000_000_000_000;
+
+    let mut calldata: Array<felt252> = array![];
+    let name: ByteArray = "Stream Token";
+    let symbol: ByteArray = "STREAM";
+    name.serialize(ref calldata);
+    symbol.serialize(ref calldata);
+    total_supply.serialize(ref calldata);
+    factory.serialize(ref calldata);
+    mock_positions.serialize(ref calldata);
+    mock_core.serialize(ref calldata);
+    mock_registry.serialize(ref calldata);
+    mock_extension.serialize(ref calldata);
+    liquidity_config.serialize(ref calldata);
+    distribution_orders.span().serialize(ref calldata);
+    let empty_premints: Array<PremintAllocation> = array![];
+    empty_premints.span().serialize(ref calldata);
+
+    let (token_address, _) = contract.deploy(@calldata).unwrap();
+
+    StreamTokenSetup {
+        token_address,
+        token: game_components_tokenomics::IStreamTokenDispatcher {
+            contract_address: token_address,
+        },
+        erc20: IERC20Dispatcher { contract_address: token_address },
+        factory,
+    }
+}
 
 // ============================================================================
 // Full Lifecycle Tests with Mocked Ekubo
@@ -305,4 +385,63 @@ fn test_proceeds_claimed_event_with_mocks() {
     stop_mock_call(mock_positions, selector!("mint_and_deposit_and_clear_both"));
     stop_mock_call(mock_positions, selector!("mint_and_increase_sell_amount"));
     stop_mock_call(mock_positions, selector!("withdraw_proceeds_from_sale_to"));
+}
+
+/// Test start_distributions with multiple orders sharing same buy_token/fee
+/// This exercises the `increase_sell_amount` branch (else case)
+#[test]
+fn test_start_distributions_multiple_orders_same_pool() {
+    let setup = deploy_stream_token_with_multiple_orders();
+
+    let mock_core: starknet::ContractAddress = 'CORE'.try_into().unwrap();
+    let mock_positions: starknet::ContractAddress = 'POSITIONS'.try_into().unwrap();
+
+    // Mock Ekubo calls for provide_initial_liquidity
+    start_mock_call(mock_core, selector!("initialize_pool"), 1_u256);
+    start_mock_call(
+        mock_positions,
+        selector!("mint_and_deposit_and_clear_both"),
+        (1_u64, 1000_u128, 500_u256, 500_u256),
+    );
+
+    // Mock mint_and_increase_sell_amount for FIRST order (creates new position)
+    // Returns: (position_id: u64, sale_rate: u128)
+    start_mock_call(mock_positions, selector!("mint_and_increase_sell_amount"), (2_u64, 100_u128));
+
+    // Mock increase_sell_amount for SECOND order (reuses existing position)
+    // This is the else branch we want to cover - returns just sale_rate: u128
+    start_mock_call(mock_positions, selector!("increase_sell_amount"), 150_u128);
+
+    let setup_dispatcher = IStreamTokenSetupDispatcher { contract_address: setup.token_address };
+
+    // Provide liquidity first
+    start_cheat_caller_address(setup.token_address, setup.factory);
+    setup_dispatcher.provide_initial_liquidity();
+
+    assert!(setup.token.get_deployment_state() == 1, "Should be state 1 after liquidity");
+
+    // Start distributions - this should:
+    // 1. First order: call mint_and_increase_sell_amount (position_id=0, creates new)
+    // 2. Second order: call increase_sell_amount (position_id=2 exists for same pool)
+    setup_dispatcher.start_distributions();
+    stop_cheat_caller_address(setup.token_address);
+
+    // Verify state transition
+    assert!(setup.token.get_deployment_state() == 2, "Should be state 2 after distributions");
+    assert!(setup.token.is_initialized(), "Should be initialized");
+
+    // Both orders should share the same position ID since they have same buy_token/fee
+    let order0 = setup.token.get_order(0);
+    let order1 = setup.token.get_order(1);
+    let position_id_0 = setup.token.get_position_id(order0.buy_token, order0.fee);
+    let position_id_1 = setup.token.get_position_id(order1.buy_token, order1.fee);
+
+    assert!(position_id_0 == 2, "First order position ID should be 2");
+    assert!(position_id_1 == 2, "Second order should share same position ID");
+
+    // Clean up
+    stop_mock_call(mock_core, selector!("initialize_pool"));
+    stop_mock_call(mock_positions, selector!("mint_and_deposit_and_clear_both"));
+    stop_mock_call(mock_positions, selector!("mint_and_increase_sell_amount"));
+    stop_mock_call(mock_positions, selector!("increase_sell_amount"));
 }
