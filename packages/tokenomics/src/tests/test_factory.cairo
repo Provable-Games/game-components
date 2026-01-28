@@ -10,7 +10,7 @@
 use game_components_interfaces::tokenomics::stream::{
     CreateTokenParams, DistributionOrder, IStreamTokenFactoryAdminDispatcher,
     IStreamTokenFactoryAdminDispatcherTrait, IStreamTokenFactoryDispatcher,
-    IStreamTokenFactoryDispatcherTrait, LiquidityConfig,
+    IStreamTokenFactoryDispatcherTrait, LiquidityConfig, PremintAllocation,
 };
 use openzeppelin_interfaces::access::ownable::{IOwnableDispatcher, IOwnableDispatcherTrait};
 use openzeppelin_interfaces::token::erc20::{IERC20Dispatcher, IERC20DispatcherTrait};
@@ -527,4 +527,112 @@ fn test_fuzz_set_stream_token_class_hash(new_hash: felt252) {
         dispatcher.get_stream_token_class_hash() == class_hash,
         "Class hash should match fuzzed value",
     );
+}
+
+// ============================================================================
+// Premint Tests
+// ============================================================================
+
+/// Create CreateTokenParams with premint allocations
+fn create_params_with_premints(
+    paired_token: ContractAddress, premint_allocations: Span<PremintAllocation>,
+) -> CreateTokenParams {
+    let buy_token: ContractAddress = 'BUY_TOKEN'.try_into().unwrap();
+
+    let liquidity_config = LiquidityConfig {
+        paired_token,
+        fee: defaults::DEFAULT_FEE,
+        initial_tick: ekubo::types::i129::i129 { mag: 0, sign: false },
+        stream_token_amount: 1000_u128 * 1_000_000_000_000_000_000,
+        paired_token_amount: 100_u128 * 1_000_000_000_000_000_000,
+        min_liquidity: 1,
+    };
+
+    let distribution_orders: Array<DistributionOrder> = array![
+        DistributionOrder {
+            buy_token,
+            fee: defaults::DEFAULT_FEE,
+            start_time: 0,
+            end_time: 86400 * 7,
+            amount: 500_u128 * 1_000_000_000_000_000_000,
+            proceeds_recipient: TREASURY(),
+        },
+    ];
+
+    // Calculate premint total
+    let mut premint_total: u128 = 0;
+    for premint in premint_allocations {
+        premint_total += *premint.amount;
+    }
+
+    // Supply needs to cover: ERC20_UNIT (1) + LP (1000) + distribution (500) + premints
+    let base_supply: u128 = 10000_u128 * 1_000_000_000_000_000_000;
+    let total_supply: u128 = base_supply + premint_total;
+
+    CreateTokenParams {
+        name: "Test Stream Token",
+        symbol: "TST",
+        total_supply,
+        liquidity_config,
+        distribution_orders: distribution_orders.span(),
+        premint_allocations,
+    }
+}
+
+#[test]
+#[should_panic(expected: 'Supply too low for config')]
+fn test_create_token_with_premints_supply_too_low_fails() {
+    let (factory_address, dispatcher) = deploy_factory();
+    let paired_token = deploy_mock_erc20("Paired", "PAIR");
+    let mock_paired = IMockERC20Dispatcher { contract_address: paired_token };
+
+    // Mint and approve paired tokens
+    mock_paired.mint(USER1(), amounts::THOUSAND_TOKENS);
+    start_cheat_caller_address(paired_token, USER1());
+    IERC20Dispatcher { contract_address: paired_token }
+        .approve(factory_address, amounts::THOUSAND_TOKENS);
+    stop_cheat_caller_address(paired_token);
+
+    let buy_token: ContractAddress = 'BUY_TOKEN'.try_into().unwrap();
+
+    let liquidity_config = LiquidityConfig {
+        paired_token,
+        fee: defaults::DEFAULT_FEE,
+        initial_tick: ekubo::types::i129::i129 { mag: 0, sign: false },
+        stream_token_amount: 1000_u128 * 1_000_000_000_000_000_000, // 1000 tokens
+        paired_token_amount: 100_u128 * 1_000_000_000_000_000_000,
+        min_liquidity: 1,
+    };
+
+    let distribution_orders: Array<DistributionOrder> = array![
+        DistributionOrder {
+            buy_token,
+            fee: defaults::DEFAULT_FEE,
+            start_time: 0,
+            end_time: 86400 * 7,
+            amount: 500_u128 * 1_000_000_000_000_000_000, // 500 tokens
+            proceeds_recipient: TREASURY(),
+        },
+    ];
+
+    // Premints that push total over the supply limit
+    // Total needed: ERC20_UNIT (1) + LP (1000) + distribution (500) + premints (1000) = 2501+
+    // Supply provided: 2000 tokens - NOT ENOUGH
+    let premint_allocations: Array<PremintAllocation> = array![
+        PremintAllocation { recipient: USER1(), amount: 500_u128 * 1_000_000_000_000_000_000 },
+        PremintAllocation { recipient: USER2(), amount: 500_u128 * 1_000_000_000_000_000_000 },
+    ];
+
+    let params = CreateTokenParams {
+        name: "Test",
+        symbol: "TST",
+        total_supply: 2000_u128 * 1_000_000_000_000_000_000, // Too low for config + premints
+        liquidity_config,
+        distribution_orders: distribution_orders.span(),
+        premint_allocations: premint_allocations.span(),
+    };
+
+    start_cheat_caller_address(factory_address, USER1());
+    dispatcher.create_token(params);
+    stop_cheat_caller_address(factory_address);
 }

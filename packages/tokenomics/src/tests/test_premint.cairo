@@ -197,11 +197,16 @@ fn test_factory_receives_reduced_supply_with_premints() {
 // for documentation - when run manually (snforge test --ignored), they will fail
 // with the expected error messages, proving the validation works correctly.
 
-#[test]
-#[ignore]
-fn test_zero_recipient_fails() {
-    let contract = declare("StreamToken").unwrap().contract_class();
+/// Helper struct for building invalid premint test calldata
+#[derive(Drop)]
+struct InvalidPremintTestParams {
+    premints: Span<PremintAllocation>,
+    total_supply: u128,
+}
 
+/// Build constructor calldata for invalid premint tests
+/// Reduces duplication between test_zero_recipient_fails and test_zero_amount_fails
+fn build_invalid_premint_calldata(params: InvalidPremintTestParams) -> Array<felt252> {
     let factory = OWNER();
     let mock_registry = super::helpers::deployment::deploy_mock_registry();
     let mock_positions: ContractAddress = 'POSITIONS'.try_into().unwrap();
@@ -230,19 +235,13 @@ fn test_zero_recipient_fails() {
         },
     ];
 
-    // Zero address recipient - should fail
-    let premints: Array<PremintAllocation> = array![
-        PremintAllocation { recipient: ZERO_ADDRESS(), amount: 100 * TOKEN_UNIT },
-    ];
-
     let mut calldata: Array<felt252> = array![];
     let name: ByteArray = "Test Token";
     let symbol: ByteArray = "TEST";
-    let total_supply: u128 = 10100 * TOKEN_UNIT;
 
     name.serialize(ref calldata);
     symbol.serialize(ref calldata);
-    total_supply.serialize(ref calldata);
+    params.total_supply.serialize(ref calldata);
     factory.serialize(ref calldata);
     mock_positions.serialize(ref calldata);
     mock_core.serialize(ref calldata);
@@ -250,8 +249,25 @@ fn test_zero_recipient_fails() {
     mock_extension.serialize(ref calldata);
     liquidity_config.serialize(ref calldata);
     distribution_orders.span().serialize(ref calldata);
-    premints.span().serialize(ref calldata);
+    params.premints.serialize(ref calldata);
 
+    calldata
+}
+
+#[test]
+#[ignore]
+fn test_zero_recipient_fails() {
+    let contract = declare("StreamToken").unwrap().contract_class();
+
+    let premints: Array<PremintAllocation> = array![
+        PremintAllocation { recipient: ZERO_ADDRESS(), amount: 100 * TOKEN_UNIT },
+    ];
+
+    let calldata = build_invalid_premint_calldata(
+        InvalidPremintTestParams { premints: premints.span(), total_supply: 10100 * TOKEN_UNIT },
+    );
+
+    // When run, this will fail with 'Invalid premint recipient'
     contract.deploy(@calldata).unwrap();
 }
 
@@ -260,55 +276,39 @@ fn test_zero_recipient_fails() {
 fn test_zero_amount_fails() {
     let contract = declare("StreamToken").unwrap().contract_class();
 
-    let factory = OWNER();
-    let mock_registry = super::helpers::deployment::deploy_mock_registry();
-    let mock_positions: ContractAddress = 'POSITIONS'.try_into().unwrap();
-    let mock_core: ContractAddress = 'CORE'.try_into().unwrap();
-    let mock_extension: ContractAddress = 'EXTENSION'.try_into().unwrap();
-    let paired_token: ContractAddress = 'PAIRED'.try_into().unwrap();
-    let buy_token: ContractAddress = 'BUY_TOKEN'.try_into().unwrap();
-
-    let liquidity_config = game_components_tokenomics::LiquidityConfig {
-        paired_token,
-        fee: 170141183460469235273462165868118016,
-        initial_tick: ekubo::types::i129::i129 { mag: 0, sign: false },
-        stream_token_amount: 1000 * TOKEN_UNIT,
-        paired_token_amount: 100 * TOKEN_UNIT,
-        min_liquidity: 1,
-    };
-
-    let distribution_orders: Array<game_components_tokenomics::DistributionOrder> = array![
-        game_components_tokenomics::DistributionOrder {
-            buy_token,
-            fee: 170141183460469235273462165868118016,
-            start_time: 0,
-            end_time: 86400 * 7,
-            amount: 500 * TOKEN_UNIT,
-            proceeds_recipient: TREASURY(),
-        },
-    ];
-
-    // Zero amount - should fail
     let premints: Array<PremintAllocation> = array![
         PremintAllocation { recipient: USER1(), amount: 0 },
     ];
 
-    let mut calldata: Array<felt252> = array![];
-    let name: ByteArray = "Test Token";
-    let symbol: ByteArray = "TEST";
-    let total_supply: u128 = 10000 * TOKEN_UNIT;
+    let calldata = build_invalid_premint_calldata(
+        InvalidPremintTestParams { premints: premints.span(), total_supply: 10000 * TOKEN_UNIT },
+    );
 
-    name.serialize(ref calldata);
-    symbol.serialize(ref calldata);
-    total_supply.serialize(ref calldata);
-    factory.serialize(ref calldata);
-    mock_positions.serialize(ref calldata);
-    mock_core.serialize(ref calldata);
-    mock_registry.serialize(ref calldata);
-    mock_extension.serialize(ref calldata);
-    liquidity_config.serialize(ref calldata);
-    distribution_orders.span().serialize(ref calldata);
-    premints.span().serialize(ref calldata);
+    // When run, this will fail with 'Invalid premint amount'
+    contract.deploy(@calldata).unwrap();
+}
 
+#[test]
+#[ignore]
+fn test_supply_too_low_with_premints_fails() {
+    let contract = declare("StreamToken").unwrap().contract_class();
+
+    // Premints that push total requirements over available supply
+    // Total needed: ERC20_UNIT (1) + LP (1000) + distribution (500) + premints (1000) = 2501
+    // Supply provided: 2000 tokens - NOT ENOUGH
+    let premints: Array<PremintAllocation> = array![
+        PremintAllocation { recipient: USER1(), amount: 500 * TOKEN_UNIT },
+        PremintAllocation { recipient: USER2(), amount: 500 * TOKEN_UNIT },
+    ];
+
+    let calldata = build_invalid_premint_calldata(
+        InvalidPremintTestParams {
+            premints: premints.span(),
+            total_supply: 2000 * TOKEN_UNIT // Too low - need at least 2501
+        },
+    );
+
+    // When run, this will fail due to arithmetic underflow in constructor
+    // (total_supply - ERC20_UNIT - premint_total would underflow)
     contract.deploy(@calldata).unwrap();
 }
