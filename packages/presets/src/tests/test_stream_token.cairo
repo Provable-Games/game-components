@@ -1302,3 +1302,173 @@ fn test_deployment_state_starts_at_zero() {
     let state = setup.token.get_deployment_state();
     assert!(state == 0, "Deployment state should be 0 initially");
 }
+
+// ==============================================================================
+// PREMINT FUNCTIONALITY TESTS
+// ==============================================================================
+
+fn deploy_stream_token_with_premints(
+    premint_allocations: Span<PremintAllocation>,
+) -> StreamTokenSetup {
+    let contract = declare("StreamToken").unwrap().contract_class();
+
+    let factory = OWNER();
+    let mock_registry = deploy_mock_registry();
+    let mock_positions: ContractAddress = 'POSITIONS'.try_into().unwrap();
+    let mock_core: ContractAddress = 'CORE'.try_into().unwrap();
+    let mock_extension: ContractAddress = 'EXTENSION'.try_into().unwrap();
+    let paired_token: ContractAddress = 'PAIRED'.try_into().unwrap();
+    let buy_token: ContractAddress = 'BUY_TOKEN'.try_into().unwrap();
+
+    let liquidity_config = LiquidityConfig {
+        paired_token,
+        fee: DEFAULT_FEE,
+        initial_tick: i129 { mag: 0, sign: false },
+        stream_token_amount: 1000_u128 * ERC20_UNIT,
+        paired_token_amount: 100_u128 * ERC20_UNIT,
+        min_liquidity: 1,
+    };
+
+    let distribution_orders: Array<DistributionOrder> = array![
+        DistributionOrder {
+            buy_token,
+            fee: DEFAULT_FEE,
+            start_time: 0,
+            end_time: 86400 * 7,
+            amount: 500_u128 * ERC20_UNIT,
+            proceeds_recipient: TREASURY(),
+        },
+    ];
+
+    // Calculate premint total for supply adjustment
+    let mut premint_total: u128 = 0;
+    for premint in premint_allocations {
+        premint_total += *premint.amount;
+    }
+
+    // Ensure supply is enough for all allocations
+    let base_supply: u128 = 10000_u128 * ERC20_UNIT;
+    let total_supply: u128 = base_supply + premint_total;
+
+    let mut calldata: Array<felt252> = array![];
+    let name: ByteArray = "Premint Token";
+    let symbol: ByteArray = "PREMINT";
+    name.serialize(ref calldata);
+    symbol.serialize(ref calldata);
+    total_supply.serialize(ref calldata);
+    factory.serialize(ref calldata);
+    mock_positions.serialize(ref calldata);
+    mock_core.serialize(ref calldata);
+    mock_registry.serialize(ref calldata);
+    mock_extension.serialize(ref calldata);
+    liquidity_config.serialize(ref calldata);
+    distribution_orders.span().serialize(ref calldata);
+    premint_allocations.serialize(ref calldata);
+
+    let (token_address, _) = contract.deploy(@calldata).unwrap();
+
+    StreamTokenSetup {
+        token_address,
+        token: IStreamTokenDispatcher { contract_address: token_address },
+        setup: IStreamTokenSetupDispatcher { contract_address: token_address },
+        erc20: IERC20Dispatcher { contract_address: token_address },
+        factory,
+        registry: mock_registry,
+    }
+}
+
+#[test]
+fn test_premint_single_allocation() {
+    let premint_amount: u128 = 100 * ERC20_UNIT;
+    let premints: Array<PremintAllocation> = array![
+        PremintAllocation { recipient: USER1(), amount: premint_amount },
+    ];
+
+    let setup = deploy_stream_token_with_premints(premints.span());
+
+    // Verify USER1 received the preminted tokens
+    let user1_balance = setup.erc20.balance_of(USER1());
+    assert!(user1_balance == premint_amount.into(), "USER1 should receive preminted tokens");
+}
+
+#[test]
+fn test_premint_multiple_allocations() {
+    let premint_amount_1: u128 = 100 * ERC20_UNIT;
+    let premint_amount_2: u128 = 200 * ERC20_UNIT;
+    let premints: Array<PremintAllocation> = array![
+        PremintAllocation { recipient: USER1(), amount: premint_amount_1 },
+        PremintAllocation { recipient: USER2(), amount: premint_amount_2 },
+    ];
+
+    let setup = deploy_stream_token_with_premints(premints.span());
+
+    // Verify both users received their preminted tokens
+    let user1_balance = setup.erc20.balance_of(USER1());
+    let user2_balance = setup.erc20.balance_of(USER2());
+
+    assert!(user1_balance == premint_amount_1.into(), "USER1 should receive correct amount");
+    assert!(user2_balance == premint_amount_2.into(), "USER2 should receive correct amount");
+}
+
+#[test]
+fn test_premint_factory_receives_reduced_supply() {
+    let premint_amount: u128 = 500 * ERC20_UNIT;
+    let premints: Array<PremintAllocation> = array![
+        PremintAllocation { recipient: USER1(), amount: premint_amount },
+    ];
+
+    let setup = deploy_stream_token_with_premints(premints.span());
+
+    // Factory should have: base_supply - ERC20_UNIT (for registry)
+    // The premint tokens go to recipients, not factory
+    let base_supply: u128 = 10000 * ERC20_UNIT;
+    let expected_factory_balance: u256 = (base_supply - ERC20_UNIT).into();
+    let factory_balance = setup.erc20.balance_of(setup.factory);
+
+    assert!(factory_balance == expected_factory_balance, "Factory should have reduced balance");
+}
+
+#[test]
+fn test_premint_emits_event() {
+    use game_components_tokenomics::stream::StreamComponent;
+
+    let premint_amount: u128 = 100 * ERC20_UNIT;
+    let premints: Array<PremintAllocation> = array![
+        PremintAllocation { recipient: USER1(), amount: premint_amount },
+    ];
+
+    let mut spy = spy_events();
+
+    let setup = deploy_stream_token_with_premints(premints.span());
+
+    // Verify Preminted event was emitted
+    spy
+        .assert_emitted(
+            @array![
+                (
+                    setup.token_address,
+                    StreamComponent::Event::Preminted(
+                        StreamComponent::Preminted { recipient: USER1(), amount: premint_amount },
+                    ),
+                ),
+            ],
+        );
+}
+
+#[test]
+fn test_premint_same_recipient_multiple_times() {
+    let premint_amount_1: u128 = 100 * ERC20_UNIT;
+    let premint_amount_2: u128 = 150 * ERC20_UNIT;
+    let premints: Array<PremintAllocation> = array![
+        PremintAllocation { recipient: USER1(), amount: premint_amount_1 },
+        PremintAllocation { recipient: USER1(), amount: premint_amount_2 },
+    ];
+
+    let setup = deploy_stream_token_with_premints(premints.span());
+
+    // USER1 should have received both allocations
+    let expected_total: u256 = (premint_amount_1 + premint_amount_2).into();
+    let user1_balance = setup.erc20.balance_of(USER1());
+
+    assert!(user1_balance == expected_total, "USER1 should receive sum of all premints");
+}
