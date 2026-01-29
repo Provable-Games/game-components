@@ -27,8 +27,18 @@ pub trait IMetagameStarknetMockInit<TContractState> {
     );
 }
 
+#[starknet::interface]
+pub trait IMetagameCallbackMockView<TContractState> {
+    fn score_update_count(self: @TContractState) -> u32;
+    fn game_over_count(self: @TContractState) -> u32;
+    fn objective_complete_count(self: @TContractState) -> u32;
+    fn last_callback_token_id(self: @TContractState) -> u256;
+    fn last_callback_score(self: @TContractState) -> u32;
+}
+
 #[starknet::contract]
 pub mod metagame_starknet_mock {
+    use game_components_metagame::extensions::callback::callback::MetagameCallbackComponent;
     use game_components_metagame::extensions::context::context::ContextComponent;
     use game_components_metagame::extensions::context::interface::{
         IMetagameContext, IMetagameContextDetails,
@@ -39,17 +49,44 @@ pub mod metagame_starknet_mock {
     use openzeppelin_introspection::src5::SRC5Component;
     use starknet::ContractAddress;
     use starknet::storage::{
-        Map, StorageMapReadAccess, StorageMapWriteAccess, StoragePointerWriteAccess,
+        Map, StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess,
+        StoragePointerWriteAccess,
     };
 
     component!(path: MetagameComponent, storage: metagame, event: MetagameEvent);
     component!(path: ContextComponent, storage: context, event: ContextEvent);
+    component!(path: MetagameCallbackComponent, storage: callback, event: CallbackEvent);
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
+
+    // Callback hooks implementation that tracks calls for test assertions
+    impl CallbackHooksImpl of MetagameCallbackComponent::MetagameCallbackHooksTrait<ContractState> {
+        fn on_score_update(ref self: ContractState, token_id: u256, score: u32) {
+            self.cb_score_update_count.write(self.cb_score_update_count.read() + 1);
+            self.cb_last_token_id.write(token_id);
+            self.cb_last_score.write(score);
+        }
+
+        fn on_game_over(ref self: ContractState, token_id: u256, final_score: u32) {
+            self.cb_game_over_count.write(self.cb_game_over_count.read() + 1);
+            self.cb_last_token_id.write(token_id);
+            self.cb_last_score.write(final_score);
+        }
+
+        fn on_objective_complete(ref self: ContractState, token_id: u256) {
+            self.cb_objective_complete_count.write(self.cb_objective_complete_count.read() + 1);
+            self.cb_last_token_id.write(token_id);
+        }
+    }
 
     #[abi(embed_v0)]
     impl MetagameImpl = MetagameComponent::MetagameImpl<ContractState>;
     impl MetagameInternalImpl = MetagameComponent::InternalImpl<ContractState>;
     impl ContextInternalImpl = ContextComponent::InternalImpl<ContractState>;
+
+    #[abi(embed_v0)]
+    impl MetagameCallbackImpl =
+        MetagameCallbackComponent::MetagameCallbackImpl<ContractState>;
+    impl CallbackInternalImpl = MetagameCallbackComponent::InternalImpl<ContractState>;
 
     #[abi(embed_v0)]
     impl SRC5Impl = SRC5Component::SRC5Impl<ContractState>;
@@ -61,6 +98,8 @@ pub mod metagame_starknet_mock {
         #[substorage(v0)]
         context: ContextComponent::Storage,
         #[substorage(v0)]
+        callback: MetagameCallbackComponent::Storage,
+        #[substorage(v0)]
         src5: SRC5Component::Storage,
         // Metagame storage
         token_counter: u64,
@@ -68,7 +107,13 @@ pub mod metagame_starknet_mock {
         token_context_count: Map<u64, u32>, // token_id -> count of contexts
         token_context_name: Map<(u64, u32), ByteArray>, // (token_id, index) -> context name
         token_context_value: Map<(u64, u32), ByteArray>, // (token_id, index) -> context value
-        token_context_exists: Map<u64, bool> // token_id -> exists
+        token_context_exists: Map<u64, bool>, // token_id -> exists
+        // Callback tracking storage
+        cb_score_update_count: u32,
+        cb_game_over_count: u32,
+        cb_objective_complete_count: u32,
+        cb_last_token_id: u256,
+        cb_last_score: u32,
     }
 
     #[event]
@@ -78,6 +123,8 @@ pub mod metagame_starknet_mock {
         MetagameEvent: MetagameComponent::Event,
         #[flat]
         ContextEvent: ContextComponent::Event,
+        #[flat]
+        CallbackEvent: MetagameCallbackComponent::Event,
         #[flat]
         SRC5Event: SRC5Component::Event,
     }
@@ -165,6 +212,29 @@ pub mod metagame_starknet_mock {
     }
 
     #[abi(embed_v0)]
+    impl MetagameCallbackMockViewImpl of super::IMetagameCallbackMockView<ContractState> {
+        fn score_update_count(self: @ContractState) -> u32 {
+            self.cb_score_update_count.read()
+        }
+
+        fn game_over_count(self: @ContractState) -> u32 {
+            self.cb_game_over_count.read()
+        }
+
+        fn objective_complete_count(self: @ContractState) -> u32 {
+            self.cb_objective_complete_count.read()
+        }
+
+        fn last_callback_token_id(self: @ContractState) -> u256 {
+            self.cb_last_token_id.read()
+        }
+
+        fn last_callback_score(self: @ContractState) -> u32 {
+            self.cb_last_score.read()
+        }
+    }
+
+    #[abi(embed_v0)]
     impl MetagameInitializerImpl of super::IMetagameStarknetMockInit<ContractState> {
         fn initializer(
             ref self: ContractState,
@@ -182,6 +252,9 @@ pub mod metagame_starknet_mock {
             if supports_context {
                 self.context.initializer();
             }
+
+            // Initialize callback component (registers SRC5 interface)
+            self.callback.initializer();
         }
     }
 }

@@ -5,7 +5,12 @@ use snforge_std::{
 };
 use starknet::ContractAddress;
 use crate::interface::IMinigameTokenMixinDispatcherTrait;
-use super::mocks::minigame_starknet_mock::IMinigameStarknetMockInitDispatcherTrait;
+use super::mocks::metagame_starknet_mock::{
+    IMetagameCallbackMockViewDispatcherTrait, IMetagameStarknetMockDispatcherTrait,
+};
+use super::mocks::minigame_starknet_mock::{
+    IMinigameStarknetMockDispatcherTrait, IMinigameStarknetMockInitDispatcherTrait,
+};
 
 // Import test helpers from setup module
 use super::setup::{
@@ -563,4 +568,196 @@ fn test_lifecycle_boundary_conditions() {
     assert!(!test_contracts.test_token.is_playable(token_id), "Should not be playable at end");
 
     stop_cheat_block_timestamp(test_contracts.test_token.contract_address);
+}
+
+// ================================================================================================
+// METAGAME CALLBACK INTEGRATION TESTS
+// ================================================================================================
+
+// CB-INT-01: update_game triggers on_score_update callback
+#[test]
+fn test_update_game_triggers_score_callback() {
+    let test_contracts = setup();
+
+    // Mint token through metagame mock (registers metagame as minter)
+    let token_id = test_contracts
+        .metagame_mock
+        .mint_game(
+            Option::Some(test_contracts.minigame.contract_address),
+            Option::Some('Player1'),
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            ALICE(),
+            false,
+        );
+
+    // End game with score (sets game_over=true and score)
+    let score: u32 = 150;
+    test_contracts.mock_minigame.end_game(token_id, score);
+
+    // Call update_game to sync state and trigger callbacks
+    test_contracts.test_token.update_game(token_id);
+
+    // Verify on_score_update was called
+    let cb_view = test_contracts.metagame_callback_view;
+    assert!(cb_view.score_update_count() == 1, "on_score_update should be called once");
+    assert!(
+        cb_view.last_callback_token_id() == token_id.into(),
+        "Callback should receive correct token_id",
+    );
+    assert!(cb_view.last_callback_score() == score, "Callback should receive correct score");
+}
+
+// CB-INT-02: update_game triggers on_game_over callback on game_over transition
+#[test]
+fn test_update_game_triggers_game_over_callback() {
+    let test_contracts = setup();
+
+    // Mint token through metagame mock
+    let token_id = test_contracts
+        .metagame_mock
+        .mint_game(
+            Option::Some(test_contracts.minigame.contract_address),
+            Option::Some('Player2'),
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            ALICE(),
+            false,
+        );
+
+    // End game with score
+    let score: u32 = 500;
+    test_contracts.mock_minigame.end_game(token_id, score);
+
+    // Call update_game
+    test_contracts.test_token.update_game(token_id);
+
+    // Verify both on_score_update and on_game_over were called
+    let cb_view = test_contracts.metagame_callback_view;
+    assert!(cb_view.score_update_count() == 1, "on_score_update should be called");
+    assert!(cb_view.game_over_count() == 1, "on_game_over should be called on transition");
+    assert!(cb_view.last_callback_score() == score, "on_game_over should receive final score");
+}
+
+// CB-INT-03: on_game_over only fires once (transition guard)
+#[test]
+fn test_update_game_no_game_over_callback_without_transition() {
+    let test_contracts = setup();
+
+    // Mint token through metagame mock
+    let token_id = test_contracts
+        .metagame_mock
+        .mint_game(
+            Option::Some(test_contracts.minigame.contract_address),
+            Option::Some('Player3'),
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            ALICE(),
+            false,
+        );
+
+    // End game
+    test_contracts.mock_minigame.end_game(token_id, 100);
+
+    // First update_game - triggers game_over transition
+    test_contracts.test_token.update_game(token_id);
+
+    // Second update_game - game_over is already true, no transition
+    test_contracts.test_token.update_game(token_id);
+
+    // Verify on_game_over was called only once (first transition)
+    let cb_view = test_contracts.metagame_callback_view;
+    assert!(cb_view.score_update_count() == 2, "on_score_update should be called twice");
+    assert!(cb_view.game_over_count() == 1, "on_game_over should only fire once on transition");
+}
+
+// CB-INT-04: update_game triggers on_objective_complete callback
+#[test]
+fn test_update_game_triggers_objective_complete_callback() {
+    let test_contracts = setup();
+
+    // Create an objective with target score of 100
+    test_contracts.mock_minigame.create_objective_score(100);
+
+    // Mint token through metagame mock WITH an objective
+    let token_id = test_contracts
+        .metagame_mock
+        .mint_game(
+            Option::Some(test_contracts.minigame.contract_address),
+            Option::Some('Player4'),
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::Some(1), // objective_id = 1
+            Option::None,
+            Option::None,
+            ALICE(),
+            false,
+        );
+
+    // End game with score >= objective target
+    test_contracts.mock_minigame.end_game(token_id, 200);
+
+    // Call update_game
+    test_contracts.test_token.update_game(token_id);
+
+    // Verify on_objective_complete was called
+    let cb_view = test_contracts.metagame_callback_view;
+    assert!(cb_view.score_update_count() == 1, "on_score_update should be called");
+    assert!(cb_view.game_over_count() == 1, "on_game_over should be called");
+    assert!(
+        cb_view.objective_complete_count() == 1,
+        "on_objective_complete should fire when objective met",
+    );
+}
+
+// CB-INT-05: No callbacks when minter is a contract without IMetagameCallback
+#[test]
+fn test_update_game_no_callback_for_non_callback_minter() {
+    let test_contracts = setup();
+
+    // Mint as the minigame contract (which does NOT implement IMetagameCallback)
+    cheat_caller_address(
+        test_contracts.test_token.contract_address,
+        test_contracts.minigame.contract_address,
+        CheatSpan::TargetCalls(1),
+    );
+    let token_id = test_contracts
+        .test_token
+        .mint(
+            Option::Some(test_contracts.minigame.contract_address),
+            Option::Some('Player5'),
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            ALICE(),
+            false,
+        );
+
+    // End game with score
+    test_contracts.mock_minigame.end_game(token_id, 300);
+
+    // Call update_game - minter is the minigame contract, which doesn't support IMetagameCallback
+    test_contracts.test_token.update_game(token_id);
+
+    // Verify no callbacks were dispatched (minter doesn't support IMetagameCallback)
+    let cb_view = test_contracts.metagame_callback_view;
+    assert!(cb_view.score_update_count() == 0, "No callbacks for non-callback minter");
+    assert!(cb_view.game_over_count() == 0, "No game_over callback for non-callback minter");
 }
