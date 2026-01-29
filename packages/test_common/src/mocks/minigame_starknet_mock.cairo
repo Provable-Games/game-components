@@ -100,7 +100,7 @@ pub mod minigame_starknet_mock {
         >, // settings_id -> (name, description, exists)
         // Objectives storage
         objective_count: u32,
-        objective_scores: Map<u32, (u32, bool)>, // objective_id -> (target_score, exists)
+        objective_scores: Map<u32, (u64, bool)>, // objective_id -> (target_score, exists)
         // Token objective mappings - using a simpler storage pattern
         token_objective_count: Map<u64, u32>, // token_id -> count of objectives
         token_objective_at_index: Map<(u64, u32), u32>, // (token_id, index) -> objective_id
