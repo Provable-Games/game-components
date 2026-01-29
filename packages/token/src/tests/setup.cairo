@@ -15,8 +15,8 @@ use crate::interface::IMinigameTokenMixinDispatcher;
 
 // Import from local mocks
 use super::mocks::metagame_starknet_mock::{
-    IMetagameStarknetMockDispatcher, IMetagameStarknetMockInitDispatcher,
-    IMetagameStarknetMockInitDispatcherTrait,
+    IMetagameCallbackMockViewDispatcher, IMetagameStarknetMockDispatcher,
+    IMetagameStarknetMockInitDispatcher, IMetagameStarknetMockInitDispatcherTrait,
 };
 use super::mocks::minigame_starknet_mock::{
     IMinigameStarknetMockDispatcher, IMinigameStarknetMockInitDispatcher,
@@ -37,6 +37,7 @@ pub struct TestContracts {
     pub erc721: ERC721ABIDispatcher,
     pub src5: ISRC5Dispatcher,
     pub metagame_mock: IMetagameStarknetMockDispatcher,
+    pub metagame_callback_view: IMetagameCallbackMockViewDispatcher,
 }
 
 // ================================================================================================
@@ -475,10 +476,11 @@ pub fn setup() -> TestContracts {
             Option::None // royalty_fraction
         );
 
-    // Mock the supports_interface call for the context address
-    mock_call(
-        metagame_init_dispatcher.contract_address, selector!("supports_interface"), true, 100,
-    );
+    // Mock supports_interface for context SRC5 check during metagame initialization.
+    // The metagame component checks context_address supports IMetagameContext via SRC5,
+    // but context.initializer() (which registers the interface) runs after metagame.initializer().
+    // Limit to 1 call so subsequent SRC5 checks (e.g., IMetagameCallback) use real implementation.
+    mock_call(metagame_init_dispatcher.contract_address, selector!("supports_interface"), true, 1);
 
     metagame_init_dispatcher
         .initializer(
@@ -486,6 +488,10 @@ pub fn setup() -> TestContracts {
             test_token_dispatcher.contract_address,
             true,
         );
+
+    let metagame_callback_view_dispatcher = IMetagameCallbackMockViewDispatcher {
+        contract_address: metagame_mock_dispatcher.contract_address,
+    };
 
     TestContracts {
         minigame: minigame_dispatcher,
@@ -495,6 +501,7 @@ pub fn setup() -> TestContracts {
         erc721: erc721_dispatcher,
         src5: src5_dispatcher,
         metagame_mock: metagame_mock_dispatcher,
+        metagame_callback_view: metagame_callback_view_dispatcher,
     }
 }
 
@@ -550,6 +557,10 @@ pub fn setup_multi_game() -> TestContracts {
             Option::None // royalty_fraction
         );
 
+    let metagame_callback_view_dispatcher = IMetagameCallbackMockViewDispatcher {
+        contract_address: metagame_mock_dispatcher.contract_address,
+    };
+
     TestContracts {
         minigame: game1_dispatcher,
         mock_minigame: mock1_dispatcher,
@@ -558,6 +569,7 @@ pub fn setup_multi_game() -> TestContracts {
         erc721: erc721_dispatcher,
         src5: src5_dispatcher,
         metagame_mock: metagame_mock_dispatcher,
+        metagame_callback_view: metagame_callback_view_dispatcher,
     }
 }
 
