@@ -1055,7 +1055,7 @@ mod MockMinigameForLibs {
 
     #[abi(embed_v0)]
     impl MinigameTokenDataImpl of IMinigameTokenData<ContractState> {
-        fn score(self: @ContractState, token_id: u64) -> u32 {
+        fn score(self: @ContractState, token_id: u64) -> u64 {
             0
         }
 
@@ -1063,7 +1063,7 @@ mod MockMinigameForLibs {
             false
         }
 
-        fn score_batch(self: @ContractState, token_ids: Span<u64>) -> Array<u32> {
+        fn score_batch(self: @ContractState, token_ids: Span<u64>) -> Array<u64> {
             array![]
         }
 

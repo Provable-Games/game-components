@@ -16,12 +16,12 @@ pub trait IMetagameCallback<TState> {
     /// Called when a token's score is updated
     /// @param token_id The token ID (packed u256)
     /// @param score The new score value
-    fn on_score_update(ref self: TState, token_id: u256, score: u32);
+    fn on_score_update(ref self: TState, token_id: u256, score: u64);
 
     /// Called when a game ends (game_over transitions to true)
     /// @param token_id The token ID (packed u256)
     /// @param final_score The final score when game ended
-    fn on_game_over(ref self: TState, token_id: u256, final_score: u32);
+    fn on_game_over(ref self: TState, token_id: u256, final_score: u64);
 
     /// Called when the objective is completed
     /// @param token_id The token ID (packed u256)

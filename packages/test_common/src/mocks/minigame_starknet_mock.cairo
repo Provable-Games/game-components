@@ -16,7 +16,7 @@ pub trait IMinigameStarknetMock<TContractState> {
         soulbound: bool,
     ) -> u64;
     fn start_game(ref self: TContractState, token_id: u64);
-    fn end_game(ref self: TContractState, token_id: u64, score: u32);
+    fn end_game(ref self: TContractState, token_id: u64, score: u64);
     fn create_objective_score(ref self: TContractState, score: u32);
     fn create_settings_difficulty(
         ref self: TContractState, name: ByteArray, description: ByteArray, difficulty: u8,
@@ -90,7 +90,7 @@ pub mod minigame_starknet_mock {
         #[substorage(v0)]
         src5: SRC5Component::Storage,
         // Token data storage
-        scores: Map<u64, u32>, // token_id -> score
+        scores: Map<u64, u64>, // token_id -> score
         game_over: Map<u64, bool>, // token_id -> game_over
         // Settings storage
         settings_count: u32,
@@ -123,7 +123,7 @@ pub mod minigame_starknet_mock {
 
     #[abi(embed_v0)]
     impl GameTokenDataImpl of IMinigameTokenData<ContractState> {
-        fn score(self: @ContractState, token_id: u64) -> u32 {
+        fn score(self: @ContractState, token_id: u64) -> u64 {
             self.scores.entry(token_id).read()
         }
 
@@ -131,7 +131,7 @@ pub mod minigame_starknet_mock {
             self.game_over.entry(token_id).read()
         }
 
-        fn score_batch(self: @ContractState, token_ids: Span<u64>) -> Array<u32> {
+        fn score_batch(self: @ContractState, token_ids: Span<u64>) -> Array<u64> {
             let mut results = array![];
             let mut index = 0;
             loop {
@@ -281,7 +281,7 @@ pub mod minigame_starknet_mock {
         fn completed_objective(self: @ContractState, token_id: u64, objective_id: u32) -> bool {
             let (target_score, _) = self.objective_scores.entry(objective_id).read();
             let player_score = self.scores.entry(token_id).read();
-            player_score >= target_score
+            player_score >= target_score.into()
         }
 
         fn objective_exists_batch(self: @ContractState, objective_ids: Span<u32>) -> Array<bool> {
@@ -382,7 +382,7 @@ pub mod minigame_starknet_mock {
             self.game_over.entry(token_id).write(false);
         }
 
-        fn end_game(ref self: ContractState, token_id: u64, score: u32) {
+        fn end_game(ref self: ContractState, token_id: u64, score: u64) {
             self.scores.entry(token_id).write(score);
             self.game_over.entry(token_id).write(true);
         }

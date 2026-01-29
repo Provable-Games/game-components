@@ -30,11 +30,11 @@ pub trait IMinigame<TState> {
 
 #[starknet::interface]
 pub trait IMinigameTokenData<TState> {
-    fn score(self: @TState, token_id: u64) -> u32;
+    fn score(self: @TState, token_id: u64) -> u64;
     fn game_over(self: @TState, token_id: u64) -> bool;
 
     // Batch operations
-    fn score_batch(self: @TState, token_ids: Span<u64>) -> Array<u32>;
+    fn score_batch(self: @TState, token_ids: Span<u64>) -> Array<u64>;
     fn game_over_batch(self: @TState, token_ids: Span<u64>) -> Array<bool>;
 }
 

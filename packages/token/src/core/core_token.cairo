@@ -59,6 +59,7 @@ pub mod CoreTokenComponent {
         TokenClientUrlUpdate: TokenClientUrlUpdate,
         // ERC721 standard
         MetadataUpdate: MetadataUpdate,
+        ScoreUpdate: ScoreUpdate,
     }
 
     /// Emitted when player name is updated
@@ -82,6 +83,14 @@ pub mod CoreTokenComponent {
     pub struct MetadataUpdate {
         #[key]
         pub token_id: u256,
+    }
+
+    /// Emitted when score is updated
+    #[derive(Drop, starknet::Event)]
+    pub struct ScoreUpdate {
+        #[key]
+        pub token_id: u64,
+        pub score: u64,
     }
 
     #[embeddable_as(CoreTokenImpl)]
@@ -572,6 +581,9 @@ pub mod CoreTokenComponent {
 
             let game_over = minigame_token_data_dispatcher.game_over(token_id);
             let score = minigame_token_data_dispatcher.score(token_id);
+
+            // Emit score update event
+            self.emit(ScoreUpdate { token_id, score });
 
             // Ensure game_over and completed_objective can only transition from false to true
             let final_game_over = token_state::ensure_game_over_transition(

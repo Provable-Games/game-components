@@ -264,9 +264,9 @@ pub mod FullTokenContract {
                         game_address, score_selector, token_calldata.span(),
                     ) {
                     Result::Ok(result) => {
-                        // Try to deserialize the result as u32
+                        // Try to deserialize the result as u64
                         let mut result_span = result;
-                        match Serde::<u32>::deserialize(ref result_span) {
+                        match Serde::<u64>::deserialize(ref result_span) {
                             Option::Some(score) => score,
                             Option::None => 0,
                         }

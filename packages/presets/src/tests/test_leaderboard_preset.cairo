@@ -774,7 +774,7 @@ fn test_fuzz_configure_tournament(tournament_id: u64, max_entries: u32, ascendin
 // FUZZ-QUA-01: Fuzz qualifies with random scores
 #[test]
 #[fuzzer]
-fn test_fuzz_qualifies(score: u32, entry_score: u32) {
+fn test_fuzz_qualifies(score: u64, entry_score: u64) {
     // Skip edge cases
     if entry_score == 0 || score == 0 {
         return;
@@ -1181,7 +1181,7 @@ fn test_large_leaderboard() {
     // Add 10 entries
     let mut i: u64 = 1;
     while i <= 10 {
-        let score: u32 = (1000 - (i * 10)).try_into().unwrap();
+        let score: u64 = 1000 - (i * 10);
         game_admin.set_score(i, score);
         let _ = leaderboard.submit_score(WEEKLY_TOURNAMENT, i, score, i.try_into().unwrap());
         i += 1;
@@ -1266,7 +1266,7 @@ fn test_clear_large_leaderboard() {
     // Add 10 entries
     let mut i: u64 = 1;
     while i <= 10 {
-        let score: u32 = (1000 - (i * 10)).try_into().unwrap();
+        let score: u64 = 1000 - (i * 10);
         game_admin.set_score(i, score);
         let _ = leaderboard.submit_score(WEEKLY_TOURNAMENT, i, score, i.try_into().unwrap());
         i += 1;
@@ -1331,8 +1331,8 @@ fn test_boundary_scores() {
 
     setup_tournament(admin, WEEKLY_TOURNAMENT, 10, false, game_address);
 
-    // Test with max u32 score
-    let max_score: u32 = 0xFFFFFFFF;
+    // Test with max u64 score
+    let max_score: u64 = 0xFFFFFFFFFFFFFFFF;
     game_admin.set_score(1, max_score);
     let result = leaderboard.submit_score(WEEKLY_TOURNAMENT, 1, max_score, 1);
     match result {

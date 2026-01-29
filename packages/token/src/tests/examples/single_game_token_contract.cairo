@@ -228,7 +228,7 @@ pub mod SingleGameTokenContract {
                     match call_contract_syscall(game_address, score_selector, calldata.span()) {
                     Result::Ok(result) => {
                         let mut result_span = result;
-                        match Serde::<u32>::deserialize(ref result_span) {
+                        match Serde::<u64>::deserialize(ref result_span) {
                             Option::Some(score) => score,
                             Option::None => 0,
                         }

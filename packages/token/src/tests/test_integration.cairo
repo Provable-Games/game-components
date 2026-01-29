@@ -596,7 +596,7 @@ fn test_update_game_triggers_score_callback() {
         );
 
     // End game with score (sets game_over=true and score)
-    let score: u32 = 150;
+    let score: u64 = 150;
     test_contracts.mock_minigame.end_game(token_id, score);
 
     // Call update_game to sync state and trigger callbacks
@@ -634,7 +634,7 @@ fn test_update_game_triggers_game_over_callback() {
         );
 
     // End game with score
-    let score: u32 = 500;
+    let score: u64 = 500;
     test_contracts.mock_minigame.end_game(token_id, score);
 
     // Call update_game

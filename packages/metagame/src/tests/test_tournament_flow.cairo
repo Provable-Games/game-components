@@ -300,7 +300,7 @@ trait IContextSetter<TContractState> {
 
 #[starknet::interface]
 trait IMockMinigameSetter<TContractState> {
-    fn set_score(ref self: TContractState, token_id: u64, score: u32);
+    fn set_score(ref self: TContractState, token_id: u64, score: u64);
     fn set_game_over(ref self: TContractState, token_id: u64, game_over: bool);
 }
 
@@ -738,7 +738,7 @@ mod MockMinigameForTournament {
         token_address: ContractAddress,
         settings_address: ContractAddress,
         objectives_address: ContractAddress,
-        token_scores: Map<u64, u32>,
+        token_scores: Map<u64, u64>,
         token_game_over: Map<u64, bool>,
     }
 
@@ -806,7 +806,7 @@ mod MockMinigameForTournament {
 
     #[abi(embed_v0)]
     impl MinigameTokenDataImpl of IMinigameTokenData<ContractState> {
-        fn score(self: @ContractState, token_id: u64) -> u32 {
+        fn score(self: @ContractState, token_id: u64) -> u64 {
             self.token_scores.read(token_id)
         }
 
@@ -814,7 +814,7 @@ mod MockMinigameForTournament {
             self.token_game_over.read(token_id)
         }
 
-        fn score_batch(self: @ContractState, token_ids: Span<u64>) -> Array<u32> {
+        fn score_batch(self: @ContractState, token_ids: Span<u64>) -> Array<u64> {
             let mut results = array![];
             let mut index = 0;
             loop {
@@ -851,7 +851,7 @@ mod MockMinigameForTournament {
 
     #[abi(embed_v0)]
     impl MockMinigameSetterImpl of IMockMinigameSetter<ContractState> {
-        fn set_score(ref self: ContractState, token_id: u64, score: u32) {
+        fn set_score(ref self: ContractState, token_id: u64, score: u64) {
             self.token_scores.write(token_id, score);
         }
 

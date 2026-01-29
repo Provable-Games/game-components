@@ -16,7 +16,7 @@ pub const ILEADERBOARD_ID: felt252 =
 /// Implemented by game contracts to provide score data for leaderboard entries
 #[starknet::interface]
 pub trait IGameDetails<TState> {
-    fn score(self: @TState, token_id: u64) -> u32;
+    fn score(self: @TState, token_id: u64) -> u64;
 }
 
 /// Multi-tournament leaderboard interface
@@ -25,7 +25,7 @@ pub trait IGameDetails<TState> {
 pub trait ILeaderboard<TState> {
     /// Submit a score to a tournament's leaderboard
     fn submit_score(
-        ref self: TState, tournament_id: u64, token_id: u64, score: u32, position: u8,
+        ref self: TState, tournament_id: u64, token_id: u64, score: u64, position: u8,
     ) -> LeaderboardResult;
 
     /// Get all leaderboard entries with scores for a tournament
@@ -38,7 +38,7 @@ pub trait ILeaderboard<TState> {
     fn get_position(self: @TState, tournament_id: u64, token_id: u64) -> Option<u8>;
 
     /// Check if a score qualifies for a tournament's leaderboard
-    fn qualifies(self: @TState, tournament_id: u64, score: u32) -> bool;
+    fn qualifies(self: @TState, tournament_id: u64, score: u64) -> bool;
 
     /// Check if a tournament's leaderboard is full
     fn is_full(self: @TState, tournament_id: u64) -> bool;

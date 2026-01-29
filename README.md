@@ -130,7 +130,7 @@ Individual game logic implementation requiring:
 
 ```cairo
 trait IMinigameTokenData<TState> {
-    fn score(self: @TState, token_id: u64) -> u32;
+    fn score(self: @TState, token_id: u64) -> u64;
     fn game_over(self: @TState, token_id: u64) -> bool;
 }
 ```

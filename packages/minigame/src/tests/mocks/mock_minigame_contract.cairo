@@ -61,7 +61,7 @@ pub mod MockMinigameContract {
         #[substorage(v0)]
         src5: SRC5Component::Storage,
         // Token data storage
-        scores: Map<u64, u32>,
+        scores: Map<u64, u64>,
         game_over: Map<u64, bool>,
     }
 
@@ -80,7 +80,7 @@ pub mod MockMinigameContract {
 
     #[abi(embed_v0)]
     impl GameTokenDataImpl of IMinigameTokenData<ContractState> {
-        fn score(self: @ContractState, token_id: u64) -> u32 {
+        fn score(self: @ContractState, token_id: u64) -> u64 {
             self.scores.entry(token_id).read()
         }
 
@@ -88,7 +88,7 @@ pub mod MockMinigameContract {
             self.game_over.entry(token_id).read()
         }
 
-        fn score_batch(self: @ContractState, token_ids: Span<u64>) -> Array<u32> {
+        fn score_batch(self: @ContractState, token_ids: Span<u64>) -> Array<u64> {
             let mut results = array![];
             let mut index = 0;
             loop {

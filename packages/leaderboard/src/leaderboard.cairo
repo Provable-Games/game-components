@@ -11,9 +11,9 @@ pub mod leaderboard {
     /// Trait for score comparison
     pub trait ScoreComparator {
         /// Compare two scores and return true if first is better than second
-        fn is_better_score(self: @LeaderboardConfig, first: u32, second: u32) -> bool;
+        fn is_better_score(self: @LeaderboardConfig, first: u64, second: u64) -> bool;
         /// Compare two scores and return true if they are equal
-        fn is_equal_score(self: @LeaderboardConfig, first: u32, second: u32) -> bool;
+        fn is_equal_score(self: @LeaderboardConfig, first: u64, second: u64) -> bool;
         /// Handle tie-breaking between two entries with same score
         fn break_tie(
             self: @LeaderboardConfig, first: @LeaderboardEntry, second: @LeaderboardEntry,
@@ -22,7 +22,7 @@ pub mod leaderboard {
 
     /// Implementation of ScoreComparator
     pub impl ScoreComparatorImpl of ScoreComparator {
-        fn is_better_score(self: @LeaderboardConfig, first: u32, second: u32) -> bool {
+        fn is_better_score(self: @LeaderboardConfig, first: u64, second: u64) -> bool {
             if *self.ascending {
                 first < second
             } else {
@@ -30,7 +30,7 @@ pub mod leaderboard {
             }
         }
 
-        fn is_equal_score(self: @LeaderboardConfig, first: u32, second: u32) -> bool {
+        fn is_equal_score(self: @LeaderboardConfig, first: u64, second: u64) -> bool {
             first == second
         }
 
@@ -75,7 +75,7 @@ pub mod leaderboard {
 
         /// Check if a score qualifies for the leaderboard
         fn qualifies_for_leaderboard(
-            config: @LeaderboardConfig, entries: @Array<LeaderboardEntry>, score: u32,
+            config: @LeaderboardConfig, entries: @Array<LeaderboardEntry>, score: u64,
         ) -> bool;
     }
 
@@ -260,7 +260,7 @@ pub mod leaderboard {
         }
 
         fn qualifies_for_leaderboard(
-            config: @LeaderboardConfig, entries: @Array<LeaderboardEntry>, score: u32,
+            config: @LeaderboardConfig, entries: @Array<LeaderboardEntry>, score: u64,
         ) -> bool {
             let entries_len = entries.len();
 
@@ -300,7 +300,7 @@ pub mod leaderboard {
         /// Get the minimum qualifying score
         fn get_qualifying_score(
             config: @LeaderboardConfig, entries: @Array<LeaderboardEntry>,
-        ) -> Option<u32>;
+        ) -> Option<u64>;
     }
 
     /// Implementation of LeaderboardUtils
@@ -354,7 +354,7 @@ pub mod leaderboard {
 
         fn get_qualifying_score(
             config: @LeaderboardConfig, entries: @Array<LeaderboardEntry>,
-        ) -> Option<u32> {
+        ) -> Option<u64> {
             if !Self::is_full(config, entries) {
                 // If not full, any score qualifies
                 Option::None

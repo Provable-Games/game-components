@@ -62,7 +62,7 @@ pub mod LeaderboardComponent {
         pub tournament_id: u64,
         #[key]
         pub token_id: u64,
-        pub score: u32,
+        pub score: u64,
         pub position: u8,
     }
 
@@ -142,7 +142,7 @@ pub mod LeaderboardComponent {
             ref self: ComponentState<TContractState>,
             tournament_id: u64,
             token_id: u64,
-            score: u32,
+            score: u64,
             position: u8,
         ) -> LeaderboardResult {
             // Read config from storage
@@ -187,7 +187,7 @@ pub mod LeaderboardComponent {
         }
 
         fn qualifies(
-            self: @ComponentState<TContractState>, tournament_id: u64, score: u32,
+            self: @ComponentState<TContractState>, tournament_id: u64, score: u64,
         ) -> bool {
             let config = LeaderboardStoreConfig {
                 max_entries: self.max_entries.read(tournament_id),

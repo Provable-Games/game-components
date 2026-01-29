@@ -481,7 +481,7 @@ fn test_mint_with_high_objective_id() { // UT-MINT-B003
     // Create multiple objectives to get a high ID
     let mut i: u32 = 0;
     while i < 100 {
-        test_contracts.mock_minigame.create_objective_score(i);
+        test_contracts.mock_minigame.create_objective_score(i.into());
         i += 1;
     }
 

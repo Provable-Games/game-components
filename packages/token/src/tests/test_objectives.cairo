@@ -608,7 +608,7 @@ fn test_fuzz_objective_id_valid_cases(objective_count: u8) {
     // Create objectives
     let mut i: u8 = 0;
     while i < objective_count {
-        let score: u32 = (i.into() + 1) * 100;
+        let score: u64 = (i.into() + 1) * 100;
         test_contracts.mock_minigame.create_objective_score(score);
         i += 1;
     }
@@ -627,7 +627,7 @@ fn test_fuzz_objective_id_valid_cases(objective_count: u8) {
 // FZ-OBJ-002: Fuzz objective completion based on score
 #[test]
 #[fuzzer(runs: 50)]
-fn test_fuzz_objective_completion(target_score: u32, achieved_score: u32) {
+fn test_fuzz_objective_completion(target_score: u64, achieved_score: u64) {
     // Limit to reasonable values
     if target_score == 0 || target_score > 10000 {
         return;
