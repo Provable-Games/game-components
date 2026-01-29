@@ -89,7 +89,7 @@ fn test_core_token_batch_operations() {
     let token_ids_len_2: usize = token_ids.len();
     while k < token_ids_len_2 {
         let token_id = *token_ids.at(k);
-        test_contracts.mock_minigame.end_game(token_id, 50 + k);
+        test_contracts.mock_minigame.end_game(token_id, 50 + k.into());
         test_contracts.test_token.update_game(token_id);
         k += 1;
     };

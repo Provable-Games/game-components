@@ -146,7 +146,7 @@ fn test_lifecycle_validity_fuzz(start_offset: u64, duration: u64) {
 // P-03: Score Monotonicity - Fuzz score updates, verify non-decreasing
 #[test]
 #[fuzzer]
-fn test_score_monotonicity_fuzz(score1: u32, score2: u32, score3: u32) {
+fn test_score_monotonicity_fuzz(score1: u64, score2: u64, score3: u64) {
     let test_contracts = setup();
 
     let token_id = test_contracts
@@ -167,7 +167,7 @@ fn test_score_monotonicity_fuzz(score1: u32, score2: u32, score3: u32) {
 
     // Apply scores in sequence
     let scores = array![score1 % 1000, score2 % 1000, score3 % 1000];
-    let mut max_score: u32 = 0;
+    let mut max_score: u64 = 0;
 
     let mut i: u32 = 0;
     while i < scores.len() {
@@ -282,7 +282,7 @@ fn test_settings_immutability_fuzz(settings_id: u32, op1: u8, op2: u8, op3: u8) 
             },
             1 => {
                 // Change end
-                test_contracts.mock_minigame.end_game(token_id, 100 + i);
+                test_contracts.mock_minigame.end_game(token_id, 100 + i.into());
                 test_contracts.test_token.update_game(token_id);
             },
             _ => {

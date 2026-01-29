@@ -3,7 +3,7 @@
 // =============================================================================
 // Tests for MetagameCallbackComponent
 
-use game_components_testing::constants::MAX_U32;
+use game_components_testing::constants::MAX_U64;
 use openzeppelin_interfaces::introspection::{ISRC5Dispatcher, ISRC5DispatcherTrait};
 use snforge_std::{ContractClassTrait, DeclareResultTrait, declare};
 use starknet::ContractAddress;
@@ -21,8 +21,8 @@ trait IMockCallbackView<TContractState> {
     fn game_over_count(self: @TContractState) -> u32;
     fn objective_complete_count(self: @TContractState) -> u32;
     fn last_token_id(self: @TContractState) -> u256;
-    fn last_score(self: @TContractState) -> u32;
-    fn last_final_score(self: @TContractState) -> u32;
+    fn last_score(self: @TContractState) -> u64;
+    fn last_final_score(self: @TContractState) -> u64;
 }
 
 // =============================================================================
@@ -99,15 +99,15 @@ fn test_on_score_update_with_zero_score() {
     assert!(view.last_score() == 0, "Score should be 0");
 }
 
-// CB-U-05: on_score_update with max u32 score
+// CB-U-05: on_score_update with max u64 score
 #[test]
 fn test_on_score_update_with_max_score() {
     let (address, dispatcher) = deploy_callback_contract();
 
-    dispatcher.on_score_update(1, MAX_U32);
+    dispatcher.on_score_update(1, MAX_U64);
 
     let view = IMockCallbackViewDispatcher { contract_address: address };
-    assert!(view.last_score() == MAX_U32, "Should handle max u32 score");
+    assert!(view.last_score() == MAX_U64, "Should handle max u64 score");
 }
 
 // CB-U-06: on_score_update with large token_id
@@ -166,15 +166,15 @@ fn test_on_game_over_with_zero_final_score() {
     assert!(view.last_final_score() == 0, "Final score should be 0");
 }
 
-// CB-U-09: on_game_over with max u32 final_score
+// CB-U-09: on_game_over with max u64 final_score
 #[test]
 fn test_on_game_over_with_max_final_score() {
     let (address, dispatcher) = deploy_callback_contract();
 
-    dispatcher.on_game_over(1, MAX_U32);
+    dispatcher.on_game_over(1, MAX_U64);
 
     let view = IMockCallbackViewDispatcher { contract_address: address };
-    assert!(view.last_final_score() == MAX_U32, "Should handle max u32 final score");
+    assert!(view.last_final_score() == MAX_U64, "Should handle max u64 final score");
 }
 
 // CB-U-10: on_game_over called multiple times (idempotent handling)
@@ -272,7 +272,7 @@ fn test_empty_hooks_on_objective_complete() {
 // CB-F-01: Fuzz on_score_update parameters
 #[test]
 #[fuzzer(runs: 100)]
-fn test_fuzz_on_score_update(token_id: u64, score: u32) {
+fn test_fuzz_on_score_update(token_id: u64, score: u64) {
     let (address, dispatcher) = deploy_callback_contract();
 
     // Convert u64 to u256 for the interface
@@ -287,7 +287,7 @@ fn test_fuzz_on_score_update(token_id: u64, score: u32) {
 // CB-F-02: Fuzz on_game_over parameters
 #[test]
 #[fuzzer(runs: 100)]
-fn test_fuzz_on_game_over(token_id: u64, final_score: u32) {
+fn test_fuzz_on_game_over(token_id: u64, final_score: u64) {
     let (address, dispatcher) = deploy_callback_contract();
 
     let token_id_u256: u256 = token_id.into();
@@ -352,16 +352,16 @@ mod MockCallbackContract {
 
     // Custom hooks implementation that tracks calls
     impl CallbackHooksImpl of MetagameCallbackComponent::MetagameCallbackHooksTrait<ContractState> {
-        fn on_score_update(ref self: ContractState, token_id: u256, score: u32) {
+        fn on_score_update(ref self: ContractState, token_id: u256, score: u64) {
             self.score_update_count.write(self.score_update_count.read() + 1);
             self.last_token_id.write(token_id);
-            self.last_score.write(score);
+            self.cb_last_score.write(score);
         }
 
-        fn on_game_over(ref self: ContractState, token_id: u256, final_score: u32) {
+        fn on_game_over(ref self: ContractState, token_id: u256, final_score: u64) {
             self.game_over_count.write(self.game_over_count.read() + 1);
             self.last_token_id.write(token_id);
-            self.last_final_score.write(final_score);
+            self.cb_last_final_score.write(final_score);
         }
 
         fn on_objective_complete(ref self: ContractState, token_id: u256) {
@@ -389,8 +389,8 @@ mod MockCallbackContract {
         game_over_count: u32,
         objective_complete_count: u32,
         last_token_id: u256,
-        last_score: u32,
-        last_final_score: u32,
+        cb_last_score: u64,
+        cb_last_final_score: u64,
     }
 
     #[event]
@@ -426,12 +426,12 @@ mod MockCallbackContract {
             self.last_token_id.read()
         }
 
-        fn last_score(self: @ContractState) -> u32 {
-            self.last_score.read()
+        fn last_score(self: @ContractState) -> u64 {
+            self.cb_last_score.read()
         }
 
-        fn last_final_score(self: @ContractState) -> u32 {
-            self.last_final_score.read()
+        fn last_final_score(self: @ContractState) -> u64 {
+            self.cb_last_final_score.read()
         }
     }
 }

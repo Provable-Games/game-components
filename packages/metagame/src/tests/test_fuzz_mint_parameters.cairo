@@ -329,7 +329,7 @@ mod MockMinigameFuzz {
         token_address: ContractAddress,
         settings_address: ContractAddress,
         objectives_address: ContractAddress,
-        token_scores: Map<u64, u32>,
+        token_scores: Map<u64, u64>,
         token_game_over: Map<u64, bool>,
     }
 
@@ -397,7 +397,7 @@ mod MockMinigameFuzz {
 
     #[abi(embed_v0)]
     impl MinigameTokenDataImpl of IMinigameTokenData<ContractState> {
-        fn score(self: @ContractState, token_id: u64) -> u32 {
+        fn score(self: @ContractState, token_id: u64) -> u64 {
             self.token_scores.read(token_id)
         }
 
@@ -405,7 +405,7 @@ mod MockMinigameFuzz {
             self.token_game_over.read(token_id)
         }
 
-        fn score_batch(self: @ContractState, token_ids: Span<u64>) -> Array<u32> {
+        fn score_batch(self: @ContractState, token_ids: Span<u64>) -> Array<u64> {
             let mut results = array![];
             let mut index = 0;
             loop {

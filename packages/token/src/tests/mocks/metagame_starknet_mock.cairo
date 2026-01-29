@@ -33,7 +33,7 @@ pub trait IMetagameCallbackMockView<TContractState> {
     fn game_over_count(self: @TContractState) -> u32;
     fn objective_complete_count(self: @TContractState) -> u32;
     fn last_callback_token_id(self: @TContractState) -> u256;
-    fn last_callback_score(self: @TContractState) -> u32;
+    fn last_callback_score(self: @TContractState) -> u64;
 }
 
 #[starknet::contract]
@@ -60,13 +60,13 @@ pub mod metagame_starknet_mock {
 
     // Callback hooks implementation that tracks calls for test assertions
     impl CallbackHooksImpl of MetagameCallbackComponent::MetagameCallbackHooksTrait<ContractState> {
-        fn on_score_update(ref self: ContractState, token_id: u256, score: u32) {
+        fn on_score_update(ref self: ContractState, token_id: u256, score: u64) {
             self.cb_score_update_count.write(self.cb_score_update_count.read() + 1);
             self.cb_last_token_id.write(token_id);
             self.cb_last_score.write(score);
         }
 
-        fn on_game_over(ref self: ContractState, token_id: u256, final_score: u32) {
+        fn on_game_over(ref self: ContractState, token_id: u256, final_score: u64) {
             self.cb_game_over_count.write(self.cb_game_over_count.read() + 1);
             self.cb_last_token_id.write(token_id);
             self.cb_last_score.write(final_score);
@@ -113,7 +113,7 @@ pub mod metagame_starknet_mock {
         cb_game_over_count: u32,
         cb_objective_complete_count: u32,
         cb_last_token_id: u256,
-        cb_last_score: u32,
+        cb_last_score: u64,
     }
 
     #[event]
@@ -229,7 +229,7 @@ pub mod metagame_starknet_mock {
             self.cb_last_token_id.read()
         }
 
-        fn last_callback_score(self: @ContractState) -> u32 {
+        fn last_callback_score(self: @ContractState) -> u64 {
             self.cb_last_score.read()
         }
     }

@@ -29,7 +29,7 @@ pub trait LeaderboardStoreTrait<T> {
         ref self: T,
         tournament_id: u64,
         token_id: u64,
-        score: u32,
+        score: u64,
         position: u8,
         config: LeaderboardStoreConfig,
     ) -> LeaderboardResult;
@@ -39,7 +39,7 @@ pub trait LeaderboardStoreTrait<T> {
 
     /// Check if a score qualifies for the leaderboard
     fn qualifies_for_leaderboard(
-        self: @T, tournament_id: u64, score: u32, config: LeaderboardStoreConfig,
+        self: @T, tournament_id: u64, score: u64, config: LeaderboardStoreConfig,
     ) -> bool;
 }
 
@@ -74,7 +74,7 @@ pub impl LeaderboardStoreImpl<T, +Store<T>, +Drop<T>> of LeaderboardStoreTrait<T
         ref self: T,
         tournament_id: u64,
         token_id: u64,
-        score: u32,
+        score: u64,
         position: u8,
         config: LeaderboardStoreConfig,
     ) -> LeaderboardResult {
@@ -140,7 +140,7 @@ pub impl LeaderboardStoreImpl<T, +Store<T>, +Drop<T>> of LeaderboardStoreTrait<T
 
     /// Check if a score qualifies for the leaderboard
     fn qualifies_for_leaderboard(
-        self: @T, tournament_id: u64, score: u32, config: LeaderboardStoreConfig,
+        self: @T, tournament_id: u64, score: u64, config: LeaderboardStoreConfig,
     ) -> bool {
         let entries = self.get_leaderboard_entries(tournament_id, config.game_address);
         let lb_config = LeaderboardConfig {
@@ -162,7 +162,7 @@ pub trait LeaderboardStoreHelpersTrait<T> {
     /// Get the minimum qualifying score for the leaderboard
     fn get_minimum_qualifying_score(
         self: @T, tournament_id: u64, config: LeaderboardStoreConfig,
-    ) -> Option<u32>;
+    ) -> Option<u64>;
 
     /// Get a range of leaderboard entries (for pagination)
     fn get_leaderboard_range(
@@ -171,7 +171,7 @@ pub trait LeaderboardStoreHelpersTrait<T> {
 
     /// Find the position where a score would be inserted
     fn find_score_position(
-        self: @T, tournament_id: u64, score: u32, config: LeaderboardStoreConfig,
+        self: @T, tournament_id: u64, score: u64, config: LeaderboardStoreConfig,
     ) -> Option<u32>;
 }
 
@@ -206,7 +206,7 @@ pub impl LeaderboardStoreHelpersImpl<T, +Store<T>, +Drop<T>> of LeaderboardStore
     /// Get the minimum qualifying score for the leaderboard
     fn get_minimum_qualifying_score(
         self: @T, tournament_id: u64, config: LeaderboardStoreConfig,
-    ) -> Option<u32> {
+    ) -> Option<u64> {
         let entries = self.get_leaderboard_entries(tournament_id, config.game_address);
         let lb_config = LeaderboardConfig {
             max_entries: config.max_entries, ascending: config.ascending, allow_ties: true,
@@ -225,7 +225,7 @@ pub impl LeaderboardStoreHelpersImpl<T, +Store<T>, +Drop<T>> of LeaderboardStore
 
     /// Find the position where a score would be inserted
     fn find_score_position(
-        self: @T, tournament_id: u64, score: u32, config: LeaderboardStoreConfig,
+        self: @T, tournament_id: u64, score: u64, config: LeaderboardStoreConfig,
     ) -> Option<u32> {
         let entries = self.get_leaderboard_entries(tournament_id, config.game_address);
         let lb_config = LeaderboardConfig {
@@ -241,7 +241,7 @@ pub impl LeaderboardStoreHelpersImpl<T, +Store<T>, +Drop<T>> of LeaderboardStore
 
 /// Internal helper functions
 /// Get score for a token from the game contract
-fn get_score_for_token(game_address: ContractAddress, token_id: u64) -> u32 {
+fn get_score_for_token(game_address: ContractAddress, token_id: u64) -> u64 {
     let game_dispatcher = IGameDetailsDispatcher { contract_address: game_address };
     game_dispatcher.score(token_id)
 }

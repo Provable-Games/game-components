@@ -1092,24 +1092,24 @@ fn test_ascending_rejects_higher_scores() {
 // EDGE CASE TESTS
 // ==============================================================================
 
-// Test LB-EDGE-01: Submit with max u32 score
+// Test LB-EDGE-01: Submit with max u64 score
 #[test]
 fn test_submit_max_score() {
     let (leaderboard, admin) = deploy_mock_leaderboard();
     let (game_address, game_admin) = deploy_mock_game_details();
 
     configure_tournament_with_game(admin, TOURNAMENT_1, 10, false, game_address);
-    game_admin.set_score(1, MAX_U32);
+    game_admin.set_score(1, MAX_U64);
 
-    let result = leaderboard.submit_score(TOURNAMENT_1, 1, MAX_U32, 1);
+    let result = leaderboard.submit_score(TOURNAMENT_1, 1, MAX_U64, 1);
 
     match result {
         LeaderboardResult::Success => {},
-        _ => panic!("Should succeed with MAX_U32 score"),
+        _ => panic!("Should succeed with MAX_U64 score"),
     }
 
     let entries = leaderboard.get_entries(TOURNAMENT_1);
-    assert!(*entries.at(0).score == MAX_U32, "Score should be MAX_U32");
+    assert!(*entries.at(0).score == MAX_U64, "Score should be MAX_U64");
 }
 
 // Test LB-EDGE-02: Submit with score = 0
@@ -1261,7 +1261,7 @@ fn test_multiple_admins_via_transfer() {
 // Test LB-FUZZ-01: Random score submissions
 #[test]
 #[fuzzer]
-fn test_fuzz_random_score_submission(score: u32, token_seed: u64) {
+fn test_fuzz_random_score_submission(score: u64, token_seed: u64) {
     let token_id = if token_seed == 0 {
         1
     } else {
@@ -1306,7 +1306,7 @@ fn test_fuzz_tournament_config(max_entries: u32) {
 // Test LB-FUZZ-06: Score qualification boundary
 #[test]
 #[fuzzer]
-fn test_fuzz_qualification_boundary(score: u32) {
+fn test_fuzz_qualification_boundary(score: u64) {
     let (leaderboard, admin) = deploy_mock_leaderboard();
     let (game_address, game_admin) = deploy_mock_game_details();
 
@@ -1681,7 +1681,7 @@ fn test_get_entries_large_leaderboard() {
         if i > 10 {
             break;
         }
-        let score: u32 = (110 - i * 10).try_into().unwrap();
+        let score: u64 = 110 - i * 10;
         game_admin.set_score(i, score);
         let _ = leaderboard.submit_score(TOURNAMENT_1, i, score, i.try_into().unwrap());
         i += 1;
@@ -1752,7 +1752,7 @@ fn test_multiple_qualifying_scores_fill_leaderboard() {
         if i > 5 {
             break;
         }
-        let score: u32 = (60 - i * 10).try_into().unwrap();
+        let score: u64 = 60 - i * 10;
         game_admin.set_score(i, score);
         let _ = leaderboard.submit_score(TOURNAMENT_1, i, score, i.try_into().unwrap());
         i += 1;
@@ -1853,7 +1853,7 @@ fn test_ascending_displacement() {
 // Test fuzz with both ascending and descending
 #[test]
 #[fuzzer]
-fn test_fuzz_ascending_descending_consistency(score: u32, ascending_seed: u8) {
+fn test_fuzz_ascending_descending_consistency(score: u64, ascending_seed: u8) {
     let ascending = ascending_seed % 2 == 0;
     let (leaderboard, admin) = deploy_mock_leaderboard();
     let (game_address, game_admin) = deploy_mock_game_details();

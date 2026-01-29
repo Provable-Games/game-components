@@ -230,7 +230,7 @@ fn test_default_svg_special_color() {
 
 #[test]
 #[fuzzer(runs: 50)]
-fn test_default_svg_fuzz(token_id: u64, score: u32) {
+fn test_default_svg_fuzz(token_id: u64, score: u64) {
     let game_metadata = default_game_metadata();
     let result = create_default_svg(token_id, game_metadata, score, 'Player');
 
@@ -495,7 +495,7 @@ fn test_custom_metadata_max_score() {
         empty_settings_details(),
         empty_context_details(),
         default_token_metadata(),
-        4294967295, // u32 max
+        18446744073709551615, // u64 max
         MINTED_BY_ADDRESS(),
         0,
         array![].span(),
@@ -1042,7 +1042,7 @@ fn test_custom_metadata_fuzz_token_id(token_id: u64) {
 
 #[test]
 #[fuzzer(runs: 50)]
-fn test_custom_metadata_fuzz_score(score: u32) {
+fn test_custom_metadata_fuzz_score(score: u64) {
     start_cheat_block_timestamp_global(2000000000);
 
     let result = create_custom_metadata(

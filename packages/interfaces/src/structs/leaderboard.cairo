@@ -18,7 +18,7 @@ pub struct LeaderboardEntry {
     /// Unique identifier for the entry
     pub id: u64,
     /// Score value
-    pub score: u32,
+    pub score: u64,
 }
 
 /// Result of a leaderboard operation

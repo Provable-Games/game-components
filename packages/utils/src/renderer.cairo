@@ -82,7 +82,7 @@ fn create_trait(name: ByteArray, value: ByteArray) -> ByteArray {
 }
 
 pub fn create_default_svg(
-    token_id: u64, game_metadata: GameMetadata, score: u32, player_name: felt252,
+    token_id: u64, game_metadata: GameMetadata, score: u64, player_name: felt252,
 ) -> ByteArray {
     let rect = create_rect(game_metadata.color.clone());
     let logo_element = logo(game_metadata.image);
@@ -130,7 +130,7 @@ pub fn create_custom_metadata(
     settings_details: GameSettingDetails,
     context_details: GameContextDetails,
     token_metadata: TokenMetadata,
-    score: u32,
+    score: u64,
     minted_by: ContractAddress,
     player_name: felt252,
     objective_ids: Span<u32>,
@@ -627,7 +627,7 @@ mod tests {
             settings_details,
             context_details,
             token_metadata,
-            4294967295, // Max u32 score
+            18446744073709551615, // Max u64 score
             0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF.try_into().unwrap(), // Max address
             'MAX_FELT_VALUE_TEST',
             array![1, 4294967295, 2147483647, 0].span() // Mix of values including max/min

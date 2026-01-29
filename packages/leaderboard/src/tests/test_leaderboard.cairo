@@ -169,7 +169,7 @@ fn test_50_player_leaderboard() {
             break;
         }
 
-        let score = 51 - i; // Score from 50 down to 1
+        let score: u64 = (51 - i).into(); // Score from 50 down to 1
         let new_entry = LeaderboardEntry { id: i.into(), score };
 
         // Find correct position and insert

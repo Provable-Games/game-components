@@ -8,7 +8,7 @@ use game_components_leaderboard::leaderboard::leaderboard::{
     LeaderboardConfig, LeaderboardEntry, LeaderboardOperationsImpl, LeaderboardResult,
     LeaderboardUtilsImpl, ScoreComparatorImpl,
 };
-use game_components_testing::constants::{MAX_U32, MAX_U64};
+use game_components_testing::constants::MAX_U64;
 
 // ==============================================================================
 // EMPTY LEADERBOARD TESTS
@@ -496,7 +496,7 @@ fn test_50_player_leaderboard() {
             break;
         }
 
-        let score = 51 - i; // Score from 50 down to 1
+        let score: u64 = (51 - i).into(); // Score from 50 down to 1
         let new_entry = LeaderboardEntry { id: i.into(), score };
 
         // Find correct position and insert
@@ -799,11 +799,11 @@ fn test_get_qualifying_score_single_entry_full() {
 fn test_max_score_value() {
     let config = LeaderboardConfig { max_entries: 5, ascending: false, allow_ties: true };
     let mut entries = ArrayTrait::new();
-    entries.append(LeaderboardEntry { id: 1, score: MAX_U32 });
+    entries.append(LeaderboardEntry { id: 1, score: MAX_U64 });
 
-    let new_entry = LeaderboardEntry { id: 2, score: MAX_U32 - 1 };
+    let new_entry = LeaderboardEntry { id: 2, score: MAX_U64 - 1 };
     let position = LeaderboardOperationsImpl::find_insert_position(@config, @entries, @new_entry);
-    assert!(position == Option::Some(1), "Should insert after MAX_U32 score");
+    assert!(position == Option::Some(1), "Should insert after MAX_U64 score");
 }
 
 #[test]
@@ -898,7 +898,7 @@ fn test_validate_tie_loses_tiebreaker() {
 
 #[test]
 #[fuzzer]
-fn test_fuzz_insert_random_score(score: u32, id_seed: u64) {
+fn test_fuzz_insert_random_score(score: u64, id_seed: u64) {
     // Ensure non-zero ID
     let id = if id_seed == 0 {
         1
@@ -928,7 +928,7 @@ fn test_fuzz_insert_random_score(score: u32, id_seed: u64) {
 
 #[test]
 #[fuzzer]
-fn test_fuzz_is_better_score_transitivity(a: u32, b: u32, c: u32) {
+fn test_fuzz_is_better_score_transitivity(a: u64, b: u64, c: u64) {
     let config = LeaderboardConfig { max_entries: 10, ascending: false, allow_ties: true };
 
     // If a > b and b > c, then a > c (transitivity in descending mode)
@@ -962,7 +962,7 @@ fn test_fuzz_position_index_roundtrip(position: u8) {
 
 #[test]
 #[fuzzer]
-fn test_fuzz_find_position_validity(score: u32) {
+fn test_fuzz_find_position_validity(score: u64) {
     let config = LeaderboardConfig { max_entries: 5, ascending: false, allow_ties: true };
     let mut entries = ArrayTrait::new();
     entries.append(LeaderboardEntry { id: 1, score: 100 });
@@ -981,7 +981,7 @@ fn test_fuzz_find_position_validity(score: u32) {
 
 #[test]
 #[fuzzer]
-fn test_fuzz_qualifies_consistency(score: u32) {
+fn test_fuzz_qualifies_consistency(score: u64) {
     let config = LeaderboardConfig { max_entries: 3, ascending: false, allow_ties: true };
     let mut entries = ArrayTrait::new();
     entries.append(LeaderboardEntry { id: 1, score: 100 });
@@ -1445,7 +1445,7 @@ fn test_qualifies_empty_leaderboard() {
         "0 qualifies for empty",
     );
     assert!(
-        LeaderboardOperationsImpl::qualifies_for_leaderboard(@config, @entries, MAX_U32),
+        LeaderboardOperationsImpl::qualifies_for_leaderboard(@config, @entries, MAX_U64),
         "MAX qualifies for empty",
     );
 }
@@ -1639,7 +1639,7 @@ fn test_fuzz_is_full_consistency(max_entries: u32, num_entries: u32) {
         if i >= bounded_num {
             break;
         }
-        entries.append(LeaderboardEntry { id: i.into(), score: 100 - i });
+        entries.append(LeaderboardEntry { id: i.into(), score: (100 - i).into() });
         i += 1;
     }
 

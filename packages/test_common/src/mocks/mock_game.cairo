@@ -1,7 +1,7 @@
 #[starknet::interface]
 pub trait IMockGame<TContractState> {
     // Test helpers
-    fn set_score(ref self: TContractState, token_id: u64, score: u32);
+    fn set_score(ref self: TContractState, token_id: u64, score: u64);
     fn set_game_over(ref self: TContractState, token_id: u64, game_over: bool);
 }
 
@@ -18,7 +18,7 @@ pub mod MockGame {
     struct Storage {
         #[substorage(v0)]
         src5: SRC5Component::Storage,
-        scores: Map<u64, u32>,
+        scores: Map<u64, u64>,
         game_overs: Map<u64, bool>,
     }
 
@@ -36,7 +36,7 @@ pub mod MockGame {
 
     #[abi(embed_v0)]
     impl MinigameTokenDataImpl of IMinigameTokenData<ContractState> {
-        fn score(self: @ContractState, token_id: u64) -> u32 {
+        fn score(self: @ContractState, token_id: u64) -> u64 {
             self.scores.read(token_id)
         }
 
@@ -44,7 +44,7 @@ pub mod MockGame {
             self.game_overs.read(token_id)
         }
 
-        fn score_batch(self: @ContractState, token_ids: Span<u64>) -> Array<u32> {
+        fn score_batch(self: @ContractState, token_ids: Span<u64>) -> Array<u64> {
             let mut results = array![];
             let mut index = 0;
             loop {
@@ -73,7 +73,7 @@ pub mod MockGame {
 
     #[abi(embed_v0)]
     impl MockGameImpl of super::IMockGame<ContractState> {
-        fn set_score(ref self: ContractState, token_id: u64, score: u32) {
+        fn set_score(ref self: ContractState, token_id: u64, score: u64) {
             self.scores.write(token_id, score);
         }
 
