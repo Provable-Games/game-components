@@ -12,11 +12,14 @@ A modular Cairo smart contract library for building on-chain games on Starknet. 
 
 ## 🎯 **Overview**
 
-Game Components is designed to solve the complexity of building on-chain games by providing three core architectural components that work seamlessly together:
+Game Components is designed to solve the complexity of building on-chain games by providing modular architectural components that work seamlessly together:
 
-- **🏆 Metagame**: High-level game management and tournament/event coordination
+- **🏆 Metagame**: High-level game management, tournament/event coordination, and automatic callbacks
 - **🎮 Minigame**: Individual game logic and mechanics implementation
 - **🃏 MinigameToken**: ERC721-based NFTs representing playable game instances
+- **📖 Registry**: Game registration and multi-game discovery
+- **🏅 Leaderboard**: Tournament scoring and ranking
+- **💰 Tokenomics**: Ekubo TWAMM buyback and stream token distribution
 
 ## 🏗️ **Architecture**
 
@@ -25,10 +28,12 @@ Game Components is designed to solve the complexity of building on-chain games b
 ```
 Metagame
   ├── minigame_token_address ──→ MinigameToken (ERC721)
-  └── context_address ──→ IMetagameContext (optional)
+  ├── context_address ──→ IMetagameContext (optional)
+  └── IMetagameCallback ◀── update_game() dispatches callbacks
 
 MinigameToken
   ├── game_address ──→ Minigame
+  ├── registry_address ──→ Registry (multi-game mode)
   └── token_metadata
       ├── settings_id ──→ IMinigameSettings
       └── objectives ──→ IMinigameObjectives
@@ -44,7 +49,7 @@ Minigame
 1. **Setup**: Deploy contracts with extension addresses configured
 2. **Mint**: Create tokens with game configuration and metadata
 3. **Play**: Validate `is_playable()` and update game state through minigame logic
-4. **Sync**: Call `update_game()` to synchronize token state with game results
+4. **Sync**: Call `update_game()` to synchronize token state with game results. If the minter implements `IMetagameCallback`, callbacks are dispatched automatically (`on_score_update`, `on_game_over`, `on_objective_complete`)
 5. **Complete**: Game ends when `game_over()` returns true or all objectives achieved
 
 ## 🚀 **Quick Start**
@@ -66,8 +71,11 @@ cd game-components
 # Build the entire workspace
 scarb build
 
+# Run tests for a specific package
+snforge test -p game_components_token
+
 # Run tests with coverage
-cd packages/test_starknet && snforge test --coverage
+snforge test -p game_components_token --coverage
 ```
 
 ### Basic Usage
@@ -136,15 +144,56 @@ ERC721-based NFT representing playable game instances with:
 - **Lifecycle Management**: Start/end times, playability validation
 - **Game State Tracking**: Score, objectives, completion status
 
-### Additional Packages
+### Supporting Packages
 
-#### 🛠️ **utils** (`packages/utils/`)
+#### 📋 **Interfaces** (`packages/interfaces/`)
+
+Centralized interface and struct definitions shared across all components. Provides trait definitions, interface IDs, and common structs used by metagame, minigame, token, and other packages.
+
+#### 🏅 **Leaderboard** (`packages/leaderboard/`)
+
+Tournament scoring and ranking system:
+
+- Score submission and ranking management
+- Leaderboard querying and pagination
+- Integration with token game state
+
+#### 📖 **Registry** (`packages/registry/`)
+
+Game registration and discovery:
+
+- Game contract registration with metadata
+- Game address lookup by ID
+- Multi-game token support through registry-based game resolution
+
+#### 💰 **Tokenomics** (`packages/tokenomics/`)
+
+Token economics and distribution:
+
+- Ekubo TWAMM buyback mechanism
+- Stream token distribution
+- Autonomous buyback contracts
+
+#### 🚀 **Presets** (`packages/presets/`)
+
+Ready-to-deploy contract presets:
+
+- LeaderboardPreset
+- AutonomousBuyback
+- StreamToken (ERC20 with premint and streaming)
+
+#### 🛠️ **Utils** (`packages/utils/`)
 
 Shared utilities providing:
 
 - JSON encoding/decoding helpers
 - Renderer trait implementations
 - Common data structures and patterns
+
+#### 🧪 **Testing Infrastructure**
+
+- **`testing`**: Shared test constants and addresses
+- **`test_common`**: Shared mock contracts and example implementations
 
 ## 🔧 **Development Workflow**
 
@@ -154,9 +203,6 @@ Shared utilities providing:
 # Build entire workspace
 scarb build
 
-# Build specific packages
-cd packages/test_starknet && scarb build
-
 # Format code
 scarb fmt -w
 ```
@@ -164,15 +210,17 @@ scarb fmt -w
 ### Testing Commands
 
 ```bash
-# Run Starknet Foundry tests
-cd packages/test_starknet && snforge test
+# Run all tests for a package
+snforge test -p game_components_token
 
-# Run with coverage (required 90%+)
-snforge test --coverage
-cairo-coverage
+# Run with coverage
+snforge test -p game_components_token --coverage
 
-# Run specific test
-snforge test test_mint_basic
+# Run a specific test by name
+snforge test -p game_components_token test_mint_basic
+
+# Run with custom fuzzer iterations
+snforge test -p game_components_token --fuzzer-runs 256
 ```
 
 ## 🎨 **Extension System**
@@ -184,6 +232,7 @@ Game Components uses interface-based extensions for modularity:
 - **Settings**: Game configuration (difficulty, modes, custom parameters)
 - **Objectives**: Achievements and goals tracking with completion rewards
 - **Context**: Tournament/event metadata and cross-game coordination
+- **Callback**: Automatic metagame notifications on score/game_over/objective events
 - **Minter**: Custom minting logic and access control
 - **Renderer**: Dynamic UI/metadata generation for tokens
 - **Soulbound**: Non-transferable tokens for achievements
@@ -210,11 +259,11 @@ if src5_component.supports_interface(IMINIGAME_SETTINGS_ID) {
 # Deploy optimized token contract
 ./scripts/deploy_optimized_token.sh
 
+# Deploy StreamToken factory
+./scripts/deploy_stream_token_factory.sh
+
 # Create game settings
 ./scripts/create_settings.sh
-
-# Create objectives
-./scripts/create_objectives.sh
 
 # Mint game tokens
 ./scripts/mint_games.sh

@@ -29,8 +29,8 @@ You are a **senior Starknet smart contract engineer** specializing in Cairo deve
 
 ```bash
 scarb build                                    # Build workspace
-cd packages/test_starknet && snforge test      # Run all tests
-cd packages/test_starknet && snforge test --coverage  # Coverage
+snforge test -p <package_name>                 # Run tests for a package
+snforge test -p <package_name> --coverage      # Coverage for a package
 scarb fmt -w                                   # Format code
 ```
 
@@ -56,12 +56,16 @@ Each package has its own `AGENTS.md` with detailed documentation.
 
 ```
 Metagame ──→ MinigameToken (ERC721) ──→ Minigame
-                 │                         │
-                 └── Registry              ├── Settings (optional)
-                                           └── Objectives (optional)
+  │  ▲               │                      │
+  │  │               └── Registry            ├── Settings (optional)
+  │  │                                       └── Objectives (optional)
+  │  └── IMetagameCallback (on_score_update, on_game_over, on_objective_complete)
+  └── Context (optional)
 ```
 
 **Game Lifecycle**: Setup → Mint → Play → Sync (`update_game()`) → Complete (`game_over()`)
+
+When `update_game()` is called, the token checks if the minter implements `IMetagameCallback` (via SRC5) and dispatches score/game_over/objective callbacks automatically.
 
 ## Key Patterns
 
@@ -103,9 +107,9 @@ When adding a new package with tests, update **both** files:
 | Package | Runner | Fuzzer Runs |
 |---------|--------|-------------|
 | `game_components_metagame` | `ubuntu-latest` | 256 |
-| `game_components_minigame` | `ubuntu-latest-4` | 256 |
+| `game_components_minigame` | `ubuntu-latest-4` | 64 |
 | `game_components_registry` | `ubuntu-latest` | 256 |
-| `game_components_token` | `ubuntu-latest-32` | 50 |
+| `game_components_token` | `ubuntu-latest-32` | 32 |
 | `game_components_tokenomics` | `ubuntu-latest` | 256 |
 | `game_components_utils` | `ubuntu-latest` | 256 |
 | `game_components_leaderboard` | `ubuntu-latest` | 256 |
