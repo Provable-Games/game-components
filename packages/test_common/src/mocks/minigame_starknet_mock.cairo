@@ -17,7 +17,7 @@ pub trait IMinigameStarknetMock<TContractState> {
     ) -> u64;
     fn start_game(ref self: TContractState, token_id: u64);
     fn end_game(ref self: TContractState, token_id: u64, score: u64);
-    fn create_objective_score(ref self: TContractState, score: u32);
+    fn create_objective_score(ref self: TContractState, score: u64);
     fn create_settings_difficulty(
         ref self: TContractState, name: ByteArray, description: ByteArray, difficulty: u8,
     );
@@ -387,7 +387,7 @@ pub mod minigame_starknet_mock {
             self.game_over.entry(token_id).write(true);
         }
 
-        fn create_objective_score(ref self: ContractState, score: u32) {
+        fn create_objective_score(ref self: ContractState, score: u64) {
             let objective_count = self.objective_count.read();
             let new_objective_id = objective_count + 1;
 
