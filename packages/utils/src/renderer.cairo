@@ -133,7 +133,6 @@ pub fn create_custom_metadata(
     score: u64,
     minted_by: ContractAddress,
     player_name: felt252,
-    objective_ids: Span<u32>,
 ) -> ByteArray {
     let _token_id = format!("{}", token_id);
     let _game_id = format!("{}", token_metadata.game_id);
@@ -177,6 +176,12 @@ pub fn create_custom_metadata(
         } else {
             "False"
         }),
+        create_trait("Paymaster", if token_metadata.paymaster {
+            "True"
+        } else {
+            "False"
+        }),
+        create_trait("Metadata", format!("{}", Into::<u16, u32>::into(token_metadata.metadata))),
         create_trait("Settings ID", _settings_id),
     ];
 
@@ -198,22 +203,8 @@ pub fn create_custom_metadata(
     }
 
     // Optional objectives traits
-    if objective_ids.len() > 0 {
-        let mut objective_ids_str: ByteArray = "[";
-        let mut i = 0;
-        loop {
-            if i >= objective_ids.len() {
-                break;
-            }
-            if i > 0 {
-                objective_ids_str += ",";
-            }
-            objective_ids_str += format!("{}", *objective_ids.at(i));
-            i += 1;
-        }
-        objective_ids_str += "]";
-
-        attributes.append(create_trait("Objective IDs", objective_ids_str));
+    if token_metadata.objective_id != 0 {
+        attributes.append(create_trait("Objective ID", format!("{}", token_metadata.objective_id)));
         attributes
             .append(
                 create_trait(
@@ -339,8 +330,6 @@ mod tests {
             metadata: 0,
         };
 
-        let objective_ids = array![1, 2, 3, 5, 8].span();
-
         let metadata = create_custom_metadata(
             1000000,
             game_metadata.name.clone(),
@@ -359,7 +348,6 @@ mod tests {
             95000,
             0x065d2AB17338b5AffdEbAF95E2D79834B5f30Bac596fF55563c62C3c98700150.try_into().unwrap(),
             'ProGamer2024',
-            objective_ids,
         );
 
         println!("Full metadata: {}", metadata);
@@ -418,8 +406,7 @@ mod tests {
             token_metadata,
             1200,
             0x065d2AB17338b5AffdEbAF95E2D79834B5f30Bac596fF55563c62C3c98700150.try_into().unwrap(),
-            0, // No player name
-            [].span() // No objectives
+            0 // No player name
         );
 
         println!("Empty settings metadata: {}", metadata);
@@ -483,7 +470,6 @@ mod tests {
             7500,
             0x065d2AB17338b5AffdEbAF95E2D79834B5f30Bac596fF55563c62C3c98700150.try_into().unwrap(),
             'CasualPlayer',
-            array![10, 20].span(),
         );
 
         println!("Partial context metadata: {}", metadata);
@@ -559,7 +545,6 @@ mod tests {
             85000,
             0x065d2AB17338b5AffdEbAF95E2D79834B5f30Bac596fF55563c62C3c98700150.try_into().unwrap(),
             'AdventureSeeker',
-            array![100].span() // Single objective
         );
 
         println!("Single objective metadata: {}", metadata);
@@ -640,7 +625,6 @@ mod tests {
             18446744073709551615, // Max u64 score
             0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF.try_into().unwrap(), // Max address
             'MAX_FELT_VALUE_TEST',
-            array![1, 4294967295, 2147483647, 0].span() // Mix of values including max/min
         );
 
         println!("Edge cases metadata: {}", metadata);

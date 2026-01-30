@@ -386,8 +386,6 @@ pub mod FullTokenContract {
                         name: "", description: "", id: Option::None, context: array![].span(),
                     },
                 };
-                let objective_id = token_metadata.objective_id;
-
                 create_custom_metadata(
                     token_id.try_into().unwrap(),
                     token_name,
@@ -401,7 +399,6 @@ pub mod FullTokenContract {
                     score,
                     minted_by_address,
                     player_name,
-                    array![objective_id].span(),
                 )
             } else {
                 // return the blank NFT renderer

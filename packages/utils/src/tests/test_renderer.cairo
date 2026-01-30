@@ -262,8 +262,7 @@ fn test_custom_metadata_basic() {
         default_token_metadata(),
         100,
         MINTED_BY_ADDRESS(),
-        0, // no player name
-        array![].span(),
+        0 // no player name
     );
 
     stop_cheat_block_timestamp_global();
@@ -280,8 +279,6 @@ fn test_custom_metadata_full() {
     ]
         .span();
 
-    let objective_ids = array![1, 2, 3].span();
-
     let result = create_custom_metadata(
         1000,
         "Full Token",
@@ -295,7 +292,6 @@ fn test_custom_metadata_full() {
         95000,
         MINTED_BY_ADDRESS(),
         'ProGamer',
-        objective_ids,
     );
 
     stop_cheat_block_timestamp_global();
@@ -321,7 +317,6 @@ fn test_custom_metadata_empty_settings() {
         100,
         MINTED_BY_ADDRESS(),
         0,
-        array![].span(),
     );
 
     stop_cheat_block_timestamp_global();
@@ -346,7 +341,6 @@ fn test_custom_metadata_empty_context() {
         100,
         MINTED_BY_ADDRESS(),
         0,
-        array![].span(),
     );
 
     stop_cheat_block_timestamp_global();
@@ -371,7 +365,6 @@ fn test_custom_metadata_empty_objectives() {
         100,
         MINTED_BY_ADDRESS(),
         'Player',
-        array![].span() // empty objectives
     );
 
     stop_cheat_block_timestamp_global();
@@ -396,7 +389,6 @@ fn test_custom_metadata_empty_game_details() {
         100,
         MINTED_BY_ADDRESS(),
         'Player',
-        array![1, 2].span(),
     );
 
     stop_cheat_block_timestamp_global();
@@ -425,7 +417,6 @@ fn test_custom_metadata_zero_token_id() {
         100,
         MINTED_BY_ADDRESS(),
         0,
-        array![].span(),
     );
 
     stop_cheat_block_timestamp_global();
@@ -450,7 +441,6 @@ fn test_custom_metadata_max_token_id() {
         100,
         MINTED_BY_ADDRESS(),
         0,
-        array![].span(),
     );
 
     stop_cheat_block_timestamp_global();
@@ -475,7 +465,6 @@ fn test_custom_metadata_zero_score() {
         0, // zero score
         MINTED_BY_ADDRESS(),
         0,
-        array![].span(),
     );
 
     stop_cheat_block_timestamp_global();
@@ -500,7 +489,6 @@ fn test_custom_metadata_max_score() {
         18446744073709551615, // u64 max
         MINTED_BY_ADDRESS(),
         0,
-        array![].span(),
     );
 
     stop_cheat_block_timestamp_global();
@@ -524,8 +512,7 @@ fn test_custom_metadata_zero_player_name() {
         default_token_metadata(),
         100,
         MINTED_BY_ADDRESS(),
-        0, // no player name
-        array![].span(),
+        0 // no player name
     );
 
     stop_cheat_block_timestamp_global();
@@ -554,7 +541,6 @@ fn test_custom_metadata_max_player_name() {
         100,
         MINTED_BY_ADDRESS(),
         'VeryLongPlayerNameForTesting12',
-        array![].span(),
     );
 
     stop_cheat_block_timestamp_global();
@@ -588,7 +574,6 @@ fn test_custom_metadata_game_over_true() {
         100,
         MINTED_BY_ADDRESS(),
         0,
-        array![].span(),
     );
 
     stop_cheat_block_timestamp_global();
@@ -616,7 +601,6 @@ fn test_custom_metadata_soulbound_true() {
         100,
         MINTED_BY_ADDRESS(),
         0,
-        array![].span(),
     );
 
     stop_cheat_block_timestamp_global();
@@ -644,7 +628,6 @@ fn test_custom_metadata_completed_objective_true() {
         100,
         MINTED_BY_ADDRESS(),
         0,
-        array![1].span() // Need objectives for completed_objective to show
     );
 
     stop_cheat_block_timestamp_global();
@@ -677,7 +660,6 @@ fn test_custom_metadata_expired_true() {
         100,
         MINTED_BY_ADDRESS(),
         0,
-        array![].span(),
     );
 
     stop_cheat_block_timestamp_global();
@@ -703,7 +685,6 @@ fn test_custom_metadata_not_expired() {
         100,
         MINTED_BY_ADDRESS(),
         0,
-        array![].span(),
     );
 
     stop_cheat_block_timestamp_global();
@@ -733,7 +714,6 @@ fn test_custom_metadata_no_end_time() {
         100,
         MINTED_BY_ADDRESS(),
         0,
-        array![].span(),
     );
 
     stop_cheat_block_timestamp_global();
@@ -770,7 +750,6 @@ fn test_custom_metadata_context_with_id() {
         100,
         MINTED_BY_ADDRESS(),
         0,
-        array![].span(),
     );
 
     stop_cheat_block_timestamp_global();
@@ -804,7 +783,6 @@ fn test_custom_metadata_context_without_id() {
         100,
         MINTED_BY_ADDRESS(),
         0,
-        array![].span(),
     );
 
     stop_cheat_block_timestamp_global();
@@ -835,7 +813,6 @@ fn test_custom_metadata_context_name_only() {
         100,
         MINTED_BY_ADDRESS(),
         0,
-        array![].span(),
     );
 
     stop_cheat_block_timestamp_global();
@@ -867,7 +844,6 @@ fn test_custom_metadata_single_objective() {
         100,
         MINTED_BY_ADDRESS(),
         0,
-        array![1].span(),
     );
 
     stop_cheat_block_timestamp_global();
@@ -894,7 +870,6 @@ fn test_custom_metadata_multiple_objectives() {
         100,
         MINTED_BY_ADDRESS(),
         0,
-        array![1, 2, 3, 5, 8].span(),
     );
 
     stop_cheat_block_timestamp_global();
@@ -907,16 +882,6 @@ fn test_custom_metadata_multiple_objectives() {
 #[test]
 fn test_custom_metadata_many_objectives() {
     start_cheat_block_timestamp_global(2000000000);
-
-    let mut objectives: Array<u32> = array![];
-    let mut i: u32 = 0;
-    loop {
-        if i >= 20 {
-            break;
-        }
-        objectives.append(i);
-        i += 1;
-    }
 
     let result = create_custom_metadata(
         1,
@@ -931,7 +896,6 @@ fn test_custom_metadata_many_objectives() {
         100,
         MINTED_BY_ADDRESS(),
         0,
-        objectives.span(),
     );
 
     stop_cheat_block_timestamp_global();
@@ -964,7 +928,6 @@ fn test_custom_metadata_single_game_detail() {
         100,
         MINTED_BY_ADDRESS(),
         0,
-        array![].span(),
     );
 
     stop_cheat_block_timestamp_global();
@@ -1002,7 +965,6 @@ fn test_custom_metadata_many_game_details() {
         100,
         MINTED_BY_ADDRESS(),
         0,
-        array![].span(),
     );
 
     stop_cheat_block_timestamp_global();
@@ -1034,7 +996,6 @@ fn test_custom_metadata_fuzz_token_id(token_id: u64) {
         100,
         MINTED_BY_ADDRESS(),
         0,
-        array![].span(),
     );
 
     stop_cheat_block_timestamp_global();
@@ -1060,7 +1021,6 @@ fn test_custom_metadata_fuzz_score(score: u64) {
         score,
         MINTED_BY_ADDRESS(),
         0,
-        array![].span(),
     );
 
     stop_cheat_block_timestamp_global();
@@ -1094,7 +1054,6 @@ fn test_custom_metadata_fuzz_lifecycle(start: u64, end: u64) {
         100,
         MINTED_BY_ADDRESS(),
         0,
-        array![].span(),
     );
 
     stop_cheat_block_timestamp_global();
@@ -1107,20 +1066,8 @@ fn test_custom_metadata_fuzz_lifecycle(start: u64, end: u64) {
 
 #[test]
 #[fuzzer(runs: 50)]
-fn test_custom_metadata_fuzz_objective_count(count: u8) {
-    let bounded_count = count % 31; // 0-30 objectives
-
+fn test_custom_metadata_fuzz_objective_count(objective_id: u32) {
     start_cheat_block_timestamp_global(2000000000);
-
-    let mut objectives: Array<u32> = array![];
-    let mut i: u8 = 0;
-    loop {
-        if i >= bounded_count {
-            break;
-        }
-        objectives.append(i.into());
-        i += 1;
-    }
 
     let result = create_custom_metadata(
         1,
@@ -1135,7 +1082,6 @@ fn test_custom_metadata_fuzz_objective_count(count: u8) {
         100,
         MINTED_BY_ADDRESS(),
         0,
-        objectives.span(),
     );
 
     stop_cheat_block_timestamp_global();
@@ -1210,7 +1156,6 @@ fn test_custom_metadata_all_features_combined() {
         999999,
         MINTED_BY_ADDRESS(),
         'ChampionPlayer2024',
-        array![1, 2, 3, 4, 5, 10, 20, 50].span(),
     );
 
     stop_cheat_block_timestamp_global();
