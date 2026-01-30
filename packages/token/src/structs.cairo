@@ -208,9 +208,41 @@ pub fn pack_token_id(
     metadata: u16,
 ) -> felt252 {
     use PackedTokenIdBits::{
-        METADATA_MASK, POW2_100, POW2_135, POW2_160, POW2_185, POW2_215, POW2_216, POW2_217,
-        POW2_218, POW2_228, POW2_238, POW2_30, POW2_70, SALT_MASK, TX_HASH_MASK,
+        END_DELAY_MASK, GAME_ID_MASK, METADATA_MASK, MINTED_AT_MASK, MINTED_BY_MASK,
+        OBJECTIVE_ID_MASK, POW2_100, POW2_135, POW2_160, POW2_185, POW2_215, POW2_216, POW2_217,
+        POW2_218, POW2_228, POW2_238, POW2_30, POW2_70, SALT_MASK, SETTINGS_ID_MASK,
+        START_DELAY_MASK, TX_HASH_MASK,
     };
+
+    // Validate all fields fit within their bit allocations
+    assert!(
+        Into::<u32, u256>::into(game_id) <= GAME_ID_MASK,
+        "PackedTokenId: game_id exceeds 30-bit limit",
+    );
+    assert!(
+        Into::<u64, u256>::into(minted_by) <= MINTED_BY_MASK,
+        "PackedTokenId: minted_by exceeds 40-bit limit",
+    );
+    assert!(
+        Into::<u32, u256>::into(settings_id) <= SETTINGS_ID_MASK,
+        "PackedTokenId: settings_id exceeds 30-bit limit",
+    );
+    assert!(
+        Into::<u64, u256>::into(minted_at) <= MINTED_AT_MASK,
+        "PackedTokenId: minted_at exceeds 35-bit limit",
+    );
+    assert!(
+        Into::<u32, u256>::into(start_delay) <= START_DELAY_MASK,
+        "PackedTokenId: start_delay exceeds 25-bit limit",
+    );
+    assert!(
+        Into::<u32, u256>::into(end_delay) <= END_DELAY_MASK,
+        "PackedTokenId: end_delay exceeds 25-bit limit",
+    );
+    assert!(
+        Into::<u32, u256>::into(objective_id) <= OBJECTIVE_ID_MASK,
+        "PackedTokenId: objective_id exceeds 30-bit limit",
+    );
 
     // Build packed value using u256 for intermediate calculations
     let mut packed: u256 = 0;
