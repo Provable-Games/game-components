@@ -556,10 +556,16 @@ pub mod CoreTokenComponent {
             let mut erc721_mut2 = ERC721::get_component_mut(ref contract_mut2);
             erc721_mut2.mint(token_owner, new_token_id.into());
 
-            // Migrate player name and client url to new token_id
+            // Migrate player name to new token_id
             let old_name = self.token_player_names.entry(token_id).read();
             if old_name != 0 {
                 self.token_player_names.entry(new_token_id).write(old_name);
+            }
+
+            // Migrate client url to new token_id
+            let old_url: ByteArray = self.token_client_url.entry(token_id).read();
+            if old_url.len() > 0 {
+                self.token_client_url.entry(new_token_id).write(old_url);
             }
 
             // Set new player name if provided (overrides old)
