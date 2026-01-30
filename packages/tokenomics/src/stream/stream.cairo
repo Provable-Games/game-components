@@ -12,13 +12,14 @@
 pub mod StreamComponent {
     use ERC20Component::InternalTrait as ERC20InternalTrait;
     use core::hash::{HashStateExTrait, HashStateTrait};
-    use core::num::traits::Zero;
+    use core::num::traits::{Sqrt, Zero};
     use core::poseidon::PoseidonTrait;
     use ekubo::interfaces::core::{ICoreDispatcher, ICoreDispatcherTrait};
     use ekubo::interfaces::erc20::IERC20Dispatcher as EkuboIERC20Dispatcher;
     use ekubo::interfaces::extensions::twamm::OrderKey;
     use ekubo::interfaces::positions::{IPositionsDispatcher, IPositionsDispatcherTrait};
     use ekubo::lens::token_registry::{ITokenRegistryDispatcher, ITokenRegistryDispatcherTrait};
+    use ekubo::math::ticks::sqrt_ratio_to_tick;
     use ekubo::types::i129::i129;
     use ekubo::types::keys::PoolKey;
     use game_components_interfaces::tokenomics::stream::{
@@ -49,7 +50,6 @@ pub mod StreamComponent {
         /// Primary pool configuration (for liquidity)
         Stream_primary_paired_token: ContractAddress,
         Stream_primary_fee: u128,
-        Stream_primary_initial_tick: i129,
         Stream_primary_stream_token_amount: u128,
         Stream_primary_paired_token_amount: u128,
         Stream_primary_min_liquidity: u128,
@@ -263,7 +263,9 @@ pub mod StreamComponent {
             // Initialize pool first
             let pool_key = self._get_primary_pool_key();
             let core_dispatcher = self.Stream_core_dispatcher.read();
-            let initial_tick = self.Stream_primary_initial_tick.read();
+
+            // Calculate initial tick from token amounts
+            let initial_tick = self._calculate_initial_tick();
             let pool_id = core_dispatcher.initialize_pool(pool_key, initial_tick);
             self.Stream_pool_id.write(pool_id);
 
@@ -397,7 +399,6 @@ pub mod StreamComponent {
             // Store liquidity config
             self.Stream_primary_paired_token.write(liquidity_config.paired_token);
             self.Stream_primary_fee.write(liquidity_config.fee);
-            self.Stream_primary_initial_tick.write(liquidity_config.initial_tick);
             self.Stream_primary_stream_token_amount.write(liquidity_config.stream_token_amount);
             self.Stream_primary_paired_token_amount.write(liquidity_config.paired_token_amount);
             self.Stream_primary_min_liquidity.write(liquidity_config.min_liquidity);
@@ -492,6 +493,51 @@ pub mod StreamComponent {
                     extension,
                 }
             }
+        }
+
+        /// Calculate initial tick from token amounts using Ekubo's math utilities
+        ///
+        /// The tick is derived from the price ratio:
+        ///   price = token1_amount / token0_amount
+        ///   sqrt_ratio = sqrt(price) * 2^128
+        ///   tick = sqrt_ratio_to_tick(sqrt_ratio)
+        ///
+        /// Token ordering is determined at runtime based on contract addresses.
+        fn _calculate_initial_tick(self: @ComponentState<TContractState>) -> i129 {
+            let this_token = get_contract_address();
+            let paired_token = self.Stream_primary_paired_token.read();
+            let stream_amount: u256 = self.Stream_primary_stream_token_amount.read().into();
+            let paired_amount: u256 = self.Stream_primary_paired_token_amount.read().into();
+
+            // Determine token ordering: Ekubo uses token0 < token1 by address
+            let (token0_amount, token1_amount) = if this_token < paired_token {
+                // stream token is token0
+                (stream_amount, paired_amount)
+            } else {
+                // stream token is token1, paired is token0
+                (paired_amount, stream_amount)
+            };
+
+            // Calculate sqrt_ratio in 128.128 fixed point format
+            // sqrt_ratio = sqrt(token1_amount / token0_amount) * 2^128
+            //
+            // To avoid u256 overflow, we split the computation:
+            // 1. Compute scaled_ratio = token1 * 2^128 / token0 (fits in u256 for reasonable
+            // amounts)
+            // 2. sqrt(scaled_ratio) gives sqrt(token1/token0) * 2^64
+            // 3. Multiply by 2^64 to get sqrt_ratio in 128.128 format
+            //
+            // Using identity: sqrt(a * 2^256 / b) = sqrt(a * 2^128 / b) * 2^64
+            // 2^128 = 340282366920938463463374607431768211456
+            const TWO_POW_128: u256 = 0x100000000000000000000000000000000;
+            // 2^64 = 18446744073709551616
+            const TWO_POW_64: u256 = 0x10000000000000000;
+
+            let scaled_ratio = (token1_amount * TWO_POW_128) / token0_amount;
+            let sqrt_scaled: u256 = scaled_ratio.sqrt().into();
+            let sqrt_ratio = sqrt_scaled * TWO_POW_64;
+
+            sqrt_ratio_to_tick(sqrt_ratio)
         }
 
         /// Build an OrderKey from a stored distribution order

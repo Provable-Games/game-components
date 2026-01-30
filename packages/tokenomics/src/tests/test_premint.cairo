@@ -218,7 +218,6 @@ fn build_invalid_premint_calldata(params: InvalidPremintTestParams) -> Array<fel
     let liquidity_config = game_components_tokenomics::LiquidityConfig {
         paired_token,
         fee: 170141183460469235273462165868118016,
-        initial_tick: ekubo::types::i129::i129 { mag: 0, sign: false },
         stream_token_amount: 1000 * TOKEN_UNIT,
         paired_token_amount: 100 * TOKEN_UNIT,
         min_liquidity: 1,

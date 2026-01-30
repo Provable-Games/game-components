@@ -46,7 +46,6 @@ fn deploy_stream_token_with_orders(order_count: u32) -> StreamTokenSetup {
     let liquidity_config = LiquidityConfig {
         paired_token,
         fee: defaults::DEFAULT_FEE,
-        initial_tick: ekubo::types::i129::i129 { mag: 0, sign: false },
         stream_token_amount: 1000_u128 * 1_000_000_000_000_000_000,
         paired_token_amount: 100_u128 * 1_000_000_000_000_000_000,
         min_liquidity: 1,

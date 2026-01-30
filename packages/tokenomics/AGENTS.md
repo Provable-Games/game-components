@@ -103,7 +103,6 @@ pub struct DistributionOrder {
 pub struct LiquidityConfig {
     pub paired_token: ContractAddress,
     pub fee: u128,
-    pub initial_tick: i129,
     pub stream_token_amount: u128,
     pub paired_token_amount: u128,
     pub min_liquidity: u128,

@@ -1,5 +1,4 @@
 use ekubo::interfaces::extensions::twamm::OrderKey;
-use ekubo::types::i129::i129;
 use starknet::ContractAddress;
 
 /// Configuration for a single distribution order
@@ -52,8 +51,6 @@ pub struct LiquidityConfig {
     pub paired_token: ContractAddress,
     /// Pool fee tier
     pub fee: u128,
-    /// Initial price tick for the pool
-    pub initial_tick: i129,
     /// Amount of stream tokens for initial liquidity
     pub stream_token_amount: u128,
     /// Amount of paired tokens for initial liquidity

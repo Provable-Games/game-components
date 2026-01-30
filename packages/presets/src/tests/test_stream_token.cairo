@@ -12,7 +12,6 @@
 // - Deployment state machine
 // - Factory-only setup functions
 
-use ekubo::types::i129::i129;
 use game_components_interfaces::tokenomics::stream::{
     DistributionOrder, IStreamTokenDispatcher, IStreamTokenDispatcherTrait,
     IStreamTokenSetupDispatcher, IStreamTokenSetupDispatcherTrait, LiquidityConfig,
@@ -100,7 +99,6 @@ fn deploy_stream_token() -> StreamTokenSetup {
     let liquidity_config = LiquidityConfig {
         paired_token,
         fee: DEFAULT_FEE,
-        initial_tick: i129 { mag: 0, sign: false },
         stream_token_amount: 1000_u128 * ERC20_UNIT,
         paired_token_amount: 100_u128 * ERC20_UNIT,
         min_liquidity: 1,
@@ -164,7 +162,6 @@ fn deploy_stream_token_with_multiple_orders() -> StreamTokenSetup {
     let liquidity_config = LiquidityConfig {
         paired_token,
         fee: DEFAULT_FEE,
-        initial_tick: i129 { mag: 0, sign: false },
         stream_token_amount: 1000_u128 * ERC20_UNIT,
         paired_token_amount: 100_u128 * ERC20_UNIT,
         min_liquidity: 1,
