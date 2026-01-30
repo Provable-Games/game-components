@@ -51,10 +51,13 @@ fn test_minimal_contract_minting() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Verify token was minted
-    assert!(token_id == 1, "First token ID should be 1");
+    assert!(token_id != 0, "Token ID should be nonzero");
     assert!(
         erc721_dispatcher.owner_of(token_id.into()) == ALICE(), "Token should be owned by ALICE",
     );
@@ -80,6 +83,9 @@ fn test_minimal_contract_minter_tracking() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     cheat_caller_address(token_dispatcher.contract_address, BOB(), CheatSpan::TargetCalls(1));
@@ -96,6 +102,9 @@ fn test_minimal_contract_minter_tracking() {
             Option::None,
             BOB(),
             false,
+            false,
+            1,
+            0,
         );
 
     // Verify minter tracking
@@ -127,6 +136,9 @@ fn test_minimal_contract_transfers() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Transfer token
@@ -158,6 +170,9 @@ fn test_minimal_contract_token_metadata() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Check metadata

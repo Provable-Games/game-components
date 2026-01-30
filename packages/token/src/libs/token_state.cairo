@@ -93,6 +93,8 @@ pub fn create_blank_token_metadata(
         has_context: false,
         // State
         minted_at: current_time,
+        paymaster: false,
+        metadata: 0,
     }
 }
 
@@ -136,6 +138,8 @@ pub fn create_game_token_metadata(
         has_context,
         // State
         minted_at: current_time,
+        paymaster: false,
+        metadata: 0,
     }
 }
 

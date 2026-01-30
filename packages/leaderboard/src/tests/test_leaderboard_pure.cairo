@@ -580,7 +580,8 @@ fn test_break_tie_large_id_difference() {
     let config = LeaderboardConfig { max_entries: 5, ascending: false, allow_ties: true };
 
     let entry1 = LeaderboardEntry { id: 1, score: 100 };
-    let entry2 = LeaderboardEntry { id: MAX_U64, score: 100 };
+    let max_id: felt252 = MAX_U64.into();
+    let entry2 = LeaderboardEntry { id: max_id, score: 100 };
 
     assert!(config.break_tie(@entry1, @entry2), "Lower ID (1) should win against MAX_U64");
     assert!(!config.break_tie(@entry2, @entry1), "MAX_U64 should lose against lower ID");
@@ -811,7 +812,8 @@ fn test_max_token_id() {
     let config = LeaderboardConfig { max_entries: 5, ascending: false, allow_ties: true };
     let entries: Array<LeaderboardEntry> = ArrayTrait::new();
 
-    let new_entry = LeaderboardEntry { id: MAX_U64, score: 100 };
+    let max_id: felt252 = MAX_U64.into();
+    let new_entry = LeaderboardEntry { id: max_id, score: 100 };
     let (updated, result) = LeaderboardOperationsImpl::insert_entry(
         @config, @entries, @new_entry, 0,
     );
@@ -820,7 +822,7 @@ fn test_max_token_id() {
         LeaderboardResult::Success => {},
         _ => panic!("Should successfully insert MAX_U64 id"),
     }
-    assert!(*updated.at(0).id == MAX_U64, "Should store MAX_U64 id");
+    assert!(*updated.at(0).id == max_id, "Should store MAX_U64 id");
 }
 
 #[test]
@@ -900,10 +902,10 @@ fn test_validate_tie_loses_tiebreaker() {
 #[fuzzer]
 fn test_fuzz_insert_random_score(score: u64, id_seed: u64) {
     // Ensure non-zero ID
-    let id = if id_seed == 0 {
+    let id: felt252 = if id_seed == 0 {
         1
     } else {
-        id_seed
+        id_seed.into()
     };
 
     let config = LeaderboardConfig { max_entries: 10, ascending: false, allow_ties: true };

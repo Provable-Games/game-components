@@ -31,7 +31,7 @@ fn ZERO_ADDRESS() -> ContractAddress {
 #[test]
 fn test_get_settings_id_valid_token() {
     let token_address = TOKEN_ADDRESS();
-    let token_id: u64 = 1;
+    let token_id: felt252 = 1;
     let expected_settings_id: u32 = 5;
 
     // Mock settings_id call
@@ -46,7 +46,7 @@ fn test_get_settings_id_valid_token() {
 #[test]
 fn test_get_settings_id_default_settings() {
     let token_address = TOKEN_ADDRESS();
-    let token_id: u64 = 1;
+    let token_id: felt252 = 1;
     let expected_settings_id: u32 = 0;
 
     mock_call(token_address, selector!("settings_id"), expected_settings_id, 1);
@@ -81,7 +81,7 @@ fn test_get_settings_id_different_tokens() {
 #[test]
 fn test_get_settings_id_max_token_id() {
     let token_address = TOKEN_ADDRESS();
-    let token_id: u64 = 18446744073709551615; // u64::MAX
+    let token_id: felt252 = 18446744073709551615; // u64::MAX as felt252
 
     mock_call(token_address, selector!("settings_id"), 42_u32, 1);
 
@@ -94,7 +94,7 @@ fn test_get_settings_id_max_token_id() {
 #[test]
 fn test_get_settings_id_max_settings_id() {
     let token_address = TOKEN_ADDRESS();
-    let token_id: u64 = 1;
+    let token_id: felt252 = 1;
 
     mock_call(token_address, selector!("settings_id"), MAX_U32, 1);
 
@@ -387,7 +387,7 @@ fn test_multiple_games_settings() {
 #[test]
 fn test_settings_persistence() {
     let token_address = TOKEN_ADDRESS();
-    let token_id: u64 = 1;
+    let token_id: felt252 = 1;
     let settings_id: u32 = 42;
 
     // Mock multiple settings_id calls returning same value
@@ -410,7 +410,7 @@ fn test_settings_persistence() {
 // Test SLIB-F-01: fuzz get_settings_id with random token_ids
 #[test]
 #[fuzzer]
-fn test_get_settings_id_fuzz_token_id(token_id: u64) {
+fn test_get_settings_id_fuzz_token_id(token_id: felt252) {
     let token_address = TOKEN_ADDRESS();
     let expected: u32 = 1;
 
@@ -446,7 +446,7 @@ fn test_create_settings_fuzz_id(settings_id: u32) {
 #[fuzzer]
 fn test_get_settings_id_fuzz_return_value(expected_settings_id: u32) {
     let token_address = TOKEN_ADDRESS();
-    let token_id: u64 = 1;
+    let token_id: felt252 = 1;
 
     mock_call(token_address, selector!("settings_id"), expected_settings_id, 1);
 

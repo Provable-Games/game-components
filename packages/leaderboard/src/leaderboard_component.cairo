@@ -31,7 +31,7 @@ pub mod LeaderboardComponent {
         // Per-tournament entry counts
         entries_count: Map<u64, u32>, // tournament_id -> count
         // Per-tournament entries: (tournament_id, position) -> token_id
-        entries: Map<(u64, u32), u64>,
+        entries: Map<(u64, u32), felt252>,
         // Per-tournament configuration
         max_entries: Map<u64, u32>, // tournament_id -> max_entries
         ascending: Map<u64, bool>, // tournament_id -> ascending
@@ -61,7 +61,7 @@ pub mod LeaderboardComponent {
         #[key]
         pub tournament_id: u64,
         #[key]
-        pub token_id: u64,
+        pub token_id: felt252,
         pub score: u64,
         pub position: u8,
     }
@@ -84,7 +84,9 @@ pub mod LeaderboardComponent {
     impl ComponentStore<
         TContractState, +HasComponent<TContractState>,
     > of Store<ComponentState<TContractState>> {
-        fn get_leaderboard(self: @ComponentState<TContractState>, tournament_id: u64) -> Span<u64> {
+        fn get_leaderboard(
+            self: @ComponentState<TContractState>, tournament_id: u64,
+        ) -> Span<felt252> {
             let count = self.entries_count.read(tournament_id);
             let mut result = ArrayTrait::new();
             let mut i = 0_u32;
@@ -141,7 +143,7 @@ pub mod LeaderboardComponent {
         fn submit_score(
             ref self: ComponentState<TContractState>,
             tournament_id: u64,
-            token_id: u64,
+            token_id: felt252,
             score: u64,
             position: u8,
         ) -> LeaderboardResult {
@@ -181,7 +183,7 @@ pub mod LeaderboardComponent {
         }
 
         fn get_position(
-            self: @ComponentState<TContractState>, tournament_id: u64, token_id: u64,
+            self: @ComponentState<TContractState>, tournament_id: u64, token_id: felt252,
         ) -> Option<u8> {
             self.get_entry_position(tournament_id, token_id)
         }

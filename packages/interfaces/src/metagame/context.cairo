@@ -6,15 +6,15 @@ pub const IMETAGAME_CONTEXT_ID: felt252 =
 
 #[starknet::interface]
 pub trait IMetagameContext<TState> {
-    fn has_context(self: @TState, token_id: u64) -> bool;
+    fn has_context(self: @TState, token_id: felt252) -> bool;
 }
 
 #[starknet::interface]
 pub trait IMetagameContextDetails<TState> {
-    fn context_details(self: @TState, token_id: u64) -> GameContextDetails;
+    fn context_details(self: @TState, token_id: felt252) -> GameContextDetails;
 }
 
 #[starknet::interface]
 pub trait IMetagameContextSVG<TState> {
-    fn context_svg(self: @TState, token_id: u64) -> ByteArray;
+    fn context_svg(self: @TState, token_id: felt252) -> ByteArray;
 }

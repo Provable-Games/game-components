@@ -129,8 +129,8 @@ pub mod FullTokenContract {
         fn royalty_info(
             self: @ContractState, token_id: u256, sale_price: u256,
         ) -> (ContractAddress, u256) {
-            let token_id_u64: u64 = token_id.try_into().unwrap();
-            let metadata = self.core_token.get_token_metadata(token_id_u64);
+            let token_id_felt: felt252 = token_id.try_into().unwrap();
+            let metadata = self.core_token.token_metadata(token_id_felt);
             let game_registry_address = self.core_token.game_registry_address();
 
             let (royalty_fraction, receiver) = if !game_registry_address.is_zero()
@@ -231,7 +231,7 @@ pub mod FullTokenContract {
 
             let token_metadata: TokenMetadata = self
                 .core_token
-                .get_token_metadata(token_id.try_into().unwrap());
+                .token_metadata(token_id.try_into().unwrap());
 
             // Try to get the token URI from the game contract if available
             if token_metadata.game_id != 0 {
@@ -239,12 +239,12 @@ pub mod FullTokenContract {
                 let game_registry_dispatcher = IMinigameRegistryDispatcher {
                     contract_address: game_registry_address,
                 };
-                let game_metadata = game_registry_dispatcher.game_metadata(token_metadata.game_id);
+                let game_metadata = game_registry_dispatcher
+                    .game_metadata(token_metadata.game_id.into());
                 let game_address = game_metadata.contract_address;
-                let renderer_address = self
-                    .core_token
-                    .renderer_address(token_id.try_into().unwrap());
-                let player_name = self.core_token.player_name(token_id.try_into().unwrap());
+                let token_id_felt: felt252 = token_id.try_into().unwrap();
+                let renderer_address = self.core_token.renderer_address(token_id_felt);
+                let player_name = self.core_token.player_name(token_id_felt);
                 let game_dispatcher = IMinigameDispatcher { contract_address: game_address };
                 let settings_address = game_dispatcher.settings_address();
 

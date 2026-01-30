@@ -28,14 +28,14 @@ pub trait LeaderboardStoreTrait<T> {
     fn submit_score_to_leaderboard(
         ref self: T,
         tournament_id: u64,
-        token_id: u64,
+        token_id: felt252,
         score: u64,
         position: u8,
         config: LeaderboardStoreConfig,
     ) -> LeaderboardResult;
 
     /// Get the position of an entry in the leaderboard (1-based)
-    fn get_entry_position(self: @T, tournament_id: u64, token_id: u64) -> Option<u8>;
+    fn get_entry_position(self: @T, tournament_id: u64, token_id: felt252) -> Option<u8>;
 
     /// Check if a score qualifies for the leaderboard
     fn qualifies_for_leaderboard(
@@ -73,7 +73,7 @@ pub impl LeaderboardStoreImpl<T, +Store<T>, +Drop<T>> of LeaderboardStoreTrait<T
     fn submit_score_to_leaderboard(
         ref self: T,
         tournament_id: u64,
-        token_id: u64,
+        token_id: felt252,
         score: u64,
         position: u8,
         config: LeaderboardStoreConfig,
@@ -123,7 +123,7 @@ pub impl LeaderboardStoreImpl<T, +Store<T>, +Drop<T>> of LeaderboardStoreTrait<T
     }
 
     /// Get the position of an entry in the leaderboard (1-based)
-    fn get_entry_position(self: @T, tournament_id: u64, token_id: u64) -> Option<u8> {
+    fn get_entry_position(self: @T, tournament_id: u64, token_id: felt252) -> Option<u8> {
         let token_ids = self.get_leaderboard(tournament_id);
 
         let mut i = 0_u32;
@@ -154,7 +154,7 @@ pub impl LeaderboardStoreImpl<T, +Store<T>, +Drop<T>> of LeaderboardStoreTrait<T
 /// Additional helper functions for leaderboard operations
 pub trait LeaderboardStoreHelpersTrait<T> {
     /// Get top N winners from the leaderboard
-    fn get_top_winners(self: @T, tournament_id: u64, count: u32) -> Array<u64>;
+    fn get_top_winners(self: @T, tournament_id: u64, count: u32) -> Array<felt252>;
 
     /// Check if the leaderboard is full
     fn is_leaderboard_full(self: @T, tournament_id: u64, max_entries: u32) -> bool;
@@ -178,7 +178,7 @@ pub trait LeaderboardStoreHelpersTrait<T> {
 /// Implementation of additional helper functions
 pub impl LeaderboardStoreHelpersImpl<T, +Store<T>, +Drop<T>> of LeaderboardStoreHelpersTrait<T> {
     /// Get top N winners from the leaderboard
-    fn get_top_winners(self: @T, tournament_id: u64, count: u32) -> Array<u64> {
+    fn get_top_winners(self: @T, tournament_id: u64, count: u32) -> Array<felt252> {
         let token_ids = self.get_leaderboard(tournament_id);
 
         // Take first N entries
@@ -241,7 +241,7 @@ pub impl LeaderboardStoreHelpersImpl<T, +Store<T>, +Drop<T>> of LeaderboardStore
 
 /// Internal helper functions
 /// Get score for a token from the game contract
-fn get_score_for_token(game_address: ContractAddress, token_id: u64) -> u64 {
+fn get_score_for_token(game_address: ContractAddress, token_id: felt252) -> u64 {
     let game_dispatcher = IGameDetailsDispatcher { contract_address: game_address };
     game_dispatcher.score(token_id)
 }

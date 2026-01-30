@@ -18,7 +18,7 @@ pub mod RendererComponent {
 
     #[storage]
     pub struct Storage {
-        token_renderers: Map<u64, ContractAddress>,
+        token_renderers: Map<felt252, ContractAddress>,
     }
 
     #[event]
@@ -30,7 +30,7 @@ pub mod RendererComponent {
     #[derive(Drop, starknet::Event)]
     pub struct TokenRendererUpdate {
         #[key]
-        pub token_id: u64,
+        pub token_id: felt252,
         pub renderer: ContractAddress,
     }
 
@@ -38,16 +38,18 @@ pub mod RendererComponent {
     pub impl Renderer<
         TContractState, +HasComponent<TContractState>, +Drop<TContractState>,
     > of IMinigameTokenRenderer<ComponentState<TContractState>> {
-        fn get_renderer(self: @ComponentState<TContractState>, token_id: u64) -> ContractAddress {
+        fn get_renderer(
+            self: @ComponentState<TContractState>, token_id: felt252,
+        ) -> ContractAddress {
             self.token_renderers.entry(token_id).read()
         }
 
-        fn has_custom_renderer(self: @ComponentState<TContractState>, token_id: u64) -> bool {
+        fn has_custom_renderer(self: @ComponentState<TContractState>, token_id: felt252) -> bool {
             let renderer = self.token_renderers.entry(token_id).read();
             address_utils::is_non_zero_address(renderer)
         }
 
-        fn reset_token_renderer(ref self: ComponentState<TContractState>, token_id: u64) {
+        fn reset_token_renderer(ref self: ComponentState<TContractState>, token_id: felt252) {
             // Get the contract address to check ownership
             let contract_address = get_contract_address();
             let erc721 = IERC721Dispatcher { contract_address };
@@ -62,7 +64,7 @@ pub mod RendererComponent {
         }
 
         fn reset_token_renderer_batch(
-            ref self: ComponentState<TContractState>, token_ids: Span<u64>,
+            ref self: ComponentState<TContractState>, token_ids: Span<felt252>,
         ) {
             let mut index = 0;
             loop {
@@ -76,7 +78,7 @@ pub mod RendererComponent {
         }
 
         fn get_renderer_batch(
-            self: @ComponentState<TContractState>, token_ids: Span<u64>,
+            self: @ComponentState<TContractState>, token_ids: Span<felt252>,
         ) -> Array<ContractAddress> {
             let mut results = array![];
             let mut index = 0;
@@ -99,13 +101,15 @@ pub mod RendererComponent {
     pub impl RendererOptionalImpl<
         TContractState, +HasComponent<TContractState>, +Drop<TContractState>,
     > of OptionalRenderer<TContractState> {
-        fn get_token_renderer(self: @TContractState, token_id: u64) -> Option<ContractAddress> {
+        fn get_token_renderer(self: @TContractState, token_id: felt252) -> Option<ContractAddress> {
             let component = HasComponent::get_component(self);
             let renderer = component.token_renderers.entry(token_id).read();
             address_utils::address_to_option(renderer)
         }
 
-        fn set_token_renderer(ref self: TContractState, token_id: u64, renderer: ContractAddress) {
+        fn set_token_renderer(
+            ref self: TContractState, token_id: felt252, renderer: ContractAddress,
+        ) {
             let mut component = HasComponent::get_component_mut(ref self);
             component.token_renderers.entry(token_id).write(renderer);
 

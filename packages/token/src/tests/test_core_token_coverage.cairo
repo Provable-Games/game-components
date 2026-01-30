@@ -32,17 +32,20 @@ fn test_core_token_edge_case_minting() {
             Option::Some('MaxPlayer'),
             Option::None,
             Option::Some(0),
-            Option::Some(MAX_LIFECYCLE_TIMESTAMP),
+            Option::Some(33554431),
             Option::None,
             Option::None,
             Option::None,
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     let metadata = test_contracts.test_token.token_metadata(token_id);
-    assert!(metadata.lifecycle.end == MAX_LIFECYCLE_TIMESTAMP, "Max end time should be set");
+    assert!(metadata.lifecycle.end == 33554431, "Max end time should be set");
 }
 
 #[test]
@@ -51,7 +54,7 @@ fn test_core_token_batch_operations() {
 
     // Batch mint tokens
     let batch_size: u32 = 5;
-    let mut token_ids: Array<u64> = array![];
+    let mut token_ids: Array<felt252> = array![];
     let mut i: u32 = 0;
 
     while i < batch_size {
@@ -69,18 +72,21 @@ fn test_core_token_batch_operations() {
                 Option::None,
                 ALICE(),
                 false,
+                false,
+                i.try_into().unwrap(),
+                0,
             );
         token_ids.append(token_id);
         i += 1;
     }
 
-    // Verify sequential IDs
+    // Verify unique IDs
     let mut j = 0;
     let token_ids_len: usize = token_ids.len();
     while j < token_ids_len - 1 {
         let current = *token_ids.at(j);
         let next = *token_ids.at(j + 1);
-        assert!(next == current + 1, "Token IDs should be sequential");
+        assert!(current != next, "Token IDs should be unique");
         j += 1;
     }
 
@@ -125,6 +131,9 @@ fn test_core_token_game_registry_operations() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     let game_address = test_contracts.test_token.token_game_address(token_id);
@@ -152,6 +161,9 @@ fn test_core_token_update_edge_cases() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Update with no changes
@@ -193,6 +205,9 @@ fn test_core_token_lifecycle_validation() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Zero end time (no expiry)
@@ -210,6 +225,9 @@ fn test_core_token_lifecycle_validation() {
             Option::None,
             BOB(),
             false,
+            false,
+            1,
+            0,
         );
 
     // Both zero (always playable)
@@ -227,6 +245,9 @@ fn test_core_token_lifecycle_validation() {
             Option::None,
             CHARLIE(),
             false,
+            false,
+            2,
+            0,
         );
 
     // Verify playability
@@ -270,6 +291,9 @@ fn test_core_token_minter_edge_cases() {
                 Option::None,
                 address,
                 false,
+                false,
+                0,
+                0,
             );
 
         // Verify minter is tracked
@@ -279,9 +303,11 @@ fn test_core_token_minter_edge_cases() {
         );
 
         let minter_id = test_contracts.test_token.minted_by(token_id);
-        assert!(minter_id > 0, "Should have valid minter ID");
+        assert!(minter_id != 0, "Should have valid minter ID");
 
-        let retrieved_address = test_contracts.test_token.get_minter_address(minter_id);
+        let retrieved_address = test_contracts
+            .test_token
+            .get_minter_address(minter_id.try_into().unwrap());
         assert!(retrieved_address == address, "Retrieved address should match");
 
         i += 1;
@@ -312,6 +338,9 @@ fn test_set_token_metadata_invalid_caller_should_panic() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Try to set metadata with BOB as caller (different from minter ALICE)
@@ -356,6 +385,9 @@ fn test_mint_with_zero_game_address_should_panic() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 }
 
@@ -411,6 +443,9 @@ fn test_update_player_name_basic() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Update player name as the token owner
@@ -444,6 +479,9 @@ fn test_update_player_name_multiple_updates() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Update player name multiple times as the token owner
@@ -505,6 +543,9 @@ fn test_update_player_name_non_owner() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Try to update name as BOB (non-owner)
@@ -534,6 +575,9 @@ fn test_update_player_name_empty_name() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Try to update with empty name (0 felt) as the token owner - should panic
@@ -563,6 +607,9 @@ fn test_update_player_name_special_characters() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Test various special names as the token owner

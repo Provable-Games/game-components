@@ -61,8 +61,8 @@ pub mod MockMinigameContract {
         #[substorage(v0)]
         src5: SRC5Component::Storage,
         // Token data storage
-        scores: Map<u64, u64>,
-        game_over: Map<u64, bool>,
+        scores: Map<felt252, u64>,
+        game_over: Map<felt252, bool>,
     }
 
     #[event]
@@ -80,15 +80,15 @@ pub mod MockMinigameContract {
 
     #[abi(embed_v0)]
     impl GameTokenDataImpl of IMinigameTokenData<ContractState> {
-        fn score(self: @ContractState, token_id: u64) -> u64 {
+        fn score(self: @ContractState, token_id: felt252) -> u64 {
             self.scores.entry(token_id).read()
         }
 
-        fn game_over(self: @ContractState, token_id: u64) -> bool {
+        fn game_over(self: @ContractState, token_id: felt252) -> bool {
             self.game_over.entry(token_id).read()
         }
 
-        fn score_batch(self: @ContractState, token_ids: Span<u64>) -> Array<u64> {
+        fn score_batch(self: @ContractState, token_ids: Span<felt252>) -> Array<u64> {
             let mut results = array![];
             let mut index = 0;
             loop {
@@ -101,7 +101,7 @@ pub mod MockMinigameContract {
             results
         }
 
-        fn game_over_batch(self: @ContractState, token_ids: Span<u64>) -> Array<bool> {
+        fn game_over_batch(self: @ContractState, token_ids: Span<felt252>) -> Array<bool> {
             let mut results = array![];
             let mut index = 0;
             loop {
@@ -117,14 +117,14 @@ pub mod MockMinigameContract {
 
     #[abi(embed_v0)]
     impl GameDetailsImpl of IMinigameDetails<ContractState> {
-        fn token_name(self: @ContractState, token_id: u64) -> ByteArray {
+        fn token_name(self: @ContractState, token_id: felt252) -> ByteArray {
             "Test Token"
         }
-        fn token_description(self: @ContractState, token_id: u64) -> ByteArray {
+        fn token_description(self: @ContractState, token_id: felt252) -> ByteArray {
             format!("Test Token Description for token {}", token_id)
         }
 
-        fn game_details(self: @ContractState, token_id: u64) -> Span<GameDetail> {
+        fn game_details(self: @ContractState, token_id: felt252) -> Span<GameDetail> {
             array![
                 GameDetail {
                     name: "Test Game Detail", value: format!("Test Value for token {}", token_id),
@@ -133,7 +133,7 @@ pub mod MockMinigameContract {
                 .span()
         }
 
-        fn token_name_batch(self: @ContractState, token_ids: Span<u64>) -> Array<ByteArray> {
+        fn token_name_batch(self: @ContractState, token_ids: Span<felt252>) -> Array<ByteArray> {
             let mut results = array![];
             let mut index = 0;
             loop {
@@ -146,7 +146,9 @@ pub mod MockMinigameContract {
             results
         }
 
-        fn token_description_batch(self: @ContractState, token_ids: Span<u64>) -> Array<ByteArray> {
+        fn token_description_batch(
+            self: @ContractState, token_ids: Span<felt252>,
+        ) -> Array<ByteArray> {
             let mut results = array![];
             let mut index = 0;
             loop {
@@ -160,7 +162,7 @@ pub mod MockMinigameContract {
         }
 
         fn game_details_batch(
-            self: @ContractState, token_ids: Span<u64>,
+            self: @ContractState, token_ids: Span<felt252>,
         ) -> Array<Span<GameDetail>> {
             let mut results = array![];
             let mut index = 0;
@@ -229,7 +231,7 @@ pub mod MockMinigameContract {
             objective_id >= 1 && objective_id <= 10
         }
 
-        fn completed_objective(self: @ContractState, token_id: u64, objective_id: u32) -> bool {
+        fn completed_objective(self: @ContractState, token_id: felt252, objective_id: u32) -> bool {
             false
         }
 
@@ -249,12 +251,12 @@ pub mod MockMinigameContract {
 
     #[abi(embed_v0)]
     impl ObjectivesDetailsImpl of IMinigameObjectivesDetails<ContractState> {
-        fn objectives_details(self: @ContractState, token_id: u64) -> Span<GameObjective> {
+        fn objectives_details(self: @ContractState, token_id: felt252) -> Span<GameObjective> {
             array![GameObjective { name: "Test Objective", value: "pending" }].span()
         }
 
         fn objectives_details_batch(
-            self: @ContractState, token_ids: Span<u64>,
+            self: @ContractState, token_ids: Span<felt252>,
         ) -> Array<Span<GameObjective>> {
             let mut results = array![];
             let mut index = 0;

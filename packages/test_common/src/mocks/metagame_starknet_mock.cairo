@@ -14,7 +14,10 @@ pub trait IMetagameStarknetMock<TContractState> {
         renderer_address: Option<ContractAddress>,
         to: ContractAddress,
         soulbound: bool,
-    ) -> u64;
+        paymaster: bool,
+        salt: u16,
+        metadata: u16,
+    ) -> felt252;
 }
 
 #[starknet::interface]
@@ -65,10 +68,10 @@ pub mod metagame_starknet_mock {
         // Metagame storage
         token_counter: u64,
         // Token context storage - mimicking the Dojo Context model
-        token_context_count: Map<u64, u32>, // token_id -> count of contexts
-        token_context_name: Map<(u64, u32), ByteArray>, // (token_id, index) -> context name
-        token_context_value: Map<(u64, u32), ByteArray>, // (token_id, index) -> context value
-        token_context_exists: Map<u64, bool> // token_id -> exists
+        token_context_count: Map<felt252, u32>, // token_id -> count of contexts
+        token_context_name: Map<(felt252, u32), ByteArray>, // (token_id, index) -> context name
+        token_context_value: Map<(felt252, u32), ByteArray>, // (token_id, index) -> context value
+        token_context_exists: Map<felt252, bool> // token_id -> exists
     }
 
     #[event]
@@ -84,14 +87,14 @@ pub mod metagame_starknet_mock {
 
     #[abi(embed_v0)]
     impl MetagameContextImpl of IMetagameContext<ContractState> {
-        fn has_context(self: @ContractState, token_id: u64) -> bool {
+        fn has_context(self: @ContractState, token_id: felt252) -> bool {
             self.token_context_exists.read(token_id)
         }
     }
 
     #[abi(embed_v0)]
     impl MetagameContextDetailsImpl of IMetagameContextDetails<ContractState> {
-        fn context_details(self: @ContractState, token_id: u64) -> GameContextDetails {
+        fn context_details(self: @ContractState, token_id: felt252) -> GameContextDetails {
             let context_count = self.token_context_count.read(token_id);
             let mut contexts = array![];
 
@@ -128,7 +131,10 @@ pub mod metagame_starknet_mock {
             renderer_address: Option<ContractAddress>,
             to: ContractAddress,
             soulbound: bool,
-        ) -> u64 {
+            paymaster: bool,
+            salt: u16,
+            metadata: u16,
+        ) -> felt252 {
             let context = array![GameContext { name: "Test Context 1", value: "Test Context" }]
                 .span();
             let context_details = GameContextDetails {
@@ -152,6 +158,9 @@ pub mod metagame_starknet_mock {
                     renderer_address,
                     to,
                     soulbound,
+                    paymaster,
+                    salt,
+                    metadata,
                 );
 
             // Store the context data in our local storage

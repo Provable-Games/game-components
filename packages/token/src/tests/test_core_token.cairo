@@ -48,6 +48,9 @@ fn test_token_metadata_valid_existing_token() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     let metadata = test_contracts.test_token.token_metadata(token_id);
@@ -58,13 +61,16 @@ fn test_token_metadata_valid_existing_token() {
 
 #[test]
 fn test_token_metadata_nonexistent_token() {
-    // TC-TM-002: Non-existent token returns default metadata
+    // TC-TM-002: Non-existent token - mutable state is default (immutable data comes from token_id)
     let test_contracts = setup();
 
     let metadata = test_contracts.test_token.token_metadata(999);
-    assert!(metadata.game_id == 0, "Non-existent token should have zero game_id");
-    assert!(metadata.minted_at == 0, "Non-existent token should have zero minted_at");
-    assert!(metadata.settings_id == 0, "Non-existent token should have zero settings_id");
+    // With packed token IDs, "immutable" fields are decoded from the token_id itself (999),
+    // so game_id = 999. Only mutable state is truly "default".
+    assert!(!metadata.game_over, "Non-existent token should not be game over");
+    assert!(
+        !metadata.completed_objective, "Non-existent token should not have completed objective",
+    );
 }
 
 #[test]
@@ -88,7 +94,10 @@ fn test_token_metadata_with_all_fields_set() {
             Option::None, // client_url
             Option::None, // renderer_address
             ALICE(),
-            true // soulbound
+            true, // soulbound
+            false,
+            0,
+            0,
         );
 
     let metadata = test_contracts.test_token.token_metadata(token_id);
@@ -140,6 +149,9 @@ fn test_is_playable_active_token_no_restrictions() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     assert!(test_contracts.test_token.is_playable(token_id), "Token should be playable");
@@ -166,6 +178,9 @@ fn test_is_playable_before_start_time() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     assert!(
@@ -196,6 +211,9 @@ fn test_is_playable_at_exact_start_time() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     assert!(test_contracts.test_token.is_playable(token_id), "Should be playable at start time");
@@ -225,6 +243,9 @@ fn test_is_playable_during_active_period() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     assert!(test_contracts.test_token.is_playable(token_id), "Should be playable during period");
@@ -237,7 +258,8 @@ fn test_is_playable_at_exact_end_time() {
     // TC-IP-005: Token at exact end time
     let test_contracts = setup();
 
-    start_cheat_block_timestamp(test_contracts.test_token.contract_address, CURRENT_TIME);
+    // Mint at PAST_TIME so end_delay > 0 (end_delay = CURRENT_TIME - PAST_TIME = 900)
+    start_cheat_block_timestamp(test_contracts.test_token.contract_address, PAST_TIME);
 
     let token_id = test_contracts
         .test_token
@@ -246,14 +268,20 @@ fn test_is_playable_at_exact_end_time() {
             Option::None,
             Option::None,
             Option::Some(PAST_TIME),
-            Option::Some(CURRENT_TIME), // end now
+            Option::Some(CURRENT_TIME), // end_delay = CURRENT_TIME - PAST_TIME = 900
             Option::None,
             Option::None,
             Option::None,
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
+
+    // Now advance to exact end time
+    start_cheat_block_timestamp(test_contracts.test_token.contract_address, CURRENT_TIME);
 
     assert!(!test_contracts.test_token.is_playable(token_id), "Should not be playable at end time");
 
@@ -263,9 +291,10 @@ fn test_is_playable_at_exact_end_time() {
 #[test]
 fn test_is_playable_after_end_time() {
     // TC-IP-006: Token after end time
+    // Mint at CURRENT_TIME with end=FUTURE_TIME, then advance past end
     let test_contracts = setup();
 
-    start_cheat_block_timestamp(test_contracts.test_token.contract_address, FAR_FUTURE_TIME);
+    start_cheat_block_timestamp(test_contracts.test_token.contract_address, CURRENT_TIME);
 
     let token_id = test_contracts
         .test_token
@@ -274,14 +303,21 @@ fn test_is_playable_after_end_time() {
             Option::None,
             Option::None,
             Option::Some(CURRENT_TIME),
-            Option::Some(FUTURE_TIME), // end before now
+            Option::Some(FUTURE_TIME),
             Option::None,
             Option::None,
             Option::None,
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
+
+    // Advance time past end
+    stop_cheat_block_timestamp(test_contracts.test_token.contract_address);
+    start_cheat_block_timestamp(test_contracts.test_token.contract_address, FAR_FUTURE_TIME);
 
     assert!(!test_contracts.test_token.is_playable(token_id), "Should not be playable after end");
 
@@ -307,6 +343,9 @@ fn test_is_playable_with_game_over_true() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Set game over
@@ -338,6 +377,9 @@ fn test_is_playable_with_completed_objective() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Mock objective completion check
@@ -375,9 +417,12 @@ fn test_mint_basic_with_game_address() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
-    assert!(token_id == 1, "First minted token should have id 1");
+    assert!(token_id != 0, "First minted token should have nonzero id");
 
     // Verify ERC721 ownership
     assert!(test_contracts.erc721.owner_of(token_id.into()) == ALICE(), "ALICE should own token");
@@ -402,6 +447,9 @@ fn test_mint_with_player_name() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     assert!(
@@ -428,6 +476,9 @@ fn test_mint_with_lifecycle_params() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     let metadata = test_contracts.test_token.token_metadata(token_id);
@@ -453,7 +504,10 @@ fn test_mint_soulbound_token() {
             Option::None,
             Option::None,
             ALICE(),
-            true // soulbound
+            true, // soulbound
+            false,
+            0,
+            0,
         );
 
     assert!(test_contracts.test_token.is_soulbound(token_id), "Token should be soulbound");
@@ -478,6 +532,9 @@ fn test_mint_blank_token_no_game() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     let metadata = test_contracts.test_token.token_metadata(token_id);
@@ -504,13 +561,21 @@ fn test_mint_with_zero_game_address_panics() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 }
 
 #[test]
 fn test_mint_with_max_timestamp_values() {
-    // TC-M-015: Mint with max timestamp values
+    // TC-M-015: Mint with max delay values
+    // Max delay is 2^25 - 1 = 33554431 seconds (~388 days)
     let test_contracts = setup();
+
+    // Use max delay from current time (block timestamp defaults to 0 in tests)
+    let max_delay: u64 = 33554431; // 2^25 - 1
+    let end_time = max_delay; // end_delay = end_time - current_time(0) = max_delay
 
     let token_id = test_contracts
         .test_token
@@ -518,18 +583,21 @@ fn test_mint_with_max_timestamp_values() {
             Option::Some(test_contracts.minigame.contract_address),
             Option::None,
             Option::None,
-            Option::Some(0),
-            Option::Some(MAX_LIFECYCLE_TIMESTAMP),
+            Option::None,
+            Option::Some(end_time),
             Option::None,
             Option::None,
             Option::None,
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     let metadata = test_contracts.test_token.token_metadata(token_id);
-    assert!(metadata.lifecycle.end == MAX_LIFECYCLE_TIMESTAMP, "Max end time should be set");
+    assert!(metadata.lifecycle.end == end_time, "End time should match");
 }
 
 #[test]
@@ -551,6 +619,9 @@ fn test_mint_sequential_token_ids() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     let token_id2 = test_contracts
@@ -567,9 +638,14 @@ fn test_mint_sequential_token_ids() {
             Option::None,
             BOB(),
             false,
+            false,
+            1,
+            0,
         );
 
-    assert!(token_id2 == token_id1 + 1, "Token IDs should be sequential");
+    assert!(token_id1 != 0, "First token should have nonzero id");
+    assert!(token_id2 != 0, "Second token should have nonzero id");
+    assert!(token_id1 != token_id2, "Token IDs should be unique");
 }
 
 #[test]
@@ -591,13 +667,16 @@ fn test_mint_with_renderer_address() {
             Option::Some(RENDERER_ADDRESS()),
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Verify custom renderer is stored (through has_custom_renderer if available)
     // The renderer_address view function will return the custom renderer
     // Note: renderer_address() requires registry in multi-game mode
     let _metadata = test_contracts.test_token.token_metadata(token_id);
-    assert!(token_id > 0, "Token should be minted with renderer");
+    assert!(token_id != 0, "Token should be minted with renderer");
 }
 
 // ============================================================================
@@ -632,6 +711,9 @@ fn test_mint_batch_single_mint() {
             renderer_address: Option::None,
             to: ALICE(),
             soulbound: false,
+            paymaster: false,
+            salt: 0,
+            metadata: 0,
         },
     ];
 
@@ -657,6 +739,9 @@ fn test_mint_batch_multiple_mints() {
             renderer_address: Option::None,
             to: ALICE(),
             soulbound: false,
+            paymaster: false,
+            salt: 0,
+            metadata: 0,
         },
         MintParams {
             game_address: Option::Some(test_contracts.minigame.contract_address),
@@ -670,6 +755,9 @@ fn test_mint_batch_multiple_mints() {
             renderer_address: Option::None,
             to: BOB(),
             soulbound: true,
+            paymaster: false,
+            salt: 1,
+            metadata: 0,
         },
         MintParams {
             game_address: Option::Some(test_contracts.minigame.contract_address),
@@ -683,15 +771,18 @@ fn test_mint_batch_multiple_mints() {
             renderer_address: Option::None,
             to: CHARLIE(),
             soulbound: false,
+            paymaster: false,
+            salt: 2,
+            metadata: 0,
         },
     ];
 
     let token_ids = test_contracts.test_token.mint_batch(mints);
     assert!(token_ids.len() == 3, "Should return 3 token_ids");
 
-    // Verify sequential
-    assert!(*token_ids.at(1) == *token_ids.at(0) + 1, "IDs should be sequential");
-    assert!(*token_ids.at(2) == *token_ids.at(1) + 1, "IDs should be sequential");
+    // Verify unique
+    assert!(*token_ids.at(0) != *token_ids.at(1), "IDs should be unique");
+    assert!(*token_ids.at(1) != *token_ids.at(2), "IDs should be unique");
 }
 
 #[test]
@@ -712,6 +803,9 @@ fn test_mint_batch_mixed_settings() {
             renderer_address: Option::None,
             to: ALICE(),
             soulbound: false,
+            paymaster: false,
+            salt: 0,
+            metadata: 0,
         },
         MintParams {
             game_address: Option::Some(test_contracts.minigame.contract_address),
@@ -725,6 +819,9 @@ fn test_mint_batch_mixed_settings() {
             renderer_address: Option::None,
             to: BOB(),
             soulbound: true,
+            paymaster: false,
+            salt: 1,
+            metadata: 0,
         },
     ];
 
@@ -764,6 +861,9 @@ fn test_mint_batch_large() {
                     renderer_address: Option::None,
                     to: ALICE(),
                     soulbound: false,
+                    paymaster: false,
+                    salt: i.try_into().unwrap(),
+                    metadata: 0,
                 },
             );
         i += 1;
@@ -818,6 +918,9 @@ fn test_set_token_metadata_wrong_minter_panics() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Try to set metadata as different caller
@@ -876,6 +979,9 @@ fn test_update_game_token_exists_game_running() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     mock_game.set_score(token_id, 100);
@@ -916,6 +1022,9 @@ fn test_update_game_reports_game_over() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Before update
@@ -950,6 +1059,9 @@ fn test_update_game_game_over_stays_true() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Set game over
@@ -984,6 +1096,9 @@ fn test_update_game_idempotent() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Update multiple times
@@ -1011,7 +1126,7 @@ fn test_update_game_batch_empty_panics() {
     // TC-UGB-001: Empty array
     let test_contracts = setup();
 
-    let token_ids: Array<u64> = array![];
+    let token_ids: Array<felt252> = array![];
     test_contracts.test_token.update_game_batch(token_ids.span());
 }
 
@@ -1034,9 +1149,12 @@ fn test_update_game_batch_single_token() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
-    let token_ids: Array<u64> = array![token_id];
+    let token_ids: Array<felt252> = array![token_id];
     token_dispatcher.update_game_batch(token_ids.span());
     // Should not panic - token updated successfully
 }
@@ -1060,6 +1178,9 @@ fn test_update_game_batch_multiple_tokens() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     let token_id2 = token_dispatcher
@@ -1075,13 +1196,16 @@ fn test_update_game_batch_multiple_tokens() {
             Option::None,
             BOB(),
             false,
+            false,
+            1,
+            0,
         );
 
     // Set different states
     mock_game.set_game_over(token_id1, true);
     mock_game.set_score(token_id2, 100);
 
-    let token_ids: Array<u64> = array![token_id1, token_id2];
+    let token_ids: Array<felt252> = array![token_id1, token_id2];
     token_dispatcher.update_game_batch(token_ids.span());
 
     // Verify updates applied
@@ -1112,6 +1236,9 @@ fn test_update_player_name_valid_owner() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     cheat_caller_address(
@@ -1142,6 +1269,9 @@ fn test_update_player_name_non_owner_panics() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Try as BOB
@@ -1183,6 +1313,9 @@ fn test_update_player_name_empty_name_panics() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     cheat_caller_address(
@@ -1210,6 +1343,9 @@ fn test_update_player_name_multiple_updates() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Use Indefinite span since we'll make multiple calls
@@ -1246,6 +1382,9 @@ fn test_update_player_name_max_felt252() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     let max_felt: felt252 = 0x7ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
@@ -1291,6 +1430,9 @@ fn test_update_player_name_batch_multiple_same_owner() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     let token_id2 = test_contracts
@@ -1307,6 +1449,9 @@ fn test_update_player_name_batch_multiple_same_owner() {
             Option::None,
             ALICE(),
             false,
+            false,
+            1,
+            0,
         );
 
     cheat_caller_address(
@@ -1346,6 +1491,9 @@ fn test_token_game_address_single_game_mode() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     let game_address = token_dispatcher.token_game_address(token_id);
@@ -1371,6 +1519,9 @@ fn test_token_game_address_multi_game_mode() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     let game_address = test_contracts.test_token.token_game_address(token_id);
@@ -1460,6 +1611,9 @@ fn test_security_game_over_transition_no_reversal() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Set game over
@@ -1496,7 +1650,10 @@ fn test_security_soulbound_transfer_blocked() {
             Option::None,
             Option::None,
             ALICE(),
-            true // soulbound
+            true, // soulbound
+            false,
+            0,
+            0,
         );
 
     // Verify soulbound
@@ -1527,6 +1684,9 @@ fn test_security_update_game_any_caller_allowed() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // BOB (non-owner) can call update_game
@@ -1559,6 +1719,9 @@ fn test_event_mint_with_player_name() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     let events = spy.get_events();
@@ -1584,6 +1747,9 @@ fn test_event_update_game_emits_metadata_update() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     let mut spy = spy_events();
@@ -1612,6 +1778,9 @@ fn test_event_update_player_name() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     let mut spy = spy_events();
@@ -1644,6 +1813,9 @@ fn test_event_batch_mint_multiple_transfers() {
             renderer_address: Option::None,
             to: ALICE(),
             soulbound: false,
+            paymaster: false,
+            salt: 0,
+            metadata: 0,
         },
         MintParams {
             game_address: Option::Some(test_contracts.minigame.contract_address),
@@ -1657,6 +1829,9 @@ fn test_event_batch_mint_multiple_transfers() {
             renderer_address: Option::None,
             to: BOB(),
             soulbound: false,
+            paymaster: false,
+            salt: 1,
+            metadata: 0,
         },
         MintParams {
             game_address: Option::Some(test_contracts.minigame.contract_address),
@@ -1670,6 +1845,9 @@ fn test_event_batch_mint_multiple_transfers() {
             renderer_address: Option::None,
             to: CHARLIE(),
             soulbound: false,
+            paymaster: false,
+            salt: 2,
+            metadata: 0,
         },
     ];
 
@@ -1713,6 +1891,9 @@ fn test_fuzz_is_playable_timestamps(start_offset: u64, duration: u64) {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Verify playability logic is consistent
@@ -1749,6 +1930,9 @@ fn test_fuzz_update_player_name(name: felt252) {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     cheat_caller_address(
@@ -1761,28 +1945,26 @@ fn test_fuzz_update_player_name(name: felt252) {
 
 #[test]
 #[fuzzer]
-fn test_fuzz_token_metadata_random_ids(token_id: u64) {
+fn test_fuzz_token_metadata_random_ids(token_id: felt252) {
     // FT-004: Fuzz token_metadata with random token_ids
     let test_contracts = setup();
 
-    // Non-existent tokens should return default metadata
+    // With packed token IDs, immutable data is decoded from the token_id itself.
+    // Non-existent tokens return decoded immutable fields + default mutable state.
     let metadata = test_contracts.test_token.token_metadata(token_id);
 
-    // Should not panic, just return defaults
-    if token_id > 0 {
-        // Only minted tokens have non-zero values
-        // Non-existent tokens have zero game_id
-        assert!(metadata.game_id == 0 || token_id == 0, "Non-existent should have zero game_id");
-    }
+    // Mutable state should always be default for non-minted tokens
+    assert!(!metadata.game_over, "Non-existent token should not be game over");
+    assert!(!metadata.completed_objective, "Non-existent should not have completed objective");
 }
 
 #[test]
 #[fuzzer]
 fn test_fuzz_token_id_monotonicity(seed: felt252) {
-    // Verify token IDs are always monotonically increasing
+    // Verify token IDs are always unique (packed IDs are not sequential)
     let test_contracts = setup();
 
-    let mut previous_id: u64 = 0;
+    let mut previous_id: felt252 = 0;
     let mut i: u32 = 0;
     while i < 5 {
         let token_id = test_contracts
@@ -1799,10 +1981,14 @@ fn test_fuzz_token_id_monotonicity(seed: felt252) {
                 Option::None,
                 ALICE(),
                 false,
+                false,
+                i.try_into().unwrap(),
+                0,
             );
 
-        if previous_id > 0 {
-            assert!(token_id == previous_id + 1, "Token IDs must be sequential");
+        assert!(token_id != 0, "Token ID must be nonzero");
+        if previous_id != 0 {
+            assert!(token_id != previous_id, "Token IDs must be unique");
         }
         previous_id = token_id;
         i += 1;
@@ -1851,6 +2037,9 @@ fn test_settings_id_view() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     let settings = test_contracts.test_token.settings_id(token_id);
@@ -1878,6 +2067,9 @@ fn test_objective_id_view() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     let objective = test_contracts.test_token.objective_id(token_id);
@@ -1906,13 +2098,18 @@ fn test_minted_by_view() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     let minted_by = test_contracts.test_token.minted_by(token_id);
-    assert!(minted_by > 0, "Should have valid minter ID");
+    assert!(minted_by != 0, "Should have valid minter ID");
 
     // Verify minter address can be retrieved
-    let minter_address = test_contracts.test_token.get_minter_address(minted_by);
+    let minter_address = test_contracts
+        .test_token
+        .get_minter_address(minted_by.try_into().unwrap());
     assert!(minter_address == ALICE(), "Minter address should match caller");
 }
 
@@ -1943,9 +2140,12 @@ fn test_minter_tracking_basic() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
-    // Second mint by ALICE
+    // Second mint by ALICE (different salt to avoid collision)
     let token_id2 = test_contracts
         .test_token
         .mint(
@@ -1960,6 +2160,9 @@ fn test_minter_tracking_basic() {
             Option::None,
             ALICE(),
             false,
+            false,
+            1,
+            0,
         );
 
     // Both tokens should have same minter ID (ALICE)
@@ -1990,6 +2193,9 @@ fn test_minter_exists() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     assert!(test_contracts.test_token.minter_exists(ALICE()), "ALICE should be a minter");
@@ -2019,6 +2225,9 @@ fn test_total_minters() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     cheat_caller_address(
@@ -2038,6 +2247,9 @@ fn test_total_minters() {
             Option::None,
             BOB(),
             false,
+            false,
+            1,
+            0,
         );
 
     let final_minters = test_contracts.test_token.total_minters();

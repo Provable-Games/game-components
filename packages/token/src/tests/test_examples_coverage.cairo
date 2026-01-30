@@ -36,6 +36,9 @@ fn test_optimized_contract_with_renderer() {
             Option::Some(renderer_address),
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Verify renderer is set
@@ -50,11 +53,11 @@ fn test_optimized_contract_with_renderer() {
 fn test_optimized_contract_lifecycle_edge_cases() {
     let test_contracts = setup();
 
-    // Test with lifecycle exactly at current time
+    // Test with lifecycle that ends 1 second after current time
     let current_time = 1000_u64;
     start_cheat_block_timestamp(test_contracts.test_token.contract_address, current_time);
 
-    // Mint token that starts now and ends now (instant expiry)
+    // Mint token that starts now and ends in 1 second
     let token_id = test_contracts
         .test_token
         .mint(
@@ -62,17 +65,27 @@ fn test_optimized_contract_lifecycle_edge_cases() {
             Option::None,
             Option::None,
             Option::Some(current_time),
-            Option::Some(current_time),
+            Option::Some(current_time + 1),
             Option::None,
             Option::None,
             Option::None,
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
-    // Should not be playable (end time equals current time)
-    assert!(!test_contracts.test_token.is_playable(token_id), "Token should not be playable");
+    // Should be playable now (start <= current_time < end)
+    assert!(test_contracts.test_token.is_playable(token_id), "Token should be playable now");
+
+    // Advance to end time - should no longer be playable
+    start_cheat_block_timestamp(test_contracts.test_token.contract_address, current_time + 1);
+    assert!(
+        !test_contracts.test_token.is_playable(token_id),
+        "Token should not be playable at end time",
+    );
 
     stop_cheat_block_timestamp(test_contracts.test_token.contract_address);
 }
@@ -95,6 +108,9 @@ fn test_optimized_contract_context_operations() {
             Option::None, // renderer_address
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Verify token exists and has context flag
@@ -108,7 +124,7 @@ fn test_optimized_contract_multi_minter_scenario() {
 
     // Multiple users mint in sequence
     let minters = array![ALICE(), BOB(), CHARLIE()];
-    let mut token_ids: Array<u64> = array![];
+    let mut token_ids: Array<felt252> = array![];
 
     let mut i = 0;
     while i < minters.len() {
@@ -131,6 +147,9 @@ fn test_optimized_contract_multi_minter_scenario() {
                 Option::None,
                 minter,
                 false,
+                false,
+                0,
+                0,
             );
 
         token_ids.append(token_id);
@@ -145,10 +164,12 @@ fn test_optimized_contract_multi_minter_scenario() {
     while j < token_ids.len() {
         let token_id = *token_ids.at(j);
         let minter_id = test_contracts.test_token.minted_by(token_id);
-        assert!(minter_id > 0, "Should have valid minter ID");
+        assert!(minter_id != 0, "Should have valid minter ID");
 
         // Verify minter lookup
-        let minter_address = test_contracts.test_token.get_minter_address(minter_id);
+        let minter_address = test_contracts
+            .test_token
+            .get_minter_address(minter_id.try_into().unwrap());
         assert!(minter_address == *minters.at(j), "Minter address should match");
         j += 1;
     };
@@ -175,6 +196,9 @@ fn test_optimized_contract_game_integration() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Update game state

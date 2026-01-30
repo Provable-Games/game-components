@@ -83,7 +83,7 @@ pub mod TicketBoothComponent {
     pub struct GameBought {
         #[key]
         pub player: ContractAddress,
-        pub token_id: u64,
+        pub token_id: felt252,
         pub payment_type: PaymentType,
     }
 
@@ -95,7 +95,7 @@ pub mod TicketBoothComponent {
             player_name: Option<felt252>,
             to: ContractAddress,
             soulbound: bool,
-        ) -> u64;
+        ) -> felt252;
 
         fn payment_token(self: @TContractState) -> ContractAddress;
         fn cost_to_play(self: @TContractState) -> u128;
@@ -127,7 +127,7 @@ pub mod TicketBoothComponent {
             player_name: Option<felt252>,
             to: ContractAddress,
             soulbound: bool,
-        ) -> u64 {
+        ) -> felt252 {
             assert!(get_block_timestamp() >= self.opening_time.read(), "Game not open yet");
 
             let caller = get_caller_address();
@@ -401,7 +401,7 @@ pub mod TicketBoothComponent {
             soulbound: bool,
             start_time: Option<u64>,
             expiration: Option<u64>,
-        ) -> u64 {
+        ) -> felt252 {
             let token_id = libs::mint(
                 self.game_token_address.read(),
                 Option::Some(self.game_address.read()),
@@ -415,6 +415,9 @@ pub mod TicketBoothComponent {
                 self.renderer_address.read(),
                 to,
                 soulbound,
+                false,
+                0,
+                0,
             );
 
             token_id

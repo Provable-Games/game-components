@@ -59,7 +59,10 @@ pub fn mint(
     renderer_address: Option<ContractAddress>,
     to: ContractAddress,
     soulbound: bool,
-) -> u64 {
+    paymaster: bool,
+    salt: u16,
+    metadata: u16,
+) -> felt252 {
     match game_address {
         // If the game address is provided, mint a token through the token contract the game
         // supports (could include its own game registry)
@@ -82,6 +85,9 @@ pub fn mint(
                     renderer_address,
                     to,
                     soulbound,
+                    paymaster,
+                    salt,
+                    metadata,
                 )
         },
         // If no game address is provided, mint a token through the default token contract (blank
@@ -103,6 +109,9 @@ pub fn mint(
                     renderer_address,
                     to,
                     soulbound,
+                    paymaster,
+                    salt,
+                    metadata,
                 )
         },
     }
@@ -115,10 +124,10 @@ pub fn mint(
 /// provided * `mints` - Array of mint parameters for each token
 ///
 /// # Returns
-/// * `Array<u64>` - Array of minted token IDs
+/// * `Array<felt252>` - Array of minted token IDs
 pub fn mint_batch(
     default_token_address: ContractAddress, mints: Array<MintMetagameParams>,
-) -> Array<u64> {
+) -> Array<felt252> {
     let mut token_ids = array![];
     let mut index = 0;
 
@@ -153,6 +162,9 @@ pub fn mint_batch(
             *mint_param.renderer_address,
             *mint_param.to,
             *mint_param.soulbound,
+            *mint_param.paymaster,
+            *mint_param.salt,
+            *mint_param.metadata,
         );
 
         token_ids.append(token_id);

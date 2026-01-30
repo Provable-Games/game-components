@@ -3,5 +3,5 @@
 #[derive(Drop, Serde)]
 pub struct Leaderboard {
     pub tournament_id: u64,
-    pub token_ids: Array<u64>,
+    pub token_ids: Array<felt252>,
 }

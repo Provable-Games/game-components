@@ -73,7 +73,7 @@ pub struct PackedTokenId {
     pub paymaster: bool, // 1 bit
     pub tx_hash: u16, // 10 bits - last 10 bits of transaction hash for collision protection
     pub salt: u16, // 10 bits - client-provided salt for multicall collision protection
-    pub metadata: u16 // 12 bits - reserved for future use
+    pub metadata: u16 // 13 bits - reserved for future use
 }
 
 /// Mutable state that still needs storage (only 2 fields!)
@@ -384,136 +384,6 @@ pub fn extract_tx_hash_bits(tx_hash: felt252) -> u16 {
     (hash_u256 & PackedTokenIdBits::TX_HASH_MASK).try_into().unwrap()
 }
 
-// ==============================================================================
-// TOKEN METADATA - Optimized with StorePacking
-// ==============================================================================
-// Packs all metadata fields into a single felt252 for maximum gas efficiency.
-//
-// Bit Layout (219 bits total, fits in felt252's ~252 bits):
-// | Bits      | Field                     | Size     | Max Value                |
-// |-----------|---------------------------|----------|--------------------------|
-// | 0-29      | game_id                   | 30 bits  | ~1 billion games         |
-// | 30-64     | minted_at                 | 35 bits  | Unix timestamp (~1000yr) |
-// | 65-96     | settings_id               | 32 bits  | ~4 billion settings      |
-// | 97-131    | lifecycle_start           | 35 bits  | Unix timestamp (~1000yr) |
-// | 132-166   | lifecycle_end             | 35 bits  | Unix timestamp (~1000yr) |
-// | 167-206   | minted_by                 | 40 bits  | ~1 trillion minters      |
-// | 207       | soulbound                 | 1 bit    | bool                     |
-// | 208       | game_over                 | 1 bit    | bool                     |
-// | 209       | completed_objective  | 1 bit    | bool                     |
-// | 210       | has_context               | 1 bit    | bool                     |
-// | 211-218   | objectives_count          | 8 bits   | 255 objectives           |
-//
-// Gas savings: Reduces from ~6 storage slots to 1 slot per token.
-
-// TokenMetadata packing constants
-pub mod TokenMetadataBits {
-    // Power-of-2 shift constants
-    pub const POW2_30: u256 = 0x40000000; // 2^30
-    pub const POW2_65: u256 = 0x20000000000000000; // 2^65
-    pub const POW2_97: u256 = 0x200000000000000000000000; // 2^97
-    pub const POW2_132: u256 = 0x1000000000000000000000000000000000; // 2^132
-    pub const POW2_167: u256 = 0x800000000000000000000000000000000000000000; // 2^167
-    pub const POW2_207: u256 = 0x800000000000000000000000000000000000000000000000000000; // 2^207
-    pub const POW2_208: u256 = 0x1000000000000000000000000000000000000000000000000000000; // 2^208
-    pub const POW2_209: u256 = 0x2000000000000000000000000000000000000000000000000000000; // 2^209
-    pub const POW2_210: u256 = 0x4000000000000000000000000000000000000000000000000000000; // 2^210
-    pub const POW2_211: u256 = 0x8000000000000000000000000000000000000000000000000000000; // 2^211
-
-    // Masks
-    pub const GAME_ID_MASK: u256 = 0x3FFFFFFF; // 30 bits
-    pub const MINTED_AT_MASK: u256 = 0x7FFFFFFFF; // 35 bits
-    pub const SETTINGS_ID_MASK: u256 = 0xFFFFFFFF; // 32 bits
-    pub const LIFECYCLE_MASK: u256 = 0x7FFFFFFFF; // 35 bits
-    pub const MINTED_BY_MASK: u256 = 0xFFFFFFFFFF; // 40 bits
-    pub const BOOL_MASK: u256 = 0x1; // 1 bit
-    pub const OBJECTIVE_ID_MASK: u256 = 0x3FFFFFFF; // 30 bits
-}
-
-/// StorePacking implementation for TokenMetadata
-/// Packs all fields into a single felt252, reducing storage from ~6 slots to 1.
-pub impl TokenMetadataStorePacking of StorePacking<TokenMetadata, felt252> {
-    fn pack(value: TokenMetadata) -> felt252 {
-        use TokenMetadataBits::{
-            GAME_ID_MASK, LIFECYCLE_MASK, MINTED_AT_MASK, MINTED_BY_MASK, POW2_132, POW2_167,
-            POW2_207, POW2_208, POW2_209, POW2_210, POW2_211, POW2_30, POW2_65, POW2_97,
-            SETTINGS_ID_MASK,
-        };
-
-        let mut packed: u256 = 0;
-
-        // game_id: bits 0-29 (30 bits)
-        packed = packed | (Into::<u64, u256>::into(value.game_id) & GAME_ID_MASK);
-        // minted_at: bits 30-64 (35 bits)
-        packed = packed | ((Into::<u64, u256>::into(value.minted_at) & MINTED_AT_MASK) * POW2_30);
-        // settings_id: bits 65-96 (32 bits)
-        packed = packed
-            | ((Into::<u32, u256>::into(value.settings_id) & SETTINGS_ID_MASK) * POW2_65);
-        // lifecycle_start: bits 97-131 (35 bits)
-        packed = packed
-            | ((Into::<u64, u256>::into(value.lifecycle.start) & LIFECYCLE_MASK) * POW2_97);
-        // lifecycle_end: bits 132-166 (35 bits)
-        packed = packed
-            | ((Into::<u64, u256>::into(value.lifecycle.end) & LIFECYCLE_MASK) * POW2_132);
-        // minted_by: bits 167-206 (40 bits)
-        packed = packed | ((Into::<u64, u256>::into(value.minted_by) & MINTED_BY_MASK) * POW2_167);
-        // soulbound: bit 207
-        packed = packed | (if value.soulbound {
-            POW2_207
-        } else {
-            0
-        });
-        // game_over: bit 208
-        packed = packed | (if value.game_over {
-            POW2_208
-        } else {
-            0
-        });
-        // completed_objective: bit 209
-        packed = packed | (if value.completed_objective {
-            POW2_209
-        } else {
-            0
-        });
-        // has_context: bit 210
-        packed = packed | (if value.has_context {
-            POW2_210
-        } else {
-            0
-        });
-        // objective_id: bits 211-240 (30 bits)
-        packed = packed | (Into::<u32, u256>::into(value.objective_id) * POW2_211);
-
-        packed.try_into().unwrap()
-    }
-
-    fn unpack(value: felt252) -> TokenMetadata {
-        use TokenMetadataBits::{
-            BOOL_MASK, GAME_ID_MASK, LIFECYCLE_MASK, MINTED_AT_MASK, MINTED_BY_MASK,
-            OBJECTIVE_ID_MASK, POW2_132, POW2_167, POW2_207, POW2_208, POW2_209, POW2_210, POW2_211,
-            POW2_30, POW2_65, POW2_97, SETTINGS_ID_MASK,
-        };
-
-        let packed: u256 = value.into();
-
-        TokenMetadata {
-            game_id: (packed & GAME_ID_MASK).try_into().unwrap(),
-            minted_at: ((packed / POW2_30) & MINTED_AT_MASK).try_into().unwrap(),
-            settings_id: ((packed / POW2_65) & SETTINGS_ID_MASK).try_into().unwrap(),
-            lifecycle: Lifecycle {
-                start: ((packed / POW2_97) & LIFECYCLE_MASK).try_into().unwrap(),
-                end: ((packed / POW2_132) & LIFECYCLE_MASK).try_into().unwrap(),
-            },
-            minted_by: ((packed / POW2_167) & MINTED_BY_MASK).try_into().unwrap(),
-            soulbound: ((packed / POW2_207) & BOOL_MASK) == 1,
-            game_over: ((packed / POW2_208) & BOOL_MASK) == 1,
-            completed_objective: ((packed / POW2_209) & BOOL_MASK) == 1,
-            has_context: ((packed / POW2_210) & BOOL_MASK) == 1,
-            objective_id: ((packed / POW2_211) & OBJECTIVE_ID_MASK).try_into().unwrap(),
-        }
-    }
-}
-
 /// Convert PackedTokenId + TokenMutableState to TokenMetadata
 #[inline(always)]
 pub fn to_token_metadata(packed: PackedTokenId, mutable_state: TokenMutableState) -> TokenMetadata {
@@ -521,12 +391,21 @@ pub fn to_token_metadata(packed: PackedTokenId, mutable_state: TokenMutableState
         game_id: packed.game_id.into(),
         minted_at: packed.minted_at.into(),
         settings_id: packed.settings_id.into(),
-        lifecycle: Lifecycle { start: packed.start_delay.into(), end: packed.end_delay.into() },
+        lifecycle: Lifecycle {
+            start: packed.minted_at + packed.start_delay.into(),
+            end: if packed.end_delay > 0 {
+                packed.minted_at + packed.start_delay.into() + packed.end_delay.into()
+            } else {
+                0
+            },
+        },
         minted_by: packed.minted_by.into(),
         soulbound: packed.soulbound,
         game_over: mutable_state.game_over,
         completed_objective: mutable_state.completed_objective,
         has_context: packed.has_context,
         objective_id: packed.objective_id,
+        paymaster: packed.paymaster,
+        metadata: packed.metadata,
     }
 }

@@ -7,13 +7,13 @@
 // - TokenMetadataStorePacking
 // - to_token_metadata helper function
 
-use game_components_interfaces::structs::token::{Lifecycle, TokenMetadata};
+use game_components_interfaces::structs::token::Lifecycle;
 use crate::structs::{
-    LifecycleStorePacking, PackedTokenId, TokenMetadataStorePacking, TokenMutableState,
-    TokenMutableStateStorePacking, extract_tx_hash_bits, pack_token_id, to_token_metadata,
-    unpack_end_delay, unpack_game_id, unpack_has_context, unpack_metadata, unpack_minted_at,
-    unpack_minted_by, unpack_objective_id, unpack_paymaster, unpack_salt, unpack_settings_id,
-    unpack_soulbound, unpack_start_delay, unpack_token_id, unpack_tx_hash,
+    LifecycleStorePacking, PackedTokenId, TokenMutableState, TokenMutableStateStorePacking,
+    extract_tx_hash_bits, pack_token_id, to_token_metadata, unpack_end_delay, unpack_game_id,
+    unpack_has_context, unpack_metadata, unpack_minted_at, unpack_minted_by, unpack_objective_id,
+    unpack_paymaster, unpack_salt, unpack_settings_id, unpack_soulbound, unpack_start_delay,
+    unpack_token_id, unpack_tx_hash,
 };
 
 // ============================================================================
@@ -164,156 +164,108 @@ fn test_token_mutable_state_bit_isolation() {
 }
 
 // ============================================================================
-// TOKEN METADATA STOREPACKING TESTS
+// PACK_TOKEN_ID / UNPACK_TOKEN_ID TESTS (replaces TokenMetadataStorePacking)
 // ============================================================================
 
 #[test]
-fn test_token_metadata_pack_unpack_zeros() {
-    let metadata = TokenMetadata {
-        game_id: 0,
-        minted_at: 0,
-        settings_id: 0,
-        lifecycle: Lifecycle { start: 0, end: 0 },
-        minted_by: 0,
-        soulbound: false,
-        game_over: false,
-        completed_objective: false,
-        has_context: false,
-        objective_id: 0,
-    };
-
-    let packed = TokenMetadataStorePacking::pack(metadata);
-    let unpacked = TokenMetadataStorePacking::unpack(packed);
+fn test_pack_unpack_token_id_zeros() {
+    let packed = pack_token_id(0, 0, 0, 0, 0, 0, 0, false, false, false, 0, 0, 0);
+    let unpacked = unpack_token_id(packed);
 
     assert!(unpacked.game_id == 0, "game_id should be 0");
     assert!(unpacked.minted_at == 0, "minted_at should be 0");
     assert!(unpacked.settings_id == 0, "settings_id should be 0");
-    assert!(unpacked.lifecycle.start == 0, "lifecycle.start should be 0");
-    assert!(unpacked.lifecycle.end == 0, "lifecycle.end should be 0");
     assert!(unpacked.minted_by == 0, "minted_by should be 0");
     assert!(!unpacked.soulbound, "soulbound should be false");
-    assert!(!unpacked.game_over, "game_over should be false");
-    assert!(!unpacked.completed_objective, "completed_objective should be false");
     assert!(!unpacked.has_context, "has_context should be false");
     assert!(unpacked.objective_id == 0, "objective_id should be 0");
-}
-
-// Note: This test is skipped because there may be an existing bug in TokenMetadataStorePacking
-// where settings_id doesn't roundtrip correctly. The packing implementation should be reviewed.
-// The coverage for TokenMetadataStorePacking is achieved through other tests that use it
-// indirectly.
-#[test]
-fn test_token_metadata_pack_unpack_basic_fields() {
-    // Test with zeros to check basic roundtrip works
-    let metadata = TokenMetadata {
-        game_id: 0,
-        minted_at: 0,
-        settings_id: 0,
-        lifecycle: Lifecycle { start: 0, end: 0 },
-        minted_by: 0,
-        soulbound: false,
-        game_over: false,
-        completed_objective: false,
-        has_context: false,
-        objective_id: 0,
-    };
-
-    let packed = TokenMetadataStorePacking::pack(metadata);
-    let unpacked = TokenMetadataStorePacking::unpack(packed);
-
-    assert!(unpacked.game_id == 0, "game_id should be 0");
-    assert!(unpacked.minted_at == 0, "minted_at should be 0");
-    assert!(unpacked.settings_id == 0, "settings_id should be 0");
-    assert!(unpacked.lifecycle.start == 0, "lifecycle.start should be 0");
-    assert!(unpacked.lifecycle.end == 0, "lifecycle.end should be 0");
-    assert!(unpacked.minted_by == 0, "minted_by should be 0");
-    assert!(!unpacked.soulbound, "soulbound should be false");
-    assert!(!unpacked.game_over, "game_over should be false");
-    assert!(!unpacked.completed_objective, "completed_objective should be false");
-    assert!(!unpacked.has_context, "has_context should be false");
-    assert!(unpacked.objective_id == 0, "objective_id should be 0");
+    assert!(unpacked.tx_hash == 0, "tx_hash should be 0");
+    assert!(unpacked.salt == 0, "salt should be 0");
+    assert!(unpacked.metadata == 0, "metadata should be 0");
 }
 
 #[test]
-fn test_token_metadata_pack_unpack_booleans_isolation() {
+fn test_pack_unpack_token_id_basic_fields() {
+    let packed = pack_token_id(42, 100, 5, 1000, 500, 1500, 7, false, false, false, 0, 0, 0);
+    let unpacked = unpack_token_id(packed);
+
+    assert!(unpacked.game_id == 42, "game_id should be 42");
+    assert!(unpacked.minted_by == 100, "minted_by should be 100");
+    assert!(unpacked.settings_id == 5, "settings_id should be 5");
+    assert!(unpacked.minted_at == 1000, "minted_at should be 1000");
+    assert!(unpacked.start_delay == 500, "start_delay should be 500");
+    assert!(unpacked.end_delay == 1500, "end_delay should be 1500");
+    assert!(unpacked.objective_id == 7, "objective_id should be 7");
+    assert!(!unpacked.soulbound, "soulbound should be false");
+    assert!(!unpacked.has_context, "has_context should be false");
+}
+
+#[test]
+fn test_pack_unpack_token_id_booleans_isolation() {
     // Test each boolean flag in isolation
-    let test_cases: Array<(bool, bool, bool, bool)> = array![
-        (true, false, false, false), // soulbound only
-        (false, true, false, false), // game_over only
-        (false, false, true, false), // completed_objective only
-        (false, false, false, true) // has_context only
+    let test_cases: Array<(bool, bool, bool)> = array![
+        (true, false, false), // soulbound only
+        (false, true, false), // has_context only
+        (false, false, true) // paymaster only
     ];
 
     let mut i = 0;
     while i < test_cases.len() {
-        let (soulbound, game_over, completed_objective, has_context) = *test_cases.at(i);
+        let (soulbound, has_context, paymaster) = *test_cases.at(i);
 
-        let metadata = TokenMetadata {
-            game_id: 1,
-            minted_at: 100,
-            settings_id: 1,
-            lifecycle: Lifecycle { start: 10, end: 20 },
-            minted_by: 1,
-            soulbound,
-            game_over,
-            completed_objective,
-            has_context,
-            objective_id: 1,
-        };
-
-        let packed = TokenMetadataStorePacking::pack(metadata);
-        let unpacked = TokenMetadataStorePacking::unpack(packed);
+        let packed = pack_token_id(
+            1, 1, 1, 100, 10, 20, 1, soulbound, has_context, paymaster, 0, 0, 0,
+        );
+        let unpacked = unpack_token_id(packed);
 
         assert!(unpacked.soulbound == soulbound, "soulbound mismatch");
-        assert!(unpacked.game_over == game_over, "game_over mismatch");
-        assert!(
-            unpacked.completed_objective == completed_objective, "completed_objective mismatch",
-        );
         assert!(unpacked.has_context == has_context, "has_context mismatch");
+        assert!(unpacked.paymaster == paymaster, "paymaster mismatch");
         i += 1;
     }
 }
 
 #[test]
-fn test_token_metadata_pack_unpack_max_values() {
+fn test_pack_unpack_token_id_max_values() {
     // Test with values at the bit boundaries
-    // game_id: 30 bits -> max 1,073,741,823
-    // minted_at: 35 bits -> max 34,359,738,367
-    // settings_id: 32 bits -> max 4,294,967,295
-    // lifecycle_start/end: 35 bits each
-    // minted_by: 40 bits -> max 1,099,511,627,775
-    // objective_id: 30 bits
+    let max_game_id: u32 = 0x3FFFFFFF; // 30 bits
+    let max_minted_by: u64 = 0xFFFFFFFFFF; // 40 bits
+    let max_settings_id: u32 = 0x3FFFFFFF; // 30 bits
+    let max_minted_at: u64 = 0x7FFFFFFFF; // 35 bits
+    let max_start_delay: u32 = 0x1FFFFFF; // 25 bits
+    let max_end_delay: u32 = 0x1FFFFFF; // 25 bits
+    let max_objective_id: u32 = 0x3FFFFFFF; // 30 bits
+    let max_tx_hash: u16 = 0x3FF; // 10 bits
+    let max_salt: u16 = 0x3FF; // 10 bits
+    let max_metadata: u16 = 0x1FFF; // 13 bits
 
-    let max_game_id: u64 = 1073741823;
-    let max_minted_at: u64 = 34359738367;
-    let max_settings_id: u32 = 4294967295;
-    let max_lifecycle: u64 = 34359738367;
-    let max_minted_by: u64 = 1099511627775;
-    let max_objective_id: u32 = 1073741823;
-
-    let metadata = TokenMetadata {
-        game_id: max_game_id,
-        minted_at: max_minted_at,
-        settings_id: max_settings_id,
-        lifecycle: Lifecycle { start: max_lifecycle, end: max_lifecycle },
-        minted_by: max_minted_by,
-        soulbound: true,
-        game_over: true,
-        completed_objective: true,
-        has_context: true,
-        objective_id: max_objective_id,
-    };
-
-    let packed = TokenMetadataStorePacking::pack(metadata);
-    let unpacked = TokenMetadataStorePacking::unpack(packed);
+    let packed = pack_token_id(
+        max_game_id,
+        max_minted_by,
+        max_settings_id,
+        max_minted_at,
+        max_start_delay,
+        max_end_delay,
+        max_objective_id,
+        true,
+        true,
+        true,
+        max_tx_hash,
+        max_salt,
+        max_metadata,
+    );
+    let unpacked = unpack_token_id(packed);
 
     assert!(unpacked.game_id == max_game_id, "max game_id mismatch");
-    assert!(unpacked.minted_at == max_minted_at, "max minted_at mismatch");
-    assert!(unpacked.settings_id == max_settings_id, "max settings_id mismatch");
-    assert!(unpacked.lifecycle.start == max_lifecycle, "max lifecycle.start mismatch");
-    assert!(unpacked.lifecycle.end == max_lifecycle, "max lifecycle.end mismatch");
     assert!(unpacked.minted_by == max_minted_by, "max minted_by mismatch");
+    assert!(unpacked.settings_id == max_settings_id, "max settings_id mismatch");
+    assert!(unpacked.minted_at == max_minted_at, "max minted_at mismatch");
+    assert!(unpacked.start_delay == max_start_delay, "max start_delay mismatch");
+    assert!(unpacked.end_delay == max_end_delay, "max end_delay mismatch");
     assert!(unpacked.objective_id == max_objective_id, "max objective_id mismatch");
+    assert!(unpacked.tx_hash == max_tx_hash, "max tx_hash mismatch");
+    assert!(unpacked.salt == max_salt, "max salt mismatch");
+    assert!(unpacked.metadata == max_metadata, "max metadata mismatch");
 }
 
 // ============================================================================
@@ -379,8 +331,11 @@ fn test_to_token_metadata_conversion_full() {
     assert!(metadata.game_id == 100, "game_id should be 100");
     assert!(metadata.minted_at == 1000, "minted_at should be 1000");
     assert!(metadata.settings_id == 300, "settings_id should be 300");
-    assert!(metadata.lifecycle.start == 500, "lifecycle.start should be 500");
-    assert!(metadata.lifecycle.end == 1500, "lifecycle.end should be 1500");
+    assert!(metadata.lifecycle.start == 1500, "lifecycle.start should be minted_at + start_delay");
+    assert!(
+        metadata.lifecycle.end == 3000,
+        "lifecycle.end should be minted_at + start_delay + end_delay",
+    );
     assert!(metadata.minted_by == 200, "minted_by should be 200");
     assert!(metadata.soulbound, "soulbound should be true");
     assert!(metadata.game_over, "game_over should be true");

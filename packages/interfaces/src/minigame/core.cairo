@@ -23,36 +23,39 @@ pub trait IMinigame<TState> {
         renderer_address: Option<ContractAddress>,
         to: ContractAddress,
         soulbound: bool,
-    ) -> u64;
+        paymaster: bool,
+        salt: u16,
+        metadata: u16,
+    ) -> felt252;
     /// Batch mint games with per-token parameters
-    fn mint_game_batch(self: @TState, mints: Array<MintGameParams>) -> Array<u64>;
+    fn mint_game_batch(self: @TState, mints: Array<MintGameParams>) -> Array<felt252>;
 }
 
 #[starknet::interface]
 pub trait IMinigameTokenData<TState> {
-    fn score(self: @TState, token_id: u64) -> u64;
-    fn game_over(self: @TState, token_id: u64) -> bool;
+    fn score(self: @TState, token_id: felt252) -> u64;
+    fn game_over(self: @TState, token_id: felt252) -> bool;
 
     // Batch operations
-    fn score_batch(self: @TState, token_ids: Span<u64>) -> Array<u64>;
-    fn game_over_batch(self: @TState, token_ids: Span<u64>) -> Array<bool>;
+    fn score_batch(self: @TState, token_ids: Span<felt252>) -> Array<u64>;
+    fn game_over_batch(self: @TState, token_ids: Span<felt252>) -> Array<bool>;
 }
 
 #[starknet::interface]
 pub trait IMinigameDetails<TState> {
-    fn token_name(self: @TState, token_id: u64) -> ByteArray;
-    fn token_description(self: @TState, token_id: u64) -> ByteArray;
-    fn game_details(self: @TState, token_id: u64) -> Span<GameDetail>;
+    fn token_name(self: @TState, token_id: felt252) -> ByteArray;
+    fn token_description(self: @TState, token_id: felt252) -> ByteArray;
+    fn game_details(self: @TState, token_id: felt252) -> Span<GameDetail>;
 
     // Batch operations
-    fn token_name_batch(self: @TState, token_ids: Span<u64>) -> Array<ByteArray>;
-    fn token_description_batch(self: @TState, token_ids: Span<u64>) -> Array<ByteArray>;
-    fn game_details_batch(self: @TState, token_ids: Span<u64>) -> Array<Span<GameDetail>>;
+    fn token_name_batch(self: @TState, token_ids: Span<felt252>) -> Array<ByteArray>;
+    fn token_description_batch(self: @TState, token_ids: Span<felt252>) -> Array<ByteArray>;
+    fn game_details_batch(self: @TState, token_ids: Span<felt252>) -> Array<Span<GameDetail>>;
 }
 
 #[starknet::interface]
 pub trait IMinigameDetailsSVG<TState> {
-    fn game_details_svg(self: @TState, token_id: u64) -> ByteArray;
+    fn game_details_svg(self: @TState, token_id: felt252) -> ByteArray;
 }
 
 #[starknet::interface]

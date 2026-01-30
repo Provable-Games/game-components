@@ -16,7 +16,7 @@ pub struct LeaderboardConfig {
 #[derive(Drop, Serde, Copy)]
 pub struct LeaderboardEntry {
     /// Unique identifier for the entry
-    pub id: u64,
+    pub id: felt252,
     /// Score value
     pub score: u64,
 }

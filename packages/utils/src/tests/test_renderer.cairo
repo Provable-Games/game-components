@@ -57,6 +57,8 @@ fn default_token_metadata() -> TokenMetadata {
         completed_objective: false,
         has_context: false,
         objective_id: 0,
+        paymaster: false,
+        metadata: 0,
     }
 }
 

@@ -419,7 +419,7 @@ fn test_get_objectives_address_when_not_set() {
 fn test_mint_game_with_all_parameters() {
     let token_address = addr(0x123);
     let renderer_address = addr(0x999);
-    let expected_token_id: u64 = 1;
+    let expected_token_id: felt252 = 1;
 
     mock_call(token_address, selector!("supports_interface"), true, 100);
     mock_call(token_address, selector!("game_registry_address"), addr(0x0), 100);
@@ -456,7 +456,10 @@ fn test_mint_game_with_all_parameters() {
             Option::Some("https://client.url"),
             Option::Some(renderer_address),
             ALICE(),
-            true // soulbound
+            true, // soulbound
+            false, // paymaster
+            0, // salt
+            0 // metadata
         );
 
     assert!(token_id == expected_token_id, "Token ID mismatch");
@@ -466,7 +469,7 @@ fn test_mint_game_with_all_parameters() {
 #[test]
 fn test_mint_game_with_minimal_parameters() {
     let token_address = addr(0x123);
-    let expected_token_id: u64 = 1;
+    let expected_token_id: felt252 = 1;
 
     mock_call(token_address, selector!("supports_interface"), true, 100);
     mock_call(token_address, selector!("game_registry_address"), addr(0x0), 100);
@@ -504,6 +507,9 @@ fn test_mint_game_with_minimal_parameters() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     assert!(token_id == expected_token_id, "Token ID mismatch");
@@ -513,7 +519,7 @@ fn test_mint_game_with_minimal_parameters() {
 #[test]
 fn test_mint_game_as_soulbound() {
     let token_address = addr(0x123);
-    let expected_token_id: u64 = 1;
+    let expected_token_id: felt252 = 1;
 
     mock_call(token_address, selector!("supports_interface"), true, 100);
     mock_call(token_address, selector!("game_registry_address"), addr(0x0), 100);
@@ -550,7 +556,10 @@ fn test_mint_game_as_soulbound() {
             Option::None,
             Option::None,
             ALICE(),
-            true // soulbound
+            true, // soulbound
+            false, // paymaster
+            0,
+            0,
         );
 
     assert!(token_id == expected_token_id, "Token ID mismatch");
@@ -560,7 +569,7 @@ fn test_mint_game_as_soulbound() {
 #[test]
 fn test_mint_game_as_transferable() {
     let token_address = addr(0x123);
-    let expected_token_id: u64 = 1;
+    let expected_token_id: felt252 = 1;
 
     mock_call(token_address, selector!("supports_interface"), true, 100);
     mock_call(token_address, selector!("game_registry_address"), addr(0x0), 100);
@@ -597,7 +606,10 @@ fn test_mint_game_as_transferable() {
             Option::None,
             Option::None,
             ALICE(),
-            false // not soulbound
+            false, // not soulbound
+            false, // paymaster
+            0,
+            0,
         );
 
     assert!(token_id == expected_token_id, "Token ID mismatch");
@@ -607,7 +619,7 @@ fn test_mint_game_as_transferable() {
 #[test]
 fn test_mint_game_with_player_name() {
     let token_address = addr(0x123);
-    let expected_token_id: u64 = 1;
+    let expected_token_id: felt252 = 1;
 
     mock_call(token_address, selector!("supports_interface"), true, 100);
     mock_call(token_address, selector!("game_registry_address"), addr(0x0), 100);
@@ -645,6 +657,9 @@ fn test_mint_game_with_player_name() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     assert!(token_id == expected_token_id, "Token ID mismatch");
@@ -654,7 +669,7 @@ fn test_mint_game_with_player_name() {
 #[test]
 fn test_mint_game_with_time_bounds() {
     let token_address = addr(0x123);
-    let expected_token_id: u64 = 1;
+    let expected_token_id: felt252 = 1;
 
     mock_call(token_address, selector!("supports_interface"), true, 100);
     mock_call(token_address, selector!("game_registry_address"), addr(0x0), 100);
@@ -692,6 +707,9 @@ fn test_mint_game_with_time_bounds() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     assert!(token_id == expected_token_id, "Token ID mismatch");
@@ -705,7 +723,7 @@ fn test_mint_game_with_time_bounds() {
 #[test]
 fn test_mint_game_batch_multiple() {
     let token_address = addr(0x123);
-    let expected_tokens: Array<u64> = array![1, 2, 3];
+    let expected_tokens: Array<felt252> = array![1, 2, 3];
 
     mock_call(token_address, selector!("supports_interface"), true, 100);
     mock_call(token_address, selector!("game_registry_address"), addr(0x0), 100);
@@ -743,6 +761,9 @@ fn test_mint_game_batch_multiple() {
             renderer_address: Option::None,
             to: ALICE(),
             soulbound: false,
+            paymaster: false,
+            salt: 0,
+            metadata: 0,
         },
         MintGameParams {
             player_name: Option::Some('Player2'),
@@ -755,6 +776,9 @@ fn test_mint_game_batch_multiple() {
             renderer_address: Option::None,
             to: BOB(),
             soulbound: false,
+            paymaster: false,
+            salt: 0,
+            metadata: 0,
         },
         MintGameParams {
             player_name: Option::Some('Player3'),
@@ -767,6 +791,9 @@ fn test_mint_game_batch_multiple() {
             renderer_address: Option::None,
             to: USER1(),
             soulbound: false,
+            paymaster: false,
+            salt: 0,
+            metadata: 0,
         },
     ];
 
@@ -779,7 +806,7 @@ fn test_mint_game_batch_multiple() {
 #[test]
 fn test_mint_game_batch_empty() {
     let token_address = addr(0x123);
-    let expected_tokens: Array<u64> = array![];
+    let expected_tokens: Array<felt252> = array![];
 
     mock_call(token_address, selector!("supports_interface"), true, 100);
     mock_call(token_address, selector!("game_registry_address"), addr(0x0), 100);
@@ -814,7 +841,7 @@ fn test_mint_game_batch_empty() {
 #[test]
 fn test_mint_game_batch_single() {
     let token_address = addr(0x123);
-    let expected_tokens: Array<u64> = array![1];
+    let expected_tokens: Array<felt252> = array![1];
 
     mock_call(token_address, selector!("supports_interface"), true, 100);
     mock_call(token_address, selector!("game_registry_address"), addr(0x0), 100);
@@ -852,6 +879,9 @@ fn test_mint_game_batch_single() {
             renderer_address: Option::None,
             to: ALICE(),
             soulbound: false,
+            paymaster: false,
+            salt: 0,
+            metadata: 0,
         },
     ];
 
@@ -864,7 +894,7 @@ fn test_mint_game_batch_single() {
 #[test]
 fn test_mint_game_batch_mixed_params() {
     let token_address = addr(0x123);
-    let expected_tokens: Array<u64> = array![1, 2];
+    let expected_tokens: Array<felt252> = array![1, 2];
 
     mock_call(token_address, selector!("supports_interface"), true, 100);
     mock_call(token_address, selector!("game_registry_address"), addr(0x0), 100);
@@ -901,7 +931,10 @@ fn test_mint_game_batch_mixed_params() {
             client_url: Option::None,
             renderer_address: Option::None,
             to: ALICE(),
-            soulbound: true // soulbound
+            soulbound: true, // soulbound
+            paymaster: false,
+            salt: 0,
+            metadata: 0,
         },
         MintGameParams {
             player_name: Option::None, // no player name
@@ -913,7 +946,10 @@ fn test_mint_game_batch_mixed_params() {
             client_url: Option::None,
             renderer_address: Option::None,
             to: BOB(),
-            soulbound: false // not soulbound
+            soulbound: false, // not soulbound
+            paymaster: false,
+            salt: 0,
+            metadata: 0,
         },
     ];
 
@@ -926,7 +962,7 @@ fn test_mint_game_batch_mixed_params() {
 #[test]
 fn test_mint_game_batch_multiple_recipients() {
     let token_address = addr(0x123);
-    let expected_tokens: Array<u64> = array![1, 2, 3, 4];
+    let expected_tokens: Array<felt252> = array![1, 2, 3, 4];
 
     mock_call(token_address, selector!("supports_interface"), true, 100);
     mock_call(token_address, selector!("game_registry_address"), addr(0x0), 100);
@@ -964,6 +1000,9 @@ fn test_mint_game_batch_multiple_recipients() {
             renderer_address: Option::None,
             to: ALICE(),
             soulbound: false,
+            paymaster: false,
+            salt: 0,
+            metadata: 0,
         },
         MintGameParams {
             player_name: Option::None,
@@ -976,6 +1015,9 @@ fn test_mint_game_batch_multiple_recipients() {
             renderer_address: Option::None,
             to: BOB(),
             soulbound: false,
+            paymaster: false,
+            salt: 0,
+            metadata: 0,
         },
         MintGameParams {
             player_name: Option::None,
@@ -988,6 +1030,9 @@ fn test_mint_game_batch_multiple_recipients() {
             renderer_address: Option::None,
             to: USER1(),
             soulbound: false,
+            paymaster: false,
+            salt: 0,
+            metadata: 0,
         },
         MintGameParams {
             player_name: Option::None,
@@ -1000,6 +1045,9 @@ fn test_mint_game_batch_multiple_recipients() {
             renderer_address: Option::None,
             to: USER2(),
             soulbound: false,
+            paymaster: false,
+            salt: 0,
+            metadata: 0,
         },
     ];
 
@@ -1049,7 +1097,7 @@ fn test_minigame_token_data_score_batch() {
         contract_address: minigame_dispatcher.contract_address,
     };
 
-    let token_ids: Array<u64> = array![1, 2, 3];
+    let token_ids: Array<felt252> = array![1, 2, 3];
     let scores = token_data_dispatcher.score_batch(token_ids.span());
 
     assert!(scores.len() == 3, "Should return 3 scores");
@@ -1067,7 +1115,7 @@ fn test_minigame_token_data_game_over_batch() {
         contract_address: minigame_dispatcher.contract_address,
     };
 
-    let token_ids: Array<u64> = array![1, 2, 3];
+    let token_ids: Array<felt252> = array![1, 2, 3];
     let game_overs = token_data_dispatcher.game_over_batch(token_ids.span());
 
     assert!(game_overs.len() == 3, "Should return 3 game_over values");
@@ -1085,7 +1133,7 @@ fn test_minigame_token_data_game_over_batch() {
 #[fuzzer]
 fn test_mint_game_fuzz_player_name(player_name: felt252) {
     let token_address = addr(0x123);
-    let expected_token_id: u64 = 1;
+    let expected_token_id: felt252 = 1;
 
     mock_call(token_address, selector!("supports_interface"), true, 100);
     mock_call(token_address, selector!("game_registry_address"), addr(0x0), 100);
@@ -1123,6 +1171,9 @@ fn test_mint_game_fuzz_player_name(player_name: felt252) {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     assert!(token_id == expected_token_id, "Token ID mismatch");
@@ -1133,7 +1184,7 @@ fn test_mint_game_fuzz_player_name(player_name: felt252) {
 #[fuzzer]
 fn test_mint_game_fuzz_settings_id(settings_id: u32) {
     let token_address = addr(0x123);
-    let expected_token_id: u64 = 1;
+    let expected_token_id: felt252 = 1;
 
     mock_call(token_address, selector!("supports_interface"), true, 100);
     mock_call(token_address, selector!("game_registry_address"), addr(0x0), 100);
@@ -1171,6 +1222,9 @@ fn test_mint_game_fuzz_settings_id(settings_id: u32) {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     assert!(token_id == expected_token_id, "Token ID mismatch");
@@ -1231,7 +1285,7 @@ fn test_minigame_details_token_name_batch() {
         contract_address: minigame_dispatcher.contract_address,
     };
 
-    let token_ids: Array<u64> = array![1, 2, 3];
+    let token_ids: Array<felt252> = array![1, 2, 3];
     let names = details_dispatcher.token_name_batch(token_ids.span());
 
     assert!(names.len() == 3, "Should return 3 names");
@@ -1249,7 +1303,7 @@ fn test_minigame_details_token_description_batch() {
         contract_address: minigame_dispatcher.contract_address,
     };
 
-    let token_ids: Array<u64> = array![1, 2];
+    let token_ids: Array<felt252> = array![1, 2];
     let descriptions = details_dispatcher.token_description_batch(token_ids.span());
 
     assert!(descriptions.len() == 2, "Should return 2 descriptions");
@@ -1266,7 +1320,7 @@ fn test_minigame_details_game_details_batch() {
         contract_address: minigame_dispatcher.contract_address,
     };
 
-    let token_ids: Array<u64> = array![1, 2, 3, 4];
+    let token_ids: Array<felt252> = array![1, 2, 3, 4];
     let details_batch = details_dispatcher.game_details_batch(token_ids.span());
 
     assert!(details_batch.len() == 4, "Should return 4 detail arrays");
@@ -1285,7 +1339,7 @@ fn test_minigame_details_empty_batch() {
         contract_address: minigame_dispatcher.contract_address,
     };
 
-    let empty_ids: Array<u64> = array![];
+    let empty_ids: Array<felt252> = array![];
 
     let names = details_dispatcher.token_name_batch(empty_ids.span());
     assert!(names.len() == 0, "Should return empty array for names");
@@ -1402,7 +1456,7 @@ fn test_objectives_details_batch() {
         contract_address: minigame_dispatcher.contract_address,
     };
 
-    let token_ids: Array<u64> = array![1, 2, 3];
+    let token_ids: Array<felt252> = array![1, 2, 3];
     let results = objectives_details_dispatcher.objectives_details_batch(token_ids.span());
 
     assert!(results.len() == 3, "Should return 3 objectives detail arrays");
@@ -1421,7 +1475,7 @@ fn test_objectives_details_batch_empty() {
         contract_address: minigame_dispatcher.contract_address,
     };
 
-    let empty_ids: Array<u64> = array![];
+    let empty_ids: Array<felt252> = array![];
     let results = objectives_details_dispatcher.objectives_details_batch(empty_ids.span());
 
     assert!(results.len() == 0, "Should return empty array");
@@ -1513,7 +1567,7 @@ fn test_initialize_with_registry_no_support() {
 // Test MN-F-03: Fuzz score with random token_id
 #[test]
 #[fuzzer]
-fn test_minigame_token_data_score_fuzz(token_id: u64) {
+fn test_minigame_token_data_score_fuzz(token_id: felt252) {
     let (minigame_dispatcher, _) = deploy_mock_game();
 
     let token_data_dispatcher = IMinigameTokenDataDispatcher {
@@ -1528,7 +1582,7 @@ fn test_minigame_token_data_score_fuzz(token_id: u64) {
 // Test MN-F-04: Fuzz game_over with random token_id
 #[test]
 #[fuzzer]
-fn test_minigame_token_data_game_over_fuzz(token_id: u64) {
+fn test_minigame_token_data_game_over_fuzz(token_id: felt252) {
     let (minigame_dispatcher, _) = deploy_mock_game();
 
     let token_data_dispatcher = IMinigameTokenDataDispatcher {
@@ -1544,7 +1598,7 @@ fn test_minigame_token_data_game_over_fuzz(token_id: u64) {
 #[fuzzer]
 fn test_mint_game_fuzz_objective_id(objective_id: u32) {
     let token_address = addr(0x123);
-    let expected_token_id: u64 = 1;
+    let expected_token_id: felt252 = 1;
 
     mock_call(token_address, selector!("supports_interface"), true, 100);
     mock_call(token_address, selector!("game_registry_address"), addr(0x0), 100);
@@ -1582,6 +1636,9 @@ fn test_mint_game_fuzz_objective_id(objective_id: u32) {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     assert!(token_id == expected_token_id, "Token ID mismatch");
@@ -1595,7 +1652,7 @@ fn test_mint_game_fuzz_objective_id(objective_id: u32) {
 #[test]
 fn test_mint_game_with_context() {
     let token_address = addr(0x123);
-    let expected_token_id: u64 = 1;
+    let expected_token_id: felt252 = 1;
 
     mock_call(token_address, selector!("supports_interface"), true, 100);
     mock_call(token_address, selector!("game_registry_address"), addr(0x0), 100);
@@ -1644,6 +1701,9 @@ fn test_mint_game_with_context() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     assert!(token_id == expected_token_id, "Token ID mismatch");
@@ -1653,7 +1713,7 @@ fn test_mint_game_with_context() {
 #[test]
 fn test_mint_game_batch_with_context() {
     let token_address = addr(0x123);
-    let expected_tokens: Array<u64> = array![1, 2];
+    let expected_tokens: Array<felt252> = array![1, 2];
 
     mock_call(token_address, selector!("supports_interface"), true, 100);
     mock_call(token_address, selector!("game_registry_address"), addr(0x0), 100);
@@ -1705,6 +1765,9 @@ fn test_mint_game_batch_with_context() {
             renderer_address: Option::None,
             to: ALICE(),
             soulbound: false,
+            paymaster: false,
+            salt: 0,
+            metadata: 0,
         },
         MintGameParams {
             player_name: Option::Some('Player2'),
@@ -1717,6 +1780,9 @@ fn test_mint_game_batch_with_context() {
             renderer_address: Option::None,
             to: BOB(),
             soulbound: true,
+            paymaster: false,
+            salt: 0,
+            metadata: 0,
         },
     ];
 
@@ -1738,7 +1804,7 @@ fn test_score_batch_iteration() {
         contract_address: minigame_dispatcher.contract_address,
     };
 
-    let token_ids: Array<u64> = array![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+    let token_ids: Array<felt252> = array![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
     let scores = token_data_dispatcher.score_batch(token_ids.span());
 
     assert!(scores.len() == 10, "Should return 10 scores");
@@ -1753,7 +1819,7 @@ fn test_game_over_batch_iteration() {
         contract_address: minigame_dispatcher.contract_address,
     };
 
-    let token_ids: Array<u64> = array![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+    let token_ids: Array<felt252> = array![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
     let results = token_data_dispatcher.game_over_batch(token_ids.span());
 
     assert!(results.len() == 10, "Should return 10 results");
@@ -1768,7 +1834,7 @@ fn test_token_name_batch_iteration() {
         contract_address: minigame_dispatcher.contract_address,
     };
 
-    let token_ids: Array<u64> = array![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+    let token_ids: Array<felt252> = array![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
     let names = details_dispatcher.token_name_batch(token_ids.span());
 
     assert!(names.len() == 10, "Should return 10 names");
@@ -1783,7 +1849,7 @@ fn test_token_description_batch_iteration() {
         contract_address: minigame_dispatcher.contract_address,
     };
 
-    let token_ids: Array<u64> = array![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+    let token_ids: Array<felt252> = array![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
     let descriptions = details_dispatcher.token_description_batch(token_ids.span());
 
     assert!(descriptions.len() == 10, "Should return 10 descriptions");
@@ -1798,7 +1864,7 @@ fn test_game_details_batch_iteration() {
         contract_address: minigame_dispatcher.contract_address,
     };
 
-    let token_ids: Array<u64> = array![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+    let token_ids: Array<felt252> = array![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
     let details = details_dispatcher.game_details_batch(token_ids.span());
 
     assert!(details.len() == 10, "Should return 10 detail arrays");
@@ -1858,7 +1924,7 @@ fn test_mock_objectives_details_batch_iteration() {
         contract_address: minigame_dispatcher.contract_address,
     };
 
-    let token_ids: Array<u64> = array![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+    let token_ids: Array<felt252> = array![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
     let results = objectives_details_dispatcher.objectives_details_batch(token_ids.span());
 
     assert!(results.len() == 10, "Should return 10 objectives detail arrays");
@@ -1954,7 +2020,7 @@ fn test_initialize_with_external_extension_addresses() {
 #[test]
 fn test_mint_game_batch_large() {
     let token_address = addr(0x123);
-    let mut expected_tokens: Array<u64> = array![];
+    let mut expected_tokens: Array<felt252> = array![];
     let mut mints: Array<MintGameParams> = array![];
 
     // Create 10 mints
@@ -1963,7 +2029,7 @@ fn test_mint_game_batch_large() {
         if i >= 10 {
             break;
         }
-        expected_tokens.append(i + 1);
+        expected_tokens.append((i + 1).into());
         mints
             .append(
                 MintGameParams {
@@ -1977,6 +2043,9 @@ fn test_mint_game_batch_large() {
                     renderer_address: Option::None,
                     to: ALICE(),
                     soulbound: false,
+                    paymaster: false,
+                    salt: 0,
+                    metadata: 0,
                 },
             );
         i += 1;
@@ -2015,7 +2084,7 @@ fn test_mint_game_batch_large() {
 #[test]
 fn test_mint_game_soulbound() {
     let token_address = addr(0x123);
-    let expected_token_id: u64 = 1;
+    let expected_token_id: felt252 = 1;
 
     mock_call(token_address, selector!("supports_interface"), true, 100);
     mock_call(token_address, selector!("game_registry_address"), addr(0x0), 100);
@@ -2052,7 +2121,10 @@ fn test_mint_game_soulbound() {
             Option::None,
             Option::None,
             ALICE(),
-            true // soulbound
+            true, // soulbound
+            false, // paymaster
+            0,
+            0,
         );
 
     assert!(token_id == expected_token_id, "Token ID mismatch");
@@ -2062,7 +2134,7 @@ fn test_mint_game_soulbound() {
 #[test]
 fn test_mint_game_with_client_url() {
     let token_address = addr(0x123);
-    let expected_token_id: u64 = 1;
+    let expected_token_id: felt252 = 1;
 
     mock_call(token_address, selector!("supports_interface"), true, 100);
     mock_call(token_address, selector!("game_registry_address"), addr(0x0), 100);
@@ -2100,6 +2172,9 @@ fn test_mint_game_with_client_url() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     assert!(token_id == expected_token_id, "Token ID mismatch");
@@ -2110,7 +2185,7 @@ fn test_mint_game_with_client_url() {
 fn test_mint_game_with_renderer_address() {
     let token_address = addr(0x123);
     let renderer_address = addr(0x999);
-    let expected_token_id: u64 = 1;
+    let expected_token_id: felt252 = 1;
 
     mock_call(token_address, selector!("supports_interface"), true, 100);
     mock_call(token_address, selector!("game_registry_address"), addr(0x0), 100);
@@ -2148,6 +2223,9 @@ fn test_mint_game_with_renderer_address() {
             Option::Some(renderer_address),
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     assert!(token_id == expected_token_id, "Token ID mismatch");

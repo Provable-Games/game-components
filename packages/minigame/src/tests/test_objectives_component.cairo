@@ -274,7 +274,7 @@ fn test_objectives_details_batch() {
     setter.complete_objective(1, 1);
     setter.complete_objective(2, 2);
 
-    let token_ids: Array<u64> = array![1, 2, 3];
+    let token_ids: Array<felt252> = array![1, 2, 3];
     let results = objectives_details_dispatcher.objectives_details_batch(token_ids.span());
 
     assert!(results.len() == 3, "Should return 3 results");
@@ -294,7 +294,7 @@ fn test_objectives_details_batch_empty() {
 
     let objectives_details_dispatcher = IMinigameObjectivesDetailsDispatcher { contract_address };
 
-    let empty_ids: Array<u64> = array![];
+    let empty_ids: Array<felt252> = array![];
     let results = objectives_details_dispatcher.objectives_details_batch(empty_ids.span());
 
     assert!(results.len() == 0, "Should return empty array");
@@ -307,7 +307,7 @@ fn test_objectives_details_batch_single() {
 
     let objectives_details_dispatcher = IMinigameObjectivesDetailsDispatcher { contract_address };
 
-    let single_id: Array<u64> = array![1];
+    let single_id: Array<felt252> = array![1];
     let results = objectives_details_dispatcher.objectives_details_batch(single_id.span());
 
     assert!(results.len() == 1, "Should return 1 result");
@@ -426,7 +426,7 @@ fn test_objective_exists_fuzz(objective_id: u32) {
 // Test OBJ-F-02: Fuzz completed_objective with random inputs
 #[test]
 #[fuzzer]
-fn test_completed_objective_fuzz(token_id: u64, objective_id: u32) {
+fn test_completed_objective_fuzz(token_id: felt252, objective_id: u32) {
     let contract_address = deploy_mock_objectives_contract();
 
     let objectives_dispatcher = IMinigameObjectivesDispatcher { contract_address };
@@ -438,7 +438,7 @@ fn test_completed_objective_fuzz(token_id: u64, objective_id: u32) {
 // Test OBJ-F-03: Fuzz objectives_svg with random token_id
 #[test]
 #[fuzzer]
-fn test_objectives_svg_fuzz(token_id: u64) {
+fn test_objectives_svg_fuzz(token_id: felt252) {
     let contract_address = deploy_mock_objectives_contract();
 
     let objectives_svg_dispatcher = IMinigameObjectivesSVGDispatcher { contract_address };
@@ -488,7 +488,7 @@ fn test_objectives_details_batch_iteration() {
     let objectives_details_dispatcher = IMinigameObjectivesDetailsDispatcher { contract_address };
 
     // Test with many token IDs
-    let token_ids: Array<u64> = array![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+    let token_ids: Array<felt252> = array![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
     let results = objectives_details_dispatcher.objectives_details_batch(token_ids.span());
 
     assert!(results.len() == 10, "Should return 10 results");

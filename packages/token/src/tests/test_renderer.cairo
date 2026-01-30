@@ -51,6 +51,9 @@ fn test_get_renderer_with_custom_renderer() {
             Option::Some(CUSTOM_RENDERER()),
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     assert!(
@@ -78,6 +81,9 @@ fn test_get_renderer_no_custom_renderer() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     assert!(
@@ -104,6 +110,9 @@ fn test_get_renderer_after_reset() {
             Option::Some(CUSTOM_RENDERER()),
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Reset as owner
@@ -139,6 +148,9 @@ fn test_has_custom_renderer_true() {
             Option::Some(RENDERER_ADDRESS()),
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     assert!(test_contracts.test_token.has_custom_renderer(token_id), "Should have custom renderer");
@@ -162,6 +174,9 @@ fn test_has_custom_renderer_false() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     assert!(
@@ -188,6 +203,9 @@ fn test_has_custom_renderer_zero_address_renderer() {
             Option::Some(ZERO_ADDRESS()),
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     assert!(
@@ -214,6 +232,9 @@ fn test_has_custom_renderer_after_reset() {
             Option::Some(CUSTOM_RENDERER()),
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Reset
@@ -249,6 +270,9 @@ fn test_reset_token_renderer_as_owner() {
             Option::Some(CUSTOM_RENDERER()),
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Verify renderer is set
@@ -289,6 +313,9 @@ fn test_reset_token_renderer_unauthorized() {
             Option::Some(CUSTOM_RENDERER()),
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Try to reset as BOB (not owner)
@@ -316,6 +343,9 @@ fn test_reset_token_renderer_already_zero() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Reset even though already zero
@@ -352,6 +382,9 @@ fn test_reset_token_renderer_batch_single() {
             Option::Some(CUSTOM_RENDERER()),
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Reset batch with single token
@@ -384,6 +417,9 @@ fn test_reset_token_renderer_batch_multiple() {
             Option::Some(CUSTOM_RENDERER()),
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     let token_id2 = test_contracts
@@ -400,6 +436,9 @@ fn test_reset_token_renderer_batch_multiple() {
             Option::Some(CUSTOM_RENDERER_2()),
             ALICE(),
             false,
+            false,
+            1,
+            0,
         );
 
     let token_id3 = test_contracts
@@ -416,6 +455,9 @@ fn test_reset_token_renderer_batch_multiple() {
             Option::Some(RENDERER_ADDRESS()),
             ALICE(),
             false,
+            false,
+            2,
+            0,
         );
 
     // Reset batch
@@ -450,6 +492,9 @@ fn test_reset_token_renderer_batch_empty() {
             Option::Some(CUSTOM_RENDERER()),
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Reset with empty batch - should be no-op
@@ -483,6 +528,9 @@ fn test_reset_token_renderer_batch_mixed_renderers() {
             Option::Some(CUSTOM_RENDERER()),
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Token without renderer
@@ -500,6 +548,9 @@ fn test_reset_token_renderer_batch_mixed_renderers() {
             Option::None,
             ALICE(),
             false,
+            false,
+            1,
+            0,
         );
 
     // Reset both
@@ -532,6 +583,9 @@ fn test_reset_token_renderer_batch_unauthorized_fails() {
             Option::Some(CUSTOM_RENDERER()),
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Try batch reset as BOB
@@ -562,6 +616,9 @@ fn test_get_renderer_batch_single() {
             Option::Some(CUSTOM_RENDERER()),
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     let results = test_contracts.test_token.get_renderer_batch(array![token_id].span());
@@ -587,6 +644,9 @@ fn test_get_renderer_batch_multiple() {
             Option::Some(CUSTOM_RENDERER()),
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     let token_id2 = test_contracts
@@ -603,6 +663,9 @@ fn test_get_renderer_batch_multiple() {
             Option::Some(CUSTOM_RENDERER_2()),
             ALICE(),
             false,
+            false,
+            1,
+            0,
         );
 
     let results = test_contracts.test_token.get_renderer_batch(array![token_id1, token_id2].span());
@@ -638,6 +701,9 @@ fn test_get_renderer_batch_mixed() {
             Option::Some(CUSTOM_RENDERER()),
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Without renderer
@@ -655,6 +721,9 @@ fn test_get_renderer_batch_mixed() {
             Option::None,
             ALICE(),
             false,
+            false,
+            1,
+            0,
         );
 
     let results = test_contracts.test_token.get_renderer_batch(array![token_id1, token_id2].span());
@@ -680,6 +749,9 @@ fn test_get_renderer_batch_matches_individual() {
             Option::Some(CUSTOM_RENDERER()),
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     let token_id2 = test_contracts
@@ -696,6 +768,9 @@ fn test_get_renderer_batch_matches_individual() {
             Option::None,
             ALICE(),
             false,
+            false,
+            1,
+            0,
         );
 
     let token_ids = array![token_id1, token_id2];
@@ -734,6 +809,9 @@ fn test_reset_token_renderer_emits_event() {
             Option::Some(CUSTOM_RENDERER()),
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     let mut spy = spy_events();
@@ -776,6 +854,9 @@ fn test_batch_reset_emits_multiple_events() {
             Option::Some(CUSTOM_RENDERER()),
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     let token_id2 = test_contracts
@@ -792,6 +873,9 @@ fn test_batch_reset_emits_multiple_events() {
             Option::Some(CUSTOM_RENDERER_2()),
             ALICE(),
             false,
+            false,
+            1,
+            0,
         );
 
     let mut spy = spy_events();
@@ -843,6 +927,9 @@ fn test_mint_with_renderer_emits_event() {
             Option::Some(CUSTOM_RENDERER()),
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Check for TokenRendererUpdate event during mint
@@ -905,6 +992,9 @@ fn test_renderer_persists_after_game_updates() {
             Option::Some(CUSTOM_RENDERER()),
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Update game
@@ -933,7 +1023,7 @@ fn test_fuzz_renderer_storage_consistency(token_offset: u8, renderer_felt: felt2
 
     // Mint tokens up to offset
     let mut i: u8 = 0;
-    let mut last_token_id: u64 = 0;
+    let mut last_token_id: felt252 = 0;
 
     while i <= token_offset {
         let renderer_opt = if i == token_offset {
@@ -957,6 +1047,9 @@ fn test_fuzz_renderer_storage_consistency(token_offset: u8, renderer_felt: felt2
                 renderer_opt,
                 ALICE(),
                 false,
+                false,
+                i.into(),
+                0,
             );
         i += 1;
     }

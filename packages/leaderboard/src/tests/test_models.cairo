@@ -68,10 +68,12 @@ fn test_leaderboard_token_ids_access() {
 
 #[test]
 fn test_leaderboard_token_ids_max_values() {
-    let leaderboard = Leaderboard { tournament_id: 1, token_ids: array![MAX_U64, MAX_U64 - 1] };
+    let max_id: felt252 = MAX_U64.into();
+    let max_id_minus_1: felt252 = (MAX_U64 - 1).into();
+    let leaderboard = Leaderboard { tournament_id: 1, token_ids: array![max_id, max_id_minus_1] };
 
-    assert!(*leaderboard.token_ids.at(0) == MAX_U64, "First should be MAX_U64");
-    assert!(*leaderboard.token_ids.at(1) == MAX_U64 - 1, "Second should be MAX_U64 - 1");
+    assert!(*leaderboard.token_ids.at(0) == max_id, "First should be MAX_U64");
+    assert!(*leaderboard.token_ids.at(1) == max_id_minus_1, "Second should be MAX_U64 - 1");
 }
 
 // ==============================================================================
@@ -103,7 +105,8 @@ fn test_leaderboard_serialize_with_tokens() {
 
 #[test]
 fn test_leaderboard_serialize_max_values() {
-    let leaderboard = Leaderboard { tournament_id: MAX_U64, token_ids: array![MAX_U64] };
+    let max_id: felt252 = MAX_U64.into();
+    let leaderboard = Leaderboard { tournament_id: MAX_U64, token_ids: array![max_id] };
 
     let mut output = array![];
     leaderboard.serialize(ref output);
@@ -150,11 +153,12 @@ fn test_leaderboard_deserialize_with_tokens() {
 #[test]
 fn test_leaderboard_roundtrip_serialization() {
     // Test with various configurations
+    let max_id: felt252 = MAX_U64.into();
     let configs: Array<Leaderboard> = array![
         Leaderboard { tournament_id: 0, token_ids: array![] },
         Leaderboard { tournament_id: 1, token_ids: array![1] },
         Leaderboard { tournament_id: 100, token_ids: array![1, 2, 3, 4, 5] },
-        Leaderboard { tournament_id: MAX_U64, token_ids: array![MAX_U64] },
+        Leaderboard { tournament_id: MAX_U64, token_ids: array![max_id] },
     ];
 
     let mut i = 0_u32;
@@ -227,13 +231,13 @@ fn test_fuzz_leaderboard_serialization_roundtrip(tournament_id: u64) {
 #[test]
 fn test_leaderboard_creation_large_array() {
     // Create a leaderboard with 50 token IDs
-    let mut token_ids = array![];
+    let mut token_ids: Array<felt252> = array![];
     let mut i: u64 = 1;
     loop {
         if i > 50 {
             break;
         }
-        token_ids.append(i);
+        token_ids.append(i.into());
         i += 1;
     }
 

@@ -97,6 +97,9 @@ fn test_validate_existing_objective() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Verify token was minted with objective
@@ -123,6 +126,9 @@ fn test_validate_no_objective() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Verify no objective
@@ -157,6 +163,9 @@ fn test_validate_nonexistent_objective() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 }
 
@@ -186,6 +195,9 @@ fn test_validate_large_objective_id() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 }
 
@@ -216,6 +228,9 @@ fn test_is_objective_completed_true() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // End game with score meeting objective
@@ -252,6 +267,9 @@ fn test_is_objective_completed_false() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // End game with score NOT meeting objective
@@ -285,6 +303,9 @@ fn test_is_objective_completed_no_objectives_contract() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Check metadata - should not have completed objective
@@ -346,6 +367,9 @@ fn test_mint_with_objective_id() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Verify
@@ -377,6 +401,9 @@ fn test_update_game_syncs_objective_completion() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Before update
@@ -421,6 +448,9 @@ fn test_create_objective_then_mint() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     assert!(test_contracts.test_token.objective_id(token_id) == 1, "Should reference objective 1");
@@ -449,6 +479,9 @@ fn test_objective_full_lifecycle() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // 3. Verify initial state
@@ -496,6 +529,9 @@ fn test_objective_id_view_with_objective() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     assert!(test_contracts.test_token.objective_id(token_id) == 1, "Should return objective_id 1");
@@ -519,6 +555,9 @@ fn test_objective_id_view_no_objective() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     assert!(test_contracts.test_token.objective_id(token_id) == 0, "Should return 0");
@@ -547,6 +586,9 @@ fn test_objective_id_batch_view() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     let token_id2 = test_contracts
@@ -563,6 +605,9 @@ fn test_objective_id_batch_view() {
             Option::None,
             BOB(),
             false,
+            false,
+            1,
+            0,
         );
 
     // Batch view
@@ -653,6 +698,9 @@ fn test_fuzz_objective_completion(target_score: u64, achieved_score: u64) {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Limit achieved_score for test
@@ -701,6 +749,9 @@ fn test_objective_progression_requires_update() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // End game but don't update yet
@@ -741,6 +792,9 @@ fn test_multiple_tokens_same_objective() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     let token_id2 = test_contracts
@@ -757,6 +811,9 @@ fn test_multiple_tokens_same_objective() {
             Option::None,
             BOB(),
             false,
+            false,
+            1,
+            0,
         );
 
     // Both should reference same objective

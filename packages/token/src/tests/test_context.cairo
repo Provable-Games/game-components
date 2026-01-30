@@ -41,6 +41,9 @@ fn test_context_through_metagame_mint() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Verify token has context flag set
@@ -72,6 +75,9 @@ fn test_mint_without_context() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Verify no context flag
@@ -105,6 +111,9 @@ fn test_context_with_lifecycle_combination() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Verify both lifecycle and context
@@ -132,7 +141,10 @@ fn test_context_with_soulbound_combination() {
             Option::None,
             Option::None,
             ALICE(),
-            true // soulbound
+            true, // soulbound
+            false,
+            0,
+            0,
         );
 
     // Verify both soulbound and context
@@ -161,6 +173,9 @@ fn test_context_with_renderer_combination() {
             Option::Some(RENDERER_ADDRESS()),
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Verify both renderer and context
@@ -195,6 +210,9 @@ fn test_batch_mint_with_context() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     let token_id2 = test_contracts
@@ -210,6 +228,9 @@ fn test_batch_mint_with_context() {
             Option::None,
             BOB(),
             false,
+            false,
+            1,
+            0,
         );
 
     // Verify all tokens have context
@@ -267,6 +288,9 @@ fn test_context_with_empty_player_name() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Should still have context
@@ -295,7 +319,10 @@ fn test_context_with_all_parameters() {
             Option::Some("https://client.url"),
             Option::Some(RENDERER_ADDRESS()),
             BOB(),
-            true // soulbound
+            true, // soulbound
+            false,
+            0,
+            0,
         );
 
     // Verify all fields
@@ -335,6 +362,9 @@ fn test_has_context_flag_in_metadata() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Metagame mint - has context
@@ -351,6 +381,9 @@ fn test_has_context_flag_in_metadata() {
             Option::None,
             BOB(),
             false,
+            false,
+            1,
+            0,
         );
 
     let metadata1 = test_contracts.test_token.token_metadata(token_id1);
@@ -384,6 +417,9 @@ fn test_event_spy_captures_context_events() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Verify events were captured
@@ -421,6 +457,9 @@ fn test_fuzz_context_with_various_token_ids(mint_count: u8) {
                 Option::None,
                 ALICE(),
                 false,
+                false,
+                i.into(),
+                0,
             );
 
         // Verify context flag is set for each
@@ -454,6 +493,9 @@ fn test_context_with_registry_game() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Verify context - game_id may be 0 if game is not registered with game_id
@@ -485,6 +527,9 @@ fn test_multiple_context_mints_unique_data() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Mint second token with different data
@@ -501,6 +546,9 @@ fn test_multiple_context_mints_unique_data() {
             Option::None,
             BOB(),
             true,
+            false,
+            1,
+            0,
         );
 
     // Verify each token has unique metadata

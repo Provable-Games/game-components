@@ -1139,9 +1139,10 @@ fn test_submit_max_token_id() {
     let (game_address, game_admin) = deploy_mock_game_details();
 
     configure_tournament_with_game(admin, TOURNAMENT_1, 10, false, game_address);
-    game_admin.set_score(MAX_U64, 100);
+    let max_token_id: felt252 = MAX_U64.into();
+    game_admin.set_score(max_token_id, 100);
 
-    let result = leaderboard.submit_score(TOURNAMENT_1, MAX_U64, 100, 1);
+    let result = leaderboard.submit_score(TOURNAMENT_1, max_token_id, 100, 1);
 
     match result {
         LeaderboardResult::Success => {},
@@ -1149,7 +1150,7 @@ fn test_submit_max_token_id() {
     }
 
     let entries = leaderboard.get_entries(TOURNAMENT_1);
-    assert!(*entries.at(0).id == MAX_U64, "Token ID should be MAX_U64");
+    assert!(*entries.at(0).id == max_token_id, "Token ID should be MAX_U64");
 }
 
 // Test LB-EDGE-05: Leaderboard with max_entries = 1
@@ -1262,11 +1263,12 @@ fn test_multiple_admins_via_transfer() {
 #[test]
 #[fuzzer]
 fn test_fuzz_random_score_submission(score: u64, token_seed: u64) {
-    let token_id = if token_seed == 0 {
-        1
+    let token_id_u64 = if token_seed == 0 {
+        1_u64
     } else {
         token_seed
     };
+    let token_id: felt252 = token_id_u64.into();
 
     let (leaderboard, admin) = deploy_mock_leaderboard();
     let (game_address, game_admin) = deploy_mock_game_details();
@@ -1682,8 +1684,9 @@ fn test_get_entries_large_leaderboard() {
             break;
         }
         let score: u64 = 110 - i * 10;
-        game_admin.set_score(i, score);
-        let _ = leaderboard.submit_score(TOURNAMENT_1, i, score, i.try_into().unwrap());
+        let token_id: felt252 = i.into();
+        game_admin.set_score(token_id, score);
+        let _ = leaderboard.submit_score(TOURNAMENT_1, token_id, score, i.try_into().unwrap());
         i += 1;
     }
 
@@ -1753,8 +1756,9 @@ fn test_multiple_qualifying_scores_fill_leaderboard() {
             break;
         }
         let score: u64 = 60 - i * 10;
-        game_admin.set_score(i, score);
-        let _ = leaderboard.submit_score(TOURNAMENT_1, i, score, i.try_into().unwrap());
+        let token_id: felt252 = i.into();
+        game_admin.set_score(token_id, score);
+        let _ = leaderboard.submit_score(TOURNAMENT_1, token_id, score, i.try_into().unwrap());
         i += 1;
     }
 

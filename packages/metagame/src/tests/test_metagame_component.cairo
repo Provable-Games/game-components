@@ -21,7 +21,10 @@ trait IMockMetagame<TContractState> {
         renderer_address: Option<ContractAddress>,
         to: ContractAddress,
         soulbound: bool,
-    ) -> u64;
+        paymaster: bool,
+        salt: u16,
+        metadata: u16,
+    ) -> felt252;
 }
 
 // Test T001.1: Initialize with both token and context addresses
@@ -184,10 +187,13 @@ fn test_mint_minimal() {
             Option::None, // client_url
             Option::None, // renderer_address
             to_address,
-            false // soulbound
+            false, // soulbound
+            false,
+            0,
+            0,
         );
 
-    assert!(token_id == 1, "First token ID should be 1");
+    assert!(token_id == 1.into(), "First token ID should be 1");
 }
 
 // Test MG-U-05: Mint with all parameters (except context)
@@ -225,10 +231,13 @@ fn test_mint_with_all_parameters() {
             Option::Some("https://game.example.com"),
             Option::Some(renderer_address),
             to_address,
-            true // soulbound
+            true, // soulbound
+            false,
+            0,
+            0,
         );
 
-    assert!(token_id > 0, "Token ID should be valid");
+    assert!(token_id != 0, "Token ID should be valid");
 }
 
 // Test MG-U-05b: Mint with context when provider is set
@@ -279,9 +288,12 @@ fn test_mint_with_context_provider_set() {
             Option::None,
             to_address,
             false,
+            false,
+            0,
+            0,
         );
 
-    assert!(token_id > 0, "Token ID should be valid with context");
+    assert!(token_id != 0, "Token ID should be valid with context");
 }
 
 // Test MG-U-06: Mint with context but no provider - context is passed to token which handles it
@@ -324,9 +336,12 @@ fn test_mint_with_context_no_provider() {
             Option::None,
             to_address,
             false,
+            false,
+            0,
+            0,
         );
 
-    assert!(token_id > 0, "Token should be minted successfully with context");
+    assert!(token_id != 0, "Token should be minted successfully with context");
 }
 
 // Test MG-U-10: Mint with objective_id
@@ -360,9 +375,12 @@ fn test_mint_with_objective_id() {
             Option::None,
             to_address,
             false,
+            false,
+            0,
+            0,
         );
 
-    assert!(token_id > 0, "Token should be minted successfully");
+    assert!(token_id != 0, "Token should be minted successfully");
 }
 
 // Test MG-U-11: Mint with start = end
@@ -398,9 +416,12 @@ fn test_mint_with_instant_game() {
             Option::None,
             to_address,
             false,
+            false,
+            0,
+            0,
         );
 
-    assert!(token_id > 0, "Token should be minted successfully");
+    assert!(token_id != 0, "Token should be minted successfully");
 }
 
 // Mock contract that embeds MetagameComponent for testing
@@ -465,7 +486,10 @@ mod MockMetagameContract {
             renderer_address: Option<ContractAddress>,
             to: ContractAddress,
             soulbound: bool,
-        ) -> u64 {
+            paymaster: bool,
+            salt: u16,
+            metadata: u16,
+        ) -> felt252 {
             self
                 .metagame
                 .mint(
@@ -480,6 +504,9 @@ mod MockMetagameContract {
                     renderer_address,
                     to,
                     soulbound,
+                    paymaster,
+                    salt,
+                    metadata,
                 )
         }
     }
@@ -500,7 +527,7 @@ mod MockContext {
     #[storage]
     struct Storage {
         supports_context: bool,
-        has_context_map: Map<u64, bool>,
+        has_context_map: Map<felt252, bool>,
         context_name: ByteArray,
         context_description: ByteArray,
         context_id: Option<u32>,
@@ -516,14 +543,14 @@ mod MockContext {
 
     #[abi(embed_v0)]
     impl MetagameContextImpl of IMetagameContext<ContractState> {
-        fn has_context(self: @ContractState, token_id: u64) -> bool {
+        fn has_context(self: @ContractState, token_id: felt252) -> bool {
             self.has_context_map.read(token_id)
         }
     }
 
     #[abi(embed_v0)]
     impl MetagameContextDetailsImpl of IMetagameContextDetails<ContractState> {
-        fn context_details(self: @ContractState, token_id: u64) -> GameContextDetails {
+        fn context_details(self: @ContractState, token_id: felt252) -> GameContextDetails {
             if !self.has_context_map.read(token_id) {
                 panic!("Context not found");
             }
@@ -574,10 +601,10 @@ mod MockMinigameToken {
     #[storage]
     struct Storage {
         next_token_id: u64,
-        token_game_address: Map<u64, ContractAddress>,
-        token_player_names: Map<u64, felt252>,
-        token_lifecycle_start: Map<u64, u64>,
-        token_lifecycle_end: Map<u64, u64>,
+        token_game_address: Map<felt252, ContractAddress>,
+        token_player_names: Map<felt252, felt252>,
+        token_lifecycle_start: Map<felt252, u64>,
+        token_lifecycle_end: Map<felt252, u64>,
         game_address: ContractAddress,
         game_registry_address: ContractAddress,
         should_fail_mint: bool,
@@ -590,7 +617,7 @@ mod MockMinigameToken {
 
     #[abi(embed_v0)]
     impl MinigameTokenImpl of IMinigameToken<ContractState> {
-        fn token_metadata(self: @ContractState, token_id: u64) -> TokenMetadata {
+        fn token_metadata(self: @ContractState, token_id: felt252) -> TokenMetadata {
             TokenMetadata {
                 game_id: 0,
                 minted_at: 0,
@@ -605,26 +632,28 @@ mod MockMinigameToken {
                 completed_objective: false,
                 has_context: false,
                 objective_id: 0,
+                paymaster: false,
+                metadata: 0,
             }
         }
 
-        fn is_playable(self: @ContractState, token_id: u64) -> bool {
-            token_id < self.next_token_id.read()
+        fn is_playable(self: @ContractState, token_id: felt252) -> bool {
+            token_id != 0
         }
 
-        fn settings_id(self: @ContractState, token_id: u64) -> u32 {
+        fn settings_id(self: @ContractState, token_id: felt252) -> u32 {
             0
         }
 
-        fn player_name(self: @ContractState, token_id: u64) -> felt252 {
+        fn player_name(self: @ContractState, token_id: felt252) -> felt252 {
             self.token_player_names.read(token_id)
         }
 
-        fn objective_id(self: @ContractState, token_id: u64) -> u32 {
+        fn objective_id(self: @ContractState, token_id: felt252) -> u32 {
             0
         }
 
-        fn minted_by(self: @ContractState, token_id: u64) -> u64 {
+        fn minted_by(self: @ContractState, token_id: felt252) -> felt252 {
             0
         }
 
@@ -636,20 +665,20 @@ mod MockMinigameToken {
             self.game_registry_address.read()
         }
 
-        fn is_soulbound(self: @ContractState, token_id: u64) -> bool {
+        fn is_soulbound(self: @ContractState, token_id: felt252) -> bool {
             false
         }
 
-        fn renderer_address(self: @ContractState, token_id: u64) -> ContractAddress {
+        fn renderer_address(self: @ContractState, token_id: felt252) -> ContractAddress {
             Zero::zero()
         }
 
-        fn token_game_address(self: @ContractState, token_id: u64) -> ContractAddress {
+        fn token_game_address(self: @ContractState, token_id: felt252) -> ContractAddress {
             self.token_game_address.read(token_id)
         }
 
         fn token_metadata_batch(
-            self: @ContractState, token_ids: Span<u64>,
+            self: @ContractState, token_ids: Span<felt252>,
         ) -> Array<TokenMetadata> {
             let mut results = array![];
             let mut i = 0;
@@ -663,7 +692,7 @@ mod MockMinigameToken {
             results
         }
 
-        fn is_playable_batch(self: @ContractState, token_ids: Span<u64>) -> Array<bool> {
+        fn is_playable_batch(self: @ContractState, token_ids: Span<felt252>) -> Array<bool> {
             let mut results = array![];
             let mut i = 0;
             loop {
@@ -676,7 +705,7 @@ mod MockMinigameToken {
             results
         }
 
-        fn settings_id_batch(self: @ContractState, token_ids: Span<u64>) -> Array<u32> {
+        fn settings_id_batch(self: @ContractState, token_ids: Span<felt252>) -> Array<u32> {
             let mut results = array![];
             let mut i = 0;
             loop {
@@ -689,7 +718,7 @@ mod MockMinigameToken {
             results
         }
 
-        fn player_name_batch(self: @ContractState, token_ids: Span<u64>) -> Array<felt252> {
+        fn player_name_batch(self: @ContractState, token_ids: Span<felt252>) -> Array<felt252> {
             let mut results = array![];
             let mut i = 0;
             loop {
@@ -702,7 +731,7 @@ mod MockMinigameToken {
             results
         }
 
-        fn objective_id_batch(self: @ContractState, token_ids: Span<u64>) -> Array<u32> {
+        fn objective_id_batch(self: @ContractState, token_ids: Span<felt252>) -> Array<u32> {
             let mut results = array![];
             let mut i = 0;
             loop {
@@ -715,7 +744,7 @@ mod MockMinigameToken {
             results
         }
 
-        fn minted_by_batch(self: @ContractState, token_ids: Span<u64>) -> Array<u64> {
+        fn minted_by_batch(self: @ContractState, token_ids: Span<felt252>) -> Array<felt252> {
             let mut results = array![];
             let mut i = 0;
             loop {
@@ -728,7 +757,7 @@ mod MockMinigameToken {
             results
         }
 
-        fn is_soulbound_batch(self: @ContractState, token_ids: Span<u64>) -> Array<bool> {
+        fn is_soulbound_batch(self: @ContractState, token_ids: Span<felt252>) -> Array<bool> {
             let mut results = array![];
             let mut i = 0;
             loop {
@@ -742,7 +771,7 @@ mod MockMinigameToken {
         }
 
         fn renderer_address_batch(
-            self: @ContractState, token_ids: Span<u64>,
+            self: @ContractState, token_ids: Span<felt252>,
         ) -> Array<ContractAddress> {
             let mut results = array![];
             let mut i = 0;
@@ -757,7 +786,7 @@ mod MockMinigameToken {
         }
 
         fn token_game_address_batch(
-            self: @ContractState, token_ids: Span<u64>,
+            self: @ContractState, token_ids: Span<felt252>,
         ) -> Array<ContractAddress> {
             let mut results = array![];
             let mut i = 0;
@@ -784,13 +813,17 @@ mod MockMinigameToken {
             renderer_address: Option<ContractAddress>,
             to: ContractAddress,
             soulbound: bool,
-        ) -> u64 {
+            paymaster: bool,
+            salt: u16,
+            metadata: u16,
+        ) -> felt252 {
             if self.should_fail_mint.read() {
                 panic!("Mint failed");
             }
 
-            let token_id = self.next_token_id.read();
-            self.next_token_id.write(token_id + 1);
+            let token_id_u64 = self.next_token_id.read();
+            self.next_token_id.write(token_id_u64 + 1);
+            let token_id: felt252 = token_id_u64.into();
 
             if let Option::Some(game_addr) = game_address {
                 self.token_game_address.write(token_id, game_addr);
@@ -811,7 +844,7 @@ mod MockMinigameToken {
             token_id
         }
 
-        fn mint_batch(ref self: ContractState, mints: Array<MintParams>) -> Array<u64> {
+        fn mint_batch(ref self: ContractState, mints: Array<MintParams>) -> Array<felt252> {
             let mut results = array![];
             let mut i = 0;
             loop {
@@ -840,6 +873,9 @@ mod MockMinigameToken {
                         *params.renderer_address,
                         *params.to,
                         *params.soulbound,
+                        *params.paymaster,
+                        *params.salt,
+                        *params.metadata,
                     );
                 results.append(token_id);
                 i += 1;
@@ -849,7 +885,7 @@ mod MockMinigameToken {
 
         fn set_token_metadata(
             ref self: ContractState,
-            token_id: u64,
+            token_id: felt252,
             game_address: ContractAddress,
             player_name: Option<felt252>,
             settings_id: Option<u32>,
@@ -857,11 +893,13 @@ mod MockMinigameToken {
             end: Option<u64>,
             objective_id: Option<u32>,
             context: Option<GameContextDetails>,
-        ) {}
+        ) -> felt252 {
+            token_id
+        }
 
-        fn update_game(ref self: ContractState, token_id: u64) {}
+        fn update_game(ref self: ContractState, token_id: felt252) {}
 
-        fn update_player_name(ref self: ContractState, token_id: u64, name: felt252) {
+        fn update_player_name(ref self: ContractState, token_id: felt252, name: felt252) {
             self.token_player_names.write(token_id, name);
         }
 
@@ -869,7 +907,7 @@ mod MockMinigameToken {
             ref self: ContractState, updates: Array<SetTokenMetadataParams>,
         ) {}
 
-        fn update_game_batch(ref self: ContractState, token_ids: Span<u64>) {}
+        fn update_game_batch(ref self: ContractState, token_ids: Span<felt252>) {}
 
         fn update_player_name_batch(ref self: ContractState, updates: Span<PlayerNameUpdate>) {
             let mut i = 0;
@@ -943,9 +981,12 @@ fn test_mint_with_renderer_address() {
             Option::Some(renderer_address),
             to_address,
             false,
+            false,
+            0,
+            0,
         );
 
-    assert!(token_id > 0, "Token should be minted with renderer");
+    assert!(token_id != 0, "Token should be minted with renderer");
 }
 
 // Test MG-U-13: Mint with settings_id
@@ -977,9 +1018,12 @@ fn test_mint_with_settings_id() {
             Option::None,
             to_address,
             false,
+            false,
+            0,
+            0,
         );
 
-    assert!(token_id > 0, "Token should be minted with settings_id");
+    assert!(token_id != 0, "Token should be minted with settings_id");
 }
 
 // Test MG-U-14: Mint multiple tokens sequentially
@@ -1011,6 +1055,9 @@ fn test_mint_multiple_sequential() {
             Option::None,
             to_address,
             false,
+            false,
+            0,
+            0,
         );
 
     let token_id_2 = dispatcher
@@ -1026,6 +1073,9 @@ fn test_mint_multiple_sequential() {
             Option::None,
             to_address,
             false,
+            false,
+            0,
+            0,
         );
 
     let token_id_3 = dispatcher
@@ -1041,11 +1091,14 @@ fn test_mint_multiple_sequential() {
             Option::None,
             to_address,
             false,
+            false,
+            0,
+            0,
         );
 
-    assert!(token_id_1 == 1, "First token should be 1");
-    assert!(token_id_2 == 2, "Second token should be 2");
-    assert!(token_id_3 == 3, "Third token should be 3");
+    assert!(token_id_1 == 1.into(), "First token should be 1");
+    assert!(token_id_2 == 2.into(), "Second token should be 2");
+    assert!(token_id_3 == 3.into(), "Third token should be 3");
 }
 
 // Test MG-U-15: Mint batch through component
@@ -1077,6 +1130,9 @@ fn test_mint_batch_through_component() {
             renderer_address: Option::None,
             to: to_address,
             soulbound: false,
+            paymaster: false,
+            salt: 0,
+            metadata: 0,
         },
         crate::structs::MintMetagameParams {
             game_address: Option::None,
@@ -1090,14 +1146,17 @@ fn test_mint_batch_through_component() {
             renderer_address: Option::None,
             to: to_address,
             soulbound: true,
+            paymaster: false,
+            salt: 0,
+            metadata: 0,
         },
     ];
 
     let token_ids = dispatcher.mint_batch(mints);
 
     assert!(token_ids.len() == 2, "Should mint 2 tokens in batch");
-    assert!(*token_ids.at(0) == 1, "First batch token ID should be 1");
-    assert!(*token_ids.at(1) == 2, "Second batch token ID should be 2");
+    assert!(*token_ids.at(0) == 1.into(), "First batch token ID should be 1");
+    assert!(*token_ids.at(1) == 2.into(), "Second batch token ID should be 2");
 }
 
 // =============================================================================
@@ -1165,11 +1224,14 @@ trait IMockMetagameWithBatch<TContractState> {
         renderer_address: Option<ContractAddress>,
         to: ContractAddress,
         soulbound: bool,
-    ) -> u64;
+        paymaster: bool,
+        salt: u16,
+        metadata: u16,
+    ) -> felt252;
 
     fn mint_batch(
         ref self: TContractState, mints: Array<crate::structs::MintMetagameParams>,
-    ) -> Array<u64>;
+    ) -> Array<felt252>;
 }
 
 // Mock contract with batch mint exposed
@@ -1232,7 +1294,10 @@ mod MockMetagameContractWithBatch {
             renderer_address: Option<ContractAddress>,
             to: ContractAddress,
             soulbound: bool,
-        ) -> u64 {
+            paymaster: bool,
+            salt: u16,
+            metadata: u16,
+        ) -> felt252 {
             self
                 .metagame
                 .mint(
@@ -1247,12 +1312,15 @@ mod MockMetagameContractWithBatch {
                     renderer_address,
                     to,
                     soulbound,
+                    paymaster,
+                    salt,
+                    metadata,
                 )
         }
 
         fn mint_batch(
             ref self: ContractState, mints: Array<crate::structs::MintMetagameParams>,
-        ) -> Array<u64> {
+        ) -> Array<felt252> {
             self.metagame.mint_batch(mints)
         }
     }
