@@ -247,19 +247,22 @@ fn test_constructor_sets_decimals_to_18() {
 }
 
 #[test]
-fn test_constructor_mints_one_token_to_registry() {
+fn test_constructor_registry_token_is_burned() {
     let setup = deploy_stream_token();
 
+    // Registry token is minted for verification then burned
+    // so registry should have 0 tokens after deployment
     let registry_balance = setup.erc20.balance_of(setup.registry);
-    assert!(registry_balance == ONE_TOKEN, "Registry should have 1 token");
+    assert!(registry_balance == 0, "Registry should have 0 tokens (burned after registration)");
 }
 
 #[test]
 fn test_constructor_mints_remaining_supply_to_factory() {
     let setup = deploy_stream_token();
 
-    // Total supply is 10000 tokens, registry gets 1
-    let expected_factory_balance: u256 = (10000_u128 * ERC20_UNIT - ERC20_UNIT).into();
+    // Total supply is 10000 tokens, registry token is minted and burned
+    // so factory gets full total_supply (no premints in this test)
+    let expected_factory_balance: u256 = (10000_u128 * ERC20_UNIT).into();
     let factory_balance = setup.erc20.balance_of(setup.factory);
     assert!(factory_balance == expected_factory_balance, "Factory balance mismatch");
 }
@@ -301,9 +304,21 @@ fn test_constructor_sets_deployment_state_to_zero() {
 fn test_total_supply() {
     let setup = deploy_stream_token();
 
+    // Total supply should be exactly what the user specified (10000 tokens)
+    // The registry token mint+burn is a net zero effect on total supply
     let total_supply = setup.erc20.total_supply();
     let expected: u256 = (10000_u128 * ERC20_UNIT).into();
-    assert!(total_supply == expected, "Total supply mismatch");
+    assert!(total_supply == expected, "Total supply should match user-specified amount");
+}
+
+#[test]
+fn test_stream_token_contract_holds_zero_balance() {
+    let setup = deploy_stream_token();
+
+    // The StreamToken contract itself should hold 0 tokens
+    // (registry token was returned and burned)
+    let contract_balance = setup.erc20.balance_of(setup.token_address);
+    assert!(contract_balance == 0, "StreamToken contract should hold 0 tokens");
 }
 
 #[test]

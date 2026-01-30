@@ -28,7 +28,7 @@ pub mod StreamTokenFactory {
     };
     use starknet::syscalls::deploy_syscall;
     use starknet::{ClassHash, ContractAddress, get_caller_address, get_contract_address};
-    use crate::constants::{ERC20_UNIT, Errors};
+    use crate::constants::Errors;
 
     // Embed Ownable component for admin functions
     component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);
@@ -149,7 +149,9 @@ pub mod StreamTokenFactory {
             }
 
             let lp_amount = params.liquidity_config.stream_token_amount;
-            let total_needed = ERC20_UNIT + lp_amount + distribution_total + premint_total;
+            // total_supply should equal exactly LP + distributions + premints
+            // (registry token is minted then burned, so no extra needed)
+            let total_needed = lp_amount + distribution_total + premint_total;
             assert(params.total_supply >= total_needed, Errors::STREAM_SUPPLY_TOO_LOW);
 
             // Transfer paired tokens from caller to positions contract
