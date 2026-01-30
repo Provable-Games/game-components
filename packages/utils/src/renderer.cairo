@@ -81,6 +81,14 @@ fn create_trait(name: ByteArray, value: ByteArray) -> ByteArray {
     JsonImpl::new().add("trait", name).add("value", value).build()
 }
 
+fn bool_to_str(val: bool) -> ByteArray {
+    if val {
+        "True"
+    } else {
+        "False"
+    }
+}
+
 pub fn create_default_svg(
     token_id: u64, game_metadata: GameMetadata, score: u64, player_name: felt252,
 ) -> ByteArray {
@@ -160,27 +168,10 @@ pub fn create_custom_metadata(
         create_trait("Game Developer", game_metadata.developer),
         create_trait("Minted By", _minted_by), create_trait("Score", _score),
         create_trait("Minted Time", _minted_at), create_trait("Start Time", _start),
-        create_trait("End Time", _end),
-        create_trait("Expired", if _expired {
-            "True"
-        } else {
-            "False"
-        }),
-        create_trait("Game Over", if token_metadata.game_over {
-            "True"
-        } else {
-            "False"
-        }),
-        create_trait("Soulbound", if token_metadata.soulbound {
-            "True"
-        } else {
-            "False"
-        }),
-        create_trait("Paymaster", if token_metadata.paymaster {
-            "True"
-        } else {
-            "False"
-        }),
+        create_trait("End Time", _end), create_trait("Expired", bool_to_str(_expired)),
+        create_trait("Game Over", bool_to_str(token_metadata.game_over)),
+        create_trait("Soulbound", bool_to_str(token_metadata.soulbound)),
+        create_trait("Paymaster", bool_to_str(token_metadata.paymaster)),
         create_trait("Metadata", format!("{}", Into::<u16, u32>::into(token_metadata.metadata))),
         create_trait("Settings ID", _settings_id),
     ];
@@ -208,12 +199,7 @@ pub fn create_custom_metadata(
         attributes
             .append(
                 create_trait(
-                    "Objectives Completed",
-                    if token_metadata.completed_objective {
-                        "True"
-                    } else {
-                        "False"
-                    },
+                    "Objectives Completed", bool_to_str(token_metadata.completed_objective),
                 ),
             );
     }
