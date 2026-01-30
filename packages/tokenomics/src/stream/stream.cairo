@@ -528,12 +528,14 @@ pub mod StreamComponent {
             // 3. Multiply by 2^64 to get sqrt_ratio in 128.128 format
             //
             // Using identity: sqrt(a * 2^256 / b) = sqrt(a * 2^128 / b) * 2^64
-            let two_pow_128: u256 = 0x100000000000000000000000000000000_u256;
-            let two_pow_64: u256 = 0x10000000000000000_u256;
+            // 2^128 = 340282366920938463463374607431768211456
+            const TWO_POW_128: u256 = 0x100000000000000000000000000000000;
+            // 2^64 = 18446744073709551616
+            const TWO_POW_64: u256 = 0x10000000000000000;
 
-            let scaled_ratio = (token1_amount * two_pow_128) / token0_amount;
+            let scaled_ratio = (token1_amount * TWO_POW_128) / token0_amount;
             let sqrt_scaled: u256 = scaled_ratio.sqrt().into();
-            let sqrt_ratio = sqrt_scaled * two_pow_64;
+            let sqrt_ratio = sqrt_scaled * TWO_POW_64;
 
             sqrt_ratio_to_tick(sqrt_ratio)
         }

@@ -92,10 +92,32 @@ print_verbose() { [[ "${VERBOSE:-false}" == "true" ]] && echo -e "${CYAN}[DEBUG]
 
 # Check if required tools are installed
 check_dependencies() {
+    local missing=()
+
     if ! command -v jq &> /dev/null; then
-        print_error "jq is required but not installed."
-        echo "  macOS: brew install jq"
-        echo "  Ubuntu: apt install jq"
+        missing+=("jq")
+    fi
+    if ! command -v sncast &> /dev/null; then
+        missing+=("sncast (install via: curl -L https://raw.githubusercontent.com/foundry-rs/starknet-foundry/master/scripts/install.sh | sh)")
+    fi
+    if ! command -v curl &> /dev/null; then
+        missing+=("curl")
+    fi
+    if ! command -v xxd &> /dev/null; then
+        missing+=("xxd (part of vim or xxd package)")
+    fi
+    if ! command -v bc &> /dev/null; then
+        missing+=("bc")
+    fi
+
+    if [ ${#missing[@]} -ne 0 ]; then
+        print_error "Missing required dependencies:"
+        for dep in "${missing[@]}"; do
+            echo "  - $dep"
+        done
+        echo ""
+        echo "Install on macOS: brew install jq xxd bc"
+        echo "Install on Ubuntu: apt install jq xxd bc curl"
         exit 1
     fi
 }
