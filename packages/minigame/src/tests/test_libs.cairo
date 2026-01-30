@@ -34,7 +34,7 @@ fn REGISTRY_ADDRESS() -> ContractAddress {
 #[test]
 fn test_pre_action_playable_token() {
     let token_address = TOKEN_ADDRESS();
-    let token_id: u64 = 1;
+    let token_id: felt252 = 1;
 
     // Mock is_playable to return true
     mock_call(token_address, selector!("is_playable"), true, 1);
@@ -48,7 +48,7 @@ fn test_pre_action_playable_token() {
 #[should_panic]
 fn test_pre_action_non_playable_token() {
     let token_address = TOKEN_ADDRESS();
-    let token_id: u64 = 1;
+    let token_id: felt252 = 1;
 
     // Mock is_playable to return false
     mock_call(token_address, selector!("is_playable"), false, 1);
@@ -78,7 +78,7 @@ fn test_pre_action_multiple_tokens() {
 #[test]
 fn test_post_action_updates_game() {
     let token_address = TOKEN_ADDRESS();
-    let token_id: u64 = 1;
+    let token_id: felt252 = 1;
 
     // Mock update_game call (returns unit)
     mock_call(token_address, selector!("update_game"), (), 1);
@@ -97,7 +97,7 @@ fn test_post_action_multiple_tokens() {
 
     libs::post_action(token_address, 1);
     libs::post_action(token_address, 2);
-    libs::post_action(token_address, MAX_U64);
+    libs::post_action(token_address, MAX_U64.into());
 }
 
 // =============================================================================
@@ -108,7 +108,7 @@ fn test_post_action_multiple_tokens() {
 #[test]
 fn test_require_owned_token_success() {
     let token_address = TOKEN_ADDRESS();
-    let token_id: u64 = 1;
+    let token_id: felt252 = 1;
     let owner = ALICE();
 
     // Mock owner_of to return non-zero address
@@ -123,7 +123,7 @@ fn test_require_owned_token_success() {
 #[should_panic(expected: "Token 1 does not exist or is not owned by anyone")]
 fn test_require_owned_token_zero_owner() {
     let token_address = TOKEN_ADDRESS();
-    let token_id: u64 = 1;
+    let token_id: felt252 = 1;
     let zero_address: ContractAddress = 0.try_into().unwrap();
 
     // Mock owner_of to return zero address
@@ -155,7 +155,7 @@ fn test_require_owned_token_multiple() {
 #[test]
 fn test_assert_token_ownership_caller_is_owner() {
     let token_address = TOKEN_ADDRESS();
-    let token_id: u64 = 1;
+    let token_id: felt252 = 1;
 
     // In test context, get_caller_address() returns the test runner address
     // We need to mock owner_of to return that same address
@@ -173,7 +173,7 @@ fn test_assert_token_ownership_caller_is_owner() {
 #[should_panic(expected: "Caller is not owner of token 1")]
 fn test_assert_token_ownership_caller_not_owner() {
     let token_address = TOKEN_ADDRESS();
-    let token_id: u64 = 1;
+    let token_id: felt252 = 1;
     let owner = ALICE();
     let non_owner = BOB();
 
@@ -192,7 +192,7 @@ fn test_assert_token_ownership_caller_not_owner() {
 #[should_panic(expected: "Caller is not owner of token 999")]
 fn test_assert_token_ownership_different_token_id() {
     let token_address = TOKEN_ADDRESS();
-    let token_id: u64 = 999;
+    let token_id: felt252 = 999;
     let owner = ALICE();
     let non_owner = BOB();
 
@@ -210,7 +210,7 @@ fn test_assert_token_ownership_different_token_id() {
 #[test]
 fn test_assert_game_token_playable_success() {
     let token_address = TOKEN_ADDRESS();
-    let token_id: u64 = 1;
+    let token_id: felt252 = 1;
 
     // Mock is_playable to return true
     mock_call(token_address, selector!("is_playable"), true, 1);
@@ -224,7 +224,7 @@ fn test_assert_game_token_playable_success() {
 #[should_panic]
 fn test_assert_game_token_playable_not_playable() {
     let token_address = TOKEN_ADDRESS();
-    let token_id: u64 = 1;
+    let token_id: felt252 = 1;
 
     // Mock is_playable to return false
     mock_call(token_address, selector!("is_playable"), false, 1);
@@ -348,7 +348,7 @@ fn test_mint_minimal_params() {
     let token_address = TOKEN_ADDRESS();
     let game_address = GAME_ADDRESS();
     let to = ALICE();
-    let expected_token_id: u64 = 1;
+    let expected_token_id: felt252 = 1;
 
     // Mock mint call to return token_id
     mock_call(token_address, selector!("mint"), expected_token_id, 1);
@@ -365,7 +365,10 @@ fn test_mint_minimal_params() {
         Option::None, // client_url
         Option::None, // renderer_address
         to,
-        false // soulbound
+        false, // soulbound
+        false, // paymaster
+        0, // salt
+        0 // metadata
     );
 
     assert!(token_id == expected_token_id, "Token ID mismatch");
@@ -378,7 +381,7 @@ fn test_mint_all_params() {
     let game_address = GAME_ADDRESS();
     let to = ALICE();
     let renderer = 'RENDERER'.try_into().unwrap();
-    let expected_token_id: u64 = 42;
+    let expected_token_id: felt252 = 42;
 
     mock_call(token_address, selector!("mint"), expected_token_id, 1);
 
@@ -394,7 +397,10 @@ fn test_mint_all_params() {
         Option::Some("https://client.url"),
         Option::Some(renderer),
         to,
-        true // soulbound
+        true, // soulbound
+        false, // paymaster
+        0, // salt
+        0 // metadata
     );
 
     assert!(token_id == expected_token_id, "Token ID mismatch");
@@ -406,7 +412,7 @@ fn test_mint_soulbound_token() {
     let token_address = TOKEN_ADDRESS();
     let game_address = GAME_ADDRESS();
     let to = ALICE();
-    let expected_token_id: u64 = 100;
+    let expected_token_id: felt252 = 100;
 
     mock_call(token_address, selector!("mint"), expected_token_id, 1);
 
@@ -422,7 +428,10 @@ fn test_mint_soulbound_token() {
         Option::None,
         Option::None,
         to,
-        true // soulbound
+        true, // soulbound
+        false, // paymaster
+        0, // salt
+        0 // metadata
     );
 
     assert!(token_id == expected_token_id, "Token ID mismatch");
@@ -434,7 +443,7 @@ fn test_mint_with_settings_and_objective() {
     let token_address = TOKEN_ADDRESS();
     let game_address = GAME_ADDRESS();
     let to = BOB();
-    let expected_token_id: u64 = 50;
+    let expected_token_id: felt252 = 50;
 
     mock_call(token_address, selector!("mint"), expected_token_id, 1);
 
@@ -451,6 +460,9 @@ fn test_mint_with_settings_and_objective() {
         Option::None,
         to,
         false,
+        false,
+        0, // salt
+        0 // metadata
     );
 
     assert!(token_id == expected_token_id, "Token ID mismatch");
@@ -462,7 +474,7 @@ fn test_mint_with_lifecycle() {
     let token_address = TOKEN_ADDRESS();
     let game_address = GAME_ADDRESS();
     let to = USER1();
-    let expected_token_id: u64 = 75;
+    let expected_token_id: felt252 = 75;
 
     mock_call(token_address, selector!("mint"), expected_token_id, 1);
 
@@ -479,6 +491,9 @@ fn test_mint_with_lifecycle() {
         Option::None,
         to,
         false,
+        false,
+        0, // salt
+        0 // metadata
     );
 
     assert!(token_id == expected_token_id, "Token ID mismatch");
@@ -496,7 +511,7 @@ fn test_mint_batch_empty_array() {
     let mints: Array<MintGameParams> = array![];
 
     // Mock mint_batch to return empty array
-    let expected: Array<u64> = array![];
+    let expected: Array<felt252> = array![];
     mock_call(token_address, selector!("mint_batch"), expected.clone(), 1);
 
     let result = libs::mint_batch(token_address, game_address, mints);
@@ -521,9 +536,12 @@ fn test_mint_batch_single_mint() {
         renderer_address: Option::None,
         to: ALICE(),
         soulbound: false,
+        paymaster: false,
+        salt: 0,
+        metadata: 0,
     };
 
-    let expected: Array<u64> = array![1];
+    let expected: Array<felt252> = array![1];
     mock_call(token_address, selector!("mint_batch"), expected.clone(), 1);
 
     let result = libs::mint_batch(token_address, game_address, array![mint_params]);
@@ -549,6 +567,9 @@ fn test_mint_batch_multiple_mints() {
         renderer_address: Option::None,
         to: ALICE(),
         soulbound: false,
+        paymaster: false,
+        salt: 0,
+        metadata: 0,
     };
 
     let mint2 = MintGameParams {
@@ -562,6 +583,9 @@ fn test_mint_batch_multiple_mints() {
         renderer_address: Option::None,
         to: BOB(),
         soulbound: true,
+        paymaster: false,
+        salt: 0,
+        metadata: 0,
     };
 
     let mint3 = MintGameParams {
@@ -575,9 +599,12 @@ fn test_mint_batch_multiple_mints() {
         renderer_address: Option::None,
         to: USER1(),
         soulbound: false,
+        paymaster: false,
+        salt: 0,
+        metadata: 0,
     };
 
-    let expected: Array<u64> = array![1, 2, 3];
+    let expected: Array<felt252> = array![1, 2, 3];
     mock_call(token_address, selector!("mint_batch"), expected.clone(), 1);
 
     let result = libs::mint_batch(token_address, game_address, array![mint1, mint2, mint3]);
@@ -606,6 +633,9 @@ fn test_mint_batch_varied_params() {
         renderer_address: Option::Some(renderer),
         to: ALICE(),
         soulbound: true,
+        paymaster: false,
+        salt: 0,
+        metadata: 0,
     };
 
     let mint2 = MintGameParams {
@@ -619,9 +649,12 @@ fn test_mint_batch_varied_params() {
         renderer_address: Option::None,
         to: BOB(),
         soulbound: false,
+        paymaster: false,
+        salt: 0,
+        metadata: 0,
     };
 
-    let expected: Array<u64> = array![10, 11];
+    let expected: Array<felt252> = array![10, 11];
     mock_call(token_address, selector!("mint_batch"), expected.clone(), 1);
 
     let result = libs::mint_batch(token_address, game_address, array![mint1, mint2]);
@@ -656,12 +689,15 @@ fn test_mint_batch_multiple_recipients() {
                     renderer_address: Option::None,
                     to: *recipients.at(i),
                     soulbound: false,
+                    paymaster: false,
+                    salt: 0,
+                    metadata: 0,
                 },
             );
         i += 1;
     }
 
-    let expected: Array<u64> = array![1, 2, 3, 4];
+    let expected: Array<felt252> = array![1, 2, 3, 4];
     mock_call(token_address, selector!("mint_batch"), expected.clone(), 1);
 
     let result = libs::mint_batch(token_address, game_address, mints);
@@ -677,7 +713,7 @@ fn test_mint_batch_multiple_recipients() {
 #[test]
 fn test_get_player_name_exists() {
     let token_address = TOKEN_ADDRESS();
-    let token_id: u64 = 1;
+    let token_id: felt252 = 1;
     let expected_name: felt252 = 'Alice';
 
     mock_call(token_address, selector!("player_name"), expected_name, 1);
@@ -691,7 +727,7 @@ fn test_get_player_name_exists() {
 #[test]
 fn test_get_player_name_empty() {
     let token_address = TOKEN_ADDRESS();
-    let token_id: u64 = 1;
+    let token_id: felt252 = 1;
     let expected_name: felt252 = 0;
 
     mock_call(token_address, selector!("player_name"), expected_name, 1);
@@ -730,7 +766,7 @@ fn test_mint_fuzz_settings_id(settings_id: u32) {
     let token_address = TOKEN_ADDRESS();
     let game_address = GAME_ADDRESS();
     let to = ALICE();
-    let expected_token_id: u64 = 1;
+    let expected_token_id: felt252 = 1;
 
     mock_call(token_address, selector!("mint"), expected_token_id, 1);
 
@@ -747,6 +783,9 @@ fn test_mint_fuzz_settings_id(settings_id: u32) {
         Option::None,
         to,
         false,
+        false,
+        0,
+        0,
     );
 
     assert!(token_id == expected_token_id, "Token ID mismatch");
@@ -759,7 +798,7 @@ fn test_mint_fuzz_objective_id(objective_id: u32) {
     let token_address = TOKEN_ADDRESS();
     let game_address = GAME_ADDRESS();
     let to = ALICE();
-    let expected_token_id: u64 = 1;
+    let expected_token_id: felt252 = 1;
 
     mock_call(token_address, selector!("mint"), expected_token_id, 1);
 
@@ -776,6 +815,9 @@ fn test_mint_fuzz_objective_id(objective_id: u32) {
         Option::None,
         to,
         false,
+        false,
+        0,
+        0,
     );
 
     assert!(token_id == expected_token_id, "Token ID mismatch");
@@ -784,7 +826,7 @@ fn test_mint_fuzz_objective_id(objective_id: u32) {
 // Test LIB-F-03: Fuzz token_id for ownership check
 #[test]
 #[fuzzer]
-fn test_require_owned_token_fuzz(token_id: u64) {
+fn test_require_owned_token_fuzz(token_id: felt252) {
     let token_address = TOKEN_ADDRESS();
     let owner = ALICE();
 
@@ -800,7 +842,7 @@ fn test_mint_fuzz_player_name(player_name: felt252) {
     let token_address = TOKEN_ADDRESS();
     let game_address = GAME_ADDRESS();
     let to = ALICE();
-    let expected_token_id: u64 = 1;
+    let expected_token_id: felt252 = 1;
 
     mock_call(token_address, selector!("mint"), expected_token_id, 1);
 
@@ -817,6 +859,9 @@ fn test_mint_fuzz_player_name(player_name: felt252) {
         Option::None,
         to,
         false,
+        false,
+        0,
+        0,
     );
 
     assert!(token_id == expected_token_id, "Token ID mismatch");
@@ -827,7 +872,7 @@ fn test_mint_fuzz_player_name(player_name: felt252) {
 #[fuzzer]
 fn test_get_player_name_fuzz(expected_name: felt252) {
     let token_address = TOKEN_ADDRESS();
-    let token_id: u64 = 1;
+    let token_id: felt252 = 1;
 
     mock_call(token_address, selector!("player_name"), expected_name, 1);
 
@@ -848,7 +893,7 @@ fn test_mint_batch_large_batch() {
 
     // Create array with 10 mints
     let mut mints: Array<MintGameParams> = array![];
-    let mut expected: Array<u64> = array![];
+    let mut expected: Array<felt252> = array![];
 
     let mut i: u32 = 0;
     loop {
@@ -868,6 +913,9 @@ fn test_mint_batch_large_batch() {
                     renderer_address: Option::None,
                     to: ALICE(),
                     soulbound: false,
+                    paymaster: false,
+                    salt: 0,
+                    metadata: 0,
                 },
             );
         expected.append((i + 1).into());
@@ -898,6 +946,9 @@ fn test_mint_batch_with_client_url() {
         renderer_address: Option::None,
         to: ALICE(),
         soulbound: false,
+        paymaster: false,
+        salt: 0,
+        metadata: 0,
     };
 
     let mint2 = MintGameParams {
@@ -911,9 +962,12 @@ fn test_mint_batch_with_client_url() {
         renderer_address: Option::None,
         to: BOB(),
         soulbound: false,
+        paymaster: false,
+        salt: 0,
+        metadata: 0,
     };
 
-    let expected: Array<u64> = array![1, 2];
+    let expected: Array<felt252> = array![1, 2];
     mock_call(token_address, selector!("mint_batch"), expected.clone(), 1);
 
     let result = libs::mint_batch(token_address, game_address, array![mint1, mint2]);
@@ -927,7 +981,7 @@ fn test_mint_with_client_url() {
     let token_address = TOKEN_ADDRESS();
     let game_address = GAME_ADDRESS();
     let to = ALICE();
-    let expected_token_id: u64 = 1;
+    let expected_token_id: felt252 = 1;
 
     mock_call(token_address, selector!("mint"), expected_token_id, 1);
 
@@ -944,6 +998,9 @@ fn test_mint_with_client_url() {
         Option::None,
         to,
         false,
+        false,
+        0,
+        0,
     );
 
     assert!(token_id == expected_token_id, "Token ID mismatch");
@@ -956,7 +1013,7 @@ fn test_mint_with_renderer_address() {
     let game_address = GAME_ADDRESS();
     let renderer_address: starknet::ContractAddress = 'RENDERER'.try_into().unwrap();
     let to = ALICE();
-    let expected_token_id: u64 = 1;
+    let expected_token_id: felt252 = 1;
 
     mock_call(token_address, selector!("mint"), expected_token_id, 1);
 
@@ -973,6 +1030,9 @@ fn test_mint_with_renderer_address() {
         Option::Some(renderer_address),
         to,
         false,
+        false,
+        0,
+        0,
     );
 
     assert!(token_id == expected_token_id, "Token ID mismatch");
@@ -982,7 +1042,7 @@ fn test_mint_with_renderer_address() {
 #[test]
 fn test_assert_game_token_playable_max_token_id() {
     let token_address = TOKEN_ADDRESS();
-    let token_id: u64 = MAX_U64;
+    let token_id: felt252 = MAX_U64.into();
 
     mock_call(token_address, selector!("is_playable"), true, 1);
 
@@ -1017,7 +1077,7 @@ fn test_register_game_max_royalty() {
 #[test]
 fn test_pre_action_max_token_id() {
     let token_address = TOKEN_ADDRESS();
-    let token_id: u64 = MAX_U64;
+    let token_id: felt252 = MAX_U64.into();
 
     mock_call(token_address, selector!("is_playable"), true, 1);
 
@@ -1028,7 +1088,7 @@ fn test_pre_action_max_token_id() {
 #[test]
 fn test_post_action_max_token_id() {
     let token_address = TOKEN_ADDRESS();
-    let token_id: u64 = MAX_U64;
+    let token_id: felt252 = MAX_U64.into();
 
     mock_call(token_address, selector!("update_game"), (), 1);
 
@@ -1042,7 +1102,7 @@ fn test_post_action_max_token_id() {
 // Test LIB-F-06: Fuzz pre_action with random token_id
 #[test]
 #[fuzzer]
-fn test_pre_action_fuzz(token_id: u64) {
+fn test_pre_action_fuzz(token_id: felt252) {
     let token_address = TOKEN_ADDRESS();
 
     mock_call(token_address, selector!("is_playable"), true, 1);
@@ -1053,7 +1113,7 @@ fn test_pre_action_fuzz(token_id: u64) {
 // Test LIB-F-07: Fuzz post_action with random token_id
 #[test]
 #[fuzzer]
-fn test_post_action_fuzz(token_id: u64) {
+fn test_post_action_fuzz(token_id: felt252) {
     let token_address = TOKEN_ADDRESS();
 
     mock_call(token_address, selector!("update_game"), (), 1);
@@ -1068,7 +1128,7 @@ fn test_mint_fuzz_lifecycle(start: u64, end: u64) {
     let token_address = TOKEN_ADDRESS();
     let game_address = GAME_ADDRESS();
     let to = ALICE();
-    let expected_token_id: u64 = 1;
+    let expected_token_id: felt252 = 1;
 
     mock_call(token_address, selector!("mint"), expected_token_id, 1);
 
@@ -1085,6 +1145,9 @@ fn test_mint_fuzz_lifecycle(start: u64, end: u64) {
         Option::None,
         to,
         false,
+        false,
+        0,
+        0,
     );
 
     assert!(token_id == expected_token_id, "Token ID mismatch");
@@ -1097,7 +1160,7 @@ fn test_mint_fuzz_soulbound(soulbound: bool) {
     let token_address = TOKEN_ADDRESS();
     let game_address = GAME_ADDRESS();
     let to = ALICE();
-    let expected_token_id: u64 = 1;
+    let expected_token_id: felt252 = 1;
 
     mock_call(token_address, selector!("mint"), expected_token_id, 1);
 
@@ -1114,6 +1177,9 @@ fn test_mint_fuzz_soulbound(soulbound: bool) {
         Option::None,
         to,
         soulbound,
+        false,
+        0,
+        0,
     );
 
     assert!(token_id == expected_token_id, "Token ID mismatch");
@@ -1129,7 +1195,7 @@ fn test_mint_with_context() {
     let token_address = TOKEN_ADDRESS();
     let game_address = GAME_ADDRESS();
     let to = ALICE();
-    let expected_token_id: u64 = 1;
+    let expected_token_id: felt252 = 1;
 
     let context = GameContextDetails {
         name: "Test Context",
@@ -1153,6 +1219,9 @@ fn test_mint_with_context() {
         Option::None,
         to,
         false,
+        false,
+        0,
+        0,
     );
 
     assert!(token_id == expected_token_id, "Token ID mismatch");
@@ -1192,6 +1261,9 @@ fn test_mint_batch_with_context() {
         renderer_address: Option::None,
         to: ALICE(),
         soulbound: false,
+        paymaster: false,
+        salt: 0,
+        metadata: 0,
     };
 
     let mint2 = MintGameParams {
@@ -1205,9 +1277,12 @@ fn test_mint_batch_with_context() {
         renderer_address: Option::None,
         to: BOB(),
         soulbound: false,
+        paymaster: false,
+        salt: 0,
+        metadata: 0,
     };
 
-    let expected: Array<u64> = array![1, 2];
+    let expected: Array<felt252> = array![1, 2];
     mock_call(token_address, selector!("mint_batch"), expected.clone(), 1);
 
     let result = libs::mint_batch(token_address, game_address, array![mint1, mint2]);
@@ -1239,6 +1314,9 @@ fn test_mint_batch_mixed_context() {
         renderer_address: Option::None,
         to: ALICE(),
         soulbound: false,
+        paymaster: false,
+        salt: 0,
+        metadata: 0,
     };
 
     let mint2 = MintGameParams {
@@ -1252,6 +1330,9 @@ fn test_mint_batch_mixed_context() {
         renderer_address: Option::None,
         to: BOB(),
         soulbound: false,
+        paymaster: false,
+        salt: 0,
+        metadata: 0,
     };
 
     let mint3 = MintGameParams {
@@ -1265,9 +1346,12 @@ fn test_mint_batch_mixed_context() {
         renderer_address: Option::None,
         to: USER1(),
         soulbound: true,
+        paymaster: false,
+        salt: 0,
+        metadata: 0,
     };
 
-    let expected: Array<u64> = array![1, 2, 3];
+    let expected: Array<felt252> = array![1, 2, 3];
     mock_call(token_address, selector!("mint_batch"), expected.clone(), 1);
 
     let result = libs::mint_batch(token_address, game_address, array![mint1, mint2, mint3]);
@@ -1282,7 +1366,7 @@ fn test_mint_with_context_and_all_params() {
     let game_address = GAME_ADDRESS();
     let renderer = 'RENDERER'.try_into().unwrap();
     let to = ALICE();
-    let expected_token_id: u64 = 1;
+    let expected_token_id: felt252 = 1;
 
     let context = GameContextDetails {
         name: "Full Context",
@@ -1311,6 +1395,9 @@ fn test_mint_with_context_and_all_params() {
         Option::Some(renderer),
         to,
         true,
+        false,
+        0,
+        0,
     );
 
     assert!(token_id == expected_token_id, "Token ID mismatch");
@@ -1340,9 +1427,12 @@ fn test_mint_batch_with_empty_context_span() {
         renderer_address: Option::None,
         to: ALICE(),
         soulbound: false,
+        paymaster: false,
+        salt: 0,
+        metadata: 0,
     };
 
-    let expected: Array<u64> = array![1];
+    let expected: Array<felt252> = array![1];
     mock_call(token_address, selector!("mint_batch"), expected.clone(), 1);
 
     let result = libs::mint_batch(token_address, game_address, array![mint]);

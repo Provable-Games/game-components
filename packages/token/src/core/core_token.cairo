@@ -22,7 +22,7 @@ pub mod CoreTokenComponent {
         Map, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess,
     };
     use starknet::syscalls::call_contract_syscall;
-    use starknet::{ContractAddress, get_block_timestamp, get_caller_address};
+    use starknet::{ContractAddress, get_block_timestamp, get_caller_address, get_tx_info};
     use crate::core::interface::{IMINIGAME_TOKEN_ID, IMinigameToken};
     use crate::core::traits::{
         OptionalContext, OptionalMinter, OptionalObjectives, OptionalRenderer, OptionalSettings,
@@ -32,15 +32,16 @@ pub mod CoreTokenComponent {
     use crate::libs::{LifecycleTrait, token_state};
     use crate::structs::{
         LifecycleStorePacking, MintParams, PlayerNameUpdate, SetTokenMetadataParams, TokenMetadata,
-        TokenMetadataStorePacking,
+        TokenMutableState, TokenMutableStateStorePacking, extract_tx_hash_bits, pack_token_id,
+        to_token_metadata, unpack_game_id, unpack_minted_by, unpack_objective_id, unpack_paymaster,
+        unpack_soulbound, unpack_token_id,
     };
 
     #[storage]
     pub struct Storage {
-        token_metadata: Map<u64, TokenMetadata>,
-        token_player_names: Map<u64, felt252>,
-        token_client_url: Map<u64, ByteArray>,
-        token_counter: u64,
+        token_mutable_state: Map<felt252, TokenMutableState>,
+        token_player_names: Map<felt252, felt252>,
+        token_client_url: Map<felt252, ByteArray>,
         game_address: ContractAddress,
         game_registry_address: ContractAddress,
     }
@@ -48,8 +49,6 @@ pub mod CoreTokenComponent {
     // ==========================================================================
     // NATIVE EVENTS - Optimized for indexing with proper #[key] fields
     // ==========================================================================
-    // Events are emitted directly as native Starknet events for gas efficiency.
-    // All indexed fields use #[key] for efficient filtering in indexers.
 
     #[event]
     #[derive(Drop, starknet::Event)]
@@ -60,13 +59,15 @@ pub mod CoreTokenComponent {
         // ERC721 standard
         MetadataUpdate: MetadataUpdate,
         ScoreUpdate: ScoreUpdate,
+        GameOver: GameOver,
+        CompletedObjective: CompletedObjective,
     }
 
     /// Emitted when player name is updated
     #[derive(Drop, starknet::Event)]
     pub struct TokenPlayerNameUpdate {
         #[key]
-        pub id: u64,
+        pub id: felt252,
         pub player_name: felt252,
     }
 
@@ -74,7 +75,7 @@ pub mod CoreTokenComponent {
     #[derive(Drop, starknet::Event)]
     pub struct TokenClientUrlUpdate {
         #[key]
-        pub id: u64,
+        pub id: felt252,
         pub client_url: ByteArray,
     }
 
@@ -89,8 +90,23 @@ pub mod CoreTokenComponent {
     #[derive(Drop, starknet::Event)]
     pub struct ScoreUpdate {
         #[key]
-        pub token_id: u64,
+        pub token_id: felt252,
         pub score: u64,
+    }
+
+    /// Emitted when a game ends (game_over transitions from false to true)
+    #[derive(Drop, starknet::Event)]
+    pub struct GameOver {
+        #[key]
+        pub token_id: felt252,
+        pub score: u64,
+    }
+
+    /// Emitted when an objective is completed
+    #[derive(Drop, starknet::Event)]
+    pub struct CompletedObjective {
+        #[key]
+        pub token_id: felt252,
     }
 
     #[embeddable_as(CoreTokenImpl)]
@@ -109,33 +125,35 @@ pub mod CoreTokenComponent {
         +ERC721Component::ERC721HooksTrait<TContractState>,
         +ERC2981Component::ImmutableConfig,
     > of IMinigameToken<ComponentState<TContractState>> {
-        fn token_metadata(self: @ComponentState<TContractState>, token_id: u64) -> TokenMetadata {
-            self.token_metadata.entry(token_id).read()
+        fn token_metadata(
+            self: @ComponentState<TContractState>, token_id: felt252,
+        ) -> TokenMetadata {
+            let packed = unpack_token_id(token_id);
+            let mutable_state = self.token_mutable_state.entry(token_id).read();
+            to_token_metadata(packed, mutable_state)
         }
 
-        fn is_playable(self: @ComponentState<TContractState>, token_id: u64) -> bool {
-            let metadata = self.token_metadata.entry(token_id).read();
+        fn is_playable(self: @ComponentState<TContractState>, token_id: felt252) -> bool {
+            let metadata = self.token_metadata(token_id);
             let current_time = get_block_timestamp();
             token_state::is_token_playable(@metadata, current_time)
         }
 
-        fn settings_id(self: @ComponentState<TContractState>, token_id: u64) -> u32 {
-            let metadata = self.token_metadata.entry(token_id).read();
-            metadata.settings_id
+        fn settings_id(self: @ComponentState<TContractState>, token_id: felt252) -> u32 {
+            crate::structs::unpack_settings_id(token_id)
         }
 
-        fn player_name(self: @ComponentState<TContractState>, token_id: u64) -> felt252 {
+        fn player_name(self: @ComponentState<TContractState>, token_id: felt252) -> felt252 {
             self.token_player_names.entry(token_id).read()
         }
 
-        fn objective_id(self: @ComponentState<TContractState>, token_id: u64) -> u32 {
-            let metadata = self.token_metadata.entry(token_id).read();
-            metadata.objective_id
+        fn objective_id(self: @ComponentState<TContractState>, token_id: felt252) -> u32 {
+            unpack_objective_id(token_id)
         }
 
-        fn minted_by(self: @ComponentState<TContractState>, token_id: u64) -> u64 {
-            let metadata = self.token_metadata.entry(token_id).read();
-            metadata.minted_by
+        fn minted_by(self: @ComponentState<TContractState>, token_id: felt252) -> felt252 {
+            let minted_by_val: u64 = unpack_minted_by(token_id);
+            minted_by_val.into()
         }
 
         fn game_address(self: @ComponentState<TContractState>) -> ContractAddress {
@@ -146,56 +164,48 @@ pub mod CoreTokenComponent {
             self.game_registry_address.read()
         }
 
-        fn is_soulbound(self: @ComponentState<TContractState>, token_id: u64) -> bool {
-            let metadata = self.token_metadata.entry(token_id).read();
-            metadata.soulbound
+        fn is_soulbound(self: @ComponentState<TContractState>, token_id: felt252) -> bool {
+            unpack_soulbound(token_id)
         }
 
         fn renderer_address(
-            self: @ComponentState<TContractState>, token_id: u64,
+            self: @ComponentState<TContractState>, token_id: felt252,
         ) -> ContractAddress {
             let contract_self = self.get_contract();
             let renderer = RendererOpt::get_token_renderer(contract_self, token_id);
             match renderer {
                 Option::Some(addr) => addr,
                 Option::None => {
-                    // If no renderer is set, check if it's a single game token
-                    let token_metadata = self.token_metadata(token_id);
-                    let game_registry_dispatcher = IMinigameRegistryDispatcher {
-                        contract_address: self.game_registry_address.read(),
-                    };
-                    let game_metadata = game_registry_dispatcher
-                        .game_metadata(token_metadata.game_id);
-                    let game_renderer_address = game_metadata.renderer_address;
-                    if !game_renderer_address.is_zero() {
-                        game_renderer_address
+                    let game_id = unpack_game_id(token_id);
+                    if game_id == 0 {
+                        // Single game token
+                        self.game_address.read()
                     } else {
-                        self.token_game_address(token_id)
+                        let game_registry_dispatcher = IMinigameRegistryDispatcher {
+                            contract_address: self.game_registry_address.read(),
+                        };
+                        let game_metadata = game_registry_dispatcher.game_metadata(game_id.into());
+                        let game_renderer_address = game_metadata.renderer_address;
+                        if !game_renderer_address.is_zero() {
+                            game_renderer_address
+                        } else {
+                            self.token_game_address(token_id)
+                        }
                     }
                 },
             }
         }
 
         fn token_game_address(
-            self: @ComponentState<TContractState>, token_id: u64,
+            self: @ComponentState<TContractState>, token_id: felt252,
         ) -> ContractAddress {
-            let metadata = self.token_metadata.entry(token_id).read();
-            if token_state::is_single_game_token(metadata.game_id) {
-                // Single game token - use component's game address
-                self.game_address.read()
-            } else {
-                // Multi-game token - resolve from game registry
-                let game_registry_dispatcher = IMinigameRegistryDispatcher {
-                    contract_address: self.game_registry_address.read(),
-                };
-                let game_address = game_registry_dispatcher.game_address_from_id(metadata.game_id);
-                game_address
-            }
+            let game_id = unpack_game_id(token_id);
+            self.resolve_game_address(game_id.into())
         }
 
         // Batch view functions - all panic if token_ids array is empty
         fn token_metadata_batch(
-            self: @ComponentState<TContractState>, token_ids: Span<u64>,
+            self: @ComponentState<TContractState>, token_ids: Span<felt252>,
         ) -> Array<TokenMetadata> {
             assert!(token_ids.len() > 0, "MinigameToken: token_ids array cannot be empty");
             let mut results: Array<TokenMetadata> = ArrayTrait::new();
@@ -205,14 +215,14 @@ pub mod CoreTokenComponent {
                     break;
                 }
                 let token_id = *token_ids.at(i);
-                results.append(self.token_metadata.entry(token_id).read());
+                results.append(self.token_metadata(token_id));
                 i += 1;
             }
             results
         }
 
         fn is_playable_batch(
-            self: @ComponentState<TContractState>, token_ids: Span<u64>,
+            self: @ComponentState<TContractState>, token_ids: Span<felt252>,
         ) -> Array<bool> {
             assert!(token_ids.len() > 0, "MinigameToken: token_ids array cannot be empty");
             let mut results: Array<bool> = ArrayTrait::new();
@@ -223,7 +233,7 @@ pub mod CoreTokenComponent {
                     break;
                 }
                 let token_id = *token_ids.at(i);
-                let metadata = self.token_metadata.entry(token_id).read();
+                let metadata = self.token_metadata(token_id);
                 results.append(token_state::is_token_playable(@metadata, current_time));
                 i += 1;
             }
@@ -231,7 +241,7 @@ pub mod CoreTokenComponent {
         }
 
         fn settings_id_batch(
-            self: @ComponentState<TContractState>, token_ids: Span<u64>,
+            self: @ComponentState<TContractState>, token_ids: Span<felt252>,
         ) -> Array<u32> {
             assert!(token_ids.len() > 0, "MinigameToken: token_ids array cannot be empty");
             let mut results: Array<u32> = ArrayTrait::new();
@@ -240,16 +250,14 @@ pub mod CoreTokenComponent {
                 if i >= token_ids.len() {
                     break;
                 }
-                let token_id = *token_ids.at(i);
-                let metadata = self.token_metadata.entry(token_id).read();
-                results.append(metadata.settings_id);
+                results.append(crate::structs::unpack_settings_id(*token_ids.at(i)));
                 i += 1;
             }
             results
         }
 
         fn player_name_batch(
-            self: @ComponentState<TContractState>, token_ids: Span<u64>,
+            self: @ComponentState<TContractState>, token_ids: Span<felt252>,
         ) -> Array<felt252> {
             assert!(token_ids.len() > 0, "MinigameToken: token_ids array cannot be empty");
             let mut results: Array<felt252> = ArrayTrait::new();
@@ -266,7 +274,7 @@ pub mod CoreTokenComponent {
         }
 
         fn objective_id_batch(
-            self: @ComponentState<TContractState>, token_ids: Span<u64>,
+            self: @ComponentState<TContractState>, token_ids: Span<felt252>,
         ) -> Array<u32> {
             assert!(token_ids.len() > 0, "MinigameToken: token_ids array cannot be empty");
             let mut results: Array<u32> = ArrayTrait::new();
@@ -275,34 +283,31 @@ pub mod CoreTokenComponent {
                 if i >= token_ids.len() {
                     break;
                 }
-                let token_id = *token_ids.at(i);
-                let metadata = self.token_metadata.entry(token_id).read();
-                results.append(metadata.objective_id);
+                results.append(unpack_objective_id(*token_ids.at(i)));
                 i += 1;
             }
             results
         }
 
         fn minted_by_batch(
-            self: @ComponentState<TContractState>, token_ids: Span<u64>,
-        ) -> Array<u64> {
+            self: @ComponentState<TContractState>, token_ids: Span<felt252>,
+        ) -> Array<felt252> {
             assert!(token_ids.len() > 0, "MinigameToken: token_ids array cannot be empty");
-            let mut results: Array<u64> = ArrayTrait::new();
+            let mut results: Array<felt252> = ArrayTrait::new();
             let mut i: u32 = 0;
             loop {
                 if i >= token_ids.len() {
                     break;
                 }
-                let token_id = *token_ids.at(i);
-                let metadata = self.token_metadata.entry(token_id).read();
-                results.append(metadata.minted_by);
+                let minted_by_val: u64 = unpack_minted_by(*token_ids.at(i));
+                results.append(minted_by_val.into());
                 i += 1;
             }
             results
         }
 
         fn is_soulbound_batch(
-            self: @ComponentState<TContractState>, token_ids: Span<u64>,
+            self: @ComponentState<TContractState>, token_ids: Span<felt252>,
         ) -> Array<bool> {
             assert!(token_ids.len() > 0, "MinigameToken: token_ids array cannot be empty");
             let mut results: Array<bool> = ArrayTrait::new();
@@ -311,16 +316,14 @@ pub mod CoreTokenComponent {
                 if i >= token_ids.len() {
                     break;
                 }
-                let token_id = *token_ids.at(i);
-                let metadata = self.token_metadata.entry(token_id).read();
-                results.append(metadata.soulbound);
+                results.append(unpack_soulbound(*token_ids.at(i)));
                 i += 1;
             }
             results
         }
 
         fn renderer_address_batch(
-            self: @ComponentState<TContractState>, token_ids: Span<u64>,
+            self: @ComponentState<TContractState>, token_ids: Span<felt252>,
         ) -> Array<ContractAddress> {
             assert!(token_ids.len() > 0, "MinigameToken: token_ids array cannot be empty");
             let mut results: Array<ContractAddress> = ArrayTrait::new();
@@ -337,7 +340,7 @@ pub mod CoreTokenComponent {
         }
 
         fn token_game_address_batch(
-            self: @ComponentState<TContractState>, token_ids: Span<u64>,
+            self: @ComponentState<TContractState>, token_ids: Span<felt252>,
         ) -> Array<ContractAddress> {
             assert!(token_ids.len() > 0, "MinigameToken: token_ids array cannot be empty");
             let mut results: Array<ContractAddress> = ArrayTrait::new();
@@ -366,7 +369,10 @@ pub mod CoreTokenComponent {
             renderer_address: Option<ContractAddress>,
             to: ContractAddress,
             soulbound: bool,
-        ) -> u64 {
+            paymaster: bool,
+            salt: u16,
+            metadata: u16,
+        ) -> felt252 {
             self
                 .mint_game(
                     game_address,
@@ -380,17 +386,18 @@ pub mod CoreTokenComponent {
                     renderer_address,
                     to,
                     soulbound,
+                    paymaster,
+                    salt,
+                    metadata,
                 )
         }
 
         /// Batch mint with full per-token parameters.
-        /// Each MintParams contains all configuration for that token.
-        /// Panics if mints array is empty.
         fn mint_batch(
             ref self: ComponentState<TContractState>, mut mints: Array<MintParams>,
-        ) -> Array<u64> {
+        ) -> Array<felt252> {
             assert!(mints.len() > 0, "MinigameToken: mints array cannot be empty");
-            let mut token_ids: Array<u64> = ArrayTrait::new();
+            let mut token_ids: Array<felt252> = ArrayTrait::new();
             loop {
                 match mints.pop_front() {
                     Option::Some(params) => {
@@ -407,6 +414,9 @@ pub mod CoreTokenComponent {
                                 params.renderer_address,
                                 params.to,
                                 params.soulbound,
+                                params.paymaster,
+                                params.salt,
+                                params.metadata,
                             );
                         token_ids.append(token_id);
                     },
@@ -418,7 +428,7 @@ pub mod CoreTokenComponent {
 
         fn set_token_metadata(
             ref self: ComponentState<TContractState>,
-            token_id: u64,
+            token_id: felt252,
             game_address: ContractAddress,
             player_name: Option<felt252>,
             settings_id: Option<u32>,
@@ -426,9 +436,8 @@ pub mod CoreTokenComponent {
             end: Option<u64>,
             objective_id: Option<u32>,
             context: Option<GameContextDetails>,
-        ) {
-            // This function only becomes relavant if we are keeping track of the minter address
-            // Validate game address supports required interfaces
+        ) -> felt252 {
+            // This function only becomes relevant if we are keeping track of the minter address
             let src5_component = get_dep_component!(@self, SRC5);
             let supports_minter = src5_component.supports_interface(IMINIGAME_TOKEN_MINTER_ID);
             assert!(
@@ -437,25 +446,26 @@ pub mod CoreTokenComponent {
             );
             let caller = get_caller_address();
 
-            // Validate lifecycle parameters regardless of token type
+            // Validate lifecycle parameters
             let lifecycle = token_state::create_lifecycle_with_defaults(start, end);
             lifecycle.validate();
 
-            let mut contract_self = self.get_contract_mut();
-            let mut contract = self.get_contract();
+            let contract = self.get_contract();
             let erc721_component = ERC721::get_component(contract);
             assert!(
                 erc721_component.exists(token_id.into()),
                 "MinigameToken: Token id {} not minted",
                 token_id,
             );
-            let token_metadata: TokenMetadata = self.get_token_metadata(token_id);
-            assert!(
-                token_metadata.game_id.is_zero(), "MinigameToken: Token id {} not blank", token_id,
-            );
-            // Get minted by address and assert it is the caller
-            let minted_by = token_metadata.minted_by;
-            let minter_address = MinterOpt::get_minter_address(contract, minted_by);
+
+            // Verify it's a blank token
+            let old_game_id = unpack_game_id(token_id);
+            assert!(old_game_id == 0, "MinigameToken: Token id {} not blank", token_id);
+
+            // Get minted by and assert it is the caller
+            let minted_by = unpack_minted_by(token_id);
+            let contract_ref = self.get_contract();
+            let minter_address = MinterOpt::get_minter_address(contract_ref, minted_by);
             let minter_address_felt: felt252 = minter_address.into();
             assert!(
                 minter_address == caller,
@@ -467,11 +477,12 @@ pub mod CoreTokenComponent {
             let (final_game_address, game_id) = self
                 .validate_and_process_game_address(game_address);
 
+            let mut contract_ref2 = self.get_contract();
             // Validate settings if provided
             let validated_settings_id = match settings_id {
-                Option::Some(settings_id) => {
-                    SettingsOpt::validate_settings(contract, final_game_address, settings_id);
-                    settings_id
+                Option::Some(sid) => {
+                    SettingsOpt::validate_settings(contract_ref2, final_game_address, sid);
+                    sid
                 },
                 Option::None => 0,
             };
@@ -479,47 +490,94 @@ pub mod CoreTokenComponent {
             // Validate objective if provided
             let validated_objective_id: u32 = match objective_id {
                 Option::Some(obj_id) => {
-                    ObjectivesOpt::validate_objective(contract, final_game_address, obj_id);
+                    ObjectivesOpt::validate_objective(contract_ref2, final_game_address, obj_id);
                     obj_id
                 },
                 Option::None => 0,
             };
 
-            // Handle context if provided
-            let has_context = match context {
-                Option::Some(context) => {
-                    ContextOpt::emit_context(ref contract_self, caller, token_id, context);
-                    true
-                },
-                Option::None => false,
+            // Get the owner of the current token
+            let erc721_comp = ERC721::get_component(self.get_contract());
+            let token_owner = erc721_comp._owner_of(token_id.into());
+
+            // Burn old token
+            let mut contract_mut = self.get_contract_mut();
+            let mut erc721_mut = ERC721::get_component_mut(ref contract_mut);
+            erc721_mut.burn(token_id.into());
+
+            // Determine has_context before packing
+            let has_context = context.is_some();
+
+            // Compute start/end delays
+            let current_time = get_block_timestamp();
+            let start_delay: u32 = if lifecycle.start > current_time {
+                (lifecycle.start - current_time).try_into().unwrap()
+            } else {
+                0
+            };
+            let end_delay: u32 = if lifecycle.end > 0 && lifecycle.end > lifecycle.start {
+                (lifecycle.end - lifecycle.start).try_into().unwrap()
+            } else {
+                0
             };
 
-            let token_metadata = self.get_token_metadata(token_id);
-            let current_time = get_block_timestamp();
+            // Get tx_hash bits
+            let tx_info = get_tx_info().unbox();
+            let tx_hash_bits = extract_tx_hash_bits(tx_info.transaction_hash);
 
-            let metadata = token_state::create_game_token_metadata(
-                game_id,
+            // Unpack salt/metadata from old token
+            let old_packed = unpack_token_id(token_id);
+
+            // Pack new token ID
+            let new_token_id = pack_token_id(
+                game_id.try_into().unwrap(),
+                minted_by,
                 validated_settings_id,
-                lifecycle,
-                token_metadata.minted_by,
-                token_metadata.soulbound,
-                has_context,
-                validated_objective_id,
                 current_time,
+                start_delay,
+                end_delay,
+                validated_objective_id,
+                unpack_soulbound(token_id),
+                has_context,
+                unpack_paymaster(token_id),
+                tx_hash_bits,
+                old_packed.salt,
+                old_packed.metadata,
             );
 
-            self.token_metadata.entry(token_id).write(metadata);
-
-            // Set player name if provided
-            if let Option::Some(name) = player_name {
-                self.token_player_names.entry(token_id).write(name);
-                self.emit_token_player_name_update(token_id, name);
+            // Emit context event with new_token_id (after packing)
+            if let Option::Some(ctx) = context {
+                let mut contract_self = self.get_contract_mut();
+                ContextOpt::emit_context(ref contract_self, caller, new_token_id, ctx);
             }
+
+            // Mint new ERC721 to same owner
+            let mut contract_mut2 = self.get_contract_mut();
+            let mut erc721_mut2 = ERC721::get_component_mut(ref contract_mut2);
+            erc721_mut2.mint(token_owner, new_token_id.into());
+
+            // Migrate player name to new token_id
+            let old_name = self.token_player_names.entry(token_id).read();
+            if old_name != 0 {
+                self.token_player_names.entry(new_token_id).write(old_name);
+            }
+
+            // Migrate client url to new token_id
+            let old_url: ByteArray = self.token_client_url.entry(token_id).read();
+            if old_url.len() > 0 {
+                self.token_client_url.entry(new_token_id).write(old_url);
+            }
+
+            // Set new player name if provided (overrides old)
+            if let Option::Some(name) = player_name {
+                self.token_player_names.entry(new_token_id).write(name);
+                self.emit_token_player_name_update(new_token_id, name);
+            }
+
+            new_token_id
         }
 
         /// Batch update token metadata for multiple tokens.
-        /// Each SetTokenMetadataParams contains all configuration for that token.
-        /// Panics if updates array is empty.
         fn set_token_metadata_batch(
             ref self: ComponentState<TContractState>, mut updates: Array<SetTokenMetadataParams>,
         ) {
@@ -544,7 +602,7 @@ pub mod CoreTokenComponent {
             }
         }
 
-        fn update_game(ref self: ComponentState<TContractState>, token_id: u64) {
+        fn update_game(ref self: ComponentState<TContractState>, token_id: felt252) {
             // Validate token exists
             let mut contract = self.get_contract_mut();
             let mut erc721_component = ERC721::get_component_mut(ref contract);
@@ -554,8 +612,8 @@ pub mod CoreTokenComponent {
                 token_id,
             );
 
-            let token_metadata = self.token_metadata.entry(token_id).read();
-            let game_address = self.resolve_game_address(token_metadata.game_id);
+            let game_id = unpack_game_id(token_id);
+            let game_address = self.resolve_game_address(game_id.into());
 
             // Validate game address supports required interfaces
             let game_src5_dispatcher = ISRC5Dispatcher { contract_address: game_address };
@@ -564,14 +622,16 @@ pub mod CoreTokenComponent {
                 "MinigameToken: Game does not support IMinigame interface",
             );
 
+            // Read mutable state
+            let mutable_state = self.token_mutable_state.entry(token_id).read();
+
             // Check objective completion if token has an objective
-            let completed_objective = if token_metadata.objective_id != 0 {
+            let obj_id = unpack_objective_id(token_id);
+            let completed_objective = if obj_id != 0 {
                 let contract_ref = self.get_contract();
-                ObjectivesOpt::is_objective_completed(
-                    contract_ref, game_address, token_id, token_metadata.objective_id,
-                )
+                ObjectivesOpt::is_objective_completed(contract_ref, game_address, token_id, obj_id)
             } else {
-                token_metadata.completed_objective
+                mutable_state.completed_objective
             };
 
             // Get current game state
@@ -587,35 +647,32 @@ pub mod CoreTokenComponent {
 
             // Ensure game_over and completed_objective can only transition from false to true
             let final_game_over = token_state::ensure_game_over_transition(
-                token_metadata.game_over, game_over,
+                mutable_state.game_over, game_over,
             );
             let final_completed_objective = token_state::ensure_objectives_completion_transition(
-                token_metadata.completed_objective, completed_objective,
+                mutable_state.completed_objective, completed_objective,
             );
 
-            // Track state transitions for callbacks
-            let game_over_transition = final_game_over && !token_metadata.game_over;
+            // Track state transitions for callbacks and events
+            let game_over_transition = final_game_over && !mutable_state.game_over;
             let objective_complete_transition = final_completed_objective
-                && !token_metadata.completed_objective;
+                && !mutable_state.completed_objective;
 
-            // Update metadata if game state changed
-            if final_completed_objective != token_metadata.completed_objective
-                || final_game_over != token_metadata.game_over {
-                // Create updated metadata preserving original values
-                let updated_metadata = TokenMetadata {
-                    game_id: token_metadata.game_id,
-                    minted_at: token_metadata.minted_at,
-                    settings_id: token_metadata.settings_id,
-                    lifecycle: token_metadata.lifecycle,
-                    minted_by: token_metadata.minted_by,
-                    soulbound: token_metadata.soulbound,
-                    game_over: final_game_over,
-                    completed_objective: final_completed_objective,
-                    has_context: token_metadata.has_context,
-                    objective_id: token_metadata.objective_id,
+            // Emit new events on transitions
+            if game_over_transition {
+                self.emit(GameOver { token_id, score });
+            }
+            if objective_complete_transition {
+                self.emit(CompletedObjective { token_id });
+            }
+
+            // Update mutable state if changed
+            if final_completed_objective != mutable_state.completed_objective
+                || final_game_over != mutable_state.game_over {
+                let updated_state = TokenMutableState {
+                    game_over: final_game_over, completed_objective: final_completed_objective,
                 };
-
-                self.token_metadata.entry(token_id).write(updated_metadata);
+                self.token_mutable_state.entry(token_id).write(updated_state);
             }
 
             // Always emit metadata update
@@ -624,18 +681,12 @@ pub mod CoreTokenComponent {
             // =================================================================
             // METAGAME CALLBACKS - Notify minter contract of state changes
             // =================================================================
-            // If the minter (metagame contract) implements IMetagameCallback,
-            // invoke callbacks to enable automatic score aggregation.
-            // Safe SRC5 check handles contracts that don't implement SRC5.
-
+            let minted_by = unpack_minted_by(token_id);
             let contract_ref = self.get_contract();
-            let minter_address = MinterOpt::get_minter_address(
-                contract_ref, token_metadata.minted_by,
-            );
+            let minter_address = MinterOpt::get_minter_address(contract_ref, minted_by);
 
             if !minter_address.is_zero() {
-                // Safe SRC5 check using call_contract_syscall to handle contracts
-                // that don't implement SRC5 (will return Err instead of panicking)
+                // Safe SRC5 check using call_contract_syscall
                 let supports_interface_selector = selector!("supports_interface");
                 let mut calldata = array![];
                 calldata.append(IMETAGAME_CALLBACK_ID);
@@ -657,10 +708,7 @@ pub mod CoreTokenComponent {
                 if supports_callback {
                     let callback = IMetagameCallbackDispatcher { contract_address: minter_address };
 
-                    // on game started is not called here since it should be
-                    // score transition
-
-                    // Always notify score update (callback can filter if needed)
+                    // Always notify score update
                     callback.on_score_update(token_id.into(), score);
 
                     // Notify game over if transitioned
@@ -677,7 +725,7 @@ pub mod CoreTokenComponent {
         }
 
         fn update_player_name(
-            ref self: ComponentState<TContractState>, token_id: u64, name: felt252,
+            ref self: ComponentState<TContractState>, token_id: felt252, name: felt252,
         ) {
             assert!(!name.is_zero(), "MinigameToken: Player name is empty");
             let mut contract = self.get_contract();
@@ -693,8 +741,7 @@ pub mod CoreTokenComponent {
         }
 
         // Batch write functions
-        /// Panics if token_ids array is empty.
-        fn update_game_batch(ref self: ComponentState<TContractState>, token_ids: Span<u64>) {
+        fn update_game_batch(ref self: ComponentState<TContractState>, token_ids: Span<felt252>) {
             assert!(token_ids.len() > 0, "MinigameToken: token_ids array cannot be empty");
             let mut i: u32 = 0;
             loop {
@@ -707,7 +754,6 @@ pub mod CoreTokenComponent {
             };
         }
 
-        /// Panics if updates array is empty.
         fn update_player_name_batch(
             ref self: ComponentState<TContractState>, updates: Span<PlayerNameUpdate>,
         ) {
@@ -788,10 +834,6 @@ pub mod CoreTokenComponent {
             }
         }
 
-        fn token_counter(self: @ComponentState<TContractState>) -> u64 {
-            self.token_counter.read()
-        }
-
         fn mint_game(
             ref self: ComponentState<TContractState>,
             game_address: Option<ContractAddress>,
@@ -805,13 +847,32 @@ pub mod CoreTokenComponent {
             renderer_address: Option<ContractAddress>,
             to: ContractAddress,
             soulbound: bool,
-        ) -> u64 {
+            paymaster: bool,
+            salt: u16,
+            metadata_val: u16,
+        ) -> felt252 {
             let caller = get_caller_address();
-            let token_id = self.token_counter.read() + 1;
+            let current_time = get_block_timestamp();
 
             // Validate lifecycle parameters regardless of token type
             let lifecycle = token_state::create_lifecycle_with_defaults(start, end);
             lifecycle.validate();
+
+            // Compute delays relative to current time
+            let start_delay: u32 = if lifecycle.start > current_time {
+                (lifecycle.start - current_time).try_into().unwrap()
+            } else {
+                0
+            };
+            let end_delay: u32 = if lifecycle.end > 0 && lifecycle.end > lifecycle.start {
+                (lifecycle.end - lifecycle.start).try_into().unwrap()
+            } else {
+                0
+            };
+
+            // Get tx_hash bits for collision protection
+            let tx_info = get_tx_info().unbox();
+            let tx_hash_bits = extract_tx_hash_bits(tx_info.transaction_hash);
 
             match game_address {
                 Option::Some(provided_game_address) => {
@@ -823,11 +884,9 @@ pub mod CoreTokenComponent {
                     let mut contract_self = self.get_contract_mut();
                     // Validate settings if provided
                     let validated_settings_id = match settings_id {
-                        Option::Some(settings_id) => {
-                            SettingsOpt::validate_settings(
-                                contract, final_game_address, settings_id,
-                            );
-                            settings_id
+                        Option::Some(sid) => {
+                            SettingsOpt::validate_settings(contract, final_game_address, sid);
+                            sid
                         },
                         Option::None => 0,
                     };
@@ -841,62 +900,65 @@ pub mod CoreTokenComponent {
                         Option::None => 0,
                     };
 
-                    // Handle context if provided
-                    let has_context = match context {
-                        Option::Some(context) => {
-                            ContextOpt::emit_context(ref contract_self, caller, token_id, context);
-                            true
-                        },
-                        Option::None => false,
-                    };
-
                     // Handle minter tracking if enabled
                     let minted_by = MinterOpt::add_minter(ref contract_self, caller);
 
+                    // Determine has_context before packing to avoid double-pack
+                    let has_context = context.is_some();
+
+                    // Pack token ID with correct has_context from the start
+                    let final_token_id = pack_token_id(
+                        game_id.try_into().unwrap(),
+                        minted_by,
+                        validated_settings_id,
+                        current_time,
+                        start_delay,
+                        end_delay,
+                        validated_objective_id,
+                        soulbound,
+                        has_context,
+                        paymaster,
+                        tx_hash_bits,
+                        salt,
+                        metadata_val,
+                    );
+
+                    // Emit context event with the final token_id
+                    if let Option::Some(ctx) = context {
+                        ContextOpt::emit_context(ref contract_self, caller, final_token_id, ctx);
+                    }
+
                     // Handle renderer if provided
                     match renderer_address {
-                        Option::Some(renderer_address) => {
+                        Option::Some(raddr) => {
                             RendererOpt::set_token_renderer(
-                                ref contract_self, token_id, renderer_address,
+                                ref contract_self, final_token_id, raddr,
                             );
                         },
                         Option::None => {},
                     }
 
-                    // Create token metadata
-                    let current_time = get_block_timestamp();
-                    let metadata = token_state::create_game_token_metadata(
-                        game_id,
-                        validated_settings_id,
-                        lifecycle,
-                        minted_by,
-                        soulbound,
-                        has_context,
-                        validated_objective_id,
-                        current_time,
-                    );
-
-                    self.token_metadata.entry(token_id).write(metadata);
-                    self.token_counter.write(token_id);
+                    // No need to write token_metadata or token_mutable_state —
+                    // immutable data is in the token_id, mutable state defaults to zero
 
                     // Set player name if provided
                     if let Option::Some(name) = player_name {
-                        self.token_player_names.entry(token_id).write(name);
-                        self.emit_token_player_name_update(token_id, name);
+                        self.token_player_names.entry(final_token_id).write(name);
+                        self.emit_token_player_name_update(final_token_id, name);
                     }
 
                     // Set client url if provided
                     if let Option::Some(url) = client_url {
-                        self.token_client_url.entry(token_id).write(url.clone());
-                        self.emit_token_client_url_update(token_id, url);
+                        self.token_client_url.entry(final_token_id).write(url.clone());
+                        self.emit_token_client_url_update(final_token_id, url);
                     }
 
                     // Mint the ERC721 token
                     let mut contract = self.get_contract_mut();
                     let mut erc721_component = ERC721::get_component_mut(ref contract);
-                    erc721_component.mint(to, token_id.into());
+                    erc721_component.mint(to, final_token_id.into());
 
-                    token_id
+                    final_token_id
                 },
                 Option::None => {
                     let src5_component = get_dep_component!(@self, SRC5);
@@ -912,24 +974,30 @@ pub mod CoreTokenComponent {
                     // Only handle minter tracking for blank tokens
                     let minted_by = MinterOpt::add_minter(ref contract_self, caller);
 
+                    // Pack blank token ID (game_id=0)
+                    let token_id = pack_token_id(
+                        0, // game_id = 0 for blank
+                        minted_by,
+                        0, // settings_id
+                        current_time,
+                        start_delay,
+                        end_delay,
+                        0, // objective_id
+                        soulbound,
+                        false, // has_context
+                        paymaster,
+                        tx_hash_bits,
+                        salt,
+                        metadata_val,
+                    );
+
                     // Handle renderer if provided
                     match renderer_address {
-                        Option::Some(renderer_address) => {
-                            RendererOpt::set_token_renderer(
-                                ref contract_self, token_id, renderer_address,
-                            );
+                        Option::Some(raddr) => {
+                            RendererOpt::set_token_renderer(ref contract_self, token_id, raddr);
                         },
                         Option::None => {},
                     }
-
-                    // Create minimal token metadata with empty/default values
-                    let current_time = get_block_timestamp();
-                    let metadata = token_state::create_blank_token_metadata(
-                        lifecycle, minted_by, soulbound, current_time,
-                    );
-
-                    self.token_metadata.entry(token_id).write(metadata);
-                    self.token_counter.write(token_id);
 
                     // Set player name if provided
                     if let Option::Some(name) = player_name {
@@ -1000,7 +1068,7 @@ pub mod CoreTokenComponent {
             }
         }
 
-        fn assert_token_ownership(self: @ComponentState<TContractState>, token_id: u64) {
+        fn assert_token_ownership(self: @ComponentState<TContractState>, token_id: felt252) {
             let contract = self.get_contract();
             let erc721_component = ERC721::get_component(contract);
             let token_owner = erc721_component._owner_of(token_id.into());
@@ -1008,8 +1076,8 @@ pub mod CoreTokenComponent {
             assert!(token_owner == caller, "MinigameToken: Caller is not owner of token");
         }
 
-        fn assert_playable(self: @ComponentState<TContractState>, token_id: u64) {
-            let metadata = self.token_metadata.entry(token_id).read();
+        fn assert_playable(self: @ComponentState<TContractState>, token_id: felt252) {
+            let metadata = CoreToken::token_metadata(self, token_id);
             let current_time = get_block_timestamp();
             let is_active = metadata.lifecycle.is_playable(current_time);
             assert!(
@@ -1021,29 +1089,21 @@ pub mod CoreTokenComponent {
         // =================================================================
         // NATIVE EVENT EMITTERS
         // =================================================================
-        // All events are now emitted directly as native Starknet events.
-        // The relayer pattern has been removed for gas efficiency.
 
         fn emit_token_player_name_update(
-            ref self: ComponentState<TContractState>, id: u64, player_name: felt252,
+            ref self: ComponentState<TContractState>, id: felt252, player_name: felt252,
         ) {
             self.emit(TokenPlayerNameUpdate { id, player_name });
         }
 
         fn emit_token_client_url_update(
-            ref self: ComponentState<TContractState>, id: u64, client_url: ByteArray,
+            ref self: ComponentState<TContractState>, id: felt252, client_url: ByteArray,
         ) {
             self.emit(TokenClientUrlUpdate { id, client_url });
         }
 
         fn emit_metadata_update(ref self: ComponentState<TContractState>, token_id: u256) {
             self.emit(MetadataUpdate { token_id });
-        }
-
-        fn get_token_metadata(
-            self: @ComponentState<TContractState>, token_id: u64,
-        ) -> TokenMetadata {
-            self.token_metadata.entry(token_id).read()
         }
     }
 }

@@ -143,7 +143,10 @@ pub mod ObjectivesComponent {
         }
 
         fn is_objective_completed(
-            self: @TContractState, game_address: ContractAddress, token_id: u64, objective_id: u32,
+            self: @TContractState,
+            game_address: ContractAddress,
+            token_id: felt252,
+            objective_id: u32,
         ) -> bool {
             // Get objectives address from game
             let minigame_dispatcher = IMinigameDispatcher { contract_address: game_address };

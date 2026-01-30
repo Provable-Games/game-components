@@ -973,7 +973,7 @@ mod MockMinigameTokenForTicketBooth {
 
     #[abi(embed_v0)]
     impl MinigameTokenImpl of IMinigameToken<ContractState> {
-        fn token_metadata(self: @ContractState, token_id: u64) -> TokenMetadata {
+        fn token_metadata(self: @ContractState, token_id: felt252) -> TokenMetadata {
             TokenMetadata {
                 game_id: 0,
                 minted_at: 0,
@@ -985,26 +985,28 @@ mod MockMinigameTokenForTicketBooth {
                 completed_objective: false,
                 has_context: false,
                 objective_id: 0,
+                paymaster: false,
+                metadata: 0,
             }
         }
 
-        fn is_playable(self: @ContractState, token_id: u64) -> bool {
+        fn is_playable(self: @ContractState, token_id: felt252) -> bool {
             true
         }
 
-        fn settings_id(self: @ContractState, token_id: u64) -> u32 {
+        fn settings_id(self: @ContractState, token_id: felt252) -> u32 {
             0
         }
 
-        fn player_name(self: @ContractState, token_id: u64) -> felt252 {
+        fn player_name(self: @ContractState, token_id: felt252) -> felt252 {
             0
         }
 
-        fn objective_id(self: @ContractState, token_id: u64) -> u32 {
+        fn objective_id(self: @ContractState, token_id: felt252) -> u32 {
             0
         }
 
-        fn minted_by(self: @ContractState, token_id: u64) -> u64 {
+        fn minted_by(self: @ContractState, token_id: felt252) -> felt252 {
             0
         }
 
@@ -1016,56 +1018,56 @@ mod MockMinigameTokenForTicketBooth {
             Zero::zero()
         }
 
-        fn is_soulbound(self: @ContractState, token_id: u64) -> bool {
+        fn is_soulbound(self: @ContractState, token_id: felt252) -> bool {
             false
         }
 
-        fn renderer_address(self: @ContractState, token_id: u64) -> ContractAddress {
+        fn renderer_address(self: @ContractState, token_id: felt252) -> ContractAddress {
             Zero::zero()
         }
 
-        fn token_game_address(self: @ContractState, token_id: u64) -> ContractAddress {
+        fn token_game_address(self: @ContractState, token_id: felt252) -> ContractAddress {
             Zero::zero()
         }
 
         fn token_metadata_batch(
-            self: @ContractState, token_ids: Span<u64>,
+            self: @ContractState, token_ids: Span<felt252>,
         ) -> Array<TokenMetadata> {
             array![]
         }
 
-        fn is_playable_batch(self: @ContractState, token_ids: Span<u64>) -> Array<bool> {
+        fn is_playable_batch(self: @ContractState, token_ids: Span<felt252>) -> Array<bool> {
             array![]
         }
 
-        fn settings_id_batch(self: @ContractState, token_ids: Span<u64>) -> Array<u32> {
+        fn settings_id_batch(self: @ContractState, token_ids: Span<felt252>) -> Array<u32> {
             array![]
         }
 
-        fn player_name_batch(self: @ContractState, token_ids: Span<u64>) -> Array<felt252> {
+        fn player_name_batch(self: @ContractState, token_ids: Span<felt252>) -> Array<felt252> {
             array![]
         }
 
-        fn objective_id_batch(self: @ContractState, token_ids: Span<u64>) -> Array<u32> {
+        fn objective_id_batch(self: @ContractState, token_ids: Span<felt252>) -> Array<u32> {
             array![]
         }
 
-        fn minted_by_batch(self: @ContractState, token_ids: Span<u64>) -> Array<u64> {
+        fn minted_by_batch(self: @ContractState, token_ids: Span<felt252>) -> Array<felt252> {
             array![]
         }
 
-        fn is_soulbound_batch(self: @ContractState, token_ids: Span<u64>) -> Array<bool> {
+        fn is_soulbound_batch(self: @ContractState, token_ids: Span<felt252>) -> Array<bool> {
             array![]
         }
 
         fn renderer_address_batch(
-            self: @ContractState, token_ids: Span<u64>,
+            self: @ContractState, token_ids: Span<felt252>,
         ) -> Array<ContractAddress> {
             array![]
         }
 
         fn token_game_address_batch(
-            self: @ContractState, token_ids: Span<u64>,
+            self: @ContractState, token_ids: Span<felt252>,
         ) -> Array<ContractAddress> {
             array![]
         }
@@ -1083,19 +1085,23 @@ mod MockMinigameTokenForTicketBooth {
             renderer_address: Option<ContractAddress>,
             to: ContractAddress,
             soulbound: bool,
-        ) -> u64 {
-            let token_id = self.next_token_id.read();
-            self.next_token_id.write(token_id + 1);
+            paymaster: bool,
+            salt: u16,
+            metadata: u16,
+        ) -> felt252 {
+            let token_id_u64 = self.next_token_id.read();
+            self.next_token_id.write(token_id_u64 + 1);
+            let token_id: felt252 = token_id_u64.into();
             token_id
         }
 
-        fn mint_batch(ref self: ContractState, mints: Array<MintParams>) -> Array<u64> {
+        fn mint_batch(ref self: ContractState, mints: Array<MintParams>) -> Array<felt252> {
             array![]
         }
 
         fn set_token_metadata(
             ref self: ContractState,
-            token_id: u64,
+            token_id: felt252,
             game_address: ContractAddress,
             player_name: Option<felt252>,
             settings_id: Option<u32>,
@@ -1103,17 +1109,19 @@ mod MockMinigameTokenForTicketBooth {
             end: Option<u64>,
             objective_id: Option<u32>,
             context: Option<GameContextDetails>,
-        ) {}
+        ) -> felt252 {
+            token_id
+        }
 
-        fn update_game(ref self: ContractState, token_id: u64) {}
+        fn update_game(ref self: ContractState, token_id: felt252) {}
 
-        fn update_player_name(ref self: ContractState, token_id: u64, name: felt252) {}
+        fn update_player_name(ref self: ContractState, token_id: felt252, name: felt252) {}
 
         fn set_token_metadata_batch(
             ref self: ContractState, updates: Array<SetTokenMetadataParams>,
         ) {}
 
-        fn update_game_batch(ref self: ContractState, token_ids: Span<u64>) {}
+        fn update_game_batch(ref self: ContractState, token_ids: Span<felt252>) {}
 
         fn update_player_name_batch(ref self: ContractState, updates: Span<PlayerNameUpdate>) {}
     }

@@ -15,7 +15,7 @@ use crate::extensions::settings::structs::GameSetting;
 ///
 /// # Returns
 /// * `u32` - The settings ID
-pub fn get_settings_id(minigame_token_address: ContractAddress, token_id: u64) -> u32 {
+pub fn get_settings_id(minigame_token_address: ContractAddress, token_id: felt252) -> u32 {
     let minigame_token_dispatcher = IMinigameTokenDispatcher {
         contract_address: minigame_token_address,
     };

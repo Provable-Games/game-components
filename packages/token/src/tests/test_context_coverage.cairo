@@ -29,6 +29,9 @@ fn test_context_extension_operations() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Check metadata - should not have context
@@ -55,6 +58,9 @@ fn test_context_through_metagame() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Verify token was minted with context support
@@ -73,7 +79,7 @@ fn test_multiple_context_mints() {
     // Mint multiple tokens through metagame
     let players = array![('Alice', ALICE()), ('Bob', BOB())];
 
-    let mut token_ids: Array<u64> = array![];
+    let mut token_ids: Array<felt252> = array![];
     let mut i = 0;
 
     while i < players.len() {
@@ -92,6 +98,9 @@ fn test_multiple_context_mints() {
                 Option::None,
                 *address,
                 false,
+                false,
+                i.try_into().unwrap(),
+                0,
             );
 
         token_ids.append(token_id);
@@ -129,6 +138,9 @@ fn test_context_with_game_lifecycle() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Verify lifecycle is set correctly
@@ -155,7 +167,10 @@ fn test_context_with_soulbound() {
             Option::None,
             Option::None,
             ALICE(),
-            true // soulbound
+            true, // soulbound
+            false,
+            0,
+            0,
         );
 
     // Verify token is soulbound and has context
@@ -183,6 +198,9 @@ fn test_context_extension_edge_cases() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Test with all parameters
@@ -199,6 +217,9 @@ fn test_context_extension_edge_cases() {
             Option::Some(addr('RENDERER')), // renderer
             BOB(),
             false,
+            false,
+            1,
+            0,
         );
 
     // Verify both tokens have context

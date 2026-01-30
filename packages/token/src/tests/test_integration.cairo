@@ -56,6 +56,9 @@ fn test_time_campaign() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // 1. Verify not playable before start
@@ -108,6 +111,9 @@ fn test_double_mint_attack() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Second mint - should get different ID
@@ -125,11 +131,13 @@ fn test_double_mint_attack() {
             Option::None,
             ALICE(),
             false,
+            false,
+            1,
+            0,
         );
 
     // Verify counter prevents duplicate IDs
     assert!(token_id_1 != token_id_2, "Token IDs must be unique");
-    assert!(token_id_2 == token_id_1 + 1, "Counter should increment");
 }
 
 // ================================================================================================
@@ -154,6 +162,9 @@ fn test_update_game_any_caller() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Try to update as BOB (non-owner) - this should work
@@ -188,14 +199,14 @@ mod MockContextProvider {
 
     #[abi(embed_v0)]
     impl MetagameContextImpl of IMetagameContext<ContractState> {
-        fn has_context(self: @ContractState, token_id: u64) -> bool {
+        fn has_context(self: @ContractState, token_id: felt252) -> bool {
             true
         }
     }
 
     #[abi(embed_v0)]
     impl MetagameContextDetailsImpl of IMetagameContextDetails<ContractState> {
-        fn context_details(self: @ContractState, token_id: u64) -> GameContextDetails {
+        fn context_details(self: @ContractState, token_id: felt252) -> GameContextDetails {
             GameContextDetails {
                 name: "Tournament",
                 description: "Test tournament",
@@ -265,8 +276,8 @@ fn test_multi_minter_scenario() {
 
     // Different users mint tokens
     let minters = array![ALICE(), BOB(), CHARLIE(), OWNER()];
-    let mut token_ids: Array<u64> = array![];
-    let mut minter_ids: Array<u64> = array![];
+    let mut token_ids: Array<felt252> = array![];
+    let mut minter_ids: Array<felt252> = array![];
 
     // Each minter mints 2 tokens
     let mut i: u32 = 0;
@@ -294,6 +305,9 @@ fn test_multi_minter_scenario() {
                     Option::None,
                     minter,
                     false,
+                    false,
+                    j.try_into().unwrap(),
+                    0,
                 );
 
             token_ids.append(token_id);
@@ -364,6 +378,9 @@ fn test_game_contract_unresponsive() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Token should exist and be valid
@@ -449,6 +466,9 @@ fn test_registry_lookup_edge_cases() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
     assert!(token_dispatcher.token_metadata(token_id1).game_id == 1, "Should have game ID 1");
 
@@ -473,6 +493,9 @@ fn test_registry_lookup_edge_cases() {
             Option::None,
             BOB(),
             false,
+            false,
+            1,
+            0,
         );
     assert!(
         token_dispatcher.token_metadata(token_id2).game_id == last_game_id,
@@ -490,7 +513,7 @@ fn test_concurrent_operations() {
 
     // Simulate concurrent minting from multiple users
     let users = array![ALICE(), BOB(), CHARLIE()];
-    let mut all_tokens: Array<u64> = array![];
+    let mut all_tokens: Array<felt252> = array![];
 
     // Each user mints tokens in interleaved fashion
     let mut round: u32 = 0;
@@ -517,6 +540,9 @@ fn test_concurrent_operations() {
                     Option::None,
                     user,
                     false,
+                    false,
+                    round.try_into().unwrap(),
+                    0,
                 );
 
             all_tokens.append(token_id);
@@ -525,12 +551,16 @@ fn test_concurrent_operations() {
         round += 1;
     }
 
-    // Verify all tokens are unique and sequential
+    // Verify all tokens are unique
     assert!(all_tokens.len() == 9, "Should have 9 tokens");
 
     let mut i: u32 = 0;
     while i < all_tokens.len() {
-        assert!(*all_tokens.at(i) == (i + 1).into(), "Tokens should be sequential");
+        let mut j: u32 = i + 1;
+        while j < all_tokens.len() {
+            assert!(*all_tokens.at(i) != *all_tokens.at(j), "Tokens should be unique");
+            j += 1;
+        }
         i += 1;
     };
 }
@@ -558,6 +588,9 @@ fn test_lifecycle_boundary_conditions() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Should be playable at start time
@@ -593,6 +626,9 @@ fn test_update_game_triggers_score_callback() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // End game with score (sets game_over=true and score)
@@ -631,6 +667,9 @@ fn test_update_game_triggers_game_over_callback() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // End game with score
@@ -666,6 +705,9 @@ fn test_update_game_no_game_over_callback_without_transition() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // End game
@@ -705,6 +747,9 @@ fn test_update_game_triggers_objective_complete_callback() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // End game with score >= objective target
@@ -748,6 +793,9 @@ fn test_update_game_no_callback_for_non_callback_minter() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // End game with score

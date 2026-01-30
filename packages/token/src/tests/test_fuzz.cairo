@@ -45,7 +45,7 @@ fn test_token_id_monotonicity_fuzz(seed: felt252) {
         i += 1;
     }
 
-    let mut previous_id: u64 = 0;
+    let mut all_ids: Array<felt252> = array![];
     let mut j: u32 = 0;
     while j < 10 {
         let to_address = *addresses.at(j % addresses.len());
@@ -64,16 +64,22 @@ fn test_token_id_monotonicity_fuzz(seed: felt252) {
                 Option::None,
                 to_address,
                 false,
+                false,
+                j.try_into().unwrap(),
+                0,
             );
 
-        // Verify monotonic increase
-        if previous_id == 0 {
-            assert!(token_id == 1, "First token ID should be 1");
-        } else {
-            assert!(token_id == previous_id + 1, "Token ID should increment by 1");
+        // Verify non-zero
+        assert!(token_id != 0, "Token ID should not be 0");
+
+        // Verify uniqueness against all previous IDs
+        let mut k: u32 = 0;
+        while k < all_ids.len() {
+            assert!(token_id != *all_ids.at(k), "Token IDs should be unique");
+            k += 1;
         }
 
-        previous_id = token_id;
+        all_ids.append(token_id);
         j += 1;
     };
 }
@@ -110,6 +116,9 @@ fn test_lifecycle_validity_fuzz(start_offset: u64, duration: u64) {
             Option::None,
             addr(0x1),
             false,
+            false,
+            0,
+            0,
         );
 
     // Verify is_playable based on lifecycle
@@ -163,6 +172,9 @@ fn test_score_monotonicity_fuzz(score1: u64, score2: u64, score3: u64) {
             Option::None,
             addr(0x1),
             false,
+            false,
+            0,
+            0,
         );
 
     // Apply scores in sequence
@@ -216,6 +228,9 @@ fn test_ownership_protection_fuzz(caller1: felt252, caller2: felt252, caller3: f
             Option::None,
             owner,
             false,
+            false,
+            0,
+            0,
         );
 
     // Verify owner
@@ -262,6 +277,9 @@ fn test_settings_immutability_fuzz(settings_id: u32, op1: u8, op2: u8, op3: u8) 
             Option::None,
             addr(0x1),
             false,
+            false,
+            0,
+            0,
         );
 
     // Get initial settings ID (should be 0 since no settings provided)
@@ -319,6 +337,9 @@ fn test_game_over_irreversibility_fuzz(op1: u8, op2: u8, op3: u8) {
             Option::None,
             addr(0x1),
             false,
+            false,
+            0,
+            0,
         );
 
     // End the game
@@ -362,7 +383,10 @@ fn test_soulbound_immutability_fuzz(attempt1: u8, attempt2: u8, attempt3: u8) {
             Option::None,
             Option::None,
             owner,
-            true // soulbound = true
+            true, // soulbound
+            false,
+            0,
+            0,
         );
 
     // Verify initial owner
@@ -416,6 +440,9 @@ fn test_objective_id_persistence_fuzz(objective_id_input: u32) {
             Option::None,
             addr(0x1),
             false,
+            false,
+            0,
+            0,
         );
 
     // Verify objective_id is stored correctly

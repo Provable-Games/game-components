@@ -335,6 +335,8 @@ mod tests {
             completed_objective: true,
             has_context: true,
             objective_id: 5,
+            paymaster: false,
+            metadata: 0,
         };
 
         let objective_ids = array![1, 2, 3, 5, 8].span();
@@ -400,6 +402,8 @@ mod tests {
             completed_objective: false,
             has_context: false,
             objective_id: 0,
+            paymaster: false,
+            metadata: 0,
         };
 
         let metadata = create_custom_metadata(
@@ -462,6 +466,8 @@ mod tests {
             completed_objective: false,
             has_context: true,
             objective_id: 10,
+            paymaster: false,
+            metadata: 0,
         };
 
         let metadata = create_custom_metadata(
@@ -531,6 +537,8 @@ mod tests {
             completed_objective: true,
             has_context: true,
             objective_id: 100,
+            paymaster: false,
+            metadata: 0,
         };
 
         let metadata = create_custom_metadata(
@@ -607,6 +615,8 @@ mod tests {
             completed_objective: true,
             has_context: true,
             objective_id: 1,
+            paymaster: false,
+            metadata: 0,
         };
 
         let metadata = create_custom_metadata(

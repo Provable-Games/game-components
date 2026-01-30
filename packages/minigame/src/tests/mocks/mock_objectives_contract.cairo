@@ -20,9 +20,9 @@ pub trait IObjectivesSetter<TContractState> {
         description: ByteArray,
         is_required: bool,
     );
-    fn complete_objective(ref self: TContractState, token_id: u64, objective_id: u32);
-    fn set_token_objective(ref self: TContractState, token_id: u64, objective_id: u32);
-    fn get_objective_id(self: @TContractState, token_id: u64) -> u32;
+    fn complete_objective(ref self: TContractState, token_id: felt252, objective_id: u32);
+    fn set_token_objective(ref self: TContractState, token_id: felt252, objective_id: u32);
+    fn get_objective_id(self: @TContractState, token_id: felt252) -> u32;
 }
 
 #[starknet::contract]
@@ -49,8 +49,8 @@ pub mod MockObjectivesContract {
         // Storage for testing
         objective_exists: Map<u32, bool>,
         objective_details: Map<u32, ObjectiveDetails>,
-        token_objectives: Map<(u64, u32), bool>, // (token_id, objective_id) => completed
-        token_objective_id: Map<u64, u32> // token_id => objective_id
+        token_objectives: Map<(felt252, u32), bool>, // (token_id, objective_id) => completed
+        token_objective_id: Map<felt252, u32> // token_id => objective_id
     }
 
     #[event]
@@ -144,7 +144,7 @@ pub mod MockObjectivesContract {
             self.objective_exists.read(objective_id)
         }
 
-        fn completed_objective(self: @ContractState, token_id: u64, objective_id: u32) -> bool {
+        fn completed_objective(self: @ContractState, token_id: felt252, objective_id: u32) -> bool {
             self.token_objectives.read((token_id, objective_id))
         }
 
@@ -164,7 +164,7 @@ pub mod MockObjectivesContract {
 
     #[abi(embed_v0)]
     impl ObjectivesDetailsImpl of IMinigameObjectivesDetails<ContractState> {
-        fn objectives_details(self: @ContractState, token_id: u64) -> Span<GameObjective> {
+        fn objectives_details(self: @ContractState, token_id: felt252) -> Span<GameObjective> {
             // Return mock objectives for the token
             let mut objectives_list = array![];
 
@@ -197,7 +197,7 @@ pub mod MockObjectivesContract {
         }
 
         fn objectives_details_batch(
-            self: @ContractState, token_ids: Span<u64>,
+            self: @ContractState, token_ids: Span<felt252>,
         ) -> Array<Span<GameObjective>> {
             let mut results = array![];
             let mut index = 0;
@@ -214,7 +214,7 @@ pub mod MockObjectivesContract {
 
     #[abi(embed_v0)]
     impl ObjectivesSVGImpl of IMinigameObjectivesSVG<ContractState> {
-        fn objectives_svg(self: @ContractState, token_id: u64) -> ByteArray {
+        fn objectives_svg(self: @ContractState, token_id: felt252) -> ByteArray {
             format!("<svg><text>Objectives for token {}</text></svg>", token_id)
         }
     }
@@ -261,15 +261,15 @@ pub mod MockObjectivesContract {
                 );
         }
 
-        fn complete_objective(ref self: ContractState, token_id: u64, objective_id: u32) {
+        fn complete_objective(ref self: ContractState, token_id: felt252, objective_id: u32) {
             self.token_objectives.write((token_id, objective_id), true);
         }
 
-        fn set_token_objective(ref self: ContractState, token_id: u64, objective_id: u32) {
+        fn set_token_objective(ref self: ContractState, token_id: felt252, objective_id: u32) {
             self.token_objective_id.write(token_id, objective_id);
         }
 
-        fn get_objective_id(self: @ContractState, token_id: u64) -> u32 {
+        fn get_objective_id(self: @ContractState, token_id: felt252) -> u32 {
             self.token_objective_id.read(token_id)
         }
     }

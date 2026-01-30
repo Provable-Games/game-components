@@ -72,7 +72,10 @@ fn test_transfer_non_soulbound_token() {
             Option::None,
             Option::None,
             ALICE(),
-            false // NOT soulbound
+            false, // NOT soulbound
+            false,
+            0,
+            0,
         );
 
     // Verify initial owner
@@ -107,7 +110,10 @@ fn test_transfer_soulbound_token_fails() {
             Option::None,
             Option::None,
             ALICE(),
-            true // SOULBOUND
+            true, // SOULBOUND
+            false,
+            0,
+            0,
         );
 
     // Try to transfer soulbound token - should fail
@@ -147,6 +153,9 @@ fn test_playability_with_zero_start_time() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     assert!(
@@ -177,6 +186,9 @@ fn test_playability_with_zero_end_time() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     assert!(test_contracts.test_token.is_playable(token_id), "Token with end=0 should be playable");
@@ -211,6 +223,9 @@ fn test_same_minter_multiple_tokens() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     let token_id2 = test_contracts
@@ -227,6 +242,9 @@ fn test_same_minter_multiple_tokens() {
             Option::None,
             ALICE(),
             false,
+            false,
+            1,
+            0,
         );
 
     let token_id3 = test_contracts
@@ -243,6 +261,9 @@ fn test_same_minter_multiple_tokens() {
             Option::None,
             ALICE(),
             false,
+            false,
+            2,
+            0,
         );
 
     // All tokens should have same minter ID
@@ -276,6 +297,9 @@ fn test_multi_game_token_game_id_resolution() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // In multi-game mode, game_id should be non-zero
@@ -321,6 +345,9 @@ fn test_erc721_balance_of_after_mint() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     let final_balance = test_contracts.erc721.balance_of(ALICE());
@@ -363,6 +390,9 @@ fn test_update_game_no_state_change() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Get initial state
@@ -400,6 +430,9 @@ fn test_update_game_with_score_change() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Set score via mock
@@ -438,6 +471,9 @@ fn test_renderer_address_custom() {
             Option::Some(RENDERER_ADDRESS()), // custom renderer
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // With custom renderer, should have custom renderer or check has_custom_renderer
@@ -463,6 +499,9 @@ fn test_get_renderer() {
             Option::Some(RENDERER_ADDRESS()),
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     let renderer = test_contracts.test_token.get_renderer(token_id);
@@ -491,6 +530,9 @@ fn test_get_renderer_batch() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     let token_id2 = test_contracts
@@ -507,9 +549,12 @@ fn test_get_renderer_batch() {
             Option::Some(RENDERER_ADDRESS()),
             BOB(),
             false,
+            false,
+            1,
+            0,
         );
 
-    let token_ids: Array<u64> = array![token_id1, token_id2];
+    let token_ids: Array<felt252> = array![token_id1, token_id2];
     let renderers = test_contracts.test_token.get_renderer_batch(token_ids.span());
 
     assert!(renderers.len() == 2, "Should return 2 renderer addresses");
@@ -537,6 +582,9 @@ fn test_player_name_initial() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     let name = test_contracts.test_token.player_name(token_id);
@@ -561,6 +609,9 @@ fn test_player_name_no_name() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     let name = test_contracts.test_token.player_name(token_id);
@@ -592,6 +643,9 @@ fn test_objective_id_initial() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     let obj_id = test_contracts.test_token.objective_id(token_id);
@@ -616,6 +670,9 @@ fn test_objective_id_zero() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     let obj_id = test_contracts.test_token.objective_id(token_id);

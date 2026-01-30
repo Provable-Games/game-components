@@ -21,6 +21,9 @@ pub struct MintGameParams {
     pub renderer_address: Option<ContractAddress>,
     pub to: ContractAddress,
     pub soulbound: bool,
+    pub paymaster: bool,
+    pub salt: u16,
+    pub metadata: u16,
 }
 
 #[derive(Drop, Serde)]

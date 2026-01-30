@@ -11,7 +11,7 @@ use super::setup::{ALICE, BOB, CHARLIE, setup};
 fn test_token_metadata_batch_empty_panics() {
     let test_contracts = setup();
 
-    let token_ids: Array<u64> = array![];
+    let token_ids: Array<felt252> = array![];
     test_contracts.test_token.token_metadata_batch(token_ids.span());
 }
 
@@ -34,9 +34,12 @@ fn test_token_metadata_batch_single() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
-    let token_ids: Array<u64> = array![token_id];
+    let token_ids: Array<felt252> = array![token_id];
     let results = test_contracts.test_token.token_metadata_batch(token_ids.span());
 
     assert!(results.len() == 1, "Should return one result");
@@ -63,6 +66,9 @@ fn test_token_metadata_batch_multiple() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     let token_id2 = test_contracts
@@ -79,6 +85,9 @@ fn test_token_metadata_batch_multiple() {
             Option::None,
             BOB(),
             true,
+            false,
+            1,
+            0,
         );
 
     let token_id3 = test_contracts
@@ -95,9 +104,12 @@ fn test_token_metadata_batch_multiple() {
             Option::None,
             CHARLIE(),
             false,
+            false,
+            2,
+            0,
         );
 
-    let token_ids: Array<u64> = array![token_id1, token_id2, token_id3];
+    let token_ids: Array<felt252> = array![token_id1, token_id2, token_id3];
     let results = test_contracts.test_token.token_metadata_batch(token_ids.span());
 
     assert!(results.len() == 3, "Should return three results");
@@ -111,12 +123,12 @@ fn test_token_metadata_batch_nonexistent() {
     let test_contracts = setup();
 
     // Query non-existent token IDs - should return default/zero values
-    let token_ids: Array<u64> = array![999, 1000, 1001];
+    let token_ids: Array<felt252> = array![999, 1000, 1001];
     let results = test_contracts.test_token.token_metadata_batch(token_ids.span());
 
     assert!(results.len() == 3, "Should return three results");
     // Non-existent tokens should have default metadata (all zeros)
-    assert!(*results.at(0).game_id == 0, "Non-existent token should have zero game_id");
+    assert!(!*results.at(0).game_over, "Non-existent token should not be game over");
 }
 
 // ============================================================================
@@ -128,7 +140,7 @@ fn test_token_metadata_batch_nonexistent() {
 fn test_is_playable_batch_empty_panics() {
     let test_contracts = setup();
 
-    let token_ids: Array<u64> = array![];
+    let token_ids: Array<felt252> = array![];
     test_contracts.test_token.is_playable_batch(token_ids.span());
 }
 
@@ -151,6 +163,9 @@ fn test_is_playable_batch_multiple() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     let token_id2 = test_contracts
@@ -167,9 +182,12 @@ fn test_is_playable_batch_multiple() {
             Option::None,
             BOB(),
             false,
+            false,
+            1,
+            0,
         );
 
-    let token_ids: Array<u64> = array![token_id1, token_id2];
+    let token_ids: Array<felt252> = array![token_id1, token_id2];
     let results = test_contracts.test_token.is_playable_batch(token_ids.span());
 
     assert!(results.len() == 2, "Should return two results");
@@ -186,7 +204,7 @@ fn test_is_playable_batch_multiple() {
 fn test_settings_id_batch_empty_panics() {
     let test_contracts = setup();
 
-    let token_ids: Array<u64> = array![];
+    let token_ids: Array<felt252> = array![];
     test_contracts.test_token.settings_id_batch(token_ids.span());
 }
 
@@ -209,6 +227,9 @@ fn test_settings_id_batch_multiple() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     let token_id2 = test_contracts
@@ -225,9 +246,12 @@ fn test_settings_id_batch_multiple() {
             Option::None,
             BOB(),
             false,
+            false,
+            1,
+            0,
         );
 
-    let token_ids: Array<u64> = array![token_id1, token_id2];
+    let token_ids: Array<felt252> = array![token_id1, token_id2];
     let results = test_contracts.test_token.settings_id_batch(token_ids.span());
 
     assert!(results.len() == 2, "Should return two results");
@@ -244,7 +268,7 @@ fn test_settings_id_batch_multiple() {
 fn test_player_name_batch_empty_panics() {
     let test_contracts = setup();
 
-    let token_ids: Array<u64> = array![];
+    let token_ids: Array<felt252> = array![];
     test_contracts.test_token.player_name_batch(token_ids.span());
 }
 
@@ -267,6 +291,9 @@ fn test_player_name_batch_multiple() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     let token_id2 = test_contracts
@@ -283,6 +310,9 @@ fn test_player_name_batch_multiple() {
             Option::None,
             BOB(),
             false,
+            false,
+            1,
+            0,
         );
 
     let token_id3 = test_contracts
@@ -299,9 +329,12 @@ fn test_player_name_batch_multiple() {
             Option::None,
             CHARLIE(),
             false,
+            false,
+            2,
+            0,
         );
 
-    let token_ids: Array<u64> = array![token_id1, token_id2, token_id3];
+    let token_ids: Array<felt252> = array![token_id1, token_id2, token_id3];
     let results = test_contracts.test_token.player_name_batch(token_ids.span());
 
     assert!(results.len() == 3, "Should return three results");
@@ -319,7 +352,7 @@ fn test_player_name_batch_multiple() {
 fn test_objective_id_batch_empty_panics() {
     let test_contracts = setup();
 
-    let token_ids: Array<u64> = array![];
+    let token_ids: Array<felt252> = array![];
     test_contracts.test_token.objective_id_batch(token_ids.span());
 }
 
@@ -342,6 +375,9 @@ fn test_objective_id_batch_multiple() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     let token_id2 = test_contracts
@@ -358,9 +394,12 @@ fn test_objective_id_batch_multiple() {
             Option::None,
             BOB(),
             false,
+            false,
+            1,
+            0,
         );
 
-    let token_ids: Array<u64> = array![token_id1, token_id2];
+    let token_ids: Array<felt252> = array![token_id1, token_id2];
     let results = test_contracts.test_token.objective_id_batch(token_ids.span());
 
     assert!(results.len() == 2, "Should return two results");
@@ -377,7 +416,7 @@ fn test_objective_id_batch_multiple() {
 fn test_minted_by_batch_empty_panics() {
     let test_contracts = setup();
 
-    let token_ids: Array<u64> = array![];
+    let token_ids: Array<felt252> = array![];
     test_contracts.test_token.minted_by_batch(token_ids.span());
 }
 
@@ -400,6 +439,9 @@ fn test_minted_by_batch_multiple() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     let token_id2 = test_contracts
@@ -416,15 +458,18 @@ fn test_minted_by_batch_multiple() {
             Option::None,
             BOB(),
             false,
+            false,
+            1,
+            0,
         );
 
-    let token_ids: Array<u64> = array![token_id1, token_id2];
+    let token_ids: Array<felt252> = array![token_id1, token_id2];
     let results = test_contracts.test_token.minted_by_batch(token_ids.span());
 
     assert!(results.len() == 2, "Should return two results");
     // Both minted by the same caller, so should have minter IDs
-    assert!(*results.at(0) > 0, "Token 1 should have valid minter ID");
-    assert!(*results.at(1) > 0, "Token 2 should have valid minter ID");
+    assert!(*results.at(0) != 0, "Token 1 should have valid minter ID");
+    assert!(*results.at(1) != 0, "Token 2 should have valid minter ID");
 }
 
 // ============================================================================
@@ -436,7 +481,7 @@ fn test_minted_by_batch_multiple() {
 fn test_is_soulbound_batch_empty_panics() {
     let test_contracts = setup();
 
-    let token_ids: Array<u64> = array![];
+    let token_ids: Array<felt252> = array![];
     test_contracts.test_token.is_soulbound_batch(token_ids.span());
 }
 
@@ -458,7 +503,10 @@ fn test_is_soulbound_batch_multiple() {
             Option::None,
             Option::None,
             ALICE(),
-            false // Not soulbound
+            false, // Not soulbound
+            false,
+            0,
+            0,
         );
 
     let token_id2 = test_contracts
@@ -474,7 +522,10 @@ fn test_is_soulbound_batch_multiple() {
             Option::None,
             Option::None,
             BOB(),
-            true // Soulbound
+            true, // Soulbound
+            false,
+            1,
+            0,
         );
 
     let token_id3 = test_contracts
@@ -490,10 +541,13 @@ fn test_is_soulbound_batch_multiple() {
             Option::None,
             Option::None,
             CHARLIE(),
-            false // Not soulbound
+            false, // Not soulbound
+            false,
+            2,
+            0,
         );
 
-    let token_ids: Array<u64> = array![token_id1, token_id2, token_id3];
+    let token_ids: Array<felt252> = array![token_id1, token_id2, token_id3];
     let results = test_contracts.test_token.is_soulbound_batch(token_ids.span());
 
     assert!(results.len() == 3, "Should return three results");
@@ -511,7 +565,7 @@ fn test_is_soulbound_batch_multiple() {
 fn test_renderer_address_batch_empty_panics() {
     let test_contracts = setup();
 
-    let token_ids: Array<u64> = array![];
+    let token_ids: Array<felt252> = array![];
     test_contracts.test_token.renderer_address_batch(token_ids.span());
 }
 
@@ -527,7 +581,7 @@ fn test_renderer_address_batch_empty_panics() {
 fn test_token_game_address_batch_empty_panics() {
     let test_contracts = setup();
 
-    let token_ids: Array<u64> = array![];
+    let token_ids: Array<felt252> = array![];
     test_contracts.test_token.token_game_address_batch(token_ids.span());
 }
 
@@ -550,6 +604,9 @@ fn test_token_game_address_batch_multiple() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     let token_id2 = test_contracts
@@ -566,9 +623,12 @@ fn test_token_game_address_batch_multiple() {
             Option::None,
             BOB(),
             false,
+            false,
+            1,
+            0,
         );
 
-    let token_ids: Array<u64> = array![token_id1, token_id2];
+    let token_ids: Array<felt252> = array![token_id1, token_id2];
     let results = test_contracts.test_token.token_game_address_batch(token_ids.span());
 
     assert!(results.len() == 2, "Should return two results");
@@ -606,6 +666,9 @@ fn test_batch_matches_individual_calls() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     let token_id2 = test_contracts
@@ -622,9 +685,12 @@ fn test_batch_matches_individual_calls() {
             Option::None,
             BOB(),
             true,
+            false,
+            1,
+            0,
         );
 
-    let token_ids: Array<u64> = array![token_id1, token_id2];
+    let token_ids: Array<felt252> = array![token_id1, token_id2];
 
     // Get batch results
     let player_names_batch = test_contracts.test_token.player_name_batch(token_ids.span());
@@ -675,6 +741,9 @@ fn test_mint_batch_single() {
             renderer_address: Option::None,
             to: ALICE(),
             soulbound: false,
+            paymaster: false,
+            salt: 0,
+            metadata: 0,
         },
     ];
 
@@ -703,6 +772,9 @@ fn test_mint_batch_multiple() {
             renderer_address: Option::None,
             to: ALICE(),
             soulbound: false,
+            paymaster: false,
+            salt: 0,
+            metadata: 0,
         },
         MintParams {
             game_address: Option::Some(test_contracts.minigame.contract_address),
@@ -716,6 +788,9 @@ fn test_mint_batch_multiple() {
             renderer_address: Option::None,
             to: BOB(),
             soulbound: true,
+            paymaster: false,
+            salt: 1,
+            metadata: 0,
         },
         MintParams {
             game_address: Option::Some(test_contracts.minigame.contract_address),
@@ -729,6 +804,9 @@ fn test_mint_batch_multiple() {
             renderer_address: Option::None,
             to: CHARLIE(),
             soulbound: false,
+            paymaster: false,
+            salt: 2,
+            metadata: 0,
         },
     ];
 
@@ -768,6 +846,9 @@ fn test_mint_batch_different_settings() {
             renderer_address: Option::None,
             to: ALICE(),
             soulbound: false,
+            paymaster: false,
+            salt: 0,
+            metadata: 0,
         },
         MintParams {
             game_address: Option::Some(test_contracts.minigame.contract_address),
@@ -781,6 +862,9 @@ fn test_mint_batch_different_settings() {
             renderer_address: Option::None,
             to: BOB(),
             soulbound: true,
+            paymaster: false,
+            salt: 1,
+            metadata: 0,
         },
     ];
 
@@ -803,7 +887,7 @@ fn test_mint_batch_different_settings() {
 fn test_update_game_batch_empty_panics() {
     let test_contracts = setup();
 
-    let token_ids: Array<u64> = array![];
+    let token_ids: Array<felt252> = array![];
     test_contracts.test_token.update_game_batch(token_ids.span());
 }
 
@@ -835,6 +919,9 @@ fn test_update_player_name_batch_multiple() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     let token_id2 = test_contracts
@@ -851,6 +938,9 @@ fn test_update_player_name_batch_multiple() {
             Option::None,
             ALICE(), // Changed from BOB() to ALICE() so same owner can update batch
             false,
+            false,
+            1,
+            0,
         );
 
     // Verify old names

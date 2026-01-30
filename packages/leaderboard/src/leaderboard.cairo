@@ -38,7 +38,9 @@ pub mod leaderboard {
             self: @LeaderboardConfig, first: @LeaderboardEntry, second: @LeaderboardEntry,
         ) -> bool {
             // In case of tie, lower ID wins (first come, first served)
-            *first.id < *second.id
+            let first_id: u256 = (*first.id).into();
+            let second_id: u256 = (*second.id).into();
+            first_id < second_id
         }
     }
 
@@ -68,10 +70,10 @@ pub mod leaderboard {
         ) -> (Array<LeaderboardEntry>, LeaderboardResult);
 
         /// Check if an entry exists in the leaderboard
-        fn contains_entry(entries: @Array<LeaderboardEntry>, id: u64) -> bool;
+        fn contains_entry(entries: @Array<LeaderboardEntry>, id: felt252) -> bool;
 
         /// Get the position of an entry by ID (0-based)
-        fn get_entry_position(entries: @Array<LeaderboardEntry>, id: u64) -> Option<u32>;
+        fn get_entry_position(entries: @Array<LeaderboardEntry>, id: felt252) -> Option<u32>;
 
         /// Check if a score qualifies for the leaderboard
         fn qualifies_for_leaderboard(
@@ -233,7 +235,7 @@ pub mod leaderboard {
             (new_leaderboard, LeaderboardResult::Success)
         }
 
-        fn contains_entry(entries: @Array<LeaderboardEntry>, id: u64) -> bool {
+        fn contains_entry(entries: @Array<LeaderboardEntry>, id: felt252) -> bool {
             let mut i = 0_u32;
             loop {
                 if i >= entries.len() {
@@ -246,7 +248,7 @@ pub mod leaderboard {
             }
         }
 
-        fn get_entry_position(entries: @Array<LeaderboardEntry>, id: u64) -> Option<u32> {
+        fn get_entry_position(entries: @Array<LeaderboardEntry>, id: felt252) -> Option<u32> {
             let mut i = 0_u32;
             loop {
                 if i >= entries.len() {

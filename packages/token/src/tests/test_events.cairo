@@ -36,6 +36,9 @@ fn test_mint_event_emission() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 }
 
@@ -63,6 +66,9 @@ fn test_update_game_event_emissions() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Start spying after mint to focus on update events
@@ -117,6 +123,9 @@ fn test_update_game_with_metadata_change_events() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Set game as completed
@@ -150,6 +159,9 @@ fn test_mint_with_context_event() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Should emit events
@@ -176,6 +188,9 @@ fn test_set_token_metadata_events() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     let mut spy = spy_events();
@@ -219,6 +234,9 @@ fn test_transfer_events() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     let mut spy = spy_events();
@@ -240,7 +258,7 @@ fn test_batch_operations_event_count() {
     let mut spy = spy_events();
 
     // Mint multiple tokens
-    let mut token_ids: Array<u64> = array![];
+    let mut token_ids: Array<felt252> = array![];
     let mut i: u32 = 0;
     while i < 3 {
         let token_id = test_contracts
@@ -257,6 +275,9 @@ fn test_batch_operations_event_count() {
                 Option::None,
                 ALICE(),
                 false,
+                false,
+                i.try_into().unwrap(),
+                0,
             );
         token_ids.append(token_id);
         i += 1;
@@ -308,6 +329,9 @@ fn test_multi_game_registry_events() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Should emit TokenMinted with correct game_id

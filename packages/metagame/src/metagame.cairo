@@ -100,7 +100,10 @@ pub mod MetagameComponent {
             renderer_address: Option<ContractAddress>,
             to: ContractAddress,
             soulbound: bool,
-        ) -> u64 {
+            paymaster: bool,
+            salt: u16,
+            metadata: u16,
+        ) -> felt252 {
             libs::mint(
                 self.default_token_address.read(),
                 game_address,
@@ -114,12 +117,15 @@ pub mod MetagameComponent {
                 renderer_address,
                 to,
                 soulbound,
+                paymaster,
+                salt,
+                metadata,
             )
         }
 
         fn mint_batch(
             ref self: ComponentState<TContractState>, mints: Array<MintMetagameParams>,
-        ) -> Array<u64> {
+        ) -> Array<felt252> {
             libs::mint_batch(self.default_token_address.read(), mints)
         }
     }

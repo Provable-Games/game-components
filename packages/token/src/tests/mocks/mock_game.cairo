@@ -1,8 +1,8 @@
 #[starknet::interface]
 pub trait IMockGame<TContractState> {
     // Test helpers
-    fn set_score(ref self: TContractState, token_id: u64, score: u64);
-    fn set_game_over(ref self: TContractState, token_id: u64, game_over: bool);
+    fn set_score(ref self: TContractState, token_id: felt252, score: u64);
+    fn set_game_over(ref self: TContractState, token_id: felt252, game_over: bool);
 }
 
 #[starknet::contract]
@@ -18,8 +18,8 @@ pub mod MockGame {
     struct Storage {
         #[substorage(v0)]
         src5: SRC5Component::Storage,
-        scores: Map<u64, u64>,
-        game_overs: Map<u64, bool>,
+        scores: Map<felt252, u64>,
+        game_overs: Map<felt252, bool>,
     }
 
     #[event]
@@ -36,15 +36,15 @@ pub mod MockGame {
 
     #[abi(embed_v0)]
     impl MinigameTokenDataImpl of IMinigameTokenData<ContractState> {
-        fn score(self: @ContractState, token_id: u64) -> u64 {
+        fn score(self: @ContractState, token_id: felt252) -> u64 {
             self.scores.read(token_id)
         }
 
-        fn game_over(self: @ContractState, token_id: u64) -> bool {
+        fn game_over(self: @ContractState, token_id: felt252) -> bool {
             self.game_overs.read(token_id)
         }
 
-        fn score_batch(self: @ContractState, token_ids: Span<u64>) -> Array<u64> {
+        fn score_batch(self: @ContractState, token_ids: Span<felt252>) -> Array<u64> {
             let mut results = array![];
             let mut index = 0;
             loop {
@@ -57,7 +57,7 @@ pub mod MockGame {
             results
         }
 
-        fn game_over_batch(self: @ContractState, token_ids: Span<u64>) -> Array<bool> {
+        fn game_over_batch(self: @ContractState, token_ids: Span<felt252>) -> Array<bool> {
             let mut results = array![];
             let mut index = 0;
             loop {
@@ -73,11 +73,11 @@ pub mod MockGame {
 
     #[abi(embed_v0)]
     impl MockGameImpl of super::IMockGame<ContractState> {
-        fn set_score(ref self: ContractState, token_id: u64, score: u64) {
+        fn set_score(ref self: ContractState, token_id: felt252, score: u64) {
             self.scores.write(token_id, score);
         }
 
-        fn set_game_over(ref self: ContractState, token_id: u64, game_over: bool) {
+        fn set_game_over(ref self: ContractState, token_id: felt252, game_over: bool) {
             self.game_overs.write(token_id, game_over);
         }
     }

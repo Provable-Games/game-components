@@ -48,6 +48,9 @@ fn test_get_minter_address_valid_id() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Get minter address for ID 1
@@ -95,6 +98,9 @@ fn test_get_minter_address_first_minter() {
             Option::None,
             BOB(),
             false,
+            false,
+            0,
+            0,
         );
 
     // First minter should be ID 1
@@ -125,6 +131,9 @@ fn test_get_minter_address_multiple_minters() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Mint from BOB
@@ -145,6 +154,9 @@ fn test_get_minter_address_multiple_minters() {
             Option::None,
             BOB(),
             false,
+            false,
+            1,
+            0,
         );
 
     // Mint from CHARLIE
@@ -165,6 +177,9 @@ fn test_get_minter_address_multiple_minters() {
             Option::None,
             CHARLIE(),
             false,
+            false,
+            2,
+            0,
         );
 
     // Verify addresses
@@ -209,6 +224,9 @@ fn test_get_minter_id_registered() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     let minter_id = test_contracts.test_token.get_minter_id(ALICE());
@@ -256,6 +274,9 @@ fn test_get_minter_id_sequential() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Mint from BOB
@@ -276,6 +297,9 @@ fn test_get_minter_id_sequential() {
             Option::None,
             BOB(),
             false,
+            false,
+            1,
+            0,
         );
 
     assert!(test_contracts.test_token.get_minter_id(ALICE()) == 1, "ALICE should be ID 1");
@@ -316,6 +340,9 @@ fn test_minter_exists_after_mint() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     assert!(test_contracts.test_token.minter_exists(ALICE()), "ALICE should exist after mint");
@@ -343,6 +370,9 @@ fn test_minter_exists_other_address() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     assert!(!test_contracts.test_token.minter_exists(BOB()), "BOB should not exist");
@@ -392,6 +422,9 @@ fn test_total_minters_after_first() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     assert!(test_contracts.test_token.total_minters() == 1, "Should have 1 minter");
@@ -420,6 +453,9 @@ fn test_total_minters_duplicate_mint() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     assert!(test_contracts.test_token.total_minters() == 1, "Should have 1 minter");
@@ -442,6 +478,9 @@ fn test_total_minters_duplicate_mint() {
             Option::None,
             ALICE(),
             false,
+            false,
+            1,
+            0,
         );
 
     assert!(test_contracts.test_token.total_minters() == 1, "Should still have 1 minter");
@@ -470,6 +509,9 @@ fn test_total_minters_after_second() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Mint from BOB
@@ -490,6 +532,9 @@ fn test_total_minters_after_second() {
             Option::None,
             BOB(),
             false,
+            false,
+            1,
+            0,
         );
 
     assert!(test_contracts.test_token.total_minters() == 2, "Should have 2 minters");
@@ -522,6 +567,9 @@ fn test_minter_sequential_ids() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
     assert!(test_contracts.test_token.get_minter_id(ALICE()) == 1, "ALICE should be ID 1");
 
@@ -543,6 +591,9 @@ fn test_minter_sequential_ids() {
             Option::None,
             BOB(),
             false,
+            false,
+            1,
+            0,
         );
     assert!(test_contracts.test_token.get_minter_id(BOB()) == 2, "BOB should be ID 2");
 
@@ -564,6 +615,9 @@ fn test_minter_sequential_ids() {
             Option::None,
             CHARLIE(),
             false,
+            false,
+            2,
+            0,
         );
     assert!(test_contracts.test_token.get_minter_id(CHARLIE()) == 3, "CHARLIE should be ID 3");
 }
@@ -590,6 +644,9 @@ fn test_minter_bidirectional_mapping_consistency() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Get ID from address
@@ -627,6 +684,9 @@ fn test_minter_registry_update_event() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Check for MinterRegistryUpdate event
@@ -668,6 +728,9 @@ fn test_minter_no_event_on_duplicate_registration() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Start spy after first mint
@@ -691,6 +754,9 @@ fn test_minter_no_event_on_duplicate_registration() {
             Option::None,
             ALICE(),
             false,
+            false,
+            1,
+            0,
         );
 
     // Verify no MinterRegistryUpdate event
@@ -767,6 +833,9 @@ fn test_minter_multiple_contracts_isolation() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // ALICE should be minter on token1 but not token2

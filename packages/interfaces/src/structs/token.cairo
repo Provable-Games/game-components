@@ -21,6 +21,8 @@ pub struct TokenMetadata {
     pub completed_objective: bool,
     pub has_context: bool,
     pub objective_id: u32,
+    pub paymaster: bool,
+    pub metadata: u16,
 }
 
 impl TokenMetadataDefault of Default<TokenMetadata> {
@@ -36,6 +38,8 @@ impl TokenMetadataDefault of Default<TokenMetadata> {
             completed_objective: false,
             has_context: false,
             objective_id: 0,
+            paymaster: false,
+            metadata: 0,
         }
     }
 }
@@ -56,12 +60,15 @@ pub struct MintParams {
     pub renderer_address: Option<ContractAddress>,
     pub to: ContractAddress,
     pub soulbound: bool,
+    pub paymaster: bool,
+    pub salt: u16,
+    pub metadata: u16,
 }
 
 /// Per-token name update parameters for batch name updates
 #[derive(Copy, Drop, Serde)]
 pub struct PlayerNameUpdate {
-    pub token_id: u64,
+    pub token_id: felt252,
     pub name: felt252,
 }
 
@@ -69,7 +76,7 @@ pub struct PlayerNameUpdate {
 /// Note: Not Copy because it contains GameContextDetails.
 #[derive(Drop, Serde)]
 pub struct SetTokenMetadataParams {
-    pub token_id: u64,
+    pub token_id: felt252,
     pub game_address: ContractAddress,
     pub player_name: Option<felt252>,
     pub settings_id: Option<u32>,

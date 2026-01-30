@@ -11,28 +11,28 @@ use crate::structs::{MintParams, PlayerNameUpdate, SetTokenMetadataParams, Token
 #[starknet::interface]
 pub trait IMinigameTokenMixin<TState> {
     // Core token functionality
-    fn token_metadata(self: @TState, token_id: u64) -> TokenMetadata;
-    fn is_playable(self: @TState, token_id: u64) -> bool;
-    fn settings_id(self: @TState, token_id: u64) -> u32;
-    fn player_name(self: @TState, token_id: u64) -> felt252;
-    fn objective_id(self: @TState, token_id: u64) -> u32;
-    fn minted_by(self: @TState, token_id: u64) -> u64;
+    fn token_metadata(self: @TState, token_id: felt252) -> TokenMetadata;
+    fn is_playable(self: @TState, token_id: felt252) -> bool;
+    fn settings_id(self: @TState, token_id: felt252) -> u32;
+    fn player_name(self: @TState, token_id: felt252) -> felt252;
+    fn objective_id(self: @TState, token_id: felt252) -> u32;
+    fn minted_by(self: @TState, token_id: felt252) -> felt252;
     fn game_address(self: @TState) -> ContractAddress;
     fn game_registry_address(self: @TState) -> ContractAddress;
-    fn is_soulbound(self: @TState, token_id: u64) -> bool;
-    fn renderer_address(self: @TState, token_id: u64) -> ContractAddress;
-    fn token_game_address(self: @TState, token_id: u64) -> ContractAddress;
+    fn is_soulbound(self: @TState, token_id: felt252) -> bool;
+    fn renderer_address(self: @TState, token_id: felt252) -> ContractAddress;
+    fn token_game_address(self: @TState, token_id: felt252) -> ContractAddress;
 
     // Batch view functions
-    fn token_metadata_batch(self: @TState, token_ids: Span<u64>) -> Array<TokenMetadata>;
-    fn is_playable_batch(self: @TState, token_ids: Span<u64>) -> Array<bool>;
-    fn settings_id_batch(self: @TState, token_ids: Span<u64>) -> Array<u32>;
-    fn player_name_batch(self: @TState, token_ids: Span<u64>) -> Array<felt252>;
-    fn objective_id_batch(self: @TState, token_ids: Span<u64>) -> Array<u32>;
-    fn minted_by_batch(self: @TState, token_ids: Span<u64>) -> Array<u64>;
-    fn is_soulbound_batch(self: @TState, token_ids: Span<u64>) -> Array<bool>;
-    fn renderer_address_batch(self: @TState, token_ids: Span<u64>) -> Array<ContractAddress>;
-    fn token_game_address_batch(self: @TState, token_ids: Span<u64>) -> Array<ContractAddress>;
+    fn token_metadata_batch(self: @TState, token_ids: Span<felt252>) -> Array<TokenMetadata>;
+    fn is_playable_batch(self: @TState, token_ids: Span<felt252>) -> Array<bool>;
+    fn settings_id_batch(self: @TState, token_ids: Span<felt252>) -> Array<u32>;
+    fn player_name_batch(self: @TState, token_ids: Span<felt252>) -> Array<felt252>;
+    fn objective_id_batch(self: @TState, token_ids: Span<felt252>) -> Array<u32>;
+    fn minted_by_batch(self: @TState, token_ids: Span<felt252>) -> Array<felt252>;
+    fn is_soulbound_batch(self: @TState, token_ids: Span<felt252>) -> Array<bool>;
+    fn renderer_address_batch(self: @TState, token_ids: Span<felt252>) -> Array<ContractAddress>;
+    fn token_game_address_batch(self: @TState, token_ids: Span<felt252>) -> Array<ContractAddress>;
 
     fn mint(
         ref self: TState,
@@ -47,10 +47,13 @@ pub trait IMinigameTokenMixin<TState> {
         renderer_address: Option<ContractAddress>,
         to: ContractAddress,
         soulbound: bool,
-    ) -> u64;
+        paymaster: bool,
+        salt: u16,
+        metadata: u16,
+    ) -> felt252;
     fn set_token_metadata(
         ref self: TState,
-        token_id: u64,
+        token_id: felt252,
         game_address: ContractAddress,
         player_name: Option<felt252>,
         settings_id: Option<u32>,
@@ -58,14 +61,14 @@ pub trait IMinigameTokenMixin<TState> {
         end: Option<u64>,
         objective_id: Option<u32>,
         context: Option<GameContextDetails>,
-    );
-    fn update_game(ref self: TState, token_id: u64);
-    fn update_player_name(ref self: TState, token_id: u64, name: felt252);
+    ) -> felt252;
+    fn update_game(ref self: TState, token_id: felt252);
+    fn update_player_name(ref self: TState, token_id: felt252, name: felt252);
 
     // Batch write functions
-    fn mint_batch(ref self: TState, mints: Array<MintParams>) -> Array<u64>;
+    fn mint_batch(ref self: TState, mints: Array<MintParams>) -> Array<felt252>;
     fn set_token_metadata_batch(ref self: TState, updates: Array<SetTokenMetadataParams>);
-    fn update_game_batch(ref self: TState, token_ids: Span<u64>);
+    fn update_game_batch(ref self: TState, token_ids: Span<felt252>);
     fn update_player_name_batch(ref self: TState, updates: Span<PlayerNameUpdate>);
 
     // Minter functionality
@@ -91,13 +94,15 @@ pub trait IMinigameTokenMixin<TState> {
         settings_data: Span<GameSetting>,
     );
     // Renderer functionality
-    fn get_renderer(self: @TState, token_id: u64) -> starknet::ContractAddress;
-    fn has_custom_renderer(self: @TState, token_id: u64) -> bool;
-    fn reset_token_renderer(ref self: TState, token_id: u64);
+    fn get_renderer(self: @TState, token_id: felt252) -> starknet::ContractAddress;
+    fn has_custom_renderer(self: @TState, token_id: felt252) -> bool;
+    fn reset_token_renderer(ref self: TState, token_id: felt252);
 
     // Renderer batch operations
-    fn reset_token_renderer_batch(ref self: TState, token_ids: Span<u64>);
-    fn get_renderer_batch(self: @TState, token_ids: Span<u64>) -> Array<starknet::ContractAddress>;
+    fn reset_token_renderer_batch(ref self: TState, token_ids: Span<felt252>);
+    fn get_renderer_batch(
+        self: @TState, token_ids: Span<felt252>,
+    ) -> Array<starknet::ContractAddress>;
 }
 
 // ==============================================================================

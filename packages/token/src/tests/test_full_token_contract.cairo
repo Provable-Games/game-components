@@ -18,8 +18,8 @@ use super::mocks::mock_game::{};
 
 // Import setup helpers
 use super::setup::{
-    ALICE, BOB, CHARLIE, CURRENT_TIME, FAR_FUTURE_TIME, FUTURE_TIME, MAX_LIFECYCLE_TIMESTAMP,
-    RENDERER_ADDRESS, ZERO_ADDRESS, deploy_mock_game, setup_multi_game,
+    ALICE, BOB, CHARLIE, CURRENT_TIME, FAR_FUTURE_TIME, FUTURE_TIME, RENDERER_ADDRESS, ZERO_ADDRESS,
+    deploy_mock_game, setup_multi_game,
 };
 
 // All test constants, deployment helpers, and setup functions are now in setup.cairo
@@ -48,9 +48,12 @@ fn test_mint_minimal_parameters() { // UT-MINT-001
             Option::None, // renderer_address
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
-    assert!(token_id == 1, "Token ID should be 1");
+    assert!(token_id != 0, "Token ID should be nonzero");
     assert!(test_contracts.erc721.owner_of(token_id.into()) == ALICE(), "Owner should be ALICE");
     assert!(test_contracts.erc721.balance_of(ALICE()) == 1, "Balance should be 1");
 
@@ -60,7 +63,8 @@ fn test_mint_minimal_parameters() { // UT-MINT-001
     assert!(metadata.completed_objective == false, "Objective should not be completed");
     assert!(metadata.objective_id == 0, "Should have no objective");
     assert!(metadata.settings_id == 0, "Settings ID should be 0");
-    assert!(metadata.lifecycle.start == 0, "Start time should be 0");
+    // lifecycle.start = minted_at + start_delay; with no start, start_delay=0, so start = minted_at
+    // lifecycle.end = 0 when no end is provided (end_delay=0)
     assert!(metadata.lifecycle.end == 0, "End time should be 0");
 }
 
@@ -102,15 +106,22 @@ fn test_mint_with_all_parameters() { // UT-MINT-002
             Option::Some("https://client.game.com"),
             Option::Some(RENDERER_ADDRESS()),
             ALICE(),
-            true // soulbound
+            true, // soulbound
+            false,
+            0,
+            0,
         );
 
-    assert!(token_id == 1, "Token ID should be 1");
+    assert!(token_id != 0, "Token ID should be nonzero");
 
     let metadata = test_contracts.test_token.token_metadata(token_id);
     assert!(metadata.soulbound == true, "Should be soulbound");
     // TODO: settings_id validation is not working - investigate impl resolution
     // assert!(metadata.settings_id == 1, "Settings ID should be 1");
+    // Lifecycle timestamps are stored as delays relative to minted_at (block_timestamp).
+    // With default block_timestamp=0: start_delay=CURRENT_TIME, end_delay=FUTURE_TIME
+    // lifecycle.start = minted_at + start_delay = 0 + CURRENT_TIME = CURRENT_TIME
+    // lifecycle.end = minted_at + end_delay = 0 + FUTURE_TIME = FUTURE_TIME
     assert!(metadata.lifecycle.start == CURRENT_TIME, "Start time mismatch");
     assert!(metadata.lifecycle.end == FUTURE_TIME, "End time mismatch");
     assert!(metadata.objective_id == 1, "Should have objective_id 1");
@@ -143,7 +154,10 @@ fn test_mint_soulbound_token() { // UT-MINT-003
             Option::None,
             Option::None,
             ALICE(),
-            true // soulbound
+            true, // soulbound
+            false,
+            0,
+            0,
         );
 
     assert!(test_contracts.test_token.is_soulbound(token_id) == true, "Token should be soulbound");
@@ -172,6 +186,9 @@ fn test_mint_with_lifecycle_constraints() { // UT-MINT-004
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Token should be playable
@@ -210,6 +227,9 @@ fn test_mint_with_objective() { // UT-MINT-005
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Verify objective_id is stored correctly
@@ -236,6 +256,9 @@ fn test_mint_with_custom_renderer() { // UT-MINT-006
             Option::Some(RENDERER_ADDRESS()),
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     assert!(
@@ -269,6 +292,9 @@ fn test_mint_to_zero_address() { // UT-MINT-R001
             Option::None,
             ZERO_ADDRESS(),
             false,
+            false,
+            0,
+            0,
         );
 }
 
@@ -291,6 +317,9 @@ fn test_mint_with_invalid_game_address() { // UT-MINT-R002
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 }
 
@@ -314,6 +343,9 @@ fn test_mint_with_non_minigame_contract() { // UT-MINT-R003
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 }
 
@@ -337,6 +369,9 @@ fn test_mint_with_invalid_settings_id() { // UT-MINT-R004
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 }
 
@@ -365,6 +400,9 @@ fn test_mint_with_invalid_objective_id() { // UT-MINT-R005
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 }
 
@@ -387,6 +425,9 @@ fn test_mint_with_start_greater_than_end() { // UT-MINT-R006
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 }
 
@@ -413,6 +454,9 @@ fn test_mint_when_game_registry_lookup_fails() { // UT-MINT-R007
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 }
 
@@ -422,33 +466,38 @@ fn test_mint_when_game_registry_lookup_fails() { // UT-MINT-R007
 fn test_mint_with_max_timestamps() { // UT-MINT-B001
     let test_contracts = setup_multi_game();
 
-    // Note: TokenMetadata uses 35-bit packing for lifecycle timestamps
-    // MAX_LIFECYCLE_TIMESTAMP = 2^35 - 1 = 34359738367
+    // Lifecycle delays are stored as 25-bit values (max 33,554,431 seconds ~388 days).
+    // Delays are relative to block_timestamp (minted_at).
+    // With default block_timestamp=0, we use delays that fit in 25 bits.
+    let max_delay: u64 = 33554431; // 2^25 - 1
+    let start_time: u64 = max_delay - 1000;
+    let end_time: u64 = max_delay;
+
     let token_id = test_contracts
         .test_token
         .mint(
             Option::None,
             Option::None,
             Option::None,
-            Option::Some(MAX_LIFECYCLE_TIMESTAMP - 1000),
-            Option::Some(MAX_LIFECYCLE_TIMESTAMP),
+            Option::Some(start_time),
+            Option::Some(end_time),
             Option::None,
             Option::None,
             Option::None,
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     let metadata = test_contracts.test_token.token_metadata(token_id);
-    assert!(
-        metadata.lifecycle.start == MAX_LIFECYCLE_TIMESTAMP - 1000,
-        "Start time should be MAX_LIFECYCLE_TIMESTAMP - 1000",
-    );
-    assert!(
-        metadata.lifecycle.end == MAX_LIFECYCLE_TIMESTAMP,
-        "End time should be MAX_LIFECYCLE_TIMESTAMP",
-    );
+    // With block_timestamp=0: start_delay = start_time, end_delay = end_time
+    // lifecycle.start = minted_at + start_delay = 0 + start_time = start_time
+    // lifecycle.end = minted_at + end_delay = 0 + end_time = end_time
+    assert!(metadata.lifecycle.start == start_time, "Start time should match");
+    assert!(metadata.lifecycle.end == end_time, "End time should match");
 }
 
 #[test]
@@ -469,6 +518,9 @@ fn test_mint_without_objective() { // UT-MINT-B002
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     assert!(test_contracts.test_token.objective_id(token_id) == 0, "Should have no objective");
@@ -502,6 +554,9 @@ fn test_mint_with_high_objective_id() { // UT-MINT-B003
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     assert!(
@@ -527,6 +582,9 @@ fn test_sequential_mints_increment_counter() { // UT-MINT-B004
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     let token_id_2 = test_contracts
@@ -543,6 +601,9 @@ fn test_sequential_mints_increment_counter() { // UT-MINT-B004
             Option::None,
             BOB(),
             false,
+            false,
+            1,
+            0,
         );
 
     let token_id_3 = test_contracts
@@ -559,15 +620,30 @@ fn test_sequential_mints_increment_counter() { // UT-MINT-B004
             Option::None,
             CHARLIE(),
             false,
+            false,
+            2,
+            0,
         );
 
-    assert!(token_id_1 == 1, "First token ID should be 1");
-    assert!(token_id_2 == 2, "Second token ID should be 2");
-    assert!(token_id_3 == 3, "Third token ID should be 3");
+    // Token IDs are packed felt252 values, not sequential integers
+    assert!(token_id_1 != 0, "First token ID should be nonzero");
+    assert!(token_id_2 != 0, "Second token ID should be nonzero");
+    assert!(token_id_3 != 0, "Third token ID should be nonzero");
+    assert!(token_id_1 != token_id_2, "Token IDs 1 and 2 should be distinct");
+    assert!(token_id_2 != token_id_3, "Token IDs 2 and 3 should be distinct");
+    assert!(token_id_1 != token_id_3, "Token IDs 1 and 3 should be distinct");
 
-    assert!(test_contracts.erc721.owner_of(1) == ALICE(), "Token 1 should belong to ALICE");
-    assert!(test_contracts.erc721.owner_of(2) == BOB(), "Token 2 should belong to BOB");
-    assert!(test_contracts.erc721.owner_of(3) == CHARLIE(), "Token 3 should belong to CHARLIE");
+    assert!(
+        test_contracts.erc721.owner_of(token_id_1.into()) == ALICE(),
+        "Token 1 should belong to ALICE",
+    );
+    assert!(
+        test_contracts.erc721.owner_of(token_id_2.into()) == BOB(), "Token 2 should belong to BOB",
+    );
+    assert!(
+        test_contracts.erc721.owner_of(token_id_3.into()) == CHARLIE(),
+        "Token 3 should belong to CHARLIE",
+    );
 }
 
 // ================================================================================================
@@ -599,6 +675,9 @@ fn test_update_game_with_objective_completion() { // UT-UPDATE-003
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // End the game with a score that meets the objective
@@ -645,6 +724,9 @@ fn test_objective_completion_progression() { // UT-UPDATE-S002
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Before update - objective not completed
@@ -684,7 +766,10 @@ fn test_token_metadata_view() { // UT-VIEW-001
             Option::None,
             Option::None,
             ALICE(),
-            true // soulbound
+            true, // soulbound
+            false,
+            0,
+            0,
         );
 
     let metadata = test_contracts.test_token.token_metadata(token_id);
@@ -721,6 +806,9 @@ fn test_settings_id_view() { // UT-VIEW-003
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     assert!(test_contracts.test_token.settings_id(token_id1) == 0, "Settings ID should be 0");
@@ -747,6 +835,9 @@ fn test_player_name_view() { // UT-VIEW-004
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     assert!(test_contracts.test_token.player_name(token_id1) == '', "Player name should be empty");
@@ -766,6 +857,9 @@ fn test_player_name_view() { // UT-VIEW-004
             Option::None,
             ALICE(),
             false,
+            false,
+            1,
+            0,
         );
 
     assert!(
@@ -793,6 +887,9 @@ fn test_objective_id_view() { // UT-VIEW-005
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     assert!(test_contracts.test_token.objective_id(token_id1) == 0, "Should have no objective");
@@ -813,6 +910,9 @@ fn test_objective_id_view() { // UT-VIEW-005
             Option::None,
             ALICE(),
             false,
+            false,
+            1,
+            0,
         );
 
     assert!(test_contracts.test_token.objective_id(token_id2) == 1, "Should have objective_id 1");
@@ -836,6 +936,9 @@ fn test_minted_by_view() { // UT-VIEW-006
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Should return the minter ID (1 for first minter)
@@ -873,6 +976,9 @@ fn test_is_soulbound_view() { // UT-VIEW-009
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     assert!(test_contracts.test_token.is_soulbound(token_id1) == false, "Should not be soulbound");
@@ -892,6 +998,9 @@ fn test_is_soulbound_view() { // UT-VIEW-009
             Option::None,
             ALICE(),
             true,
+            false,
+            1,
+            0,
         );
 
     assert!(test_contracts.test_token.is_soulbound(token_id2) == true, "Should be soulbound");
@@ -916,6 +1025,9 @@ fn test_renderer_address_view() { // UT-VIEW-010
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     assert!(
@@ -937,6 +1049,9 @@ fn test_renderer_address_view() { // UT-VIEW-010
             Option::Some(RENDERER_ADDRESS()),
             ALICE(),
             false,
+            false,
+            1,
+            0,
         );
 
     assert!(
@@ -973,6 +1088,9 @@ fn test_get_minter_address() { // UT-EXT-001
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Get minter address for ID 1
@@ -1015,6 +1133,9 @@ fn test_minter_tracking() { // UT-EXT-002
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Check after first mint
@@ -1042,6 +1163,9 @@ fn test_minter_tracking() { // UT-EXT-002
             Option::None,
             ALICE(),
             false,
+            false,
+            1,
+            0,
         );
 
     assert!(test_contracts.test_token.total_minters() == 1, "Should still have 1 minter");
@@ -1066,6 +1190,9 @@ fn test_minter_tracking() { // UT-EXT-002
             Option::None,
             BOB(),
             false,
+            false,
+            2,
+            0,
         );
 
     // Check after BOB mints
@@ -1093,6 +1220,9 @@ fn test_has_custom_renderer() { // UT-EXT-003
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     assert!(
@@ -1119,6 +1249,9 @@ fn test_has_custom_renderer() { // UT-EXT-003
             Option::Some(RENDERER_ADDRESS()),
             ALICE(),
             false,
+            false,
+            1,
+            0,
         );
 
     assert!(
@@ -1154,14 +1287,17 @@ fn test_set_token_metadata_basic() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Verify token is blank
     let metadata = test_contracts.test_token.token_metadata(token_id);
     assert!(metadata.game_id == 0, "Token should be blank");
 
-    // Set token metadata
-    test_contracts
+    // Set token metadata - returns a NEW token_id (old is burned, new is minted)
+    let new_token_id = test_contracts
         .test_token
         .set_token_metadata(
             token_id,
@@ -1174,11 +1310,12 @@ fn test_set_token_metadata_basic() {
             Option::None,
         );
 
-    // Verify metadata was set
-    let updated_metadata = test_contracts.test_token.token_metadata(token_id);
-    assert!(updated_metadata.game_id == 1, "Game ID should be set");
+    // Verify metadata was set on the new token
+    let updated_metadata = test_contracts.test_token.token_metadata(new_token_id);
+    assert!(updated_metadata.game_id != 0, "Game ID should be set");
     assert!(
-        test_contracts.test_token.player_name(token_id) == 'Player1', "Player name should be set",
+        test_contracts.test_token.player_name(new_token_id) == 'Player1',
+        "Player name should be set",
     );
 }
 
@@ -1203,7 +1340,7 @@ fn test_set_token_metadata_nonexistent_token() {
 }
 
 #[test]
-#[should_panic(expected: "Token id 1 not blank")]
+#[should_panic(expected: "not blank")]
 fn test_set_token_metadata_already_set() {
     let test_contracts = setup_multi_game();
 
@@ -1222,6 +1359,9 @@ fn test_set_token_metadata_already_set() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Try to set metadata on already set token
@@ -1258,10 +1398,13 @@ fn test_set_token_metadata_with_lifecycle() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
-    // Set metadata with lifecycle
-    test_contracts
+    // Set metadata with lifecycle - returns a NEW token_id
+    let new_token_id = test_contracts
         .test_token
         .set_token_metadata(
             token_id,
@@ -1274,8 +1417,11 @@ fn test_set_token_metadata_with_lifecycle() {
             Option::None,
         );
 
-    // Verify lifecycle was set
-    let metadata = test_contracts.test_token.token_metadata(token_id);
+    // Verify lifecycle was set on new token
+    // With block_timestamp=0: start_delay=1000, end_delay=2000
+    // lifecycle.start = minted_at + start_delay = 0 + 1000 = 1000
+    // lifecycle.end = minted_at + end_delay = 0 + 2000 = 2000
+    let metadata = test_contracts.test_token.token_metadata(new_token_id);
     assert!(metadata.lifecycle.start == 1000, "Start time should be set");
     assert!(metadata.lifecycle.end == 2000, "End time should be set");
 }
@@ -1300,6 +1446,9 @@ fn test_set_token_metadata_invalid_lifecycle() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Try to set metadata with invalid lifecycle

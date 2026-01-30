@@ -15,4 +15,7 @@ pub struct MintMetagameParams {
     pub renderer_address: Option<ContractAddress>,
     pub to: ContractAddress,
     pub soulbound: bool,
+    pub paymaster: bool,
+    pub salt: u16,
+    pub metadata: u16,
 }

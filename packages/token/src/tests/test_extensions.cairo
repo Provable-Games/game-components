@@ -63,7 +63,10 @@ fn test_transfer_regular_token() {
             Option::None,
             Option::None,
             ALICE(),
-            false // not soulbound
+            false, // not soulbound
+            false,
+            0,
+            0,
         );
 
     assert!(!token_dispatcher.is_soulbound(token_id), "Token should not be soulbound");
@@ -104,6 +107,9 @@ fn test_set_token_renderer() {
             Option::Some(renderer_address),
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Verify renderer is set
@@ -138,6 +144,9 @@ fn test_get_renderer_no_custom() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Verify no custom renderer
@@ -169,6 +178,9 @@ fn test_reset_token_renderer() {
             Option::Some(custom_renderer),
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Verify custom renderer is set
@@ -219,6 +231,9 @@ fn test_reset_token_renderer_unauthorized() {
             Option::Some(custom_renderer),
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Try to reset renderer as BOB (not the owner)
@@ -251,6 +266,9 @@ fn test_reset_token_renderer_event() {
             Option::Some(custom_renderer),
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Reset the renderer
@@ -287,6 +305,9 @@ fn test_zero_address_renderer() {
             Option::Some(addr(0x0)),
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Verify it's treated as no renderer
@@ -343,11 +364,14 @@ fn test_mint_events() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Check events were emitted (exact event structure depends on implementation)
     // For now, just verify mint succeeded
-    assert!(token_id == 1, "Token should be minted");
+    assert!(token_id != 0, "Token should be minted");
 }
 
 // Test E-02: ScoreUpdate event

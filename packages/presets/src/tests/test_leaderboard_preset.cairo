@@ -1182,8 +1182,8 @@ fn test_large_leaderboard() {
     let mut i: u64 = 1;
     while i <= 10 {
         let score: u64 = 1000 - (i * 10);
-        game_admin.set_score(i, score);
-        let _ = leaderboard.submit_score(WEEKLY_TOURNAMENT, i, score, i.try_into().unwrap());
+        game_admin.set_score(i.into(), score);
+        let _ = leaderboard.submit_score(WEEKLY_TOURNAMENT, i.into(), score, i.try_into().unwrap());
         i += 1;
     }
 
@@ -1267,8 +1267,8 @@ fn test_clear_large_leaderboard() {
     let mut i: u64 = 1;
     while i <= 10 {
         let score: u64 = 1000 - (i * 10);
-        game_admin.set_score(i, score);
-        let _ = leaderboard.submit_score(WEEKLY_TOURNAMENT, i, score, i.try_into().unwrap());
+        game_admin.set_score(i.into(), score);
+        let _ = leaderboard.submit_score(WEEKLY_TOURNAMENT, i.into(), score, i.try_into().unwrap());
         i += 1;
     }
 

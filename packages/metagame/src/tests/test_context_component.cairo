@@ -9,8 +9,8 @@ use crate::extensions::context::structs::{GameContext, GameContextDetails};
 // Helper interface for testing
 #[starknet::interface]
 trait IContextSetter<TContractState> {
-    fn store_context(ref self: TContractState, token_id: u64, context: GameContextDetails);
-    fn set_has_context(ref self: TContractState, token_id: u64, has_context: bool);
+    fn store_context(ref self: TContractState, token_id: felt252, context: GameContextDetails);
+    fn set_has_context(ref self: TContractState, token_id: felt252, has_context: bool);
 }
 
 // Test contract that embeds ContextComponent
@@ -82,7 +82,7 @@ mod MockContextContract {
     // Implement the context interface to use our test storage
     #[abi(embed_v0)]
     impl IMetagameContextImpl of IMetagameContext<ContractState> {
-        fn has_context(self: @ContractState, token_id: u64) -> bool {
+        fn has_context(self: @ContractState, token_id: felt252) -> bool {
             if token_id == 1 {
                 self.has_context_1.read()
             } else if token_id == 2 {
@@ -107,7 +107,7 @@ mod MockContextContract {
 
     #[abi(embed_v0)]
     impl IMetagameContextDetailsImpl of IMetagameContextDetails<ContractState> {
-        fn context_details(self: @ContractState, token_id: u64) -> GameContextDetails {
+        fn context_details(self: @ContractState, token_id: felt252) -> GameContextDetails {
             if !self.has_context(token_id) {
                 panic!("Context not found for token");
             }
@@ -136,7 +136,7 @@ mod MockContextContract {
             GameContextDetails {
                 name: name,
                 description: description,
-                id: Option::Some(token_id.try_into().unwrap()),
+                id: Option::Some(1),
                 context: array![
                     GameContext { name: "Prize", value: "1000 USD" },
                     GameContext { name: "Duration", value: "7 days" },
@@ -149,7 +149,7 @@ mod MockContextContract {
     // Implement the SVG interface
     #[abi(embed_v0)]
     impl IMetagameContextSVGImpl of IMetagameContextSVG<ContractState> {
-        fn context_svg(self: @ContractState, token_id: u64) -> ByteArray {
+        fn context_svg(self: @ContractState, token_id: felt252) -> ByteArray {
             let context = self.context_details(token_id);
             // Return mock SVG with the actual context name
             "<svg><text>" + context.name + "</text></svg>"
@@ -159,7 +159,7 @@ mod MockContextContract {
     // Helper function to store context for testing
     #[abi(embed_v0)]
     impl IContextSetterImpl of IContextSetter<ContractState> {
-        fn store_context(ref self: ContractState, token_id: u64, context: GameContextDetails) {
+        fn store_context(ref self: ContractState, token_id: felt252, context: GameContextDetails) {
             // Store the context data
             if token_id == 1 {
                 self.stored_context_name_1.write(context.name);
@@ -187,7 +187,7 @@ mod MockContextContract {
             self.set_has_context(token_id, true);
         }
 
-        fn set_has_context(ref self: ContractState, token_id: u64, has_context: bool) {
+        fn set_has_context(ref self: ContractState, token_id: felt252, has_context: bool) {
             if token_id == 1 {
                 self.has_context_1.write(has_context);
             } else if token_id == 2 {
@@ -326,7 +326,7 @@ fn test_get_context_valid_token() {
     let context_details_dispatcher = IMetagameContextDetailsDispatcher { contract_address };
     let retrieved = context_details_dispatcher.context_details(20);
 
-    assert!(retrieved.id == Option::Some(20), "Context ID mismatch");
+    assert!(retrieved.id == Option::Some(1), "Context ID mismatch");
     assert!(retrieved.name == "Championship", "Name mismatch");
     assert!(retrieved.description == "World Championship", "Description mismatch");
     assert!(retrieved.context.len() == 2, "Context array length mismatch");

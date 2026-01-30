@@ -27,7 +27,7 @@ pub mod SettingsComponent {
 
         fn get_settings_id(
             self: @ComponentState<TContractState>,
-            token_id: u64,
+            token_id: felt252,
             minigame_token_address: ContractAddress,
         ) -> u32 {
             libs::get_settings_id(minigame_token_address, token_id)

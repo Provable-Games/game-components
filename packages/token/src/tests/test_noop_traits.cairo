@@ -48,7 +48,7 @@ fn deploy_noop_test_contract() -> (IMinigameTokenMixinDispatcher, ERC721ABIDispa
 /// Mint a token for testing using the correct mint signature:
 /// mint(game_address, player_name, settings_id, start, end, objective_id, context, client_url,
 /// renderer_address, to, soulbound)
-fn mint_test_token(token: IMinigameTokenMixinDispatcher, to: ContractAddress) -> u64 {
+fn mint_test_token(token: IMinigameTokenMixinDispatcher, to: ContractAddress) -> felt252 {
     token
         .mint(
             Option::None, // game_address
@@ -61,7 +61,10 @@ fn mint_test_token(token: IMinigameTokenMixinDispatcher, to: ContractAddress) ->
             Option::None, // client_url
             Option::None, // renderer_address
             to,
-            false // soulbound
+            false, // soulbound
+            false,
+            0,
+            0,
         )
 }
 
@@ -103,7 +106,10 @@ fn test_noop_soulbound_mint_with_soulbound_flag_still_transferable() {
             Option::None, // client_url
             Option::None, // renderer_address
             ALICE(),
-            true // soulbound flag - ignored by NoOp
+            true, // soulbound flag - ignored by NoOp
+            false,
+            0,
+            0,
         );
 
     // Transfer should still work because NoOpSoulbound always returns true
@@ -158,10 +164,13 @@ fn test_noop_objectives_mint_with_any_objective_id() {
             Option::None, // renderer_address
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Token should be minted successfully
-    assert!(token_id > 0, "Token should be minted despite invalid objective_id");
+    assert!(token_id != 0, "Token should be minted despite invalid objective_id");
 }
 
 #[test]
@@ -193,9 +202,12 @@ fn test_noop_objectives_mint_with_max_objective_id() {
             Option::None, // renderer_address
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
-    assert!(token_id > 0, "Token should be minted with max objective_id");
+    assert!(token_id != 0, "Token should be minted with max objective_id");
 }
 
 // =============================================================================
@@ -223,10 +235,13 @@ fn test_noop_settings_mint_with_any_settings_id() {
             Option::None, // renderer_address
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Token should be minted successfully
-    assert!(token_id > 0, "Token should be minted despite invalid settings_id");
+    assert!(token_id != 0, "Token should be minted despite invalid settings_id");
 }
 
 #[test]
@@ -247,9 +262,12 @@ fn test_noop_settings_mint_with_max_settings_id() {
             Option::None, // renderer_address
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
-    assert!(token_id > 0, "Token should be minted with max settings_id");
+    assert!(token_id != 0, "Token should be minted with max settings_id");
 }
 
 #[test]
@@ -270,9 +288,12 @@ fn test_noop_settings_mint_with_zero_settings_id() {
             Option::None, // renderer_address
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
-    assert!(token_id > 0, "Token should be minted with zero settings_id");
+    assert!(token_id != 0, "Token should be minted with zero settings_id");
 }
 
 // =============================================================================
@@ -326,11 +347,14 @@ fn test_noop_all_features_mint_full_params() {
             Option::None, // client_url
             Option::Some(renderer_addr), // renderer_address - not validated by NoOp
             ALICE(),
-            true // soulbound - not enforced by NoOp
+            true, // soulbound - not enforced by NoOp
+            false,
+            0,
+            0,
         );
 
     // Verify token was minted
-    assert!(token_id > 0, "Token should be minted with all NoOp features");
+    assert!(token_id != 0, "Token should be minted with all NoOp features");
     assert!(erc721.owner_of(token_id.into()) == ALICE(), "ALICE should own the token");
 
     // Verify metadata (only fields that are always set)
@@ -364,6 +388,9 @@ fn test_noop_multiple_tokens_different_configs() {
             Option::None, // renderer_address
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     let token_id2 = token
@@ -379,11 +406,14 @@ fn test_noop_multiple_tokens_different_configs() {
             Option::None, // renderer_address
             BOB(),
             true,
+            false,
+            1,
+            0,
         );
 
     // Both should succeed
-    assert!(token_id1 > 0, "Token 1 should be minted");
-    assert!(token_id2 > token_id1, "Token 2 should have higher ID");
+    assert!(token_id1 != 0, "Token 1 should be minted");
+    assert!(token_id2 != token_id1, "Token 2 should have different ID");
 
     // Verify ownership
     assert!(erc721.owner_of(token_id1.into()) == ALICE(), "ALICE should own token 1");
@@ -418,7 +448,7 @@ fn test_noop_mint_basic() {
     let token_id = mint_test_token(token, ALICE());
 
     // Verify basic functionality
-    assert!(token_id == 1, "First token should be ID 1");
+    assert!(token_id != 0, "First token should not be ID 0");
     assert!(erc721.owner_of(token_id.into()) == ALICE(), "ALICE should own the token");
     assert!(erc721.balance_of(ALICE()) == 1, "Balance should be 1");
 }
@@ -427,14 +457,65 @@ fn test_noop_mint_basic() {
 fn test_noop_mint_multiple() {
     let (token, erc721) = deploy_noop_test_contract();
 
-    let token_id1 = mint_test_token(token, ALICE());
-    let token_id2 = mint_test_token(token, BOB());
-    let token_id3 = mint_test_token(token, ALICE());
+    let token_id1 = token
+        .mint(
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            ALICE(),
+            false,
+            false,
+            0,
+            0,
+        );
+    let token_id2 = token
+        .mint(
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            BOB(),
+            false,
+            false,
+            1,
+            0,
+        );
+    let token_id3 = token
+        .mint(
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            ALICE(),
+            false,
+            false,
+            2,
+            0,
+        );
 
-    // Verify sequential IDs
-    assert!(token_id1 == 1, "First token ID should be 1");
-    assert!(token_id2 == 2, "Second token ID should be 2");
-    assert!(token_id3 == 3, "Third token ID should be 3");
+    // Verify non-zero and unique IDs
+    assert!(token_id1 != 0, "First token ID should not be 0");
+    assert!(token_id2 != 0, "Second token ID should not be 0");
+    assert!(token_id3 != 0, "Third token ID should not be 0");
+    assert!(token_id1 != token_id2, "Token IDs should be unique");
+    assert!(token_id2 != token_id3, "Token IDs should be unique");
+    assert!(token_id1 != token_id3, "Token IDs should be unique");
 
     // Verify ownership
     assert!(erc721.owner_of(token_id1.into()) == ALICE(), "ALICE should own token 1");

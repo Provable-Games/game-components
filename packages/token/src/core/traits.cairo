@@ -13,7 +13,7 @@ pub trait OptionalContext<TContractState> {
     fn emit_context(
         ref self: TContractState,
         caller: ContractAddress,
-        token_id: u64,
+        token_id: felt252,
         context: GameContextDetails,
     );
 }
@@ -21,7 +21,7 @@ pub trait OptionalContext<TContractState> {
 pub trait OptionalObjectives<TContractState> {
     fn validate_objective(self: @TContractState, game_address: ContractAddress, objective_id: u32);
     fn is_objective_completed(
-        self: @TContractState, game_address: ContractAddress, token_id: u64, objective_id: u32,
+        self: @TContractState, game_address: ContractAddress, token_id: felt252, objective_id: u32,
     ) -> bool;
 }
 
@@ -30,11 +30,11 @@ pub trait OptionalSettings<TContractState> {
 }
 
 pub trait OptionalSoulbound<TContractState> {
-    fn check_transfer_allowed(self: @TContractState, token_id: u64) -> bool;
-    fn set_soulbound_status(ref self: TContractState, token_id: u64, is_soulbound: bool);
+    fn check_transfer_allowed(self: @TContractState, token_id: felt252) -> bool;
+    fn set_soulbound_status(ref self: TContractState, token_id: felt252, is_soulbound: bool);
 }
 
 pub trait OptionalRenderer<TContractState> {
-    fn get_token_renderer(self: @TContractState, token_id: u64) -> Option<ContractAddress>;
-    fn set_token_renderer(ref self: TContractState, token_id: u64, renderer: ContractAddress);
+    fn get_token_renderer(self: @TContractState, token_id: felt252) -> Option<ContractAddress>;
+    fn set_token_renderer(ref self: TContractState, token_id: felt252, renderer: ContractAddress);
 }

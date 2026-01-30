@@ -16,7 +16,7 @@ use crate::structs::MintGameParams;
 /// # Arguments
 /// * `minigame_token_address` - The address of the minigame token contract
 /// * `token_id` - The game token ID to validate
-pub fn pre_action(minigame_token_address: ContractAddress, token_id: u64) {
+pub fn pre_action(minigame_token_address: ContractAddress, token_id: felt252) {
     assert_game_token_playable(minigame_token_address, token_id);
 }
 
@@ -25,7 +25,7 @@ pub fn pre_action(minigame_token_address: ContractAddress, token_id: u64) {
 /// # Arguments
 /// * `minigame_token_address` - The address of the minigame token contract
 /// * `token_id` - The game token ID to update
-pub fn post_action(minigame_token_address: ContractAddress, token_id: u64) {
+pub fn post_action(minigame_token_address: ContractAddress, token_id: felt252) {
     let minigame_token_dispatcher = IMinigameTokenDispatcher {
         contract_address: minigame_token_address,
     };
@@ -37,7 +37,7 @@ pub fn post_action(minigame_token_address: ContractAddress, token_id: u64) {
 /// # Arguments
 /// * `minigame_token_address` - The address of the minigame token contract
 /// * `token_id` - The token ID to check ownership for
-pub fn require_owned_token(minigame_token_address: ContractAddress, token_id: u64) {
+pub fn require_owned_token(minigame_token_address: ContractAddress, token_id: felt252) {
     let erc721_dispatcher = IERC721Dispatcher { contract_address: minigame_token_address };
     let token_owner = erc721_dispatcher.owner_of(token_id.into());
     assert!(!token_owner.is_zero(), "Token {} does not exist or is not owned by anyone", token_id);
@@ -48,7 +48,7 @@ pub fn require_owned_token(minigame_token_address: ContractAddress, token_id: u6
 /// # Arguments
 /// * `minigame_token_address` - The address of the minigame token contract
 /// * `token_id` - The token ID to check ownership for
-pub fn assert_token_ownership(minigame_token_address: ContractAddress, token_id: u64) {
+pub fn assert_token_ownership(minigame_token_address: ContractAddress, token_id: felt252) {
     let erc721_dispatcher = IERC721Dispatcher { contract_address: minigame_token_address };
     let token_owner = erc721_dispatcher.owner_of(token_id.into());
     assert!(
@@ -61,7 +61,7 @@ pub fn assert_token_ownership(minigame_token_address: ContractAddress, token_id:
 /// # Arguments
 /// * `minigame_token_address` - The address of the minigame token contract
 /// * `token_id` - The token ID to check playability for
-pub fn assert_game_token_playable(minigame_token_address: ContractAddress, token_id: u64) {
+pub fn assert_game_token_playable(minigame_token_address: ContractAddress, token_id: felt252) {
     let minigame_token_dispatcher = IMinigameTokenDispatcher {
         contract_address: minigame_token_address,
     };
@@ -134,7 +134,7 @@ pub fn register_game(
 /// * `soulbound` - Whether the token should be soulbound
 ///
 /// # Returns
-/// * `u64` - The minted token ID
+/// * `felt252` - The minted token ID
 pub fn mint(
     minigame_token_address: ContractAddress,
     game_address: ContractAddress,
@@ -148,7 +148,10 @@ pub fn mint(
     renderer_address: Option<ContractAddress>,
     to: ContractAddress,
     soulbound: bool,
-) -> u64 {
+    paymaster: bool,
+    salt: u16,
+    metadata: u16,
+) -> felt252 {
     let minigame_token_dispatcher = IMinigameTokenDispatcher {
         contract_address: minigame_token_address,
     };
@@ -165,6 +168,9 @@ pub fn mint(
             renderer_address,
             to,
             soulbound,
+            paymaster,
+            salt,
+            metadata,
         )
 }
 
@@ -176,12 +182,12 @@ pub fn mint(
 /// * `mints` - Array of mint parameters for each token
 ///
 /// # Returns
-/// * `Array<u64>` - Array of minted token IDs
+/// * `Array<felt252>` - Array of minted token IDs
 pub fn mint_batch(
     minigame_token_address: ContractAddress,
     game_address: ContractAddress,
     mints: Array<MintGameParams>,
-) -> Array<u64> {
+) -> Array<felt252> {
     let minigame_token_dispatcher = IMinigameTokenDispatcher {
         contract_address: minigame_token_address,
     };
@@ -220,6 +226,9 @@ pub fn mint_batch(
                     renderer_address: *mint_game_param.renderer_address,
                     to: *mint_game_param.to,
                     soulbound: *mint_game_param.soulbound,
+                    paymaster: *mint_game_param.paymaster,
+                    salt: *mint_game_param.salt,
+                    metadata: *mint_game_param.metadata,
                 },
             );
         index += 1;
@@ -236,7 +245,7 @@ pub fn mint_batch(
 ///
 /// # Returns
 /// * `felt252` - The player name
-pub fn get_player_name(minigame_token_address: ContractAddress, token_id: u64) -> felt252 {
+pub fn get_player_name(minigame_token_address: ContractAddress, token_id: felt252) -> felt252 {
     let minigame_token_dispatcher = IMinigameTokenDispatcher {
         contract_address: minigame_token_address,
     };

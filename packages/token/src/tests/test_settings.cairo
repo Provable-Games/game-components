@@ -119,10 +119,13 @@ fn test_validate_settings_valid_settings_id() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Verify token was minted
-    assert!(token_id == 1, "Token should be minted");
+    assert!(token_id != 0, "Token should be minted");
 }
 
 // TST-VS-002: Validate with zero settings_address (no validation needed)
@@ -146,9 +149,12 @@ fn test_validate_settings_zero_settings_address() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
-    assert!(token_id == 1, "Token should be minted");
+    assert!(token_id != 0, "Token should be minted");
     assert!(test_contracts.test_token.settings_id(token_id) == 0, "Settings ID should be 0");
 }
 
@@ -175,6 +181,9 @@ fn test_validate_settings_id_zero() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     assert!(test_contracts.test_token.settings_id(token_id) == 0, "Settings ID should be 0");
@@ -208,6 +217,9 @@ fn test_validate_settings_id_not_exist() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 }
 
@@ -268,10 +280,13 @@ fn test_mint_with_settings_validation() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Verify token metadata includes settings_id
-    assert!(token_id == 1, "Token should be minted");
+    assert!(token_id != 0, "Token should be minted");
 }
 
 // TST-INT-002: Create settings then mint using that settings_id
@@ -307,9 +322,12 @@ fn test_create_and_use_settings() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
-    assert!(token_id > 0, "Token should be minted");
+    assert!(token_id != 0, "Token should be minted");
 }
 
 // ================================================================================================
@@ -334,6 +352,9 @@ fn test_settings_id_view_no_settings() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     assert!(test_contracts.test_token.settings_id(token_id) == 0, "Settings ID should be 0");
@@ -358,6 +379,9 @@ fn test_settings_id_batch_view() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     let token_id2 = test_contracts
@@ -374,6 +398,9 @@ fn test_settings_id_batch_view() {
             Option::None,
             BOB(),
             false,
+            false,
+            1,
+            0,
         );
 
     // Get batch settings
@@ -427,6 +454,9 @@ fn test_fuzz_settings_id_validation(settings_id: u32) {
                 Option::None,
                 ALICE(),
                 false,
+                false,
+                0,
+                0,
             );
 
         assert!(test_contracts.test_token.settings_id(token_id) == 0, "Should have settings_id 0");

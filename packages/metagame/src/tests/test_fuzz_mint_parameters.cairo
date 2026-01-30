@@ -21,7 +21,10 @@ trait IMockMetagame<TContractState> {
         renderer_address: Option<ContractAddress>,
         to: ContractAddress,
         soulbound: bool,
-    ) -> u64;
+        paymaster: bool,
+        salt: u16,
+        metadata: u16,
+    ) -> felt252;
 }
 
 // Fuzz test F-02: Mint parameter fuzzing
@@ -139,6 +142,9 @@ fn test_fuzz_player_names() {
                 Option::None,
                 owner,
                 false,
+                false,
+                0,
+                0,
             );
 
         // Verify name was stored correctly
@@ -170,7 +176,7 @@ fn test_property_token_id_monotonicity() {
     let metagame_dispatcher = IMockMetagameDispatcher { contract_address: metagame_address };
 
     // Mint 100 tokens and verify monotonicity
-    let mut previous_id: u64 = 0;
+    let mut previous_id: felt252 = 0;
     let mut i: u32 = 0;
 
     loop {
@@ -193,11 +199,14 @@ fn test_property_token_id_monotonicity() {
                 Option::None,
                 owner,
                 false,
+                false,
+                0,
+                0,
             );
 
         // Verify monotonicity
         if i == 0 {
-            assert!(token_id == 1, "First token should be 1");
+            assert!(token_id == 1.into(), "First token should be 1");
         } else {
             assert!(token_id == previous_id + 1, "Token ID should increment by 1");
         }
@@ -210,7 +219,7 @@ fn test_property_token_id_monotonicity() {
 // Helper function to try minting with lifecycle parameters
 fn try_mint_with_lifecycle(
     dispatcher: IMockMetagameDispatcher, game_address: ContractAddress, start: u64, end: u64,
-) -> Option<u64> {
+) -> Option<felt252> {
     // In a real fuzz test framework, we would catch panics
     // For now, we'll assume valid ranges succeed
     if start > end && start != 0 && end != 0 {
@@ -230,6 +239,9 @@ fn try_mint_with_lifecycle(
             Option::None,
             0x9999.try_into().unwrap(),
             false,
+            false,
+            0,
+            0,
         );
 
     Option::Some(token_id)
@@ -292,7 +304,10 @@ mod MockMetagameFuzz {
             renderer_address: Option<ContractAddress>,
             to: ContractAddress,
             soulbound: bool,
-        ) -> u64 {
+            paymaster: bool,
+            salt: u16,
+            metadata: u16,
+        ) -> felt252 {
             self
                 .metagame
                 .mint(
@@ -307,6 +322,9 @@ mod MockMetagameFuzz {
                     renderer_address,
                     to,
                     soulbound,
+                    paymaster,
+                    salt,
+                    metadata,
                 )
         }
     }
@@ -329,8 +347,8 @@ mod MockMinigameFuzz {
         token_address: ContractAddress,
         settings_address: ContractAddress,
         objectives_address: ContractAddress,
-        token_scores: Map<u64, u64>,
-        token_game_over: Map<u64, bool>,
+        token_scores: Map<felt252, u64>,
+        token_game_over: Map<felt252, bool>,
     }
 
     #[event]
@@ -375,11 +393,14 @@ mod MockMinigameFuzz {
             renderer_address: Option<ContractAddress>,
             to: ContractAddress,
             soulbound: bool,
-        ) -> u64 {
+            paymaster: bool,
+            salt: u16,
+            metadata: u16,
+        ) -> felt252 {
             1
         }
 
-        fn mint_game_batch(self: @ContractState, mints: Array<MintGameParams>) -> Array<u64> {
+        fn mint_game_batch(self: @ContractState, mints: Array<MintGameParams>) -> Array<felt252> {
             let mut results = array![];
             let mut i: u64 = 1;
             let mut index = 0;
@@ -387,7 +408,7 @@ mod MockMinigameFuzz {
                 if index >= mints.len() {
                     break;
                 }
-                results.append(i);
+                results.append(i.into());
                 i += 1;
                 index += 1;
             }
@@ -397,15 +418,15 @@ mod MockMinigameFuzz {
 
     #[abi(embed_v0)]
     impl MinigameTokenDataImpl of IMinigameTokenData<ContractState> {
-        fn score(self: @ContractState, token_id: u64) -> u64 {
+        fn score(self: @ContractState, token_id: felt252) -> u64 {
             self.token_scores.read(token_id)
         }
 
-        fn game_over(self: @ContractState, token_id: u64) -> bool {
+        fn game_over(self: @ContractState, token_id: felt252) -> bool {
             self.token_game_over.read(token_id)
         }
 
-        fn score_batch(self: @ContractState, token_ids: Span<u64>) -> Array<u64> {
+        fn score_batch(self: @ContractState, token_ids: Span<felt252>) -> Array<u64> {
             let mut results = array![];
             let mut index = 0;
             loop {
@@ -418,7 +439,7 @@ mod MockMinigameFuzz {
             results
         }
 
-        fn game_over_batch(self: @ContractState, token_ids: Span<u64>) -> Array<bool> {
+        fn game_over_batch(self: @ContractState, token_ids: Span<felt252>) -> Array<bool> {
             let mut results = array![];
             let mut index = 0;
             loop {
@@ -460,10 +481,10 @@ mod MockMinigameTokenFuzz {
     #[storage]
     struct Storage {
         next_token_id: u64,
-        token_game_address: Map<u64, ContractAddress>,
-        token_player_names: Map<u64, felt252>,
-        token_lifecycle_start: Map<u64, u64>,
-        token_lifecycle_end: Map<u64, u64>,
+        token_game_address: Map<felt252, ContractAddress>,
+        token_player_names: Map<felt252, felt252>,
+        token_lifecycle_start: Map<felt252, u64>,
+        token_lifecycle_end: Map<felt252, u64>,
         game_address: ContractAddress,
         game_registry_address: ContractAddress,
     }
@@ -475,7 +496,7 @@ mod MockMinigameTokenFuzz {
 
     #[abi(embed_v0)]
     impl MinigameTokenImpl of IMinigameToken<ContractState> {
-        fn token_metadata(self: @ContractState, token_id: u64) -> TokenMetadata {
+        fn token_metadata(self: @ContractState, token_id: felt252) -> TokenMetadata {
             TokenMetadata {
                 game_id: 0,
                 minted_at: 0,
@@ -490,26 +511,28 @@ mod MockMinigameTokenFuzz {
                 completed_objective: false,
                 has_context: false,
                 objective_id: 0,
+                paymaster: false,
+                metadata: 0,
             }
         }
 
-        fn is_playable(self: @ContractState, token_id: u64) -> bool {
-            token_id < self.next_token_id.read()
+        fn is_playable(self: @ContractState, token_id: felt252) -> bool {
+            token_id != 0
         }
 
-        fn settings_id(self: @ContractState, token_id: u64) -> u32 {
+        fn settings_id(self: @ContractState, token_id: felt252) -> u32 {
             0
         }
 
-        fn player_name(self: @ContractState, token_id: u64) -> felt252 {
+        fn player_name(self: @ContractState, token_id: felt252) -> felt252 {
             self.token_player_names.read(token_id)
         }
 
-        fn objective_id(self: @ContractState, token_id: u64) -> u32 {
+        fn objective_id(self: @ContractState, token_id: felt252) -> u32 {
             0
         }
 
-        fn minted_by(self: @ContractState, token_id: u64) -> u64 {
+        fn minted_by(self: @ContractState, token_id: felt252) -> felt252 {
             0
         }
 
@@ -521,20 +544,20 @@ mod MockMinigameTokenFuzz {
             self.game_registry_address.read()
         }
 
-        fn is_soulbound(self: @ContractState, token_id: u64) -> bool {
+        fn is_soulbound(self: @ContractState, token_id: felt252) -> bool {
             false
         }
 
-        fn renderer_address(self: @ContractState, token_id: u64) -> ContractAddress {
+        fn renderer_address(self: @ContractState, token_id: felt252) -> ContractAddress {
             Zero::zero()
         }
 
-        fn token_game_address(self: @ContractState, token_id: u64) -> ContractAddress {
+        fn token_game_address(self: @ContractState, token_id: felt252) -> ContractAddress {
             self.token_game_address.read(token_id)
         }
 
         fn token_metadata_batch(
-            self: @ContractState, token_ids: Span<u64>,
+            self: @ContractState, token_ids: Span<felt252>,
         ) -> Array<TokenMetadata> {
             let mut results = array![];
             let mut i = 0;
@@ -548,7 +571,7 @@ mod MockMinigameTokenFuzz {
             results
         }
 
-        fn is_playable_batch(self: @ContractState, token_ids: Span<u64>) -> Array<bool> {
+        fn is_playable_batch(self: @ContractState, token_ids: Span<felt252>) -> Array<bool> {
             let mut results = array![];
             let mut i = 0;
             loop {
@@ -561,7 +584,7 @@ mod MockMinigameTokenFuzz {
             results
         }
 
-        fn settings_id_batch(self: @ContractState, token_ids: Span<u64>) -> Array<u32> {
+        fn settings_id_batch(self: @ContractState, token_ids: Span<felt252>) -> Array<u32> {
             let mut results = array![];
             let mut i = 0;
             loop {
@@ -574,7 +597,7 @@ mod MockMinigameTokenFuzz {
             results
         }
 
-        fn player_name_batch(self: @ContractState, token_ids: Span<u64>) -> Array<felt252> {
+        fn player_name_batch(self: @ContractState, token_ids: Span<felt252>) -> Array<felt252> {
             let mut results = array![];
             let mut i = 0;
             loop {
@@ -587,7 +610,7 @@ mod MockMinigameTokenFuzz {
             results
         }
 
-        fn objective_id_batch(self: @ContractState, token_ids: Span<u64>) -> Array<u32> {
+        fn objective_id_batch(self: @ContractState, token_ids: Span<felt252>) -> Array<u32> {
             let mut results = array![];
             let mut i = 0;
             loop {
@@ -600,7 +623,7 @@ mod MockMinigameTokenFuzz {
             results
         }
 
-        fn minted_by_batch(self: @ContractState, token_ids: Span<u64>) -> Array<u64> {
+        fn minted_by_batch(self: @ContractState, token_ids: Span<felt252>) -> Array<felt252> {
             let mut results = array![];
             let mut i = 0;
             loop {
@@ -613,7 +636,7 @@ mod MockMinigameTokenFuzz {
             results
         }
 
-        fn is_soulbound_batch(self: @ContractState, token_ids: Span<u64>) -> Array<bool> {
+        fn is_soulbound_batch(self: @ContractState, token_ids: Span<felt252>) -> Array<bool> {
             let mut results = array![];
             let mut i = 0;
             loop {
@@ -627,7 +650,7 @@ mod MockMinigameTokenFuzz {
         }
 
         fn renderer_address_batch(
-            self: @ContractState, token_ids: Span<u64>,
+            self: @ContractState, token_ids: Span<felt252>,
         ) -> Array<ContractAddress> {
             let mut results = array![];
             let mut i = 0;
@@ -642,7 +665,7 @@ mod MockMinigameTokenFuzz {
         }
 
         fn token_game_address_batch(
-            self: @ContractState, token_ids: Span<u64>,
+            self: @ContractState, token_ids: Span<felt252>,
         ) -> Array<ContractAddress> {
             let mut results = array![];
             let mut i = 0;
@@ -669,9 +692,13 @@ mod MockMinigameTokenFuzz {
             renderer_address: Option<ContractAddress>,
             to: ContractAddress,
             soulbound: bool,
-        ) -> u64 {
-            let token_id = self.next_token_id.read();
-            self.next_token_id.write(token_id + 1);
+            paymaster: bool,
+            salt: u16,
+            metadata: u16,
+        ) -> felt252 {
+            let token_id_u64 = self.next_token_id.read();
+            self.next_token_id.write(token_id_u64 + 1);
+            let token_id: felt252 = token_id_u64.into();
 
             if let Option::Some(game_addr) = game_address {
                 self.token_game_address.write(token_id, game_addr);
@@ -692,7 +719,7 @@ mod MockMinigameTokenFuzz {
             token_id
         }
 
-        fn mint_batch(ref self: ContractState, mints: Array<MintParams>) -> Array<u64> {
+        fn mint_batch(ref self: ContractState, mints: Array<MintParams>) -> Array<felt252> {
             let mut results = array![];
             let mut i = 0;
             loop {
@@ -721,6 +748,9 @@ mod MockMinigameTokenFuzz {
                         *params.renderer_address,
                         *params.to,
                         *params.soulbound,
+                        *params.paymaster,
+                        *params.salt,
+                        *params.metadata,
                     );
                 results.append(token_id);
                 i += 1;
@@ -730,7 +760,7 @@ mod MockMinigameTokenFuzz {
 
         fn set_token_metadata(
             ref self: ContractState,
-            token_id: u64,
+            token_id: felt252,
             game_address: ContractAddress,
             player_name: Option<felt252>,
             settings_id: Option<u32>,
@@ -738,11 +768,13 @@ mod MockMinigameTokenFuzz {
             end: Option<u64>,
             objective_id: Option<u32>,
             context: Option<GameContextDetails>,
-        ) {}
+        ) -> felt252 {
+            token_id
+        }
 
-        fn update_game(ref self: ContractState, token_id: u64) {}
+        fn update_game(ref self: ContractState, token_id: felt252) {}
 
-        fn update_player_name(ref self: ContractState, token_id: u64, name: felt252) {
+        fn update_player_name(ref self: ContractState, token_id: felt252, name: felt252) {
             self.token_player_names.write(token_id, name);
         }
 
@@ -750,7 +782,7 @@ mod MockMinigameTokenFuzz {
             ref self: ContractState, updates: Array<SetTokenMetadataParams>,
         ) {}
 
-        fn update_game_batch(ref self: ContractState, token_ids: Span<u64>) {}
+        fn update_game_batch(ref self: ContractState, token_ids: Span<felt252>) {}
 
         fn update_player_name_batch(ref self: ContractState, updates: Span<PlayerNameUpdate>) {
             let mut i = 0;

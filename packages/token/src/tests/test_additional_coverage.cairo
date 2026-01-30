@@ -102,6 +102,9 @@ fn test_settings_mint_with_valid_settings() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Verify token metadata
@@ -127,6 +130,9 @@ fn test_settings_with_zero_settings_id() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     assert!(test_contracts.test_token.settings_id(token_id) == 0, "Settings ID should be 0");
@@ -183,6 +189,9 @@ fn test_objectives_completion_lifecycle() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Verify initial state
@@ -228,6 +237,9 @@ fn test_objectives_completion_exceeds_target() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // End game with score exceeding objective
@@ -261,6 +273,9 @@ fn test_objectives_completion_exact_match() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // End game with exact target score
@@ -293,6 +308,9 @@ fn test_objectives_multiple_tokens_same_objective() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     let token_id2 = test_contracts
@@ -309,6 +327,9 @@ fn test_objectives_multiple_tokens_same_objective() {
             Option::None,
             BOB(),
             false,
+            false,
+            1,
+            0,
         );
 
     let token_id3 = test_contracts
@@ -325,6 +346,9 @@ fn test_objectives_multiple_tokens_same_objective() {
             Option::None,
             CHARLIE(),
             false,
+            false,
+            2,
+            0,
         );
 
     // All should reference same objective
@@ -380,10 +404,13 @@ fn test_core_token_client_url_with_mint() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Token should be minted successfully
-    assert!(token_id > 0, "Token should be minted");
+    assert!(token_id != 0, "Token should be minted");
 }
 
 #[test]
@@ -405,10 +432,13 @@ fn test_core_token_renderer_address_with_mint() {
             Option::Some(RENDERER_ADDRESS()),
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Token should be minted successfully with renderer
-    assert!(token_id > 0, "Token should be minted");
+    assert!(token_id != 0, "Token should be minted");
 }
 
 #[test]
@@ -434,7 +464,10 @@ fn test_core_token_full_params_mint() {
             Option::Some("https://game.com"), // client_url
             Option::Some(RENDERER_ADDRESS()), // renderer_address
             ALICE(),
-            true // soulbound
+            true, // soulbound
+            false,
+            0,
+            0,
         );
 
     // Verify metadata
@@ -469,6 +502,9 @@ fn test_core_token_batch_update_game() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     let token_id2 = token_dispatcher
@@ -484,6 +520,9 @@ fn test_core_token_batch_update_game() {
             Option::None,
             BOB(),
             false,
+            false,
+            1,
+            0,
         );
 
     let token_id3 = token_dispatcher
@@ -499,6 +538,9 @@ fn test_core_token_batch_update_game() {
             Option::None,
             CHARLIE(),
             false,
+            false,
+            2,
+            0,
         );
 
     // Set different game states
@@ -507,7 +549,7 @@ fn test_core_token_batch_update_game() {
     mock_game.set_score(token_id3, 200);
 
     // Batch update
-    let token_ids: Array<u64> = array![token_id1, token_id2, token_id3];
+    let token_ids: Array<felt252> = array![token_id1, token_id2, token_id3];
     token_dispatcher.update_game_batch(token_ids.span());
 
     // Verify states
@@ -538,23 +580,31 @@ fn test_core_token_playability_with_lifecycle() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
-    // Token that already ended
-    let past_token = test_contracts
+    // Token that ends soon after current time (to test expiry)
+    // end_delay = end - start = (PAST_TIME + 1) - PAST_TIME = 1
+    // lifecycle.end = minted_at + start_delay + end_delay = CURRENT_TIME + 0 + 1 = CURRENT_TIME + 1
+    let expiring_token = test_contracts
         .test_token
         .mint(
             Option::Some(test_contracts.minigame.contract_address),
             Option::None,
             Option::None,
             Option::Some(PAST_TIME),
-            Option::Some(CURRENT_TIME - 1),
+            Option::Some(PAST_TIME + 1), // end_delay = 1 second (end - start)
             Option::None,
             Option::None,
             Option::None,
             Option::None,
             BOB(),
             false,
+            false,
+            1,
+            0,
         );
 
     // Token currently active
@@ -572,12 +622,30 @@ fn test_core_token_playability_with_lifecycle() {
             Option::None,
             CHARLIE(),
             false,
+            false,
+            2,
+            0,
         );
 
-    // Verify playability
+    // Verify playability at CURRENT_TIME
     assert!(!test_contracts.test_token.is_playable(future_token), "Future token not playable yet");
-    assert!(!test_contracts.test_token.is_playable(past_token), "Past token no longer playable");
+    // expiring_token: start_delay=0 (PAST_TIME < CURRENT_TIME), end_delay=1 (end - start)
+    // lifecycle.start = minted_at + start_delay = CURRENT_TIME + 0 = CURRENT_TIME
+    // lifecycle.end = minted_at + start_delay + end_delay = CURRENT_TIME + 0 + 1 = CURRENT_TIME + 1
+    // At CURRENT_TIME: playable (start <= now < end)
+    assert!(
+        test_contracts.test_token.is_playable(expiring_token),
+        "Expiring token should be playable now",
+    );
     assert!(test_contracts.test_token.is_playable(active_token), "Active token should be playable");
+
+    // Advance time past the expiring token's end
+    start_cheat_block_timestamp(test_contracts.test_token.contract_address, CURRENT_TIME + 1);
+    assert!(
+        !test_contracts.test_token.is_playable(expiring_token),
+        "Expiring token should no longer be playable",
+    );
+    assert!(test_contracts.test_token.is_playable(active_token), "Active token still playable");
 
     stop_cheat_block_timestamp(test_contracts.test_token.contract_address);
 }
@@ -600,7 +668,10 @@ fn test_core_token_soulbound_verification() {
             Option::None,
             Option::None,
             ALICE(),
-            true // soulbound
+            true, // soulbound
+            false,
+            0,
+            0,
         );
 
     // Mint normal token
@@ -617,7 +688,10 @@ fn test_core_token_soulbound_verification() {
             Option::None,
             Option::None,
             BOB(),
-            false // not soulbound
+            false, // not soulbound
+            false,
+            1,
+            0,
         );
 
     // Verify soulbound flags
@@ -657,6 +731,9 @@ fn test_core_token_minter_tracking() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Verify ALICE is tracked
@@ -680,6 +757,9 @@ fn test_core_token_minter_tracking() {
             Option::None,
             BOB(),
             false,
+            false,
+            1,
+            0,
         );
 
     // Verify BOB is tracked
@@ -696,8 +776,8 @@ fn test_core_token_minter_tracking() {
     let minted_by1 = test_contracts.test_token.minted_by(token_id1);
     let minted_by2 = test_contracts.test_token.minted_by(token_id2);
 
-    let minter_addr1 = test_contracts.test_token.get_minter_address(minted_by1);
-    let minter_addr2 = test_contracts.test_token.get_minter_address(minted_by2);
+    let minter_addr1 = test_contracts.test_token.get_minter_address(minted_by1.try_into().unwrap());
+    let minter_addr2 = test_contracts.test_token.get_minter_address(minted_by2.try_into().unwrap());
 
     assert!(minter_addr1 == ALICE(), "Token 1 minter should be ALICE");
     assert!(minter_addr2 == BOB(), "Token 2 minter should be BOB");
@@ -721,6 +801,9 @@ fn test_core_token_game_over_irreversible() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Set game over
@@ -758,6 +841,9 @@ fn test_core_token_metadata_batch_mixed() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     let token_id2 = test_contracts
@@ -773,11 +859,14 @@ fn test_core_token_metadata_batch_mixed() {
             Option::None,
             Option::None,
             BOB(),
-            true // soulbound
+            true, // soulbound
+            false,
+            1,
+            0,
         );
 
     // Batch query all views
-    let token_ids: Array<u64> = array![token_id1, token_id2];
+    let token_ids: Array<felt252> = array![token_id1, token_id2];
 
     let metadata_batch = test_contracts.test_token.token_metadata_batch(token_ids.span());
     let playable_batch = test_contracts.test_token.is_playable_batch(token_ids.span());
@@ -824,6 +913,9 @@ fn test_multi_game_mint_and_resolution() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Verify game address resolution
@@ -873,6 +965,9 @@ fn test_event_emission_on_mint() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     // Verify events were emitted
@@ -898,6 +993,9 @@ fn test_event_emission_on_update_game() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     let mut spy = spy_events();
@@ -926,6 +1024,9 @@ fn test_event_emission_on_player_name_update() {
             Option::None,
             ALICE(),
             false,
+            false,
+            0,
+            0,
         );
 
     let mut spy = spy_events();

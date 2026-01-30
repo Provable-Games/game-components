@@ -22,7 +22,7 @@ pub mod ContextComponent {
     #[derive(Drop, starknet::Event)]
     pub struct TokenContextUpdate {
         #[key]
-        pub token_id: u64,
+        pub token_id: felt252,
         pub data: ByteArray,
     }
 
@@ -33,7 +33,7 @@ pub mod ContextComponent {
         fn emit_context(
             ref self: TContractState,
             caller: ContractAddress,
-            token_id: u64,
+            token_id: felt252,
             context: GameContextDetails,
         ) {
             let src5_dispatcher = ISRC5Dispatcher { contract_address: caller };

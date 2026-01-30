@@ -61,7 +61,10 @@ pub mod MinigameComponent {
             renderer_address: Option<ContractAddress>,
             to: ContractAddress,
             soulbound: bool,
-        ) -> u64 {
+            paymaster: bool,
+            salt: u16,
+            metadata: u16,
+        ) -> felt252 {
             libs::mint(
                 self.token_address.read(),
                 get_contract_address(),
@@ -75,12 +78,15 @@ pub mod MinigameComponent {
                 renderer_address,
                 to,
                 soulbound,
+                paymaster,
+                salt,
+                metadata,
             )
         }
 
         fn mint_game_batch(
             self: @ComponentState<TContractState>, mints: Array<MintGameParams>,
-        ) -> Array<u64> {
+        ) -> Array<felt252> {
             libs::mint_batch(self.token_address.read(), get_contract_address(), mints)
         }
     }
@@ -164,27 +170,27 @@ pub mod MinigameComponent {
             src5_component.register_interface(IMINIGAME_ID);
         }
 
-        fn pre_action(self: @ComponentState<TContractState>, token_id: u64) {
+        fn pre_action(self: @ComponentState<TContractState>, token_id: felt252) {
             libs::pre_action(self.token_address.read(), token_id);
         }
 
-        fn post_action(self: @ComponentState<TContractState>, token_id: u64) {
+        fn post_action(self: @ComponentState<TContractState>, token_id: felt252) {
             libs::post_action(self.token_address.read(), token_id);
         }
 
-        fn get_player_name(self: @ComponentState<TContractState>, token_id: u64) -> felt252 {
+        fn get_player_name(self: @ComponentState<TContractState>, token_id: felt252) -> felt252 {
             libs::get_player_name(self.token_address.read(), token_id)
         }
 
-        fn require_owned_token(self: @ComponentState<TContractState>, token_id: u64) {
+        fn require_owned_token(self: @ComponentState<TContractState>, token_id: felt252) {
             libs::require_owned_token(self.token_address.read(), token_id);
         }
 
-        fn assert_token_ownership(self: @ComponentState<TContractState>, token_id: u64) {
+        fn assert_token_ownership(self: @ComponentState<TContractState>, token_id: felt252) {
             libs::assert_token_ownership(self.token_address.read(), token_id);
         }
 
-        fn assert_game_token_playable(self: @ComponentState<TContractState>, token_id: u64) {
+        fn assert_game_token_playable(self: @ComponentState<TContractState>, token_id: felt252) {
             libs::assert_game_token_playable(self.token_address.read(), token_id);
         }
     }

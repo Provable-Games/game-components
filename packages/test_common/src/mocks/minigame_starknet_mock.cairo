@@ -14,9 +14,12 @@ pub trait IMinigameStarknetMock<TContractState> {
         renderer_address: Option<ContractAddress>,
         player_address: ContractAddress,
         soulbound: bool,
-    ) -> u64;
-    fn start_game(ref self: TContractState, token_id: u64);
-    fn end_game(ref self: TContractState, token_id: u64, score: u64);
+        paymaster: bool,
+        salt: u16,
+        metadata: u16,
+    ) -> felt252;
+    fn start_game(ref self: TContractState, token_id: felt252);
+    fn end_game(ref self: TContractState, token_id: felt252, score: u64);
     fn create_objective_score(ref self: TContractState, score: u64);
     fn create_settings_difficulty(
         ref self: TContractState, name: ByteArray, description: ByteArray, difficulty: u8,
@@ -90,8 +93,8 @@ pub mod minigame_starknet_mock {
         #[substorage(v0)]
         src5: SRC5Component::Storage,
         // Token data storage
-        scores: Map<u64, u64>, // token_id -> score
-        game_over: Map<u64, bool>, // token_id -> game_over
+        scores: Map<felt252, u64>, // token_id -> score
+        game_over: Map<felt252, bool>, // token_id -> game_over
         // Settings storage
         settings_count: u32,
         settings_difficulty: Map<u32, u8>, // settings_id -> difficulty
@@ -102,8 +105,8 @@ pub mod minigame_starknet_mock {
         objective_count: u32,
         objective_scores: Map<u32, (u64, bool)>, // objective_id -> (target_score, exists)
         // Token objective mappings - using a simpler storage pattern
-        token_objective_count: Map<u64, u32>, // token_id -> count of objectives
-        token_objective_at_index: Map<(u64, u32), u32>, // (token_id, index) -> objective_id
+        token_objective_count: Map<felt252, u32>, // token_id -> count of objectives
+        token_objective_at_index: Map<(felt252, u32), u32>, // (token_id, index) -> objective_id
         // Token counter for minting
         token_counter: u64,
     }
@@ -123,15 +126,15 @@ pub mod minigame_starknet_mock {
 
     #[abi(embed_v0)]
     impl GameTokenDataImpl of IMinigameTokenData<ContractState> {
-        fn score(self: @ContractState, token_id: u64) -> u64 {
+        fn score(self: @ContractState, token_id: felt252) -> u64 {
             self.scores.entry(token_id).read()
         }
 
-        fn game_over(self: @ContractState, token_id: u64) -> bool {
+        fn game_over(self: @ContractState, token_id: felt252) -> bool {
             self.game_over.entry(token_id).read()
         }
 
-        fn score_batch(self: @ContractState, token_ids: Span<u64>) -> Array<u64> {
+        fn score_batch(self: @ContractState, token_ids: Span<felt252>) -> Array<u64> {
             let mut results = array![];
             let mut index = 0;
             loop {
@@ -144,7 +147,7 @@ pub mod minigame_starknet_mock {
             results
         }
 
-        fn game_over_batch(self: @ContractState, token_ids: Span<u64>) -> Array<bool> {
+        fn game_over_batch(self: @ContractState, token_ids: Span<felt252>) -> Array<bool> {
             let mut results = array![];
             let mut index = 0;
             loop {
@@ -160,14 +163,14 @@ pub mod minigame_starknet_mock {
 
     #[abi(embed_v0)]
     impl GameDetailsImpl of IMinigameDetails<ContractState> {
-        fn token_name(self: @ContractState, token_id: u64) -> ByteArray {
+        fn token_name(self: @ContractState, token_id: felt252) -> ByteArray {
             "Test Token"
         }
-        fn token_description(self: @ContractState, token_id: u64) -> ByteArray {
+        fn token_description(self: @ContractState, token_id: felt252) -> ByteArray {
             format!("Test Token Description for token {}", token_id)
         }
 
-        fn game_details(self: @ContractState, token_id: u64) -> Span<GameDetail> {
+        fn game_details(self: @ContractState, token_id: felt252) -> Span<GameDetail> {
             array![
                 GameDetail {
                     name: "Test Game Detail", value: format!("Test Value for token {}", token_id),
@@ -176,7 +179,7 @@ pub mod minigame_starknet_mock {
                 .span()
         }
 
-        fn token_name_batch(self: @ContractState, token_ids: Span<u64>) -> Array<ByteArray> {
+        fn token_name_batch(self: @ContractState, token_ids: Span<felt252>) -> Array<ByteArray> {
             let mut results = array![];
             let mut index = 0;
             loop {
@@ -189,7 +192,9 @@ pub mod minigame_starknet_mock {
             results
         }
 
-        fn token_description_batch(self: @ContractState, token_ids: Span<u64>) -> Array<ByteArray> {
+        fn token_description_batch(
+            self: @ContractState, token_ids: Span<felt252>,
+        ) -> Array<ByteArray> {
             let mut results = array![];
             let mut index = 0;
             loop {
@@ -203,7 +208,7 @@ pub mod minigame_starknet_mock {
         }
 
         fn game_details_batch(
-            self: @ContractState, token_ids: Span<u64>,
+            self: @ContractState, token_ids: Span<felt252>,
         ) -> Array<Span<GameDetail>> {
             let mut results = array![];
             let mut index = 0;
@@ -278,7 +283,7 @@ pub mod minigame_starknet_mock {
             exists
         }
 
-        fn completed_objective(self: @ContractState, token_id: u64, objective_id: u32) -> bool {
+        fn completed_objective(self: @ContractState, token_id: felt252, objective_id: u32) -> bool {
             let (target_score, _) = self.objective_scores.entry(objective_id).read();
             let player_score = self.scores.entry(token_id).read();
             player_score >= target_score.into()
@@ -300,7 +305,7 @@ pub mod minigame_starknet_mock {
 
     #[abi(embed_v0)]
     impl ObjectivesDetailsImpl of IMinigameObjectivesDetails<ContractState> {
-        fn objectives_details(self: @ContractState, token_id: u64) -> Span<GameObjective> {
+        fn objectives_details(self: @ContractState, token_id: felt252) -> Span<GameObjective> {
             let objective_count = self.token_objective_count.entry(token_id).read();
             let mut objectives = array![];
 
@@ -322,7 +327,7 @@ pub mod minigame_starknet_mock {
         }
 
         fn objectives_details_batch(
-            self: @ContractState, token_ids: Span<u64>,
+            self: @ContractState, token_ids: Span<felt252>,
         ) -> Array<Span<GameObjective>> {
             let mut results = array![];
             let mut index = 0;
@@ -351,7 +356,10 @@ pub mod minigame_starknet_mock {
             renderer_address: Option<ContractAddress>,
             player_address: ContractAddress,
             soulbound: bool,
-        ) -> u64 {
+            paymaster: bool,
+            salt: u16,
+            metadata: u16,
+        ) -> felt252 {
             // Check if settings are supported when settings_id is provided
             if settings_id.is_some() {
                 let supports_settings = self.src5.supports_interface(IMINIGAME_SETTINGS_ID);
@@ -366,8 +374,8 @@ pub mod minigame_starknet_mock {
 
             // Generate a simple token ID
             let current_counter = self.token_counter.read();
-            let token_id = current_counter + 1;
-            self.token_counter.write(token_id);
+            let token_id: felt252 = (current_counter + 1).into();
+            self.token_counter.write(current_counter + 1);
 
             // Store objective if provided
             if let Option::Some(obj_id) = objective_id {
@@ -377,12 +385,12 @@ pub mod minigame_starknet_mock {
             token_id
         }
 
-        fn start_game(ref self: ContractState, token_id: u64) {
+        fn start_game(ref self: ContractState, token_id: felt252) {
             self.scores.entry(token_id).write(0);
             self.game_over.entry(token_id).write(false);
         }
 
-        fn end_game(ref self: ContractState, token_id: u64, score: u64) {
+        fn end_game(ref self: ContractState, token_id: felt252, score: u64) {
             self.scores.entry(token_id).write(score);
             self.game_over.entry(token_id).write(true);
         }
@@ -501,7 +509,7 @@ pub mod minigame_starknet_mock {
     // Helper function to store token objectives (called during mint)
     #[generate_trait]
     impl HelperImpl of HelperTrait {
-        fn store_token_objective(ref self: ContractState, token_id: u64, objective_id: u32) {
+        fn store_token_objective(ref self: ContractState, token_id: felt252, objective_id: u32) {
             self.token_objective_count.entry(token_id).write(1);
             self.token_objective_at_index.entry((token_id, 0)).write(objective_id);
         }

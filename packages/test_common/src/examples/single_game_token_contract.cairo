@@ -188,7 +188,7 @@ pub mod SingleGameTokenContract {
 
             let token_metadata: TokenMetadata = self
                 .core_token
-                .get_token_metadata(token_id.try_into().unwrap());
+                .token_metadata(token_id.try_into().unwrap());
 
             // For single-game tokens, we get the game address directly
             let game_address = self.core_token.game_address();

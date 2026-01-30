@@ -28,6 +28,8 @@ fn create_test_metadata(
         completed_objective,
         has_context: false,
         objective_id: 0,
+        paymaster: false,
+        metadata: 0,
     }
 }
 
