@@ -15,3 +15,6 @@ coverage.lcov
 **/snfoundry_trace/
 **/coverage_html/
 **/coverage/
+
+# Example configs (only token_config.example.json should be committed)
+scripts/examples/summit_test_*.json

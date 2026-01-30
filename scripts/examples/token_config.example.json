@@ -1,8 +1,8 @@
 {
   "_comment": "All token amounts assume 18 decimals. Use human-readable values (e.g., '1000000' for 1M tokens). total_supply is auto-calculated from LP + distributions + premints.",
 
-  "name": "TSTATTACKONE",
-  "symbol": "TSTATTACKONE",
+  "name": "TOKEN_NAME",
+  "symbol": "TOKEN_SYMBOL",
 
   "liquidity_config": {
     "paired_token": "0x03C8559b31A325f9f45Ce98f709e8e7C655805C6ca4EECB78FF7761F202AcBA3",
@@ -25,8 +25,16 @@
 
   "premint_allocations": [
     {
-      "recipient": "0x28c5a99082ec6b142ea6f7cc3b046f4effc8c13077ad97cd45c993fe4cd429d",
-      "amount": "5000"
+      "recipient": "0xPREMINT_RECIPIENT_ADDRESS",
+      "amount": "PREMINT_AMOUNT"
+    },
+    {
+      "recipient": "0xPREMINT_RECIPIENT_ADDRESS2",
+      "amount": "PREMINT_AMOUNT"
+    },
+    {
+      "recipient": "0xPREMINT_RECIPIENT_ADDRESS3",
+      "amount": "PREMINT_AMOUNT"
     }
   ]
 }

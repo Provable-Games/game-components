@@ -536,19 +536,9 @@ MIN_LIQUIDITY="${MIN_LIQUIDITY:-0}"
 ORDER_COUNT=$(echo "$CONFIG" | jq '.distribution_orders | length')
 PREMINT_COUNT=$(echo "$CONFIG" | jq '.premint_allocations | length')
 
-# Calculate distribution total
-DISTRIBUTION_TOTAL=0
-for i in $(seq 0 $((ORDER_COUNT - 1))); do
-    local_amount=$(echo "$CONFIG" | jq -r ".distribution_orders[$i].amount")
-    DISTRIBUTION_TOTAL=$((DISTRIBUTION_TOTAL + local_amount))
-done
-
-# Calculate premint total
-PREMINT_TOTAL=0
-for i in $(seq 0 $((PREMINT_COUNT - 1))); do
-    local_amount=$(echo "$CONFIG" | jq -r ".premint_allocations[$i].amount")
-    PREMINT_TOTAL=$((PREMINT_TOTAL + local_amount))
-done
+# Calculate distribution and premint totals using jq (handles empty arrays gracefully)
+DISTRIBUTION_TOTAL=$(echo "$CONFIG" | jq -r '[.distribution_orders[].amount | tonumber] | add // 0')
+PREMINT_TOTAL=$(echo "$CONFIG" | jq -r '[.premint_allocations[].amount | tonumber] | add // 0')
 
 # Auto-calculate total_supply: LP + distributions + premints
 # (registry token is minted and burned during deployment, so no extra needed)
