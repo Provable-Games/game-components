@@ -69,7 +69,6 @@ fn _create_params_with_strk_and_premints(
     let liquidity_config = LiquidityConfig {
         paired_token,
         fee: DEFAULT_FEE,
-        initial_tick: ekubo::types::i129::i129 { mag: 0, sign: false },
         stream_token_amount: 1000 * TOKEN_UNIT, // 1000 tokens for LP
         paired_token_amount: 100 * TOKEN_UNIT, // 100 STRK for LP
         min_liquidity: 1,
@@ -153,7 +152,6 @@ fn test_factory_rejects_insufficient_supply_with_premints_fork() {
     let liquidity_config = LiquidityConfig {
         paired_token,
         fee: DEFAULT_FEE,
-        initial_tick: ekubo::types::i129::i129 { mag: 0, sign: false },
         stream_token_amount: 1000 * TOKEN_UNIT, // 1000 tokens for LP
         paired_token_amount: 100 * TOKEN_UNIT,
         min_liquidity: 1,

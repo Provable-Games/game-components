@@ -44,7 +44,6 @@ fn deploy_stream_token_mainnet() -> (ContractAddress, IStreamTokenDispatcher, IE
     let liquidity_config = LiquidityConfig {
         paired_token: mainnet::STRK(),
         fee: DEFAULT_FEE,
-        initial_tick: ekubo::types::i129::i129 { mag: 0, sign: false },
         stream_token_amount: 1000 * TOKEN_UNIT,
         paired_token_amount: 100 * TOKEN_UNIT,
         min_liquidity: 1,
@@ -101,7 +100,6 @@ fn deploy_stream_token_mainnet_with_premints(
     let liquidity_config = LiquidityConfig {
         paired_token: mainnet::STRK(),
         fee: DEFAULT_FEE,
-        initial_tick: ekubo::types::i129::i129 { mag: 0, sign: false },
         stream_token_amount: 1000 * TOKEN_UNIT,
         paired_token_amount: 100 * TOKEN_UNIT,
         min_liquidity: 1,

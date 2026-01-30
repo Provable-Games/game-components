@@ -1,4 +1,3 @@
-use ekubo::types::i129::i129;
 use game_components_tokenomics::{
     DistributionOrder, GlobalBuybackConfig, IStreamTokenDispatcher, LiquidityConfig,
     PremintAllocation,
@@ -123,7 +122,6 @@ pub fn deploy_stream_token() -> StreamTokenSetup {
     let liquidity_config = LiquidityConfig {
         paired_token,
         fee: defaults::DEFAULT_FEE,
-        initial_tick: i129 { mag: 0, sign: false },
         stream_token_amount: 1000_u128 * 1_000_000_000_000_000_000, // 1000 tokens
         paired_token_amount: 100_u128 * 1_000_000_000_000_000_000, // 100 tokens
         min_liquidity: 1,
@@ -204,7 +202,6 @@ pub fn deploy_stream_token_with_premints(
     let liquidity_config = LiquidityConfig {
         paired_token,
         fee: defaults::DEFAULT_FEE,
-        initial_tick: i129 { mag: 0, sign: false },
         stream_token_amount: 1000_u128 * 1_000_000_000_000_000_000, // 1000 tokens
         paired_token_amount: 100_u128 * 1_000_000_000_000_000_000, // 100 tokens
         min_liquidity: 1,
