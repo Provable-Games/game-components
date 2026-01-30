@@ -307,8 +307,6 @@ pub mod SingleGameTokenContract {
                 };
 
                 let minted_by_address = self.minter.get_minter_address(token_metadata.minted_by);
-                let objective_id = token_metadata.objective_id;
-
                 create_custom_metadata(
                     token_id.try_into().unwrap(),
                     token_name,
@@ -322,7 +320,6 @@ pub mod SingleGameTokenContract {
                     score,
                     minted_by_address,
                     player_name,
-                    array![objective_id].span(),
                 )
             } else {
                 // Fallback if no game address is set
