@@ -23,7 +23,7 @@ fn test_token_metadata_batch_single() {
     let token_id = test_contracts
         .test_token
         .mint(
-            Option::Some(test_contracts.minigame.contract_address),
+            test_contracts.minigame.contract_address,
             Option::Some('Player1'),
             Option::None,
             Option::None,
@@ -55,7 +55,7 @@ fn test_token_metadata_batch_multiple() {
     let token_id1 = test_contracts
         .test_token
         .mint(
-            Option::Some(test_contracts.minigame.contract_address),
+            test_contracts.minigame.contract_address,
             Option::Some('Player1'),
             Option::None,
             Option::None,
@@ -74,7 +74,7 @@ fn test_token_metadata_batch_multiple() {
     let token_id2 = test_contracts
         .test_token
         .mint(
-            Option::Some(test_contracts.minigame.contract_address),
+            test_contracts.minigame.contract_address,
             Option::Some('Player2'),
             Option::None,
             Option::None,
@@ -93,7 +93,7 @@ fn test_token_metadata_batch_multiple() {
     let token_id3 = test_contracts
         .test_token
         .mint(
-            Option::Some(test_contracts.minigame.contract_address),
+            test_contracts.minigame.contract_address,
             Option::Some('Player3'),
             Option::None,
             Option::None,
@@ -152,7 +152,7 @@ fn test_is_playable_batch_multiple() {
     let token_id1 = test_contracts
         .test_token
         .mint(
-            Option::Some(test_contracts.minigame.contract_address),
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::None,
             Option::None,
@@ -171,7 +171,7 @@ fn test_is_playable_batch_multiple() {
     let token_id2 = test_contracts
         .test_token
         .mint(
-            Option::Some(test_contracts.minigame.contract_address),
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::None,
             Option::None,
@@ -216,7 +216,7 @@ fn test_settings_id_batch_multiple() {
     let token_id1 = test_contracts
         .test_token
         .mint(
-            Option::Some(test_contracts.minigame.contract_address),
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::None,
             Option::None,
@@ -235,7 +235,7 @@ fn test_settings_id_batch_multiple() {
     let token_id2 = test_contracts
         .test_token
         .mint(
-            Option::Some(test_contracts.minigame.contract_address),
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::None,
             Option::None,
@@ -280,7 +280,7 @@ fn test_player_name_batch_multiple() {
     let token_id1 = test_contracts
         .test_token
         .mint(
-            Option::Some(test_contracts.minigame.contract_address),
+            test_contracts.minigame.contract_address,
             Option::Some('Alice'),
             Option::None,
             Option::None,
@@ -299,7 +299,7 @@ fn test_player_name_batch_multiple() {
     let token_id2 = test_contracts
         .test_token
         .mint(
-            Option::Some(test_contracts.minigame.contract_address),
+            test_contracts.minigame.contract_address,
             Option::Some('Bob'),
             Option::None,
             Option::None,
@@ -318,7 +318,7 @@ fn test_player_name_batch_multiple() {
     let token_id3 = test_contracts
         .test_token
         .mint(
-            Option::Some(test_contracts.minigame.contract_address),
+            test_contracts.minigame.contract_address,
             Option::None, // No name
             Option::None,
             Option::None,
@@ -364,7 +364,7 @@ fn test_objective_id_batch_multiple() {
     let token_id1 = test_contracts
         .test_token
         .mint(
-            Option::Some(test_contracts.minigame.contract_address),
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::None,
             Option::None,
@@ -383,7 +383,7 @@ fn test_objective_id_batch_multiple() {
     let token_id2 = test_contracts
         .test_token
         .mint(
-            Option::Some(test_contracts.minigame.contract_address),
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::None,
             Option::None,
@@ -428,7 +428,7 @@ fn test_minted_by_batch_multiple() {
     let token_id1 = test_contracts
         .test_token
         .mint(
-            Option::Some(test_contracts.minigame.contract_address),
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::None,
             Option::None,
@@ -447,7 +447,7 @@ fn test_minted_by_batch_multiple() {
     let token_id2 = test_contracts
         .test_token
         .mint(
-            Option::Some(test_contracts.minigame.contract_address),
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::None,
             Option::None,
@@ -493,7 +493,7 @@ fn test_is_soulbound_batch_multiple() {
     let token_id1 = test_contracts
         .test_token
         .mint(
-            Option::Some(test_contracts.minigame.contract_address),
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::None,
             Option::None,
@@ -512,7 +512,7 @@ fn test_is_soulbound_batch_multiple() {
     let token_id2 = test_contracts
         .test_token
         .mint(
-            Option::Some(test_contracts.minigame.contract_address),
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::None,
             Option::None,
@@ -531,7 +531,7 @@ fn test_is_soulbound_batch_multiple() {
     let token_id3 = test_contracts
         .test_token
         .mint(
-            Option::Some(test_contracts.minigame.contract_address),
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::None,
             Option::None,
@@ -593,7 +593,7 @@ fn test_token_game_address_batch_multiple() {
     let token_id1 = test_contracts
         .test_token
         .mint(
-            Option::Some(test_contracts.minigame.contract_address),
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::None,
             Option::None,
@@ -612,7 +612,7 @@ fn test_token_game_address_batch_multiple() {
     let token_id2 = test_contracts
         .test_token
         .mint(
-            Option::Some(test_contracts.minigame.contract_address),
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::None,
             Option::None,
@@ -655,7 +655,7 @@ fn test_batch_matches_individual_calls() {
     let token_id1 = test_contracts
         .test_token
         .mint(
-            Option::Some(test_contracts.minigame.contract_address),
+            test_contracts.minigame.contract_address,
             Option::Some('Alice'),
             Option::None,
             Option::None,
@@ -674,7 +674,7 @@ fn test_batch_matches_individual_calls() {
     let token_id2 = test_contracts
         .test_token
         .mint(
-            Option::Some(test_contracts.minigame.contract_address),
+            test_contracts.minigame.contract_address,
             Option::Some('Bob'),
             Option::None,
             Option::None,
@@ -713,7 +713,7 @@ fn test_batch_matches_individual_calls() {
 // BATCH WRITE FUNCTION TESTS
 // ============================================================================
 
-use crate::structs::{MintParams, PlayerNameUpdate, SetTokenMetadataParams};
+use crate::structs::{MintParams, PlayerNameUpdate};
 
 #[test]
 #[should_panic(expected: "MinigameToken: mints array cannot be empty")]
@@ -730,7 +730,7 @@ fn test_mint_batch_single() {
 
     let mints: Array<MintParams> = array![
         MintParams {
-            game_address: Option::Some(test_contracts.minigame.contract_address),
+            game_address: test_contracts.minigame.contract_address,
             player_name: Option::Some('Alice'),
             settings_id: Option::None,
             start: Option::None,
@@ -761,7 +761,7 @@ fn test_mint_batch_multiple() {
 
     let mints: Array<MintParams> = array![
         MintParams {
-            game_address: Option::Some(test_contracts.minigame.contract_address),
+            game_address: test_contracts.minigame.contract_address,
             player_name: Option::Some('Alice'),
             settings_id: Option::None,
             start: Option::None,
@@ -777,7 +777,7 @@ fn test_mint_batch_multiple() {
             metadata: 0,
         },
         MintParams {
-            game_address: Option::Some(test_contracts.minigame.contract_address),
+            game_address: test_contracts.minigame.contract_address,
             player_name: Option::Some('Bob'),
             settings_id: Option::None,
             start: Option::None,
@@ -793,7 +793,7 @@ fn test_mint_batch_multiple() {
             metadata: 0,
         },
         MintParams {
-            game_address: Option::Some(test_contracts.minigame.contract_address),
+            game_address: test_contracts.minigame.contract_address,
             player_name: Option::None,
             settings_id: Option::None,
             start: Option::None,
@@ -835,7 +835,7 @@ fn test_mint_batch_different_settings() {
     // Test minting with different settings per token
     let mints: Array<MintParams> = array![
         MintParams {
-            game_address: Option::Some(test_contracts.minigame.contract_address),
+            game_address: test_contracts.minigame.contract_address,
             player_name: Option::Some('Player1'),
             settings_id: Option::None,
             start: Option::Some(1000),
@@ -851,7 +851,7 @@ fn test_mint_batch_different_settings() {
             metadata: 0,
         },
         MintParams {
-            game_address: Option::Some(test_contracts.minigame.contract_address),
+            game_address: test_contracts.minigame.contract_address,
             player_name: Option::Some('Player2'),
             settings_id: Option::None,
             start: Option::Some(3000),
@@ -908,7 +908,7 @@ fn test_update_player_name_batch_multiple() {
     let token_id1 = test_contracts
         .test_token
         .mint(
-            Option::Some(test_contracts.minigame.contract_address),
+            test_contracts.minigame.contract_address,
             Option::Some('OldName1'),
             Option::None,
             Option::None,
@@ -927,7 +927,7 @@ fn test_update_player_name_batch_multiple() {
     let token_id2 = test_contracts
         .test_token
         .mint(
-            Option::Some(test_contracts.minigame.contract_address),
+            test_contracts.minigame.contract_address,
             Option::Some('OldName2'),
             Option::None,
             Option::None,
@@ -961,11 +961,3 @@ fn test_update_player_name_batch_multiple() {
     assert!(test_contracts.test_token.player_name(token_id2) == 'NewName2', "Updated name 2");
 }
 
-#[test]
-#[should_panic(expected: "MinigameToken: updates array cannot be empty")]
-fn test_set_token_metadata_batch_empty_panics() {
-    let test_contracts = setup();
-
-    let updates: Array<SetTokenMetadataParams> = array![];
-    test_contracts.test_token.set_token_metadata_batch(updates);
-}

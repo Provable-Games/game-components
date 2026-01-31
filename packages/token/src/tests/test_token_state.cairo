@@ -4,9 +4,9 @@
 use core::num::traits::Bounded;
 use crate::libs::LifecycleTrait;
 use crate::libs::token_state::{
-    create_blank_token_metadata, create_game_token_metadata, create_lifecycle_with_defaults,
-    ensure_game_over_transition, ensure_objectives_completion_transition, is_multi_game_token,
-    is_single_game_token, is_token_playable,
+    create_game_token_metadata, create_lifecycle_with_defaults, ensure_game_over_transition,
+    ensure_objectives_completion_transition, is_multi_game_token, is_single_game_token,
+    is_token_playable,
 };
 use crate::structs::{Lifecycle, TokenMetadata};
 
@@ -198,51 +198,6 @@ fn test_objectives_completion_transition_true_to_false_blocked() {
     // OC-004: Already true, attempt revert (blocked)
     let result = ensure_objectives_completion_transition(true, false);
     assert!(result, "Should block transition back to false");
-}
-
-// =============================================================================
-// CREATE_BLANK_TOKEN_METADATA TESTS (UT-TS-BT-*)
-// =============================================================================
-
-#[test]
-fn test_create_blank_token_basic() {
-    // BT-001: Basic blank token
-    let lifecycle = Lifecycle { start: 0, end: 0 };
-    let metadata = create_blank_token_metadata(lifecycle, 1, false, 1000);
-
-    assert!(metadata.game_id == 0, "Blank token game_id should be 0");
-    assert!(metadata.minted_at == 1000, "minted_at should match");
-    assert!(!metadata.soulbound, "soulbound should be false");
-    assert!(!metadata.game_over, "game_over should be false");
-    assert!(metadata.settings_id == 0, "settings_id should be 0");
-    assert!(metadata.objective_id == 0, "objective_id should be 0");
-    assert!(!metadata.completed_objective, "completed_objective should be false");
-    assert!(!metadata.has_context, "has_context should be false");
-    assert!(metadata.minted_by == 1, "minted_by should match");
-}
-
-#[test]
-fn test_create_blank_token_soulbound() {
-    // BT-002: Soulbound blank token
-    let lifecycle = Lifecycle { start: 100, end: 200 };
-    let metadata = create_blank_token_metadata(lifecycle, 42, true, 500);
-
-    assert!(metadata.soulbound, "soulbound should be true");
-    assert!(metadata.lifecycle.start == 100, "lifecycle start should match");
-    assert!(metadata.lifecycle.end == 200, "lifecycle end should match");
-    assert!(metadata.minted_by == 42, "minted_by should match");
-    assert!(metadata.minted_at == 500, "minted_at should match");
-}
-
-#[test]
-fn test_create_blank_token_large_values() {
-    // BT-003: Large minted_by value
-    let lifecycle = Lifecycle { start: 0, end: 0 };
-    let max_u64 = Bounded::<u64>::MAX;
-    let metadata = create_blank_token_metadata(lifecycle, max_u64, false, max_u64);
-
-    assert!(metadata.minted_by == max_u64, "minted_by should handle max value");
-    assert!(metadata.minted_at == max_u64, "minted_at should handle max value");
 }
 
 // =============================================================================
@@ -459,24 +414,6 @@ fn test_fuzz_game_type_inverse(game_id: u64) {
     assert!(is_multi != is_single, "Must be either multi or single, not both/neither");
     assert!(is_multi == (game_id != 0), "Multi-game should be game_id != 0");
     assert!(is_single == (game_id == 0), "Single-game should be game_id == 0");
-}
-
-#[test]
-#[fuzzer]
-fn test_fuzz_create_blank_token(minted_by: u64, soulbound: bool, current_time: u64) {
-    let lifecycle = Lifecycle { start: 0, end: 0 };
-    let metadata = create_blank_token_metadata(lifecycle, minted_by, soulbound, current_time);
-
-    // Verify blank token invariants
-    assert!(metadata.game_id == 0, "Blank token must have game_id=0");
-    assert!(!metadata.game_over, "Blank token must not be game_over");
-    assert!(metadata.settings_id == 0, "Blank token must have settings_id=0");
-    assert!(metadata.objective_id == 0, "Blank token must have objective_id=0");
-    assert!(!metadata.completed_objective, "Blank token must not have completed_objective");
-    assert!(!metadata.has_context, "Blank token must not have context");
-    assert!(metadata.minted_at == current_time, "minted_at must match current_time");
-    assert!(metadata.minted_by == minted_by, "minted_by must match input");
-    assert!(metadata.soulbound == soulbound, "soulbound must match input");
 }
 
 #[test]

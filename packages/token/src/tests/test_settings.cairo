@@ -108,7 +108,7 @@ fn test_validate_settings_valid_settings_id() {
     let token_id = test_contracts
         .test_token
         .mint(
-            Option::Some(test_contracts.minigame.contract_address),
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::Some(1), // Use created settings_id
             Option::None,
@@ -138,7 +138,7 @@ fn test_validate_settings_zero_settings_address() {
     let token_id = test_contracts
         .test_token
         .mint(
-            Option::None,
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::None, // No settings_id means no validation
             Option::None,
@@ -170,7 +170,7 @@ fn test_validate_settings_id_zero() {
     let token_id = test_contracts
         .test_token
         .mint(
-            Option::Some(test_contracts.minigame.contract_address),
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::None, // No settings_id = 0
             Option::None,
@@ -206,7 +206,7 @@ fn test_validate_settings_id_not_exist() {
     test_contracts
         .test_token
         .mint(
-            Option::Some(test_contracts.minigame.contract_address),
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::Some(999), // Non-existent settings_id
             Option::None,
@@ -269,7 +269,7 @@ fn test_mint_with_settings_validation() {
     let token_id = test_contracts
         .test_token
         .mint(
-            Option::Some(test_contracts.minigame.contract_address),
+            test_contracts.minigame.contract_address,
             Option::Some('Player'),
             Option::Some(1),
             Option::None,
@@ -311,7 +311,7 @@ fn test_create_and_use_settings() {
     let token_id = test_contracts
         .test_token
         .mint(
-            Option::Some(test_contracts.minigame.contract_address),
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::Some(1),
             Option::None,
@@ -341,7 +341,7 @@ fn test_settings_id_view_no_settings() {
     let token_id = test_contracts
         .test_token
         .mint(
-            Option::None,
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::None,
             Option::None,
@@ -368,7 +368,7 @@ fn test_settings_id_batch_view() {
     let token_id1 = test_contracts
         .test_token
         .mint(
-            Option::None,
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::None,
             Option::None,
@@ -387,7 +387,7 @@ fn test_settings_id_batch_view() {
     let token_id2 = test_contracts
         .test_token
         .mint(
-            Option::None,
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::None,
             Option::None,
@@ -443,7 +443,7 @@ fn test_fuzz_settings_id_validation(settings_id: u32) {
         let token_id = test_contracts
             .test_token
             .mint(
-                Option::None,
+                test_contracts.minigame.contract_address,
                 Option::None,
                 Option::None, // settings_id = 0
                 Option::None,

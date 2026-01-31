@@ -91,7 +91,7 @@ fn test_settings_mint_with_valid_settings() {
     let token_id = test_contracts
         .test_token
         .mint(
-            Option::Some(test_contracts.minigame.contract_address),
+            test_contracts.minigame.contract_address,
             Option::Some('SettingsPlayer'),
             Option::Some(1), // Use created settings_id
             Option::None,
@@ -119,7 +119,7 @@ fn test_settings_with_zero_settings_id() {
     let token_id = test_contracts
         .test_token
         .mint(
-            Option::Some(test_contracts.minigame.contract_address),
+            test_contracts.minigame.contract_address,
             Option::Some('NoSettingsPlayer'),
             Option::None, // No settings_id means 0
             Option::None,
@@ -178,7 +178,7 @@ fn test_objectives_completion_lifecycle() {
     let token_id = test_contracts
         .test_token
         .mint(
-            Option::Some(test_contracts.minigame.contract_address),
+            test_contracts.minigame.contract_address,
             Option::Some('ObjectivePlayer'),
             Option::None,
             Option::None,
@@ -226,7 +226,7 @@ fn test_objectives_completion_exceeds_target() {
     let token_id = test_contracts
         .test_token
         .mint(
-            Option::Some(test_contracts.minigame.contract_address),
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::None,
             Option::None,
@@ -262,7 +262,7 @@ fn test_objectives_completion_exact_match() {
     let token_id = test_contracts
         .test_token
         .mint(
-            Option::Some(test_contracts.minigame.contract_address),
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::None,
             Option::None,
@@ -297,7 +297,7 @@ fn test_objectives_multiple_tokens_same_objective() {
     let token_id1 = test_contracts
         .test_token
         .mint(
-            Option::Some(test_contracts.minigame.contract_address),
+            test_contracts.minigame.contract_address,
             Option::Some('Player1'),
             Option::None,
             Option::None,
@@ -316,7 +316,7 @@ fn test_objectives_multiple_tokens_same_objective() {
     let token_id2 = test_contracts
         .test_token
         .mint(
-            Option::Some(test_contracts.minigame.contract_address),
+            test_contracts.minigame.contract_address,
             Option::Some('Player2'),
             Option::None,
             Option::None,
@@ -335,7 +335,7 @@ fn test_objectives_multiple_tokens_same_objective() {
     let token_id3 = test_contracts
         .test_token
         .mint(
-            Option::Some(test_contracts.minigame.contract_address),
+            test_contracts.minigame.contract_address,
             Option::Some('Player3'),
             Option::None,
             Option::None,
@@ -393,7 +393,7 @@ fn test_core_token_client_url_with_mint() {
     let token_id = test_contracts
         .test_token
         .mint(
-            Option::Some(test_contracts.minigame.contract_address),
+            test_contracts.minigame.contract_address,
             Option::Some('UrlPlayer'),
             Option::None,
             Option::None,
@@ -421,7 +421,7 @@ fn test_core_token_renderer_address_with_mint() {
     let token_id = test_contracts
         .test_token
         .mint(
-            Option::Some(test_contracts.minigame.contract_address),
+            test_contracts.minigame.contract_address,
             Option::Some('RendererPlayer'),
             Option::None,
             Option::None,
@@ -454,7 +454,7 @@ fn test_core_token_full_params_mint() {
     let token_id = test_contracts
         .test_token
         .mint(
-            Option::Some(test_contracts.minigame.contract_address),
+            test_contracts.minigame.contract_address,
             Option::Some('FullParamsPlayer'),
             Option::None, // settings_id - skip to avoid packing issues
             Option::Some(CURRENT_TIME), // start
@@ -491,7 +491,7 @@ fn test_core_token_batch_update_game() {
     // Mint multiple tokens
     let token_id1 = token_dispatcher
         .mint(
-            Option::None,
+            minigame.contract_address,
             Option::None,
             Option::None,
             Option::None,
@@ -509,7 +509,7 @@ fn test_core_token_batch_update_game() {
 
     let token_id2 = token_dispatcher
         .mint(
-            Option::None,
+            minigame.contract_address,
             Option::None,
             Option::None,
             Option::None,
@@ -527,7 +527,7 @@ fn test_core_token_batch_update_game() {
 
     let token_id3 = token_dispatcher
         .mint(
-            Option::None,
+            minigame.contract_address,
             Option::None,
             Option::None,
             Option::None,
@@ -569,7 +569,7 @@ fn test_core_token_playability_with_lifecycle() {
     let future_token = test_contracts
         .test_token
         .mint(
-            Option::Some(test_contracts.minigame.contract_address),
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::None,
             Option::Some(FUTURE_TIME),
@@ -591,7 +591,7 @@ fn test_core_token_playability_with_lifecycle() {
     let expiring_token = test_contracts
         .test_token
         .mint(
-            Option::Some(test_contracts.minigame.contract_address),
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::None,
             Option::Some(PAST_TIME),
@@ -611,7 +611,7 @@ fn test_core_token_playability_with_lifecycle() {
     let active_token = test_contracts
         .test_token
         .mint(
-            Option::Some(test_contracts.minigame.contract_address),
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::None,
             Option::Some(PAST_TIME),
@@ -658,7 +658,7 @@ fn test_core_token_soulbound_verification() {
     let soulbound_token = test_contracts
         .test_token
         .mint(
-            Option::Some(test_contracts.minigame.contract_address),
+            test_contracts.minigame.contract_address,
             Option::Some('SoulboundPlayer'),
             Option::None,
             Option::None,
@@ -678,7 +678,7 @@ fn test_core_token_soulbound_verification() {
     let normal_token = test_contracts
         .test_token
         .mint(
-            Option::Some(test_contracts.minigame.contract_address),
+            test_contracts.minigame.contract_address,
             Option::Some('NormalPlayer'),
             Option::None,
             Option::None,
@@ -720,7 +720,7 @@ fn test_core_token_minter_tracking() {
     let token_id1 = test_contracts
         .test_token
         .mint(
-            Option::Some(test_contracts.minigame.contract_address),
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::None,
             Option::None,
@@ -746,7 +746,7 @@ fn test_core_token_minter_tracking() {
     let token_id2 = test_contracts
         .test_token
         .mint(
-            Option::Some(test_contracts.minigame.contract_address),
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::None,
             Option::None,
@@ -790,7 +790,7 @@ fn test_core_token_game_over_irreversible() {
 
     let token_id = token_dispatcher
         .mint(
-            Option::None,
+            minigame.contract_address,
             Option::None,
             Option::None,
             Option::None,
@@ -830,7 +830,7 @@ fn test_core_token_metadata_batch_mixed() {
     let token_id1 = test_contracts
         .test_token
         .mint(
-            Option::Some(test_contracts.minigame.contract_address),
+            test_contracts.minigame.contract_address,
             Option::Some('Player1'),
             Option::None,
             Option::None,
@@ -849,7 +849,7 @@ fn test_core_token_metadata_batch_mixed() {
     let token_id2 = test_contracts
         .test_token
         .mint(
-            Option::Some(test_contracts.minigame.contract_address),
+            test_contracts.minigame.contract_address,
             Option::Some('Player2'),
             Option::None,
             Option::Some(1000),
@@ -902,7 +902,7 @@ fn test_multi_game_mint_and_resolution() {
     let token_id = test_contracts
         .test_token
         .mint(
-            Option::Some(test_contracts.minigame.contract_address),
+            test_contracts.minigame.contract_address,
             Option::Some('MultiGamePlayer'),
             Option::None,
             Option::None,
@@ -954,7 +954,7 @@ fn test_event_emission_on_mint() {
     let _token_id = test_contracts
         .test_token
         .mint(
-            Option::Some(test_contracts.minigame.contract_address),
+            test_contracts.minigame.contract_address,
             Option::Some('EventPlayer'),
             Option::None,
             Option::None,
@@ -982,7 +982,7 @@ fn test_event_emission_on_update_game() {
 
     let token_id = token_dispatcher
         .mint(
-            Option::None,
+            minigame.contract_address,
             Option::None,
             Option::None,
             Option::None,
@@ -1013,7 +1013,7 @@ fn test_event_emission_on_player_name_update() {
     let token_id = test_contracts
         .test_token
         .mint(
-            Option::Some(test_contracts.minigame.contract_address),
+            test_contracts.minigame.contract_address,
             Option::Some('OldName'),
             Option::None,
             Option::None,

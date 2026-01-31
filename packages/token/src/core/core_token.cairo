@@ -27,14 +27,12 @@ pub mod CoreTokenComponent {
     use crate::core::traits::{
         OptionalContext, OptionalMinter, OptionalObjectives, OptionalRenderer, OptionalSettings,
     };
-    use crate::extensions::minter::interface::IMINIGAME_TOKEN_MINTER_ID;
     use crate::interface::{IMinigameRegistryDispatcher, IMinigameRegistryDispatcherTrait};
     use crate::libs::{LifecycleTrait, token_state};
     use crate::structs::{
-        LifecycleStorePacking, MintParams, PlayerNameUpdate, SetTokenMetadataParams, TokenMetadata,
-        TokenMutableState, TokenMutableStateStorePacking, extract_tx_hash_bits, pack_token_id,
-        to_token_metadata, unpack_game_id, unpack_minted_by, unpack_objective_id, unpack_paymaster,
-        unpack_soulbound, unpack_token_id,
+        LifecycleStorePacking, MintParams, PlayerNameUpdate, TokenMetadata, TokenMutableState,
+        TokenMutableStateStorePacking, extract_tx_hash_bits, pack_token_id, to_token_metadata,
+        unpack_game_id, unpack_minted_by, unpack_objective_id, unpack_soulbound, unpack_token_id,
     };
 
     #[storage]
@@ -358,7 +356,7 @@ pub mod CoreTokenComponent {
 
         fn mint(
             ref self: ComponentState<TContractState>,
-            game_address: Option<ContractAddress>,
+            game_address: ContractAddress,
             player_name: Option<felt252>,
             settings_id: Option<u32>,
             start: Option<u64>,
@@ -424,182 +422,6 @@ pub mod CoreTokenComponent {
                 }
             }
             token_ids
-        }
-
-        fn set_token_metadata(
-            ref self: ComponentState<TContractState>,
-            token_id: felt252,
-            game_address: ContractAddress,
-            player_name: Option<felt252>,
-            settings_id: Option<u32>,
-            start: Option<u64>,
-            end: Option<u64>,
-            objective_id: Option<u32>,
-            context: Option<GameContextDetails>,
-        ) -> felt252 {
-            // This function only becomes relevant if we are keeping track of the minter address
-            let src5_component = get_dep_component!(@self, SRC5);
-            let supports_minter = src5_component.supports_interface(IMINIGAME_TOKEN_MINTER_ID);
-            assert!(
-                supports_minter,
-                "MinigameToken: Game does not support IMinigameTokenMinter interface",
-            );
-            let caller = get_caller_address();
-
-            // Validate lifecycle parameters
-            let lifecycle = token_state::create_lifecycle_with_defaults(start, end);
-            lifecycle.validate();
-
-            let contract = self.get_contract();
-            let erc721_component = ERC721::get_component(contract);
-            assert!(
-                erc721_component.exists(token_id.into()),
-                "MinigameToken: Token id {} not minted",
-                token_id,
-            );
-
-            // Verify it's a blank token
-            let old_game_id = unpack_game_id(token_id);
-            assert!(old_game_id == 0, "MinigameToken: Token id {} not blank", token_id);
-
-            // Get minted by and assert it is the caller
-            let minted_by = unpack_minted_by(token_id);
-            let contract_ref = self.get_contract();
-            let minter_address = MinterOpt::get_minter_address(contract_ref, minted_by);
-            let minter_address_felt: felt252 = minter_address.into();
-            assert!(
-                minter_address == caller,
-                "MinigameToken: Token id {} minted by {} not by caller",
-                token_id,
-                minter_address_felt,
-            );
-
-            let (final_game_address, game_id) = self
-                .validate_and_process_game_address(game_address);
-
-            let mut contract_ref2 = self.get_contract();
-            // Validate settings if provided
-            let validated_settings_id = match settings_id {
-                Option::Some(sid) => {
-                    SettingsOpt::validate_settings(contract_ref2, final_game_address, sid);
-                    sid
-                },
-                Option::None => 0,
-            };
-
-            // Validate objective if provided
-            let validated_objective_id: u32 = match objective_id {
-                Option::Some(obj_id) => {
-                    ObjectivesOpt::validate_objective(contract_ref2, final_game_address, obj_id);
-                    obj_id
-                },
-                Option::None => 0,
-            };
-
-            // Get the owner of the current token
-            let erc721_comp = ERC721::get_component(self.get_contract());
-            let token_owner = erc721_comp._owner_of(token_id.into());
-
-            // Burn old token
-            let mut contract_mut = self.get_contract_mut();
-            let mut erc721_mut = ERC721::get_component_mut(ref contract_mut);
-            erc721_mut.burn(token_id.into());
-
-            // Determine has_context before packing
-            let has_context = context.is_some();
-
-            // Compute start/end delays
-            let current_time = get_block_timestamp();
-            let start_delay: u32 = if lifecycle.start > current_time {
-                (lifecycle.start - current_time).try_into().unwrap()
-            } else {
-                0
-            };
-            let end_delay: u32 = if lifecycle.end > 0 && lifecycle.end > lifecycle.start {
-                (lifecycle.end - lifecycle.start).try_into().unwrap()
-            } else {
-                0
-            };
-
-            // Get tx_hash bits
-            let tx_info = get_tx_info().unbox();
-            let tx_hash_bits = extract_tx_hash_bits(tx_info.transaction_hash);
-
-            // Unpack salt/metadata from old token
-            let old_packed = unpack_token_id(token_id);
-
-            // Pack new token ID
-            let new_token_id = pack_token_id(
-                game_id.try_into().unwrap(),
-                minted_by,
-                validated_settings_id,
-                current_time,
-                start_delay,
-                end_delay,
-                validated_objective_id,
-                unpack_soulbound(token_id),
-                has_context,
-                unpack_paymaster(token_id),
-                tx_hash_bits,
-                old_packed.salt,
-                old_packed.metadata,
-            );
-
-            // Emit context event with new_token_id (after packing)
-            if let Option::Some(ctx) = context {
-                let mut contract_self = self.get_contract_mut();
-                ContextOpt::emit_context(ref contract_self, caller, new_token_id, ctx);
-            }
-
-            // Mint new ERC721 to same owner
-            let mut contract_mut2 = self.get_contract_mut();
-            let mut erc721_mut2 = ERC721::get_component_mut(ref contract_mut2);
-            erc721_mut2.mint(token_owner, new_token_id.into());
-
-            // Migrate player name to new token_id
-            let old_name = self.token_player_names.entry(token_id).read();
-            if old_name != 0 {
-                self.token_player_names.entry(new_token_id).write(old_name);
-            }
-
-            // Migrate client url to new token_id
-            let old_url: ByteArray = self.token_client_url.entry(token_id).read();
-            if old_url.len() > 0 {
-                self.token_client_url.entry(new_token_id).write(old_url);
-            }
-
-            // Set new player name if provided (overrides old)
-            if let Option::Some(name) = player_name {
-                self.token_player_names.entry(new_token_id).write(name);
-                self.emit_token_player_name_update(new_token_id, name);
-            }
-
-            new_token_id
-        }
-
-        /// Batch update token metadata for multiple tokens.
-        fn set_token_metadata_batch(
-            ref self: ComponentState<TContractState>, mut updates: Array<SetTokenMetadataParams>,
-        ) {
-            assert!(updates.len() > 0, "MinigameToken: updates array cannot be empty");
-            loop {
-                match updates.pop_front() {
-                    Option::Some(params) => {
-                        self
-                            .set_token_metadata(
-                                params.token_id,
-                                params.game_address,
-                                params.player_name,
-                                params.settings_id,
-                                params.start,
-                                params.end,
-                                params.objective_id,
-                                params.context,
-                            );
-                    },
-                    Option::None => { break; },
-                }
-            }
         }
 
         fn update_game(ref self: ComponentState<TContractState>, token_id: felt252) {
@@ -836,7 +658,7 @@ pub mod CoreTokenComponent {
 
         fn mint_game(
             ref self: ComponentState<TContractState>,
-            game_address: Option<ContractAddress>,
+            game_address: ContractAddress,
             player_name: Option<felt252>,
             settings_id: Option<u32>,
             start: Option<u64>,
@@ -854,7 +676,7 @@ pub mod CoreTokenComponent {
             let caller = get_caller_address();
             let current_time = get_block_timestamp();
 
-            // Validate lifecycle parameters regardless of token type
+            // Validate lifecycle parameters
             let lifecycle = token_state::create_lifecycle_with_defaults(start, end);
             lifecycle.validate();
 
@@ -874,144 +696,87 @@ pub mod CoreTokenComponent {
             let tx_info = get_tx_info().unbox();
             let tx_hash_bits = extract_tx_hash_bits(tx_info.transaction_hash);
 
-            match game_address {
-                Option::Some(provided_game_address) => {
-                    // Full game token with validation and setup
-                    let (final_game_address, game_id) = self
-                        .validate_and_process_game_address(provided_game_address);
+            // Full game token with validation and setup
+            let (final_game_address, game_id) = self
+                .validate_and_process_game_address(game_address);
 
-                    let mut contract = self.get_contract();
-                    let mut contract_self = self.get_contract_mut();
-                    // Validate settings if provided
-                    let validated_settings_id = match settings_id {
-                        Option::Some(sid) => {
-                            SettingsOpt::validate_settings(contract, final_game_address, sid);
-                            sid
-                        },
-                        Option::None => 0,
-                    };
-
-                    // Validate objective if provided
-                    let validated_objective_id: u32 = match objective_id {
-                        Option::Some(obj_id) => {
-                            ObjectivesOpt::validate_objective(contract, final_game_address, obj_id);
-                            obj_id
-                        },
-                        Option::None => 0,
-                    };
-
-                    // Handle minter tracking if enabled
-                    let minted_by = MinterOpt::add_minter(ref contract_self, caller);
-
-                    // Determine has_context before packing to avoid double-pack
-                    let has_context = context.is_some();
-
-                    // Pack token ID with correct has_context from the start
-                    let final_token_id = pack_token_id(
-                        game_id.try_into().unwrap(),
-                        minted_by,
-                        validated_settings_id,
-                        current_time,
-                        start_delay,
-                        end_delay,
-                        validated_objective_id,
-                        soulbound,
-                        has_context,
-                        paymaster,
-                        tx_hash_bits,
-                        salt,
-                        metadata_val,
-                    );
-
-                    // Emit context event with the final token_id
-                    if let Option::Some(ctx) = context {
-                        ContextOpt::emit_context(ref contract_self, caller, final_token_id, ctx);
-                    }
-
-                    // Handle renderer if provided
-                    match renderer_address {
-                        Option::Some(raddr) => {
-                            RendererOpt::set_token_renderer(
-                                ref contract_self, final_token_id, raddr,
-                            );
-                        },
-                        Option::None => {},
-                    }
-
-                    // No need to write token_metadata or token_mutable_state —
-                    // immutable data is in the token_id, mutable state defaults to zero
-
-                    // Set player name if provided
-                    if let Option::Some(name) = player_name {
-                        self.token_player_names.entry(final_token_id).write(name);
-                        self.emit_token_player_name_update(final_token_id, name);
-                    }
-
-                    // Set client url if provided
-                    if let Option::Some(url) = client_url {
-                        self.token_client_url.entry(final_token_id).write(url.clone());
-                        self.emit_token_client_url_update(final_token_id, url);
-                    }
-
-                    // Mint the ERC721 token
-                    let mut contract = self.get_contract_mut();
-                    let mut erc721_component = ERC721::get_component_mut(ref contract);
-                    erc721_component.mint(to, final_token_id.into());
-
-                    final_token_id
+            let mut contract = self.get_contract();
+            let mut contract_self = self.get_contract_mut();
+            // Validate settings if provided
+            let validated_settings_id = match settings_id {
+                Option::Some(sid) => {
+                    SettingsOpt::validate_settings(contract, final_game_address, sid);
+                    sid
                 },
-                Option::None => {
-                    let src5_component = get_dep_component!(@self, SRC5);
-                    let supports_minter = src5_component
-                        .supports_interface(IMINIGAME_TOKEN_MINTER_ID);
-                    assert!(
-                        supports_minter,
-                        "MinigameToken: Game does not support IMinigameTokenMinter interface",
-                    );
-                    // Blank token - minimal processing with default values
-                    let mut contract_self = self.get_contract_mut();
+                Option::None => 0,
+            };
 
-                    // Only handle minter tracking for blank tokens
-                    let minted_by = MinterOpt::add_minter(ref contract_self, caller);
-
-                    // Pack blank token ID (game_id=0)
-                    let token_id = pack_token_id(
-                        0, // game_id = 0 for blank
-                        minted_by,
-                        0, // settings_id
-                        current_time,
-                        start_delay,
-                        end_delay,
-                        0, // objective_id
-                        soulbound,
-                        false, // has_context
-                        paymaster,
-                        tx_hash_bits,
-                        salt,
-                        metadata_val,
-                    );
-
-                    // Handle renderer if provided
-                    match renderer_address {
-                        Option::Some(raddr) => {
-                            RendererOpt::set_token_renderer(ref contract_self, token_id, raddr);
-                        },
-                        Option::None => {},
-                    }
-
-                    // Set player name if provided
-                    if let Option::Some(name) = player_name {
-                        self.token_player_names.entry(token_id).write(name);
-                        self.emit_token_player_name_update(token_id, name);
-                    }
-
-                    // Mint the ERC721 token
-                    let mut erc721_component = ERC721::get_component_mut(ref contract_self);
-                    erc721_component.mint(to, token_id.into());
-
-                    token_id
+            // Validate objective if provided
+            let validated_objective_id: u32 = match objective_id {
+                Option::Some(obj_id) => {
+                    ObjectivesOpt::validate_objective(contract, final_game_address, obj_id);
+                    obj_id
                 },
+                Option::None => 0,
+            };
+
+            // Handle minter tracking if enabled
+            let minted_by = MinterOpt::add_minter(ref contract_self, caller);
+
+            // Determine has_context before packing to avoid double-pack
+            let has_context = context.is_some();
+
+            // Pack token ID with correct has_context from the start
+            let final_token_id = pack_token_id(
+                game_id.try_into().unwrap(),
+                minted_by,
+                validated_settings_id,
+                current_time,
+                start_delay,
+                end_delay,
+                validated_objective_id,
+                soulbound,
+                has_context,
+                paymaster,
+                tx_hash_bits,
+                salt,
+                metadata_val,
+            );
+
+            // Emit context event with the final token_id
+            if let Option::Some(ctx) = context {
+                ContextOpt::emit_context(ref contract_self, caller, final_token_id, ctx);
             }
+
+            // Handle renderer if provided
+            match renderer_address {
+                Option::Some(raddr) => {
+                    RendererOpt::set_token_renderer(ref contract_self, final_token_id, raddr);
+                },
+                Option::None => {},
+            }
+
+            // No need to write token_metadata or token_mutable_state —
+            // immutable data is in the token_id, mutable state defaults to zero
+
+            // Set player name if provided
+            if let Option::Some(name) = player_name {
+                self.token_player_names.entry(final_token_id).write(name);
+                self.emit_token_player_name_update(final_token_id, name);
+            }
+
+            // Set client url if provided
+            if let Option::Some(url) = client_url {
+                self.token_client_url.entry(final_token_id).write(url.clone());
+                self.emit_token_client_url_update(final_token_id, url);
+            }
+
+            // Mint the ERC721 token
+            let mut contract = self.get_contract_mut();
+            let mut erc721_component = ERC721::get_component_mut(ref contract);
+            erc721_component.mint(to, final_token_id.into());
+
+            final_token_id
         }
 
         fn validate_and_process_game_address(

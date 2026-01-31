@@ -9,30 +9,32 @@ use snforge_std::{
     CheatSpan, cheat_caller_address, start_cheat_block_timestamp, stop_cheat_block_timestamp,
 };
 use crate::interface::{IMinigameTokenMixinDispatcher, IMinigameTokenMixinDispatcherTrait};
-use crate::structs::{PlayerNameUpdate, SetTokenMetadataParams};
+use crate::structs::PlayerNameUpdate;
 use super::mocks::mock_game::IMockGameDispatcherTrait;
 
 // Import setup helpers
 use super::setup::{
-    ALICE, BOB, CHARLIE, CURRENT_TIME, FUTURE_TIME, OWNER, deploy_basic_mock_game,
-    deploy_minimal_optimized_contract, deploy_mock_game,
+    ALICE, BOB, CURRENT_TIME, FUTURE_TIME, OWNER, deploy_basic_mock_game,
+    deploy_minimal_optimized_contract,
 };
 
 // Deploy helper
-fn deploy_minimal_token() -> (IMinigameTokenMixinDispatcher, ERC721ABIDispatcher) {
-    let (minigame_dispatcher, _, _) = deploy_mock_game();
-    deploy_minimal_optimized_contract(
+fn deploy_minimal_token() -> (IMinigameTokenMixinDispatcher, ERC721ABIDispatcher, ContractAddress) {
+    let (minigame_dispatcher, _) = deploy_basic_mock_game();
+    let game_addr = minigame_dispatcher.contract_address;
+    let (token, erc721) = deploy_minimal_optimized_contract(
         "MinimalToken",
         "MIN",
         "https://minimal.test/",
-        Option::Some(minigame_dispatcher.contract_address),
-        Option::Some(minigame_dispatcher.contract_address),
-    )
+        Option::Some(game_addr),
+        Option::Some(game_addr),
+    );
+    (token, erc721, game_addr)
 }
 
 #[test]
 fn test_minimal_contract_deployment() {
-    let (token_dispatcher, _erc721_dispatcher) = deploy_minimal_token();
+    let (token_dispatcher, _erc721_dispatcher, _game_addr) = deploy_minimal_token();
 
     // Verify basic token interface is working
     // Note: The minimal contract may not expose all metadata functions
@@ -42,12 +44,12 @@ fn test_minimal_contract_deployment() {
 
 #[test]
 fn test_minimal_contract_minting() {
-    let (token_dispatcher, erc721_dispatcher) = deploy_minimal_token();
+    let (token_dispatcher, erc721_dispatcher, game_addr) = deploy_minimal_token();
 
     // Mint a token with minimal parameters
     let token_id = token_dispatcher
         .mint(
-            Option::None,
+            game_addr,
             Option::None,
             Option::None,
             Option::None,
@@ -73,13 +75,13 @@ fn test_minimal_contract_minting() {
 
 #[test]
 fn test_minimal_contract_minter_tracking() {
-    let (token_dispatcher, _) = deploy_minimal_token();
+    let (token_dispatcher, _, game_addr) = deploy_minimal_token();
 
     // Mint tokens from different addresses
     cheat_caller_address(token_dispatcher.contract_address, ALICE(), CheatSpan::TargetCalls(1));
     let token_id1 = token_dispatcher
         .mint(
-            Option::None,
+            game_addr,
             Option::None,
             Option::None,
             Option::None,
@@ -98,7 +100,7 @@ fn test_minimal_contract_minter_tracking() {
     cheat_caller_address(token_dispatcher.contract_address, BOB(), CheatSpan::TargetCalls(1));
     let token_id2 = token_dispatcher
         .mint(
-            Option::None,
+            game_addr,
             Option::None,
             Option::None,
             Option::None,
@@ -127,12 +129,12 @@ fn test_minimal_contract_minter_tracking() {
 
 #[test]
 fn test_minimal_contract_transfers() {
-    let (token_dispatcher, erc721_dispatcher) = deploy_minimal_token();
+    let (token_dispatcher, erc721_dispatcher, game_addr) = deploy_minimal_token();
 
     // Mint a token
     let token_id = token_dispatcher
         .mint(
-            Option::None,
+            game_addr,
             Option::None,
             Option::None,
             Option::None,
@@ -161,12 +163,12 @@ fn test_minimal_contract_transfers() {
 
 #[test]
 fn test_minimal_contract_token_metadata() {
-    let (token_dispatcher, _) = deploy_minimal_token();
+    let (token_dispatcher, _, game_addr) = deploy_minimal_token();
 
     // Mint a token
     let token_id = token_dispatcher
         .mint(
-            Option::None,
+            game_addr,
             Option::Some('MinimalPlayer'),
             Option::None,
             Option::None,
@@ -200,16 +202,18 @@ fn deploy_minimal_token_with_mock_game() -> (
     IMinigameTokenMixinDispatcher,
     ERC721ABIDispatcher,
     super::mocks::mock_game::IMockGameDispatcher,
+    ContractAddress,
 ) {
     let (minigame_dispatcher, mock_game) = deploy_basic_mock_game();
+    let game_addr = minigame_dispatcher.contract_address;
     let (token_dispatcher, erc721_dispatcher) = deploy_minimal_optimized_contract(
         "MinimalToken",
         "MIN",
         "https://minimal.test/",
-        Option::Some(minigame_dispatcher.contract_address),
+        Option::Some(game_addr),
         Option::Some(OWNER()),
     );
-    (token_dispatcher, erc721_dispatcher, mock_game)
+    (token_dispatcher, erc721_dispatcher, mock_game, game_addr)
 }
 
 // ============================================================================
@@ -218,11 +222,11 @@ fn deploy_minimal_token_with_mock_game() -> (
 
 #[test]
 fn test_minimal_is_playable_batch() {
-    let (token_dispatcher, _, _) = deploy_minimal_token_with_mock_game();
+    let (token_dispatcher, _, _, game_addr) = deploy_minimal_token_with_mock_game();
 
     let token_id = token_dispatcher
         .mint(
-            Option::None,
+            game_addr,
             Option::None,
             Option::None,
             Option::None,
@@ -246,11 +250,11 @@ fn test_minimal_is_playable_batch() {
 
 #[test]
 fn test_minimal_settings_id_batch() {
-    let (token_dispatcher, _, _) = deploy_minimal_token_with_mock_game();
+    let (token_dispatcher, _, _, game_addr) = deploy_minimal_token_with_mock_game();
 
     let token_id = token_dispatcher
         .mint(
-            Option::None,
+            game_addr,
             Option::None,
             Option::None,
             Option::None,
@@ -273,11 +277,11 @@ fn test_minimal_settings_id_batch() {
 
 #[test]
 fn test_minimal_player_name_batch() {
-    let (token_dispatcher, _, _) = deploy_minimal_token_with_mock_game();
+    let (token_dispatcher, _, _, game_addr) = deploy_minimal_token_with_mock_game();
 
     let token_id = token_dispatcher
         .mint(
-            Option::None,
+            game_addr,
             Option::Some('BatchMin'),
             Option::None,
             Option::None,
@@ -301,11 +305,11 @@ fn test_minimal_player_name_batch() {
 
 #[test]
 fn test_minimal_objective_id_batch() {
-    let (token_dispatcher, _, _) = deploy_minimal_token_with_mock_game();
+    let (token_dispatcher, _, _, game_addr) = deploy_minimal_token_with_mock_game();
 
     let token_id = token_dispatcher
         .mint(
-            Option::None,
+            game_addr,
             Option::None,
             Option::None,
             Option::None,
@@ -328,11 +332,11 @@ fn test_minimal_objective_id_batch() {
 
 #[test]
 fn test_minimal_minted_by_batch() {
-    let (token_dispatcher, _, _) = deploy_minimal_token_with_mock_game();
+    let (token_dispatcher, _, _, game_addr) = deploy_minimal_token_with_mock_game();
 
     let token_id = token_dispatcher
         .mint(
-            Option::None,
+            game_addr,
             Option::None,
             Option::None,
             Option::None,
@@ -356,11 +360,11 @@ fn test_minimal_minted_by_batch() {
 
 #[test]
 fn test_minimal_is_soulbound_batch() {
-    let (token_dispatcher, _, _) = deploy_minimal_token_with_mock_game();
+    let (token_dispatcher, _, _, game_addr) = deploy_minimal_token_with_mock_game();
 
     let token_id = token_dispatcher
         .mint(
-            Option::None,
+            game_addr,
             Option::None,
             Option::None,
             Option::None,
@@ -384,11 +388,11 @@ fn test_minimal_is_soulbound_batch() {
 
 #[test]
 fn test_minimal_renderer_address_batch() {
-    let (token_dispatcher, _, _) = deploy_minimal_token_with_mock_game();
+    let (token_dispatcher, _, _, game_addr) = deploy_minimal_token_with_mock_game();
 
     let token_id = token_dispatcher
         .mint(
-            Option::None,
+            game_addr,
             Option::None,
             Option::None,
             Option::None,
@@ -411,11 +415,11 @@ fn test_minimal_renderer_address_batch() {
 
 #[test]
 fn test_minimal_token_game_address_batch() {
-    let (token_dispatcher, _, _) = deploy_minimal_token_with_mock_game();
+    let (token_dispatcher, _, _, game_addr) = deploy_minimal_token_with_mock_game();
 
     let token_id = token_dispatcher
         .mint(
-            Option::None,
+            game_addr,
             Option::None,
             Option::None,
             Option::None,
@@ -442,11 +446,11 @@ fn test_minimal_token_game_address_batch() {
 
 #[test]
 fn test_minimal_player_name_view() {
-    let (token_dispatcher, _, _) = deploy_minimal_token_with_mock_game();
+    let (token_dispatcher, _, _, game_addr) = deploy_minimal_token_with_mock_game();
 
     let token_id = token_dispatcher
         .mint(
-            Option::None,
+            game_addr,
             Option::Some('MinView'),
             Option::None,
             Option::None,
@@ -473,17 +477,18 @@ fn test_minimal_player_name_view() {
 #[test]
 fn test_minimal_renderer_address_single_game() {
     let (minigame_dispatcher, _) = deploy_basic_mock_game();
+    let game_addr = minigame_dispatcher.contract_address;
     let (token_dispatcher, _) = deploy_minimal_optimized_contract(
         "MinimalToken",
         "MIN",
         "https://minimal.test/",
-        Option::Some(minigame_dispatcher.contract_address),
+        Option::Some(game_addr),
         Option::Some(OWNER()),
     );
 
     let token_id = token_dispatcher
         .mint(
-            Option::None,
+            game_addr,
             Option::None,
             Option::None,
             Option::None,
@@ -508,207 +513,16 @@ fn test_minimal_renderer_address_single_game() {
 }
 
 // ============================================================================
-// SET TOKEN METADATA (lines 429-582) - blank token path
-// ============================================================================
-
-#[test]
-fn test_minimal_set_token_metadata() {
-    let (minigame_dispatcher, _) = deploy_basic_mock_game();
-    let (token_dispatcher, _) = deploy_minimal_optimized_contract(
-        "MinimalToken",
-        "MIN",
-        "https://minimal.test/",
-        Option::Some(minigame_dispatcher.contract_address),
-        Option::Some(OWNER()),
-    );
-
-    // Mint blank token
-    let token_id = token_dispatcher
-        .mint(
-            Option::None, // blank
-            Option::Some('OldMin'),
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            ALICE(),
-            false,
-            false,
-            0,
-            0,
-        );
-
-    assert!(token_dispatcher.player_name(token_id) == 'OldMin', "Old name should be set");
-
-    // Set metadata with game address
-    let new_token_id = token_dispatcher
-        .set_token_metadata(
-            token_id,
-            minigame_dispatcher.contract_address,
-            Option::Some('NewMin'),
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-        );
-
-    let name = token_dispatcher.player_name(new_token_id);
-    assert!(name == 'NewMin', "New name should be set");
-}
-
-#[test]
-fn test_minimal_set_token_metadata_preserves_name() {
-    let (minigame_dispatcher, _) = deploy_basic_mock_game();
-    let (token_dispatcher, _) = deploy_minimal_optimized_contract(
-        "MinimalToken",
-        "MIN",
-        "https://minimal.test/",
-        Option::Some(minigame_dispatcher.contract_address),
-        Option::Some(OWNER()),
-    );
-
-    let token_id = token_dispatcher
-        .mint(
-            Option::None,
-            Option::Some('KeepMin'),
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            ALICE(),
-            false,
-            false,
-            0,
-            0,
-        );
-
-    let new_token_id = token_dispatcher
-        .set_token_metadata(
-            token_id,
-            minigame_dispatcher.contract_address,
-            Option::None, // preserve old name
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-        );
-
-    let name = token_dispatcher.player_name(new_token_id);
-    assert!(name == 'KeepMin', "Old name should be preserved");
-}
-
-#[test]
-fn test_minimal_set_token_metadata_batch() {
-    let (minigame_dispatcher, _) = deploy_basic_mock_game();
-    let (token_dispatcher, _) = deploy_minimal_optimized_contract(
-        "MinimalToken",
-        "MIN",
-        "https://minimal.test/",
-        Option::Some(minigame_dispatcher.contract_address),
-        Option::Some(OWNER()),
-    );
-
-    let token_id = token_dispatcher
-        .mint(
-            Option::None,
-            Option::Some('BatchMin'),
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            ALICE(),
-            false,
-            false,
-            0,
-            0,
-        );
-
-    let updates: Array<SetTokenMetadataParams> = array![
-        SetTokenMetadataParams {
-            token_id: token_id,
-            game_address: minigame_dispatcher.contract_address,
-            player_name: Option::Some('BatchUpdMin'),
-            settings_id: Option::None,
-            start: Option::None,
-            end: Option::None,
-            objective_id: Option::None,
-            context: Option::None,
-        },
-    ];
-    token_dispatcher.set_token_metadata_batch(updates);
-}
-
-#[test]
-fn test_minimal_set_token_metadata_with_future_start() {
-    let (minigame_dispatcher, _) = deploy_basic_mock_game();
-    let (token_dispatcher, _) = deploy_minimal_optimized_contract(
-        "MinimalToken",
-        "MIN",
-        "https://minimal.test/",
-        Option::Some(minigame_dispatcher.contract_address),
-        Option::Some(OWNER()),
-    );
-
-    start_cheat_block_timestamp(token_dispatcher.contract_address, CURRENT_TIME);
-
-    let token_id = token_dispatcher
-        .mint(
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            ALICE(),
-            false,
-            false,
-            0,
-            0,
-        );
-
-    let new_token_id = token_dispatcher
-        .set_token_metadata(
-            token_id,
-            minigame_dispatcher.contract_address,
-            Option::None,
-            Option::None,
-            Option::Some(FUTURE_TIME),
-            Option::Some(FUTURE_TIME + 5000),
-            Option::None,
-            Option::None,
-        );
-
-    let metadata = token_dispatcher.token_metadata(new_token_id);
-    assert!(metadata.lifecycle.start == FUTURE_TIME, "Start should be future");
-
-    stop_cheat_block_timestamp(token_dispatcher.contract_address);
-}
-
-// ============================================================================
 // UPDATE GAME (lines 610, 614, 615)
 // ============================================================================
 
 #[test]
 fn test_minimal_update_game() {
-    let (token_dispatcher, _, mock_game) = deploy_minimal_token_with_mock_game();
+    let (token_dispatcher, _, mock_game, game_addr) = deploy_minimal_token_with_mock_game();
 
     let token_id = token_dispatcher
         .mint(
-            Option::None,
+            game_addr,
             Option::None,
             Option::None,
             Option::None,
@@ -735,11 +549,11 @@ fn test_minimal_update_game() {
 
 #[test]
 fn test_minimal_update_game_batch() {
-    let (token_dispatcher, _, _) = deploy_minimal_token_with_mock_game();
+    let (token_dispatcher, _, _, game_addr) = deploy_minimal_token_with_mock_game();
 
     let token_id = token_dispatcher
         .mint(
-            Option::None,
+            game_addr,
             Option::None,
             Option::None,
             Option::None,
@@ -765,11 +579,11 @@ fn test_minimal_update_game_batch() {
 
 #[test]
 fn test_minimal_update_player_name() {
-    let (token_dispatcher, _, _) = deploy_minimal_token_with_mock_game();
+    let (token_dispatcher, _, _, game_addr) = deploy_minimal_token_with_mock_game();
 
     let token_id = token_dispatcher
         .mint(
-            Option::None,
+            game_addr,
             Option::Some('OrigMin'),
             Option::None,
             Option::None,
@@ -793,11 +607,11 @@ fn test_minimal_update_player_name() {
 
 #[test]
 fn test_minimal_update_player_name_batch() {
-    let (token_dispatcher, _, _) = deploy_minimal_token_with_mock_game();
+    let (token_dispatcher, _, _, game_addr) = deploy_minimal_token_with_mock_game();
 
     let token_id1 = token_dispatcher
         .mint(
-            Option::None,
+            game_addr,
             Option::Some('Old1'),
             Option::None,
             Option::None,
@@ -815,7 +629,7 @@ fn test_minimal_update_player_name_batch() {
 
     let token_id2 = token_dispatcher
         .mint(
-            Option::None,
+            game_addr,
             Option::Some('Old2'),
             Option::None,
             Option::None,
@@ -848,13 +662,13 @@ fn test_minimal_update_player_name_batch() {
 
 #[test]
 fn test_minimal_mint_with_future_start() {
-    let (token_dispatcher, _, _) = deploy_minimal_token_with_mock_game();
+    let (token_dispatcher, _, _, game_addr) = deploy_minimal_token_with_mock_game();
 
     start_cheat_block_timestamp(token_dispatcher.contract_address, CURRENT_TIME);
 
     let token_id = token_dispatcher
         .mint(
-            Option::None,
+            game_addr,
             Option::None,
             Option::None,
             Option::Some(FUTURE_TIME),
@@ -879,76 +693,16 @@ fn test_minimal_mint_with_future_start() {
 }
 
 // ============================================================================
-// MINT blank token (lines 941-969)
-// ============================================================================
-
-#[test]
-fn test_minimal_mint_blank_token_with_player_name() {
-    let (token_dispatcher, _, _) = deploy_minimal_token_with_mock_game();
-
-    let token_id = token_dispatcher
-        .mint(
-            Option::None, // blank
-            Option::Some('BlankMin'),
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::Some("https://blank.min.com"),
-            Option::None,
-            ALICE(),
-            false,
-            false,
-            0,
-            0,
-        );
-
-    let metadata = token_dispatcher.token_metadata(token_id);
-    assert!(metadata.game_id == 0, "Blank token should have game_id 0");
-
-    let name = token_dispatcher.player_name(token_id);
-    assert!(name == 'BlankMin', "Blank token should have player name");
-}
-
-#[test]
-fn test_minimal_mint_blank_token_soulbound() {
-    let (token_dispatcher, _, _) = deploy_minimal_token_with_mock_game();
-
-    let token_id = token_dispatcher
-        .mint(
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            ALICE(),
-            true, // soulbound
-            true, // paymaster
-            0,
-            0,
-        );
-
-    assert!(token_dispatcher.is_soulbound(token_id), "Should be soulbound");
-    let metadata = token_dispatcher.token_metadata(token_id);
-    assert!(metadata.game_id == 0, "Blank token game_id should be 0");
-}
-
-// ============================================================================
 // MINT game token with player name + client url (lines 941, 947)
 // ============================================================================
 
 #[test]
 fn test_minimal_mint_game_token_with_player_name_and_url() {
-    let (token_dispatcher, _, _) = deploy_minimal_token_with_mock_game();
+    let (token_dispatcher, _, _, game_addr) = deploy_minimal_token_with_mock_game();
 
     let token_id = token_dispatcher
         .mint(
-            Option::None,
+            game_addr,
             Option::Some('NamedMin'),
             Option::None,
             Option::None,
@@ -999,11 +753,11 @@ fn test_minimal_initializer_stores_game_address() {
 
 #[test]
 fn test_minimal_token_game_address() {
-    let (token_dispatcher, _, _) = deploy_minimal_token_with_mock_game();
+    let (token_dispatcher, _, _, game_addr) = deploy_minimal_token_with_mock_game();
 
     let token_id = token_dispatcher
         .mint(
-            Option::None,
+            game_addr,
             Option::None,
             Option::None,
             Option::None,

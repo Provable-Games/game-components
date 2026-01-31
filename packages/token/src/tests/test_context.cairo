@@ -64,7 +64,7 @@ fn test_mint_without_context() {
     let token_id = test_contracts
         .test_token
         .mint(
-            Option::Some(test_contracts.minigame.contract_address),
+            test_contracts.minigame.contract_address,
             Option::Some('DirectPlayer'),
             Option::None,
             Option::None,
@@ -351,7 +351,7 @@ fn test_has_context_flag_in_metadata() {
     let token_id1 = test_contracts
         .test_token
         .mint(
-            Option::Some(test_contracts.minigame.contract_address),
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::None,
             Option::None,

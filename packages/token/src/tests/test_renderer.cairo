@@ -40,7 +40,7 @@ fn test_get_renderer_with_custom_renderer() {
     let token_id = test_contracts
         .test_token
         .mint(
-            Option::None,
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::None,
             Option::None,
@@ -70,7 +70,7 @@ fn test_get_renderer_no_custom_renderer() {
     let token_id = test_contracts
         .test_token
         .mint(
-            Option::None,
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::None,
             Option::None,
@@ -99,7 +99,7 @@ fn test_get_renderer_after_reset() {
     let token_id = test_contracts
         .test_token
         .mint(
-            Option::None,
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::None,
             Option::None,
@@ -137,7 +137,7 @@ fn test_has_custom_renderer_true() {
     let token_id = test_contracts
         .test_token
         .mint(
-            Option::None,
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::None,
             Option::None,
@@ -163,7 +163,7 @@ fn test_has_custom_renderer_false() {
     let token_id = test_contracts
         .test_token
         .mint(
-            Option::None,
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::None,
             Option::None,
@@ -192,7 +192,7 @@ fn test_has_custom_renderer_zero_address_renderer() {
     let token_id = test_contracts
         .test_token
         .mint(
-            Option::None,
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::None,
             Option::None,
@@ -221,7 +221,7 @@ fn test_has_custom_renderer_after_reset() {
     let token_id = test_contracts
         .test_token
         .mint(
-            Option::None,
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::None,
             Option::None,
@@ -259,7 +259,7 @@ fn test_reset_token_renderer_as_owner() {
     let token_id = test_contracts
         .test_token
         .mint(
-            Option::None,
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::None,
             Option::None,
@@ -302,7 +302,7 @@ fn test_reset_token_renderer_unauthorized() {
     let token_id = test_contracts
         .test_token
         .mint(
-            Option::None,
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::None,
             Option::None,
@@ -332,7 +332,7 @@ fn test_reset_token_renderer_already_zero() {
     let token_id = test_contracts
         .test_token
         .mint(
-            Option::None,
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::None,
             Option::None,
@@ -371,7 +371,7 @@ fn test_reset_token_renderer_batch_single() {
     let token_id = test_contracts
         .test_token
         .mint(
-            Option::None,
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::None,
             Option::None,
@@ -406,7 +406,7 @@ fn test_reset_token_renderer_batch_multiple() {
     let token_id1 = test_contracts
         .test_token
         .mint(
-            Option::None,
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::None,
             Option::None,
@@ -425,7 +425,7 @@ fn test_reset_token_renderer_batch_multiple() {
     let token_id2 = test_contracts
         .test_token
         .mint(
-            Option::None,
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::None,
             Option::None,
@@ -444,7 +444,7 @@ fn test_reset_token_renderer_batch_multiple() {
     let token_id3 = test_contracts
         .test_token
         .mint(
-            Option::None,
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::None,
             Option::None,
@@ -481,7 +481,7 @@ fn test_reset_token_renderer_batch_empty() {
     let token_id = test_contracts
         .test_token
         .mint(
-            Option::None,
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::None,
             Option::None,
@@ -517,7 +517,7 @@ fn test_reset_token_renderer_batch_mixed_renderers() {
     let token_id1 = test_contracts
         .test_token
         .mint(
-            Option::None,
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::None,
             Option::None,
@@ -537,7 +537,7 @@ fn test_reset_token_renderer_batch_mixed_renderers() {
     let token_id2 = test_contracts
         .test_token
         .mint(
-            Option::None,
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::None,
             Option::None,
@@ -572,7 +572,7 @@ fn test_reset_token_renderer_batch_unauthorized_fails() {
     let token_id = test_contracts
         .test_token
         .mint(
-            Option::None,
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::None,
             Option::None,
@@ -605,7 +605,7 @@ fn test_get_renderer_batch_single() {
     let token_id = test_contracts
         .test_token
         .mint(
-            Option::None,
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::None,
             Option::None,
@@ -633,7 +633,7 @@ fn test_get_renderer_batch_multiple() {
     let token_id1 = test_contracts
         .test_token
         .mint(
-            Option::None,
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::None,
             Option::None,
@@ -652,7 +652,7 @@ fn test_get_renderer_batch_multiple() {
     let token_id2 = test_contracts
         .test_token
         .mint(
-            Option::None,
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::None,
             Option::None,
@@ -690,7 +690,7 @@ fn test_get_renderer_batch_mixed() {
     let token_id1 = test_contracts
         .test_token
         .mint(
-            Option::None,
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::None,
             Option::None,
@@ -710,7 +710,7 @@ fn test_get_renderer_batch_mixed() {
     let token_id2 = test_contracts
         .test_token
         .mint(
-            Option::None,
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::None,
             Option::None,
@@ -738,7 +738,7 @@ fn test_get_renderer_batch_matches_individual() {
     let token_id1 = test_contracts
         .test_token
         .mint(
-            Option::None,
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::None,
             Option::None,
@@ -757,7 +757,7 @@ fn test_get_renderer_batch_matches_individual() {
     let token_id2 = test_contracts
         .test_token
         .mint(
-            Option::None,
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::None,
             Option::None,
@@ -798,7 +798,7 @@ fn test_reset_token_renderer_emits_event() {
     let token_id = test_contracts
         .test_token
         .mint(
-            Option::None,
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::None,
             Option::None,
@@ -843,7 +843,7 @@ fn test_batch_reset_emits_multiple_events() {
     let token_id1 = test_contracts
         .test_token
         .mint(
-            Option::None,
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::None,
             Option::None,
@@ -862,7 +862,7 @@ fn test_batch_reset_emits_multiple_events() {
     let token_id2 = test_contracts
         .test_token
         .mint(
-            Option::None,
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::None,
             Option::None,
@@ -916,7 +916,7 @@ fn test_mint_with_renderer_emits_event() {
     let token_id = test_contracts
         .test_token
         .mint(
-            Option::None,
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::None,
             Option::None,
@@ -981,7 +981,7 @@ fn test_renderer_persists_after_game_updates() {
     let token_id = test_contracts
         .test_token
         .mint(
-            Option::Some(test_contracts.minigame.contract_address),
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::None,
             Option::None,
@@ -1036,7 +1036,7 @@ fn test_fuzz_renderer_storage_consistency(token_offset: u8, renderer_felt: felt2
         last_token_id = test_contracts
             .test_token
             .mint(
-                Option::None,
+                test_contracts.minigame.contract_address,
                 Option::None,
                 Option::None,
                 Option::None,

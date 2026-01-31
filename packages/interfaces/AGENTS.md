@@ -18,7 +18,7 @@ Single source of truth for all game component interface definitions. Other packa
 
 | Module | Structs |
 |--------|---------|
-| `structs/token` | `TokenMetadata`, `Lifecycle`, `MintParams`, `SetTokenMetadataParams`, `PlayerNameUpdate` |
+| `structs/token` | `TokenMetadata`, `Lifecycle`, `MintParams`, `PlayerNameUpdate` |
 | `structs/minigame` | `GameDetail`, `MintGameParams`, `GameSettingDetails`, `GameSetting`, `GameObjective` |
 | `structs/metagame` | `GameContextDetails`, `GameContext` |
 | `structs/leaderboard` | `LeaderboardConfig`, `LeaderboardEntry`, `LeaderboardResult`, `LeaderboardStoreConfig` |

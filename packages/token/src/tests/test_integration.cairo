@@ -45,7 +45,7 @@ fn test_time_campaign() {
     let token_id = test_contracts
         .test_token
         .mint(
-            Option::None,
+            test_contracts.minigame.contract_address,
             Option::Some('TimePlayer'),
             Option::None,
             Option::Some(future_start),
@@ -100,7 +100,7 @@ fn test_double_mint_attack() {
     let token_id_1 = test_contracts
         .test_token
         .mint(
-            Option::None,
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::None,
             Option::None,
@@ -120,7 +120,7 @@ fn test_double_mint_attack() {
     let token_id_2 = test_contracts
         .test_token
         .mint(
-            Option::None,
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::None,
             Option::None,
@@ -146,12 +146,12 @@ fn test_double_mint_attack() {
 
 #[test]
 fn test_update_game_any_caller() {
-    let (token_dispatcher, _, _) = deploy_simple_setup();
+    let (token_dispatcher, _, game_address) = deploy_simple_setup();
 
     // Mint token as ALICE
     let token_id = token_dispatcher
         .mint(
-            Option::None,
+            game_address,
             Option::None,
             Option::None,
             Option::None,
@@ -294,7 +294,7 @@ fn test_multi_minter_scenario() {
             let token_id = test_contracts
                 .test_token
                 .mint(
-                    Option::Some(test_contracts.minigame.contract_address),
+                    test_contracts.minigame.contract_address,
                     Option::None,
                     Option::None,
                     Option::None,
@@ -367,7 +367,7 @@ fn test_game_contract_unresponsive() {
     // Mint a token
     let token_id = token_dispatcher
         .mint(
-            Option::Some(game_address),
+            game_address,
             Option::None,
             Option::None,
             Option::None,
@@ -455,7 +455,7 @@ fn test_registry_lookup_edge_cases() {
     // 1. Mint with valid registered game
     let token_id1 = token_dispatcher
         .mint(
-            Option::Some(*games.at(0)),
+            *games.at(0),
             Option::None,
             Option::None,
             Option::None,
@@ -482,7 +482,7 @@ fn test_registry_lookup_edge_cases() {
 
     let token_id2 = token_dispatcher
         .mint(
-            Option::Some(last_game_address),
+            last_game_address,
             Option::None,
             Option::None,
             Option::None,
@@ -529,7 +529,7 @@ fn test_concurrent_operations() {
             let token_id = test_contracts
                 .test_token
                 .mint(
-                    Option::Some(test_contracts.minigame.contract_address),
+                    test_contracts.minigame.contract_address,
                     Option::None,
                     Option::None,
                     Option::None,
@@ -577,7 +577,7 @@ fn test_lifecycle_boundary_conditions() {
     let token_id = test_contracts
         .test_token
         .mint(
-            Option::Some(test_contracts.minigame.contract_address),
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::None,
             Option::Some(current_time),
@@ -782,7 +782,7 @@ fn test_update_game_no_callback_for_non_callback_minter() {
     let token_id = test_contracts
         .test_token
         .mint(
-            Option::Some(test_contracts.minigame.contract_address),
+            test_contracts.minigame.contract_address,
             Option::Some('Player5'),
             Option::None,
             Option::None,

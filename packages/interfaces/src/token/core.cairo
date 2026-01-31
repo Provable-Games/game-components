@@ -1,7 +1,7 @@
 // Core token interface
 use starknet::ContractAddress;
 use crate::structs::metagame::GameContextDetails;
-use crate::structs::token::{MintParams, PlayerNameUpdate, SetTokenMetadataParams, TokenMetadata};
+use crate::structs::token::{MintParams, PlayerNameUpdate, TokenMetadata};
 
 pub const IMINIGAME_TOKEN_ID: felt252 =
     0xa08df7e54b63300eeacf85a0f3289c405351278620b5af7e5d868b91f4d43d;
@@ -33,7 +33,7 @@ pub trait IMinigameToken<TState> {
 
     fn mint(
         ref self: TState,
-        game_address: Option<ContractAddress>,
+        game_address: ContractAddress,
         player_name: Option<felt252>,
         settings_id: Option<u32>,
         start: Option<u64>,
@@ -52,22 +52,10 @@ pub trait IMinigameToken<TState> {
     /// Each MintParams contains all configuration for that token.
     fn mint_batch(ref self: TState, mints: Array<MintParams>) -> Array<felt252>;
 
-    fn set_token_metadata(
-        ref self: TState,
-        token_id: felt252,
-        game_address: ContractAddress,
-        player_name: Option<felt252>,
-        settings_id: Option<u32>,
-        start: Option<u64>,
-        end: Option<u64>,
-        objective_id: Option<u32>,
-        context: Option<GameContextDetails>,
-    ) -> felt252;
     fn update_game(ref self: TState, token_id: felt252);
     fn update_player_name(ref self: TState, token_id: felt252, name: felt252);
 
     // Batch write functions
-    fn set_token_metadata_batch(ref self: TState, updates: Array<SetTokenMetadataParams>);
     fn update_game_batch(ref self: TState, token_ids: Span<felt252>);
     fn update_player_name_batch(ref self: TState, updates: Span<PlayerNameUpdate>);
 }

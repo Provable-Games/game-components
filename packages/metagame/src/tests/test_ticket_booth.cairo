@@ -954,9 +954,7 @@ mod MockMinigameTokenForTicketBooth {
     use core::num::traits::Zero;
     use game_components_metagame::extensions::context::structs::GameContextDetails;
     use game_components_token::core::interface::{IMINIGAME_TOKEN_ID, IMinigameToken};
-    use game_components_token::structs::{
-        Lifecycle, MintParams, PlayerNameUpdate, SetTokenMetadataParams, TokenMetadata,
-    };
+    use game_components_token::structs::{Lifecycle, MintParams, PlayerNameUpdate, TokenMetadata};
     use openzeppelin_interfaces::introspection::ISRC5;
     use starknet::ContractAddress;
     use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
@@ -1074,7 +1072,7 @@ mod MockMinigameTokenForTicketBooth {
 
         fn mint(
             ref self: ContractState,
-            game_address: Option<ContractAddress>,
+            game_address: ContractAddress,
             player_name: Option<felt252>,
             settings_id: Option<u32>,
             start: Option<u64>,
@@ -1099,27 +1097,9 @@ mod MockMinigameTokenForTicketBooth {
             array![]
         }
 
-        fn set_token_metadata(
-            ref self: ContractState,
-            token_id: felt252,
-            game_address: ContractAddress,
-            player_name: Option<felt252>,
-            settings_id: Option<u32>,
-            start: Option<u64>,
-            end: Option<u64>,
-            objective_id: Option<u32>,
-            context: Option<GameContextDetails>,
-        ) -> felt252 {
-            token_id
-        }
-
         fn update_game(ref self: ContractState, token_id: felt252) {}
 
         fn update_player_name(ref self: ContractState, token_id: felt252, name: felt252) {}
-
-        fn set_token_metadata_batch(
-            ref self: ContractState, updates: Array<SetTokenMetadataParams>,
-        ) {}
 
         fn update_game_batch(ref self: ContractState, token_ids: Span<felt252>) {}
 

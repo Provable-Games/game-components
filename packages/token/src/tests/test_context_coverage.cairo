@@ -18,7 +18,7 @@ fn test_context_extension_operations() {
     let token_id = test_contracts
         .test_token
         .mint(
-            Option::Some(test_contracts.minigame.contract_address),
+            test_contracts.minigame.contract_address,
             Option::Some('Player1'),
             Option::None,
             Option::None,

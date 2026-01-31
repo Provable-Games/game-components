@@ -587,9 +587,7 @@ mod MockContext {
 mod MockMinigameToken {
     use core::num::traits::Zero;
     use game_components_token::core::interface::{IMINIGAME_TOKEN_ID, IMinigameToken};
-    use game_components_token::structs::{
-        Lifecycle, MintParams, PlayerNameUpdate, SetTokenMetadataParams, TokenMetadata,
-    };
+    use game_components_token::structs::{Lifecycle, MintParams, PlayerNameUpdate, TokenMetadata};
     use openzeppelin_interfaces::introspection::ISRC5;
     use starknet::ContractAddress;
     use starknet::storage::{
@@ -802,7 +800,7 @@ mod MockMinigameToken {
 
         fn mint(
             ref self: ContractState,
-            game_address: Option<ContractAddress>,
+            game_address: ContractAddress,
             player_name: Option<felt252>,
             settings_id: Option<u32>,
             start: Option<u64>,
@@ -825,9 +823,7 @@ mod MockMinigameToken {
             self.next_token_id.write(token_id_u64 + 1);
             let token_id: felt252 = token_id_u64.into();
 
-            if let Option::Some(game_addr) = game_address {
-                self.token_game_address.write(token_id, game_addr);
-            }
+            self.token_game_address.write(token_id, game_address);
 
             if let Option::Some(name) = player_name {
                 self.token_player_names.write(token_id, name);
@@ -883,29 +879,11 @@ mod MockMinigameToken {
             results
         }
 
-        fn set_token_metadata(
-            ref self: ContractState,
-            token_id: felt252,
-            game_address: ContractAddress,
-            player_name: Option<felt252>,
-            settings_id: Option<u32>,
-            start: Option<u64>,
-            end: Option<u64>,
-            objective_id: Option<u32>,
-            context: Option<GameContextDetails>,
-        ) -> felt252 {
-            token_id
-        }
-
         fn update_game(ref self: ContractState, token_id: felt252) {}
 
         fn update_player_name(ref self: ContractState, token_id: felt252, name: felt252) {
             self.token_player_names.write(token_id, name);
         }
-
-        fn set_token_metadata_batch(
-            ref self: ContractState, updates: Array<SetTokenMetadataParams>,
-        ) {}
 
         fn update_game_batch(ref self: ContractState, token_ids: Span<felt252>) {}
 

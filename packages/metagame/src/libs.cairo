@@ -74,7 +74,7 @@ pub fn mint(
             };
             minigame_token_dispatcher
                 .mint(
-                    Option::Some(game_address),
+                    game_address,
                     player_name,
                     settings_id,
                     start,
@@ -98,7 +98,7 @@ pub fn mint(
             };
             minigame_token_dispatcher
                 .mint(
-                    Option::None,
+                    core::num::traits::Zero::zero(),
                     player_name,
                     settings_id,
                     start,

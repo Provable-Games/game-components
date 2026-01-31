@@ -53,7 +53,7 @@ fn test_token_id_monotonicity_fuzz(seed: felt252) {
         let token_id = test_contracts
             .test_token
             .mint(
-                Option::None,
+                test_contracts.minigame.contract_address,
                 Option::None,
                 Option::None,
                 Option::None,
@@ -105,7 +105,7 @@ fn test_lifecycle_validity_fuzz(start_offset: u64, duration: u64) {
     let token_id = test_contracts
         .test_token
         .mint(
-            Option::None,
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::None,
             Option::Some(start),
@@ -161,7 +161,7 @@ fn test_score_monotonicity_fuzz(score1: u64, score2: u64, score3: u64) {
     let token_id = test_contracts
         .test_token
         .mint(
-            Option::None,
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::None,
             Option::None,
@@ -217,7 +217,7 @@ fn test_ownership_protection_fuzz(caller1: felt252, caller2: felt252, caller3: f
     let token_id = test_contracts
         .test_token
         .mint(
-            Option::None,
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::None,
             Option::None,
@@ -266,7 +266,7 @@ fn test_settings_immutability_fuzz(settings_id: u32, op1: u8, op2: u8, op3: u8) 
     let token_id = test_contracts
         .test_token
         .mint(
-            Option::None, // Use default game address from constructor
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::None, // No settings_id since game doesn't support it
             Option::None,
@@ -326,7 +326,7 @@ fn test_game_over_irreversibility_fuzz(op1: u8, op2: u8, op3: u8) {
     let token_id = test_contracts
         .test_token
         .mint(
-            Option::None,
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::None,
             Option::None,
@@ -373,7 +373,7 @@ fn test_soulbound_immutability_fuzz(attempt1: u8, attempt2: u8, attempt3: u8) {
     let token_id = test_contracts
         .test_token
         .mint(
-            Option::None,
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::None,
             Option::None,
@@ -429,7 +429,7 @@ fn test_objective_id_persistence_fuzz(objective_id_input: u32) {
     let token_id = test_contracts
         .test_token
         .mint(
-            Option::Some(game_address),
+            game_address,
             Option::None,
             Option::None,
             Option::None,

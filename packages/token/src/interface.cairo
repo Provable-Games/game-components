@@ -6,7 +6,7 @@ pub use game_components_interfaces::registry::{
 pub use game_components_interfaces::structs::metagame::GameContextDetails;
 pub use game_components_interfaces::structs::minigame::{GameObjective, GameSetting};
 use starknet::ContractAddress;
-use crate::structs::{MintParams, PlayerNameUpdate, SetTokenMetadataParams, TokenMetadata};
+use crate::structs::{MintParams, PlayerNameUpdate, TokenMetadata};
 
 #[starknet::interface]
 pub trait IMinigameTokenMixin<TState> {
@@ -36,7 +36,7 @@ pub trait IMinigameTokenMixin<TState> {
 
     fn mint(
         ref self: TState,
-        game_address: Option<ContractAddress>,
+        game_address: ContractAddress,
         player_name: Option<felt252>,
         settings_id: Option<u32>,
         start: Option<u64>,
@@ -51,23 +51,11 @@ pub trait IMinigameTokenMixin<TState> {
         salt: u16,
         metadata: u16,
     ) -> felt252;
-    fn set_token_metadata(
-        ref self: TState,
-        token_id: felt252,
-        game_address: ContractAddress,
-        player_name: Option<felt252>,
-        settings_id: Option<u32>,
-        start: Option<u64>,
-        end: Option<u64>,
-        objective_id: Option<u32>,
-        context: Option<GameContextDetails>,
-    ) -> felt252;
     fn update_game(ref self: TState, token_id: felt252);
     fn update_player_name(ref self: TState, token_id: felt252, name: felt252);
 
     // Batch write functions
     fn mint_batch(ref self: TState, mints: Array<MintParams>) -> Array<felt252>;
-    fn set_token_metadata_batch(ref self: TState, updates: Array<SetTokenMetadataParams>);
     fn update_game_batch(ref self: TState, token_ids: Span<felt252>);
     fn update_player_name_batch(ref self: TState, updates: Span<PlayerNameUpdate>);
 

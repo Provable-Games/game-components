@@ -49,7 +49,7 @@ impl TokenMetadataDefault of Default<TokenMetadata> {
 /// Note: Not Copy because it contains ByteArray and GameContextDetails.
 #[derive(Drop, Serde)]
 pub struct MintParams {
-    pub game_address: Option<ContractAddress>,
+    pub game_address: ContractAddress,
     pub player_name: Option<felt252>,
     pub settings_id: Option<u32>,
     pub start: Option<u64>,
@@ -72,16 +72,3 @@ pub struct PlayerNameUpdate {
     pub name: felt252,
 }
 
-/// Per-token metadata update parameters for batch metadata updates
-/// Note: Not Copy because it contains GameContextDetails.
-#[derive(Drop, Serde)]
-pub struct SetTokenMetadataParams {
-    pub token_id: felt252,
-    pub game_address: ContractAddress,
-    pub player_name: Option<felt252>,
-    pub settings_id: Option<u32>,
-    pub start: Option<u64>,
-    pub end: Option<u64>,
-    pub objective_id: Option<u32>,
-    pub context: Option<GameContextDetails>,
-}
