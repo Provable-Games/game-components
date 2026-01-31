@@ -8,7 +8,24 @@ use snforge_std::spy_events;
 use crate::interface::IMinigameTokenMixinDispatcherTrait;
 
 // Import setup helpers
-use super::setup::{ALICE, BOB, deploy_optimized_token_custom_metadata};
+use super::setup::{ALICE, BOB, OWNER, deploy_basic_mock_game, deploy_single_game_token_contract};
+
+/// Deploy a single-game token with custom metadata and a mock game for tests that need a game
+/// address.
+fn deploy_single_game_token_custom_metadata(
+    name: ByteArray, symbol: ByteArray, base_uri: ByteArray,
+) -> (crate::interface::IMinigameTokenMixinDispatcher, ContractAddress) {
+    let (minigame, _) = deploy_basic_mock_game();
+    let (token_dispatcher, _, _, _) = deploy_single_game_token_contract(
+        Option::Some(name),
+        Option::Some(symbol),
+        Option::Some(base_uri),
+        Option::None,
+        minigame.contract_address,
+        OWNER(),
+    );
+    (token_dispatcher, minigame.contract_address)
+}
 
 // ================================================================================================
 // EXTENSION COMPONENT TESTS
@@ -46,14 +63,14 @@ fn test_transfer_soulbound_token_fails() {
 #[test]
 fn test_transfer_regular_token() {
     // Deploy token contract
-    let (token_dispatcher, _, _, _) = deploy_optimized_token_custom_metadata(
+    let (token_dispatcher, game_addr) = deploy_single_game_token_custom_metadata(
         "RegularToken", "RT", "",
     );
 
     // Mint regular (non-soulbound) token
     let token_id = token_dispatcher
         .mint(
-            Option::None,
+            game_addr,
             Option::None,
             Option::None,
             Option::None,
@@ -87,7 +104,7 @@ fn test_set_default_renderer() { // This test would require a contract that expo
 #[test]
 fn test_set_token_renderer() {
     // Deploy token contract
-    let (token_dispatcher, _, _, _) = deploy_optimized_token_custom_metadata(
+    let (token_dispatcher, game_addr) = deploy_single_game_token_custom_metadata(
         "RendererTest", "RT", "",
     );
 
@@ -96,7 +113,7 @@ fn test_set_token_renderer() {
     // Mint with custom renderer
     let token_id = token_dispatcher
         .mint(
-            Option::None,
+            game_addr,
             Option::None,
             Option::None,
             Option::None,
@@ -126,14 +143,14 @@ fn test_get_renderer_with_custom() { // Covered by test_set_token_renderer
 #[test]
 fn test_get_renderer_no_custom() {
     // Deploy token contract
-    let (token_dispatcher, _, _, _) = deploy_optimized_token_custom_metadata(
+    let (token_dispatcher, game_addr) = deploy_single_game_token_custom_metadata(
         "NoRenderer", "NR", "",
     );
 
     // Mint without renderer
     let token_id = token_dispatcher
         .mint(
-            Option::None, // Game address must be provided if no registry address
+            game_addr,
             Option::None,
             Option::None,
             Option::None,
@@ -151,14 +168,18 @@ fn test_get_renderer_no_custom() {
 
     // Verify no custom renderer
     assert!(!token_dispatcher.has_custom_renderer(token_id), "Should not have custom renderer");
-    assert!(token_dispatcher.renderer_address(token_id) == addr(0x0), "Renderer should be zero");
+    // renderer_address falls back to game address when no custom renderer is set
+    assert!(
+        token_dispatcher.renderer_address(token_id) == game_addr,
+        "Renderer should fall back to game address",
+    );
 }
 
 // Test RND-U-05: Reset token renderer
 #[test]
 fn test_reset_token_renderer() {
     // Deploy token contract
-    let (token_dispatcher, _, _, _) = deploy_optimized_token_custom_metadata(
+    let (token_dispatcher, game_addr) = deploy_single_game_token_custom_metadata(
         "ResetRenderer", "RR", "",
     );
 
@@ -167,7 +188,7 @@ fn test_reset_token_renderer() {
     // Mint token with custom renderer
     let token_id = token_dispatcher
         .mint(
-            Option::None,
+            game_addr,
             Option::None,
             Option::None,
             Option::None,
@@ -195,14 +216,15 @@ fn test_reset_token_renderer() {
     token_dispatcher.reset_token_renderer(token_id);
     snforge_std::stop_cheat_caller_address(token_dispatcher.contract_address);
 
-    // Verify renderer is reset to zero
+    // Verify renderer is reset (no custom renderer)
     assert!(
         !token_dispatcher.has_custom_renderer(token_id),
         "Should not have custom renderer after reset",
     );
+    // renderer_address falls back to game address when no custom renderer is set
     assert!(
-        token_dispatcher.renderer_address(token_id) == addr(0x0),
-        "Renderer should be zero after reset",
+        token_dispatcher.renderer_address(token_id) == game_addr,
+        "Renderer should fall back to game address after reset",
     );
 }
 
@@ -211,7 +233,7 @@ fn test_reset_token_renderer() {
 #[should_panic(expected: "MinigameToken: Caller is not owner of token")]
 fn test_reset_token_renderer_unauthorized() {
     // Deploy token contract
-    let (token_dispatcher, _, _, _) = deploy_optimized_token_custom_metadata(
+    let (token_dispatcher, game_addr) = deploy_single_game_token_custom_metadata(
         "ResetUnauthorized", "RU", "",
     );
 
@@ -220,7 +242,7 @@ fn test_reset_token_renderer_unauthorized() {
     // Mint token with custom renderer to ALICE
     let token_id = token_dispatcher
         .mint(
-            Option::None,
+            game_addr,
             Option::None,
             Option::None,
             Option::None,
@@ -246,7 +268,7 @@ fn test_reset_token_renderer_unauthorized() {
 #[test]
 fn test_reset_token_renderer_event() {
     // Deploy token contract
-    let (token_dispatcher, _, _, _) = deploy_optimized_token_custom_metadata(
+    let (token_dispatcher, game_addr) = deploy_single_game_token_custom_metadata(
         "ResetRendererEvent", "RRE", "",
     );
 
@@ -255,7 +277,7 @@ fn test_reset_token_renderer_event() {
     // Mint token with custom renderer
     let token_id = token_dispatcher
         .mint(
-            Option::None,
+            game_addr,
             Option::None,
             Option::None,
             Option::None,
@@ -278,8 +300,10 @@ fn test_reset_token_renderer_event() {
 
     // Verify renderer was reset
     assert!(!token_dispatcher.has_custom_renderer(token_id), "Renderer should be reset");
+    // renderer_address falls back to game address when no custom renderer is set
     assert!(
-        token_dispatcher.renderer_address(token_id) == addr(0x0), "Renderer address should be zero",
+        token_dispatcher.renderer_address(token_id) == game_addr,
+        "Renderer should fall back to game address",
     );
 }
 
@@ -287,14 +311,14 @@ fn test_reset_token_renderer_event() {
 #[test]
 fn test_zero_address_renderer() {
     // Deploy token contract
-    let (token_dispatcher, _, _, _) = deploy_optimized_token_custom_metadata(
+    let (token_dispatcher, game_addr) = deploy_single_game_token_custom_metadata(
         "ZeroRenderer", "ZR", "",
     );
 
     // Mint with zero address renderer
     let token_id = token_dispatcher
         .mint(
-            Option::None,
+            game_addr,
             Option::None,
             Option::None,
             Option::None,
@@ -345,7 +369,9 @@ fn test_all_objectives_completed() { // Deploy contracts and mint token with obj
 #[test]
 fn test_mint_events() {
     // Deploy token contract
-    let (token_dispatcher, _, _, _) = deploy_optimized_token_custom_metadata("EventTest", "ET", "");
+    let (token_dispatcher, game_addr) = deploy_single_game_token_custom_metadata(
+        "EventTest", "ET", "",
+    );
 
     // Start spying on events
     let mut _spy = spy_events();
@@ -353,7 +379,7 @@ fn test_mint_events() {
     // Mint token
     let token_id = token_dispatcher
         .mint(
-            Option::None,
+            game_addr,
             Option::None,
             Option::None,
             Option::None,

@@ -32,7 +32,6 @@ Feature flags in `src/config.cairo` eliminate unused code at compile time:
 | mint               | `(...params) -> u64`                       | Mint new token with config   |
 | mint_batch         | `(mints: Array<MintParams>) -> Array<u64>` | Batch mint tokens            |
 | update_game        | `(token_id: u64)`                          | Sync token state from game   |
-| set_token_metadata | `(token_id, ...)`                          | Update token metadata        |
 
 **Batch views:** `*_batch` variants for all view functions (token_metadata, is_playable, settings_id, etc.)
 

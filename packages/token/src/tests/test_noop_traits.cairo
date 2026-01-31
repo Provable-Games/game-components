@@ -20,38 +20,43 @@
 // 2. Transfers work (soulbound is disabled = always transferable)
 // 3. Token metadata is correctly set for enabled features
 
-use core::num::traits::Bounded;
 use openzeppelin_interfaces::erc721::{ERC721ABIDispatcher, ERC721ABIDispatcherTrait};
 use snforge_std::{CheatSpan, cheat_caller_address};
 use starknet::ContractAddress;
 use crate::interface::{IMinigameTokenMixinDispatcher, IMinigameTokenMixinDispatcherTrait};
 
 // Import setup helpers
-use super::setup::{ALICE, BOB, deploy_minimal_optimized_contract, deploy_mock_game};
+use super::setup::{ALICE, BOB, deploy_basic_mock_game, deploy_minimal_optimized_contract};
 
 // =============================================================================
 // TEST HELPERS
 // =============================================================================
 
 /// Deploy minimal optimized contract for NoOp testing
-fn deploy_noop_test_contract() -> (IMinigameTokenMixinDispatcher, ERC721ABIDispatcher) {
-    let (minigame_dispatcher, _, _) = deploy_mock_game();
-    deploy_minimal_optimized_contract(
+fn deploy_noop_test_contract() -> (
+    IMinigameTokenMixinDispatcher, ERC721ABIDispatcher, ContractAddress,
+) {
+    let (minigame_dispatcher, _) = deploy_basic_mock_game();
+    let game_addr = minigame_dispatcher.contract_address;
+    let (token, erc721) = deploy_minimal_optimized_contract(
         "NoOpTestToken",
         "NOOP",
         "https://noop.test/",
-        Option::Some(minigame_dispatcher.contract_address),
-        Option::Some(minigame_dispatcher.contract_address),
-    )
+        Option::Some(game_addr),
+        Option::Some(game_addr),
+    );
+    (token, erc721, game_addr)
 }
 
 /// Mint a token for testing using the correct mint signature:
 /// mint(game_address, player_name, settings_id, start, end, objective_id, context, client_url,
 /// renderer_address, to, soulbound)
-fn mint_test_token(token: IMinigameTokenMixinDispatcher, to: ContractAddress) -> felt252 {
+fn mint_test_token(
+    token: IMinigameTokenMixinDispatcher, game_addr: ContractAddress, to: ContractAddress,
+) -> felt252 {
     token
         .mint(
-            Option::None, // game_address
+            game_addr, // game_address
             Option::None, // player_name
             Option::None, // settings_id
             Option::None, // start
@@ -77,10 +82,10 @@ fn mint_test_token(token: IMinigameTokenMixinDispatcher, to: ContractAddress) ->
 
 #[test]
 fn test_noop_soulbound_transfer_always_allowed() {
-    let (token, erc721) = deploy_noop_test_contract();
+    let (token, erc721, game_addr) = deploy_noop_test_contract();
 
     // Mint a token
-    let token_id = mint_test_token(token, ALICE());
+    let token_id = mint_test_token(token, game_addr, ALICE());
 
     // Transfer should work because NoOpSoulbound::check_transfer_allowed returns true
     cheat_caller_address(token.contract_address, ALICE(), CheatSpan::TargetCalls(1));
@@ -91,12 +96,12 @@ fn test_noop_soulbound_transfer_always_allowed() {
 
 #[test]
 fn test_noop_soulbound_mint_with_soulbound_flag_still_transferable() {
-    let (token, erc721) = deploy_noop_test_contract();
+    let (token, erc721, game_addr) = deploy_noop_test_contract();
 
     // Mint a token with soulbound=true, but NoOpSoulbound ignores this
     let token_id = token
         .mint(
-            Option::None, // game_address
+            game_addr, // game_address
             Option::None, // player_name
             Option::None, // settings_id
             Option::None, // start
@@ -124,9 +129,9 @@ fn test_noop_soulbound_mint_with_soulbound_flag_still_transferable() {
 
 #[test]
 fn test_noop_soulbound_multiple_transfers() {
-    let (token, erc721) = deploy_noop_test_contract();
+    let (token, erc721, game_addr) = deploy_noop_test_contract();
 
-    let token_id = mint_test_token(token, ALICE());
+    let token_id = mint_test_token(token, game_addr, ALICE());
 
     // First transfer
     cheat_caller_address(token.contract_address, ALICE(), CheatSpan::TargetCalls(1));
@@ -148,12 +153,12 @@ fn test_noop_soulbound_multiple_transfers() {
 
 #[test]
 fn test_noop_objectives_mint_with_any_objective_id() {
-    let (token, _) = deploy_noop_test_contract();
+    let (token, _, game_addr) = deploy_noop_test_contract();
 
     // Mint with an arbitrary objective_id - NoOp should not validate it
     let token_id = token
         .mint(
-            Option::None, // game_address
+            game_addr, // game_address
             Option::None, // player_name
             Option::None, // settings_id
             Option::None, // start
@@ -175,9 +180,9 @@ fn test_noop_objectives_mint_with_any_objective_id() {
 
 #[test]
 fn test_noop_objectives_completed_returns_false() {
-    let (token, _) = deploy_noop_test_contract();
+    let (token, _, game_addr) = deploy_noop_test_contract();
 
-    let token_id = mint_test_token(token, ALICE());
+    let token_id = mint_test_token(token, game_addr, ALICE());
 
     // Check metadata - completed_objective should be false
     let metadata = token.token_metadata(token_id);
@@ -186,17 +191,19 @@ fn test_noop_objectives_completed_returns_false() {
 
 #[test]
 fn test_noop_objectives_mint_with_max_objective_id() {
-    let (token, _) = deploy_noop_test_contract();
+    let (token, _, game_addr) = deploy_noop_test_contract();
 
-    // Mint with max u32 objective_id - NoOp should not validate
+    // Mint with max 30-bit objective_id - NoOp should not validate
+    // objective_id is packed into 30 bits in PackedTokenId
+    let max_30_bit: u32 = 0x3FFFFFFF;
     let token_id = token
         .mint(
-            Option::None, // game_address
+            game_addr, // game_address
             Option::None, // player_name
             Option::None, // settings_id
             Option::None, // start
             Option::None, // end
-            Option::Some(Bounded::<u32>::MAX), // max objective_id
+            Option::Some(max_30_bit), // max objective_id
             Option::None, // context
             Option::None, // client_url
             Option::None, // renderer_address
@@ -219,12 +226,12 @@ fn test_noop_objectives_mint_with_max_objective_id() {
 
 #[test]
 fn test_noop_settings_mint_with_any_settings_id() {
-    let (token, _) = deploy_noop_test_contract();
+    let (token, _, game_addr) = deploy_noop_test_contract();
 
     // Mint with an arbitrary settings_id - NoOp should not validate it
     let token_id = token
         .mint(
-            Option::None, // game_address
+            game_addr, // game_address
             Option::None, // player_name
             Option::Some(999_u32), // settings_id - not validated by NoOp
             Option::None, // start
@@ -246,14 +253,16 @@ fn test_noop_settings_mint_with_any_settings_id() {
 
 #[test]
 fn test_noop_settings_mint_with_max_settings_id() {
-    let (token, _) = deploy_noop_test_contract();
+    let (token, _, game_addr) = deploy_noop_test_contract();
 
-    // Mint with max u32 settings_id - NoOp should not validate
+    // Mint with max 30-bit settings_id - NoOp should not validate
+    // settings_id is packed into 30 bits in PackedTokenId
+    let max_30_bit: u32 = 0x3FFFFFFF;
     let token_id = token
         .mint(
-            Option::None, // game_address
+            game_addr, // game_address
             Option::None, // player_name
-            Option::Some(Bounded::<u32>::MAX), // max settings_id
+            Option::Some(max_30_bit), // max settings_id
             Option::None, // start
             Option::None, // end
             Option::None, // objective_id
@@ -272,12 +281,12 @@ fn test_noop_settings_mint_with_max_settings_id() {
 
 #[test]
 fn test_noop_settings_mint_with_zero_settings_id() {
-    let (token, _) = deploy_noop_test_contract();
+    let (token, _, game_addr) = deploy_noop_test_contract();
 
     // Mint with zero settings_id
     let token_id = token
         .mint(
-            Option::None, // game_address
+            game_addr, // game_address
             Option::None, // player_name
             Option::Some(0_u32), // zero settings_id
             Option::None, // start
@@ -304,10 +313,10 @@ fn test_noop_settings_mint_with_zero_settings_id() {
 
 #[test]
 fn test_noop_context_mint_without_context() {
-    let (token, _) = deploy_noop_test_contract();
+    let (token, _, game_addr) = deploy_noop_test_contract();
 
     // Mint without context
-    let token_id = mint_test_token(token, ALICE());
+    let token_id = mint_test_token(token, game_addr, ALICE());
 
     // Verify has_context is false
     let metadata = token.token_metadata(token_id);
@@ -316,9 +325,9 @@ fn test_noop_context_mint_without_context() {
 
 #[test]
 fn test_noop_context_token_metadata_has_context_false() {
-    let (token, _) = deploy_noop_test_contract();
+    let (token, _, game_addr) = deploy_noop_test_contract();
 
-    let token_id = mint_test_token(token, ALICE());
+    let token_id = mint_test_token(token, game_addr, ALICE());
 
     // has_context should always be false with NoOp
     let metadata = token.token_metadata(token_id);
@@ -331,13 +340,13 @@ fn test_noop_context_token_metadata_has_context_false() {
 
 #[test]
 fn test_noop_all_features_mint_full_params() {
-    let (token, erc721) = deploy_noop_test_contract();
+    let (token, erc721, game_addr) = deploy_noop_test_contract();
 
     // Mint with all optional parameters that would normally require feature validation
     let renderer_addr: ContractAddress = 'RENDERER'.try_into().unwrap();
     let token_id = token
         .mint(
-            Option::None, // game_address
+            game_addr, // game_address
             Option::Some('TestPlayer'), // player_name
             Option::Some(12345_u32), // settings_id - not validated by NoOp
             Option::Some(100_u64), // start
@@ -372,12 +381,12 @@ fn test_noop_all_features_mint_full_params() {
 
 #[test]
 fn test_noop_multiple_tokens_different_configs() {
-    let (token, erc721) = deploy_noop_test_contract();
+    let (token, erc721, game_addr) = deploy_noop_test_contract();
 
     // Mint tokens with different configurations
     let token_id1 = token
         .mint(
-            Option::None, // game_address
+            game_addr, // game_address
             Option::None, // player_name
             Option::Some(1_u32), // settings_id
             Option::None, // start
@@ -395,7 +404,7 @@ fn test_noop_multiple_tokens_different_configs() {
 
     let token_id2 = token
         .mint(
-            Option::None, // game_address
+            game_addr, // game_address
             Option::None, // player_name
             Option::Some(2_u32), // settings_id
             Option::None, // start
@@ -426,9 +435,9 @@ fn test_noop_multiple_tokens_different_configs() {
 
 #[test]
 fn test_noop_returns_expected_defaults() {
-    let (token, _) = deploy_noop_test_contract();
+    let (token, _, game_addr) = deploy_noop_test_contract();
 
-    let token_id = mint_test_token(token, ALICE());
+    let token_id = mint_test_token(token, game_addr, ALICE());
 
     let metadata = token.token_metadata(token_id);
 
@@ -443,9 +452,9 @@ fn test_noop_returns_expected_defaults() {
 
 #[test]
 fn test_noop_mint_basic() {
-    let (token, erc721) = deploy_noop_test_contract();
+    let (token, erc721, game_addr) = deploy_noop_test_contract();
 
-    let token_id = mint_test_token(token, ALICE());
+    let token_id = mint_test_token(token, game_addr, ALICE());
 
     // Verify basic functionality
     assert!(token_id != 0, "First token should not be ID 0");
@@ -455,11 +464,11 @@ fn test_noop_mint_basic() {
 
 #[test]
 fn test_noop_mint_multiple() {
-    let (token, erc721) = deploy_noop_test_contract();
+    let (token, erc721, game_addr) = deploy_noop_test_contract();
 
     let token_id1 = token
         .mint(
-            Option::None,
+            game_addr,
             Option::None,
             Option::None,
             Option::None,
@@ -476,7 +485,7 @@ fn test_noop_mint_multiple() {
         );
     let token_id2 = token
         .mint(
-            Option::None,
+            game_addr,
             Option::None,
             Option::None,
             Option::None,
@@ -493,7 +502,7 @@ fn test_noop_mint_multiple() {
         );
     let token_id3 = token
         .mint(
-            Option::None,
+            game_addr,
             Option::None,
             Option::None,
             Option::None,

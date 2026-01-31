@@ -13,7 +13,8 @@ use crate::interface::IMinigameTokenMixinDispatcherTrait;
 
 // Import setup helpers
 use super::setup::{
-    ALICE, BOB, CHARLIE, ZERO_ADDRESS, deploy_optimized_token_custom_metadata, setup_multi_game,
+    ALICE, BOB, CHARLIE, OWNER, ZERO_ADDRESS, deploy_mock_game_standalone,
+    deploy_single_game_token_contract, setup_multi_game,
 };
 
 // Helper function for creating contract addresses from felt252 values
@@ -37,7 +38,7 @@ fn test_get_minter_address_valid_id() {
     test_contracts
         .test_token
         .mint(
-            Option::None,
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::None,
             Option::None,
@@ -87,7 +88,7 @@ fn test_get_minter_address_first_minter() {
     test_contracts
         .test_token
         .mint(
-            Option::None,
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::None,
             Option::None,
@@ -120,7 +121,7 @@ fn test_get_minter_address_multiple_minters() {
     test_contracts
         .test_token
         .mint(
-            Option::None,
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::None,
             Option::None,
@@ -143,7 +144,7 @@ fn test_get_minter_address_multiple_minters() {
     test_contracts
         .test_token
         .mint(
-            Option::None,
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::None,
             Option::None,
@@ -166,7 +167,7 @@ fn test_get_minter_address_multiple_minters() {
     test_contracts
         .test_token
         .mint(
-            Option::None,
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::None,
             Option::None,
@@ -213,7 +214,7 @@ fn test_get_minter_id_registered() {
     test_contracts
         .test_token
         .mint(
-            Option::None,
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::None,
             Option::None,
@@ -263,7 +264,7 @@ fn test_get_minter_id_sequential() {
     test_contracts
         .test_token
         .mint(
-            Option::None,
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::None,
             Option::None,
@@ -286,7 +287,7 @@ fn test_get_minter_id_sequential() {
     test_contracts
         .test_token
         .mint(
-            Option::None,
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::None,
             Option::None,
@@ -329,7 +330,7 @@ fn test_minter_exists_after_mint() {
     test_contracts
         .test_token
         .mint(
-            Option::None,
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::None,
             Option::None,
@@ -359,7 +360,7 @@ fn test_minter_exists_other_address() {
     test_contracts
         .test_token
         .mint(
-            Option::None,
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::None,
             Option::None,
@@ -411,7 +412,7 @@ fn test_total_minters_after_first() {
     test_contracts
         .test_token
         .mint(
-            Option::None,
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::None,
             Option::None,
@@ -442,7 +443,7 @@ fn test_total_minters_duplicate_mint() {
     test_contracts
         .test_token
         .mint(
-            Option::None,
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::None,
             Option::None,
@@ -467,7 +468,7 @@ fn test_total_minters_duplicate_mint() {
     test_contracts
         .test_token
         .mint(
-            Option::None,
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::None,
             Option::None,
@@ -498,7 +499,7 @@ fn test_total_minters_after_second() {
     test_contracts
         .test_token
         .mint(
-            Option::None,
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::None,
             Option::None,
@@ -521,7 +522,7 @@ fn test_total_minters_after_second() {
     test_contracts
         .test_token
         .mint(
-            Option::None,
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::None,
             Option::None,
@@ -556,7 +557,7 @@ fn test_minter_sequential_ids() {
     test_contracts
         .test_token
         .mint(
-            Option::None,
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::None,
             Option::None,
@@ -580,7 +581,7 @@ fn test_minter_sequential_ids() {
     test_contracts
         .test_token
         .mint(
-            Option::None,
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::None,
             Option::None,
@@ -604,7 +605,7 @@ fn test_minter_sequential_ids() {
     test_contracts
         .test_token
         .mint(
-            Option::None,
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::None,
             Option::None,
@@ -633,7 +634,7 @@ fn test_minter_bidirectional_mapping_consistency() {
     test_contracts
         .test_token
         .mint(
-            Option::None,
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::None,
             Option::None,
@@ -673,7 +674,7 @@ fn test_minter_registry_update_event() {
     test_contracts
         .test_token
         .mint(
-            Option::None,
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::None,
             Option::None,
@@ -717,7 +718,7 @@ fn test_minter_no_event_on_duplicate_registration() {
     test_contracts
         .test_token
         .mint(
-            Option::None,
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::None,
             Option::None,
@@ -743,7 +744,7 @@ fn test_minter_no_event_on_duplicate_registration() {
     test_contracts
         .test_token
         .mint(
-            Option::None,
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::None,
             Option::None,
@@ -812,17 +813,34 @@ fn test_minter_interface_id_value() {
 // Minter tracking is isolated per token contract
 #[test]
 fn test_minter_multiple_contracts_isolation() {
-    // Deploy first contract
-    let (token1, _, src5_1, _) = deploy_optimized_token_custom_metadata("Token1", "T1", "");
+    // Deploy a mock game that supports IMinigame interface
+    let game_address = deploy_mock_game_standalone();
 
-    // Deploy second contract
-    let (token2, _, _, _) = deploy_optimized_token_custom_metadata("Token2", "T2", "");
+    // Deploy first contract (single-game token with the mock game)
+    let (token1, _, src5_1, _) = deploy_single_game_token_contract(
+        Option::Some("Token1"),
+        Option::Some("T1"),
+        Option::Some(""),
+        Option::None,
+        game_address,
+        OWNER(),
+    );
+
+    // Deploy second contract (single-game token with the mock game)
+    let (token2, _, _, _) = deploy_single_game_token_contract(
+        Option::Some("Token2"),
+        Option::Some("T2"),
+        Option::Some(""),
+        Option::None,
+        game_address,
+        OWNER(),
+    );
 
     // Mint from ALICE on token1
     cheat_caller_address(token1.contract_address, ALICE(), CheatSpan::TargetCalls(1));
     token1
         .mint(
-            Option::None,
+            game_address,
             Option::None,
             Option::None,
             Option::None,

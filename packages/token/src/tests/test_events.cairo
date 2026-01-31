@@ -25,7 +25,7 @@ fn test_mint_event_emission() {
     let _token_id = test_contracts
         .test_token
         .mint(
-            Option::Some(test_contracts.minigame.contract_address),
+            test_contracts.minigame.contract_address,
             Option::Some('Player1'),
             Option::None,
             Option::None,
@@ -55,7 +55,7 @@ fn test_update_game_event_emissions() {
     // Mint a token
     let token_id = token_dispatcher
         .mint(
-            Option::Some(minigame.contract_address),
+            minigame.contract_address,
             Option::None,
             Option::None,
             Option::None,
@@ -112,7 +112,7 @@ fn test_update_game_with_metadata_change_events() {
     // Mint token
     let token_id = token_dispatcher
         .mint(
-            Option::Some(minigame.contract_address),
+            minigame.contract_address,
             Option::None,
             Option::None,
             Option::None,
@@ -148,7 +148,7 @@ fn test_mint_with_context_event() {
     let _token_id = test_contracts
         .test_token
         .mint(
-            Option::Some(test_contracts.minigame.contract_address),
+            test_contracts.minigame.contract_address,
             Option::Some('Player1'),
             Option::None,
             Option::None,
@@ -170,52 +170,6 @@ fn test_mint_with_context_event() {
 }
 
 #[test]
-fn test_set_token_metadata_events() {
-    let test_contracts = setup();
-
-    // Mint a blank token
-    let token_id = test_contracts
-        .test_token
-        .mint(
-            Option::None, // No game address - creates blank token
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            ALICE(),
-            false,
-            false,
-            0,
-            0,
-        );
-
-    let mut spy = spy_events();
-
-    // Set token metadata
-    test_contracts
-        .test_token
-        .set_token_metadata(
-            token_id,
-            test_contracts.minigame.contract_address,
-            Option::Some('Player1'),
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-        );
-
-    // Should emit MetadataUpdate event
-    let events = spy.get_events();
-    // Note: MetadataUpdate event might not be emitted in current implementation
-    assert!(events.events.span().len() >= 0, "Check for events");
-}
-
-#[test]
 fn test_transfer_events() {
     let test_contracts = setup();
 
@@ -223,7 +177,7 @@ fn test_transfer_events() {
     let token_id = test_contracts
         .test_token
         .mint(
-            Option::Some(test_contracts.minigame.contract_address),
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::None,
             Option::None,
@@ -264,7 +218,7 @@ fn test_batch_operations_event_count() {
         let token_id = test_contracts
             .test_token
             .mint(
-                Option::Some(test_contracts.minigame.contract_address),
+                test_contracts.minigame.contract_address,
                 Option::None,
                 Option::None,
                 Option::None,
@@ -318,7 +272,7 @@ fn test_multi_game_registry_events() {
     let _token_id = test_contracts
         .test_token
         .mint(
-            Option::Some(game.contract_address),
+            game.contract_address,
             Option::None,
             Option::None,
             Option::None,

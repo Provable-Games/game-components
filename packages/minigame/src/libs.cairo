@@ -157,7 +157,7 @@ pub fn mint(
     };
     minigame_token_dispatcher
         .mint(
-            Option::Some(game_address),
+            game_address,
             player_name,
             settings_id,
             start,
@@ -215,7 +215,7 @@ pub fn mint_batch(
         mint_params_array
             .append(
                 MintParams {
-                    game_address: Option::Some(game_address),
+                    game_address: game_address,
                     player_name: *mint_game_param.player_name,
                     settings_id: *mint_game_param.settings_id,
                     start: *mint_game_param.start,

@@ -64,40 +64,6 @@ pub fn ensure_objectives_completion_transition(old_state: bool, new_state: bool)
     }
 }
 
-/// Creates metadata for a blank token (no game)
-///
-/// # Arguments
-/// * `lifecycle` - The token lifecycle
-/// * `minted_by` - The minter ID
-/// * `soulbound` - Whether the token is soulbound
-/// * `current_time` - The current block timestamp
-///
-/// # Returns
-/// * `TokenMetadata` - The created metadata
-#[inline(always)]
-pub fn create_blank_token_metadata(
-    lifecycle: Lifecycle, minted_by: u64, soulbound: bool, current_time: u64,
-) -> TokenMetadata {
-    TokenMetadata {
-        // Game info
-        game_id: 0,
-        game_over: false,
-        settings_id: 0,
-        // Objectives
-        objective_id: 0,
-        completed_objective: false,
-        // Metadata
-        lifecycle,
-        soulbound,
-        minted_by,
-        has_context: false,
-        // State
-        minted_at: current_time,
-        paymaster: false,
-        metadata: 0,
-    }
-}
-
 /// Creates metadata for a game token
 ///
 /// # Arguments

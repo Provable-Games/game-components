@@ -25,7 +25,7 @@ fn test_optimized_contract_with_renderer() {
     let token_id = test_contracts
         .test_token
         .mint(
-            Option::Some(test_contracts.minigame.contract_address),
+            test_contracts.minigame.contract_address,
             Option::Some('RendererPlayer'),
             Option::None,
             Option::None,
@@ -61,7 +61,7 @@ fn test_optimized_contract_lifecycle_edge_cases() {
     let token_id = test_contracts
         .test_token
         .mint(
-            Option::Some(test_contracts.minigame.contract_address),
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::None,
             Option::Some(current_time),
@@ -136,7 +136,7 @@ fn test_optimized_contract_multi_minter_scenario() {
         let token_id = test_contracts
             .test_token
             .mint(
-                Option::Some(test_contracts.minigame.contract_address),
+                test_contracts.minigame.contract_address,
                 Option::None,
                 Option::None,
                 Option::None,
@@ -185,7 +185,7 @@ fn test_optimized_contract_game_integration() {
     // Mint and play
     let token_id = token_dispatcher
         .mint(
-            Option::None,
+            mock_game.contract_address,
             Option::Some('GamePlayer'),
             Option::None,
             Option::None,
