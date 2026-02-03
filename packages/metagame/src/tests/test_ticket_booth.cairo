@@ -954,7 +954,9 @@ mod MockMinigameTokenForTicketBooth {
     use core::num::traits::Zero;
     use game_components_metagame::extensions::context::structs::GameContextDetails;
     use game_components_token::core::interface::{IMINIGAME_TOKEN_ID, IMinigameToken};
-    use game_components_token::structs::{Lifecycle, MintParams, PlayerNameUpdate, TokenMetadata};
+    use game_components_token::structs::{
+        Lifecycle, MintParams, PlayerNameUpdate, TokenMetadata, TokenMutableState,
+    };
     use openzeppelin_interfaces::introspection::ISRC5;
     use starknet::ContractAddress;
     use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
@@ -1028,6 +1030,10 @@ mod MockMinigameTokenForTicketBooth {
             Zero::zero()
         }
 
+        fn token_mutable_state(self: @ContractState, token_id: felt252) -> TokenMutableState {
+            TokenMutableState { game_over: false, completed_objective: false }
+        }
+
         fn token_metadata_batch(
             self: @ContractState, token_ids: Span<felt252>,
         ) -> Array<TokenMetadata> {
@@ -1067,6 +1073,12 @@ mod MockMinigameTokenForTicketBooth {
         fn token_game_address_batch(
             self: @ContractState, token_ids: Span<felt252>,
         ) -> Array<ContractAddress> {
+            array![]
+        }
+
+        fn token_mutable_state_batch(
+            self: @ContractState, token_ids: Span<felt252>,
+        ) -> Array<TokenMutableState> {
             array![]
         }
 

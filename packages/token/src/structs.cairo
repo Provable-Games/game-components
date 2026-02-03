@@ -2,7 +2,7 @@ pub use game_components_interfaces::structs::metagame::GameContextDetails;
 
 // Re-export structs from interfaces for backward compatibility
 pub use game_components_interfaces::structs::token::{
-    Lifecycle, MintParams, PlayerNameUpdate, TokenMetadata,
+    Lifecycle, MintParams, PlayerNameUpdate, TokenMetadata, TokenMutableState,
 };
 use starknet::storage_access::StorePacking;
 
@@ -74,20 +74,6 @@ pub struct PackedTokenId {
     pub tx_hash: u16, // 10 bits - last 10 bits of transaction hash for collision protection
     pub salt: u16, // 10 bits - client-provided salt for multicall collision protection
     pub metadata: u16 // 13 bits - reserved for future use
-}
-
-/// Mutable state that still needs storage (only 2 fields!)
-/// Packed into a single felt252 for gas efficiency using StorePacking.
-#[derive(Copy, Drop, Serde)]
-pub struct TokenMutableState {
-    pub game_over: bool,
-    pub completed_objective: bool,
-}
-
-impl TokenMutableStateDefault of Default<TokenMutableState> {
-    fn default() -> TokenMutableState {
-        TokenMutableState { game_over: false, completed_objective: false }
-    }
 }
 
 /// StorePacking implementation for TokenMutableState

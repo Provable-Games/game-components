@@ -1,7 +1,7 @@
 // Core token interface
 use starknet::ContractAddress;
 use crate::structs::metagame::GameContextDetails;
-use crate::structs::token::{MintParams, PlayerNameUpdate, TokenMetadata};
+use crate::structs::token::{MintParams, PlayerNameUpdate, TokenMetadata, TokenMutableState};
 
 pub const IMINIGAME_TOKEN_ID: felt252 =
     0xa08df7e54b63300eeacf85a0f3289c405351278620b5af7e5d868b91f4d43d;
@@ -19,6 +19,7 @@ pub trait IMinigameToken<TState> {
     fn is_soulbound(self: @TState, token_id: felt252) -> bool;
     fn renderer_address(self: @TState, token_id: felt252) -> ContractAddress;
     fn token_game_address(self: @TState, token_id: felt252) -> ContractAddress;
+    fn token_mutable_state(self: @TState, token_id: felt252) -> TokenMutableState;
 
     // Batch view functions
     fn token_metadata_batch(self: @TState, token_ids: Span<felt252>) -> Array<TokenMetadata>;
@@ -30,6 +31,9 @@ pub trait IMinigameToken<TState> {
     fn is_soulbound_batch(self: @TState, token_ids: Span<felt252>) -> Array<bool>;
     fn renderer_address_batch(self: @TState, token_ids: Span<felt252>) -> Array<ContractAddress>;
     fn token_game_address_batch(self: @TState, token_ids: Span<felt252>) -> Array<ContractAddress>;
+    fn token_mutable_state_batch(
+        self: @TState, token_ids: Span<felt252>,
+    ) -> Array<TokenMutableState>;
 
     fn mint(
         ref self: TState,
