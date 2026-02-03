@@ -30,4 +30,20 @@ pub trait IMinigameRegistry<TState> {
     /// Only the owner of the game creator token (game_id) can call this.
     /// royalty_fraction is in basis points (e.g., 500 = 5%)
     fn set_game_royalty(ref self: TState, game_id: u64, royalty_fraction: u128);
+
+    // Batch view functions
+    fn game_metadata_batch(self: @TState, game_ids: Span<u64>) -> Array<GameMetadata>;
+    fn games_registered_batch(self: @TState, addresses: Span<ContractAddress>) -> Array<bool>;
+    fn get_games(self: @TState, start: u64, count: u64) -> Array<GameMetadata>;
+
+    // Filtered view functions
+    fn get_games_by_developer(
+        self: @TState, developer: ByteArray, start: u64, count: u64,
+    ) -> Array<GameMetadata>;
+    fn get_games_by_publisher(
+        self: @TState, publisher: ByteArray, start: u64, count: u64,
+    ) -> Array<GameMetadata>;
+    fn get_games_by_genre(
+        self: @TState, genre: ByteArray, start: u64, count: u64,
+    ) -> Array<GameMetadata>;
 }

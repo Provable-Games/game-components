@@ -253,6 +253,146 @@ pub mod MinigameRegistryContract {
             metadata.royalty_fraction = royalty_fraction;
             self.game_metadata.entry(game_id).write(metadata);
         }
+
+        fn game_metadata_batch(self: @ContractState, game_ids: Span<u64>) -> Array<GameMetadata> {
+            assert!(game_ids.len() > 0, "Registry: game_ids empty");
+            let mut results: Array<GameMetadata> = ArrayTrait::new();
+            let mut i: u32 = 0;
+            loop {
+                if i >= game_ids.len() {
+                    break;
+                }
+                let game_id = *game_ids.at(i);
+                results.append(self.game_metadata.entry(game_id).read());
+                i += 1;
+            }
+            results
+        }
+
+        fn games_registered_batch(
+            self: @ContractState, addresses: Span<ContractAddress>,
+        ) -> Array<bool> {
+            assert!(addresses.len() > 0, "Registry: addresses empty");
+            let mut results: Array<bool> = ArrayTrait::new();
+            let mut i: u32 = 0;
+            loop {
+                if i >= addresses.len() {
+                    break;
+                }
+                let addr = *addresses.at(i);
+                results.append(self.game_id_by_address.entry(addr).read() != 0);
+                i += 1;
+            }
+            results
+        }
+
+        fn get_games(self: @ContractState, start: u64, count: u64) -> Array<GameMetadata> {
+            let mut results: Array<GameMetadata> = ArrayTrait::new();
+            if count == 0 {
+                return results;
+            }
+            let game_count = self.game_counter.read();
+            if start == 0 || start > game_count {
+                return results;
+            }
+            let end = core::cmp::min(start + count, game_count + 1);
+            let mut i = start;
+            loop {
+                if i >= end {
+                    break;
+                }
+                results.append(self.game_metadata.entry(i).read());
+                i += 1;
+            }
+            results
+        }
+
+        fn get_games_by_developer(
+            self: @ContractState, developer: ByteArray, start: u64, count: u64,
+        ) -> Array<GameMetadata> {
+            let mut results: Array<GameMetadata> = ArrayTrait::new();
+            if count == 0 {
+                return results;
+            }
+            let game_count = self.game_counter.read();
+            let mut game_id: u64 = 1;
+            let mut skipped: u64 = 0;
+            let mut collected: u64 = 0;
+            loop {
+                if game_id > game_count || collected >= count {
+                    break;
+                }
+                let metadata = self.game_metadata.entry(game_id).read();
+                if metadata.developer == developer {
+                    if skipped >= start {
+                        results.append(metadata);
+                        collected += 1;
+                    } else {
+                        skipped += 1;
+                    }
+                }
+                game_id += 1;
+            }
+            results
+        }
+
+        fn get_games_by_publisher(
+            self: @ContractState, publisher: ByteArray, start: u64, count: u64,
+        ) -> Array<GameMetadata> {
+            let mut results: Array<GameMetadata> = ArrayTrait::new();
+            if count == 0 {
+                return results;
+            }
+            let game_count = self.game_counter.read();
+            let mut game_id: u64 = 1;
+            let mut skipped: u64 = 0;
+            let mut collected: u64 = 0;
+            loop {
+                if game_id > game_count || collected >= count {
+                    break;
+                }
+                let metadata = self.game_metadata.entry(game_id).read();
+                if metadata.publisher == publisher {
+                    if skipped >= start {
+                        results.append(metadata);
+                        collected += 1;
+                    } else {
+                        skipped += 1;
+                    }
+                }
+                game_id += 1;
+            }
+            results
+        }
+
+        fn get_games_by_genre(
+            self: @ContractState, genre: ByteArray, start: u64, count: u64,
+        ) -> Array<GameMetadata> {
+            let mut results: Array<GameMetadata> = ArrayTrait::new();
+            if count == 0 {
+                return results;
+            }
+            let game_count = self.game_counter.read();
+            let mut game_id: u64 = 1;
+            let mut skipped: u64 = 0;
+            let mut collected: u64 = 0;
+            loop {
+                if game_id > game_count || collected >= count {
+                    break;
+                }
+                let metadata = self.game_metadata.entry(game_id).read();
+                if metadata.genre == genre {
+                    if skipped >= start {
+                        results.append(metadata);
+                        collected += 1;
+                    } else {
+                        skipped += 1;
+                    }
+                }
+                game_id += 1;
+            }
+            results
+        }
     }
 
     #[generate_trait]
