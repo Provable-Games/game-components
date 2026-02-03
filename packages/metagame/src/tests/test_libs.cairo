@@ -1240,20 +1240,23 @@ mod MockRegistryForLibs {
         }
 
         fn get_games_by_developer(
-            self: @ContractState, _developer: ByteArray, _start: u64, _count: u64,
+            self: @ContractState, developer: ByteArray, start: u64, count: u64,
         ) -> Array<GameMetadata> {
+            let _ = (developer, start, count);
             array![]
         }
 
         fn get_games_by_publisher(
-            self: @ContractState, _publisher: ByteArray, _start: u64, _count: u64,
+            self: @ContractState, publisher: ByteArray, start: u64, count: u64,
         ) -> Array<GameMetadata> {
+            let _ = (publisher, start, count);
             array![]
         }
 
         fn get_games_by_genre(
-            self: @ContractState, _genre: ByteArray, _start: u64, _count: u64,
+            self: @ContractState, genre: ByteArray, start: u64, count: u64,
         ) -> Array<GameMetadata> {
+            let _ = (genre, start, count);
             array![]
         }
     }
