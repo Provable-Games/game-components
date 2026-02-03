@@ -6,7 +6,7 @@ pub use game_components_interfaces::registry::{
 pub use game_components_interfaces::structs::metagame::GameContextDetails;
 pub use game_components_interfaces::structs::minigame::{GameObjective, GameSetting};
 use starknet::ContractAddress;
-use crate::structs::{MintParams, PlayerNameUpdate, TokenMetadata};
+use crate::structs::{MintParams, PlayerNameUpdate, TokenMetadata, TokenMutableState};
 
 #[starknet::interface]
 pub trait IMinigameTokenMixin<TState> {
@@ -22,6 +22,7 @@ pub trait IMinigameTokenMixin<TState> {
     fn is_soulbound(self: @TState, token_id: felt252) -> bool;
     fn renderer_address(self: @TState, token_id: felt252) -> ContractAddress;
     fn token_game_address(self: @TState, token_id: felt252) -> ContractAddress;
+    fn token_mutable_state(self: @TState, token_id: felt252) -> TokenMutableState;
 
     // Batch view functions
     fn token_metadata_batch(self: @TState, token_ids: Span<felt252>) -> Array<TokenMetadata>;
@@ -33,6 +34,9 @@ pub trait IMinigameTokenMixin<TState> {
     fn is_soulbound_batch(self: @TState, token_ids: Span<felt252>) -> Array<bool>;
     fn renderer_address_batch(self: @TState, token_ids: Span<felt252>) -> Array<ContractAddress>;
     fn token_game_address_batch(self: @TState, token_ids: Span<felt252>) -> Array<ContractAddress>;
+    fn token_mutable_state_batch(
+        self: @TState, token_ids: Span<felt252>,
+    ) -> Array<TokenMutableState>;
 
     fn mint(
         ref self: TState,

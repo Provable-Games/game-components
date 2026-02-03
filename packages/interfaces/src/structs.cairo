@@ -13,4 +13,4 @@ pub use leaderboard::{
 pub use metagame::{GameContext, GameContextDetails};
 pub use minigame::{GameDetail, GameObjective, GameSetting, GameSettingDetails, MintGameParams};
 pub use registry::GameMetadata;
-pub use token::{Lifecycle, MintParams, PlayerNameUpdate, TokenMetadata};
+pub use token::{Lifecycle, MintParams, PlayerNameUpdate, TokenMetadata, TokenMutableState};

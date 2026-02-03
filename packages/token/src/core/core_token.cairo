@@ -149,6 +149,12 @@ pub mod CoreTokenComponent {
             unpack_objective_id(token_id)
         }
 
+        fn token_mutable_state(
+            self: @ComponentState<TContractState>, token_id: felt252,
+        ) -> TokenMutableState {
+            self.token_mutable_state.entry(token_id).read()
+        }
+
         fn minted_by(self: @ComponentState<TContractState>, token_id: felt252) -> felt252 {
             let minted_by_val: u64 = unpack_minted_by(token_id);
             minted_by_val.into()
@@ -282,6 +288,23 @@ pub mod CoreTokenComponent {
                     break;
                 }
                 results.append(unpack_objective_id(*token_ids.at(i)));
+                i += 1;
+            }
+            results
+        }
+
+        fn token_mutable_state_batch(
+            self: @ComponentState<TContractState>, token_ids: Span<felt252>,
+        ) -> Array<TokenMutableState> {
+            assert!(token_ids.len() > 0, "MinigameToken: token_ids array cannot be empty");
+            let mut results: Array<TokenMutableState> = ArrayTrait::new();
+            let mut i: u32 = 0;
+            loop {
+                if i >= token_ids.len() {
+                    break;
+                }
+                let token_id = *token_ids.at(i);
+                results.append(self.token_mutable_state.entry(token_id).read());
                 i += 1;
             }
             results

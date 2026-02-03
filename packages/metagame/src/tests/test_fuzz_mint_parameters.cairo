@@ -468,7 +468,9 @@ mod MockMinigameTokenFuzz {
     use core::num::traits::Zero;
     use game_components_metagame::extensions::context::structs::GameContextDetails;
     use game_components_token::core::interface::{IMINIGAME_TOKEN_ID, IMinigameToken};
-    use game_components_token::structs::{Lifecycle, MintParams, PlayerNameUpdate, TokenMetadata};
+    use game_components_token::structs::{
+        Lifecycle, MintParams, PlayerNameUpdate, TokenMetadata, TokenMutableState,
+    };
     use openzeppelin_interfaces::introspection::ISRC5;
     use starknet::ContractAddress;
     use starknet::storage::{
@@ -552,6 +554,10 @@ mod MockMinigameTokenFuzz {
 
         fn token_game_address(self: @ContractState, token_id: felt252) -> ContractAddress {
             self.token_game_address.read(token_id)
+        }
+
+        fn token_mutable_state(self: @ContractState, token_id: felt252) -> TokenMutableState {
+            TokenMutableState { game_over: false, completed_objective: false }
         }
 
         fn token_metadata_batch(
@@ -672,6 +678,21 @@ mod MockMinigameTokenFuzz {
                     break;
                 }
                 results.append(self.token_game_address(*token_ids.at(i)));
+                i += 1;
+            }
+            results
+        }
+
+        fn token_mutable_state_batch(
+            self: @ContractState, token_ids: Span<felt252>,
+        ) -> Array<TokenMutableState> {
+            let mut results = array![];
+            let mut i = 0;
+            loop {
+                if i >= token_ids.len() {
+                    break;
+                }
+                results.append(self.token_mutable_state(*token_ids.at(i)));
                 i += 1;
             }
             results

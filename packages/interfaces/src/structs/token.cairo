@@ -72,3 +72,17 @@ pub struct PlayerNameUpdate {
     pub name: felt252,
 }
 
+/// Mutable token state (game_over and completed_objective flags)
+/// Used for efficient queries without parsing packed token data
+#[derive(Copy, Drop, Serde)]
+pub struct TokenMutableState {
+    pub game_over: bool,
+    pub completed_objective: bool,
+}
+
+impl TokenMutableStateDefault of Default<TokenMutableState> {
+    fn default() -> TokenMutableState {
+        TokenMutableState { game_over: false, completed_objective: false }
+    }
+}
+
