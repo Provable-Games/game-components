@@ -1201,6 +1201,61 @@ mod MockRegistryForLibs {
             1
         }
         fn set_game_royalty(ref self: ContractState, game_id: u64, royalty_fraction: u128) {}
+
+        fn game_metadata_batch(self: @ContractState, game_ids: Span<u64>) -> Array<GameMetadata> {
+            let mut results: Array<GameMetadata> = ArrayTrait::new();
+            let mut i: u32 = 0;
+            loop {
+                if i >= game_ids.len() {
+                    break;
+                }
+                results.append(self.game_metadata(*game_ids.at(i)));
+                i += 1;
+            }
+            results
+        }
+
+        fn games_registered_batch(
+            self: @ContractState, addresses: Span<ContractAddress>,
+        ) -> Array<bool> {
+            let mut results: Array<bool> = ArrayTrait::new();
+            let mut i: u32 = 0;
+            loop {
+                if i >= addresses.len() {
+                    break;
+                }
+                results.append(self.is_game_registered(*addresses.at(i)));
+                i += 1;
+            }
+            results
+        }
+
+        fn get_games(self: @ContractState, start: u64, count: u64) -> Array<GameMetadata> {
+            let mut results: Array<GameMetadata> = ArrayTrait::new();
+            if count == 0 || start == 0 || start > 1 {
+                return results;
+            }
+            results.append(self.game_metadata(1));
+            results
+        }
+
+        fn get_games_by_developer(
+            self: @ContractState, _developer: ByteArray, _start: u64, _count: u64,
+        ) -> Array<GameMetadata> {
+            array![]
+        }
+
+        fn get_games_by_publisher(
+            self: @ContractState, _publisher: ByteArray, _start: u64, _count: u64,
+        ) -> Array<GameMetadata> {
+            array![]
+        }
+
+        fn get_games_by_genre(
+            self: @ContractState, _genre: ByteArray, _start: u64, _count: u64,
+        ) -> Array<GameMetadata> {
+            array![]
+        }
     }
 }
 

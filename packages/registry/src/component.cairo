@@ -87,6 +87,8 @@ pub mod MinigameRegistryComponent {
         pub const GAME_ALREADY_REGISTERED: felt252 = 'Registry: already registered';
         pub const NOT_GAME_OWNER: felt252 = 'Registry: not game owner';
         pub const INVALID_GAME_ID: felt252 = 'Registry: invalid game id';
+        pub const GAME_IDS_EMPTY: felt252 = 'Registry: game_ids empty';
+        pub const ADDRESSES_EMPTY: felt252 = 'Registry: addresses empty';
     }
 
     // ==========================================================================
@@ -294,6 +296,152 @@ pub mod MinigameRegistryComponent {
 
             // Emit royalty update event
             self.emit(GameRoyaltyUpdate { game_id, royalty_fraction });
+        }
+
+        fn game_metadata_batch(
+            self: @ComponentState<TContractState>, game_ids: Span<u64>,
+        ) -> Array<GameMetadata> {
+            assert!(game_ids.len() > 0, "{}", Errors::GAME_IDS_EMPTY);
+            let mut results: Array<GameMetadata> = ArrayTrait::new();
+            let mut i: u32 = 0;
+            loop {
+                if i >= game_ids.len() {
+                    break;
+                }
+                let game_id = *game_ids.at(i);
+                results.append(self.game_metadata.entry(game_id).read());
+                i += 1;
+            }
+            results
+        }
+
+        fn games_registered_batch(
+            self: @ComponentState<TContractState>, addresses: Span<ContractAddress>,
+        ) -> Array<bool> {
+            assert!(addresses.len() > 0, "{}", Errors::ADDRESSES_EMPTY);
+            let mut results: Array<bool> = ArrayTrait::new();
+            let mut i: u32 = 0;
+            loop {
+                if i >= addresses.len() {
+                    break;
+                }
+                let addr = *addresses.at(i);
+                results.append(self.game_id_by_address.entry(addr).read() != 0);
+                i += 1;
+            }
+            results
+        }
+
+        fn get_games(
+            self: @ComponentState<TContractState>, start: u64, count: u64,
+        ) -> Array<GameMetadata> {
+            let mut results: Array<GameMetadata> = ArrayTrait::new();
+            if count == 0 {
+                return results;
+            }
+            let game_count = self.game_counter.read();
+            // Game IDs are 1-indexed, so valid range is 1..=game_count
+            // If start is 0 or greater than game_count, return empty
+            if start == 0 || start > game_count {
+                return results;
+            }
+            let end = core::cmp::min(start + count, game_count + 1);
+            let mut i = start;
+            loop {
+                if i >= end {
+                    break;
+                }
+                results.append(self.game_metadata.entry(i).read());
+                i += 1;
+            }
+            results
+        }
+
+        fn get_games_by_developer(
+            self: @ComponentState<TContractState>, developer: ByteArray, start: u64, count: u64,
+        ) -> Array<GameMetadata> {
+            let mut results: Array<GameMetadata> = ArrayTrait::new();
+            if count == 0 {
+                return results;
+            }
+            let game_count = self.game_counter.read();
+            let mut game_id: u64 = 1;
+            let mut skipped: u64 = 0;
+            let mut collected: u64 = 0;
+            loop {
+                if game_id > game_count || collected >= count {
+                    break;
+                }
+                let metadata = self.game_metadata.entry(game_id).read();
+                if metadata.developer == developer {
+                    if skipped >= start {
+                        results.append(metadata);
+                        collected += 1;
+                    } else {
+                        skipped += 1;
+                    }
+                }
+                game_id += 1;
+            }
+            results
+        }
+
+        fn get_games_by_publisher(
+            self: @ComponentState<TContractState>, publisher: ByteArray, start: u64, count: u64,
+        ) -> Array<GameMetadata> {
+            let mut results: Array<GameMetadata> = ArrayTrait::new();
+            if count == 0 {
+                return results;
+            }
+            let game_count = self.game_counter.read();
+            let mut game_id: u64 = 1;
+            let mut skipped: u64 = 0;
+            let mut collected: u64 = 0;
+            loop {
+                if game_id > game_count || collected >= count {
+                    break;
+                }
+                let metadata = self.game_metadata.entry(game_id).read();
+                if metadata.publisher == publisher {
+                    if skipped >= start {
+                        results.append(metadata);
+                        collected += 1;
+                    } else {
+                        skipped += 1;
+                    }
+                }
+                game_id += 1;
+            }
+            results
+        }
+
+        fn get_games_by_genre(
+            self: @ComponentState<TContractState>, genre: ByteArray, start: u64, count: u64,
+        ) -> Array<GameMetadata> {
+            let mut results: Array<GameMetadata> = ArrayTrait::new();
+            if count == 0 {
+                return results;
+            }
+            let game_count = self.game_counter.read();
+            let mut game_id: u64 = 1;
+            let mut skipped: u64 = 0;
+            let mut collected: u64 = 0;
+            loop {
+                if game_id > game_count || collected >= count {
+                    break;
+                }
+                let metadata = self.game_metadata.entry(game_id).read();
+                if metadata.genre == genre {
+                    if skipped >= start {
+                        results.append(metadata);
+                        collected += 1;
+                    } else {
+                        skipped += 1;
+                    }
+                }
+                game_id += 1;
+            }
+            results
         }
     }
 
