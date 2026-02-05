@@ -31,7 +31,9 @@ pub mod MockObjectivesContract {
         IMINIGAME_OBJECTIVES_ID, IMinigameObjectives, IMinigameObjectivesDetails,
         IMinigameObjectivesSVG,
     };
-    use game_components_minigame::extensions::objectives::structs::GameObjective;
+    use game_components_minigame::extensions::objectives::structs::{
+        GameObjective, GameObjectiveDetails,
+    };
     use openzeppelin_introspection::src5::SRC5Component;
     use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess};
     use super::ObjectiveDetails;
@@ -164,48 +166,35 @@ pub mod MockObjectivesContract {
 
     #[abi(embed_v0)]
     impl ObjectivesDetailsImpl of IMinigameObjectivesDetails<ContractState> {
-        fn objectives_details(self: @ContractState, token_id: felt252) -> Span<GameObjective> {
-            // Return mock objectives for the token
-            let mut objectives_list = array![];
+        fn objectives_details(self: @ContractState, objective_id: u32) -> GameObjectiveDetails {
+            // Return mock objective details for the objective_id
+            let obj = self.objective_details.read(objective_id);
+            let objectives = array![
+                GameObjective { name: "points", value: format!("{}", obj.points) },
+                GameObjective {
+                    name: "required", value: if obj.is_required {
+                        "true"
+                    } else {
+                        "false"
+                    },
+                },
+            ];
 
-            // Add some default objectives - convert from ObjectiveDetails to GameObjective
-            let obj1 = self.objective_details.read(1);
-            if self.completed_objective(token_id, 1) {
-                objectives_list
-                    .append(GameObjective { name: obj1.name.clone(), value: "completed" });
-            } else {
-                objectives_list.append(GameObjective { name: obj1.name.clone(), value: "pending" });
+            GameObjectiveDetails {
+                name: obj.name, description: obj.description, objectives: objectives.span(),
             }
-
-            let obj2 = self.objective_details.read(2);
-            if self.completed_objective(token_id, 2) {
-                objectives_list
-                    .append(GameObjective { name: obj2.name.clone(), value: "completed" });
-            } else {
-                objectives_list.append(GameObjective { name: obj2.name.clone(), value: "pending" });
-            }
-
-            let obj3 = self.objective_details.read(3);
-            if self.completed_objective(token_id, 3) {
-                objectives_list
-                    .append(GameObjective { name: obj3.name.clone(), value: "completed" });
-            } else {
-                objectives_list.append(GameObjective { name: obj3.name.clone(), value: "pending" });
-            }
-
-            objectives_list.span()
         }
 
         fn objectives_details_batch(
-            self: @ContractState, token_ids: Span<felt252>,
-        ) -> Array<Span<GameObjective>> {
+            self: @ContractState, objective_ids: Span<u32>,
+        ) -> Array<GameObjectiveDetails> {
             let mut results = array![];
             let mut index = 0;
             loop {
-                if index >= token_ids.len() {
+                if index >= objective_ids.len() {
                     break;
                 }
-                results.append(self.objectives_details(*token_ids.at(index)));
+                results.append(self.objectives_details(*objective_ids.at(index)));
                 index += 1;
             }
             results
@@ -214,8 +203,8 @@ pub mod MockObjectivesContract {
 
     #[abi(embed_v0)]
     impl ObjectivesSVGImpl of IMinigameObjectivesSVG<ContractState> {
-        fn objectives_svg(self: @ContractState, token_id: felt252) -> ByteArray {
-            format!("<svg><text>Objectives for token {}</text></svg>", token_id)
+        fn objectives_svg(self: @ContractState, objective_id: u32) -> ByteArray {
+            format!("<svg><text>Objectives for objective {}</text></svg>", objective_id)
         }
     }
 

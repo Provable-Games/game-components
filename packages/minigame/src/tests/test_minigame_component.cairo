@@ -1456,14 +1456,14 @@ fn test_objectives_details_batch() {
         contract_address: minigame_dispatcher.contract_address,
     };
 
-    let token_ids: Array<felt252> = array![1, 2, 3];
-    let results = objectives_details_dispatcher.objectives_details_batch(token_ids.span());
+    let objective_ids: Array<u32> = array![1, 2, 3];
+    let results = objectives_details_dispatcher.objectives_details_batch(objective_ids.span());
 
-    assert!(results.len() == 3, "Should return 3 objectives detail arrays");
+    assert!(results.len() == 3, "Should return 3 objectives detail results");
 
-    // Check first token's objectives
-    let objectives1 = results.at(0);
-    assert!(objectives1.len() == 1, "Token 1 should have 1 objective");
+    // Check first objective's details
+    let details1 = results.at(0);
+    assert!(details1.objectives.len() == 1, "Objective 1 should have 1 property");
 }
 
 // Test MN-OBJ-04: objectives_details_batch with empty array
@@ -1475,7 +1475,7 @@ fn test_objectives_details_batch_empty() {
         contract_address: minigame_dispatcher.contract_address,
     };
 
-    let empty_ids: Array<felt252> = array![];
+    let empty_ids: Array<u32> = array![];
     let results = objectives_details_dispatcher.objectives_details_batch(empty_ids.span());
 
     assert!(results.len() == 0, "Should return empty array");
@@ -1924,10 +1924,10 @@ fn test_mock_objectives_details_batch_iteration() {
         contract_address: minigame_dispatcher.contract_address,
     };
 
-    let token_ids: Array<felt252> = array![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-    let results = objectives_details_dispatcher.objectives_details_batch(token_ids.span());
+    let objective_ids: Array<u32> = array![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+    let results = objectives_details_dispatcher.objectives_details_batch(objective_ids.span());
 
-    assert!(results.len() == 10, "Should return 10 objectives detail arrays");
+    assert!(results.len() == 10, "Should return 10 objectives detail results");
 }
 
 // =============================================================================

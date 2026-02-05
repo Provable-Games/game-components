@@ -50,7 +50,9 @@ pub mod minigame_starknet_mock {
         IMINIGAME_OBJECTIVES_ID, IMinigameObjectives, IMinigameObjectivesDetails,
     };
     use game_components_minigame::extensions::objectives::objectives::ObjectivesComponent;
-    use game_components_minigame::extensions::objectives::structs::GameObjective;
+    use game_components_minigame::extensions::objectives::structs::{
+        GameObjective, GameObjectiveDetails,
+    };
     use game_components_minigame::extensions::settings::interface::{
         IMINIGAME_SETTINGS_ID, IMinigameSettings, IMinigameSettingsDetails,
     };
@@ -302,37 +304,29 @@ pub mod minigame_starknet_mock {
 
     #[abi(embed_v0)]
     impl ObjectivesDetailsImpl of IMinigameObjectivesDetails<ContractState> {
-        fn objectives_details(self: @ContractState, token_id: felt252) -> Span<GameObjective> {
-            let objective_count = self.token_objective_count.entry(token_id).read();
-            let mut objectives = array![];
+        fn objectives_details(self: @ContractState, objective_id: u32) -> GameObjectiveDetails {
+            let (target_score, _) = self.objective_scores.entry(objective_id).read();
 
-            let mut i = 0;
-            while i < objective_count {
-                let objective_id = self.token_objective_at_index.entry((token_id, i)).read();
-                let (target_score, _) = self.objective_scores.entry(objective_id).read();
-
-                objectives
-                    .append(
-                        GameObjective {
-                            name: "Score Target", value: format!("Score Above {}", target_score),
-                        },
-                    );
-                i += 1;
+            GameObjectiveDetails {
+                name: "Score Target",
+                description: format!("Score Above {}", target_score),
+                objectives: array![
+                    GameObjective { name: "target", value: format!("{}", target_score) },
+                ]
+                    .span(),
             }
-
-            objectives.span()
         }
 
         fn objectives_details_batch(
-            self: @ContractState, token_ids: Span<felt252>,
-        ) -> Array<Span<GameObjective>> {
+            self: @ContractState, objective_ids: Span<u32>,
+        ) -> Array<GameObjectiveDetails> {
             let mut results = array![];
             let mut index = 0;
             loop {
-                if index >= token_ids.len() {
+                if index >= objective_ids.len() {
                     break;
                 }
-                results.append(self.objectives_details(*token_ids.at(index)));
+                results.append(self.objectives_details(*objective_ids.at(index)));
                 index += 1;
             }
             results

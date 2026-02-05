@@ -28,7 +28,7 @@ pub mod MockMinigameContract {
     use starknet::{ContractAddress, get_contract_address};
     use crate::extensions::objectives::interface::{IMinigameObjectives, IMinigameObjectivesDetails};
     use crate::extensions::objectives::objectives::ObjectivesComponent;
-    use crate::extensions::objectives::structs::GameObjective;
+    use crate::extensions::objectives::structs::{GameObjective, GameObjectiveDetails};
     use crate::extensions::settings::interface::{IMinigameSettings, IMinigameSettingsDetails};
     use crate::extensions::settings::settings::SettingsComponent;
     use crate::extensions::settings::structs::{GameSetting, GameSettingDetails};
@@ -251,20 +251,25 @@ pub mod MockMinigameContract {
 
     #[abi(embed_v0)]
     impl ObjectivesDetailsImpl of IMinigameObjectivesDetails<ContractState> {
-        fn objectives_details(self: @ContractState, token_id: felt252) -> Span<GameObjective> {
-            array![GameObjective { name: "Test Objective", value: "pending" }].span()
+        fn objectives_details(self: @ContractState, objective_id: u32) -> GameObjectiveDetails {
+            GameObjectiveDetails {
+                name: "Mock Objective",
+                description: "Mock objective description",
+                objectives: array![GameObjective { name: "Test Objective", value: "pending" }]
+                    .span(),
+            }
         }
 
         fn objectives_details_batch(
-            self: @ContractState, token_ids: Span<felt252>,
-        ) -> Array<Span<GameObjective>> {
+            self: @ContractState, objective_ids: Span<u32>,
+        ) -> Array<GameObjectiveDetails> {
             let mut results = array![];
             let mut index = 0;
             loop {
-                if index >= token_ids.len() {
+                if index >= objective_ids.len() {
                     break;
                 }
-                results.append(self.objectives_details(*token_ids.at(index)));
+                results.append(self.objectives_details(*objective_ids.at(index)));
                 index += 1;
             }
             results
