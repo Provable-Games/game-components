@@ -70,7 +70,7 @@ pub const IMINIGAME_REGISTRY_ID: felt252 = 0x014a8d6e4bf56a4bbf869257d1f846e5a2a
 ## Usage
 
 ```cairo
-use game_components_registry::component::MinigameRegistryComponent;
+use game_components_registry::registry::MinigameRegistryComponent;
 component!(path: MinigameRegistryComponent, storage: registry, event: RegistryEvent);
 
 // Call initializer in constructor to register SRC5 interface

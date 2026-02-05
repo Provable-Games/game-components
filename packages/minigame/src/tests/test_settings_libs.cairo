@@ -5,7 +5,7 @@ use game_components_testing::constants::{CREATOR, MAX_U32};
 use snforge_std::mock_call;
 use starknet::ContractAddress;
 use crate::extensions::settings::libs;
-use crate::extensions::settings::structs::GameSetting;
+use crate::extensions::settings::structs::{GameSetting, GameSettingDetails};
 
 // =============================================================================
 // Test Address Helpers
@@ -123,9 +123,9 @@ fn test_create_settings_basic() {
         game_address,
         creator_address,
         settings_id,
-        "Test Settings",
-        "A test",
-        array![].span(),
+        GameSettingDetails {
+            name: "Test Settings", description: "A test", settings: array![].span(),
+        },
     );
 }
 
@@ -145,9 +145,9 @@ fn test_create_settings_with_settings_data() {
         game_address,
         creator_address,
         1,
-        "Speed Settings",
-        "Settings for speed mode",
-        settings,
+        GameSettingDetails {
+            name: "Speed Settings", description: "Settings for speed mode", settings,
+        },
     );
 }
 
@@ -171,9 +171,7 @@ fn test_create_settings_multiple_settings() {
         game_address,
         creator_address,
         2,
-        "Complex Settings",
-        "Multiple options",
-        settings,
+        GameSettingDetails { name: "Complex Settings", description: "Multiple options", settings },
     );
 }
 
@@ -191,9 +189,10 @@ fn test_create_settings_empty_name() {
         game_address,
         creator_address,
         3,
-        "", // empty name
-        "Settings with no name",
-        array![].span(),
+        GameSettingDetails {
+            name: "", // empty name
+            description: "Settings with no name", settings: array![].span(),
+        },
     );
 }
 
@@ -211,9 +210,10 @@ fn test_create_settings_empty_description() {
         game_address,
         creator_address,
         4,
-        "Settings Name",
-        "", // empty description
-        array![].span(),
+        GameSettingDetails {
+            name: "Settings Name", description: "", // empty description
+            settings: array![].span(),
+        },
     );
 }
 
@@ -234,9 +234,9 @@ fn test_create_settings_long_name() {
         game_address,
         creator_address,
         5,
-        long_name,
-        "Normal description",
-        array![].span(),
+        GameSettingDetails {
+            name: long_name, description: "Normal description", settings: array![].span(),
+        },
     );
 }
 
@@ -253,7 +253,13 @@ fn test_create_settings_long_description() {
         "This is a very long description that contains multiple sentences. It should test the limits of the ByteArray type and ensure that long strings are handled properly. The settings system needs to support arbitrary length descriptions.";
 
     libs::create_settings(
-        token_address, game_address, creator_address, 6, "Normal Name", long_desc, array![].span(),
+        token_address,
+        game_address,
+        creator_address,
+        6,
+        GameSettingDetails {
+            name: "Normal Name", description: long_desc, settings: array![].span(),
+        },
     );
 }
 
@@ -271,9 +277,9 @@ fn test_create_settings_max_id() {
         game_address,
         creator_address,
         MAX_U32, // max u32
-        "Max ID Settings",
-        "Testing max ID",
-        array![].span(),
+        GameSettingDetails {
+            name: "Max ID Settings", description: "Testing max ID", settings: array![].span(),
+        },
     );
 }
 
@@ -291,9 +297,9 @@ fn test_create_settings_zero_id() {
         game_address,
         creator_address,
         0,
-        "Zero ID Settings",
-        "Testing zero ID",
-        array![].span(),
+        GameSettingDetails {
+            name: "Zero ID Settings", description: "Testing zero ID", settings: array![].span(),
+        },
     );
 }
 
@@ -322,9 +328,11 @@ fn test_create_settings_many_items() {
         game_address,
         creator_address,
         7,
-        "Many Settings",
-        "Contains 20 items",
-        settings_items.span(),
+        GameSettingDetails {
+            name: "Many Settings",
+            description: "Contains 20 items",
+            settings: settings_items.span(),
+        },
     );
 }
 
@@ -348,9 +356,11 @@ fn test_create_then_get_settings() {
         game_address,
         creator_address,
         settings_id,
-        "Integration Test",
-        "Testing create then get",
-        array![GameSetting { name: "test", value: "value" }].span(),
+        GameSettingDetails {
+            name: "Integration Test",
+            description: "Testing create then get",
+            settings: array![GameSetting { name: "test", value: "value" }].span(),
+        },
     );
 
     // Mock get settings_id call to return the same ID for a token
@@ -373,12 +383,24 @@ fn test_multiple_games_settings() {
 
     // Game 1 creates settings
     libs::create_settings(
-        token_address, game1, creator, 1, "Game 1 Settings", "From game 1", array![].span(),
+        token_address,
+        game1,
+        creator,
+        1,
+        GameSettingDetails {
+            name: "Game 1 Settings", description: "From game 1", settings: array![].span(),
+        },
     );
 
     // Game 2 creates settings
     libs::create_settings(
-        token_address, game2, creator, 2, "Game 2 Settings", "From game 2", array![].span(),
+        token_address,
+        game2,
+        creator,
+        2,
+        GameSettingDetails {
+            name: "Game 2 Settings", description: "From game 2", settings: array![].span(),
+        },
     );
     // Both should succeed (tested by no panic)
 }
@@ -435,9 +457,9 @@ fn test_create_settings_fuzz_id(settings_id: u32) {
         game_address,
         creator_address,
         settings_id,
-        "Fuzz Test",
-        "Fuzz description",
-        array![].span(),
+        GameSettingDetails {
+            name: "Fuzz Test", description: "Fuzz description", settings: array![].span(),
+        },
     );
 }
 

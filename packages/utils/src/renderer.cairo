@@ -255,6 +255,7 @@ mod tests {
             client_url: "https://zkube.vercel.app",
             renderer_address: 0x9876543210987654321098765432109876543210.try_into().unwrap(),
             royalty_fraction: 500,
+            created_at: 0,
         };
 
         let svg_result = create_default_svg(1000000, game_metadata, 100, 'test Player');
@@ -276,6 +277,7 @@ mod tests {
             client_url: "https://zkube.vercel.app",
             renderer_address: 0x9876543210987654321098765432109876543210.try_into().unwrap(),
             royalty_fraction: 500,
+            created_at: 0,
         };
 
         let settings_details = GameSettingDetails {
@@ -353,6 +355,7 @@ mod tests {
             client_url: "https://example.com/play",
             renderer_address: 0x9876543210987654321098765432109876543210.try_into().unwrap(),
             royalty_fraction: 250,
+            created_at: 0,
         };
 
         // Empty settings
@@ -412,6 +415,7 @@ mod tests {
             client_url: "https://example.com/context",
             renderer_address: 0x2222222222222222222222222222222222222222.try_into().unwrap(),
             royalty_fraction: 750,
+            created_at: 0,
         };
 
         let settings_details = GameSettingDetails {
@@ -475,6 +479,7 @@ mod tests {
             client_url: "https://example.com/adventure",
             renderer_address: 0x4444444444444444444444444444444444444444.try_into().unwrap(),
             royalty_fraction: 1000,
+            created_at: 0,
         };
 
         let settings_details = GameSettingDetails {
@@ -550,6 +555,7 @@ mod tests {
             client_url: "https://example.com/test",
             renderer_address: 0x6666666666666666666666666666666666666666.try_into().unwrap(),
             royalty_fraction: 10000,
+            created_at: 0,
         };
 
         let settings_details = GameSettingDetails {

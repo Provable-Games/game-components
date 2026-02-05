@@ -222,6 +222,7 @@ pub mod SingleGameTokenContract {
                     client_url: "https://example.com/game",
                     renderer_address: renderer_address,
                     royalty_fraction: royalty_frac,
+                    created_at: 0,
                 };
 
                 let score =

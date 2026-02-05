@@ -850,8 +850,8 @@ fn test_set_game_royalty_emits_event() {
             @array![
                 (
                     registry.contract_address,
-                    game_components_registry::component::MinigameRegistryComponent::Event::GameRoyaltyUpdate(
-                        game_components_registry::component::MinigameRegistryComponent::GameRoyaltyUpdate {
+                    game_components_registry::registry::MinigameRegistryComponent::Event::GameRoyaltyUpdate(
+                        game_components_registry::registry::MinigameRegistryComponent::GameRoyaltyUpdate {
                             game_id: game_id, royalty_fraction: 500,
                         },
                     ),
@@ -1065,8 +1065,8 @@ fn test_register_game_emits_registry_update_event() {
             @array![
                 (
                     registry.contract_address,
-                    game_components_registry::component::MinigameRegistryComponent::Event::GameRegistryUpdate(
-                        game_components_registry::component::MinigameRegistryComponent::GameRegistryUpdate {
+                    game_components_registry::registry::MinigameRegistryComponent::Event::GameRegistryUpdate(
+                        game_components_registry::registry::MinigameRegistryComponent::GameRegistryUpdate {
                             id: game_id, contract_address: game_address,
                         },
                     ),
@@ -1108,8 +1108,8 @@ fn test_register_game_emits_metadata_update_event() {
             @array![
                 (
                     registry.contract_address,
-                    game_components_registry::component::MinigameRegistryComponent::Event::GameMetadataUpdate(
-                        game_components_registry::component::MinigameRegistryComponent::GameMetadataUpdate {
+                    game_components_registry::registry::MinigameRegistryComponent::Event::GameMetadataUpdate(
+                        game_components_registry::registry::MinigameRegistryComponent::GameMetadataUpdate {
                             id: game_id,
                             contract_address: game_address,
                             name: "Metadata Event Game",
@@ -1170,16 +1170,16 @@ fn test_register_game_events_order() {
             @array![
                 (
                     registry.contract_address,
-                    game_components_registry::component::MinigameRegistryComponent::Event::GameRegistryUpdate(
-                        game_components_registry::component::MinigameRegistryComponent::GameRegistryUpdate {
+                    game_components_registry::registry::MinigameRegistryComponent::Event::GameRegistryUpdate(
+                        game_components_registry::registry::MinigameRegistryComponent::GameRegistryUpdate {
                             id: game_id, contract_address: game_address,
                         },
                     ),
                 ),
                 (
                     registry.contract_address,
-                    game_components_registry::component::MinigameRegistryComponent::Event::GameMetadataUpdate(
-                        game_components_registry::component::MinigameRegistryComponent::GameMetadataUpdate {
+                    game_components_registry::registry::MinigameRegistryComponent::Event::GameMetadataUpdate(
+                        game_components_registry::registry::MinigameRegistryComponent::GameMetadataUpdate {
                             id: game_id,
                             contract_address: game_address,
                             name: "Order Test",
@@ -1236,8 +1236,8 @@ fn test_royalty_event_contains_correct_data() {
             @array![
                 (
                     registry.contract_address,
-                    game_components_registry::component::MinigameRegistryComponent::Event::GameRoyaltyUpdate(
-                        game_components_registry::component::MinigameRegistryComponent::GameRoyaltyUpdate {
+                    game_components_registry::registry::MinigameRegistryComponent::Event::GameRoyaltyUpdate(
+                        game_components_registry::registry::MinigameRegistryComponent::GameRoyaltyUpdate {
                             game_id: game_id, royalty_fraction: royalty_value,
                         },
                     ),

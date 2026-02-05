@@ -4,9 +4,8 @@ pub mod SettingsComponent {
     use game_components_minigame::extensions::settings::interface::{
         IMINIGAME_SETTINGS_ID, IMinigameSettingsDispatcher, IMinigameSettingsDispatcherTrait,
     };
-    use game_components_minigame::extensions::settings::structs::GameSetting;
+    use game_components_minigame::extensions::settings::structs::{GameSetting, GameSettingDetails};
     use game_components_minigame::interface::{IMinigameDispatcher, IMinigameDispatcherTrait};
-    use game_components_utils::json::create_settings_json;
     use openzeppelin_interfaces::introspection::{ISRC5Dispatcher, ISRC5DispatcherTrait};
     use openzeppelin_introspection::src5::SRC5Component;
     use openzeppelin_introspection::src5::SRC5Component::{
@@ -36,7 +35,9 @@ pub mod SettingsComponent {
         #[key]
         pub settings_id: u32,
         pub creator_address: ContractAddress,
-        pub settings_data: ByteArray,
+        pub name: ByteArray,
+        pub description: ByteArray,
+        pub settings: Span<GameSetting>,
     }
 
     #[embeddable_as(SettingsImpl)]
@@ -48,9 +49,7 @@ pub mod SettingsComponent {
             game_address: ContractAddress,
             creator_address: ContractAddress,
             settings_id: u32,
-            name: ByteArray,
-            description: ByteArray,
-            settings_data: Span<GameSetting>,
+            settings_details: GameSettingDetails,
         ) {
             // Check caller is settings address
             let minigame_dispatcher = IMinigameDispatcher { contract_address: game_address };
@@ -84,18 +83,16 @@ pub mod SettingsComponent {
                 game_address_display,
             );
 
-            let settings_data_json = create_settings_json(
-                name.clone(), description.clone(), settings_data.clone(),
-            );
-
-            // Emit native event
+            // Emit native event with struct fields directly
             self
                 .emit(
                     SettingsCreated {
                         game_address,
                         settings_id,
                         creator_address,
-                        settings_data: settings_data_json,
+                        name: settings_details.name,
+                        description: settings_details.description,
+                        settings: settings_details.settings,
                     },
                 );
         }

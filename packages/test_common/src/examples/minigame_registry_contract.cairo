@@ -196,6 +196,7 @@ pub mod MinigameRegistryContract {
                 client_url: final_client_url.clone(),
                 renderer_address: final_renderer_address,
                 royalty_fraction: final_royalty_fraction,
+                created_at: starknet::get_block_timestamp(),
             };
 
             self.game_metadata.entry(new_game_id).write(metadata);
