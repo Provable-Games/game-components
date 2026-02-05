@@ -81,42 +81,35 @@ fn test_completed_objective() {
     );
 }
 
-// Test OBJ-U-05: Get objectives details for token
+// Test OBJ-U-05: Get objectives details for objective_id
 #[test]
-fn test_get_objectives_details_for_token() {
+fn test_get_objectives_details_for_objective_id() {
     let contract_address = deploy_mock_objectives_contract();
 
     let objectives_details_dispatcher = IMinigameObjectivesDetailsDispatcher { contract_address };
-    let setter = IObjectivesSetterDispatcher { contract_address };
 
-    // Complete some objectives
-    setter.complete_objective(10, 1);
-    setter.complete_objective(10, 3);
+    // Get objectives details for objective 1 (First Blood)
+    let details = objectives_details_dispatcher.objectives_details(1);
 
-    // Get objectives details
-    let objectives = objectives_details_dispatcher.objectives_details(10);
+    let expected_name: ByteArray = "First Blood";
+    let expected_desc: ByteArray = "Get the first kill";
+    assert!(details.name == expected_name, "Objective name mismatch");
+    assert!(details.description == expected_desc, "Objective description mismatch");
+    assert!(details.objectives.len() == 2, "Should have 2 objective properties");
 
-    assert!(objectives.len() == 3, "Should have 3 objectives");
+    // Check points property
+    let points_obj = details.objectives.at(0);
+    let expected_points_name: ByteArray = "points";
+    let expected_points_value: ByteArray = "10";
+    assert!(points_obj.name == @expected_points_name, "Points name mismatch");
+    assert!(points_obj.value == @expected_points_value, "Points value mismatch");
 
-    // Check first objective
-    let obj1 = objectives.at(0);
-    let expected_name1: ByteArray = "First Blood";
-    let expected_value_completed: ByteArray = "completed";
-    let expected_value_pending: ByteArray = "pending";
-    assert!(obj1.name == @expected_name1, "First objective name mismatch");
-    assert!(obj1.value == @expected_value_completed, "First objective should be completed");
-
-    // Check second objective
-    let obj2 = objectives.at(1);
-    let expected_name2: ByteArray = "Double Kill";
-    assert!(obj2.name == @expected_name2, "Second objective name mismatch");
-    assert!(obj2.value == @expected_value_pending, "Second objective should not be completed");
-
-    // Check third objective
-    let obj3 = objectives.at(2);
-    let expected_name3: ByteArray = "Ace";
-    assert!(obj3.name == @expected_name3, "Third objective name mismatch");
-    assert!(obj3.value == @expected_value_completed, "Third objective should be completed");
+    // Check required property
+    let required_obj = details.objectives.at(1);
+    let expected_required_name: ByteArray = "required";
+    let expected_required_value: ByteArray = "true";
+    assert!(required_obj.name == @expected_required_name, "Required name mismatch");
+    assert!(required_obj.value == @expected_required_value, "Required value mismatch");
 }
 
 // Test OBJ-U-06: Create objective with valid data
@@ -210,7 +203,7 @@ fn test_objectives_svg() {
     let objectives_svg_dispatcher = IMinigameObjectivesSVGDispatcher { contract_address };
 
     let svg = objectives_svg_dispatcher.objectives_svg(42);
-    assert!(svg == "<svg><text>Objectives for token 42</text></svg>", "SVG content mismatch");
+    assert!(svg == "<svg><text>Objectives for objective 42</text></svg>", "SVG content mismatch");
 }
 
 // =============================================================================
@@ -268,23 +261,22 @@ fn test_objectives_details_batch() {
     let contract_address = deploy_mock_objectives_contract();
 
     let objectives_details_dispatcher = IMinigameObjectivesDetailsDispatcher { contract_address };
-    let setter = IObjectivesSetterDispatcher { contract_address };
 
-    // Complete some objectives for different tokens
-    setter.complete_objective(1, 1);
-    setter.complete_objective(2, 2);
-
-    let token_ids: Array<felt252> = array![1, 2, 3];
-    let results = objectives_details_dispatcher.objectives_details_batch(token_ids.span());
+    let objective_ids: Array<u32> = array![1, 2, 3];
+    let results = objectives_details_dispatcher.objectives_details_batch(objective_ids.span());
 
     assert!(results.len() == 3, "Should return 3 results");
 
-    // Check each token has objectives
-    let objectives1 = results.at(0);
-    assert!(objectives1.len() == 3, "Token 1 should have 3 objectives");
+    // Check each objective has details
+    let details1 = results.at(0);
+    let expected_name1: ByteArray = "First Blood";
+    assert!(details1.name == @expected_name1, "Objective 1 name mismatch");
+    assert!(details1.objectives.len() == 2, "Objective 1 should have 2 properties");
 
-    let objectives2 = results.at(1);
-    assert!(objectives2.len() == 3, "Token 2 should have 3 objectives");
+    let details2 = results.at(1);
+    let expected_name2: ByteArray = "Double Kill";
+    assert!(details2.name == @expected_name2, "Objective 2 name mismatch");
+    assert!(details2.objectives.len() == 2, "Objective 2 should have 2 properties");
 }
 
 // Test OBJ-U-15: objectives_details_batch with empty array
@@ -294,7 +286,7 @@ fn test_objectives_details_batch_empty() {
 
     let objectives_details_dispatcher = IMinigameObjectivesDetailsDispatcher { contract_address };
 
-    let empty_ids: Array<felt252> = array![];
+    let empty_ids: Array<u32> = array![];
     let results = objectives_details_dispatcher.objectives_details_batch(empty_ids.span());
 
     assert!(results.len() == 0, "Should return empty array");
@@ -307,13 +299,15 @@ fn test_objectives_details_batch_single() {
 
     let objectives_details_dispatcher = IMinigameObjectivesDetailsDispatcher { contract_address };
 
-    let single_id: Array<felt252> = array![1];
+    let single_id: Array<u32> = array![1];
     let results = objectives_details_dispatcher.objectives_details_batch(single_id.span());
 
     assert!(results.len() == 1, "Should return 1 result");
 
-    let objectives = results.at(0);
-    assert!(objectives.len() == 3, "Token 1 should have 3 objectives");
+    let details = results.at(0);
+    let expected_name: ByteArray = "First Blood";
+    assert!(details.name == @expected_name, "Objective 1 name mismatch");
+    assert!(details.objectives.len() == 2, "Objective 1 should have 2 properties");
 }
 
 // =============================================================================
@@ -435,16 +429,16 @@ fn test_completed_objective_fuzz(token_id: felt252, objective_id: u32) {
     let _completed = objectives_dispatcher.completed_objective(token_id, objective_id);
 }
 
-// Test OBJ-F-03: Fuzz objectives_svg with random token_id
+// Test OBJ-F-03: Fuzz objectives_svg with random objective_id
 #[test]
 #[fuzzer]
-fn test_objectives_svg_fuzz(token_id: felt252) {
+fn test_objectives_svg_fuzz(objective_id: u32) {
     let contract_address = deploy_mock_objectives_contract();
 
     let objectives_svg_dispatcher = IMinigameObjectivesSVGDispatcher { contract_address };
 
-    // Should not panic for any token_id
-    let svg = objectives_svg_dispatcher.objectives_svg(token_id);
+    // Should not panic for any objective_id
+    let svg = objectives_svg_dispatcher.objectives_svg(objective_id);
     assert!(svg.len() > 0, "SVG should not be empty");
 }
 
@@ -486,80 +480,91 @@ fn test_objectives_details_batch_iteration() {
     let contract_address = deploy_mock_objectives_contract();
 
     let objectives_details_dispatcher = IMinigameObjectivesDetailsDispatcher { contract_address };
+    let setter = IObjectivesSetterDispatcher { contract_address };
 
-    // Test with many token IDs
-    let token_ids: Array<felt252> = array![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-    let results = objectives_details_dispatcher.objectives_details_batch(token_ids.span());
+    // Create additional objectives for testing batch iteration
+    setter.create_objective(1, 4, 15, "Objective 4", "Description 4", false);
+    setter.create_objective(1, 5, 20, "Objective 5", "Description 5", true);
+    setter.create_objective(1, 6, 25, "Objective 6", "Description 6", false);
+    setter.create_objective(1, 7, 30, "Objective 7", "Description 7", true);
+    setter.create_objective(1, 8, 35, "Objective 8", "Description 8", false);
+    setter.create_objective(1, 9, 40, "Objective 9", "Description 9", true);
+    setter.create_objective(1, 10, 45, "Objective 10", "Description 10", false);
+
+    // Test with many objective IDs
+    let objective_ids: Array<u32> = array![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+    let results = objectives_details_dispatcher.objectives_details_batch(objective_ids.span());
 
     assert!(results.len() == 10, "Should return 10 results");
 }
 
-// Test OBJ-MOCK-03: Test objectives_details with all completion states
+// Test OBJ-MOCK-03: Test objectives_details returns correct details for various objectives
 #[test]
-fn test_objectives_details_all_completed() {
+fn test_objectives_details_various_objectives() {
     let contract_address = deploy_mock_objectives_contract();
 
     let objectives_details_dispatcher = IMinigameObjectivesDetailsDispatcher { contract_address };
-    let setter = IObjectivesSetterDispatcher { contract_address };
 
-    // Complete all objectives for token 50
-    setter.complete_objective(50, 1);
-    setter.complete_objective(50, 2);
-    setter.complete_objective(50, 3);
+    // Test objective 1 (required)
+    let details1 = objectives_details_dispatcher.objectives_details(1);
+    let expected_name1: ByteArray = "First Blood";
+    let expected_desc1: ByteArray = "Get the first kill";
+    assert!(details1.name == expected_name1, "Objective 1 name mismatch");
+    assert!(details1.description == expected_desc1, "Objective 1 description mismatch");
 
-    let objectives = objectives_details_dispatcher.objectives_details(50);
-    assert!(objectives.len() == 3, "Should have 3 objectives");
+    // Test objective 3 (not required)
+    let details3 = objectives_details_dispatcher.objectives_details(3);
+    let expected_name3: ByteArray = "Ace";
+    let expected_desc3: ByteArray = "Eliminate entire enemy team";
+    assert!(details3.name == expected_name3, "Objective 3 name mismatch");
+    assert!(details3.description == expected_desc3, "Objective 3 description mismatch");
 
-    // All should be completed
-    let obj1 = objectives.at(0);
-    let obj2 = objectives.at(1);
-    let obj3 = objectives.at(2);
-
-    let expected_value: ByteArray = "completed";
-    assert!(obj1.value == @expected_value, "Objective 1 should be completed");
-    assert!(obj2.value == @expected_value, "Objective 2 should be completed");
-    assert!(obj3.value == @expected_value, "Objective 3 should be completed");
+    // Check that objective 3 is not required
+    let required_obj = details3.objectives.at(1);
+    let expected_required_value: ByteArray = "false";
+    assert!(required_obj.value == @expected_required_value, "Objective 3 should not be required");
 }
 
-// Test OBJ-MOCK-04: Test objectives_details with no completed
+// Test OBJ-MOCK-04: Test objectives_details for objective with high points
 #[test]
-fn test_objectives_details_none_completed() {
+fn test_objectives_details_high_points() {
     let contract_address = deploy_mock_objectives_contract();
 
     let objectives_details_dispatcher = IMinigameObjectivesDetailsDispatcher { contract_address };
 
-    // Token 999 has no completed objectives
-    let objectives = objectives_details_dispatcher.objectives_details(999);
-    assert!(objectives.len() == 3, "Should have 3 objectives");
+    // Test objective 100 (Perfectionist with 100 points)
+    let details = objectives_details_dispatcher.objectives_details(100);
+    let expected_name: ByteArray = "Perfectionist";
+    let expected_desc: ByteArray = "Complete without taking damage";
+    assert!(details.name == expected_name, "Objective 100 name mismatch");
+    assert!(details.description == expected_desc, "Objective 100 description mismatch");
 
-    // All should be pending
-    let obj1 = objectives.at(0);
-    let obj2 = objectives.at(1);
-    let obj3 = objectives.at(2);
-
-    let expected_value: ByteArray = "pending";
-    assert!(obj1.value == @expected_value, "Objective 1 should be pending");
-    assert!(obj2.value == @expected_value, "Objective 2 should be pending");
-    assert!(obj3.value == @expected_value, "Objective 3 should be pending");
+    // Check points
+    let points_obj = details.objectives.at(0);
+    let expected_points_value: ByteArray = "100";
+    assert!(points_obj.value == @expected_points_value, "Objective 100 should have 100 points");
 }
 
-// Test OBJ-MOCK-05: Test partial completion
+// Test OBJ-MOCK-05: Test objectives_details with different required states
 #[test]
-fn test_objectives_details_partial_completed() {
+fn test_objectives_details_required_states() {
     let contract_address = deploy_mock_objectives_contract();
 
     let objectives_details_dispatcher = IMinigameObjectivesDetailsDispatcher { contract_address };
-    let setter = IObjectivesSetterDispatcher { contract_address };
 
-    // Complete only objective 2 for token 75
-    setter.complete_objective(75, 2);
+    // Test required objective (1 and 2 are required)
+    let details1 = objectives_details_dispatcher.objectives_details(1);
+    let required1 = details1.objectives.at(1);
+    let expected_true: ByteArray = "true";
+    assert!(required1.value == @expected_true, "Objective 1 should be required");
 
-    let objectives = objectives_details_dispatcher.objectives_details(75);
+    let details2 = objectives_details_dispatcher.objectives_details(2);
+    let required2 = details2.objectives.at(1);
+    assert!(required2.value == @expected_true, "Objective 2 should be required");
 
-    let completed: ByteArray = "completed";
-    let pending: ByteArray = "pending";
-
-    assert!(objectives.at(0).value == @pending, "Objective 1 should be pending");
-    assert!(objectives.at(1).value == @completed, "Objective 2 should be completed");
-    assert!(objectives.at(2).value == @pending, "Objective 3 should be pending");
+    // Test non-required objective (3 is not required)
+    let details3 = objectives_details_dispatcher.objectives_details(3);
+    let required3 = details3.objectives.at(1);
+    let expected_false: ByteArray = "false";
+    assert!(required3.value == @expected_false, "Objective 3 should not be required");
 }

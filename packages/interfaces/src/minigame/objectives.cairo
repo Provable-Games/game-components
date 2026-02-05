@@ -1,5 +1,5 @@
 // Minigame objectives extension interface
-use crate::structs::minigame::GameObjective;
+use crate::structs::minigame::{GameObjective, GameObjectiveDetails};
 
 pub const IMINIGAME_OBJECTIVES_ID: felt252 =
     0x0213cfcf73543e549f00c7cad49cf27a1e544d71315ff981930aaf77ac0709bd;
@@ -15,15 +15,15 @@ pub trait IMinigameObjectives<TState> {
 
 #[starknet::interface]
 pub trait IMinigameObjectivesDetails<TState> {
-    fn objectives_details(self: @TState, token_id: felt252) -> Span<GameObjective>;
+    fn objectives_details(self: @TState, objective_id: u32) -> GameObjectiveDetails;
 
     // Batch operations
     fn objectives_details_batch(
-        self: @TState, token_ids: Span<felt252>,
-    ) -> Array<Span<GameObjective>>;
+        self: @TState, objective_ids: Span<u32>,
+    ) -> Array<GameObjectiveDetails>;
 }
 
 #[starknet::interface]
 pub trait IMinigameObjectivesSVG<TState> {
-    fn objectives_svg(self: @TState, token_id: felt252) -> ByteArray;
+    fn objectives_svg(self: @TState, objective_id: u32) -> ByteArray;
 }

@@ -59,8 +59,8 @@ pub use registry::{
 
 // Structs
 pub use structs::{
-    GameContext, GameContextDetails, GameDetail, GameMetadata, GameObjective, GameSetting,
-    GameSettingDetails, LeaderboardConfig, LeaderboardEntry, LeaderboardResult,
+    GameContext, GameContextDetails, GameDetail, GameMetadata, GameObjective, GameObjectiveDetails,
+    GameSetting, GameSettingDetails, LeaderboardConfig, LeaderboardEntry, LeaderboardResult,
     LeaderboardStoreConfig, Lifecycle, MintGameParams, MintParams, PlayerNameUpdate, TokenMetadata,
 };
 
