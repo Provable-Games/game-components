@@ -200,6 +200,11 @@ pub mod MockMinigameContract {
 
     #[abi(embed_v0)]
     impl SettingsDetailsImpl of IMinigameSettingsDetails<ContractState> {
+        fn settings_count(self: @ContractState) -> u32 {
+            // Mock: return 10 (IDs 1-10 exist)
+            10
+        }
+
         fn settings_details(self: @ContractState, settings_id: u32) -> GameSettingDetails {
             GameSettingDetails {
                 name: "Mock Settings",
@@ -251,6 +256,11 @@ pub mod MockMinigameContract {
 
     #[abi(embed_v0)]
     impl ObjectivesDetailsImpl of IMinigameObjectivesDetails<ContractState> {
+        fn objectives_count(self: @ContractState) -> u32 {
+            // Mock: return 10 (IDs 1-10 exist)
+            10
+        }
+
         fn objectives_details(self: @ContractState, objective_id: u32) -> GameObjectiveDetails {
             GameObjectiveDetails {
                 name: "Mock Objective",

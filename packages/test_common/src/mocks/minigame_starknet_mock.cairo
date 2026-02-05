@@ -248,6 +248,10 @@ pub mod minigame_starknet_mock {
 
     #[abi(embed_v0)]
     impl SettingsDetailsImpl of IMinigameSettingsDetails<ContractState> {
+        fn settings_count(self: @ContractState) -> u32 {
+            self.settings_count.read()
+        }
+
         fn settings_details(self: @ContractState, settings_id: u32) -> GameSettingDetails {
             let (name, description, _) = self.settings_details.entry(settings_id).read();
             let difficulty = self.settings_difficulty.entry(settings_id).read();
@@ -307,6 +311,10 @@ pub mod minigame_starknet_mock {
 
     #[abi(embed_v0)]
     impl ObjectivesDetailsImpl of IMinigameObjectivesDetails<ContractState> {
+        fn objectives_count(self: @ContractState) -> u32 {
+            self.objective_count.read()
+        }
+
         fn objectives_details(self: @ContractState, objective_id: u32) -> GameObjectiveDetails {
             let (target_score, _) = self.objective_scores.entry(objective_id).read();
 

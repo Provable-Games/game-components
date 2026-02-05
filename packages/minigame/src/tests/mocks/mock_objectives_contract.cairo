@@ -28,7 +28,10 @@ pub trait IObjectivesSetter<TContractState> {
 #[starknet::contract]
 pub mod MockObjectivesContract {
     use openzeppelin_introspection::src5::SRC5Component;
-    use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess};
+    use starknet::storage::{
+        Map, StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess,
+        StoragePointerWriteAccess,
+    };
     use crate::extensions::objectives::interface::{
         IMINIGAME_OBJECTIVES_ID, IMinigameObjectives, IMinigameObjectivesDetails,
         IMinigameObjectivesSVG,
@@ -50,7 +53,9 @@ pub mod MockObjectivesContract {
         objective_exists: Map<u32, bool>,
         objective_details: Map<u32, ObjectiveDetails>,
         token_objectives: Map<(felt252, u32), bool>, // (token_id, objective_id) => completed
-        token_objective_id: Map<felt252, u32> // token_id => objective_id
+        token_objective_id: Map<felt252, u32>, // token_id => objective_id
+        // Total number of objectives created
+        total_objectives_count: u32,
     }
 
     #[event]
@@ -135,6 +140,9 @@ pub mod MockObjectivesContract {
                     is_required: false,
                 },
             );
+
+        // Set total objectives count (4 objectives: 1, 2, 3, 100)
+        self.total_objectives_count.write(4);
     }
 
     // Objectives implementation
@@ -164,6 +172,10 @@ pub mod MockObjectivesContract {
 
     #[abi(embed_v0)]
     impl ObjectivesDetailsImpl of IMinigameObjectivesDetails<ContractState> {
+        fn objectives_count(self: @ContractState) -> u32 {
+            self.total_objectives_count.read()
+        }
+
         fn objectives_details(self: @ContractState, objective_id: u32) -> GameObjectiveDetails {
             // Return mock objective details for the objective_id
             let obj = self.objective_details.read(objective_id);
