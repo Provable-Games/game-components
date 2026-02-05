@@ -183,7 +183,7 @@ pub mod MockSettingsContract {
 
             // Store all settings
             let settings_len = settings.settings.len();
-            self.settings_count.write(settings_id, settings_len);
+            self.settings_item_count.write(settings_id, settings_len);
 
             let mut i: u32 = 0;
             loop {
