@@ -390,11 +390,18 @@ pub mod minigame_starknet_mock {
             self.objective_scores.entry(new_objective_id).write((score, true));
             self.objective_count.write(new_objective_id);
 
+            let objectives = array![
+                GameObjective { name: "Score Target", value: format!("Score Above {}", score) },
+            ];
             self
                 .objectives
                 .create_objective(
                     new_objective_id,
-                    GameObjective { name: "Score Target", value: format!("Score Above {}", score) },
+                    GameObjectiveDetails {
+                        name: "Score Objective",
+                        description: "Achieve target score",
+                        objectives: objectives.span(),
+                    },
                     self.minigame.token_address(),
                 );
         }
