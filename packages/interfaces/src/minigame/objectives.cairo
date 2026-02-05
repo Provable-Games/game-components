@@ -15,6 +15,7 @@ pub trait IMinigameObjectives<TState> {
 
 #[starknet::interface]
 pub trait IMinigameObjectivesDetails<TState> {
+    fn objectives_count(self: @TState) -> u32;
     fn objectives_details(self: @TState, objective_id: u32) -> GameObjectiveDetails;
 
     // Batch operations

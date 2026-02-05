@@ -14,7 +14,10 @@ pub mod MockSettingsContract {
     };
     use game_components_minigame::extensions::settings::structs::{GameSetting, GameSettingDetails};
     use openzeppelin_introspection::src5::SRC5Component;
-    use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess};
+    use starknet::storage::{
+        Map, StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess,
+        StoragePointerWriteAccess,
+    };
 
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
 
@@ -30,11 +33,13 @@ pub mod MockSettingsContract {
         settings_exist: Map<u32, bool>,
         settings_name: Map<u32, ByteArray>,
         settings_description: Map<u32, ByteArray>,
-        // Store settings count for each settings_id
-        settings_count: Map<u32, u32>,
+        // Store settings item count for each settings_id
+        settings_item_count: Map<u32, u32>,
         // Store settings as nested maps - (settings_id, index) -> key/value
         settings_keys: Map<(u32, u32), ByteArray>,
         settings_values: Map<(u32, u32), ByteArray>,
+        // Total number of settings created
+        total_settings_count: u32,
     }
 
     #[event]
@@ -63,7 +68,7 @@ pub mod MockSettingsContract {
         self.settings_exist.write(1, true);
         self.settings_name.write(1, "Easy Mode");
         self.settings_description.write(1, "Beginner friendly settings");
-        self.settings_count.write(1, 2);
+        self.settings_item_count.write(1, 2);
         self.settings_keys.write((1, 0), "difficulty");
         self.settings_values.write((1, 0), "easy");
         self.settings_keys.write((1, 1), "lives");
@@ -72,11 +77,14 @@ pub mod MockSettingsContract {
         self.settings_exist.write(2, true);
         self.settings_name.write(2, "Hard Mode");
         self.settings_description.write(2, "Expert settings");
-        self.settings_count.write(2, 2);
+        self.settings_item_count.write(2, 2);
         self.settings_keys.write((2, 0), "difficulty");
         self.settings_values.write((2, 0), "hard");
         self.settings_keys.write((2, 1), "lives");
         self.settings_values.write((2, 1), "1");
+
+        // Set total settings count
+        self.total_settings_count.write(2);
     }
 
     // Settings implementation
@@ -105,6 +113,10 @@ pub mod MockSettingsContract {
 
     #[abi(embed_v0)]
     impl SettingsDetailsImpl of IMinigameSettingsDetails<ContractState> {
+        fn settings_count(self: @ContractState) -> u32 {
+            self.total_settings_count.read()
+        }
+
         fn settings_details(self: @ContractState, settings_id: u32) -> GameSettingDetails {
             assert!(self.settings_exist(settings_id), "Settings not found");
 
@@ -113,7 +125,7 @@ pub mod MockSettingsContract {
 
             // Build settings array from storage
             let mut settings_array = array![];
-            let count = self.settings_count.read(settings_id);
+            let count = self.settings_item_count.read(settings_id);
 
             let mut i: u32 = 0;
             loop {
@@ -171,7 +183,7 @@ pub mod MockSettingsContract {
 
             // Store all settings
             let settings_len = settings.settings.len();
-            self.settings_count.write(settings_id, settings_len);
+            self.settings_item_count.write(settings_id, settings_len);
 
             let mut i: u32 = 0;
             loop {

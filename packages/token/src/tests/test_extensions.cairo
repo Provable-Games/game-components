@@ -452,6 +452,10 @@ mod MockSettingsContract {
 
     #[abi(embed_v0)]
     impl MinigameSettingsDetailsImpl of IMinigameSettingsDetails<ContractState> {
+        fn settings_count(self: @ContractState) -> u32 {
+            0 // Mock contract has no settings
+        }
+
         fn settings_details(self: @ContractState, settings_id: u32) -> GameSettingDetails {
             GameSettingDetails {
                 name: "Mock Settings",

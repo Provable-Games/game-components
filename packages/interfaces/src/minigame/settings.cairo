@@ -14,6 +14,7 @@ pub trait IMinigameSettings<TState> {
 
 #[starknet::interface]
 pub trait IMinigameSettingsDetails<TState> {
+    fn settings_count(self: @TState) -> u32;
     fn settings_details(self: @TState, settings_id: u32) -> GameSettingDetails;
 
     // Batch operations
