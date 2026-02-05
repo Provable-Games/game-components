@@ -4,7 +4,9 @@ pub mod ObjectivesComponent {
     use game_components_minigame::extensions::objectives::interface::{
         IMINIGAME_OBJECTIVES_ID, IMinigameObjectivesDispatcher, IMinigameObjectivesDispatcherTrait,
     };
-    use game_components_minigame::extensions::objectives::structs::GameObjective;
+    use game_components_minigame::extensions::objectives::structs::{
+        GameObjective, GameObjectiveDetails,
+    };
     use game_components_minigame::interface::{IMinigameDispatcher, IMinigameDispatcherTrait};
     use openzeppelin_interfaces::introspection::{ISRC5Dispatcher, ISRC5DispatcherTrait};
     use openzeppelin_introspection::src5::SRC5Component;
@@ -36,7 +38,8 @@ pub mod ObjectivesComponent {
         pub objective_id: u32,
         pub creator_address: ContractAddress,
         pub name: ByteArray,
-        pub value: ByteArray,
+        pub description: ByteArray,
+        pub objectives: Span<GameObjective>,
     }
 
     #[embeddable_as(ObjectivesImpl)]
@@ -48,7 +51,7 @@ pub mod ObjectivesComponent {
             game_address: ContractAddress,
             creator_address: ContractAddress,
             objective_id: u32,
-            objective_data: GameObjective,
+            objective_details: GameObjectiveDetails,
         ) {
             // Check caller is objectives address
             let minigame_dispatcher = IMinigameDispatcher { contract_address: game_address };
@@ -89,8 +92,9 @@ pub mod ObjectivesComponent {
                         game_address,
                         objective_id,
                         creator_address,
-                        name: objective_data.name,
-                        value: objective_data.value,
+                        name: objective_details.name,
+                        description: objective_details.description,
+                        objectives: objective_details.objectives,
                     },
                 );
         }

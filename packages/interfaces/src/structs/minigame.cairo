@@ -40,6 +40,13 @@ pub struct GameSetting {
 }
 
 #[derive(Drop, Serde)]
+pub struct GameObjectiveDetails {
+    pub name: ByteArray,
+    pub description: ByteArray,
+    pub objectives: Span<GameObjective>,
+}
+
+#[derive(Drop, Serde)]
 pub struct GameObjective {
     pub name: ByteArray,
     pub value: ByteArray,

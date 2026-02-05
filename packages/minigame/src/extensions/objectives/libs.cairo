@@ -2,7 +2,7 @@ use game_components_token::extensions::objectives::interface::{
     IMinigameTokenObjectivesDispatcher, IMinigameTokenObjectivesDispatcherTrait,
 };
 use starknet::ContractAddress;
-use crate::extensions::objectives::structs::GameObjective;
+use crate::extensions::objectives::structs::GameObjectiveDetails;
 
 
 /// Creates an objective in the minigame token contract
@@ -12,19 +12,19 @@ use crate::extensions::objectives::structs::GameObjective;
 /// * `game_address` - The address of the game contract creating the objective
 /// * `creator_address` - The address of the creator
 /// * `objective_id` - The ID of the objective to create
-/// * `objective` - The objective data (name, value)
+/// * `objective_details` - The objective details struct
 pub fn create_objective(
     minigame_token_address: ContractAddress,
     game_address: ContractAddress,
     creator_address: ContractAddress,
     objective_id: u32,
-    objective: GameObjective,
+    objective_details: GameObjectiveDetails,
 ) {
     let minigame_token_dispatcher = IMinigameTokenObjectivesDispatcher {
         contract_address: minigame_token_address,
     };
     minigame_token_dispatcher
-        .create_objective(game_address, creator_address, objective_id, objective);
+        .create_objective(game_address, creator_address, objective_id, objective_details);
 }
 // /// Asserts that an objective exists by checking the game contract
 // ///
