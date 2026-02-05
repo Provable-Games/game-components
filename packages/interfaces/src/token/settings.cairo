@@ -1,6 +1,6 @@
 // Token settings extension interface
 use starknet::ContractAddress;
-use crate::structs::minigame::GameSetting;
+use crate::structs::minigame::GameSettingDetails;
 
 pub const IMINIGAME_TOKEN_SETTINGS_ID: felt252 =
     0x02e0b4b2324e3b0a64da1d2c55dbbcaf8c369f0dd3f44e23babe98f8de7d6a89;
@@ -12,8 +12,6 @@ pub trait IMinigameTokenSettings<TState> {
         game_address: ContractAddress,
         creator_address: ContractAddress,
         settings_id: u32,
-        name: ByteArray,
-        description: ByteArray,
-        settings_data: Span<GameSetting>,
+        settings_details: GameSettingDetails,
     );
 }

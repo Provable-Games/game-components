@@ -8,6 +8,7 @@ pub mod ObjectivesComponent {
     use starknet::{ContractAddress, get_caller_address, get_contract_address};
     use crate::extensions::objectives::interface::{IMINIGAME_OBJECTIVES_ID, IMinigameObjectives};
     use crate::extensions::objectives::libs;
+    use crate::extensions::objectives::structs::GameObjective;
 
     #[storage]
     pub struct Storage {}
@@ -32,8 +33,7 @@ pub mod ObjectivesComponent {
         fn create_objective(
             self: @ComponentState<TContractState>,
             objective_id: u32,
-            name: ByteArray,
-            value: ByteArray,
+            objective: GameObjective,
             minigame_token_address: ContractAddress,
         ) {
             libs::create_objective(
@@ -41,8 +41,7 @@ pub mod ObjectivesComponent {
                 get_contract_address(),
                 get_caller_address(),
                 objective_id,
-                name,
-                value,
+                objective,
             );
         }
     }

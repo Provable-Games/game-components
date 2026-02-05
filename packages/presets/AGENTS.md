@@ -97,7 +97,7 @@ Compose components for custom contracts:
 ```cairo
 #[starknet::contract]
 mod MyPreset {
-    use game_components_registry::component::MinigameRegistryComponent;
+    use game_components_registry::registry::MinigameRegistryComponent;
     use openzeppelin_access::ownable::OwnableComponent;
 
     component!(path: MinigameRegistryComponent, storage: registry, event: RegistryEvent);

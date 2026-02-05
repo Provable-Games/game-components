@@ -8,10 +8,10 @@ pub trait IMockRegistryInit<TContractState> {
 /// This contract embeds the registry component and provides test access
 #[starknet::contract]
 pub mod MockRegistryContract {
-    use game_components_registry::component::{
+    use game_components_registry::interface::IMinigameRegistry;
+    use game_components_registry::registry::{
         MinigameRegistryComponent, MinigameRegistryHooksEmptyImpl,
     };
-    use game_components_registry::interface::IMinigameRegistry;
     use openzeppelin_introspection::src5::SRC5Component;
 
     component!(path: MinigameRegistryComponent, storage: registry, event: RegistryEvent);

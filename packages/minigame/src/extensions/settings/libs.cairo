@@ -5,7 +5,7 @@ use game_components_token::extensions::settings::interface::{
     IMinigameTokenSettingsDispatcher, IMinigameTokenSettingsDispatcherTrait,
 };
 use starknet::ContractAddress;
-use crate::extensions::settings::structs::GameSetting;
+use crate::extensions::settings::structs::GameSettingDetails;
 
 /// Gets the settings ID for a game token
 ///
@@ -27,22 +27,21 @@ pub fn get_settings_id(minigame_token_address: ContractAddress, token_id: felt25
 /// # Arguments
 /// * `minigame_token_address` - The address of the minigame token contract
 /// * `game_address` - The address of the game contract creating the settings
+/// * `creator_address` - The address of the creator
 /// * `settings_id` - The ID of the settings to create
-/// * `data` - The settings data
+/// * `settings_details` - The settings details (name, description, settings)
 pub fn create_settings(
     minigame_token_address: ContractAddress,
     game_address: ContractAddress,
     creator_address: ContractAddress,
     settings_id: u32,
-    name: ByteArray,
-    description: ByteArray,
-    settings: Span<GameSetting>,
+    settings_details: GameSettingDetails,
 ) {
     let minigame_token_dispatcher = IMinigameTokenSettingsDispatcher {
         contract_address: minigame_token_address,
     };
     minigame_token_dispatcher
-        .create_settings(game_address, creator_address, settings_id, name, description, settings);
+        .create_settings(game_address, creator_address, settings_id, settings_details);
 }
 // /// Asserts that a setting exists by checking the game contract
 // ///

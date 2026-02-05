@@ -10,17 +10,16 @@ use crate::extensions::objectives::structs::GameObjective;
 /// # Arguments
 /// * `minigame_token_address` - The address of the minigame token contract
 /// * `game_address` - The address of the game contract creating the objective
+/// * `creator_address` - The address of the creator
 /// * `objective_id` - The ID of the objective to create
-/// * `data` - The objective data
+/// * `objective` - The objective data (name, value)
 pub fn create_objective(
     minigame_token_address: ContractAddress,
     game_address: ContractAddress,
     creator_address: ContractAddress,
     objective_id: u32,
-    name: ByteArray,
-    value: ByteArray,
+    objective: GameObjective,
 ) {
-    let objective = GameObjective { name: name.clone(), value: value.clone() };
     let minigame_token_dispatcher = IMinigameTokenObjectivesDispatcher {
         contract_address: minigame_token_address,
     };

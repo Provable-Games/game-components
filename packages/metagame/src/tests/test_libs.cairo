@@ -1196,6 +1196,7 @@ mod MockRegistryForLibs {
                 client_url: "",
                 renderer_address: Zero::zero(),
                 royalty_fraction: 0,
+                created_at: 0,
             }
         }
         fn is_game_registered(self: @ContractState, contract_address: ContractAddress) -> bool {

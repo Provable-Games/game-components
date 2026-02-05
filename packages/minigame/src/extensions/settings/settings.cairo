@@ -8,7 +8,7 @@ pub mod SettingsComponent {
     use starknet::{ContractAddress, get_caller_address};
     use crate::extensions::settings::interface::{IMINIGAME_SETTINGS_ID, IMinigameSettings};
     use crate::extensions::settings::libs;
-    use crate::extensions::settings::structs::GameSetting;
+    use crate::extensions::settings::structs::GameSettingDetails;
 
     #[storage]
     pub struct Storage {}
@@ -42,9 +42,7 @@ pub mod SettingsComponent {
             self: @ComponentState<TContractState>,
             game_address: ContractAddress,
             settings_id: u32,
-            name: ByteArray,
-            description: ByteArray,
-            settings: Span<GameSetting>,
+            settings_details: GameSettingDetails,
             minigame_token_address: ContractAddress,
         ) {
             libs::create_settings(
@@ -52,9 +50,7 @@ pub mod SettingsComponent {
                 game_address,
                 get_caller_address(),
                 settings_id,
-                name,
-                description,
-                settings,
+                settings_details,
             );
         }
     }

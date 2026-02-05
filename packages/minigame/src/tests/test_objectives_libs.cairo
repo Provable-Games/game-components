@@ -5,6 +5,7 @@ use game_components_testing::constants::{ALICE, CREATOR, MAX_U32};
 use snforge_std::mock_call;
 use starknet::ContractAddress;
 use crate::extensions::objectives::libs;
+use crate::extensions::objectives::structs::GameObjective;
 
 // =============================================================================
 // Test Address Helpers
@@ -42,8 +43,7 @@ fn test_create_objective_valid_parameters() {
         game_address,
         creator_address,
         objective_id,
-        "First Blood",
-        "Get the first kill",
+        GameObjective { name: "First Blood", value: "Get the first kill" },
     );
 }
 
@@ -57,8 +57,11 @@ fn test_create_objective_empty_name() {
     mock_call(token_address, selector!("create_objective"), (), 1);
 
     libs::create_objective(
-        token_address, game_address, creator_address, 2, "", // empty name
-        "Some description",
+        token_address,
+        game_address,
+        creator_address,
+        2,
+        GameObjective { name: "", value: "Some description" },
     );
 }
 
@@ -72,7 +75,11 @@ fn test_create_objective_empty_value() {
     mock_call(token_address, selector!("create_objective"), (), 1);
 
     libs::create_objective(
-        token_address, game_address, creator_address, 3, "Empty Value Objective", "" // empty value
+        token_address,
+        game_address,
+        creator_address,
+        3,
+        GameObjective { name: "Empty Value Objective", value: "" },
     );
 }
 
@@ -89,9 +96,8 @@ fn test_create_objective_max_objective_id() {
         token_address,
         game_address,
         creator_address,
-        MAX_U32, // max u32
-        "Max ID Objective",
-        "Testing boundary",
+        MAX_U32,
+        GameObjective { name: "Max ID Objective", value: "Testing boundary" },
     );
 }
 
@@ -105,7 +111,11 @@ fn test_create_objective_zero_objective_id() {
     mock_call(token_address, selector!("create_objective"), (), 1);
 
     libs::create_objective(
-        token_address, game_address, creator_address, 0, "Zero ID Objective", "Testing zero",
+        token_address,
+        game_address,
+        creator_address,
+        0,
+        GameObjective { name: "Zero ID Objective", value: "Testing zero" },
     );
 }
 
@@ -122,7 +132,11 @@ fn test_create_objective_long_name() {
         "This is a very long objective name that tests the limits of ByteArray storage and handling in the contract system";
 
     libs::create_objective(
-        token_address, game_address, creator_address, 4, long_name, "Normal value",
+        token_address,
+        game_address,
+        creator_address,
+        4,
+        GameObjective { name: long_name, value: "Normal value" },
     );
 }
 
@@ -139,7 +153,11 @@ fn test_create_objective_long_value() {
         "This is a very long objective value containing multiple sentences. It tests how the contract handles large ByteArray values. The objectives system should support arbitrary length descriptions for flexibility.";
 
     libs::create_objective(
-        token_address, game_address, creator_address, 5, "Normal Name", long_value,
+        token_address,
+        game_address,
+        creator_address,
+        5,
+        GameObjective { name: "Normal Name", value: long_value },
     );
 }
 
@@ -157,8 +175,7 @@ fn test_create_objective_special_chars_name() {
         game_address,
         creator_address,
         6,
-        "Special: !@#$%^&*()",
-        "Testing special characters",
+        GameObjective { name: "Special: !@#$%^&*()", value: "Testing special characters" },
     );
 }
 
@@ -176,8 +193,10 @@ fn test_create_objective_complex_content() {
         game_address,
         creator_address,
         7,
-        "Multi-line\ndescription\nwith newlines",
-        "Value with\ttabs\tand\tnewlines\n",
+        GameObjective {
+            name: "Multi-line\ndescription\nwith newlines",
+            value: "Value with\ttabs\tand\tnewlines\n",
+        },
     );
 }
 
@@ -199,7 +218,9 @@ fn test_game_objective_struct_construction() {
     let name: ByteArray = "Complex Objective";
     let value: ByteArray = "Multi-line\ndescription\nwith special chars: !@#$%";
 
-    libs::create_objective(token_address, game_address, creator_address, 10, name, value);
+    libs::create_objective(
+        token_address, game_address, creator_address, 10, GameObjective { name, value },
+    );
 }
 
 // Test OBJ-LIB-I-02: create multiple objectives sequentially
@@ -214,17 +235,29 @@ fn test_create_multiple_objectives_sequentially() {
 
     // Create first objective
     libs::create_objective(
-        token_address, game_address, creator_address, 1, "Objective One", "Description One",
+        token_address,
+        game_address,
+        creator_address,
+        1,
+        GameObjective { name: "Objective One", value: "Description One" },
     );
 
     // Create second objective
     libs::create_objective(
-        token_address, game_address, creator_address, 2, "Objective Two", "Description Two",
+        token_address,
+        game_address,
+        creator_address,
+        2,
+        GameObjective { name: "Objective Two", value: "Description Two" },
     );
 
     // Create third objective
     libs::create_objective(
-        token_address, game_address, creator_address, 3, "Objective Three", "Description Three",
+        token_address,
+        game_address,
+        creator_address,
+        3,
+        GameObjective { name: "Objective Three", value: "Description Three" },
     );
 }
 
@@ -239,10 +272,22 @@ fn test_create_objectives_different_games() {
     mock_call(token_address, selector!("create_objective"), (), 10);
 
     // Game 1 creates objective
-    libs::create_objective(token_address, game1, creator, 100, "Game 1 Objective", "From game 1");
+    libs::create_objective(
+        token_address,
+        game1,
+        creator,
+        100,
+        GameObjective { name: "Game 1 Objective", value: "From game 1" },
+    );
 
     // Game 2 creates objective
-    libs::create_objective(token_address, game2, creator, 101, "Game 2 Objective", "From game 2");
+    libs::create_objective(
+        token_address,
+        game2,
+        creator,
+        101,
+        GameObjective { name: "Game 2 Objective", value: "From game 2" },
+    );
 }
 
 // Test OBJ-LIB-I-04: create objectives with different creators
@@ -257,12 +302,20 @@ fn test_create_objectives_different_creators() {
 
     // First creator
     libs::create_objective(
-        token_address, game_address, creator1, 200, "Creator 1 Objective", "From creator 1",
+        token_address,
+        game_address,
+        creator1,
+        200,
+        GameObjective { name: "Creator 1 Objective", value: "From creator 1" },
     );
 
     // Second creator
     libs::create_objective(
-        token_address, game_address, creator2, 201, "Creator 2 Objective", "From creator 2",
+        token_address,
+        game_address,
+        creator2,
+        201,
+        GameObjective { name: "Creator 2 Objective", value: "From creator 2" },
     );
 }
 
@@ -279,7 +332,9 @@ fn test_all_params_passed_through() {
     mock_call(token_address, selector!("create_objective"), (), 1);
 
     // This tests that all params are correctly passed - any issue would cause a panic
-    libs::create_objective(token_address, game_address, creator_address, objective_id, name, value);
+    libs::create_objective(
+        token_address, game_address, creator_address, objective_id, GameObjective { name, value },
+    );
 }
 
 // =============================================================================
@@ -296,8 +351,7 @@ fn test_create_objective_both_empty() {
     mock_call(token_address, selector!("create_objective"), (), 1);
 
     libs::create_objective(
-        token_address, game_address, creator_address, 8, "", // empty name
-        "" // empty value
+        token_address, game_address, creator_address, 8, GameObjective { name: "", value: "" },
     );
 }
 
@@ -316,7 +370,13 @@ fn test_create_objective_very_long_strings() {
     let long_value: ByteArray =
         "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB";
 
-    libs::create_objective(token_address, game_address, creator_address, 9, long_name, long_value);
+    libs::create_objective(
+        token_address,
+        game_address,
+        creator_address,
+        9,
+        GameObjective { name: long_name, value: long_value },
+    );
 }
 
 // Test OBJ-LIB-E-03: consecutive objective IDs
@@ -334,7 +394,11 @@ fn test_create_objectives_consecutive_ids() {
             break;
         }
         libs::create_objective(
-            token_address, game_address, creator_address, i, "Objective", "Value",
+            token_address,
+            game_address,
+            creator_address,
+            i,
+            GameObjective { name: "Objective", value: "Value" },
         );
         i += 1;
     }
@@ -350,16 +414,36 @@ fn test_create_objectives_boundary_ids() {
     mock_call(token_address, selector!("create_objective"), (), 10);
 
     // Test boundary values
-    libs::create_objective(token_address, game_address, creator_address, 0, "ID 0", "Value");
-
-    libs::create_objective(token_address, game_address, creator_address, 1, "ID 1", "Value");
-
     libs::create_objective(
-        token_address, game_address, creator_address, MAX_U32 - 1, "ID Max-1", "Value",
+        token_address,
+        game_address,
+        creator_address,
+        0,
+        GameObjective { name: "ID 0", value: "Value" },
     );
 
     libs::create_objective(
-        token_address, game_address, creator_address, MAX_U32, "ID Max", "Value",
+        token_address,
+        game_address,
+        creator_address,
+        1,
+        GameObjective { name: "ID 1", value: "Value" },
+    );
+
+    libs::create_objective(
+        token_address,
+        game_address,
+        creator_address,
+        MAX_U32 - 1,
+        GameObjective { name: "ID Max-1", value: "Value" },
+    );
+
+    libs::create_objective(
+        token_address,
+        game_address,
+        creator_address,
+        MAX_U32,
+        GameObjective { name: "ID Max", value: "Value" },
     );
 }
 
@@ -378,7 +462,11 @@ fn test_create_objective_fuzz_ids(objective_id: u32) {
     mock_call(token_address, selector!("create_objective"), (), 1);
 
     libs::create_objective(
-        token_address, game_address, creator_address, objective_id, "Fuzz Test", "Fuzz Value",
+        token_address,
+        game_address,
+        creator_address,
+        objective_id,
+        GameObjective { name: "Fuzz Test", value: "Fuzz Value" },
     );
 }
 
@@ -396,7 +484,11 @@ fn test_create_objective_fuzz_content(seed: felt252) {
     let objective_id: u32 = (seed.try_into().unwrap_or(0_u128) % 1000000).try_into().unwrap();
 
     libs::create_objective(
-        token_address, game_address, creator_address, objective_id, "Fuzz Name", "Fuzz Value",
+        token_address,
+        game_address,
+        creator_address,
+        objective_id,
+        GameObjective { name: "Fuzz Name", value: "Fuzz Value" },
     );
 }
 
@@ -413,11 +505,33 @@ fn test_create_objectives_sparse_ids() {
 
     mock_call(token_address, selector!("create_objective"), (), 5);
 
-    libs::create_objective(token_address, game_address, creator_address, 1, "First", "v1");
-    libs::create_objective(token_address, game_address, creator_address, 1000, "Thousand", "v2");
-    libs::create_objective(token_address, game_address, creator_address, 1000000, "Million", "v3");
     libs::create_objective(
-        token_address, game_address, creator_address, MAX_U32 / 2, "Half Max", "v4",
+        token_address,
+        game_address,
+        creator_address,
+        1,
+        GameObjective { name: "First", value: "v1" },
+    );
+    libs::create_objective(
+        token_address,
+        game_address,
+        creator_address,
+        1000,
+        GameObjective { name: "Thousand", value: "v2" },
+    );
+    libs::create_objective(
+        token_address,
+        game_address,
+        creator_address,
+        1000000,
+        GameObjective { name: "Million", value: "v3" },
+    );
+    libs::create_objective(
+        token_address,
+        game_address,
+        creator_address,
+        MAX_U32 / 2,
+        GameObjective { name: "Half Max", value: "v4" },
     );
 }
 
@@ -431,8 +545,11 @@ fn test_create_objective_spaces_only() {
     mock_call(token_address, selector!("create_objective"), (), 1);
 
     libs::create_objective(
-        token_address, game_address, creator_address, 500, "     ", // spaces only
-        "Normal value",
+        token_address,
+        game_address,
+        creator_address,
+        500,
+        GameObjective { name: "     ", value: "Normal value" },
     );
 }
 
@@ -447,6 +564,18 @@ fn test_create_objective_different_tokens() {
     mock_call(token1, selector!("create_objective"), (), 1);
     mock_call(token2, selector!("create_objective"), (), 1);
 
-    libs::create_objective(token1, game_address, creator_address, 1, "Token 1 Obj", "v1");
-    libs::create_objective(token2, game_address, creator_address, 2, "Token 2 Obj", "v2");
+    libs::create_objective(
+        token1,
+        game_address,
+        creator_address,
+        1,
+        GameObjective { name: "Token 1 Obj", value: "v1" },
+    );
+    libs::create_objective(
+        token2,
+        game_address,
+        creator_address,
+        2,
+        GameObjective { name: "Token 2 Obj", value: "v2" },
+    );
 }

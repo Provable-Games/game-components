@@ -394,8 +394,7 @@ pub mod minigame_starknet_mock {
                 .objectives
                 .create_objective(
                     new_objective_id,
-                    "Score Target",
-                    format!("Score Above {}", score),
+                    GameObjective { name: "Score Target", value: format!("Score Above {}", score) },
                     self.minigame.token_address(),
                 );
         }
@@ -422,9 +421,7 @@ pub mod minigame_starknet_mock {
                 .create_settings(
                     get_contract_address(),
                     new_settings_id,
-                    name,
-                    description,
-                    settings.span(),
+                    GameSettingDetails { name, description, settings: settings.span() },
                     self.minigame.token_address(),
                 );
         }

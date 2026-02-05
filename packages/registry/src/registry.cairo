@@ -18,7 +18,7 @@ pub mod MinigameRegistryComponent {
         Map, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess,
     };
     use starknet::syscalls::call_contract_syscall;
-    use starknet::{ContractAddress, get_caller_address, get_contract_address};
+    use starknet::{ContractAddress, get_block_timestamp, get_caller_address, get_contract_address};
     use crate::interface::{GameMetadata, IMINIGAME_REGISTRY_ID, IMinigameRegistry};
 
     // ==========================================================================
@@ -225,6 +225,7 @@ pub mod MinigameRegistryComponent {
                 client_url: final_client_url.clone(),
                 renderer_address: final_renderer_address,
                 royalty_fraction: final_royalty_fraction,
+                created_at: get_block_timestamp(),
             };
 
             self.game_metadata.entry(new_game_id).write(metadata);

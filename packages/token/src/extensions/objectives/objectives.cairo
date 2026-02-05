@@ -6,7 +6,6 @@ pub mod ObjectivesComponent {
     };
     use game_components_minigame::extensions::objectives::structs::GameObjective;
     use game_components_minigame::interface::{IMinigameDispatcher, IMinigameDispatcherTrait};
-    use game_components_utils::json::create_objectives_json;
     use openzeppelin_interfaces::introspection::{ISRC5Dispatcher, ISRC5DispatcherTrait};
     use openzeppelin_introspection::src5::SRC5Component;
     use openzeppelin_introspection::src5::SRC5Component::{
@@ -36,7 +35,8 @@ pub mod ObjectivesComponent {
         #[key]
         pub objective_id: u32,
         pub creator_address: ContractAddress,
-        pub objective_data: ByteArray,
+        pub name: ByteArray,
+        pub value: ByteArray,
     }
 
     #[embeddable_as(ObjectivesImpl)]
@@ -82,16 +82,15 @@ pub mod ObjectivesComponent {
                 game_address_display,
             );
 
-            let objective_data_json = create_objectives_json(array![objective_data].span());
-
-            // Emit native event
+            // Emit native event with struct fields directly
             self
                 .emit(
                     ObjectiveCreated {
                         game_address,
                         objective_id,
                         creator_address,
-                        objective_data: objective_data_json,
+                        name: objective_data.name,
+                        value: objective_data.value,
                     },
                 );
         }
