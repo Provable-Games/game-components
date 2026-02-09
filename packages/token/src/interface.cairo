@@ -74,6 +74,7 @@ pub trait IMinigameTokenMixin<TState> {
         game_address: ContractAddress,
         creator_address: ContractAddress,
         objective_id: u32,
+        settings_id: u32,
         objective_data: GameObjective,
     );
     // Settings functionality

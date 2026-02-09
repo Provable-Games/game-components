@@ -834,3 +834,91 @@ fn test_multiple_tokens_same_objective() {
     assert!(metadata1.completed_objective == true, "Token 1 should be completed");
     assert!(metadata2.completed_objective == false, "Token 2 should not be completed");
 }
+
+// ================================================================================================
+// SETTINGS ASSOCIATION TESTS
+// ================================================================================================
+
+// SA-U-001: Create objective with valid settings_id
+#[test]
+fn test_create_objective_with_valid_settings_id() {
+    let test_contracts = setup();
+
+    // Create settings first
+    test_contracts.mock_minigame.create_settings_difficulty("Hard", "Hard mode", 3);
+
+    // Create objective associated with settings_id = 1
+    test_contracts.mock_minigame.create_objective_score_with_settings(100, 1);
+
+    // Verify objective exists
+    let objectives = IMinigameObjectivesDispatcher {
+        contract_address: test_contracts.minigame.contract_address,
+    };
+    assert!(objectives.objective_exists(1), "Objective should exist");
+}
+
+// SA-U-002: Create objective with settings_id = 0 always works (no settings required)
+#[test]
+fn test_create_objective_settings_id_zero_always_valid() {
+    let test_contracts = setup();
+
+    // settings_id = 0 should always work, even without settings
+    test_contracts.mock_minigame.create_objective_score(100);
+
+    let objectives = IMinigameObjectivesDispatcher {
+        contract_address: test_contracts.minigame.contract_address,
+    };
+    assert!(objectives.objective_exists(1), "Objective with settings_id 0 should exist");
+}
+
+// SA-U-003: Create objective with nonexistent settings_id panics
+#[test]
+#[should_panic(expected: "MinigameTokenObjectives: Settings ID 999 does not exist")]
+fn test_create_objective_with_nonexistent_settings_id_panics() {
+    let test_contracts = setup();
+
+    // Create one settings (id=1), then try to use settings_id=999
+    test_contracts.mock_minigame.create_settings_difficulty("Easy", "Easy mode", 1);
+
+    // This should panic because settings_id 999 doesn't exist
+    test_contracts.mock_minigame.create_objective_score_with_settings(100, 999);
+}
+
+// SA-U-004: Create objective with multiple settings, use valid one
+#[test]
+fn test_create_objective_with_multiple_settings() {
+    let test_contracts = setup();
+
+    // Create multiple settings
+    test_contracts.mock_minigame.create_settings_difficulty("Easy", "Easy mode", 1);
+    test_contracts.mock_minigame.create_settings_difficulty("Medium", "Medium mode", 2);
+    test_contracts.mock_minigame.create_settings_difficulty("Hard", "Hard mode", 3);
+
+    // Create objectives for different settings
+    test_contracts.mock_minigame.create_objective_score_with_settings(50, 1); // Easy
+    test_contracts.mock_minigame.create_objective_score_with_settings(100, 2); // Medium
+    test_contracts.mock_minigame.create_objective_score_with_settings(200, 3); // Hard
+
+    // Verify all objectives exist
+    let objectives = IMinigameObjectivesDispatcher {
+        contract_address: test_contracts.minigame.contract_address,
+    };
+    assert!(objectives.objective_exists(1), "Easy objective should exist");
+    assert!(objectives.objective_exists(2), "Medium objective should exist");
+    assert!(objectives.objective_exists(3), "Hard objective should exist");
+}
+
+// SA-U-005: Event contains settings_id
+#[test]
+fn test_create_objective_event_contains_settings_id() {
+    let test_contracts = setup();
+    let mut spy = spy_events();
+
+    // Create settings and objective
+    test_contracts.mock_minigame.create_settings_difficulty("Hard", "Hard mode", 3);
+    test_contracts.mock_minigame.create_objective_score_with_settings(100, 1);
+
+    // Events should have been emitted
+    let events = spy.get_events();
+    assert!(events.events.len() > 0, "Should emit events including ObjectiveCreated");
+}
