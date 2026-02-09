@@ -51,6 +51,7 @@ fn test_create_objective_valid_parameters() {
         game_address,
         creator_address,
         objective_id,
+        0,
         create_objective_details(
             "Combat Objectives", "Combat-related achievements", objectives.span(),
         ),
@@ -72,6 +73,7 @@ fn test_create_objective_empty_name() {
         game_address,
         creator_address,
         2,
+        0,
         create_objective_details("", "Description only", objectives.span()),
     );
 }
@@ -91,6 +93,7 @@ fn test_create_objective_empty_description() {
         game_address,
         creator_address,
         3,
+        0,
         create_objective_details("Name Only", "", objectives.span()),
     );
 }
@@ -110,6 +113,7 @@ fn test_create_objective_max_objective_id() {
         game_address,
         creator_address,
         MAX_U32,
+        0,
         create_objective_details("Boundary Test", "Testing max ID", objectives.span()),
     );
 }
@@ -128,6 +132,7 @@ fn test_create_objective_zero_objective_id() {
         token_address,
         game_address,
         creator_address,
+        0,
         0,
         create_objective_details("Zero ID Test", "Testing zero ID", objectives.span()),
     );
@@ -151,6 +156,7 @@ fn test_create_objective_long_name() {
         game_address,
         creator_address,
         4,
+        0,
         create_objective_details(long_name, "Normal description", objectives.span()),
     );
 }
@@ -173,6 +179,7 @@ fn test_create_objective_long_description() {
         game_address,
         creator_address,
         5,
+        0,
         create_objective_details("Normal Name", long_description, objectives.span()),
     );
 }
@@ -194,6 +201,7 @@ fn test_create_objective_special_chars_name() {
         game_address,
         creator_address,
         6,
+        0,
         create_objective_details("Special Chars", "Test with special chars", objectives.span()),
     );
 }
@@ -218,6 +226,7 @@ fn test_create_objective_complex_content() {
         game_address,
         creator_address,
         7,
+        0,
         create_objective_details("Complex", "Complex content test", objectives.span()),
     );
 }
@@ -241,6 +250,7 @@ fn test_create_objective_multiple_in_span() {
         game_address,
         creator_address,
         8,
+        0,
         create_objective_details(
             "Kill Streak Objectives", "Combat achievements", objectives.span(),
         ),
@@ -272,6 +282,7 @@ fn test_game_objective_details_struct_construction() {
         game_address,
         creator_address,
         10,
+        0,
         create_objective_details(name, description, objectives.span()),
     );
 }
@@ -295,6 +306,7 @@ fn test_create_multiple_objectives_sequentially() {
         game_address,
         creator_address,
         1,
+        0,
         create_objective_details("Group One", "First group", obj1.span()),
     );
 
@@ -303,6 +315,7 @@ fn test_create_multiple_objectives_sequentially() {
         game_address,
         creator_address,
         2,
+        0,
         create_objective_details("Group Two", "Second group", obj2.span()),
     );
 
@@ -311,6 +324,7 @@ fn test_create_multiple_objectives_sequentially() {
         game_address,
         creator_address,
         3,
+        0,
         create_objective_details("Group Three", "Third group", obj3.span()),
     );
 }
@@ -333,6 +347,7 @@ fn test_create_objectives_different_games() {
         game1,
         creator,
         100,
+        0,
         create_objective_details("Game 1 Objectives", "From game 1", obj1.span()),
     );
 
@@ -341,6 +356,7 @@ fn test_create_objectives_different_games() {
         game2,
         creator,
         101,
+        0,
         create_objective_details("Game 2 Objectives", "From game 2", obj2.span()),
     );
 }
@@ -363,6 +379,7 @@ fn test_create_objectives_different_creators() {
         game_address,
         creator1,
         200,
+        0,
         create_objective_details("Creator 1", "From creator 1", obj1.span()),
     );
 
@@ -371,6 +388,7 @@ fn test_create_objectives_different_creators() {
         game_address,
         creator2,
         201,
+        0,
         create_objective_details("Creator 2", "From creator 2", obj2.span()),
     );
 }
@@ -393,6 +411,7 @@ fn test_all_params_passed_through() {
         game_address,
         creator_address,
         objective_id,
+        0,
         create_objective_details(name, description, objectives.span()),
     );
 }
@@ -416,6 +435,7 @@ fn test_create_objective_both_empty() {
         game_address,
         creator_address,
         8,
+        0,
         create_objective_details("", "", objectives.span()),
     );
 }
@@ -440,6 +460,7 @@ fn test_create_objective_very_long_strings() {
         game_address,
         creator_address,
         9,
+        0,
         create_objective_details(long_name, long_description, objectives.span()),
     );
 }
@@ -465,6 +486,7 @@ fn test_create_objectives_consecutive_ids() {
             game_address,
             creator_address,
             i,
+            0,
             create_objective_details("Group", "Description", objectives.span()),
         );
         i += 1;
@@ -487,6 +509,7 @@ fn test_create_objectives_boundary_ids() {
         game_address,
         creator_address,
         0,
+        0,
         create_objective_details("ID 0", "Zero", objectives.span()),
     );
 
@@ -495,6 +518,7 @@ fn test_create_objectives_boundary_ids() {
         game_address,
         creator_address,
         1,
+        0,
         create_objective_details("ID 1", "One", objectives.span()),
     );
 
@@ -503,6 +527,7 @@ fn test_create_objectives_boundary_ids() {
         game_address,
         creator_address,
         MAX_U32 - 1,
+        0,
         create_objective_details("ID Max-1", "Max minus one", objectives.span()),
     );
 
@@ -511,6 +536,7 @@ fn test_create_objectives_boundary_ids() {
         game_address,
         creator_address,
         MAX_U32,
+        0,
         create_objective_details("ID Max", "Maximum", objectives.span()),
     );
 }
@@ -530,6 +556,7 @@ fn test_create_objective_empty_span() {
         game_address,
         creator_address,
         11,
+        0,
         create_objective_details("Empty Objectives", "No sub-objectives", objectives.span()),
     );
 }
@@ -554,6 +581,7 @@ fn test_create_objective_fuzz_ids(objective_id: u32) {
         game_address,
         creator_address,
         objective_id,
+        0,
         create_objective_details("Fuzz", "Fuzz test", objectives.span()),
     );
 }
@@ -576,6 +604,7 @@ fn test_create_objective_fuzz_content(seed: felt252) {
         game_address,
         creator_address,
         objective_id,
+        0,
         create_objective_details("Fuzz", "Fuzz description", objectives.span()),
     );
 }
@@ -600,6 +629,7 @@ fn test_create_objectives_sparse_ids() {
         game_address,
         creator_address,
         1,
+        0,
         create_objective_details("First", "v1", objectives.span()),
     );
     libs::create_objective(
@@ -607,6 +637,7 @@ fn test_create_objectives_sparse_ids() {
         game_address,
         creator_address,
         1000,
+        0,
         create_objective_details("Thousand", "v2", objectives.span()),
     );
     libs::create_objective(
@@ -614,6 +645,7 @@ fn test_create_objectives_sparse_ids() {
         game_address,
         creator_address,
         1000000,
+        0,
         create_objective_details("Million", "v3", objectives.span()),
     );
     libs::create_objective(
@@ -621,6 +653,7 @@ fn test_create_objectives_sparse_ids() {
         game_address,
         creator_address,
         MAX_U32 / 2,
+        0,
         create_objective_details("Half Max", "v4", objectives.span()),
     );
 }
@@ -640,6 +673,7 @@ fn test_create_objective_spaces_only() {
         game_address,
         creator_address,
         500,
+        0,
         create_objective_details("     ", "Normal description", objectives.span()),
     );
 }
@@ -663,6 +697,7 @@ fn test_create_objective_different_tokens() {
         game_address,
         creator_address,
         1,
+        0,
         create_objective_details("Token 1", "From token 1", obj1.span()),
     );
     libs::create_objective(
@@ -670,6 +705,7 @@ fn test_create_objective_different_tokens() {
         game_address,
         creator_address,
         2,
+        0,
         create_objective_details("Token 2", "From token 2", obj2.span()),
     );
 }

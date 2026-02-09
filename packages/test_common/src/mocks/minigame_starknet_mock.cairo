@@ -21,6 +21,7 @@ pub trait IMinigameStarknetMock<TContractState> {
     fn start_game(ref self: TContractState, token_id: felt252);
     fn end_game(ref self: TContractState, token_id: felt252, score: u64);
     fn create_objective_score(ref self: TContractState, score: u64);
+    fn create_objective_score_with_settings(ref self: TContractState, score: u64, settings_id: u32);
     fn create_settings_difficulty(
         ref self: TContractState, name: ByteArray, description: ByteArray, difficulty: u8,
     );
@@ -398,6 +399,12 @@ pub mod minigame_starknet_mock {
         }
 
         fn create_objective_score(ref self: ContractState, score: u64) {
+            self.create_objective_score_with_settings(score, 0_u32);
+        }
+
+        fn create_objective_score_with_settings(
+            ref self: ContractState, score: u64, settings_id: u32,
+        ) {
             let objective_count = self.objective_count.read();
             let new_objective_id = objective_count + 1;
 
@@ -411,6 +418,7 @@ pub mod minigame_starknet_mock {
                 .objectives
                 .create_objective(
                     new_objective_id,
+                    settings_id,
                     GameObjectiveDetails {
                         name: "Score Objective",
                         description: "Achieve target score",
