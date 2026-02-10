@@ -3,7 +3,7 @@ codecov:
   notify:
     # Must equal package count in .github/workflows/test.yml matrix
     # See AGENTS.md "CI Configuration" section when adding packages
-    after_n_builds: 8
+    after_n_builds: 14
 
 comment:
   layout: "diff, files, header, footer"

@@ -8,7 +8,13 @@ members = [
     "packages/tokenomics",
     "packages/utils",
     "packages/leaderboard",
+    "packages/registration",
+    "packages/entry_requirement",
     "packages/presets",
+    "packages/math",
+    "packages/distribution",
+    "packages/entry_fee",
+    "packages/prize",
     # Shared testing infrastructure
     "packages/testing",
     "packages/test_common",
@@ -53,7 +59,13 @@ game_components_token = { path = "packages/token" }
 game_components_tokenomics = { path = "packages/tokenomics" }
 game_components_utils = { path = "packages/utils" }
 game_components_leaderboard = { path = "packages/leaderboard" }
+game_components_registration = { path = "packages/registration" }
+game_components_entry_requirement = { path = "packages/entry_requirement" }
 game_components_presets = { path = "packages/presets" }
+game_components_math = { path = "packages/math" }
+game_components_distribution = { path = "packages/distribution" }
+game_components_entry_fee = { path = "packages/entry_fee" }
+game_components_prize = { path = "packages/prize" }
 # Shared testing infrastructure
 game_components_testing = { path = "packages/testing" }
 game_components_test_common = { path = "packages/test_common" }

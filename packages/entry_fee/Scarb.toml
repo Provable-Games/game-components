@@ -1,0 +1,17 @@
+[package]
+name = "game_components_entry_fee"
+version.workspace = true
+edition.workspace = true
+
+[lib]
+
+[cairo]
+sierra-replace-ids = true
+
+[dependencies]
+starknet.workspace = true
+openzeppelin_interfaces.workspace = true
+game_components_interfaces = { path = "../interfaces" }
+
+[dev-dependencies]
+snforge_std.workspace = true

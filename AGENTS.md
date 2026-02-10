@@ -99,10 +99,10 @@ When adding a new package with tests, update **both** files:
 2. **`codecov.yml`** - Update the build count:
    ```yaml
    notify:
-     after_n_builds: 9 # ← Must equal total package count in matrix
+     after_n_builds: 14 # ← Must equal total package count in matrix
    ```
 
-### Current Matrix (8 packages)
+### Current Matrix (14 packages)
 
 | Package | Runner | Fuzzer Runs |
 |---------|--------|-------------|
@@ -114,3 +114,9 @@ When adding a new package with tests, update **both** files:
 | `game_components_utils` | `ubuntu-latest` | 256 |
 | `game_components_leaderboard` | `ubuntu-latest` | 256 |
 | `game_components_presets` | `ubuntu-latest` | 256 |
+| `game_components_math` | `ubuntu-latest` | 256 |
+| `game_components_distribution` | `ubuntu-latest` | 256 |
+| `game_components_registration` | `ubuntu-latest` | 256 |
+| `game_components_entry_requirement` | `ubuntu-latest` | 256 |
+| `game_components_entry_fee` | `ubuntu-latest` | 256 |
+| `game_components_prize` | `ubuntu-latest` | 256 |
