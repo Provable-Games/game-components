@@ -7,14 +7,42 @@ pub use structs::{
     leaderboard as leaderboard_structs, metagame as metagame_structs, minigame as minigame_structs,
     registry as registry_structs, token as token_structs,
 };
+
+// Budokan-extracted interfaces
+pub mod distribution;
+pub mod entry_fee;
+pub mod entry_requirement;
+pub mod entry_validator;
 pub mod leaderboard;
 
 // Interface modules
 pub mod metagame;
 pub mod minigame;
+pub mod prize;
+pub mod registration;
 pub mod registry;
 pub mod token;
 pub mod tokenomics;
+
+// Distribution
+pub use distribution::Distribution;
+
+// Entry Fee
+pub use entry_fee::{
+    AdditionalShare, EntryFee, IEntryFee, IEntryFeeDispatcher, IEntryFeeDispatcherTrait,
+};
+
+// Entry Requirement
+pub use entry_requirement::{
+    EntryRequirement, EntryRequirementType, ExtensionConfig, IEntryRequirement,
+    IEntryRequirementDispatcher, IEntryRequirementDispatcherTrait, NFTQualification,
+    QualificationEntries, QualificationProof,
+};
+
+// Entry Validator
+pub use entry_validator::{
+    IENTRY_VALIDATOR_ID, IEntryValidator, IEntryValidatorDispatcher, IEntryValidatorDispatcherTrait,
+};
 
 // Leaderboard
 pub use leaderboard::{
@@ -49,6 +77,17 @@ pub use minigame::{
     IMinigameSettingsSVGDispatcherTrait, IMinigameTokenData, IMinigameTokenDataDispatcher,
     IMinigameTokenDataDispatcherTrait, IMinigameTokenUri, IMinigameTokenUriDispatcher,
     IMinigameTokenUriDispatcherTrait,
+};
+
+// Prize
+pub use prize::{
+    ERC20Data, ERC721Data, IPrize, IPrizeDispatcher, IPrizeDispatcherTrait, Prize, PrizeType,
+    TokenTypeData,
+};
+
+// Registration
+pub use registration::{
+    IRegistration, IRegistrationDispatcher, IRegistrationDispatcherTrait, Registration,
 };
 
 // Registry
