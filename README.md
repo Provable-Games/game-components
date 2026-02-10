@@ -10,18 +10,7 @@
 
 A modular Cairo smart contract library for building on-chain games on Starknet. Provides reusable components for managing game state, player tokens, and tournament/event systems with comprehensive testing and deployment tools.
 
-## 🎯 **Overview**
-
-Game Components is designed to solve the complexity of building on-chain games by providing modular architectural components that work seamlessly together:
-
-- **🏆 Metagame**: High-level game management, tournament/event coordination, and automatic callbacks
-- **🎮 Minigame**: Individual game logic and mechanics implementation
-- **🃏 MinigameToken**: ERC721-based NFTs representing playable game instances
-- **📖 Registry**: Game registration and multi-game discovery
-- **🏅 Leaderboard**: Tournament scoring and ranking
-- **💰 Tokenomics**: Ekubo TWAMM buyback and stream token distribution
-
-## 🏗️ **Architecture**
+## Architecture
 
 ### Component Relationships
 
@@ -52,7 +41,60 @@ Minigame
 4. **Sync**: Call `update_game()` to synchronize token state with game results. If the minter implements `IMetagameCallback`, callbacks are dispatched automatically (`on_score_update`, `on_game_over`, `on_objective_complete`)
 5. **Complete**: Game ends when `game_over()` returns true or all objectives achieved
 
-## 🚀 **Quick Start**
+## Packages
+
+### Embeddable Game Standard
+
+Core components for onboarding games onto Starknet.
+
+| Package | Description | Docs |
+|---------|-------------|------|
+| [**token**](packages/token/) | ERC721 NFT representing playable game instances with compile-time feature flags (<4MB optimization) | [README](packages/token/README.md) |
+| [**minigame**](packages/minigame/) | Individual game logic foundation requiring `IMinigameTokenData` implementation | [README](packages/minigame/README.md) |
+| [**registry**](packages/registry/) | Game registration, discovery, and metadata management | [README](packages/registry/README.md) |
+
+### Metagame
+
+Components for applications that coordinate and interact with games.
+
+| Package | Description | Docs |
+|---------|-------------|------|
+| [**metagame**](packages/metagame/) | High-level game management, token delegation, and context coordination | [README](packages/metagame/README.md) |
+| [**leaderboard**](packages/leaderboard/) | Tournament scoring, ranking, and multi-tournament support | [README](packages/leaderboard/README.md) |
+| [**registration**](packages/registration/) | Player registration tracking for tournaments, quests, and other contexts | [README](packages/registration/README.md) |
+| [**entry_requirement**](packages/entry_requirement/) | Entry gating via token ownership, allowlists, or external validators | [README](packages/entry_requirement/README.md) |
+| [**entry_fee**](packages/entry_fee/) | Entry fee management with ERC20 deposits and share distribution | [README](packages/entry_fee/README.md) |
+| [**prize**](packages/prize/) | Prize management for ERC20/ERC721 rewards with claim tracking | [README](packages/prize/README.md) |
+| [**presets**](packages/presets/) | Ready-to-deploy contracts (LeaderboardPreset, AutonomousBuyback, StreamToken) | [README](packages/presets/README.md) |
+
+### Game Economy
+
+| Package | Description | Docs |
+|---------|-------------|------|
+| [**tokenomics**](packages/tokenomics/) | Ekubo TWAMM buyback and stream token distribution | [README](packages/tokenomics/README.md) |
+
+### Utilities
+
+| Package | Description | Docs |
+|---------|-------------|------|
+| [**math**](packages/math/) | Fixed-point math library (32.32 bit) based on Cubit | [README](packages/math/README.md) |
+| [**distribution**](packages/distribution/) | Share computation with Linear, Exponential, Uniform, and Custom distributions | [README](packages/distribution/README.md) |
+| [**utils**](packages/utils/) | Encoding, JSON generation, and token metadata rendering | [README](packages/utils/README.md) |
+
+### Cross-Cutting
+
+| Package | Description | Docs |
+|---------|-------------|------|
+| [**interfaces**](packages/interfaces/) | Centralized interface and struct definitions shared across all components | [README](packages/interfaces/README.md) |
+
+### Testing Infrastructure
+
+| Package | Description |
+|---------|-------------|
+| **testing** | Shared test constants and addresses |
+| **test_common** | Shared mock contracts and example implementations |
+
+## Quick Start
 
 ### Prerequisites
 
@@ -96,106 +138,32 @@ mod MyGameToken {
 }
 ```
 
-## 📦 **Packages**
+## Extension System
 
-### Core Components
+Game Components uses interface-based extensions for modularity:
 
-#### 🏆 **Metagame** (`packages/metagame/`)
+| Extension | Purpose |
+|-----------|---------|
+| **Settings** | Game configuration (difficulty, modes, custom parameters) |
+| **Objectives** | Achievements and goals tracking with completion rewards |
+| **Context** | Tournament/event metadata and cross-game coordination |
+| **Callback** | Automatic metagame notifications on score/game_over/objective events |
+| **Minter** | Custom minting logic and access control |
+| **Renderer** | Dynamic UI/metadata generation for tokens |
+| **Soulbound** | Non-transferable tokens for achievements |
+| **Multi-game** | Support multiple games in one token collection |
 
-High-level game management providing:
-
-- Token delegation and minting coordination
-- Optional tournament/event context management
-- Game registration and validation
-- Cross-game player tracking
-
-**Key Interfaces:**
+### Implementation Pattern
 
 ```cairo
-trait IMetagame<TContractState> {
-    fn context_address(self: @TContractState) -> ContractAddress;
-    fn default_token_address(self: @TContractState) -> ContractAddress;
+// Check for extension availability
+if src5_component.supports_interface(IMINIGAME_SETTINGS_ID) {
+    let settings = IMinigameSettingsDispatcher { contract_address: settings_address };
+    // Use extension functionality
 }
 ```
 
-#### 🎮 **Minigame** (`packages/minigame/`)
-
-Individual game logic implementation requiring:
-
-- Implementation of `IMinigameTokenData` trait with `score()` and `game_over()` methods
-- Support for optional settings and objectives extensions
-- Integration with token contracts for NFT lifecycle management
-
-**Required Implementation:**
-
-```cairo
-trait IMinigameTokenData<TState> {
-    fn score(self: @TState, token_id: u64) -> u64;
-    fn game_over(self: @TState, token_id: u64) -> bool;
-}
-```
-
-#### 🃏 **MinigameToken** (`packages/token/`)
-
-ERC721-based NFT representing playable game instances with:
-
-- **Optimized Architecture**: Compile-time feature flags eliminate unused code
-- **Modular Extensions**: Minter, renderer, soulbound, multi-game, objectives, context
-- **Lifecycle Management**: Start/end times, playability validation
-- **Game State Tracking**: Score, objectives, completion status
-
-### Supporting Packages
-
-#### 📋 **Interfaces** (`packages/interfaces/`)
-
-Centralized interface and struct definitions shared across all components. Provides trait definitions, interface IDs, and common structs used by metagame, minigame, token, and other packages.
-
-#### 🏅 **Leaderboard** (`packages/leaderboard/`)
-
-Tournament scoring and ranking system:
-
-- Score submission and ranking management
-- Leaderboard querying and pagination
-- Integration with token game state
-
-#### 📖 **Registry** (`packages/registry/`)
-
-Game registration and discovery:
-
-- Game contract registration with metadata
-- Game address lookup by ID
-- Multi-game token support through registry-based game resolution
-
-#### 💰 **Tokenomics** (`packages/tokenomics/`)
-
-Token economics and distribution:
-
-- Ekubo TWAMM buyback mechanism
-- Stream token distribution
-- Autonomous buyback contracts
-
-#### 🚀 **Presets** (`packages/presets/`)
-
-Ready-to-deploy contract presets:
-
-- LeaderboardPreset
-- AutonomousBuyback
-- StreamToken (ERC20 with premint and streaming)
-
-#### 🛠️ **Utils** (`packages/utils/`)
-
-Shared utilities providing:
-
-- JSON encoding/decoding helpers
-- Renderer trait implementations
-- Common data structures and patterns
-
-#### 🧪 **Testing Infrastructure**
-
-- **`testing`**: Shared test constants and addresses
-- **`test_common`**: Shared mock contracts and example implementations
-
-## 🔧 **Development Workflow**
+## Development Workflow
 
 ### Build Commands
 
@@ -223,34 +191,7 @@ snforge test -p game_components_token test_mint_basic
 snforge test -p game_components_token --fuzzer-runs 256
 ```
 
-## 🎨 **Extension System**
-
-Game Components uses interface-based extensions for modularity:
-
-### Available Extensions
-
-- **Settings**: Game configuration (difficulty, modes, custom parameters)
-- **Objectives**: Achievements and goals tracking with completion rewards
-- **Context**: Tournament/event metadata and cross-game coordination
-- **Callback**: Automatic metagame notifications on score/game_over/objective events
-- **Minter**: Custom minting logic and access control
-- **Renderer**: Dynamic UI/metadata generation for tokens
-- **Soulbound**: Non-transferable tokens for achievements
-- **Multi-game**: Support multiple games in one token collection
-
-### Implementation Pattern
-
-```cairo
-// Check for extension availability
-if src5_component.supports_interface(IMINIGAME_SETTINGS_ID) {
-    let settings = IMinigameSettingsDispatcher { contract_address: settings_address };
-    // Use extension functionality
-}
-```
-
-## 📱 **Deployment & Scripts**
-
-### Deployment Scripts
+## Deployment Scripts
 
 ```bash
 # Deploy mock contracts for testing
@@ -269,31 +210,10 @@ if src5_component.supports_interface(IMINIGAME_SETTINGS_ID) {
 ./scripts/mint_games.sh
 ```
 
-## 🌟 **Key Features**
-
-### For Game Developers
-
-- **Rapid Development**: Pre-built components eliminate boilerplate
-- **Modular Design**: Pick only the extensions you need
-- **Gas Optimized**: Designed to be gas efficient and stay under Starknet limits
-
-### For Players
-
-- **True Ownership**: ERC721 tokens represent actual game instances
-- **Interoperability**: Games can interact through shared interfaces
-- **Tournament Support**: Participate in cross-game events and competitions
-
-### For Tournament Organizers
-
-- **Flexible Configuration**: Support for various tournament formats
-- **Metagame Integration**: Coordinate multiple games in single events
-- **Context Management**: Rich metadata for tournaments and competitions
-- **Player Tracking**: Cross-game player statistics and achievements
-
-## 📄 **License**
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ---
 
-**Built with ❤️ for the Starknet gaming ecosystem by [Provable Games](https://provable.games)**
+**Built with love for the Starknet gaming ecosystem by [Provable Games](https://provable.games)**
