@@ -1,7 +1,7 @@
 /// Mock contract that embeds the PrizeComponent for testing storage gas
 #[starknet::contract]
 pub mod PrizeMock {
-    use crate::models::PrizeType;
+    use crate::models::{Prize, PrizeType};
     use crate::prize::PrizeComponent;
 
     component!(path: PrizeComponent, storage: prize, event: PrizeEvent);
@@ -78,5 +78,31 @@ pub mod PrizeMock {
             self.prize._set_prize_claimed_by_hash(context_id, prize_type_hash);
         }
         was_claimed
+    }
+
+    /// Store a prize directly (for component testing without token transfers)
+    #[external(v0)]
+    fn set_prize(ref self: ContractState, prize_id: u64, prize: Prize) {
+        self.prize.set_prize(prize_id, prize);
+    }
+
+    // Note: get_prize and get_total_prizes are already exposed via #[abi(embed_v0)] PrizeImpl
+
+    /// Increment prize count
+    #[external(v0)]
+    fn increment_prize_count(ref self: ContractState) -> u64 {
+        self.prize.increment_prize_count()
+    }
+
+    /// Assert prize exists (panics if not)
+    #[external(v0)]
+    fn assert_prize_exists(self: @ContractState, prize_id: u64) {
+        self.prize.assert_prize_exists(prize_id);
+    }
+
+    /// Assert prize not claimed (panics if claimed)
+    #[external(v0)]
+    fn assert_prize_not_claimed(self: @ContractState, context_id: u64, prize_type: PrizeType) {
+        self.prize.assert_prize_not_claimed(context_id, prize_type);
     }
 }

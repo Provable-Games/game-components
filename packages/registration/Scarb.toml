@@ -11,3 +11,6 @@ sierra-replace-ids = true
 [dependencies]
 starknet.workspace = true
 game_components_interfaces = { path = "../interfaces" }
+
+[dev-dependencies]
+snforge_std.workspace = true

@@ -1,7 +1,5 @@
 use starknet::ContractAddress;
 
-// TODO: Recalculate after method rename (budokan_address -> owner_address, tournament_id ->
-// context_id)
 pub const IENTRY_VALIDATOR_ID: felt252 =
     0x01158754d5cc62137c4de2cbd0e65cbd163990af29f0182006f26fe0cac00bb6;
 

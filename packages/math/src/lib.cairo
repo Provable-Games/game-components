@@ -7,3 +7,6 @@ pub mod types;
 
 // Re-export commonly used items
 pub use types::{Fixed, FixedTrait, HALF, ONE};
+
+#[cfg(test)]
+mod tests;

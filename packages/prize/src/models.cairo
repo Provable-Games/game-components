@@ -3,6 +3,7 @@ pub use game_components_interfaces::distribution::Distribution;
 pub use game_components_interfaces::prize::{ERC20Data, ERC721Data, Prize, PrizeType, TokenTypeData};
 use starknet::ContractAddress;
 use starknet::storage_access::StorePacking;
+use crate::libs::share_math::{SHARES_PER_SLOT, get_packed_share, set_packed_share};
 
 // Packing constants for PackedERC20Data into felt252
 // Layout: [amount: 128 bits][payout_type: 8 bits][param: 16 bits][count: 32 bits] = 184 bits
@@ -188,7 +189,6 @@ pub impl StoredPrizeImpl of StoredPrizeTrait {
         }
     }
 }
-use crate::libs::share_math::{SHARES_PER_SLOT, get_packed_share, set_packed_share};
 
 /// Custom shares - stores up to 15 u16 shares in a single felt252
 /// Each share = 16 bits, Layout: [share0(16)] | [share1(16)] | ... | [share14(16)] = 240 bits

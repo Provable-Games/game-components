@@ -48,15 +48,14 @@ pub fn calculate_total(
         if p > total_payouts {
             break;
         }
-        total +=
-            calculate_share(distribution, p.try_into().unwrap(), total_payouts, available_share);
+        total += calculate_share(distribution, p, total_payouts, available_share);
         p += 1;
     }
     total
 }
 
 /// Calculate the rounding dust (difference between available_share and sum of all shares)
-/// This dust should be added to the last payout to ensure 100% distribution
+/// This dust should be added to the first payout (winner) to ensure 100% distribution
 /// Returns the dust amount in basis points
 pub fn calculate_dust(distribution: Distribution, total_payouts: u32, available_share: u16) -> u16 {
     let total = calculate_total(distribution, total_payouts, available_share);
