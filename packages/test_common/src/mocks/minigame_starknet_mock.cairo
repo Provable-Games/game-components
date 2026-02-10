@@ -329,6 +329,10 @@ pub mod minigame_starknet_mock {
             }
         }
 
+        fn objective_settings_id(self: @ContractState, objective_id: u32) -> u32 {
+            0
+        }
+
         fn objectives_details_batch(
             self: @ContractState, objective_ids: Span<u32>,
         ) -> Array<GameObjectiveDetails> {
@@ -339,6 +343,21 @@ pub mod minigame_starknet_mock {
                     break;
                 }
                 results.append(self.objectives_details(*objective_ids.at(index)));
+                index += 1;
+            }
+            results
+        }
+
+        fn objective_settings_id_batch(
+            self: @ContractState, objective_ids: Span<u32>,
+        ) -> Array<u32> {
+            let mut results = array![];
+            let mut index = 0;
+            loop {
+                if index >= objective_ids.len() {
+                    break;
+                }
+                results.append(self.objective_settings_id(*objective_ids.at(index)));
                 index += 1;
             }
             results
