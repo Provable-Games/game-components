@@ -17,11 +17,13 @@ pub trait IMinigameObjectives<TState> {
 pub trait IMinigameObjectivesDetails<TState> {
     fn objectives_count(self: @TState) -> u32;
     fn objectives_details(self: @TState, objective_id: u32) -> GameObjectiveDetails;
+    fn objective_settings_id(self: @TState, objective_id: u32) -> u32;
 
     // Batch operations
     fn objectives_details_batch(
         self: @TState, objective_ids: Span<u32>,
     ) -> Array<GameObjectiveDetails>;
+    fn objective_settings_id_batch(self: @TState, objective_ids: Span<u32>) -> Array<u32>;
 }
 
 #[starknet::interface]
