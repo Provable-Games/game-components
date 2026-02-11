@@ -5,7 +5,10 @@
 
 use game_components_testing::constants::MAX_U64;
 use openzeppelin_interfaces::introspection::{ISRC5Dispatcher, ISRC5DispatcherTrait};
-use snforge_std::{ContractClassTrait, DeclareResultTrait, declare};
+use snforge_std::{
+    ContractClassTrait, DeclareResultTrait, declare, mock_call, start_cheat_caller_address,
+    stop_cheat_caller_address,
+};
 use starknet::ContractAddress;
 use crate::extensions::callback::interface::{
     IMETAGAME_CALLBACK_ID, IMetagameCallbackDispatcher, IMetagameCallbackDispatcherTrait,
@@ -29,17 +32,35 @@ trait IMockCallbackView<TContractState> {
 // DEPLOYMENT HELPERS
 // =============================================================================
 
-fn deploy_callback_contract() -> (ContractAddress, IMetagameCallbackDispatcher) {
-    let contract = declare("MockCallbackContract").unwrap().contract_class();
-    let (address, _) = contract.deploy(@array![]).unwrap();
-    let dispatcher = IMetagameCallbackDispatcher { contract_address: address };
-    (address, dispatcher)
+fn TOKEN_ADDRESS() -> ContractAddress {
+    0x70CE0.try_into().unwrap()
 }
 
-fn deploy_empty_callback_contract() -> ContractAddress {
+fn deploy_callback_contract() -> (ContractAddress, IMetagameCallbackDispatcher, ContractAddress) {
+    let token_address = TOKEN_ADDRESS();
+    // Mock supports_interface so MetagameComponent::initializer passes SRC5 check
+    mock_call(token_address, selector!("supports_interface"), true, 100);
+
+    let contract = declare("MockCallbackContract").unwrap().contract_class();
+    // Constructor args: Option::None for context_address, then default_token_address
+    let mut calldata = array![];
+    calldata.append(1); // Option::None
+    calldata.append(token_address.into());
+    let (address, _) = contract.deploy(@calldata).unwrap();
+    let dispatcher = IMetagameCallbackDispatcher { contract_address: address };
+    (address, dispatcher, token_address)
+}
+
+fn deploy_empty_callback_contract() -> (ContractAddress, ContractAddress) {
+    let token_address = TOKEN_ADDRESS();
+    mock_call(token_address, selector!("supports_interface"), true, 100);
+
     let contract = declare("MockEmptyCallbackContract").unwrap().contract_class();
-    let (address, _) = contract.deploy(@array![]).unwrap();
-    address
+    let mut calldata = array![];
+    calldata.append(1); // Option::None
+    calldata.append(token_address.into());
+    let (address, _) = contract.deploy(@calldata).unwrap();
+    (address, token_address)
 }
 
 // =============================================================================
@@ -49,7 +70,7 @@ fn deploy_empty_callback_contract() -> ContractAddress {
 // CB-U-01: Initialize component registers SRC5 interface
 #[test]
 fn test_callback_initializer_registers_src5_interface() {
-    let (address, _) = deploy_callback_contract();
+    let (address, _, _) = deploy_callback_contract();
 
     let src5_dispatcher = ISRC5Dispatcher { contract_address: address };
     assert!(
@@ -61,7 +82,7 @@ fn test_callback_initializer_registers_src5_interface() {
 // CB-U-02: Verify ISRC5 base interface also registered
 #[test]
 fn test_callback_supports_src5_base() {
-    let (address, _) = deploy_callback_contract();
+    let (address, _, _) = deploy_callback_contract();
 
     let src5_dispatcher = ISRC5Dispatcher { contract_address: address };
     assert!(
@@ -77,9 +98,11 @@ fn test_callback_supports_src5_base() {
 // CB-U-03: on_score_update delegates to hooks trait
 #[test]
 fn test_on_score_update_delegates_to_hooks() {
-    let (address, dispatcher) = deploy_callback_contract();
+    let (address, dispatcher, token_addr) = deploy_callback_contract();
 
+    start_cheat_caller_address(address, token_addr);
     dispatcher.on_score_update(1, 100);
+    stop_cheat_caller_address(address);
 
     let view = IMockCallbackViewDispatcher { contract_address: address };
     assert!(view.score_update_count() == 1, "Score update count should be 1");
@@ -90,9 +113,11 @@ fn test_on_score_update_delegates_to_hooks() {
 // CB-U-04: on_score_update with zero score
 #[test]
 fn test_on_score_update_with_zero_score() {
-    let (address, dispatcher) = deploy_callback_contract();
+    let (address, dispatcher, token_addr) = deploy_callback_contract();
 
+    start_cheat_caller_address(address, token_addr);
     dispatcher.on_score_update(5, 0);
+    stop_cheat_caller_address(address);
 
     let view = IMockCallbackViewDispatcher { contract_address: address };
     assert!(view.last_token_id() == 5, "Token ID should be 5");
@@ -102,9 +127,11 @@ fn test_on_score_update_with_zero_score() {
 // CB-U-05: on_score_update with max u64 score
 #[test]
 fn test_on_score_update_with_max_score() {
-    let (address, dispatcher) = deploy_callback_contract();
+    let (address, dispatcher, token_addr) = deploy_callback_contract();
 
+    start_cheat_caller_address(address, token_addr);
     dispatcher.on_score_update(1, MAX_U64);
+    stop_cheat_caller_address(address);
 
     let view = IMockCallbackViewDispatcher { contract_address: address };
     assert!(view.last_score() == MAX_U64, "Should handle max u64 score");
@@ -113,10 +140,12 @@ fn test_on_score_update_with_max_score() {
 // CB-U-06: on_score_update with large token_id
 #[test]
 fn test_on_score_update_with_large_token_id() {
-    let (address, dispatcher) = deploy_callback_contract();
+    let (address, dispatcher, token_addr) = deploy_callback_contract();
 
     let large_token_id: u256 = 0xFFFFFFFFFFFFFFFF; // max u64 as u256
+    start_cheat_caller_address(address, token_addr);
     dispatcher.on_score_update(large_token_id, 50);
+    stop_cheat_caller_address(address);
 
     let view = IMockCallbackViewDispatcher { contract_address: address };
     assert!(view.last_token_id() == large_token_id, "Should handle large token ID");
@@ -125,11 +154,13 @@ fn test_on_score_update_with_large_token_id() {
 // CB-U-multiple: Multiple score updates
 #[test]
 fn test_on_score_update_multiple_calls() {
-    let (address, dispatcher) = deploy_callback_contract();
+    let (address, dispatcher, token_addr) = deploy_callback_contract();
 
+    start_cheat_caller_address(address, token_addr);
     dispatcher.on_score_update(1, 100);
     dispatcher.on_score_update(2, 200);
     dispatcher.on_score_update(3, 300);
+    stop_cheat_caller_address(address);
 
     let view = IMockCallbackViewDispatcher { contract_address: address };
     assert!(view.score_update_count() == 3, "Score update count should be 3");
@@ -144,9 +175,11 @@ fn test_on_score_update_multiple_calls() {
 // CB-U-07: on_game_over delegates to hooks trait
 #[test]
 fn test_on_game_over_delegates_to_hooks() {
-    let (address, dispatcher) = deploy_callback_contract();
+    let (address, dispatcher, token_addr) = deploy_callback_contract();
 
+    start_cheat_caller_address(address, token_addr);
     dispatcher.on_game_over(1, 500);
+    stop_cheat_caller_address(address);
 
     let view = IMockCallbackViewDispatcher { contract_address: address };
     assert!(view.game_over_count() == 1, "Game over count should be 1");
@@ -157,9 +190,11 @@ fn test_on_game_over_delegates_to_hooks() {
 // CB-U-08: on_game_over with zero final_score
 #[test]
 fn test_on_game_over_with_zero_final_score() {
-    let (address, dispatcher) = deploy_callback_contract();
+    let (address, dispatcher, token_addr) = deploy_callback_contract();
 
+    start_cheat_caller_address(address, token_addr);
     dispatcher.on_game_over(10, 0);
+    stop_cheat_caller_address(address);
 
     let view = IMockCallbackViewDispatcher { contract_address: address };
     assert!(view.last_token_id() == 10, "Token ID should be 10");
@@ -169,9 +204,11 @@ fn test_on_game_over_with_zero_final_score() {
 // CB-U-09: on_game_over with max u64 final_score
 #[test]
 fn test_on_game_over_with_max_final_score() {
-    let (address, dispatcher) = deploy_callback_contract();
+    let (address, dispatcher, token_addr) = deploy_callback_contract();
 
+    start_cheat_caller_address(address, token_addr);
     dispatcher.on_game_over(1, MAX_U64);
+    stop_cheat_caller_address(address);
 
     let view = IMockCallbackViewDispatcher { contract_address: address };
     assert!(view.last_final_score() == MAX_U64, "Should handle max u64 final score");
@@ -180,10 +217,12 @@ fn test_on_game_over_with_max_final_score() {
 // CB-U-10: on_game_over called multiple times (idempotent handling)
 #[test]
 fn test_on_game_over_multiple_calls() {
-    let (address, dispatcher) = deploy_callback_contract();
+    let (address, dispatcher, token_addr) = deploy_callback_contract();
 
+    start_cheat_caller_address(address, token_addr);
     dispatcher.on_game_over(1, 100);
     dispatcher.on_game_over(1, 100);
+    stop_cheat_caller_address(address);
 
     let view = IMockCallbackViewDispatcher { contract_address: address };
     assert!(view.game_over_count() == 2, "Should receive both calls");
@@ -196,9 +235,11 @@ fn test_on_game_over_multiple_calls() {
 // CB-U-11: on_objective_complete delegates to hooks trait
 #[test]
 fn test_on_objective_complete_delegates_to_hooks() {
-    let (address, dispatcher) = deploy_callback_contract();
+    let (address, dispatcher, token_addr) = deploy_callback_contract();
 
+    start_cheat_caller_address(address, token_addr);
     dispatcher.on_objective_complete(42);
+    stop_cheat_caller_address(address);
 
     let view = IMockCallbackViewDispatcher { contract_address: address };
     assert!(view.objective_complete_count() == 1, "Objective complete count should be 1");
@@ -208,11 +249,13 @@ fn test_on_objective_complete_delegates_to_hooks() {
 // CB-U-12: on_objective_complete with various token_ids
 #[test]
 fn test_on_objective_complete_various_token_ids() {
-    let (address, dispatcher) = deploy_callback_contract();
+    let (address, dispatcher, token_addr) = deploy_callback_contract();
 
+    start_cheat_caller_address(address, token_addr);
     dispatcher.on_objective_complete(1);
     dispatcher.on_objective_complete(100);
     dispatcher.on_objective_complete(1000);
+    stop_cheat_caller_address(address);
 
     let view = IMockCallbackViewDispatcher { contract_address: address };
     assert!(view.objective_complete_count() == 3, "Should have 3 objective completions");
@@ -222,10 +265,12 @@ fn test_on_objective_complete_various_token_ids() {
 // CB-U-13: on_objective_complete with large token_id
 #[test]
 fn test_on_objective_complete_with_large_token_id() {
-    let (address, dispatcher) = deploy_callback_contract();
+    let (address, dispatcher, token_addr) = deploy_callback_contract();
 
     let large_token_id: u256 = 0xFFFFFFFFFFFFFFFF;
+    start_cheat_caller_address(address, token_addr);
     dispatcher.on_objective_complete(large_token_id);
+    stop_cheat_caller_address(address);
 
     let view = IMockCallbackViewDispatcher { contract_address: address };
     assert!(view.last_token_id() == large_token_id, "Should handle large token ID");
@@ -238,31 +283,66 @@ fn test_on_objective_complete_with_large_token_id() {
 // CB-U-14: Empty hooks on_score_update is no-op
 #[test]
 fn test_empty_hooks_on_score_update() {
-    let address = deploy_empty_callback_contract();
+    let (address, token_addr) = deploy_empty_callback_contract();
     let dispatcher = IMetagameCallbackDispatcher { contract_address: address };
 
+    start_cheat_caller_address(address, token_addr);
     // Should not panic
     dispatcher.on_score_update(1, 100);
+    stop_cheat_caller_address(address);
 }
 
 // CB-U-15: Empty hooks on_game_over is no-op
 #[test]
 fn test_empty_hooks_on_game_over() {
-    let address = deploy_empty_callback_contract();
+    let (address, token_addr) = deploy_empty_callback_contract();
     let dispatcher = IMetagameCallbackDispatcher { contract_address: address };
 
+    start_cheat_caller_address(address, token_addr);
     // Should not panic
     dispatcher.on_game_over(1, 500);
+    stop_cheat_caller_address(address);
 }
 
 // CB-U-16: Empty hooks on_objective_complete is no-op
 #[test]
 fn test_empty_hooks_on_objective_complete() {
-    let address = deploy_empty_callback_contract();
+    let (address, token_addr) = deploy_empty_callback_contract();
     let dispatcher = IMetagameCallbackDispatcher { contract_address: address };
 
+    start_cheat_caller_address(address, token_addr);
     // Should not panic
     dispatcher.on_objective_complete(1);
+    stop_cheat_caller_address(address);
+}
+
+// =============================================================================
+// CALLER VALIDATION / REJECTION TESTS
+// =============================================================================
+
+// CB-U-17: on_score_update rejects unauthorized caller
+#[test]
+#[should_panic(expected: "MetagameCallback: caller is not the token contract")]
+fn test_on_score_update_rejects_unauthorized_caller() {
+    let (_, dispatcher, _) = deploy_callback_contract();
+    // Call without cheating caller — default caller is not the token address
+    dispatcher.on_score_update(1, 100);
+}
+
+// CB-U-18: on_game_over rejects unauthorized caller
+#[test]
+#[should_panic(expected: "MetagameCallback: caller is not the token contract")]
+fn test_on_game_over_rejects_unauthorized_caller() {
+    let (_, dispatcher, _) = deploy_callback_contract();
+    dispatcher.on_game_over(1, 500);
+}
+
+// CB-U-19: on_objective_complete rejects unauthorized caller
+#[test]
+#[should_panic(expected: "MetagameCallback: caller is not the token contract")]
+fn test_on_objective_complete_rejects_unauthorized_caller() {
+    let (_, dispatcher, _) = deploy_callback_contract();
+    dispatcher.on_objective_complete(42);
 }
 
 // =============================================================================
@@ -273,11 +353,13 @@ fn test_empty_hooks_on_objective_complete() {
 #[test]
 #[fuzzer(runs: 100)]
 fn test_fuzz_on_score_update(token_id: u64, score: u64) {
-    let (address, dispatcher) = deploy_callback_contract();
+    let (address, dispatcher, token_addr) = deploy_callback_contract();
 
     // Convert u64 to u256 for the interface
     let token_id_u256: u256 = token_id.into();
+    start_cheat_caller_address(address, token_addr);
     dispatcher.on_score_update(token_id_u256, score);
+    stop_cheat_caller_address(address);
 
     let view = IMockCallbackViewDispatcher { contract_address: address };
     assert!(view.last_token_id() == token_id_u256, "Token ID should match");
@@ -288,10 +370,12 @@ fn test_fuzz_on_score_update(token_id: u64, score: u64) {
 #[test]
 #[fuzzer(runs: 100)]
 fn test_fuzz_on_game_over(token_id: u64, final_score: u64) {
-    let (address, dispatcher) = deploy_callback_contract();
+    let (address, dispatcher, token_addr) = deploy_callback_contract();
 
     let token_id_u256: u256 = token_id.into();
+    start_cheat_caller_address(address, token_addr);
     dispatcher.on_game_over(token_id_u256, final_score);
+    stop_cheat_caller_address(address);
 
     let view = IMockCallbackViewDispatcher { contract_address: address };
     assert!(view.last_token_id() == token_id_u256, "Token ID should match");
@@ -302,10 +386,12 @@ fn test_fuzz_on_game_over(token_id: u64, final_score: u64) {
 #[test]
 #[fuzzer(runs: 100)]
 fn test_fuzz_on_objective_complete(token_id: u64) {
-    let (address, dispatcher) = deploy_callback_contract();
+    let (address, dispatcher, token_addr) = deploy_callback_contract();
 
     let token_id_u256: u256 = token_id.into();
+    start_cheat_caller_address(address, token_addr);
     dispatcher.on_objective_complete(token_id_u256);
+    stop_cheat_caller_address(address);
 
     let view = IMockCallbackViewDispatcher { contract_address: address };
     assert!(view.last_token_id() == token_id_u256, "Token ID should match");
@@ -318,8 +404,9 @@ fn test_fuzz_on_objective_complete(token_id: u64) {
 // Test multiple callback types in sequence
 #[test]
 fn test_multiple_callback_types() {
-    let (address, dispatcher) = deploy_callback_contract();
+    let (address, dispatcher, token_addr) = deploy_callback_contract();
 
+    start_cheat_caller_address(address, token_addr);
     // Score update
     dispatcher.on_score_update(1, 100);
 
@@ -328,6 +415,7 @@ fn test_multiple_callback_types() {
 
     // Objective complete
     dispatcher.on_objective_complete(1);
+    stop_cheat_caller_address(address);
 
     let view = IMockCallbackViewDispatcher { contract_address: address };
     assert!(view.score_update_count() == 1, "Should have 1 score update");
@@ -343,11 +431,14 @@ fn test_multiple_callback_types() {
 #[starknet::contract]
 mod MockCallbackContract {
     use openzeppelin_introspection::src5::SRC5Component;
+    use starknet::ContractAddress;
     use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
     use crate::extensions::callback::callback::MetagameCallbackComponent;
+    use crate::metagame::MetagameComponent;
     use super::IMockCallbackView;
 
     component!(path: MetagameCallbackComponent, storage: callback, event: CallbackEvent);
+    component!(path: MetagameComponent, storage: metagame, event: MetagameEvent);
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
 
     // Custom hooks implementation that tracks calls
@@ -376,12 +467,18 @@ mod MockCallbackContract {
     impl CallbackInternalImpl = MetagameCallbackComponent::InternalImpl<ContractState>;
 
     #[abi(embed_v0)]
+    impl MetagameImpl = MetagameComponent::MetagameImpl<ContractState>;
+    impl MetagameInternalImpl = MetagameComponent::InternalImpl<ContractState>;
+
+    #[abi(embed_v0)]
     impl SRC5Impl = SRC5Component::SRC5Impl<ContractState>;
 
     #[storage]
     struct Storage {
         #[substorage(v0)]
         callback: MetagameCallbackComponent::Storage,
+        #[substorage(v0)]
+        metagame: MetagameComponent::Storage,
         #[substorage(v0)]
         src5: SRC5Component::Storage,
         // Tracking storage
@@ -399,11 +496,18 @@ mod MockCallbackContract {
         #[flat]
         CallbackEvent: MetagameCallbackComponent::Event,
         #[flat]
+        MetagameEvent: MetagameComponent::Event,
+        #[flat]
         SRC5Event: SRC5Component::Event,
     }
 
     #[constructor]
-    fn constructor(ref self: ContractState) {
+    fn constructor(
+        ref self: ContractState,
+        context_address: Option<ContractAddress>,
+        default_token_address: ContractAddress,
+    ) {
+        self.metagame.initializer(context_address, default_token_address);
         self.callback.initializer();
     }
 
@@ -440,11 +544,14 @@ mod MockCallbackContract {
 #[starknet::contract]
 mod MockEmptyCallbackContract {
     use openzeppelin_introspection::src5::SRC5Component;
+    use starknet::ContractAddress;
     use crate::extensions::callback::callback::{
         MetagameCallbackComponent, MetagameCallbackHooksEmptyImpl,
     };
+    use crate::metagame::MetagameComponent;
 
     component!(path: MetagameCallbackComponent, storage: callback, event: CallbackEvent);
+    component!(path: MetagameComponent, storage: metagame, event: MetagameEvent);
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
 
     // Use the empty hooks implementation
@@ -456,12 +563,18 @@ mod MockEmptyCallbackContract {
     impl CallbackInternalImpl = MetagameCallbackComponent::InternalImpl<ContractState>;
 
     #[abi(embed_v0)]
+    impl MetagameImpl = MetagameComponent::MetagameImpl<ContractState>;
+    impl MetagameInternalImpl = MetagameComponent::InternalImpl<ContractState>;
+
+    #[abi(embed_v0)]
     impl SRC5Impl = SRC5Component::SRC5Impl<ContractState>;
 
     #[storage]
     struct Storage {
         #[substorage(v0)]
         callback: MetagameCallbackComponent::Storage,
+        #[substorage(v0)]
+        metagame: MetagameComponent::Storage,
         #[substorage(v0)]
         src5: SRC5Component::Storage,
     }
@@ -472,11 +585,18 @@ mod MockEmptyCallbackContract {
         #[flat]
         CallbackEvent: MetagameCallbackComponent::Event,
         #[flat]
+        MetagameEvent: MetagameComponent::Event,
+        #[flat]
         SRC5Event: SRC5Component::Event,
     }
 
     #[constructor]
-    fn constructor(ref self: ContractState) {
+    fn constructor(
+        ref self: ContractState,
+        context_address: Option<ContractAddress>,
+        default_token_address: ContractAddress,
+    ) {
+        self.metagame.initializer(context_address, default_token_address);
         self.callback.initializer();
     }
 }
