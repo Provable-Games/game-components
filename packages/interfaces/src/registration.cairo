@@ -1,31 +1,23 @@
-use starknet::ContractAddress;
-
 #[derive(Copy, Drop, Serde)]
 pub struct Registration {
-    pub game_address: ContractAddress,
-    pub game_token_id: u64,
     pub context_id: u64,
-    pub entry_number: u32,
+    pub entry_id: u32,
+    pub game_token_id: felt252,
     pub has_submitted: bool,
     pub is_banned: bool,
 }
 
 #[starknet::interface]
 pub trait IRegistration<TState> {
-    /// Get registration for a game token
-    fn get_registration(
-        self: @TState, game_address: ContractAddress, token_id: u64,
-    ) -> Registration;
+    /// Get entry by context and entry ID
+    fn get_entry(self: @TState, context_id: u64, entry_id: u32) -> Registration;
 
-    /// Check if a registration is banned
-    fn is_registration_banned(self: @TState, game_address: ContractAddress, token_id: u64) -> bool;
+    /// Check if an entry exists at (context_id, entry_id)
+    fn entry_exists(self: @TState, context_id: u64, entry_id: u32) -> bool;
 
-    /// Get context ID for a token
-    fn get_context_id_for_token(self: @TState, game_address: ContractAddress, token_id: u64) -> u64;
+    /// Check if an entry is banned
+    fn is_entry_banned(self: @TState, context_id: u64, entry_id: u32) -> bool;
 
     /// Get entry count for a context
     fn get_entry_count(self: @TState, context_id: u64) -> u32;
-
-    /// Check if a registration exists
-    fn registration_exists(self: @TState, game_address: ContractAddress, token_id: u64) -> bool;
 }
