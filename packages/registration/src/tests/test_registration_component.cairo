@@ -74,15 +74,13 @@ fn test_entry_exists_true_after_set() {
 }
 
 #[test]
-fn test_entry_exists_false_with_zero_token_id() {
+#[should_panic(expected: 'Invalid token id')]
+fn test_set_entry_zero_token_id_panics() {
     let mock = deploy_mock();
 
-    // game_token_id == 0 means entry does not exist
+    // game_token_id == 0 is invalid, should panic
     let reg = make_registration(1, 1, 0, false, false);
     mock.set_entry(reg);
-
-    let exists = mock.entry_exists(1, 1);
-    assert!(!exists, "entry with game_token_id=0 should not be considered existing");
 }
 
 // ============================================================================

@@ -68,6 +68,7 @@ pub mod RegistrationComponent {
 
         /// Write an entry to storage
         fn set_entry(ref self: ComponentState<TContractState>, registration: @Registration) {
+            assert(*registration.game_token_id != 0, 'Invalid token id');
             let data = RegistrationEntryData {
                 game_token_id: *registration.game_token_id,
                 has_submitted: *registration.has_submitted,
@@ -97,20 +98,14 @@ pub mod RegistrationComponent {
             ref self: ComponentState<TContractState>, context_id: u64, entry_id: u32,
         ) {
             let data = self.Registration_entries.entry((context_id, entry_id)).read();
-            let updated = RegistrationEntryData {
-                game_token_id: data.game_token_id, has_submitted: true, is_banned: data.is_banned,
-            };
+            let updated = RegistrationEntryData { has_submitted: true, ..data };
             self.Registration_entries.entry((context_id, entry_id)).write(updated);
         }
 
         /// Ban an entry
         fn ban_entry(ref self: ComponentState<TContractState>, context_id: u64, entry_id: u32) {
             let data = self.Registration_entries.entry((context_id, entry_id)).read();
-            let updated = RegistrationEntryData {
-                game_token_id: data.game_token_id,
-                has_submitted: data.has_submitted,
-                is_banned: true,
-            };
+            let updated = RegistrationEntryData { is_banned: true, ..data };
             self.Registration_entries.entry((context_id, entry_id)).write(updated);
         }
 
