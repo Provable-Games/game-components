@@ -1,24 +1,18 @@
 /// RegistrationComponent handles registration storage and logic for any context.
-/// This component manages:
-/// - Player registrations for contexts (tournaments, quests, etc.)
-/// - Entry counts per context
-/// - Score submission tracking
-/// - Registration banning
+/// Entries are keyed by (context_id, entry_id) for direct enumeration.
 
 #[starknet::component]
 pub mod RegistrationComponent {
     use game_components_interfaces::registration::{IRegistration, Registration};
-    use starknet::ContractAddress;
     use starknet::storage::{
         Map, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess,
     };
-    use crate::models::{RegistrationData, RegistrationDataStorePacking};
+    use crate::models::RegistrationEntryData;
 
     #[storage]
     pub struct Storage {
-        /// Registration data keyed by (game_address, game_token_id)
-        /// Stores: context_id, entry_number, has_submitted, is_banned
-        Registration_registrations: Map<(ContractAddress, u64), RegistrationData>,
+        /// Entry data keyed by (context_id, entry_id)
+        Registration_entries: Map<(u64, u32), RegistrationEntryData>,
         /// Entry count per context
         Registration_entry_counts: Map<u64, u32>,
     }
@@ -31,32 +25,26 @@ pub mod RegistrationComponent {
     impl RegistrationComponentImpl<
         TContractState, +HasComponent<TContractState>,
     > of IRegistration<ComponentState<TContractState>> {
-        fn get_registration(
-            self: @ComponentState<TContractState>, game_address: ContractAddress, token_id: u64,
+        fn get_entry(
+            self: @ComponentState<TContractState>, context_id: u64, entry_id: u32,
         ) -> Registration {
-            self._get_registration(game_address, token_id)
+            self._get_entry(context_id, entry_id)
         }
 
-        fn is_registration_banned(
-            self: @ComponentState<TContractState>, game_address: ContractAddress, token_id: u64,
+        fn entry_exists(
+            self: @ComponentState<TContractState>, context_id: u64, entry_id: u32,
         ) -> bool {
-            self.Registration_registrations.entry((game_address, token_id)).read().is_banned
+            self._entry_exists(context_id, entry_id)
         }
 
-        fn get_context_id_for_token(
-            self: @ComponentState<TContractState>, game_address: ContractAddress, token_id: u64,
-        ) -> u64 {
-            self._get_context_id_for_token(game_address, token_id)
+        fn is_entry_banned(
+            self: @ComponentState<TContractState>, context_id: u64, entry_id: u32,
+        ) -> bool {
+            self.Registration_entries.entry((context_id, entry_id)).read().is_banned
         }
 
         fn get_entry_count(self: @ComponentState<TContractState>, context_id: u64) -> u32 {
             self._get_entry_count(context_id)
-        }
-
-        fn registration_exists(
-            self: @ComponentState<TContractState>, game_address: ContractAddress, token_id: u64,
-        ) -> bool {
-            self._registration_exists(game_address, token_id)
         }
     }
 
@@ -64,47 +52,31 @@ pub mod RegistrationComponent {
     pub impl RegistrationInternalImpl<
         TContractState, +HasComponent<TContractState>,
     > of RegistrationInternalTrait<TContractState> {
-        /// Get registration for a game token (internal)
-        fn _get_registration(
-            self: @ComponentState<TContractState>, game_address: ContractAddress, token_id: u64,
+        /// Get entry by (context_id, entry_id)
+        fn _get_entry(
+            self: @ComponentState<TContractState>, context_id: u64, entry_id: u32,
         ) -> Registration {
-            let reg_data = self.Registration_registrations.entry((game_address, token_id)).read();
+            let data = self.Registration_entries.entry((context_id, entry_id)).read();
             Registration {
-                game_address,
-                game_token_id: token_id,
-                context_id: reg_data.context_id,
-                entry_number: reg_data.entry_number,
-                has_submitted: reg_data.has_submitted,
-                is_banned: reg_data.is_banned,
+                context_id,
+                entry_id,
+                game_token_id: data.game_token_id,
+                has_submitted: data.has_submitted,
+                is_banned: data.is_banned,
             }
         }
 
-        /// Get raw registration data (for internal use)
-        fn get_registration_data(
-            self: @ComponentState<TContractState>, game_address: ContractAddress, token_id: u64,
-        ) -> RegistrationData {
-            self.Registration_registrations.entry((game_address, token_id)).read()
-        }
-
-        /// Set registration for a game token
-        fn set_registration(ref self: ComponentState<TContractState>, registration: @Registration) {
-            let reg_data = RegistrationData {
-                context_id: *registration.context_id,
-                entry_number: *registration.entry_number,
+        /// Write an entry to storage
+        fn set_entry(ref self: ComponentState<TContractState>, registration: @Registration) {
+            let data = RegistrationEntryData {
+                game_token_id: *registration.game_token_id,
                 has_submitted: *registration.has_submitted,
                 is_banned: *registration.is_banned,
             };
             self
-                .Registration_registrations
-                .entry((*registration.game_address, *registration.game_token_id))
-                .write(reg_data);
-        }
-
-        /// Get context ID for a token (internal)
-        fn _get_context_id_for_token(
-            self: @ComponentState<TContractState>, game_address: ContractAddress, token_id: u64,
-        ) -> u64 {
-            self.Registration_registrations.entry((game_address, token_id)).read().context_id
+                .Registration_entries
+                .entry((*registration.context_id, *registration.entry_id))
+                .write(data);
         }
 
         /// Get entry count for a context (internal)
@@ -120,45 +92,33 @@ pub mod RegistrationComponent {
             new_count
         }
 
-        /// Mark a registration as having submitted a score
-        fn mark_score_submitted(
-            ref self: ComponentState<TContractState>, game_address: ContractAddress, token_id: u64,
+        /// Mark an entry as having submitted a score
+        fn mark_entry_submitted(
+            ref self: ComponentState<TContractState>, context_id: u64, entry_id: u32,
         ) {
-            let registration = self
-                .Registration_registrations
-                .entry((game_address, token_id))
-                .read();
-            let updated = RegistrationData {
-                context_id: registration.context_id,
-                entry_number: registration.entry_number,
-                has_submitted: true,
-                is_banned: registration.is_banned,
+            let data = self.Registration_entries.entry((context_id, entry_id)).read();
+            let updated = RegistrationEntryData {
+                game_token_id: data.game_token_id, has_submitted: true, is_banned: data.is_banned,
             };
-            self.Registration_registrations.entry((game_address, token_id)).write(updated);
+            self.Registration_entries.entry((context_id, entry_id)).write(updated);
         }
 
-        /// Ban a registration
-        fn ban_registration(
-            ref self: ComponentState<TContractState>, game_address: ContractAddress, token_id: u64,
-        ) {
-            let registration = self
-                .Registration_registrations
-                .entry((game_address, token_id))
-                .read();
-            let updated = RegistrationData {
-                context_id: registration.context_id,
-                entry_number: registration.entry_number,
-                has_submitted: registration.has_submitted,
+        /// Ban an entry
+        fn ban_entry(ref self: ComponentState<TContractState>, context_id: u64, entry_id: u32) {
+            let data = self.Registration_entries.entry((context_id, entry_id)).read();
+            let updated = RegistrationEntryData {
+                game_token_id: data.game_token_id,
+                has_submitted: data.has_submitted,
                 is_banned: true,
             };
-            self.Registration_registrations.entry((game_address, token_id)).write(updated);
+            self.Registration_entries.entry((context_id, entry_id)).write(updated);
         }
 
-        /// Check if a registration exists (has non-zero entry number) (internal)
-        fn _registration_exists(
-            self: @ComponentState<TContractState>, game_address: ContractAddress, token_id: u64,
+        /// Check if an entry exists (game_token_id != 0)
+        fn _entry_exists(
+            self: @ComponentState<TContractState>, context_id: u64, entry_id: u32,
         ) -> bool {
-            self.Registration_registrations.entry((game_address, token_id)).read().entry_number != 0
+            self.Registration_entries.entry((context_id, entry_id)).read().game_token_id != 0
         }
 
         /// Validate registration for score submission

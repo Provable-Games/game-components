@@ -24,8 +24,8 @@ pub mod RegistrationMock {
 
     // Expose internal functions for testing
     #[external(v0)]
-    fn set_registration(ref self: ContractState, registration: Registration) {
-        self.registration.set_registration(@registration);
+    fn set_entry(ref self: ContractState, registration: Registration) {
+        self.registration.set_entry(@registration);
     }
 
     #[external(v0)]
@@ -34,17 +34,13 @@ pub mod RegistrationMock {
     }
 
     #[external(v0)]
-    fn mark_score_submitted(
-        ref self: ContractState, game_address: starknet::ContractAddress, token_id: u64,
-    ) {
-        self.registration.mark_score_submitted(game_address, token_id);
+    fn mark_entry_submitted(ref self: ContractState, context_id: u64, entry_id: u32) {
+        self.registration.mark_entry_submitted(context_id, entry_id);
     }
 
     #[external(v0)]
-    fn ban_registration(
-        ref self: ContractState, game_address: starknet::ContractAddress, token_id: u64,
-    ) {
-        self.registration.ban_registration(game_address, token_id);
+    fn ban_entry(ref self: ContractState, context_id: u64, entry_id: u32) {
+        self.registration.ban_entry(context_id, entry_id);
     }
 
     #[external(v0)]
