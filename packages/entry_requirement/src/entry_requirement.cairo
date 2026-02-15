@@ -8,11 +8,14 @@
 
 #[starknet::component]
 pub mod EntryRequirementComponent {
+    use core::num::traits::Zero;
     use core::poseidon::poseidon_hash_span;
     use game_components_interfaces::entry_requirement::IEntryRequirement;
     use game_components_interfaces::entry_validator::{
-        IEntryValidatorDispatcher, IEntryValidatorDispatcherTrait,
+        IENTRY_VALIDATOR_ID, IEntryValidatorDispatcher, IEntryValidatorDispatcherTrait,
     };
+    use openzeppelin_interfaces::erc721::{IERC721Dispatcher, IERC721DispatcherTrait, IERC721_ID};
+    use openzeppelin_interfaces::introspection::{ISRC5Dispatcher, ISRC5DispatcherTrait};
     use starknet::storage::{
         Map, MutableVecTrait, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess,
         Vec, VecTrait,
@@ -234,6 +237,107 @@ pub mod EntryRequirementComponent {
             let mut data = ArrayTrait::new();
             proof.serialize(ref data);
             poseidon_hash_span(data.span())
+        }
+
+        /// Validates a qualification proof against an entry requirement.
+        /// Returns the qualifying address (NFT owner, allowlist address, or caller).
+        fn validate_qualification(
+            self: @ComponentState<TContractState>,
+            context_id: u64,
+            entry_requirement: EntryRequirement,
+            qualifier: QualificationProof,
+        ) -> ContractAddress {
+            match entry_requirement.entry_requirement_type {
+                EntryRequirementType::token(token_address) => {
+                    let qualification = match qualifier {
+                        QualificationProof::NFT(qual) => qual,
+                        _ => panic!(
+                            "EntryRequirement: Provided qualification proof is not of type 'NFT'",
+                        ),
+                    };
+                    let erc721_dispatcher = IERC721Dispatcher { contract_address: token_address };
+                    erc721_dispatcher.owner_of(qualification.token_id)
+                },
+                EntryRequirementType::allowlist(addresses) => {
+                    let qualifying_address = match qualifier {
+                        QualificationProof::Address(addr) => addr,
+                        _ => panic!(
+                            "EntryRequirement: Provided qualification proof is not of type 'Address'",
+                        ),
+                    };
+                    assert!(
+                        Self::_contains_address(addresses, qualifying_address),
+                        "EntryRequirement: Qualifying address is not in allowlist",
+                    );
+                    qualifying_address
+                },
+                EntryRequirementType::extension(extension_config) => {
+                    let qualification = match qualifier {
+                        QualificationProof::Extension(qual) => qual,
+                        _ => panic!(
+                            "EntryRequirement: Provided qualification proof is not of type 'Extension'",
+                        ),
+                    };
+                    let entry_validator_dispatcher = IEntryValidatorDispatcher {
+                        contract_address: extension_config.address,
+                    };
+                    let caller_address = get_caller_address();
+                    let display_extension_address: felt252 = extension_config.address.into();
+                    assert!(
+                        entry_validator_dispatcher
+                            .valid_entry(context_id, caller_address, qualification),
+                        "EntryRequirement: Invalid entry according to extension {}",
+                        display_extension_address,
+                    );
+                    caller_address
+                },
+            }
+        }
+
+        /// Validates entry requirement configuration at creation time.
+        /// Checks SRC5 interfaces (ERC721 for token, IEntryValidator for extension).
+        fn assert_valid_entry_requirement(
+            self: @ComponentState<TContractState>, entry_requirement: EntryRequirement,
+        ) {
+            match entry_requirement.entry_requirement_type {
+                EntryRequirementType::token(token) => {
+                    let src5_dispatcher = ISRC5Dispatcher { contract_address: token };
+                    let display_address: felt252 = token.into();
+                    assert!(
+                        src5_dispatcher.supports_interface(IERC721_ID),
+                        "EntryRequirement: Token address {} does not support IERC721 interface",
+                        display_address,
+                    );
+                },
+                EntryRequirementType::allowlist(_) => {},
+                EntryRequirementType::extension(extension_config) => {
+                    let extension_address = extension_config.address;
+                    assert!(
+                        !extension_address.is_zero(),
+                        "EntryRequirement: Extension address can't be zero",
+                    );
+                    let src5_dispatcher = ISRC5Dispatcher { contract_address: extension_address };
+                    let display_address: felt252 = extension_address.into();
+                    assert!(
+                        src5_dispatcher.supports_interface(IENTRY_VALIDATOR_ID),
+                        "EntryRequirement: Extension address {} does not support IEntryValidator interface",
+                        display_address,
+                    );
+                },
+            }
+        }
+
+        fn _contains_address(addresses: Span<ContractAddress>, target: ContractAddress) -> bool {
+            let mut i = 0;
+            loop {
+                if i >= addresses.len() {
+                    break false;
+                }
+                if *addresses.at(i) == target {
+                    break true;
+                }
+                i += 1;
+            }
         }
 
         /// Update qualification entries after a successful entry

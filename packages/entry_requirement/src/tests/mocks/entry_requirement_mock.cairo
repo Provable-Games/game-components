@@ -1,5 +1,6 @@
 #[starknet::contract]
 pub mod EntryRequirementMock {
+    use starknet::ContractAddress;
     use crate::entry_requirement::EntryRequirementComponent;
     use crate::models::{EntryRequirement, QualificationEntries, QualificationProof};
 
@@ -44,5 +45,20 @@ pub mod EntryRequirementMock {
         entry_requirement: EntryRequirement,
     ) {
         self.entry_req.update_qualification_entries(context_id, qualifier, entry_requirement);
+    }
+
+    #[external(v0)]
+    fn validate_qualification(
+        self: @ContractState,
+        context_id: u64,
+        entry_requirement: EntryRequirement,
+        qualifier: QualificationProof,
+    ) -> ContractAddress {
+        self.entry_req.validate_qualification(context_id, entry_requirement, qualifier)
+    }
+
+    #[external(v0)]
+    fn assert_valid_entry_requirement(self: @ContractState, entry_requirement: EntryRequirement) {
+        self.entry_req.assert_valid_entry_requirement(entry_requirement);
     }
 }
