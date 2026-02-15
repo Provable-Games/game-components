@@ -12,10 +12,14 @@ pub mod PrizeComponent {
     use core::num::traits::Zero;
     use core::poseidon::poseidon_hash_span;
     use game_components_interfaces::prize::IPrize;
+    use game_components_interfaces::prize_extension::{
+        IPrizeExtensionDispatcher, IPrizeExtensionDispatcherTrait,
+    };
     use openzeppelin_interfaces::erc20::{IERC20Dispatcher, IERC20DispatcherTrait};
     use openzeppelin_interfaces::erc721::{IERC721Dispatcher, IERC721DispatcherTrait};
     use starknet::storage::{
-        Map, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess,
+        Map, MutableVecTrait, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess,
+        Vec, VecTrait,
     };
     use starknet::{ContractAddress, get_caller_address, get_contract_address};
     use crate::models::{
@@ -40,6 +44,10 @@ pub mod PrizeComponent {
         Prize_custom_shares_packed: Map<(u64, u8), CustomShares>,
         /// Number of custom shares for a prize
         Prize_custom_shares_count: Map<u64, u32>,
+        /// Extension address for extension-enhanced prizes
+        Prize_extension_address: Map<u64, ContractAddress>,
+        /// Extension config data (stored as Vec)
+        Prize_extension_config: Map<u64, Vec<felt252>>,
     }
 
     #[event]
@@ -351,6 +359,133 @@ pub mod PrizeComponent {
             let prize = self._get_prize(prize_id);
             let erc721 = IERC721Dispatcher { contract_address: prize.token_address };
             erc721.transfer_from(get_contract_address(), prize.sponsor_address, token_id.into());
+        }
+
+        // --- Extension helpers ---
+
+        /// Read extension config for a context
+        fn read_extension_config(
+            self: @ComponentState<TContractState>, context_id: u64,
+        ) -> Span<felt252> {
+            let vec = self.Prize_extension_config.entry(context_id);
+            let mut arr = ArrayTrait::new();
+            let len = vec.len();
+            let mut i: u64 = 0;
+            loop {
+                if i >= len {
+                    break;
+                }
+                arr.append(vec.at(i).read());
+                i += 1;
+            }
+            arr.span()
+        }
+
+        /// Write extension config for a context
+        fn write_extension_config(
+            ref self: ComponentState<TContractState>, context_id: u64, config: Span<felt252>,
+        ) {
+            let mut vec = self.Prize_extension_config.entry(context_id);
+            let mut i: u32 = 0;
+            loop {
+                if i >= config.len() {
+                    break;
+                }
+                vec.push(*config.at(i));
+                i += 1;
+            };
+        }
+
+        /// Set extension for a context: stores address + config and calls add_config on the
+        /// extension
+        fn set_extension(
+            ref self: ComponentState<TContractState>,
+            context_id: u64,
+            extension_address: ContractAddress,
+            config: Span<felt252>,
+        ) {
+            self.Prize_extension_address.entry(context_id).write(extension_address);
+            self.write_extension_config(context_id, config);
+
+            if !extension_address.is_zero() {
+                let dispatcher = IPrizeExtensionDispatcher { contract_address: extension_address };
+                dispatcher.add_config(context_id, config);
+            }
+        }
+
+        /// Get extension address for a context
+        fn get_extension_address(
+            self: @ComponentState<TContractState>, context_id: u64,
+        ) -> ContractAddress {
+            self.Prize_extension_address.entry(context_id).read()
+        }
+
+        // --- Extension dispatch hooks ---
+
+        /// Notify extension when a prize is deposited
+        fn notify_deposit(
+            ref self: ComponentState<TContractState>,
+            context_id: u64,
+            prize_id: u64,
+            sponsor: ContractAddress,
+            token_address: ContractAddress,
+            amount_or_token_id: u128,
+            is_erc721: bool,
+        ) {
+            let extension_address = self.Prize_extension_address.entry(context_id).read();
+            if extension_address.is_zero() {
+                return;
+            }
+
+            let config = self.read_extension_config(context_id);
+            let dispatcher = IPrizeExtensionDispatcher { contract_address: extension_address };
+            dispatcher
+                .on_deposit(
+                    context_id,
+                    prize_id,
+                    sponsor,
+                    token_address,
+                    amount_or_token_id,
+                    is_erc721,
+                    config,
+                );
+        }
+
+        /// Dispatch before_payout to extension. Returns (should_proceed, adjusted_amount).
+        /// If no extension is configured, returns (true, amount).
+        fn notify_before_payout(
+            ref self: ComponentState<TContractState>,
+            context_id: u64,
+            prize_id: u64,
+            recipient: ContractAddress,
+            amount: u128,
+        ) -> (bool, u128) {
+            let extension_address = self.Prize_extension_address.entry(context_id).read();
+            if extension_address.is_zero() {
+                return (true, amount);
+            }
+
+            let config = self.read_extension_config(context_id);
+            let dispatcher = IPrizeExtensionDispatcher { contract_address: extension_address };
+            dispatcher.before_payout(context_id, prize_id, recipient, amount, config)
+        }
+
+        /// Notify extension after payout is complete
+        fn notify_after_payout(
+            ref self: ComponentState<TContractState>,
+            context_id: u64,
+            prize_id: u64,
+            recipient: ContractAddress,
+            amount: u128,
+        ) {
+            let extension_address = self.Prize_extension_address.entry(context_id).read();
+            if extension_address.is_zero() {
+                return;
+            }
+
+            let config = self.read_extension_config(context_id);
+            let dispatcher = IPrizeExtensionDispatcher { contract_address: extension_address };
+            dispatcher.after_payout(context_id, prize_id, recipient, amount, config);
         }
     }
 }

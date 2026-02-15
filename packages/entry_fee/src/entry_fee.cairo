@@ -10,9 +10,13 @@
 pub mod EntryFeeComponent {
     use core::num::traits::Zero;
     use game_components_interfaces::entry_fee::IEntryFee;
+    use game_components_interfaces::entry_fee_extension::{
+        IEntryFeeExtensionDispatcher, IEntryFeeExtensionDispatcherTrait,
+    };
     use openzeppelin_interfaces::erc20::{IERC20Dispatcher, IERC20DispatcherTrait};
     use starknet::storage::{
-        Map, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess,
+        Map, MutableVecTrait, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess,
+        Vec, VecTrait,
     };
     use starknet::{ContractAddress, get_caller_address, get_contract_address};
     use crate::models::{
@@ -38,6 +42,10 @@ pub mod EntryFeeComponent {
         EntryFee_additional_shares_packed: Map<(u64, u8), PackedAdditionalShares>,
         /// Refund claimed: (context_id, token_id) -> claimed
         EntryFee_refund_claimed: Map<(u64, u64), bool>,
+        /// Extension address for extension-enhanced entry fees
+        EntryFee_extension_address: Map<u64, ContractAddress>,
+        /// Extension config data (stored as Vec)
+        EntryFee_extension_config: Map<u64, Vec<felt252>>,
     }
 
     #[event]
@@ -288,6 +296,151 @@ pub mod EntryFeeComponent {
                         .write(packed);
                 },
             }
+        }
+
+        // --- Extension helpers ---
+
+        /// Read extension config for a context
+        fn read_extension_config(
+            self: @ComponentState<TContractState>, context_id: u64,
+        ) -> Span<felt252> {
+            let vec = self.EntryFee_extension_config.entry(context_id);
+            let mut arr = ArrayTrait::new();
+            let len = vec.len();
+            let mut i: u64 = 0;
+            loop {
+                if i >= len {
+                    break;
+                }
+                arr.append(vec.at(i).read());
+                i += 1;
+            }
+            arr.span()
+        }
+
+        /// Write extension config for a context
+        fn write_extension_config(
+            ref self: ComponentState<TContractState>, context_id: u64, config: Span<felt252>,
+        ) {
+            let mut vec = self.EntryFee_extension_config.entry(context_id);
+            let mut i: u32 = 0;
+            loop {
+                if i >= config.len() {
+                    break;
+                }
+                vec.push(*config.at(i));
+                i += 1;
+            };
+        }
+
+        /// Set extension for a context: stores address + config and calls add_config on the
+        /// extension
+        fn set_extension(
+            ref self: ComponentState<TContractState>,
+            context_id: u64,
+            extension_address: ContractAddress,
+            config: Span<felt252>,
+        ) {
+            self.EntryFee_extension_address.entry(context_id).write(extension_address);
+            self.write_extension_config(context_id, config);
+
+            if !extension_address.is_zero() {
+                let dispatcher = IEntryFeeExtensionDispatcher {
+                    contract_address: extension_address,
+                };
+                dispatcher.add_config(context_id, config);
+            }
+        }
+
+        /// Get extension address for a context
+        fn get_extension_address(
+            self: @ComponentState<TContractState>, context_id: u64,
+        ) -> ContractAddress {
+            self.EntryFee_extension_address.entry(context_id).read()
+        }
+
+        // --- Extension dispatch hooks ---
+
+        /// Dispatch deposit hooks to the extension (calculate_fee, validate_deposit, on_deposit).
+        /// Returns the (potentially adjusted) fee amount. Panics if validation fails.
+        /// If no extension is configured, returns the base amount unchanged.
+        fn dispatch_deposit(
+            ref self: ComponentState<TContractState>,
+            context_id: u64,
+            entry_fee: @EntryFee,
+            player: ContractAddress,
+        ) -> u128 {
+            let extension_address = self.EntryFee_extension_address.entry(context_id).read();
+            let base_amount = *entry_fee.amount;
+
+            if extension_address.is_zero() {
+                return base_amount;
+            }
+
+            let config = self.read_extension_config(context_id);
+            let dispatcher = IEntryFeeExtensionDispatcher { contract_address: extension_address };
+
+            // Calculate adjusted fee
+            let adjusted_amount = dispatcher.calculate_fee(context_id, base_amount, player, config);
+
+            // Validate the deposit
+            let valid = dispatcher.validate_deposit(context_id, player, adjusted_amount, config);
+            assert!(valid, "EntryFee: Extension rejected deposit");
+
+            adjusted_amount
+        }
+
+        /// Notify extension after deposit is complete
+        fn notify_deposit(
+            ref self: ComponentState<TContractState>,
+            context_id: u64,
+            token_address: ContractAddress,
+            amount: u128,
+            player: ContractAddress,
+        ) {
+            let extension_address = self.EntryFee_extension_address.entry(context_id).read();
+            if extension_address.is_zero() {
+                return;
+            }
+
+            let config = self.read_extension_config(context_id);
+            let dispatcher = IEntryFeeExtensionDispatcher { contract_address: extension_address };
+            dispatcher.on_deposit(context_id, token_address, amount, player, config);
+        }
+
+        /// Notify extension when a claim is processed
+        fn notify_claim(
+            ref self: ComponentState<TContractState>,
+            context_id: u64,
+            claim_type: Span<felt252>,
+            claimer: ContractAddress,
+            amount: u128,
+        ) {
+            let extension_address = self.EntryFee_extension_address.entry(context_id).read();
+            if extension_address.is_zero() {
+                return;
+            }
+
+            let config = self.read_extension_config(context_id);
+            let dispatcher = IEntryFeeExtensionDispatcher { contract_address: extension_address };
+            dispatcher.on_claim(context_id, claim_type, claimer, amount, config);
+        }
+
+        /// Notify extension when a refund is processed
+        fn notify_refund(
+            ref self: ComponentState<TContractState>,
+            context_id: u64,
+            recipient: ContractAddress,
+            amount: u128,
+        ) {
+            let extension_address = self.EntryFee_extension_address.entry(context_id).read();
+            if extension_address.is_zero() {
+                return;
+            }
+
+            let config = self.read_extension_config(context_id);
+            let dispatcher = IEntryFeeExtensionDispatcher { contract_address: extension_address };
+            dispatcher.on_refund(context_id, recipient, amount, config);
         }
     }
 }
