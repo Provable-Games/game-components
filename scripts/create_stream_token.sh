@@ -12,6 +12,7 @@
 #   - Config values are human-readable (e.g., "1000000" = 1 million tokens)
 #   - The script automatically converts to wei (multiplies by 10^18)
 #   - Initial tick is calculated automatically by the StreamToken contract
+#   - total_supply is auto-calculated: LP + distributions + premints
 #
 # PRICE CALCULATION:
 #   The initial pool price is derived from the liquidity amounts you provide:
@@ -106,9 +107,6 @@ check_dependencies() {
     if ! command -v xxd &> /dev/null; then
         missing+=("xxd (part of vim or xxd package)")
     fi
-    if ! command -v bc &> /dev/null; then
-        missing+=("bc")
-    fi
 
     if [ ${#missing[@]} -ne 0 ]; then
         print_error "Missing required dependencies:"
@@ -116,8 +114,8 @@ check_dependencies() {
             echo "  - $dep"
         done
         echo ""
-        echo "Install on macOS: brew install jq xxd bc"
-        echo "Install on Ubuntu: apt install jq xxd bc curl"
+        echo "Install on macOS: brew install jq xxd"
+        echo "Install on Ubuntu: apt install jq xxd curl"
         exit 1
     fi
 }
@@ -493,7 +491,6 @@ CONFIG=$(cat "$CONFIG_FILE")
 # Extract and validate required fields
 TOKEN_NAME=$(echo "$CONFIG" | jq -r '.name')
 TOKEN_SYMBOL=$(echo "$CONFIG" | jq -r '.symbol')
-TOTAL_SUPPLY=$(echo "$CONFIG" | jq -r '.total_supply')
 
 if [ "$TOKEN_NAME" == "null" ] || [ -z "$TOKEN_NAME" ]; then
     print_error "Missing required field: name"
@@ -502,11 +499,6 @@ fi
 
 if [ "$TOKEN_SYMBOL" == "null" ] || [ -z "$TOKEN_SYMBOL" ]; then
     print_error "Missing required field: symbol"
-    exit 1
-fi
-
-if [ "$TOTAL_SUPPLY" == "null" ] || [ -z "$TOTAL_SUPPLY" ]; then
-    print_error "Missing required field: total_supply"
     exit 1
 fi
 
@@ -534,7 +526,6 @@ if [ "$PAIRED_TOKEN_AMOUNT" == "null" ] || [ -z "$PAIRED_TOKEN_AMOUNT" ]; then
 fi
 
 # Convert human-readable amounts to wei (18 decimals)
-TOTAL_SUPPLY_WEI=$(to_wei "$TOTAL_SUPPLY")
 STREAM_TOKEN_AMOUNT_WEI=$(to_wei "$STREAM_TOKEN_AMOUNT")
 PAIRED_TOKEN_AMOUNT_WEI=$(to_wei "$PAIRED_TOKEN_AMOUNT")
 
@@ -544,6 +535,20 @@ MIN_LIQUIDITY="${MIN_LIQUIDITY:-0}"
 # Count arrays
 ORDER_COUNT=$(echo "$CONFIG" | jq '.distribution_orders | length')
 PREMINT_COUNT=$(echo "$CONFIG" | jq '.premint_allocations | length')
+
+# Calculate distribution and premint totals using jq (handles empty arrays gracefully)
+DISTRIBUTION_TOTAL=$(echo "$CONFIG" | jq -r '[.distribution_orders[].amount | tonumber] | add // 0')
+PREMINT_TOTAL=$(echo "$CONFIG" | jq -r '[.premint_allocations[].amount | tonumber] | add // 0')
+
+# Auto-calculate total_supply: LP + distributions + premints
+# (registry token is minted and burned during deployment, so no extra needed)
+TOTAL_SUPPLY=$((STREAM_TOKEN_AMOUNT + DISTRIBUTION_TOTAL + PREMINT_TOTAL))
+TOTAL_SUPPLY_WEI=$(to_wei "$TOTAL_SUPPLY")
+
+print_info "Auto-calculated total_supply: $TOTAL_SUPPLY tokens"
+print_verbose "  LP tokens:           $STREAM_TOKEN_AMOUNT"
+print_verbose "  Distribution tokens: $DISTRIBUTION_TOTAL"
+print_verbose "  Premint tokens:      $PREMINT_TOTAL"
 
 if [ "$ORDER_COUNT" -eq 0 ]; then
     print_error "At least one distribution order is required"

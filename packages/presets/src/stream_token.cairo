@@ -110,8 +110,11 @@ pub mod StreamToken {
         // Mint tokens to registry for registration (1 token = 10^18 units)
         self.erc20.mint(registry_address, ERC20_UNIT.into());
 
-        // Register token with Ekubo
+        // Register token with Ekubo (registry returns the token after verification)
         self.stream.register_token();
+
+        // Burn the returned registry token so circulating supply = exactly what user specified
+        self.erc20.burn(starknet::get_contract_address(), ERC20_UNIT.into());
 
         // Mint premint allocations directly to recipients
         let mut premint_total: u128 = 0;
@@ -129,7 +132,8 @@ pub mod StreamToken {
 
         // Mint remaining tokens to factory for distribution
         // Factory will transfer to positions contract for liquidity and distribution
-        let remaining_supply: u256 = (total_supply - ERC20_UNIT - premint_total).into();
+        // (registry token was minted and burned, so remaining = total_supply - premints)
+        let remaining_supply: u256 = (total_supply - premint_total).into();
         self.erc20.mint(factory, remaining_supply);
     }
 }

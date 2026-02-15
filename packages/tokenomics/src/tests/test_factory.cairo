@@ -407,7 +407,7 @@ fn test_create_token_supply_too_low_fails() {
         },
     ];
 
-    // Supply = 100, but need: ERC20_UNIT + 1000 (LP) + 500 (distribution) = 1501 tokens
+    // Supply = 100, but need: 1000 (LP) + 500 (distribution) = 1500 tokens
     let params = CreateTokenParams {
         name: "Test",
         symbol: "TST",
@@ -560,7 +560,7 @@ fn create_params_with_premints(
         premint_total += *premint.amount;
     }
 
-    // Supply needs to cover: ERC20_UNIT (1) + LP (1000) + distribution (500) + premints
+    // Supply needs to cover: LP (1000) + distribution (500) + premints
     let base_supply: u128 = 10000_u128 * 1_000_000_000_000_000_000;
     let total_supply: u128 = base_supply + premint_total;
 
@@ -610,7 +610,7 @@ fn test_create_token_with_premints_supply_too_low_fails() {
     ];
 
     // Premints that push total over the supply limit
-    // Total needed: ERC20_UNIT (1) + LP (1000) + distribution (500) + premints (1000) = 2501+
+    // Total needed: LP (1000) + distribution (500) + premints (1000) = 2500
     // Supply provided: 2000 tokens - NOT ENOUGH
     let premint_allocations: Array<PremintAllocation> = array![
         PremintAllocation { recipient: USER1(), amount: 500_u128 * 1_000_000_000_000_000_000 },

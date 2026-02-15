@@ -1,0 +1,40 @@
+{
+  "_comment": "All token amounts assume 18 decimals. Use human-readable values (e.g., '1000000' for 1M tokens). total_supply is auto-calculated from LP + distributions + premints.",
+
+  "name": "TOKEN_NAME",
+  "symbol": "TOKEN_SYMBOL",
+
+  "liquidity_config": {
+    "paired_token": "0x03C8559b31A325f9f45Ce98f709e8e7C655805C6ca4EECB78FF7761F202AcBA3",
+    "fee": "170141183460469235273462165868118016",
+    "stream_token_amount": "5000",
+    "paired_token_amount": "500"
+  },
+
+  "distribution_orders": [
+    {
+      "_comment": "TWAMM end_time must be aligned to powers of 16. Script validates and suggests valid times.",
+      "buy_token": "0x042DD777885AD2C116be96d4D634abC90A26A790ffB5871E037Dd5Ae7d2Ec86B",
+      "fee": "170141183460469235273462165868118016",
+      "start_time": 0,
+      "end_time": 1811939328,
+      "amount": "300000",
+      "proceeds_recipient": "0xYOUR_TREASURY_ADDRESS_HERE"
+    }
+  ],
+
+  "premint_allocations": [
+    {
+      "recipient": "0xPREMINT_RECIPIENT_ADDRESS",
+      "amount": "PREMINT_AMOUNT"
+    },
+    {
+      "recipient": "0xPREMINT_RECIPIENT_ADDRESS2",
+      "amount": "PREMINT_AMOUNT"
+    },
+    {
+      "recipient": "0xPREMINT_RECIPIENT_ADDRESS3",
+      "amount": "PREMINT_AMOUNT"
+    }
+  ]
+}
