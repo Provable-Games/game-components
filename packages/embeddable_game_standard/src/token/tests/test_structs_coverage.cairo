@@ -701,3 +701,570 @@ fn test_pack_preserves_all_fields_independently() {
     assert!(unpack_settings_id(with_game_id) == 0, "settings_id should be 0");
     assert!(!unpack_soulbound(with_game_id), "soulbound should be false");
 }
+
+// ============================================================================
+// DIVREM U128-ALIGNED LAYOUT OPTIMIZATION TESTS
+// ============================================================================
+
+// ----------------------------------------------------------------------------
+// 1. Zero packed value
+// ----------------------------------------------------------------------------
+
+#[test]
+fn test_divrem_zero_packed_value_is_zero() {
+    let packed = pack_token_id(0, 0, 0, 0, 0, 0, 0, false, false, false, 0, 0, 0);
+    let packed_u256: u256 = packed.into();
+    assert!(packed_u256.low == 0, "zero pack: low u128 should be 0");
+    assert!(packed_u256.high == 0, "zero pack: high u128 should be 0");
+    assert!(packed == 0, "zero pack: felt252 should be 0");
+}
+
+// ----------------------------------------------------------------------------
+// 2. u128 boundary - low half only (game_id, minted_by, settings_id, start_delay, flags)
+// ----------------------------------------------------------------------------
+
+#[test]
+fn test_divrem_low_half_only_high_is_zero() {
+    // Set all low-half fields to non-zero, all high-half fields to zero
+    // Low half: game_id, minted_by, settings_id, start_delay, soulbound, has_context, paymaster
+    let packed = pack_token_id(
+        999, // game_id (low)
+        54321, // minted_by (low)
+        42, // settings_id (low)
+        0, // minted_at (high)
+        8000, // start_delay (low)
+        0, // end_delay (high)
+        0, // objective_id (high)
+        true, // soulbound (low)
+        true, // has_context (low)
+        true, // paymaster (low)
+        0, // tx_hash (high)
+        0, // salt (high)
+        0 // metadata (high)
+    );
+    let packed_u256: u256 = packed.into();
+    assert!(packed_u256.high == 0, "low-half only: high u128 must be 0");
+    assert!(packed_u256.low != 0, "low-half only: low u128 must be non-zero");
+
+    // Verify fields round-trip correctly
+    let unpacked = unpack_token_id(packed);
+    assert!(unpacked.game_id == 999, "low-half: game_id");
+    assert!(unpacked.minted_by == 54321, "low-half: minted_by");
+    assert!(unpacked.settings_id == 42, "low-half: settings_id");
+    assert!(unpacked.start_delay == 8000, "low-half: start_delay");
+    assert!(unpacked.soulbound, "low-half: soulbound");
+    assert!(unpacked.has_context, "low-half: has_context");
+    assert!(unpacked.paymaster, "low-half: paymaster");
+}
+
+// ----------------------------------------------------------------------------
+// 3. u128 boundary - high half only (minted_at, end_delay, objective_id, tx_hash, salt, metadata)
+// ----------------------------------------------------------------------------
+
+#[test]
+fn test_divrem_high_half_only_low_is_zero() {
+    // Set all high-half fields to non-zero, all low-half fields to zero
+    // High half: minted_at, end_delay, objective_id, tx_hash, salt, metadata
+    // Flags (soulbound, has_context, paymaster) are in low half now
+    let packed = pack_token_id(
+        0, // game_id (low)
+        0, // minted_by (low)
+        0, // settings_id (low)
+        1704067200, // minted_at (high)
+        0, // start_delay (low)
+        86400, // end_delay (high)
+        7, // objective_id (high)
+        false, // soulbound (low - must be false for low=0)
+        false, // has_context (low - must be false for low=0)
+        false, // paymaster (low - must be false for low=0)
+        512, // tx_hash (high)
+        100, // salt (high)
+        255 // metadata (high)
+    );
+    let packed_u256: u256 = packed.into();
+    assert!(packed_u256.low == 0, "high-half only: low u128 must be 0");
+    assert!(packed_u256.high != 0, "high-half only: high u128 must be non-zero");
+
+    // Verify fields round-trip correctly
+    let unpacked = unpack_token_id(packed);
+    assert!(unpacked.minted_at == 1704067200, "high-half: minted_at");
+    assert!(unpacked.end_delay == 86400, "high-half: end_delay");
+    assert!(unpacked.objective_id == 7, "high-half: objective_id");
+    assert!(!unpacked.soulbound, "high-half: soulbound should be false");
+    assert!(!unpacked.has_context, "high-half: has_context should be false");
+    assert!(!unpacked.paymaster, "high-half: paymaster should be false");
+    assert!(unpacked.tx_hash == 512, "high-half: tx_hash");
+    assert!(unpacked.salt == 100, "high-half: salt");
+    assert!(unpacked.metadata == 255, "high-half: metadata");
+}
+
+// ----------------------------------------------------------------------------
+// 4. Alternating max/zero for adjacent fields
+// ----------------------------------------------------------------------------
+
+#[test]
+fn test_divrem_alternating_max_zero_pattern_a() {
+    // Pattern A: odd fields max, even fields zero
+    // game_id=max, minted_by=0, settings_id=max, minted_at=0, start_delay=max,
+    // end_delay=0, objective_id=max, soulbound=true, has_context=false, paymaster=true,
+    // tx_hash=0, salt=max, metadata=0
+    let packed = pack_token_id(
+        0x3FFFFFFF, 0, 0x3FFFFFFF, 0, 0x1FFFFFF, 0, 0x3FFFFFFF, true, false, true, 0, 0x3FF, 0,
+    );
+    let u = unpack_token_id(packed);
+    assert!(u.game_id == 0x3FFFFFFF, "alt_a: game_id");
+    assert!(u.minted_by == 0, "alt_a: minted_by");
+    assert!(u.settings_id == 0x3FFFFFFF, "alt_a: settings_id");
+    assert!(u.minted_at == 0, "alt_a: minted_at");
+    assert!(u.start_delay == 0x1FFFFFF, "alt_a: start_delay");
+    assert!(u.end_delay == 0, "alt_a: end_delay");
+    assert!(u.objective_id == 0x3FFFFFFF, "alt_a: objective_id");
+    assert!(u.soulbound, "alt_a: soulbound");
+    assert!(!u.has_context, "alt_a: has_context");
+    assert!(u.paymaster, "alt_a: paymaster");
+    assert!(u.tx_hash == 0, "alt_a: tx_hash");
+    assert!(u.salt == 0x3FF, "alt_a: salt");
+    assert!(u.metadata == 0, "alt_a: metadata");
+}
+
+#[test]
+fn test_divrem_alternating_max_zero_pattern_b() {
+    // Pattern B: even fields max, odd fields zero (inverse of pattern A)
+    let packed = pack_token_id(
+        0, 0xFFFFFFFFFF, 0, 0x7FFFFFFFF, 0, 0x1FFFFFF, 0, false, true, false, 0x3FF, 0, 0x1FFF,
+    );
+    let u = unpack_token_id(packed);
+    assert!(u.game_id == 0, "alt_b: game_id");
+    assert!(u.minted_by == 0xFFFFFFFFFF, "alt_b: minted_by");
+    assert!(u.settings_id == 0, "alt_b: settings_id");
+    assert!(u.minted_at == 0x7FFFFFFFF, "alt_b: minted_at");
+    assert!(u.start_delay == 0, "alt_b: start_delay");
+    assert!(u.end_delay == 0x1FFFFFF, "alt_b: end_delay");
+    assert!(u.objective_id == 0, "alt_b: objective_id");
+    assert!(!u.soulbound, "alt_b: soulbound");
+    assert!(u.has_context, "alt_b: has_context");
+    assert!(!u.paymaster, "alt_b: paymaster");
+    assert!(u.tx_hash == 0x3FF, "alt_b: tx_hash");
+    assert!(u.salt == 0, "alt_b: salt");
+    assert!(u.metadata == 0x1FFF, "alt_b: metadata");
+}
+
+// ----------------------------------------------------------------------------
+// 5. Near-max values (2^N - 2 for each field)
+// ----------------------------------------------------------------------------
+
+#[test]
+fn test_divrem_near_max_values() {
+    let packed = pack_token_id(
+        0x3FFFFFFF - 1, // game_id: 30-bit near-max
+        0xFFFFFFFFFF - 1, // minted_by: 40-bit near-max
+        0x3FFFFFFF - 1, // settings_id: 30-bit near-max
+        0x7FFFFFFFF - 1, // minted_at: 35-bit near-max
+        0x1FFFFFF - 1, // start_delay: 25-bit near-max
+        0x1FFFFFF - 1, // end_delay: 25-bit near-max
+        0x3FFFFFFF - 1, // objective_id: 30-bit near-max
+        true,
+        true,
+        true,
+        0x3FF - 1, // tx_hash: 10-bit near-max
+        0x3FF - 1, // salt: 10-bit near-max
+        0x1FFF - 1 // metadata: 13-bit near-max
+    );
+    let u = unpack_token_id(packed);
+
+    assert!(u.game_id == 0x3FFFFFFE, "near_max: game_id");
+    assert!(u.minted_by == 0xFFFFFFFFFE, "near_max: minted_by");
+    assert!(u.settings_id == 0x3FFFFFFE, "near_max: settings_id");
+    assert!(u.minted_at == 0x7FFFFFFFE, "near_max: minted_at");
+    assert!(u.start_delay == 0x1FFFFFE, "near_max: start_delay");
+    assert!(u.end_delay == 0x1FFFFFE, "near_max: end_delay");
+    assert!(u.objective_id == 0x3FFFFFFE, "near_max: objective_id");
+    assert!(u.soulbound, "near_max: soulbound");
+    assert!(u.has_context, "near_max: has_context");
+    assert!(u.paymaster, "near_max: paymaster");
+    assert!(u.tx_hash == 0x3FE, "near_max: tx_hash");
+    assert!(u.salt == 0x3FE, "near_max: salt");
+    assert!(u.metadata == 0x1FFE, "near_max: metadata");
+}
+
+// ----------------------------------------------------------------------------
+// 6. Single field isolation for ALL 13 fields
+// ----------------------------------------------------------------------------
+
+#[test]
+fn test_divrem_isolate_game_id() {
+    let packed = pack_token_id(777, 0, 0, 0, 0, 0, 0, false, false, false, 0, 0, 0);
+    let u = unpack_token_id(packed);
+    assert!(u.game_id == 777, "isolate: game_id value");
+    assert!(u.minted_by == 0, "isolate: game_id -> minted_by clean");
+    assert!(u.settings_id == 0, "isolate: game_id -> settings_id clean");
+    assert!(u.minted_at == 0, "isolate: game_id -> minted_at clean");
+    assert!(u.start_delay == 0, "isolate: game_id -> start_delay clean");
+    assert!(u.end_delay == 0, "isolate: game_id -> end_delay clean");
+    assert!(u.objective_id == 0, "isolate: game_id -> objective_id clean");
+    assert!(!u.soulbound, "isolate: game_id -> soulbound clean");
+    assert!(!u.has_context, "isolate: game_id -> has_context clean");
+    assert!(!u.paymaster, "isolate: game_id -> paymaster clean");
+    assert!(u.tx_hash == 0, "isolate: game_id -> tx_hash clean");
+    assert!(u.salt == 0, "isolate: game_id -> salt clean");
+    assert!(u.metadata == 0, "isolate: game_id -> metadata clean");
+}
+
+#[test]
+fn test_divrem_isolate_minted_by() {
+    let packed = pack_token_id(0, 123456789, 0, 0, 0, 0, 0, false, false, false, 0, 0, 0);
+    let u = unpack_token_id(packed);
+    assert!(u.minted_by == 123456789, "isolate: minted_by value");
+    assert!(u.game_id == 0, "isolate: minted_by -> game_id clean");
+    assert!(u.settings_id == 0, "isolate: minted_by -> settings_id clean");
+    assert!(u.minted_at == 0, "isolate: minted_by -> minted_at clean");
+    assert!(u.start_delay == 0, "isolate: minted_by -> start_delay clean");
+    assert!(u.end_delay == 0, "isolate: minted_by -> end_delay clean");
+    assert!(u.objective_id == 0, "isolate: minted_by -> objective_id clean");
+    assert!(!u.soulbound, "isolate: minted_by -> soulbound clean");
+    assert!(!u.has_context, "isolate: minted_by -> has_context clean");
+    assert!(!u.paymaster, "isolate: minted_by -> paymaster clean");
+    assert!(u.tx_hash == 0, "isolate: minted_by -> tx_hash clean");
+    assert!(u.salt == 0, "isolate: minted_by -> salt clean");
+    assert!(u.metadata == 0, "isolate: minted_by -> metadata clean");
+}
+
+#[test]
+fn test_divrem_isolate_settings_id() {
+    let packed = pack_token_id(0, 0, 55555, 0, 0, 0, 0, false, false, false, 0, 0, 0);
+    let u = unpack_token_id(packed);
+    assert!(u.settings_id == 55555, "isolate: settings_id value");
+    assert!(u.game_id == 0, "isolate: settings_id -> game_id clean");
+    assert!(u.minted_by == 0, "isolate: settings_id -> minted_by clean");
+    assert!(u.minted_at == 0, "isolate: settings_id -> minted_at clean");
+    assert!(u.start_delay == 0, "isolate: settings_id -> start_delay clean");
+    assert!(u.end_delay == 0, "isolate: settings_id -> end_delay clean");
+    assert!(u.objective_id == 0, "isolate: settings_id -> objective_id clean");
+    assert!(!u.soulbound, "isolate: settings_id -> soulbound clean");
+    assert!(!u.has_context, "isolate: settings_id -> has_context clean");
+    assert!(!u.paymaster, "isolate: settings_id -> paymaster clean");
+    assert!(u.tx_hash == 0, "isolate: settings_id -> tx_hash clean");
+    assert!(u.salt == 0, "isolate: settings_id -> salt clean");
+    assert!(u.metadata == 0, "isolate: settings_id -> metadata clean");
+}
+
+#[test]
+fn test_divrem_isolate_minted_at() {
+    let packed = pack_token_id(0, 0, 0, 1704067200, 0, 0, 0, false, false, false, 0, 0, 0);
+    let u = unpack_token_id(packed);
+    assert!(u.minted_at == 1704067200, "isolate: minted_at value");
+    assert!(u.game_id == 0, "isolate: minted_at -> game_id clean");
+    assert!(u.minted_by == 0, "isolate: minted_at -> minted_by clean");
+    assert!(u.settings_id == 0, "isolate: minted_at -> settings_id clean");
+    assert!(u.start_delay == 0, "isolate: minted_at -> start_delay clean");
+    assert!(u.end_delay == 0, "isolate: minted_at -> end_delay clean");
+    assert!(u.objective_id == 0, "isolate: minted_at -> objective_id clean");
+    assert!(!u.soulbound, "isolate: minted_at -> soulbound clean");
+    assert!(!u.has_context, "isolate: minted_at -> has_context clean");
+    assert!(!u.paymaster, "isolate: minted_at -> paymaster clean");
+    assert!(u.tx_hash == 0, "isolate: minted_at -> tx_hash clean");
+    assert!(u.salt == 0, "isolate: minted_at -> salt clean");
+    assert!(u.metadata == 0, "isolate: minted_at -> metadata clean");
+}
+
+#[test]
+fn test_divrem_isolate_start_delay() {
+    let packed = pack_token_id(0, 0, 0, 0, 7200, 0, 0, false, false, false, 0, 0, 0);
+    let u = unpack_token_id(packed);
+    assert!(u.start_delay == 7200, "isolate: start_delay value");
+    assert!(u.game_id == 0, "isolate: start_delay -> game_id clean");
+    assert!(u.minted_by == 0, "isolate: start_delay -> minted_by clean");
+    assert!(u.settings_id == 0, "isolate: start_delay -> settings_id clean");
+    assert!(u.minted_at == 0, "isolate: start_delay -> minted_at clean");
+    assert!(u.end_delay == 0, "isolate: start_delay -> end_delay clean");
+    assert!(u.objective_id == 0, "isolate: start_delay -> objective_id clean");
+    assert!(!u.soulbound, "isolate: start_delay -> soulbound clean");
+    assert!(!u.has_context, "isolate: start_delay -> has_context clean");
+    assert!(!u.paymaster, "isolate: start_delay -> paymaster clean");
+    assert!(u.tx_hash == 0, "isolate: start_delay -> tx_hash clean");
+    assert!(u.salt == 0, "isolate: start_delay -> salt clean");
+    assert!(u.metadata == 0, "isolate: start_delay -> metadata clean");
+}
+
+#[test]
+fn test_divrem_isolate_end_delay() {
+    let packed = pack_token_id(0, 0, 0, 0, 0, 43200, 0, false, false, false, 0, 0, 0);
+    let u = unpack_token_id(packed);
+    assert!(u.end_delay == 43200, "isolate: end_delay value");
+    assert!(u.game_id == 0, "isolate: end_delay -> game_id clean");
+    assert!(u.minted_by == 0, "isolate: end_delay -> minted_by clean");
+    assert!(u.settings_id == 0, "isolate: end_delay -> settings_id clean");
+    assert!(u.minted_at == 0, "isolate: end_delay -> minted_at clean");
+    assert!(u.start_delay == 0, "isolate: end_delay -> start_delay clean");
+    assert!(u.objective_id == 0, "isolate: end_delay -> objective_id clean");
+    assert!(!u.soulbound, "isolate: end_delay -> soulbound clean");
+    assert!(!u.has_context, "isolate: end_delay -> has_context clean");
+    assert!(!u.paymaster, "isolate: end_delay -> paymaster clean");
+    assert!(u.tx_hash == 0, "isolate: end_delay -> tx_hash clean");
+    assert!(u.salt == 0, "isolate: end_delay -> salt clean");
+    assert!(u.metadata == 0, "isolate: end_delay -> metadata clean");
+}
+
+#[test]
+fn test_divrem_isolate_objective_id() {
+    let packed = pack_token_id(0, 0, 0, 0, 0, 0, 999999, false, false, false, 0, 0, 0);
+    let u = unpack_token_id(packed);
+    assert!(u.objective_id == 999999, "isolate: objective_id value");
+    assert!(u.game_id == 0, "isolate: objective_id -> game_id clean");
+    assert!(u.minted_by == 0, "isolate: objective_id -> minted_by clean");
+    assert!(u.settings_id == 0, "isolate: objective_id -> settings_id clean");
+    assert!(u.minted_at == 0, "isolate: objective_id -> minted_at clean");
+    assert!(u.start_delay == 0, "isolate: objective_id -> start_delay clean");
+    assert!(u.end_delay == 0, "isolate: objective_id -> end_delay clean");
+    assert!(!u.soulbound, "isolate: objective_id -> soulbound clean");
+    assert!(!u.has_context, "isolate: objective_id -> has_context clean");
+    assert!(!u.paymaster, "isolate: objective_id -> paymaster clean");
+    assert!(u.tx_hash == 0, "isolate: objective_id -> tx_hash clean");
+    assert!(u.salt == 0, "isolate: objective_id -> salt clean");
+    assert!(u.metadata == 0, "isolate: objective_id -> metadata clean");
+}
+
+#[test]
+fn test_divrem_isolate_soulbound() {
+    let packed = pack_token_id(0, 0, 0, 0, 0, 0, 0, true, false, false, 0, 0, 0);
+    let u = unpack_token_id(packed);
+    assert!(u.soulbound, "isolate: soulbound value");
+    assert!(u.game_id == 0, "isolate: soulbound -> game_id clean");
+    assert!(u.minted_by == 0, "isolate: soulbound -> minted_by clean");
+    assert!(u.settings_id == 0, "isolate: soulbound -> settings_id clean");
+    assert!(u.minted_at == 0, "isolate: soulbound -> minted_at clean");
+    assert!(u.start_delay == 0, "isolate: soulbound -> start_delay clean");
+    assert!(u.end_delay == 0, "isolate: soulbound -> end_delay clean");
+    assert!(u.objective_id == 0, "isolate: soulbound -> objective_id clean");
+    assert!(!u.has_context, "isolate: soulbound -> has_context clean");
+    assert!(!u.paymaster, "isolate: soulbound -> paymaster clean");
+    assert!(u.tx_hash == 0, "isolate: soulbound -> tx_hash clean");
+    assert!(u.salt == 0, "isolate: soulbound -> salt clean");
+    assert!(u.metadata == 0, "isolate: soulbound -> metadata clean");
+}
+
+#[test]
+fn test_divrem_isolate_has_context() {
+    let packed = pack_token_id(0, 0, 0, 0, 0, 0, 0, false, true, false, 0, 0, 0);
+    let u = unpack_token_id(packed);
+    assert!(u.has_context, "isolate: has_context value");
+    assert!(u.game_id == 0, "isolate: has_context -> game_id clean");
+    assert!(u.minted_by == 0, "isolate: has_context -> minted_by clean");
+    assert!(u.settings_id == 0, "isolate: has_context -> settings_id clean");
+    assert!(u.minted_at == 0, "isolate: has_context -> minted_at clean");
+    assert!(u.start_delay == 0, "isolate: has_context -> start_delay clean");
+    assert!(u.end_delay == 0, "isolate: has_context -> end_delay clean");
+    assert!(u.objective_id == 0, "isolate: has_context -> objective_id clean");
+    assert!(!u.soulbound, "isolate: has_context -> soulbound clean");
+    assert!(!u.paymaster, "isolate: has_context -> paymaster clean");
+    assert!(u.tx_hash == 0, "isolate: has_context -> tx_hash clean");
+    assert!(u.salt == 0, "isolate: has_context -> salt clean");
+    assert!(u.metadata == 0, "isolate: has_context -> metadata clean");
+}
+
+#[test]
+fn test_divrem_isolate_paymaster() {
+    let packed = pack_token_id(0, 0, 0, 0, 0, 0, 0, false, false, true, 0, 0, 0);
+    let u = unpack_token_id(packed);
+    assert!(u.paymaster, "isolate: paymaster value");
+    assert!(u.game_id == 0, "isolate: paymaster -> game_id clean");
+    assert!(u.minted_by == 0, "isolate: paymaster -> minted_by clean");
+    assert!(u.settings_id == 0, "isolate: paymaster -> settings_id clean");
+    assert!(u.minted_at == 0, "isolate: paymaster -> minted_at clean");
+    assert!(u.start_delay == 0, "isolate: paymaster -> start_delay clean");
+    assert!(u.end_delay == 0, "isolate: paymaster -> end_delay clean");
+    assert!(u.objective_id == 0, "isolate: paymaster -> objective_id clean");
+    assert!(!u.soulbound, "isolate: paymaster -> soulbound clean");
+    assert!(!u.has_context, "isolate: paymaster -> has_context clean");
+    assert!(u.tx_hash == 0, "isolate: paymaster -> tx_hash clean");
+    assert!(u.salt == 0, "isolate: paymaster -> salt clean");
+    assert!(u.metadata == 0, "isolate: paymaster -> metadata clean");
+}
+
+#[test]
+fn test_divrem_isolate_tx_hash() {
+    let packed = pack_token_id(0, 0, 0, 0, 0, 0, 0, false, false, false, 777, 0, 0);
+    let u = unpack_token_id(packed);
+    assert!(u.tx_hash == 777, "isolate: tx_hash value");
+    assert!(u.game_id == 0, "isolate: tx_hash -> game_id clean");
+    assert!(u.minted_by == 0, "isolate: tx_hash -> minted_by clean");
+    assert!(u.settings_id == 0, "isolate: tx_hash -> settings_id clean");
+    assert!(u.minted_at == 0, "isolate: tx_hash -> minted_at clean");
+    assert!(u.start_delay == 0, "isolate: tx_hash -> start_delay clean");
+    assert!(u.end_delay == 0, "isolate: tx_hash -> end_delay clean");
+    assert!(u.objective_id == 0, "isolate: tx_hash -> objective_id clean");
+    assert!(!u.soulbound, "isolate: tx_hash -> soulbound clean");
+    assert!(!u.has_context, "isolate: tx_hash -> has_context clean");
+    assert!(!u.paymaster, "isolate: tx_hash -> paymaster clean");
+    assert!(u.salt == 0, "isolate: tx_hash -> salt clean");
+    assert!(u.metadata == 0, "isolate: tx_hash -> metadata clean");
+}
+
+#[test]
+fn test_divrem_isolate_salt() {
+    let packed = pack_token_id(0, 0, 0, 0, 0, 0, 0, false, false, false, 0, 555, 0);
+    let u = unpack_token_id(packed);
+    assert!(u.salt == 555, "isolate: salt value");
+    assert!(u.game_id == 0, "isolate: salt -> game_id clean");
+    assert!(u.minted_by == 0, "isolate: salt -> minted_by clean");
+    assert!(u.settings_id == 0, "isolate: salt -> settings_id clean");
+    assert!(u.minted_at == 0, "isolate: salt -> minted_at clean");
+    assert!(u.start_delay == 0, "isolate: salt -> start_delay clean");
+    assert!(u.end_delay == 0, "isolate: salt -> end_delay clean");
+    assert!(u.objective_id == 0, "isolate: salt -> objective_id clean");
+    assert!(!u.soulbound, "isolate: salt -> soulbound clean");
+    assert!(!u.has_context, "isolate: salt -> has_context clean");
+    assert!(!u.paymaster, "isolate: salt -> paymaster clean");
+    assert!(u.tx_hash == 0, "isolate: salt -> tx_hash clean");
+    assert!(u.metadata == 0, "isolate: salt -> metadata clean");
+}
+
+#[test]
+fn test_divrem_isolate_metadata() {
+    let packed = pack_token_id(0, 0, 0, 0, 0, 0, 0, false, false, false, 0, 0, 4095);
+    let u = unpack_token_id(packed);
+    assert!(u.metadata == 4095, "isolate: metadata value");
+    assert!(u.game_id == 0, "isolate: metadata -> game_id clean");
+    assert!(u.minted_by == 0, "isolate: metadata -> minted_by clean");
+    assert!(u.settings_id == 0, "isolate: metadata -> settings_id clean");
+    assert!(u.minted_at == 0, "isolate: metadata -> minted_at clean");
+    assert!(u.start_delay == 0, "isolate: metadata -> start_delay clean");
+    assert!(u.end_delay == 0, "isolate: metadata -> end_delay clean");
+    assert!(u.objective_id == 0, "isolate: metadata -> objective_id clean");
+    assert!(!u.soulbound, "isolate: metadata -> soulbound clean");
+    assert!(!u.has_context, "isolate: metadata -> has_context clean");
+    assert!(!u.paymaster, "isolate: metadata -> paymaster clean");
+    assert!(u.tx_hash == 0, "isolate: metadata -> tx_hash clean");
+    assert!(u.salt == 0, "isolate: metadata -> salt clean");
+}
+
+// ----------------------------------------------------------------------------
+// 7. Idempotency test (double pack/unpack)
+// ----------------------------------------------------------------------------
+
+#[test]
+fn test_divrem_idempotency_double_roundtrip() {
+    let packed1 = pack_token_id(
+        42, 99999, 7, 1704067200, 3600, 86400, 13, true, false, true, 512, 100, 255,
+    );
+    let u1 = unpack_token_id(packed1);
+
+    // Re-pack the unpacked values
+    let packed2 = pack_token_id(
+        u1.game_id,
+        u1.minted_by,
+        u1.settings_id,
+        u1.minted_at,
+        u1.start_delay,
+        u1.end_delay,
+        u1.objective_id,
+        u1.soulbound,
+        u1.has_context,
+        u1.paymaster,
+        u1.tx_hash,
+        u1.salt,
+        u1.metadata,
+    );
+
+    // packed1 and packed2 must be identical
+    assert!(packed1 == packed2, "idempotency: double roundtrip must produce same packed value");
+
+    // Unpack again and verify all fields
+    let u2 = unpack_token_id(packed2);
+    assert!(u2.game_id == u1.game_id, "idempotency: game_id");
+    assert!(u2.minted_by == u1.minted_by, "idempotency: minted_by");
+    assert!(u2.settings_id == u1.settings_id, "idempotency: settings_id");
+    assert!(u2.minted_at == u1.minted_at, "idempotency: minted_at");
+    assert!(u2.start_delay == u1.start_delay, "idempotency: start_delay");
+    assert!(u2.end_delay == u1.end_delay, "idempotency: end_delay");
+    assert!(u2.objective_id == u1.objective_id, "idempotency: objective_id");
+    assert!(u2.soulbound == u1.soulbound, "idempotency: soulbound");
+    assert!(u2.has_context == u1.has_context, "idempotency: has_context");
+    assert!(u2.paymaster == u1.paymaster, "idempotency: paymaster");
+    assert!(u2.tx_hash == u1.tx_hash, "idempotency: tx_hash");
+    assert!(u2.salt == u1.salt, "idempotency: salt");
+    assert!(u2.metadata == u1.metadata, "idempotency: metadata");
+}
+
+// ----------------------------------------------------------------------------
+// 8. Realistic game scenario values
+// ----------------------------------------------------------------------------
+
+#[test]
+fn test_divrem_realistic_tournament_scenario() {
+    // Realistic tournament: game #3, player #50000, settings #1,
+    // minted Jan 1 2025 (Unix 1735689600), 1 hour start delay, 24 hour end delay,
+    // objective #2, soulbound tournament token, no context, paymaster-sponsored,
+    // tx_hash bits, salt for multicall
+    let packed = pack_token_id(
+        3, // game_id
+        50000, // minted_by (player index)
+        1, // settings_id
+        1735689600, // minted_at (Jan 1 2025 00:00:00 UTC)
+        3600, // start_delay (1 hour)
+        86400, // end_delay (24 hours)
+        2, // objective_id
+        true, // soulbound
+        false, // has_context
+        true, // paymaster
+        42, // tx_hash bits
+        7, // salt
+        100 // metadata
+    );
+
+    let u = unpack_token_id(packed);
+    assert!(u.game_id == 3, "tournament: game_id");
+    assert!(u.minted_by == 50000, "tournament: minted_by");
+    assert!(u.settings_id == 1, "tournament: settings_id");
+    assert!(u.minted_at == 1735689600, "tournament: minted_at");
+    assert!(u.start_delay == 3600, "tournament: start_delay");
+    assert!(u.end_delay == 86400, "tournament: end_delay");
+    assert!(u.objective_id == 2, "tournament: objective_id");
+    assert!(u.soulbound, "tournament: soulbound");
+    assert!(!u.has_context, "tournament: has_context");
+    assert!(u.paymaster, "tournament: paymaster");
+    assert!(u.tx_hash == 42, "tournament: tx_hash");
+    assert!(u.salt == 7, "tournament: salt");
+    assert!(u.metadata == 100, "tournament: metadata");
+
+    // Verify the u128 boundary: both halves should be populated
+    let packed_u256: u256 = packed.into();
+    assert!(packed_u256.low != 0, "tournament: low half should be populated");
+    assert!(packed_u256.high != 0, "tournament: high half should be populated");
+}
+
+#[test]
+fn test_divrem_realistic_casual_game_scenario() {
+    // Casual free-to-play game: large game_id, transferable, no paymaster,
+    // with context, no delays, no objective
+    let packed = pack_token_id(
+        1000000, // game_id (large game registry)
+        999999999, // minted_by
+        50, // settings_id
+        1735776000, // minted_at (Jan 2 2025)
+        0, // start_delay (immediate)
+        0, // end_delay (no expiry)
+        0, // objective_id (no objective)
+        false, // soulbound (transferable)
+        true, // has_context
+        false, // paymaster (self-pay)
+        999, // tx_hash bits
+        0, // salt (single mint)
+        8191 // metadata (max 13-bit)
+    );
+
+    let u = unpack_token_id(packed);
+    assert!(u.game_id == 1000000, "casual: game_id");
+    assert!(u.minted_by == 999999999, "casual: minted_by");
+    assert!(u.settings_id == 50, "casual: settings_id");
+    assert!(u.minted_at == 1735776000, "casual: minted_at");
+    assert!(u.start_delay == 0, "casual: start_delay");
+    assert!(u.end_delay == 0, "casual: end_delay");
+    assert!(u.objective_id == 0, "casual: objective_id");
+    assert!(!u.soulbound, "casual: soulbound");
+    assert!(u.has_context, "casual: has_context");
+    assert!(!u.paymaster, "casual: paymaster");
+    assert!(u.tx_hash == 999, "casual: tx_hash");
+    assert!(u.salt == 0, "casual: salt");
+    assert!(u.metadata == 8191, "casual: metadata");
+}
