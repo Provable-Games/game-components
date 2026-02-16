@@ -236,26 +236,26 @@ pub mod PrizeComponent {
         }
 
         /// Add a prize or set extension for a context.
-        /// - Prize::Config: deposits tokens, stores prize, returns Some(PrizeData)
-        /// - Prize::Extension: sets extension config, returns None
+        /// Returns the prize_id in both cases.
+        /// - Prize::Config: deposits tokens, stores prize data
+        /// - Prize::Extension: increments prize count and delegates to extension
         fn add_prize(
             ref self: ComponentState<TContractState>, context_id: u64, prize: Prize,
-        ) -> Option<PrizeData> {
+        ) -> u64 {
             match prize {
-                Prize::Config(config) => {
-                    Option::Some(self._add_prize_config(context_id, config))
-                },
+                Prize::Config(config) => { self._add_prize_config(context_id, config) },
                 Prize::Extension(ext) => {
-                    self._set_extension(context_id, ext);
-                    Option::None
+                    let prize_id = self.increment_prize_count();
+                    self._set_extension(context_id, prize_id, ext);
+                    prize_id
                 },
             }
         }
 
-        /// Internal: deposit tokens, store prize data, return PrizeData
+        /// Internal: deposit tokens, store prize data, return prize_id
         fn _add_prize_config(
             ref self: ComponentState<TContractState>, context_id: u64, config: PrizeConfig,
-        ) -> PrizeData {
+        ) -> u64 {
             let token_address = config.token_address;
             let token_type = config.token_type;
 
@@ -336,20 +336,22 @@ pub mod PrizeComponent {
             // Store the prize data
             self.set_prize(id, prize_data);
 
-            // Return a copy by reconstructing from storage
-            self._get_prize(id)
+            id
         }
 
         /// Internal: store extension config and notify extension contract
         fn _set_extension(
-            ref self: ComponentState<TContractState>, context_id: u64, ext: ExtensionConfig,
+            ref self: ComponentState<TContractState>,
+            context_id: u64,
+            prize_id: u64,
+            ext: ExtensionConfig,
         ) {
             self.Prize_extension_address.entry(context_id).write(ext.address);
             self.write_extension_config(context_id, ext.config);
 
             if !ext.address.is_zero() {
                 let dispatcher = IPrizeExtensionDispatcher { contract_address: ext.address };
-                dispatcher.add_prize(context_id, ext.config);
+                dispatcher.add_prize(context_id, prize_id, ext.config);
             }
         }
 

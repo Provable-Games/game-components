@@ -150,11 +150,21 @@ pub mod EntryFeeComponent {
         }
 
         /// Set entry fee or extension for a context.
+        /// Asserts that no entry fee has been previously set for this context.
         /// - EntryFee::Config: stores entry fee config, returns Some(EntryFeeConfig)
         /// - EntryFee::Extension: sets extension config, returns None
         fn set_entry_fee(
             ref self: ComponentState<TContractState>, context_id: u64, entry_fee: EntryFee,
         ) -> Option<EntryFeeConfig> {
+            // Assert entry fee has not already been set (either config or extension)
+            let token = self.EntryFee_token.entry(context_id).read();
+            let ext = self.EntryFee_extension_address.entry(context_id).read();
+            assert!(
+                token.is_zero() && ext.is_zero(),
+                "EntryFee: Entry fee already set for context {}",
+                context_id,
+            );
+
             match entry_fee {
                 EntryFee::Config(config) => {
                     self._set_entry_fee_config(context_id, @config);

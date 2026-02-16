@@ -23,7 +23,9 @@ pub mod PrizeExtensionComponent {
     /// This trait defines the prize logic that each extension implements.
     pub trait PrizeExtension<TContractState> {
         /// Add a prize configuration for a context
-        fn add_prize(ref self: TContractState, context_id: u64, config: Span<felt252>);
+        fn add_prize(
+            ref self: TContractState, context_id: u64, prize_id: u64, config: Span<felt252>,
+        );
 
         /// Claim a prize for a context
         fn claim_prize(ref self: TContractState, context_id: u64, claim_params: Span<felt252>);
@@ -42,11 +44,14 @@ pub mod PrizeExtensionComponent {
         }
 
         fn add_prize(
-            ref self: ComponentState<TContractState>, context_id: u64, config: Span<felt252>,
+            ref self: ComponentState<TContractState>,
+            context_id: u64,
+            prize_id: u64,
+            config: Span<felt252>,
         ) {
             self.assert_only_owner();
             let mut contract = self.get_contract_mut();
-            PrizeExtension::add_prize(ref contract, context_id, config);
+            PrizeExtension::add_prize(ref contract, context_id, prize_id, config);
         }
 
         fn claim_prize(

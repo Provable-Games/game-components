@@ -10,7 +10,7 @@ fn make_address(value: felt252) -> starknet::ContractAddress {
 #[starknet::interface]
 trait IPrizeExtensionMock<TContractState> {
     fn owner_address(self: @TContractState) -> starknet::ContractAddress;
-    fn add_prize(ref self: TContractState, context_id: u64, config: Span<felt252>);
+    fn add_prize(ref self: TContractState, context_id: u64, prize_id: u64, config: Span<felt252>);
     fn claim_prize(ref self: TContractState, context_id: u64, claim_params: Span<felt252>);
     // SRC5
     fn supports_interface(self: @TContractState, interface_id: felt252) -> bool;
@@ -69,7 +69,7 @@ fn test_add_prize_only_owner() {
 
     start_cheat_caller_address(mock.contract_address, owner);
     let config: Array<felt252> = array![10, 20];
-    mock.add_prize(1, config.span());
+    mock.add_prize(1, 1, config.span());
     stop_cheat_caller_address(mock.contract_address);
 }
 
@@ -82,7 +82,7 @@ fn test_add_prize_non_owner_panics() {
     let non_owner = make_address(0xBAD);
     start_cheat_caller_address(mock.contract_address, non_owner);
     let config: Array<felt252> = array![];
-    mock.add_prize(1, config.span());
+    mock.add_prize(1, 1, config.span());
     stop_cheat_caller_address(mock.contract_address);
 }
 

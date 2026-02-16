@@ -33,7 +33,7 @@ pub mod PrizeExtensionMock {
 
     impl PrizeExtensionTraitImpl of PrizeExtensionComponent::PrizeExtension<ContractState> {
         fn add_prize(
-            ref self: ContractState, context_id: u64, config: Span<felt252>,
+            ref self: ContractState, context_id: u64, prize_id: u64, config: Span<felt252>,
         ) { // No-op for test mock
         }
 
