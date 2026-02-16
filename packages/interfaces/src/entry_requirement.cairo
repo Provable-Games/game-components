@@ -1,7 +1,7 @@
 use starknet::ContractAddress;
 
 pub const IENTRY_REQUIREMENT_ID: felt252 =
-    0x361b2054a6d1e25bd76513b5e5fcc31745a5bc1a88b452ab52be7cfedef0001;
+    0x01a96fed356e101112c0cc86d357a4ca8ec9c41f7f7d34a88c03e7083ddceb55;
 
 #[derive(Copy, Drop, Serde, PartialEq)]
 pub struct EntryRequirement {
