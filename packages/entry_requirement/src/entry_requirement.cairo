@@ -125,6 +125,17 @@ pub mod EntryRequirementComponent {
                             (REQ_TYPE_ALLOWLIST, req.entry_limit)
                         },
                         EntryRequirementType::extension(config) => {
+                            assert!(
+                                !config.address.is_zero(),
+                                "EntryRequirement: Extension address cannot be zero",
+                            );
+                            let src5 = ISRC5Dispatcher { contract_address: config.address };
+                            let display_address: felt252 = config.address.into();
+                            assert!(
+                                src5.supports_interface(IENTRY_VALIDATOR_ID),
+                                "EntryRequirement: Extension {} does not support IEntryValidator",
+                                display_address,
+                            );
                             self
                                 .EntryRequirement_extension_address
                                 .entry(context_id)

@@ -137,7 +137,8 @@ fn test_set_and_get_allowlist_requirement() {
 #[test]
 fn test_set_and_get_extension_requirement() {
     let mock = deploy_entry_requirement_mock();
-    let ext_addr = make_address(0xEEE);
+    let owner = make_address(0x1);
+    let ext_addr = deploy_entry_validator_mock(owner, false);
     let config_data: Array<felt252> = array![1, 2, 3];
     let context_id: u64 = 77;
 
