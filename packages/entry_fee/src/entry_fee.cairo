@@ -413,20 +413,6 @@ pub mod EntryFeeComponent {
             self.EntryFee_extension_address.entry(context_id).read()
         }
 
-        // --- Extension dispatch hooks ---
-
-        /// Notify extension to claim entry fee for a context
-        fn notify_claim_entry_fee(
-            ref self: ComponentState<TContractState>, context_id: u64, claim_params: Span<felt252>,
-        ) {
-            let extension_address = self.EntryFee_extension_address.entry(context_id).read();
-            if extension_address.is_zero() {
-                return;
-            }
-
-            let dispatcher = IEntryFeeExtensionDispatcher { contract_address: extension_address };
-            dispatcher.claim_entry_fee(context_id, claim_params);
-        }
     }
 
     #[generate_trait]

@@ -447,26 +447,6 @@ pub mod PrizeComponent {
             self.Prize_extension_address.entry((context_id, prize_id)).read()
         }
 
-        // --- Extension dispatch hooks ---
-
-        /// Notify extension to claim prize for a context and prize
-        fn notify_claim_prize(
-            ref self: ComponentState<TContractState>,
-            context_id: u64,
-            prize_id: u64,
-            claim_params: Span<felt252>,
-        ) {
-            let extension_address = self
-                .Prize_extension_address
-                .entry((context_id, prize_id))
-                .read();
-            if extension_address.is_zero() {
-                return;
-            }
-
-            let dispatcher = IPrizeExtensionDispatcher { contract_address: extension_address };
-            dispatcher.claim_prize(context_id, claim_params);
-        }
     }
 
     #[generate_trait]
