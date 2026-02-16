@@ -10,12 +10,14 @@
 pub mod EntryRequirementComponent {
     use core::num::traits::Zero;
     use core::poseidon::poseidon_hash_span;
-    use game_components_interfaces::entry_requirement::IEntryRequirement;
+    use game_components_interfaces::entry_requirement::{IENTRY_REQUIREMENT_ID, IEntryRequirement};
     use game_components_interfaces::entry_validator::{
         IENTRY_VALIDATOR_ID, IEntryValidatorDispatcher, IEntryValidatorDispatcherTrait,
     };
     use openzeppelin_interfaces::erc721::{IERC721Dispatcher, IERC721DispatcherTrait, IERC721_ID};
     use openzeppelin_interfaces::introspection::{ISRC5Dispatcher, ISRC5DispatcherTrait};
+    use openzeppelin_introspection::src5::SRC5Component;
+    use openzeppelin_introspection::src5::SRC5Component::InternalTrait as SRC5InternalTrait;
     use starknet::storage::{
         Map, MutableVecTrait, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess,
         Vec, VecTrait,
@@ -395,6 +397,19 @@ pub mod EntryRequirementComponent {
                     }
                 },
             }
+        }
+    }
+
+    #[generate_trait]
+    pub impl EntryRequirementInitializerImpl<
+        TContractState,
+        +HasComponent<TContractState>,
+        impl SRC5: SRC5Component::HasComponent<TContractState>,
+        +Drop<TContractState>,
+    > of EntryRequirementInitializerTrait<TContractState> {
+        fn initializer(ref self: ComponentState<TContractState>) {
+            let mut src5_component = get_dep_component_mut!(ref self, SRC5);
+            src5_component.register_interface(IENTRY_REQUIREMENT_ID);
         }
     }
 }

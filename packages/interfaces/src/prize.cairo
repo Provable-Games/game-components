@@ -1,6 +1,8 @@
 use game_components_interfaces::distribution::Distribution;
 use starknet::ContractAddress;
 
+pub const IPRIZE_ID: felt252 = 0x6e8a2d8eb955996a5c1043fb15074225db67fd6f30d6b3b8a208ae014101598;
+
 #[derive(Drop, Serde)]
 pub struct ERC20Data {
     pub amount: u128,

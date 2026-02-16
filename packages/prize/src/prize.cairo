@@ -11,12 +11,14 @@
 pub mod PrizeComponent {
     use core::num::traits::Zero;
     use core::poseidon::poseidon_hash_span;
-    use game_components_interfaces::prize::IPrize;
+    use game_components_interfaces::prize::{IPRIZE_ID, IPrize};
     use game_components_interfaces::prize_extension::{
         IPrizeExtensionDispatcher, IPrizeExtensionDispatcherTrait,
     };
     use openzeppelin_interfaces::erc20::{IERC20Dispatcher, IERC20DispatcherTrait};
     use openzeppelin_interfaces::erc721::{IERC721Dispatcher, IERC721DispatcherTrait};
+    use openzeppelin_introspection::src5::SRC5Component;
+    use openzeppelin_introspection::src5::SRC5Component::InternalTrait as SRC5InternalTrait;
     use starknet::storage::{
         Map, MutableVecTrait, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess,
         Vec, VecTrait,
@@ -486,6 +488,19 @@ pub mod PrizeComponent {
             let config = self.read_extension_config(context_id);
             let dispatcher = IPrizeExtensionDispatcher { contract_address: extension_address };
             dispatcher.after_payout(context_id, prize_id, recipient, amount, config);
+        }
+    }
+
+    #[generate_trait]
+    pub impl PrizeInitializerImpl<
+        TContractState,
+        +HasComponent<TContractState>,
+        impl SRC5: SRC5Component::HasComponent<TContractState>,
+        +Drop<TContractState>,
+    > of PrizeInitializerTrait<TContractState> {
+        fn initializer(ref self: ComponentState<TContractState>) {
+            let mut src5_component = get_dep_component_mut!(ref self, SRC5);
+            src5_component.register_interface(IPRIZE_ID);
         }
     }
 }

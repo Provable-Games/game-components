@@ -1,5 +1,8 @@
 use starknet::ContractAddress;
 
+pub const IENTRY_FEE_ID: felt252 =
+    0x1b136591c978b0a7c1c171cb60b3f34bc71f4fe7454561032bdbb7a088abd60;
+
 /// Additional share configuration for entry fee distribution
 /// These shares are deducted from the total pool before position-based distribution
 #[derive(Copy, Drop, Serde, PartialEq)]
