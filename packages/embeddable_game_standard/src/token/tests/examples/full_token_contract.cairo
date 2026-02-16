@@ -3,7 +3,9 @@
 
 use game_components_embeddable_game_standard::metagame::extensions::context::structs::GameContextDetails;
 use game_components_embeddable_game_standard::minigame::extensions::settings::structs::GameSettingDetails;
-use game_components_embeddable_game_standard::minigame::interface::{IMinigameDispatcher, IMinigameDispatcherTrait};
+use game_components_embeddable_game_standard::minigame::interface::{
+    IMinigameDispatcher, IMinigameDispatcherTrait,
+};
 use game_components_embeddable_game_standard::minigame::structs::GameDetail;
 
 // Game components imports - using full package paths

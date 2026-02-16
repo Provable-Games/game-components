@@ -4,7 +4,9 @@ use starknet::ContractAddress;
 fn addr(value: felt252) -> ContractAddress {
     value.try_into().unwrap()
 }
-use game_components_embeddable_game_standard::metagame::extensions::context::structs::{GameContext, GameContextDetails};
+use game_components_embeddable_game_standard::metagame::extensions::context::structs::{
+    GameContext, GameContextDetails,
+};
 use openzeppelin_interfaces::erc721::ERC721ABIDispatcherTrait;
 use snforge_std::{
     CheatSpan, cheat_caller_address, mock_call, start_cheat_block_timestamp,

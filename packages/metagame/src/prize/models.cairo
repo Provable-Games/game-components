@@ -136,17 +136,23 @@ fn unpack_token_type(packed_token_type: PackedTokenTypeData) -> TokenTypeData {
                 Option::None
             } else if packed.payout_type == PAYOUT_TYPE_LINEAR {
                 Option::Some(
-                    game_components_utilities::distribution::models::Distribution::Linear(packed.param),
+                    game_components_utilities::distribution::models::Distribution::Linear(
+                        packed.param,
+                    ),
                 )
             } else if packed.payout_type == PAYOUT_TYPE_EXPONENTIAL {
                 Option::Some(
-                    game_components_utilities::distribution::models::Distribution::Exponential(packed.param),
+                    game_components_utilities::distribution::models::Distribution::Exponential(
+                        packed.param,
+                    ),
                 )
             } else if packed.payout_type == PAYOUT_TYPE_UNIFORM {
                 Option::Some(game_components_utilities::distribution::models::Distribution::Uniform)
             } else {
                 Option::Some(
-                    game_components_utilities::distribution::models::Distribution::Custom(array![].span()),
+                    game_components_utilities::distribution::models::Distribution::Custom(
+                        array![].span(),
+                    ),
                 )
             };
 

@@ -1,3 +1,7 @@
+use game_components_economy::tokenomics::stream::StreamComponent;
+use game_components_economy::tokenomics::{
+    DistributionOrder, IStreamTokenDispatcherTrait, LiquidityConfig, PremintAllocation,
+};
 /// Tests for StreamToken full lifecycle using snforge mock_call
 ///
 /// These tests exercise the complete token lifecycle:
@@ -9,10 +13,6 @@
 
 use game_components_interfaces::tokenomics::stream::{
     IStreamTokenSetupDispatcher, IStreamTokenSetupDispatcherTrait,
-};
-use game_components_economy::tokenomics::stream::StreamComponent;
-use game_components_economy::tokenomics::{
-    DistributionOrder, IStreamTokenDispatcherTrait, LiquidityConfig, PremintAllocation,
 };
 use openzeppelin_interfaces::erc20::IERC20Dispatcher;
 use snforge_std::{

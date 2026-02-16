@@ -7,7 +7,9 @@ pub mod MinterComponent {
         Map, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess,
     };
     use crate::token::core::traits::OptionalMinter;
-    use crate::token::extensions::minter::interface::{IMINIGAME_TOKEN_MINTER_ID, IMinigameTokenMinter};
+    use crate::token::extensions::minter::interface::{
+        IMINIGAME_TOKEN_MINTER_ID, IMinigameTokenMinter,
+    };
 
     #[storage]
     pub struct Storage {

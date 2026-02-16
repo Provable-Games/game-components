@@ -10,7 +10,9 @@ pub mod ObjectivesComponent {
     use game_components_embeddable_game_standard::minigame::extensions::settings::interface::{
         IMINIGAME_SETTINGS_ID, IMinigameSettingsDispatcher, IMinigameSettingsDispatcherTrait,
     };
-    use game_components_embeddable_game_standard::minigame::interface::{IMinigameDispatcher, IMinigameDispatcherTrait};
+    use game_components_embeddable_game_standard::minigame::interface::{
+        IMinigameDispatcher, IMinigameDispatcherTrait,
+    };
     use openzeppelin_interfaces::introspection::{ISRC5Dispatcher, ISRC5DispatcherTrait};
     use openzeppelin_introspection::src5::SRC5Component;
     use openzeppelin_introspection::src5::SRC5Component::{

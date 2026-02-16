@@ -26,10 +26,14 @@ pub mod MockMinigameContract {
     use openzeppelin_introspection::src5::SRC5Component;
     use starknet::storage::{Map, StoragePathEntry, StoragePointerReadAccess};
     use starknet::{ContractAddress, get_contract_address};
-    use crate::minigame::extensions::objectives::interface::{IMinigameObjectives, IMinigameObjectivesDetails};
+    use crate::minigame::extensions::objectives::interface::{
+        IMinigameObjectives, IMinigameObjectivesDetails,
+    };
     use crate::minigame::extensions::objectives::objectives::ObjectivesComponent;
     use crate::minigame::extensions::objectives::structs::{GameObjective, GameObjectiveDetails};
-    use crate::minigame::extensions::settings::interface::{IMinigameSettings, IMinigameSettingsDetails};
+    use crate::minigame::extensions::settings::interface::{
+        IMinigameSettings, IMinigameSettingsDetails,
+    };
     use crate::minigame::extensions::settings::settings::SettingsComponent;
     use crate::minigame::extensions::settings::structs::{GameSetting, GameSettingDetails};
     use crate::minigame::interface::{IMinigameDetails, IMinigameTokenData};

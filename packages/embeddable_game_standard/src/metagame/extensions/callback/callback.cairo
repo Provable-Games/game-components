@@ -12,7 +12,9 @@ pub mod MetagameCallbackComponent {
     use openzeppelin_introspection::src5::SRC5Component;
     use openzeppelin_introspection::src5::SRC5Component::InternalTrait as SRC5InternalTrait;
     use starknet::get_caller_address;
-    use crate::metagame::extensions::callback::interface::{IMETAGAME_CALLBACK_ID, IMetagameCallback};
+    use crate::metagame::extensions::callback::interface::{
+        IMETAGAME_CALLBACK_ID, IMetagameCallback,
+    };
     use crate::metagame::metagame::MetagameComponent;
     use crate::metagame::metagame::MetagameComponent::MetagameImpl;
 

@@ -17,7 +17,9 @@ pub mod LeaderboardComponent {
         StoragePointerWriteAccess,
     };
     use starknet::{ContractAddress, get_caller_address};
-    use crate::leaderboard::leaderboard::leaderboard::{LeaderboardOperationsImpl, LeaderboardUtilsImpl};
+    use crate::leaderboard::leaderboard::leaderboard::{
+        LeaderboardOperationsImpl, LeaderboardUtilsImpl,
+    };
     use crate::leaderboard::leaderboard_store::{
         LeaderboardStoreHelpersImpl, LeaderboardStoreHelpersTrait, LeaderboardStoreImpl,
         LeaderboardStoreTrait,

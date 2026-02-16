@@ -4,8 +4,12 @@
 // Tests for SVG and metadata rendering functions.
 // Note: Some functions use get_block_timestamp(), requiring cheatcodes.
 
-use game_components_embeddable_game_standard::metagame::extensions::context::structs::{GameContext, GameContextDetails};
-use game_components_embeddable_game_standard::minigame::extensions::settings::structs::{GameSetting, GameSettingDetails};
+use game_components_embeddable_game_standard::metagame::extensions::context::structs::{
+    GameContext, GameContextDetails,
+};
+use game_components_embeddable_game_standard::minigame::extensions::settings::structs::{
+    GameSetting, GameSettingDetails,
+};
 use game_components_embeddable_game_standard::minigame::structs::GameDetail;
 use game_components_embeddable_game_standard::registry::interface::GameMetadata;
 use game_components_embeddable_game_standard::token::structs::{Lifecycle, TokenMetadata};

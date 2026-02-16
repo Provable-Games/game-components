@@ -1,5 +1,7 @@
 use game_components_embeddable_game_standard::metagame::extensions::context::structs::GameContextDetails;
-use game_components_embeddable_game_standard::minigame::interface::{IMinigameDispatcher, IMinigameDispatcherTrait};
+use game_components_embeddable_game_standard::minigame::interface::{
+    IMinigameDispatcher, IMinigameDispatcherTrait,
+};
 use game_components_embeddable_game_standard::registry::interface::{
     IMinigameRegistryDispatcher, IMinigameRegistryDispatcherTrait,
 };

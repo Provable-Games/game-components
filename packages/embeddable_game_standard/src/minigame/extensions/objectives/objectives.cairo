@@ -6,7 +6,9 @@ pub mod ObjectivesComponent {
     use openzeppelin_introspection::src5::SRC5Component;
     use openzeppelin_introspection::src5::SRC5Component::InternalTrait as SRC5InternalTrait;
     use starknet::{ContractAddress, get_caller_address, get_contract_address};
-    use crate::minigame::extensions::objectives::interface::{IMINIGAME_OBJECTIVES_ID, IMinigameObjectives};
+    use crate::minigame::extensions::objectives::interface::{
+        IMINIGAME_OBJECTIVES_ID, IMinigameObjectives,
+    };
     use crate::minigame::extensions::objectives::libs;
     use crate::minigame::extensions::objectives::structs::GameObjectiveDetails;
 

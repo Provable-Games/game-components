@@ -3,10 +3,10 @@
 // =============================================================================
 // Tests for library functions: assert_game_registered, mint, mint_batch
 
-use game_components_testing::constants::{ALICE, BOB};
 use game_components_embeddable_game_standard::token::core::interface::{
     IMinigameTokenDispatcher, IMinigameTokenDispatcherTrait,
 };
+use game_components_testing::constants::{ALICE, BOB};
 use snforge_std::{ContractClassTrait, DeclareResultTrait, declare, mock_call};
 use starknet::ContractAddress;
 use crate::metagame::extensions::context::structs::{GameContext, GameContextDetails};
@@ -753,7 +753,9 @@ fn test_fuzz_mint_objective_ids(objective_id: u32) {
 mod MockMinigameTokenForLibs {
     use core::num::traits::Zero;
     use game_components_embeddable_game_standard::metagame::extensions::context::structs::GameContextDetails;
-    use game_components_embeddable_game_standard::token::core::interface::{IMINIGAME_TOKEN_ID, IMinigameToken};
+    use game_components_embeddable_game_standard::token::core::interface::{
+        IMINIGAME_TOKEN_ID, IMinigameToken,
+    };
     use game_components_embeddable_game_standard::token::structs::{
         Lifecycle, MintParams, PlayerNameUpdate, TokenMetadata, TokenMutableState,
     };
@@ -1075,7 +1077,9 @@ mod MockMinigameTokenForLibs {
 #[starknet::contract]
 mod MockMinigameForLibs {
     use game_components_embeddable_game_standard::metagame::extensions::context::structs::GameContextDetails;
-    use game_components_embeddable_game_standard::minigame::interface::{IMINIGAME_ID, IMinigame, IMinigameTokenData};
+    use game_components_embeddable_game_standard::minigame::interface::{
+        IMINIGAME_ID, IMinigame, IMinigameTokenData,
+    };
     use game_components_embeddable_game_standard::minigame::structs::MintGameParams;
     use openzeppelin_interfaces::introspection::ISRC5;
     use starknet::ContractAddress;
@@ -1156,7 +1160,9 @@ mod MockMinigameForLibs {
 #[starknet::contract]
 mod MockRegistryForLibs {
     use core::num::traits::Zero;
-    use game_components_embeddable_game_standard::registry::interface::{GameMetadata, IMinigameRegistry};
+    use game_components_embeddable_game_standard::registry::interface::{
+        GameMetadata, IMinigameRegistry,
+    };
     use starknet::ContractAddress;
     use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
 
@@ -1544,7 +1550,9 @@ fn test_mint_batch_large_batch() {
 mod MockMinigameTokenWithRegistry {
     use core::num::traits::Zero;
     use game_components_embeddable_game_standard::metagame::extensions::context::structs::GameContextDetails;
-    use game_components_embeddable_game_standard::token::core::interface::{IMINIGAME_TOKEN_ID, IMinigameToken};
+    use game_components_embeddable_game_standard::token::core::interface::{
+        IMINIGAME_TOKEN_ID, IMinigameToken,
+    };
     use game_components_embeddable_game_standard::token::structs::{
         Lifecycle, MintParams, PlayerNameUpdate, TokenMetadata, TokenMutableState,
     };

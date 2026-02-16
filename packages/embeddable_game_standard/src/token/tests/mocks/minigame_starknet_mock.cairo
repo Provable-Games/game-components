@@ -58,8 +58,12 @@ pub mod minigame_starknet_mock {
         IMINIGAME_SETTINGS_ID, IMinigameSettings, IMinigameSettingsDetails,
     };
     use game_components_embeddable_game_standard::minigame::extensions::settings::settings::SettingsComponent;
-    use game_components_embeddable_game_standard::minigame::extensions::settings::structs::{GameSetting, GameSettingDetails};
-    use game_components_embeddable_game_standard::minigame::interface::{IMinigameDetails, IMinigameTokenData};
+    use game_components_embeddable_game_standard::minigame::extensions::settings::structs::{
+        GameSetting, GameSettingDetails,
+    };
+    use game_components_embeddable_game_standard::minigame::interface::{
+        IMinigameDetails, IMinigameTokenData,
+    };
     use game_components_embeddable_game_standard::minigame::minigame::MinigameComponent;
     use game_components_embeddable_game_standard::minigame::structs::GameDetail;
     use openzeppelin_introspection::src5::SRC5Component;

@@ -414,7 +414,9 @@ mod MockContextProvider {
 #[starknet::contract]
 mod MockTokenContract {
     use core::num::traits::Zero;
-    use game_components_embeddable_game_standard::token::core::interface::{IMINIGAME_TOKEN_ID, IMinigameToken};
+    use game_components_embeddable_game_standard::token::core::interface::{
+        IMINIGAME_TOKEN_ID, IMinigameToken,
+    };
     use game_components_embeddable_game_standard::token::structs::{
         Lifecycle, MintParams, PlayerNameUpdate, TokenMetadata, TokenMutableState,
     };
@@ -756,7 +758,9 @@ mod MockTokenContract {
 // Mock Minigame Contract for Tournament
 #[starknet::contract]
 mod MockMinigameForTournament {
-    use game_components_embeddable_game_standard::minigame::interface::{IMINIGAME_ID, IMinigame, IMinigameTokenData};
+    use game_components_embeddable_game_standard::minigame::interface::{
+        IMINIGAME_ID, IMinigame, IMinigameTokenData,
+    };
     use game_components_embeddable_game_standard::minigame::structs::MintGameParams;
     use openzeppelin_interfaces::introspection::ISRC5;
     use starknet::ContractAddress;

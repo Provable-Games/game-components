@@ -586,7 +586,9 @@ mod MockContext {
 #[starknet::contract]
 mod MockMinigameToken {
     use core::num::traits::Zero;
-    use game_components_embeddable_game_standard::token::core::interface::{IMINIGAME_TOKEN_ID, IMinigameToken};
+    use game_components_embeddable_game_standard::token::core::interface::{
+        IMINIGAME_TOKEN_ID, IMinigameToken,
+    };
     use game_components_embeddable_game_standard::token::structs::{
         Lifecycle, MintParams, PlayerNameUpdate, TokenMetadata, TokenMutableState,
     };

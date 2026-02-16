@@ -953,7 +953,9 @@ mod MockERC721ForTicketBooth {
 mod MockMinigameTokenForTicketBooth {
     use core::num::traits::Zero;
     use game_components_embeddable_game_standard::metagame::extensions::context::structs::GameContextDetails;
-    use game_components_embeddable_game_standard::token::core::interface::{IMINIGAME_TOKEN_ID, IMinigameToken};
+    use game_components_embeddable_game_standard::token::core::interface::{
+        IMINIGAME_TOKEN_ID, IMinigameToken,
+    };
     use game_components_embeddable_game_standard::token::structs::{
         Lifecycle, MintParams, PlayerNameUpdate, TokenMetadata, TokenMutableState,
     };

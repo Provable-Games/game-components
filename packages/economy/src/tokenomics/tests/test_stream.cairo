@@ -1,3 +1,7 @@
+use game_components_economy::tokenomics::{
+    DistributionOrder, IStreamTokenDispatcher, IStreamTokenDispatcherTrait, LiquidityConfig,
+    PremintAllocation,
+};
 /// Tests for StreamComponent
 ///
 /// These tests verify the stream token component's behavior including:
@@ -10,10 +14,6 @@
 
 use game_components_interfaces::tokenomics::stream::{
     IStreamTokenSetupDispatcher, IStreamTokenSetupDispatcherTrait,
-};
-use game_components_economy::tokenomics::{
-    DistributionOrder, IStreamTokenDispatcher, IStreamTokenDispatcherTrait, LiquidityConfig,
-    PremintAllocation,
 };
 use openzeppelin_interfaces::erc20::{
     IERC20Dispatcher, IERC20DispatcherTrait, IERC20MetadataDispatcher,

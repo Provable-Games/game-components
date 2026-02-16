@@ -1,3 +1,5 @@
+use game_components_economy::tokenomics::IStreamTokenDispatcherTrait;
+use game_components_economy::tokenomics::stream::StreamComponent;
 /// Tests for premint functionality in StreamToken
 ///
 /// Test coverage:
@@ -11,8 +13,6 @@
 /// - Works alongside distribution orders
 
 use game_components_interfaces::tokenomics::stream::PremintAllocation;
-use game_components_economy::tokenomics::IStreamTokenDispatcherTrait;
-use game_components_economy::tokenomics::stream::StreamComponent;
 use openzeppelin_interfaces::token::erc20::IERC20DispatcherTrait;
 use snforge_std::{
     ContractClassTrait, DeclareResultTrait, EventSpyAssertionsTrait, declare, spy_events,

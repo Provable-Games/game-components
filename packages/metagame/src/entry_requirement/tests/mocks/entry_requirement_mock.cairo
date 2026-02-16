@@ -3,7 +3,9 @@ pub mod EntryRequirementMock {
     use openzeppelin_introspection::src5::SRC5Component;
     use starknet::ContractAddress;
     use crate::entry_requirement::entry_requirement::EntryRequirementComponent;
-    use crate::entry_requirement::models::{EntryRequirement, QualificationEntries, QualificationProof};
+    use crate::entry_requirement::models::{
+        EntryRequirement, QualificationEntries, QualificationProof,
+    };
 
     component!(path: EntryRequirementComponent, storage: entry_req, event: EntryReqEvent);
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
