@@ -412,7 +412,6 @@ pub mod EntryFeeComponent {
         ) -> ContractAddress {
             self.EntryFee_extension_address.entry(context_id).read()
         }
-
     }
 
     #[generate_trait]

@@ -446,7 +446,6 @@ pub mod PrizeComponent {
         ) -> ContractAddress {
             self.Prize_extension_address.entry((context_id, prize_id)).read()
         }
-
     }
 
     #[generate_trait]
