@@ -24,7 +24,7 @@ pub trait IEntryValidator<TState> {
     fn should_ban(
         self: @TState,
         context_id: u64,
-        game_token_id: u64,
+        game_token_id: felt252,
         current_owner: ContractAddress,
         qualification: Span<felt252>,
     ) -> bool;
@@ -45,7 +45,7 @@ pub trait IEntryValidator<TState> {
     fn add_entry(
         ref self: TState,
         context_id: u64,
-        game_token_id: u64,
+        game_token_id: felt252,
         player_address: ContractAddress,
         qualification: Span<felt252>,
     );
@@ -54,7 +54,7 @@ pub trait IEntryValidator<TState> {
     fn remove_entry(
         ref self: TState,
         context_id: u64,
-        game_token_id: u64,
+        game_token_id: felt252,
         player_address: ContractAddress,
         qualification: Span<felt252>,
     );

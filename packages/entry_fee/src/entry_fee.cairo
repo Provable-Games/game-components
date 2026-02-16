@@ -46,7 +46,7 @@ pub mod EntryFeeComponent {
         /// slot_index = share_index / 16
         EntryFee_additional_shares_packed: Map<(u64, u8), PackedAdditionalShares>,
         /// Refund claimed: (context_id, token_id) -> claimed
-        EntryFee_refund_claimed: Map<(u64, u64), bool>,
+        EntryFee_refund_claimed: Map<(u64, felt252), bool>,
         /// Extension address for extension-enhanced entry fees
         EntryFee_extension_address: Map<u64, ContractAddress>,
         /// Extension config data (stored as Vec)
