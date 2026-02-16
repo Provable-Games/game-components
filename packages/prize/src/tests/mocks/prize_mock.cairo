@@ -1,26 +1,38 @@
 /// Mock contract that embeds the PrizeComponent for testing storage gas
 #[starknet::contract]
 pub mod PrizeMock {
-    use crate::models::{Prize, PrizeType};
+    use openzeppelin_introspection::src5::SRC5Component;
+    use crate::models::{PrizeData, PrizeType};
     use crate::prize::PrizeComponent;
 
     component!(path: PrizeComponent, storage: prize, event: PrizeEvent);
+    component!(path: SRC5Component, storage: src5, event: SRC5Event);
 
     #[abi(embed_v0)]
     impl PrizeImpl = PrizeComponent::PrizeImpl<ContractState>;
 
     impl PrizeInternalImpl = PrizeComponent::PrizeInternalImpl<ContractState>;
 
+    impl PrizeInitializerImpl = PrizeComponent::PrizeInitializerImpl<ContractState>;
+
     #[storage]
     struct Storage {
         #[substorage(v0)]
         prize: PrizeComponent::Storage,
+        #[substorage(v0)]
+        src5: SRC5Component::Storage,
     }
 
     #[event]
     #[derive(Drop, starknet::Event)]
     enum Event {
         PrizeEvent: PrizeComponent::Event,
+        SRC5Event: SRC5Component::Event,
+    }
+
+    #[constructor]
+    fn constructor(ref self: ContractState) {
+        self.prize.initializer();
     }
 
     /// Hash a prize type (exposes internal function for testing)
@@ -82,7 +94,7 @@ pub mod PrizeMock {
 
     /// Store a prize directly (for component testing without token transfers)
     #[external(v0)]
-    fn set_prize(ref self: ContractState, prize_id: u64, prize: Prize) {
+    fn set_prize(ref self: ContractState, prize_id: u64, prize: PrizeData) {
         self.prize.set_prize(prize_id, prize);
     }
 

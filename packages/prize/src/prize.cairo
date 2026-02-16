@@ -11,16 +11,24 @@
 pub mod PrizeComponent {
     use core::num::traits::Zero;
     use core::poseidon::poseidon_hash_span;
-    use game_components_interfaces::prize::IPrize;
+    use game_components_interfaces::extension::ExtensionConfig;
+    use game_components_interfaces::prize::{IPRIZE_ID, IPrize};
+    use game_components_interfaces::prize_extension::{
+        IPRIZE_EXTENSION_ID, IPrizeExtensionDispatcher, IPrizeExtensionDispatcherTrait,
+    };
     use openzeppelin_interfaces::erc20::{IERC20Dispatcher, IERC20DispatcherTrait};
     use openzeppelin_interfaces::erc721::{IERC721Dispatcher, IERC721DispatcherTrait};
+    use openzeppelin_interfaces::introspection::{ISRC5Dispatcher, ISRC5DispatcherTrait};
+    use openzeppelin_introspection::src5::SRC5Component;
+    use openzeppelin_introspection::src5::SRC5Component::InternalTrait as SRC5InternalTrait;
     use starknet::storage::{
-        Map, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess,
+        Map, MutableVecTrait, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess,
+        Vec, VecTrait,
     };
     use starknet::{ContractAddress, get_caller_address, get_contract_address};
     use crate::models::{
         CUSTOM_SHARES_PER_SLOT, CustomShares, CustomSharesImpl, CustomSharesTrait, ERC20Data, Prize,
-        PrizeType, StoredPrize, StoredPrizeTrait, TokenTypeData,
+        PrizeConfig, PrizeData, PrizeType, StoredPrize, StoredPrizeTrait, TokenTypeData,
     };
 
     #[storage]
@@ -40,6 +48,10 @@ pub mod PrizeComponent {
         Prize_custom_shares_packed: Map<(u64, u8), CustomShares>,
         /// Number of custom shares for a prize
         Prize_custom_shares_count: Map<u64, u32>,
+        /// Extension address keyed by (context_id, prize_id)
+        Prize_extension_address: Map<(u64, u64), ContractAddress>,
+        /// Extension config data keyed by (context_id, prize_id)
+        Prize_extension_config: Map<(u64, u64), Vec<felt252>>,
     }
 
     #[event]
@@ -50,7 +62,7 @@ pub mod PrizeComponent {
     impl PrizeComponentImpl<
         TContractState, +HasComponent<TContractState>,
     > of IPrize<ComponentState<TContractState>> {
-        fn get_prize(self: @ComponentState<TContractState>, prize_id: u64) -> Prize {
+        fn get_prize(self: @ComponentState<TContractState>, prize_id: u64) -> PrizeData {
             self._get_prize(prize_id)
         }
 
@@ -70,10 +82,10 @@ pub mod PrizeComponent {
         TContractState, +HasComponent<TContractState>,
     > of PrizeInternalTrait<TContractState> {
         /// Get a prize by its ID
-        /// The Prize struct is unpacked from storage and the id field is set
-        fn _get_prize(self: @ComponentState<TContractState>, prize_id: u64) -> Prize {
+        /// The PrizeData struct is unpacked from storage and the id field is set
+        fn _get_prize(self: @ComponentState<TContractState>, prize_id: u64) -> PrizeData {
             let stored = self.Prize_prizes.entry(prize_id).read();
-            // Convert StoredPrize to Prize
+            // Convert StoredPrize to PrizeData
             let mut prize = stored.to_prize(prize_id);
 
             // For custom distributions, restore the shares from separate storage
@@ -143,7 +155,7 @@ pub mod PrizeComponent {
         }
 
         /// Store a prize (converts to StoredPrize for storage)
-        fn set_prize(ref self: ComponentState<TContractState>, prize_id: u64, prize: Prize) {
+        fn set_prize(ref self: ComponentState<TContractState>, prize_id: u64, prize: PrizeData) {
             let stored = StoredPrizeTrait::from_prize(prize);
             self.Prize_prizes.entry(prize_id).write(stored);
         }
@@ -224,14 +236,38 @@ pub mod PrizeComponent {
             assert!(!claimed, "Prize: Prize has already been claimed");
         }
 
-        /// Add a prize: deposits tokens, increments count, and stores the prize
-        /// Distribution configuration is packed into storage via StorePacking
+        /// Add a prize or set extension for a context.
+        /// Returns the prize_id in both cases.
+        /// - Prize::Config: deposits tokens, stores prize data
+        /// - Prize::Extension: increments prize count and delegates to extension
         fn add_prize(
-            ref self: ComponentState<TContractState>,
-            context_id: u64,
-            token_address: ContractAddress,
-            token_type: TokenTypeData,
-        ) -> Prize {
+            ref self: ComponentState<TContractState>, context_id: u64, prize: Prize,
+        ) -> u64 {
+            match prize {
+                Prize::Config(config) => { self._add_prize_config(context_id, config) },
+                Prize::Extension(ext) => {
+                    assert!(!ext.address.is_zero(), "Prize: Extension address cannot be zero");
+                    let src5 = ISRC5Dispatcher { contract_address: ext.address };
+                    let display_address: felt252 = ext.address.into();
+                    assert!(
+                        src5.supports_interface(IPRIZE_EXTENSION_ID),
+                        "Prize: Extension {} does not support IPrizeExtension",
+                        display_address,
+                    );
+                    let prize_id = self.increment_prize_count();
+                    self._set_extension(context_id, prize_id, ext);
+                    prize_id
+                },
+            }
+        }
+
+        /// Internal: deposit tokens, store prize data, return prize_id
+        fn _add_prize_config(
+            ref self: ComponentState<TContractState>, context_id: u64, config: PrizeConfig,
+        ) -> u64 {
+            let token_address = config.token_address;
+            let token_type = config.token_type;
+
             // Deposit the prize tokens
             match @token_type {
                 TokenTypeData::erc20(erc20_data) => {
@@ -300,17 +336,30 @@ pub mod PrizeComponent {
                 }
             }
 
-            // Create the prize (StorePacking handles the packing in storage)
+            // Create the prize data (StorePacking handles the packing in storage)
             let sponsor = get_caller_address();
-            let prize = Prize {
+            let prize_data = PrizeData {
                 id, context_id, token_address, token_type, sponsor_address: sponsor,
             };
 
-            // Store and return the prize
-            self.set_prize(id, prize);
+            // Store the prize data
+            self.set_prize(id, prize_data);
 
-            // Return a copy by reconstructing from storage
-            self._get_prize(id)
+            id
+        }
+
+        /// Internal: store extension config and notify extension contract
+        fn _set_extension(
+            ref self: ComponentState<TContractState>,
+            context_id: u64,
+            prize_id: u64,
+            ext: ExtensionConfig,
+        ) {
+            self.Prize_extension_address.entry((context_id, prize_id)).write(ext.address);
+            self.write_extension_config(context_id, prize_id, ext.config);
+
+            let dispatcher = IPrizeExtensionDispatcher { contract_address: ext.address };
+            dispatcher.add_prize(context_id, prize_id, ext.config);
         }
 
         /// Payout full ERC20 amount to a recipient
@@ -351,6 +400,64 @@ pub mod PrizeComponent {
             let prize = self._get_prize(prize_id);
             let erc721 = IERC721Dispatcher { contract_address: prize.token_address };
             erc721.transfer_from(get_contract_address(), prize.sponsor_address, token_id.into());
+        }
+
+        // --- Extension helpers ---
+
+        /// Read extension config for a context and prize
+        fn read_extension_config(
+            self: @ComponentState<TContractState>, context_id: u64, prize_id: u64,
+        ) -> Span<felt252> {
+            let vec = self.Prize_extension_config.entry((context_id, prize_id));
+            let mut arr = ArrayTrait::new();
+            let len = vec.len();
+            let mut i: u64 = 0;
+            loop {
+                if i >= len {
+                    break;
+                }
+                arr.append(vec.at(i).read());
+                i += 1;
+            }
+            arr.span()
+        }
+
+        /// Write extension config for a context and prize
+        fn write_extension_config(
+            ref self: ComponentState<TContractState>,
+            context_id: u64,
+            prize_id: u64,
+            config: Span<felt252>,
+        ) {
+            let mut vec = self.Prize_extension_config.entry((context_id, prize_id));
+            let mut i: u32 = 0;
+            loop {
+                if i >= config.len() {
+                    break;
+                }
+                vec.push(*config.at(i));
+                i += 1;
+            };
+        }
+
+        /// Get extension address for a context and prize
+        fn get_extension_address(
+            self: @ComponentState<TContractState>, context_id: u64, prize_id: u64,
+        ) -> ContractAddress {
+            self.Prize_extension_address.entry((context_id, prize_id)).read()
+        }
+    }
+
+    #[generate_trait]
+    pub impl PrizeInitializerImpl<
+        TContractState,
+        +HasComponent<TContractState>,
+        impl SRC5: SRC5Component::HasComponent<TContractState>,
+        +Drop<TContractState>,
+    > of PrizeInitializerTrait<TContractState> {
+        fn initializer(ref self: ComponentState<TContractState>) {
+            let mut src5_component = get_dep_component_mut!(ref self, SRC5);
+            src5_component.register_interface(IPRIZE_ID);
         }
     }
 }

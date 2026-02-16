@@ -1,12 +1,12 @@
 use game_components_distribution::models::Distribution;
-use crate::models::{ERC20Data, ERC721Data, Prize, StoredPrizeTrait, TokenTypeData};
+use crate::models::{ERC20Data, ERC721Data, PrizeData, StoredPrizeTrait, TokenTypeData};
 
 // ============================================================================
 // pack_token_type / unpack_token_type roundtrip tests via StoredPrizeTrait
 // ============================================================================
 
-fn make_prize(token_type: TokenTypeData) -> Prize {
-    Prize {
+fn make_prize(token_type: TokenTypeData) -> PrizeData {
+    PrizeData {
         id: 0,
         context_id: 1,
         token_address: starknet::contract_address_const::<0x123>(),
@@ -184,7 +184,7 @@ fn test_stored_prize_from_to_roundtrip_erc20() {
     let token_addr = starknet::contract_address_const::<0xABC>();
     let sponsor_addr = starknet::contract_address_const::<0xDEF>();
 
-    let prize = Prize {
+    let prize = PrizeData {
         id: 7,
         context_id: 42,
         token_address: token_addr,
@@ -212,7 +212,7 @@ fn test_stored_prize_from_to_roundtrip_erc721() {
     let token_addr = starknet::contract_address_const::<0xABC>();
     let sponsor_addr = starknet::contract_address_const::<0xDEF>();
 
-    let prize = Prize {
+    let prize = PrizeData {
         id: 3,
         context_id: 99,
         token_address: token_addr,

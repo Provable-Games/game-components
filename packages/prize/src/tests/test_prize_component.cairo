@@ -1,6 +1,6 @@
 use game_components_distribution::models::Distribution;
 use snforge_std::{ContractClassTrait, DeclareResultTrait, declare};
-use crate::models::{ERC20Data, ERC721Data, Prize, PrizeType, TokenTypeData};
+use crate::models::{ERC20Data, ERC721Data, PrizeData, PrizeType, TokenTypeData};
 
 #[starknet::interface]
 trait IPrizeMockExtended<TContractState> {
@@ -9,8 +9,8 @@ trait IPrizeMockExtended<TContractState> {
     fn is_claimed(self: @TContractState, context_id: u64, prize_type: PrizeType) -> bool;
     fn set_claimed(ref self: TContractState, context_id: u64, prize_type: PrizeType);
     // New mock functions for component testing
-    fn set_prize(ref self: TContractState, prize_id: u64, prize: Prize);
-    fn get_prize(self: @TContractState, prize_id: u64) -> Prize;
+    fn set_prize(ref self: TContractState, prize_id: u64, prize: PrizeData);
+    fn get_prize(self: @TContractState, prize_id: u64) -> PrizeData;
     fn get_total_prizes(self: @TContractState) -> u64;
     fn increment_prize_count(ref self: TContractState) -> u64;
     fn assert_prize_exists(self: @TContractState, prize_id: u64);
@@ -25,8 +25,8 @@ fn deploy_prize_mock() -> IPrizeMockExtendedDispatcher {
 
 fn make_erc20_prize(
     id: u64, context_id: u64, amount: u128, distribution: Option<Distribution>, count: Option<u32>,
-) -> Prize {
-    Prize {
+) -> PrizeData {
+    PrizeData {
         id,
         context_id,
         token_address: starknet::contract_address_const::<0xE2C20>(),
@@ -37,8 +37,8 @@ fn make_erc20_prize(
     }
 }
 
-fn make_erc721_prize(id: u64, context_id: u64, token_id: u128) -> Prize {
-    Prize {
+fn make_erc721_prize(id: u64, context_id: u64, token_id: u128) -> PrizeData {
+    PrizeData {
         id,
         context_id,
         token_address: starknet::contract_address_const::<0xE2C721>(),

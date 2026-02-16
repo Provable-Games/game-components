@@ -1,5 +1,5 @@
 use snforge_std::{ContractClassTrait, DeclareResultTrait, declare};
-use crate::models::{AdditionalShare, EntryFee, EntryFeeClaimType};
+use crate::models::{AdditionalShare, EntryFee, EntryFeeClaimType, EntryFeeConfig};
 
 #[starknet::interface]
 trait IEntryFeeMock<TContractState> {
@@ -20,17 +20,19 @@ fn make_address(value: felt252) -> starknet::ContractAddress {
 }
 
 fn setup_entry_fee_with_additional_shares(mock: IEntryFeeMockDispatcher) {
-    let entry_fee = EntryFee {
-        token_address: make_address(0x1234),
-        amount: 1000,
-        game_creator_share: Option::Some(500),
-        refund_share: Option::Some(300),
-        additional_shares: array![
-            AdditionalShare { recipient: make_address(0xA1), share_bps: 100 },
-            AdditionalShare { recipient: make_address(0xA2), share_bps: 100 },
-        ]
-            .span(),
-    };
+    let entry_fee = EntryFee::Config(
+        EntryFeeConfig {
+            token_address: make_address(0x1234),
+            amount: 1000,
+            game_creator_share: Option::Some(500),
+            refund_share: Option::Some(300),
+            additional_shares: array![
+                AdditionalShare { recipient: make_address(0xA1), share_bps: 100 },
+                AdditionalShare { recipient: make_address(0xA2), share_bps: 100 },
+            ]
+                .span(),
+        },
+    );
     mock.set_entry_fee(1, entry_fee);
 }
 

@@ -1,4 +1,8 @@
+pub use game_components_interfaces::extension::ExtensionConfig;
 use starknet::ContractAddress;
+
+pub const IENTRY_REQUIREMENT_ID: felt252 =
+    0x01a96fed356e101112c0cc86d357a4ca8ec9c41f7f7d34a88c03e7083ddceb55;
 
 #[derive(Copy, Drop, Serde, PartialEq)]
 pub struct EntryRequirement {
@@ -11,12 +15,6 @@ pub enum EntryRequirementType {
     token: ContractAddress,
     allowlist: Span<ContractAddress>,
     extension: ExtensionConfig,
-}
-
-#[derive(Copy, Drop, Serde, PartialEq)]
-pub struct ExtensionConfig {
-    pub address: ContractAddress,
-    pub config: Span<felt252>,
 }
 
 #[derive(Copy, Drop, Serde)]

@@ -1,9 +1,12 @@
 #[starknet::contract]
 pub mod EntryRequirementMock {
+    use openzeppelin_introspection::src5::SRC5Component;
+    use starknet::ContractAddress;
     use crate::entry_requirement::EntryRequirementComponent;
     use crate::models::{EntryRequirement, QualificationEntries, QualificationProof};
 
     component!(path: EntryRequirementComponent, storage: entry_req, event: EntryReqEvent);
+    component!(path: SRC5Component, storage: src5, event: SRC5Event);
 
     #[abi(embed_v0)]
     impl EntryRequirementImpl =
@@ -12,16 +15,27 @@ pub mod EntryRequirementMock {
     impl EntryRequirementInternalImpl =
         EntryRequirementComponent::EntryRequirementInternalImpl<ContractState>;
 
+    impl EntryRequirementInitializerImpl =
+        EntryRequirementComponent::EntryRequirementInitializerImpl<ContractState>;
+
     #[storage]
     struct Storage {
         #[substorage(v0)]
         entry_req: EntryRequirementComponent::Storage,
+        #[substorage(v0)]
+        src5: SRC5Component::Storage,
     }
 
     #[event]
     #[derive(Drop, starknet::Event)]
     enum Event {
         EntryReqEvent: EntryRequirementComponent::Event,
+        SRC5Event: SRC5Component::Event,
+    }
+
+    #[constructor]
+    fn constructor(ref self: ContractState) {
+        self.entry_req.initializer();
     }
 
     #[external(v0)]
@@ -44,5 +58,20 @@ pub mod EntryRequirementMock {
         entry_requirement: EntryRequirement,
     ) {
         self.entry_req.update_qualification_entries(context_id, qualifier, entry_requirement);
+    }
+
+    #[external(v0)]
+    fn validate_qualification(
+        self: @ContractState,
+        context_id: u64,
+        entry_requirement: EntryRequirement,
+        qualifier: QualificationProof,
+    ) -> ContractAddress {
+        self.entry_req.validate_qualification(context_id, entry_requirement, qualifier)
+    }
+
+    #[external(v0)]
+    fn assert_valid_entry_requirement(self: @ContractState, entry_requirement: EntryRequirement) {
+        self.entry_req.assert_valid_entry_requirement(entry_requirement);
     }
 }

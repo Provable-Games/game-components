@@ -1,6 +1,8 @@
 // Re-export all types from game_components_interfaces
 pub use game_components_interfaces::distribution::Distribution;
-pub use game_components_interfaces::prize::{ERC20Data, ERC721Data, Prize, PrizeType, TokenTypeData};
+pub use game_components_interfaces::prize::{
+    ERC20Data, ERC721Data, Prize, PrizeConfig, PrizeData, PrizeType, TokenTypeData,
+};
 use starknet::ContractAddress;
 use starknet::storage_access::StorePacking;
 use crate::libs::share_math::{SHARES_PER_SLOT, get_packed_share, set_packed_share};
@@ -166,8 +168,8 @@ fn unpack_token_type(packed_token_type: PackedTokenTypeData) -> TokenTypeData {
 /// Helper functions to convert between Prize (API) and StoredPrize (storage)
 #[generate_trait]
 pub impl StoredPrizeImpl of StoredPrizeTrait {
-    /// Convert Prize to StoredPrize (for writing to storage)
-    fn from_prize(prize: Prize) -> StoredPrize {
+    /// Convert PrizeData to StoredPrize (for writing to storage)
+    fn from_prize(prize: PrizeData) -> StoredPrize {
         let packed_token_type = pack_token_type(prize.token_type);
         StoredPrize {
             context_id: prize.context_id,
@@ -177,10 +179,10 @@ pub impl StoredPrizeImpl of StoredPrizeTrait {
         }
     }
 
-    /// Convert StoredPrize to Prize (for reading from storage)
-    fn to_prize(self: StoredPrize, id: u64) -> Prize {
+    /// Convert StoredPrize to PrizeData (for reading from storage)
+    fn to_prize(self: StoredPrize, id: u64) -> PrizeData {
         let token_type = unpack_token_type(self.token_type);
-        Prize {
+        PrizeData {
             id,
             context_id: self.context_id,
             token_address: self.token_address,

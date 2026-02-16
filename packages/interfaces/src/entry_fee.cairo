@@ -1,4 +1,8 @@
+use game_components_interfaces::extension::ExtensionConfig;
 use starknet::ContractAddress;
+
+pub const IENTRY_FEE_ID: felt252 =
+    0x022972c149377b51478a25ad70c95a0d3df9e6cfc5d7a0757c2a01acc8aedbd1;
 
 /// Additional share configuration for entry fee distribution
 /// These shares are deducted from the total pool before position-based distribution
@@ -10,9 +14,9 @@ pub struct AdditionalShare {
     pub share_bps: u16,
 }
 
-/// Entry fee configuration passed to create functions
+/// Entry fee configuration (the core config fields)
 #[derive(Drop, Serde, PartialEq)]
-pub struct EntryFee {
+pub struct EntryFeeConfig {
     pub token_address: ContractAddress,
     pub amount: u128,
     /// Game creator share in basis points (10000 = 100%)
@@ -23,9 +27,25 @@ pub struct EntryFee {
     pub additional_shares: Span<AdditionalShare>,
 }
 
+/// Entry fee enum: dispatch to either store config or set extension
+#[derive(Drop, Serde)]
+pub enum EntryFee {
+    Config: EntryFeeConfig,
+    Extension: ExtensionConfig,
+}
+
+/// Entry fee deposit enum: dispatch to either direct ERC20 transfer or extension payment
+#[derive(Drop, Serde)]
+pub enum EntryFeeDeposit {
+    /// Direct ERC20 deposit using stored config
+    Config: EntryFeeConfig,
+    /// Extension-based payment with caller-provided params
+    Extension: Span<felt252>,
+}
+
 #[starknet::interface]
 pub trait IEntryFee<TState> {
     /// Get entry fee configuration for a context
     /// Returns None if no entry fee is set
-    fn get_entry_fee(self: @TState, context_id: u64) -> Option<EntryFee>;
+    fn get_entry_fee(self: @TState, context_id: u64) -> Option<EntryFeeConfig>;
 }
