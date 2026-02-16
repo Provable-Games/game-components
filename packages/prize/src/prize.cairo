@@ -14,10 +14,11 @@ pub mod PrizeComponent {
     use game_components_interfaces::extension::ExtensionConfig;
     use game_components_interfaces::prize::{IPRIZE_ID, IPrize};
     use game_components_interfaces::prize_extension::{
-        IPrizeExtensionDispatcher, IPrizeExtensionDispatcherTrait,
+        IPRIZE_EXTENSION_ID, IPrizeExtensionDispatcher, IPrizeExtensionDispatcherTrait,
     };
     use openzeppelin_interfaces::erc20::{IERC20Dispatcher, IERC20DispatcherTrait};
     use openzeppelin_interfaces::erc721::{IERC721Dispatcher, IERC721DispatcherTrait};
+    use openzeppelin_interfaces::introspection::{ISRC5Dispatcher, ISRC5DispatcherTrait};
     use openzeppelin_introspection::src5::SRC5Component;
     use openzeppelin_introspection::src5::SRC5Component::InternalTrait as SRC5InternalTrait;
     use starknet::storage::{
@@ -246,6 +247,13 @@ pub mod PrizeComponent {
                 Prize::Config(config) => { self._add_prize_config(context_id, config) },
                 Prize::Extension(ext) => {
                     assert!(!ext.address.is_zero(), "Prize: Extension address cannot be zero");
+                    let src5 = ISRC5Dispatcher { contract_address: ext.address };
+                    let display_address: felt252 = ext.address.into();
+                    assert!(
+                        src5.supports_interface(IPRIZE_EXTENSION_ID),
+                        "Prize: Extension {} does not support IPrizeExtension",
+                        display_address,
+                    );
                     let prize_id = self.increment_prize_count();
                     self._set_extension(context_id, prize_id, ext);
                     prize_id
