@@ -177,7 +177,7 @@ pub enum EntryFeeClaimType {
     /// Claim the game creator's share
     GameCreator,
     /// Claim refund share for a specific token_id
-    Refund: u64,
+    Refund: felt252,
     /// Claim an additional share by index
     AdditionalShare: u8,
 }

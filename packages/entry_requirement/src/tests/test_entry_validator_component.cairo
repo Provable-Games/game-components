@@ -20,7 +20,7 @@ trait IEntryValidatorMock<TContractState> {
     fn should_ban(
         self: @TContractState,
         context_id: u64,
-        game_token_id: u64,
+        game_token_id: felt252,
         current_owner: starknet::ContractAddress,
         qualification: Span<felt252>,
     ) -> bool;
@@ -36,14 +36,14 @@ trait IEntryValidatorMock<TContractState> {
     fn add_entry(
         ref self: TContractState,
         context_id: u64,
-        game_token_id: u64,
+        game_token_id: felt252,
         player_address: starknet::ContractAddress,
         qualification: Span<felt252>,
     );
     fn remove_entry(
         ref self: TContractState,
         context_id: u64,
-        game_token_id: u64,
+        game_token_id: felt252,
         player_address: starknet::ContractAddress,
         qualification: Span<felt252>,
     );

@@ -45,7 +45,7 @@ pub mod RejectingEntryValidatorMock {
         fn should_ban_entry(
             self: @ContractState,
             context_id: u64,
-            game_token_id: u64,
+            game_token_id: felt252,
             current_owner: ContractAddress,
             qualification: Span<felt252>,
         ) -> bool {
@@ -68,7 +68,7 @@ pub mod RejectingEntryValidatorMock {
         fn on_entry_added(
             ref self: ContractState,
             context_id: u64,
-            game_token_id: u64,
+            game_token_id: felt252,
             player_address: ContractAddress,
             qualification: Span<felt252>,
         ) {}
@@ -76,7 +76,7 @@ pub mod RejectingEntryValidatorMock {
         fn on_entry_removed(
             ref self: ContractState,
             context_id: u64,
-            game_token_id: u64,
+            game_token_id: felt252,
             player_address: ContractAddress,
             qualification: Span<felt252>,
         ) {}

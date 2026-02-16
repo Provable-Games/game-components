@@ -35,7 +35,7 @@ pub mod EntryValidatorComponent {
         fn should_ban_entry(
             self: @TContractState,
             context_id: u64,
-            game_token_id: u64,
+            game_token_id: felt252,
             current_owner: ContractAddress,
             qualification: Span<felt252>,
         ) -> bool;
@@ -57,7 +57,7 @@ pub mod EntryValidatorComponent {
         fn on_entry_added(
             ref self: TContractState,
             context_id: u64,
-            game_token_id: u64,
+            game_token_id: felt252,
             player_address: ContractAddress,
             qualification: Span<felt252>,
         );
@@ -66,7 +66,7 @@ pub mod EntryValidatorComponent {
         fn on_entry_removed(
             ref self: TContractState,
             context_id: u64,
-            game_token_id: u64,
+            game_token_id: felt252,
             player_address: ContractAddress,
             qualification: Span<felt252>,
         );
@@ -101,7 +101,7 @@ pub mod EntryValidatorComponent {
         fn should_ban(
             self: @ComponentState<TContractState>,
             context_id: u64,
-            game_token_id: u64,
+            game_token_id: felt252,
             current_owner: ContractAddress,
             qualification: Span<felt252>,
         ) -> bool {
@@ -135,7 +135,7 @@ pub mod EntryValidatorComponent {
         fn add_entry(
             ref self: ComponentState<TContractState>,
             context_id: u64,
-            game_token_id: u64,
+            game_token_id: felt252,
             player_address: ContractAddress,
             qualification: Span<felt252>,
         ) {
@@ -149,7 +149,7 @@ pub mod EntryValidatorComponent {
         fn remove_entry(
             ref self: ComponentState<TContractState>,
             context_id: u64,
-            game_token_id: u64,
+            game_token_id: felt252,
             player_address: ContractAddress,
             qualification: Span<felt252>,
         ) {
