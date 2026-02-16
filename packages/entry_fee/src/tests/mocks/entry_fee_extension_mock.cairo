@@ -38,59 +38,18 @@ pub mod EntryFeeExtensionMock {
     impl EntryFeeExtensionTraitImpl of EntryFeeExtensionComponent::EntryFeeExtension<
         ContractState,
     > {
-        fn calculate_fee(
-            self: @ContractState,
-            context_id: u64,
-            base_amount: u128,
-            player: ContractAddress,
-            config: Span<felt252>,
-        ) -> u128 {
-            // Simple: return base amount unchanged
-            base_amount
-        }
-
-        fn validate_deposit(
-            self: @ContractState,
-            context_id: u64,
-            player: ContractAddress,
-            amount: u128,
-            config: Span<felt252>,
-        ) -> bool {
-            // Simple: always valid
-            true
-        }
-
-        fn on_deposit(
-            ref self: ContractState,
-            context_id: u64,
-            token_address: ContractAddress,
-            amount: u128,
-            player: ContractAddress,
-            config: Span<felt252>,
-        ) { // No-op for test mock
-        }
-
-        fn on_claim(
-            ref self: ContractState,
-            context_id: u64,
-            claim_type: Span<felt252>,
-            claimer: ContractAddress,
-            amount: u128,
-            config: Span<felt252>,
-        ) { // No-op for test mock
-        }
-
-        fn on_refund(
-            ref self: ContractState,
-            context_id: u64,
-            recipient: ContractAddress,
-            amount: u128,
-            config: Span<felt252>,
-        ) { // No-op for test mock
-        }
-
-        fn add_config(
+        fn set_entry_fee_config(
             ref self: ContractState, context_id: u64, config: Span<felt252>,
+        ) { // No-op for test mock
+        }
+
+        fn pay_entry_fee(
+            ref self: ContractState, context_id: u64, pay_params: Span<felt252>,
+        ) { // No-op for test mock
+        }
+
+        fn claim_entry_fee(
+            ref self: ContractState, context_id: u64, claim_params: Span<felt252>,
         ) { // No-op for test mock
         }
     }

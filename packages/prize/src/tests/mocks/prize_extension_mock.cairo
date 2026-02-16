@@ -32,66 +32,13 @@ pub mod PrizeExtensionMock {
     }
 
     impl PrizeExtensionTraitImpl of PrizeExtensionComponent::PrizeExtension<ContractState> {
-        fn on_deposit(
-            ref self: ContractState,
-            context_id: u64,
-            prize_id: u64,
-            sponsor: ContractAddress,
-            token_address: ContractAddress,
-            amount_or_token_id: u128,
-            is_erc721: bool,
-            config: Span<felt252>,
-        ) { // No-op for test mock
-        }
-
-        fn validate_claim(
-            self: @ContractState,
-            context_id: u64,
-            prize_id: u64,
-            claimer: ContractAddress,
-            position: Option<u32>,
-            config: Span<felt252>,
-        ) -> bool {
-            // Simple: always valid
-            true
-        }
-
-        fn before_payout(
-            ref self: ContractState,
-            context_id: u64,
-            prize_id: u64,
-            recipient: ContractAddress,
-            amount: u128,
-            config: Span<felt252>,
-        ) -> (bool, u128) {
-            // Simple: proceed with original amount
-            (true, amount)
-        }
-
-        fn after_payout(
-            ref self: ContractState,
-            context_id: u64,
-            prize_id: u64,
-            recipient: ContractAddress,
-            amount: u128,
-            config: Span<felt252>,
-        ) { // No-op for test mock
-        }
-
-        fn generate_erc721_prize(
-            ref self: ContractState,
-            context_id: u64,
-            prize_id: u64,
-            recipient: ContractAddress,
-            base_token_id: u128,
-            config: Span<felt252>,
-        ) -> u128 {
-            // Simple: return base token ID unchanged
-            base_token_id
-        }
-
-        fn add_config(
+        fn add_prize(
             ref self: ContractState, context_id: u64, config: Span<felt252>,
+        ) { // No-op for test mock
+        }
+
+        fn claim_prize(
+            ref self: ContractState, context_id: u64, claim_params: Span<felt252>,
         ) { // No-op for test mock
         }
     }

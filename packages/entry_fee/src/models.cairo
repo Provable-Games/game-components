@@ -1,5 +1,7 @@
 // Import types from interface for component trait implementation
-pub use game_components_interfaces::entry_fee::{AdditionalShare, EntryFee};
+pub use game_components_interfaces::entry_fee::{
+    AdditionalShare, EntryFee, EntryFeeConfig, EntryFeeDeposit,
+};
 use starknet::storage_access::StorePacking;
 
 /// Basis points constant: 10000 = 100%

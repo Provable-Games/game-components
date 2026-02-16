@@ -13,6 +13,7 @@ pub mod EntryFeeComponent {
     use game_components_interfaces::entry_fee_extension::{
         IEntryFeeExtensionDispatcher, IEntryFeeExtensionDispatcherTrait,
     };
+    use game_components_interfaces::extension::ExtensionConfig;
     use openzeppelin_interfaces::erc20::{IERC20Dispatcher, IERC20DispatcherTrait};
     use openzeppelin_introspection::src5::SRC5Component;
     use openzeppelin_introspection::src5::SRC5Component::InternalTrait as SRC5InternalTrait;
@@ -22,9 +23,10 @@ pub mod EntryFeeComponent {
     };
     use starknet::{ContractAddress, get_caller_address, get_contract_address};
     use crate::models::{
-        AdditionalShare, EntryFee, EntryFeeClaimType, EntryFeeData, EntryFeeDataStorePacking,
-        PackedAdditionalShares, PackedAdditionalSharesImpl, PackedAdditionalSharesTrait,
-        SHARES_PER_SLOT, StoredAdditionalShare,
+        AdditionalShare, EntryFee, EntryFeeClaimType, EntryFeeConfig, EntryFeeData,
+        EntryFeeDataStorePacking, EntryFeeDeposit, PackedAdditionalShares,
+        PackedAdditionalSharesImpl, PackedAdditionalSharesTrait, SHARES_PER_SLOT,
+        StoredAdditionalShare,
     };
 
     #[storage]
@@ -60,7 +62,7 @@ pub mod EntryFeeComponent {
     > of IEntryFee<ComponentState<TContractState>> {
         fn get_entry_fee(
             self: @ComponentState<TContractState>, context_id: u64,
-        ) -> Option<EntryFee> {
+        ) -> Option<EntryFeeConfig> {
             self._get_entry_fee(context_id)
         }
     }
@@ -73,7 +75,7 @@ pub mod EntryFeeComponent {
         /// Returns None if no entry fee is set (token address is zero)
         fn _get_entry_fee(
             self: @ComponentState<TContractState>, context_id: u64,
-        ) -> Option<EntryFee> {
+        ) -> Option<EntryFeeConfig> {
             let token_address = self.EntryFee_token.entry(context_id).read();
 
             // If token address is zero, no entry fee is set
@@ -99,7 +101,7 @@ pub mod EntryFeeComponent {
             };
 
             Option::Some(
-                EntryFee {
+                EntryFeeConfig {
                     token_address,
                     amount: data.amount,
                     game_creator_share,
@@ -147,32 +149,49 @@ pub mod EntryFeeComponent {
             shares.span()
         }
 
-        /// Set entry fee for a context
-        /// Uses packed storage: writes 1 slot per 16 shares instead of 1 slot per share
+        /// Set entry fee or extension for a context.
+        /// - EntryFee::Config: stores entry fee config, returns Some(EntryFeeConfig)
+        /// - EntryFee::Extension: sets extension config, returns None
         fn set_entry_fee(
-            ref self: ComponentState<TContractState>, context_id: u64, entry_fee: @EntryFee,
+            ref self: ComponentState<TContractState>, context_id: u64, entry_fee: EntryFee,
+        ) -> Option<EntryFeeConfig> {
+            match entry_fee {
+                EntryFee::Config(config) => {
+                    self._set_entry_fee_config(context_id, @config);
+                    Option::Some(config)
+                },
+                EntryFee::Extension(ext) => {
+                    self._set_extension(context_id, ext);
+                    Option::None
+                },
+            }
+        }
+
+        /// Internal: store entry fee config data
+        fn _set_entry_fee_config(
+            ref self: ComponentState<TContractState>, context_id: u64, config: @EntryFeeConfig,
         ) {
             // Store token address
-            self.EntryFee_token.entry(context_id).write(*entry_fee.token_address);
+            self.EntryFee_token.entry(context_id).write(*config.token_address);
 
             // Convert Option<u16> to stored values
-            let game_creator_share: u16 = match entry_fee.game_creator_share {
+            let game_creator_share: u16 = match config.game_creator_share {
                 Option::Some(share) => *share,
                 Option::None => 0,
             };
 
-            let refund_share: u16 = match entry_fee.refund_share {
+            let refund_share: u16 = match config.refund_share {
                 Option::Some(share) => *share,
                 Option::None => 0,
             };
 
             // Get additional shares count
-            let additional_shares = *entry_fee.additional_shares;
+            let additional_shares = *config.additional_shares;
             let additional_count: u8 = additional_shares.len().try_into().unwrap();
 
             // Store packed data (game_creator_claimed starts as false)
             let data = EntryFeeData {
-                amount: *entry_fee.amount,
+                amount: *config.amount,
                 game_creator_share,
                 refund_share,
                 game_creator_claimed: false,
@@ -218,13 +237,48 @@ pub mod EntryFeeComponent {
             }
         }
 
-        /// Process entry fee deposit by transferring tokens from caller to contract
-        fn deposit_entry_fee(ref self: ComponentState<TContractState>, entry_fee: @EntryFee) {
-            let erc20_dispatcher = IERC20Dispatcher { contract_address: *entry_fee.token_address };
-            erc20_dispatcher
-                .transfer_from(
-                    get_caller_address(), get_contract_address(), (*entry_fee.amount).into(),
-                );
+        /// Internal: store extension config and notify extension contract
+        fn _set_extension(
+            ref self: ComponentState<TContractState>, context_id: u64, ext: ExtensionConfig,
+        ) {
+            self.EntryFee_extension_address.entry(context_id).write(ext.address);
+            self.write_extension_config(context_id, ext.config);
+
+            if !ext.address.is_zero() {
+                let dispatcher = IEntryFeeExtensionDispatcher { contract_address: ext.address };
+                dispatcher.set_entry_fee_config(context_id, ext.config);
+            }
+        }
+
+        /// Process entry fee deposit.
+        /// - EntryFeeDeposit::Config: transfers ERC20 tokens from caller to contract
+        /// - EntryFeeDeposit::Extension: calls pay_entry_fee on the extension with
+        ///   caller-provided params
+        fn deposit_entry_fee(
+            ref self: ComponentState<TContractState>, context_id: u64, deposit: EntryFeeDeposit,
+        ) {
+            match deposit {
+                EntryFeeDeposit::Config(config) => {
+                    let erc20_dispatcher = IERC20Dispatcher {
+                        contract_address: config.token_address,
+                    };
+                    erc20_dispatcher
+                        .transfer_from(
+                            get_caller_address(), get_contract_address(), config.amount.into(),
+                        );
+                },
+                EntryFeeDeposit::Extension(pay_params) => {
+                    let extension_address = self
+                        .EntryFee_extension_address
+                        .entry(context_id)
+                        .read();
+                    assert!(!extension_address.is_zero(), "EntryFee: No extension configured");
+                    let dispatcher = IEntryFeeExtensionDispatcher {
+                        contract_address: extension_address,
+                    };
+                    dispatcher.pay_entry_fee(context_id, pay_params);
+                },
+            }
         }
 
         /// Payout to a recipient
@@ -335,25 +389,6 @@ pub mod EntryFeeComponent {
             };
         }
 
-        /// Set extension for a context: stores address + config and calls add_config on the
-        /// extension
-        fn set_extension(
-            ref self: ComponentState<TContractState>,
-            context_id: u64,
-            extension_address: ContractAddress,
-            config: Span<felt252>,
-        ) {
-            self.EntryFee_extension_address.entry(context_id).write(extension_address);
-            self.write_extension_config(context_id, config);
-
-            if !extension_address.is_zero() {
-                let dispatcher = IEntryFeeExtensionDispatcher {
-                    contract_address: extension_address,
-                };
-                dispatcher.add_config(context_id, config);
-            }
-        }
-
         /// Get extension address for a context
         fn get_extension_address(
             self: @ComponentState<TContractState>, context_id: u64,
@@ -363,86 +398,17 @@ pub mod EntryFeeComponent {
 
         // --- Extension dispatch hooks ---
 
-        /// Dispatch deposit hooks to the extension (calculate_fee, validate_deposit, on_deposit).
-        /// Returns the (potentially adjusted) fee amount. Panics if validation fails.
-        /// If no extension is configured, returns the base amount unchanged.
-        fn dispatch_deposit(
-            ref self: ComponentState<TContractState>,
-            context_id: u64,
-            entry_fee: @EntryFee,
-            player: ContractAddress,
-        ) -> u128 {
-            let extension_address = self.EntryFee_extension_address.entry(context_id).read();
-            let base_amount = *entry_fee.amount;
-
-            if extension_address.is_zero() {
-                return base_amount;
-            }
-
-            let config = self.read_extension_config(context_id);
-            let dispatcher = IEntryFeeExtensionDispatcher { contract_address: extension_address };
-
-            // Calculate adjusted fee
-            let adjusted_amount = dispatcher.calculate_fee(context_id, base_amount, player, config);
-
-            // Validate the deposit
-            let valid = dispatcher.validate_deposit(context_id, player, adjusted_amount, config);
-            assert!(valid, "EntryFee: Extension rejected deposit");
-
-            adjusted_amount
-        }
-
-        /// Notify extension after deposit is complete
-        fn notify_deposit(
-            ref self: ComponentState<TContractState>,
-            context_id: u64,
-            token_address: ContractAddress,
-            amount: u128,
-            player: ContractAddress,
+        /// Notify extension to claim entry fee for a context
+        fn notify_claim_entry_fee(
+            ref self: ComponentState<TContractState>, context_id: u64, claim_params: Span<felt252>,
         ) {
             let extension_address = self.EntryFee_extension_address.entry(context_id).read();
             if extension_address.is_zero() {
                 return;
             }
 
-            let config = self.read_extension_config(context_id);
             let dispatcher = IEntryFeeExtensionDispatcher { contract_address: extension_address };
-            dispatcher.on_deposit(context_id, token_address, amount, player, config);
-        }
-
-        /// Notify extension when a claim is processed
-        fn notify_claim(
-            ref self: ComponentState<TContractState>,
-            context_id: u64,
-            claim_type: Span<felt252>,
-            claimer: ContractAddress,
-            amount: u128,
-        ) {
-            let extension_address = self.EntryFee_extension_address.entry(context_id).read();
-            if extension_address.is_zero() {
-                return;
-            }
-
-            let config = self.read_extension_config(context_id);
-            let dispatcher = IEntryFeeExtensionDispatcher { contract_address: extension_address };
-            dispatcher.on_claim(context_id, claim_type, claimer, amount, config);
-        }
-
-        /// Notify extension when a refund is processed
-        fn notify_refund(
-            ref self: ComponentState<TContractState>,
-            context_id: u64,
-            recipient: ContractAddress,
-            amount: u128,
-        ) {
-            let extension_address = self.EntryFee_extension_address.entry(context_id).read();
-            if extension_address.is_zero() {
-                return;
-            }
-
-            let config = self.read_extension_config(context_id);
-            let dispatcher = IEntryFeeExtensionDispatcher { contract_address: extension_address };
-            dispatcher.on_refund(context_id, recipient, amount, config);
+            dispatcher.claim_entry_fee(context_id, claim_params);
         }
     }
 

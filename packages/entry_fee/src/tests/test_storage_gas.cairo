@@ -20,7 +20,7 @@ use starknet::ContractAddress;
 ///
 /// Note: Recipients are still stored separately (ContractAddress = 251 bits, cannot pack)
 
-use crate::models::{AdditionalShare, EntryFee, EntryFeeClaimType};
+use crate::models::{AdditionalShare, EntryFee, EntryFeeClaimType, EntryFeeConfig};
 
 #[starknet::interface]
 trait IEntryFeeMock<TContractState> {
@@ -62,13 +62,15 @@ fn create_additional_shares(count: u32) -> Array<AdditionalShare> {
 fn test_storage_gas_1_additional_share() {
     let mock = deploy_mock();
 
-    let entry_fee = EntryFee {
-        token_address: make_address(1),
-        amount: 1000,
-        game_creator_share: Option::None,
-        refund_share: Option::None,
-        additional_shares: create_additional_shares(1).span(),
-    };
+    let entry_fee = EntryFee::Config(
+        EntryFeeConfig {
+            token_address: make_address(1),
+            amount: 1000,
+            game_creator_share: Option::None,
+            refund_share: Option::None,
+            additional_shares: create_additional_shares(1).span(),
+        },
+    );
 
     mock.set_entry_fee(1, entry_fee);
 
@@ -85,13 +87,15 @@ fn test_storage_gas_1_additional_share() {
 fn test_storage_gas_4_additional_shares() {
     let mock = deploy_mock();
 
-    let entry_fee = EntryFee {
-        token_address: make_address(1),
-        amount: 1000,
-        game_creator_share: Option::None,
-        refund_share: Option::None,
-        additional_shares: create_additional_shares(4).span(),
-    };
+    let entry_fee = EntryFee::Config(
+        EntryFeeConfig {
+            token_address: make_address(1),
+            amount: 1000,
+            game_creator_share: Option::None,
+            refund_share: Option::None,
+            additional_shares: create_additional_shares(4).span(),
+        },
+    );
 
     mock.set_entry_fee(1, entry_fee);
 
@@ -108,13 +112,15 @@ fn test_storage_gas_4_additional_shares() {
 fn test_storage_gas_8_additional_shares() {
     let mock = deploy_mock();
 
-    let entry_fee = EntryFee {
-        token_address: make_address(1),
-        amount: 1000,
-        game_creator_share: Option::None,
-        refund_share: Option::None,
-        additional_shares: create_additional_shares(8).span(),
-    };
+    let entry_fee = EntryFee::Config(
+        EntryFeeConfig {
+            token_address: make_address(1),
+            amount: 1000,
+            game_creator_share: Option::None,
+            refund_share: Option::None,
+            additional_shares: create_additional_shares(8).span(),
+        },
+    );
 
     mock.set_entry_fee(1, entry_fee);
 
@@ -132,13 +138,15 @@ fn test_storage_gas_8_additional_shares() {
 fn test_storage_gas_16_additional_shares() {
     let mock = deploy_mock();
 
-    let entry_fee = EntryFee {
-        token_address: make_address(1),
-        amount: 1000,
-        game_creator_share: Option::None,
-        refund_share: Option::None,
-        additional_shares: create_additional_shares(16).span(),
-    };
+    let entry_fee = EntryFee::Config(
+        EntryFeeConfig {
+            token_address: make_address(1),
+            amount: 1000,
+            game_creator_share: Option::None,
+            refund_share: Option::None,
+            additional_shares: create_additional_shares(16).span(),
+        },
+    );
 
     mock.set_entry_fee(1, entry_fee);
 
@@ -154,13 +162,15 @@ fn test_storage_gas_16_additional_shares() {
 fn test_storage_gas_claim_status() {
     let mock = deploy_mock();
 
-    let entry_fee = EntryFee {
-        token_address: make_address(1),
-        amount: 1000,
-        game_creator_share: Option::None,
-        refund_share: Option::None,
-        additional_shares: create_additional_shares(8).span(),
-    };
+    let entry_fee = EntryFee::Config(
+        EntryFeeConfig {
+            token_address: make_address(1),
+            amount: 1000,
+            game_creator_share: Option::None,
+            refund_share: Option::None,
+            additional_shares: create_additional_shares(8).span(),
+        },
+    );
 
     mock.set_entry_fee(1, entry_fee);
 
@@ -189,13 +199,15 @@ fn test_storage_gas_claim_status() {
 fn test_storage_gas_claim_multiple_shares() {
     let mock = deploy_mock();
 
-    let entry_fee = EntryFee {
-        token_address: make_address(1),
-        amount: 1000,
-        game_creator_share: Option::None,
-        refund_share: Option::None,
-        additional_shares: create_additional_shares(16).span(),
-    };
+    let entry_fee = EntryFee::Config(
+        EntryFeeConfig {
+            token_address: make_address(1),
+            amount: 1000,
+            game_creator_share: Option::None,
+            refund_share: Option::None,
+            additional_shares: create_additional_shares(16).span(),
+        },
+    );
 
     mock.set_entry_fee(1, entry_fee);
 

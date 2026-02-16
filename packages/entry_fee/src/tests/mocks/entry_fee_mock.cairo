@@ -37,7 +37,7 @@ pub mod EntryFeeMock {
 
     #[external(v0)]
     fn set_entry_fee(ref self: ContractState, context_id: u64, entry_fee: EntryFee) {
-        self.entry_fee.set_entry_fee(context_id, @entry_fee);
+        self.entry_fee.set_entry_fee(context_id, entry_fee);
     }
 
     #[external(v0)]

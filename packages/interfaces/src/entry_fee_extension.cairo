@@ -8,59 +8,12 @@ pub trait IEntryFeeExtension<TState> {
     /// Get the owner contract address (e.g., budokan, quest manager)
     fn owner_address(self: @TState) -> ContractAddress;
 
-    // --- Deposit lifecycle ---
+    /// Set entry fee configuration for a context (called during setup)
+    fn set_entry_fee_config(ref self: TState, context_id: u64, config: Span<felt252>);
 
-    /// Calculate the actual fee amount for a player (allows dynamic pricing)
-    fn calculate_fee(
-        self: @TState,
-        context_id: u64,
-        base_amount: u128,
-        player: ContractAddress,
-        config: Span<felt252>,
-    ) -> u128;
+    /// Pay entry fee for a context (called during deposit via extension)
+    fn pay_entry_fee(ref self: TState, context_id: u64, pay_params: Span<felt252>);
 
-    /// Validate whether a deposit should be accepted
-    fn validate_deposit(
-        self: @TState,
-        context_id: u64,
-        player: ContractAddress,
-        amount: u128,
-        config: Span<felt252>,
-    ) -> bool;
-
-    /// Called after a deposit is processed
-    fn on_deposit(
-        ref self: TState,
-        context_id: u64,
-        token_address: ContractAddress,
-        amount: u128,
-        player: ContractAddress,
-        config: Span<felt252>,
-    );
-
-    // --- Claim/Payout lifecycle ---
-
-    /// Called when a claim is processed
-    fn on_claim(
-        ref self: TState,
-        context_id: u64,
-        claim_type: Span<felt252>,
-        claimer: ContractAddress,
-        amount: u128,
-        config: Span<felt252>,
-    );
-
-    /// Called when a refund is processed
-    fn on_refund(
-        ref self: TState,
-        context_id: u64,
-        recipient: ContractAddress,
-        amount: u128,
-        config: Span<felt252>,
-    );
-
-    // --- Configuration ---
-
-    /// Add configuration for a context
-    fn add_config(ref self: TState, context_id: u64, config: Span<felt252>);
+    /// Claim entry fee for a context
+    fn claim_entry_fee(ref self: TState, context_id: u64, claim_params: Span<felt252>);
 }

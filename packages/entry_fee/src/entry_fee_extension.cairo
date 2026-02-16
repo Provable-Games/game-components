@@ -1,6 +1,6 @@
 /// EntryFeeExtensionComponent provides extensible entry fee logic for any context.
-/// This component allows external contracts to implement custom fee calculation,
-/// deposit validation, and claim/refund lifecycle hooks.
+/// This component allows external contracts to implement custom entry fee setup,
+/// payment, and claim hooks.
 
 #[starknet::component]
 pub mod EntryFeeExtensionComponent {
@@ -24,55 +24,14 @@ pub mod EntryFeeExtensionComponent {
     /// Internal trait that implementors must provide.
     /// This trait defines the fee logic that each extension implements.
     pub trait EntryFeeExtension<TContractState> {
-        /// Calculate the actual fee amount for a player (allows dynamic pricing)
-        fn calculate_fee(
-            self: @TContractState,
-            context_id: u64,
-            base_amount: u128,
-            player: ContractAddress,
-            config: Span<felt252>,
-        ) -> u128;
+        /// Set entry fee configuration for a context (called during setup)
+        fn set_entry_fee_config(ref self: TContractState, context_id: u64, config: Span<felt252>);
 
-        /// Validate whether a deposit should be accepted
-        fn validate_deposit(
-            self: @TContractState,
-            context_id: u64,
-            player: ContractAddress,
-            amount: u128,
-            config: Span<felt252>,
-        ) -> bool;
+        /// Pay entry fee for a context (called during deposit via extension)
+        fn pay_entry_fee(ref self: TContractState, context_id: u64, pay_params: Span<felt252>);
 
-        /// Called after a deposit is processed
-        fn on_deposit(
-            ref self: TContractState,
-            context_id: u64,
-            token_address: ContractAddress,
-            amount: u128,
-            player: ContractAddress,
-            config: Span<felt252>,
-        );
-
-        /// Called when a claim is processed
-        fn on_claim(
-            ref self: TContractState,
-            context_id: u64,
-            claim_type: Span<felt252>,
-            claimer: ContractAddress,
-            amount: u128,
-            config: Span<felt252>,
-        );
-
-        /// Called when a refund is processed
-        fn on_refund(
-            ref self: TContractState,
-            context_id: u64,
-            recipient: ContractAddress,
-            amount: u128,
-            config: Span<felt252>,
-        );
-
-        /// Add configuration for a context
-        fn add_config(ref self: TContractState, context_id: u64, config: Span<felt252>);
+        /// Claim entry fee for a context
+        fn claim_entry_fee(ref self: TContractState, context_id: u64, claim_params: Span<felt252>);
     }
 
     #[embeddable_as(EntryFeeExtensionImpl)]
@@ -87,76 +46,28 @@ pub mod EntryFeeExtensionComponent {
             self.owner_address.read()
         }
 
-        fn calculate_fee(
-            self: @ComponentState<TContractState>,
-            context_id: u64,
-            base_amount: u128,
-            player: ContractAddress,
-            config: Span<felt252>,
-        ) -> u128 {
-            let contract = self.get_contract();
-            EntryFeeExtension::calculate_fee(contract, context_id, base_amount, player, config)
-        }
-
-        fn validate_deposit(
-            self: @ComponentState<TContractState>,
-            context_id: u64,
-            player: ContractAddress,
-            amount: u128,
-            config: Span<felt252>,
-        ) -> bool {
-            let contract = self.get_contract();
-            EntryFeeExtension::validate_deposit(contract, context_id, player, amount, config)
-        }
-
-        fn on_deposit(
-            ref self: ComponentState<TContractState>,
-            context_id: u64,
-            token_address: ContractAddress,
-            amount: u128,
-            player: ContractAddress,
-            config: Span<felt252>,
-        ) {
-            self.assert_only_owner();
-            let mut contract = self.get_contract_mut();
-            EntryFeeExtension::on_deposit(
-                ref contract, context_id, token_address, amount, player, config,
-            );
-        }
-
-        fn on_claim(
-            ref self: ComponentState<TContractState>,
-            context_id: u64,
-            claim_type: Span<felt252>,
-            claimer: ContractAddress,
-            amount: u128,
-            config: Span<felt252>,
-        ) {
-            self.assert_only_owner();
-            let mut contract = self.get_contract_mut();
-            EntryFeeExtension::on_claim(
-                ref contract, context_id, claim_type, claimer, amount, config,
-            );
-        }
-
-        fn on_refund(
-            ref self: ComponentState<TContractState>,
-            context_id: u64,
-            recipient: ContractAddress,
-            amount: u128,
-            config: Span<felt252>,
-        ) {
-            self.assert_only_owner();
-            let mut contract = self.get_contract_mut();
-            EntryFeeExtension::on_refund(ref contract, context_id, recipient, amount, config);
-        }
-
-        fn add_config(
+        fn set_entry_fee_config(
             ref self: ComponentState<TContractState>, context_id: u64, config: Span<felt252>,
         ) {
             self.assert_only_owner();
             let mut contract = self.get_contract_mut();
-            EntryFeeExtension::add_config(ref contract, context_id, config);
+            EntryFeeExtension::set_entry_fee_config(ref contract, context_id, config);
+        }
+
+        fn pay_entry_fee(
+            ref self: ComponentState<TContractState>, context_id: u64, pay_params: Span<felt252>,
+        ) {
+            self.assert_only_owner();
+            let mut contract = self.get_contract_mut();
+            EntryFeeExtension::pay_entry_fee(ref contract, context_id, pay_params);
+        }
+
+        fn claim_entry_fee(
+            ref self: ComponentState<TContractState>, context_id: u64, claim_params: Span<felt252>,
+        ) {
+            self.assert_only_owner();
+            let mut contract = self.get_contract_mut();
+            EntryFeeExtension::claim_entry_fee(ref contract, context_id, claim_params);
         }
     }
 

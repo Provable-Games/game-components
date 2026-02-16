@@ -11,6 +11,7 @@
 pub mod PrizeComponent {
     use core::num::traits::Zero;
     use core::poseidon::poseidon_hash_span;
+    use game_components_interfaces::extension::ExtensionConfig;
     use game_components_interfaces::prize::{IPRIZE_ID, IPrize};
     use game_components_interfaces::prize_extension::{
         IPrizeExtensionDispatcher, IPrizeExtensionDispatcherTrait,
@@ -26,7 +27,7 @@ pub mod PrizeComponent {
     use starknet::{ContractAddress, get_caller_address, get_contract_address};
     use crate::models::{
         CUSTOM_SHARES_PER_SLOT, CustomShares, CustomSharesImpl, CustomSharesTrait, ERC20Data, Prize,
-        PrizeType, StoredPrize, StoredPrizeTrait, TokenTypeData,
+        PrizeConfig, PrizeData, PrizeType, StoredPrize, StoredPrizeTrait, TokenTypeData,
     };
 
     #[storage]
@@ -60,7 +61,7 @@ pub mod PrizeComponent {
     impl PrizeComponentImpl<
         TContractState, +HasComponent<TContractState>,
     > of IPrize<ComponentState<TContractState>> {
-        fn get_prize(self: @ComponentState<TContractState>, prize_id: u64) -> Prize {
+        fn get_prize(self: @ComponentState<TContractState>, prize_id: u64) -> PrizeData {
             self._get_prize(prize_id)
         }
 
@@ -80,10 +81,10 @@ pub mod PrizeComponent {
         TContractState, +HasComponent<TContractState>,
     > of PrizeInternalTrait<TContractState> {
         /// Get a prize by its ID
-        /// The Prize struct is unpacked from storage and the id field is set
-        fn _get_prize(self: @ComponentState<TContractState>, prize_id: u64) -> Prize {
+        /// The PrizeData struct is unpacked from storage and the id field is set
+        fn _get_prize(self: @ComponentState<TContractState>, prize_id: u64) -> PrizeData {
             let stored = self.Prize_prizes.entry(prize_id).read();
-            // Convert StoredPrize to Prize
+            // Convert StoredPrize to PrizeData
             let mut prize = stored.to_prize(prize_id);
 
             // For custom distributions, restore the shares from separate storage
@@ -153,7 +154,7 @@ pub mod PrizeComponent {
         }
 
         /// Store a prize (converts to StoredPrize for storage)
-        fn set_prize(ref self: ComponentState<TContractState>, prize_id: u64, prize: Prize) {
+        fn set_prize(ref self: ComponentState<TContractState>, prize_id: u64, prize: PrizeData) {
             let stored = StoredPrizeTrait::from_prize(prize);
             self.Prize_prizes.entry(prize_id).write(stored);
         }
@@ -234,14 +235,30 @@ pub mod PrizeComponent {
             assert!(!claimed, "Prize: Prize has already been claimed");
         }
 
-        /// Add a prize: deposits tokens, increments count, and stores the prize
-        /// Distribution configuration is packed into storage via StorePacking
+        /// Add a prize or set extension for a context.
+        /// - Prize::Config: deposits tokens, stores prize, returns Some(PrizeData)
+        /// - Prize::Extension: sets extension config, returns None
         fn add_prize(
-            ref self: ComponentState<TContractState>,
-            context_id: u64,
-            token_address: ContractAddress,
-            token_type: TokenTypeData,
-        ) -> Prize {
+            ref self: ComponentState<TContractState>, context_id: u64, prize: Prize,
+        ) -> Option<PrizeData> {
+            match prize {
+                Prize::Config(config) => {
+                    Option::Some(self._add_prize_config(context_id, config))
+                },
+                Prize::Extension(ext) => {
+                    self._set_extension(context_id, ext);
+                    Option::None
+                },
+            }
+        }
+
+        /// Internal: deposit tokens, store prize data, return PrizeData
+        fn _add_prize_config(
+            ref self: ComponentState<TContractState>, context_id: u64, config: PrizeConfig,
+        ) -> PrizeData {
+            let token_address = config.token_address;
+            let token_type = config.token_type;
+
             // Deposit the prize tokens
             match @token_type {
                 TokenTypeData::erc20(erc20_data) => {
@@ -310,17 +327,30 @@ pub mod PrizeComponent {
                 }
             }
 
-            // Create the prize (StorePacking handles the packing in storage)
+            // Create the prize data (StorePacking handles the packing in storage)
             let sponsor = get_caller_address();
-            let prize = Prize {
+            let prize_data = PrizeData {
                 id, context_id, token_address, token_type, sponsor_address: sponsor,
             };
 
-            // Store and return the prize
-            self.set_prize(id, prize);
+            // Store the prize data
+            self.set_prize(id, prize_data);
 
             // Return a copy by reconstructing from storage
             self._get_prize(id)
+        }
+
+        /// Internal: store extension config and notify extension contract
+        fn _set_extension(
+            ref self: ComponentState<TContractState>, context_id: u64, ext: ExtensionConfig,
+        ) {
+            self.Prize_extension_address.entry(context_id).write(ext.address);
+            self.write_extension_config(context_id, ext.config);
+
+            if !ext.address.is_zero() {
+                let dispatcher = IPrizeExtensionDispatcher { contract_address: ext.address };
+                dispatcher.add_prize(context_id, ext.config);
+            }
         }
 
         /// Payout full ERC20 amount to a recipient
@@ -398,23 +428,6 @@ pub mod PrizeComponent {
             };
         }
 
-        /// Set extension for a context: stores address + config and calls add_config on the
-        /// extension
-        fn set_extension(
-            ref self: ComponentState<TContractState>,
-            context_id: u64,
-            extension_address: ContractAddress,
-            config: Span<felt252>,
-        ) {
-            self.Prize_extension_address.entry(context_id).write(extension_address);
-            self.write_extension_config(context_id, config);
-
-            if !extension_address.is_zero() {
-                let dispatcher = IPrizeExtensionDispatcher { contract_address: extension_address };
-                dispatcher.add_config(context_id, config);
-            }
-        }
-
         /// Get extension address for a context
         fn get_extension_address(
             self: @ComponentState<TContractState>, context_id: u64,
@@ -424,70 +437,17 @@ pub mod PrizeComponent {
 
         // --- Extension dispatch hooks ---
 
-        /// Notify extension when a prize is deposited
-        fn notify_deposit(
-            ref self: ComponentState<TContractState>,
-            context_id: u64,
-            prize_id: u64,
-            sponsor: ContractAddress,
-            token_address: ContractAddress,
-            amount_or_token_id: u128,
-            is_erc721: bool,
+        /// Notify extension to claim prize for a context
+        fn notify_claim_prize(
+            ref self: ComponentState<TContractState>, context_id: u64, claim_params: Span<felt252>,
         ) {
             let extension_address = self.Prize_extension_address.entry(context_id).read();
             if extension_address.is_zero() {
                 return;
             }
 
-            let config = self.read_extension_config(context_id);
             let dispatcher = IPrizeExtensionDispatcher { contract_address: extension_address };
-            dispatcher
-                .on_deposit(
-                    context_id,
-                    prize_id,
-                    sponsor,
-                    token_address,
-                    amount_or_token_id,
-                    is_erc721,
-                    config,
-                );
-        }
-
-        /// Dispatch before_payout to extension. Returns (should_proceed, adjusted_amount).
-        /// If no extension is configured, returns (true, amount).
-        fn notify_before_payout(
-            ref self: ComponentState<TContractState>,
-            context_id: u64,
-            prize_id: u64,
-            recipient: ContractAddress,
-            amount: u128,
-        ) -> (bool, u128) {
-            let extension_address = self.Prize_extension_address.entry(context_id).read();
-            if extension_address.is_zero() {
-                return (true, amount);
-            }
-
-            let config = self.read_extension_config(context_id);
-            let dispatcher = IPrizeExtensionDispatcher { contract_address: extension_address };
-            dispatcher.before_payout(context_id, prize_id, recipient, amount, config)
-        }
-
-        /// Notify extension after payout is complete
-        fn notify_after_payout(
-            ref self: ComponentState<TContractState>,
-            context_id: u64,
-            prize_id: u64,
-            recipient: ContractAddress,
-            amount: u128,
-        ) {
-            let extension_address = self.Prize_extension_address.entry(context_id).read();
-            if extension_address.is_zero() {
-                return;
-            }
-
-            let config = self.read_extension_config(context_id);
-            let dispatcher = IPrizeExtensionDispatcher { contract_address: extension_address };
-            dispatcher.after_payout(context_id, prize_id, recipient, amount, config);
+            dispatcher.claim_prize(context_id, claim_params);
         }
     }
 
