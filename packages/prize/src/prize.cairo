@@ -47,10 +47,10 @@ pub mod PrizeComponent {
         Prize_custom_shares_packed: Map<(u64, u8), CustomShares>,
         /// Number of custom shares for a prize
         Prize_custom_shares_count: Map<u64, u32>,
-        /// Extension address for extension-enhanced prizes
-        Prize_extension_address: Map<u64, ContractAddress>,
-        /// Extension config data (stored as Vec)
-        Prize_extension_config: Map<u64, Vec<felt252>>,
+        /// Extension address keyed by (context_id, prize_id)
+        Prize_extension_address: Map<(u64, u64), ContractAddress>,
+        /// Extension config data keyed by (context_id, prize_id)
+        Prize_extension_config: Map<(u64, u64), Vec<felt252>>,
     }
 
     #[event]
@@ -245,6 +245,7 @@ pub mod PrizeComponent {
             match prize {
                 Prize::Config(config) => { self._add_prize_config(context_id, config) },
                 Prize::Extension(ext) => {
+                    assert!(!ext.address.is_zero(), "Prize: Extension address cannot be zero");
                     let prize_id = self.increment_prize_count();
                     self._set_extension(context_id, prize_id, ext);
                     prize_id
@@ -346,13 +347,11 @@ pub mod PrizeComponent {
             prize_id: u64,
             ext: ExtensionConfig,
         ) {
-            self.Prize_extension_address.entry(context_id).write(ext.address);
-            self.write_extension_config(context_id, ext.config);
+            self.Prize_extension_address.entry((context_id, prize_id)).write(ext.address);
+            self.write_extension_config(context_id, prize_id, ext.config);
 
-            if !ext.address.is_zero() {
-                let dispatcher = IPrizeExtensionDispatcher { contract_address: ext.address };
-                dispatcher.add_prize(context_id, prize_id, ext.config);
-            }
+            let dispatcher = IPrizeExtensionDispatcher { contract_address: ext.address };
+            dispatcher.add_prize(context_id, prize_id, ext.config);
         }
 
         /// Payout full ERC20 amount to a recipient
@@ -397,11 +396,11 @@ pub mod PrizeComponent {
 
         // --- Extension helpers ---
 
-        /// Read extension config for a context
+        /// Read extension config for a context and prize
         fn read_extension_config(
-            self: @ComponentState<TContractState>, context_id: u64,
+            self: @ComponentState<TContractState>, context_id: u64, prize_id: u64,
         ) -> Span<felt252> {
-            let vec = self.Prize_extension_config.entry(context_id);
+            let vec = self.Prize_extension_config.entry((context_id, prize_id));
             let mut arr = ArrayTrait::new();
             let len = vec.len();
             let mut i: u64 = 0;
@@ -415,11 +414,14 @@ pub mod PrizeComponent {
             arr.span()
         }
 
-        /// Write extension config for a context
+        /// Write extension config for a context and prize
         fn write_extension_config(
-            ref self: ComponentState<TContractState>, context_id: u64, config: Span<felt252>,
+            ref self: ComponentState<TContractState>,
+            context_id: u64,
+            prize_id: u64,
+            config: Span<felt252>,
         ) {
-            let mut vec = self.Prize_extension_config.entry(context_id);
+            let mut vec = self.Prize_extension_config.entry((context_id, prize_id));
             let mut i: u32 = 0;
             loop {
                 if i >= config.len() {
@@ -430,20 +432,26 @@ pub mod PrizeComponent {
             };
         }
 
-        /// Get extension address for a context
+        /// Get extension address for a context and prize
         fn get_extension_address(
-            self: @ComponentState<TContractState>, context_id: u64,
+            self: @ComponentState<TContractState>, context_id: u64, prize_id: u64,
         ) -> ContractAddress {
-            self.Prize_extension_address.entry(context_id).read()
+            self.Prize_extension_address.entry((context_id, prize_id)).read()
         }
 
         // --- Extension dispatch hooks ---
 
-        /// Notify extension to claim prize for a context
+        /// Notify extension to claim prize for a context and prize
         fn notify_claim_prize(
-            ref self: ComponentState<TContractState>, context_id: u64, claim_params: Span<felt252>,
+            ref self: ComponentState<TContractState>,
+            context_id: u64,
+            prize_id: u64,
+            claim_params: Span<felt252>,
         ) {
-            let extension_address = self.Prize_extension_address.entry(context_id).read();
+            let extension_address = self
+                .Prize_extension_address
+                .entry((context_id, prize_id))
+                .read();
             if extension_address.is_zero() {
                 return;
             }
