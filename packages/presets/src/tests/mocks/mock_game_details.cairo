@@ -8,7 +8,7 @@ pub trait IMockGameDetailsAdmin<TContractState> {
 /// Mock game contract that implements IGameDetails for leaderboard testing
 #[starknet::contract]
 pub mod MockGameDetails {
-    use game_components_leaderboard::interface::IGameDetails;
+    use game_components_metagame::leaderboard::interface::IGameDetails;
     use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess};
 
     #[storage]

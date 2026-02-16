@@ -9,17 +9,17 @@ pub trait IMockLeaderboardTest<TContractState> {
 #[starknet::contract]
 pub mod MockLeaderboardContract {
     #[allow(unused_imports)]
-    use game_components_leaderboard::interface::ILeaderboard;
+    use game_components_metagame::leaderboard::interface::ILeaderboard;
     #[allow(unused_imports)]
-    use game_components_leaderboard::leaderboard::leaderboard::{
+    use game_components_metagame::leaderboard::leaderboard::leaderboard::{
         LeaderboardEntry, LeaderboardResult,
     };
-    use game_components_leaderboard::leaderboard_component::LeaderboardComponent;
-    use game_components_leaderboard::leaderboard_component::LeaderboardComponent::{
+    use game_components_metagame::leaderboard::leaderboard_component::LeaderboardComponent;
+    use game_components_metagame::leaderboard::leaderboard_component::LeaderboardComponent::{
         LeaderboardAdminImpl, LeaderboardImpl, LeaderboardInternalTrait,
     };
     #[allow(unused_imports)]
-    use game_components_leaderboard::leaderboard_store::LeaderboardStoreConfig;
+    use game_components_metagame::leaderboard::leaderboard_store::LeaderboardStoreConfig;
     use openzeppelin_introspection::src5::SRC5Component;
     use starknet::ContractAddress;
 

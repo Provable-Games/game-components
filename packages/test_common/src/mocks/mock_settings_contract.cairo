@@ -1,4 +1,4 @@
-use game_components_minigame::extensions::settings::structs::GameSettingDetails;
+use game_components_embeddable_game_standard::minigame::extensions::settings::structs::GameSettingDetails;
 
 #[starknet::interface]
 pub trait ISettingsSetter<TContractState> {
@@ -9,10 +9,12 @@ pub trait ISettingsSetter<TContractState> {
 
 #[starknet::contract]
 pub mod MockSettingsContract {
-    use game_components_minigame::extensions::settings::interface::{
+    use game_components_embeddable_game_standard::minigame::extensions::settings::interface::{
         IMINIGAME_SETTINGS_ID, IMinigameSettings, IMinigameSettingsDetails, IMinigameSettingsSVG,
     };
-    use game_components_minigame::extensions::settings::structs::{GameSetting, GameSettingDetails};
+    use game_components_embeddable_game_standard::minigame::extensions::settings::structs::{
+        GameSetting, GameSettingDetails,
+    };
     use openzeppelin_introspection::src5::SRC5Component;
     use starknet::storage::{
         Map, StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess,

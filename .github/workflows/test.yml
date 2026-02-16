@@ -43,22 +43,22 @@ jobs:
 
       - name: Validate package count matches codecov config
         run: |
-          # Count packages in matrix (lines starting with "- game_components_")
-          matrix_count=$(grep -cE '^\s+- game_components_' .github/workflows/test.yml)
+          # Count test matrix entries (lines with "module:" in the include block)
+          matrix_count=$(grep -cE '^\s+module:' .github/workflows/test.yml)
 
           # Extract after_n_builds value from codecov.yml
           codecov_count=$(grep 'after_n_builds:' codecov.yml | grep -oE '[0-9]+')
 
-          echo "Matrix packages: $matrix_count"
+          echo "Matrix modules: $matrix_count"
           echo "Codecov after_n_builds: $codecov_count"
 
           if [ "$matrix_count" != "$codecov_count" ]; then
-            echo "::error::Matrix has $matrix_count packages but codecov.yml expects $codecov_count builds"
-            echo "::error::Update codecov.yml after_n_builds to match package count"
+            echo "::error::Matrix has $matrix_count modules but codecov.yml expects $codecov_count builds"
+            echo "::error::Update codecov.yml after_n_builds to match module count"
             exit 1
           fi
 
-          echo "Configuration validated: $matrix_count packages"
+          echo "Configuration validated: $matrix_count modules"
 
   setup:
     name: setup
@@ -106,47 +106,78 @@ jobs:
         run: snforge --version
 
   test:
-    name: test (${{ matrix.package }})
+    name: test (${{ matrix.module }})
     needs: setup
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 10
     strategy:
       fail-fast: true
       matrix:
-        # NOTE: When adding/removing packages, also update:
-        #   - codecov.yml: after_n_builds must equal package count
+        # NOTE: When adding/removing modules, also update:
+        #   - codecov.yml: after_n_builds must equal module count
         #   - AGENTS.md: CI Configuration section
-        package:
-          - game_components_metagame
-          - game_components_minigame
-          - game_components_registry
-          - game_components_token
-          - game_components_tokenomics
-          - game_components_utils
-          - game_components_leaderboard
-          - game_components_presets
-          - game_components_math
-          - game_components_distribution
-          - game_components_registration
-          - game_components_entry_requirement
-          - game_components_entry_fee
-          - game_components_prize
-        runner:
-          - ubuntu-latest
-        fuzzer_runs:
-          - 256
-        exclude:
-          - package: game_components_token
-            runner: ubuntu-latest
-          - package: game_components_minigame
-            runner: ubuntu-latest
         include:
-          - package: game_components_token
+          # Embeddable Game Standard
+          - package: game_components_embeddable_game_standard
+            module: token
             runner: ubuntu-latest-32
             fuzzer_runs: 32
-          - package: game_components_minigame
-            runner: ubuntu-latest-4
+          - package: game_components_embeddable_game_standard
+            module: minigame
+            runner: ubuntu-latest
             fuzzer_runs: 64
+          - package: game_components_embeddable_game_standard
+            module: metagame
+            runner: ubuntu-latest
+            fuzzer_runs: 256
+          - package: game_components_embeddable_game_standard
+            module: registry
+            runner: ubuntu-latest
+            fuzzer_runs: 256
+          # Metagame
+          - package: game_components_metagame
+            module: leaderboard
+            runner: ubuntu-latest
+            fuzzer_runs: 256
+          - package: game_components_metagame
+            module: registration
+            runner: ubuntu-latest
+            fuzzer_runs: 256
+          - package: game_components_metagame
+            module: entry_requirement
+            runner: ubuntu-latest
+            fuzzer_runs: 256
+          - package: game_components_metagame
+            module: entry_fee
+            runner: ubuntu-latest
+            fuzzer_runs: 256
+          - package: game_components_metagame
+            module: prize
+            runner: ubuntu-latest
+            fuzzer_runs: 256
+          # Economy
+          - package: game_components_economy
+            module: tokenomics
+            runner: ubuntu-latest
+            fuzzer_runs: 256
+          # Utilities
+          - package: game_components_utilities
+            module: math
+            runner: ubuntu-latest
+            fuzzer_runs: 256
+          - package: game_components_utilities
+            module: distribution
+            runner: ubuntu-latest
+            fuzzer_runs: 256
+          - package: game_components_utilities
+            module: utils
+            runner: ubuntu-latest
+            fuzzer_runs: 256
+          # Presets (standalone package, no module filter)
+          - package: game_components_presets
+            module: presets
+            runner: ubuntu-latest
+            fuzzer_runs: 256
     steps:
       - uses: actions/checkout@v6
 
@@ -203,17 +234,23 @@ jobs:
         uses: actions/cache@v4
         with:
           path: target/
-          key: ${{ runner.os }}-target-${{ matrix.package }}-${{ env.SCARB_VERSION }}-${{ hashFiles('packages/**/*.cairo', '**/Scarb.toml', '**/Scarb.lock') }}
+          key: ${{ runner.os }}-target-${{ matrix.package }}-${{ matrix.module }}-${{ env.SCARB_VERSION }}-${{ hashFiles('packages/**/*.cairo', '**/Scarb.toml', '**/Scarb.lock') }}
           restore-keys: |
-            ${{ runner.os }}-target-${{ matrix.package }}-${{ env.SCARB_VERSION }}-
+            ${{ runner.os }}-target-${{ matrix.package }}-${{ matrix.module }}-${{ env.SCARB_VERSION }}-
 
       # snforge test auto-builds the package before testing
+      # For group packages, filter to module level; for standalone packages, run all tests
       - name: Run tests with coverage
-        run: snforge test -p ${{ matrix.package }} --fuzzer-runs ${{ matrix.fuzzer_runs }} --coverage
+        run: |
+          if [ "${{ matrix.package }}" = "game_components_${{ matrix.module }}" ]; then
+            snforge test -p ${{ matrix.package }} --fuzzer-runs ${{ matrix.fuzzer_runs }} --coverage
+          else
+            snforge test -p ${{ matrix.package }} "::${{ matrix.module }}::" --fuzzer-runs ${{ matrix.fuzzer_runs }} --coverage
+          fi
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
         with:
           files: ./coverage.lcov
-          flags: ${{ matrix.package }}
+          flags: ${{ matrix.module }}
           token: ${{ secrets.CODECOV_TOKEN }}

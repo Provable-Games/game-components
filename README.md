@@ -47,45 +47,45 @@ Minigame
 
 Core components for onboarding games onto Starknet.
 
-| Package | Description | Docs |
-|---------|-------------|------|
-| [**token**](packages/token/) | ERC721 NFT representing playable game instances with compile-time feature flags (<4MB optimization) | [README](packages/token/README.md) |
-| [**minigame**](packages/minigame/) | Individual game logic foundation requiring `IMinigameTokenData` implementation | [README](packages/minigame/README.md) |
-| [**registry**](packages/registry/) | Game registration, discovery, and metadata management | [README](packages/registry/README.md) |
+| Module | Description | Docs |
+|--------|-------------|------|
+| [**token**](packages/embeddable_game_standard/src/token/) | ERC721 NFT representing playable game instances with compile-time feature flags (<4MB optimization) | [README](packages/embeddable_game_standard/src/token/README.md) |
+| [**minigame**](packages/embeddable_game_standard/src/minigame/) | Individual game logic foundation requiring `IMinigameTokenData` implementation | [README](packages/embeddable_game_standard/src/minigame/README.md) |
+| [**metagame**](packages/embeddable_game_standard/src/metagame/) | High-level game management, token delegation, and context coordination | [README](packages/embeddable_game_standard/src/metagame/README.md) |
+| [**registry**](packages/embeddable_game_standard/src/registry/) | Game registration, discovery, and metadata management | [README](packages/embeddable_game_standard/src/registry/README.md) |
 
 ### Metagame
 
 Components for applications that coordinate and interact with games.
 
-| Package | Description | Docs |
-|---------|-------------|------|
-| [**metagame**](packages/metagame/) | High-level game management, token delegation, and context coordination | [README](packages/metagame/README.md) |
-| [**leaderboard**](packages/leaderboard/) | Tournament scoring, ranking, and multi-tournament support | [README](packages/leaderboard/README.md) |
-| [**registration**](packages/registration/) | Player registration tracking for tournaments, quests, and other contexts | [README](packages/registration/README.md) |
-| [**entry_requirement**](packages/entry_requirement/) | Entry gating via token ownership, allowlists, or external validators | [README](packages/entry_requirement/README.md) |
-| [**entry_fee**](packages/entry_fee/) | Entry fee management with ERC20 deposits and share distribution | [README](packages/entry_fee/README.md) |
-| [**prize**](packages/prize/) | Prize management for ERC20/ERC721 rewards with claim tracking | [README](packages/prize/README.md) |
-| [**presets**](packages/presets/) | Ready-to-deploy contracts (LeaderboardPreset, AutonomousBuyback, StreamToken) | [README](packages/presets/README.md) |
+| Module | Description | Docs |
+|--------|-------------|------|
+| [**leaderboard**](packages/metagame/src/leaderboard/) | Tournament scoring, ranking, and multi-tournament support | [README](packages/metagame/src/leaderboard/README.md) |
+| [**registration**](packages/metagame/src/registration/) | Player registration tracking for tournaments, quests, and other contexts | [README](packages/metagame/src/registration/README.md) |
+| [**entry_requirement**](packages/metagame/src/entry_requirement/) | Entry gating via token ownership, allowlists, or external validators | [README](packages/metagame/src/entry_requirement/README.md) |
+| [**entry_fee**](packages/metagame/src/entry_fee/) | Entry fee management with ERC20 deposits and share distribution | [README](packages/metagame/src/entry_fee/README.md) |
+| [**prize**](packages/metagame/src/prize/) | Prize management for ERC20/ERC721 rewards with claim tracking | [README](packages/metagame/src/prize/README.md) |
+| [**presets**](packages/presets/) | Ready-to-deploy contracts (LeaderboardPreset, AutonomousBuyback, StreamToken) | [README](packages/presets/src/README.md) |
 
 ### Game Economy
 
-| Package | Description | Docs |
-|---------|-------------|------|
-| [**tokenomics**](packages/tokenomics/) | Ekubo TWAMM buyback and stream token distribution | [README](packages/tokenomics/README.md) |
+| Module | Description | Docs |
+|--------|-------------|------|
+| [**tokenomics**](packages/economy/src/tokenomics/) | Ekubo TWAMM buyback and stream token distribution | [README](packages/economy/src/tokenomics/README.md) |
 
 ### Utilities
 
-| Package | Description | Docs |
-|---------|-------------|------|
-| [**math**](packages/math/) | Fixed-point math library (32.32 bit) based on Cubit | [README](packages/math/README.md) |
-| [**distribution**](packages/distribution/) | Share computation with Linear, Exponential, Uniform, and Custom distributions | [README](packages/distribution/README.md) |
-| [**utils**](packages/utils/) | Encoding, JSON generation, and token metadata rendering | [README](packages/utils/README.md) |
+| Module | Description | Docs |
+|--------|-------------|------|
+| [**math**](packages/utilities/src/math/) | Fixed-point math library (32.32 bit) based on Cubit | [README](packages/utilities/src/math/README.md) |
+| [**distribution**](packages/utilities/src/distribution/) | Share computation with Linear, Exponential, Uniform, and Custom distributions | [README](packages/utilities/src/distribution/README.md) |
+| [**utils**](packages/utilities/src/utils/) | Encoding, JSON generation, and token metadata rendering | [README](packages/utilities/src/utils/README.md) |
 
 ### Cross-Cutting
 
 | Package | Description | Docs |
 |---------|-------------|------|
-| [**interfaces**](packages/interfaces/) | Centralized interface and struct definitions shared across all components | [README](packages/interfaces/README.md) |
+| [**interfaces**](packages/interfaces/) | Centralized interface and struct definitions shared across all components | [README](packages/interfaces/src/README.md) |
 
 ### Testing Infrastructure
 
@@ -113,19 +113,19 @@ cd game-components
 # Build the entire workspace
 scarb build
 
-# Run tests for a specific package
-snforge test -p game_components_token
+# Run tests for a specific module
+snforge test --filter token
 
 # Run tests with coverage
-snforge test -p game_components_token --coverage
+snforge test --filter token --coverage
 ```
 
 ### Basic Usage
 
 ```cairo
 // Deploy a simple game token
-use game_components_token::core::CoreTokenComponent;
-use game_components_minigame::interface::{IMinigame, IMinigameTokenData};
+use game_components_embeddable_game_standard::token::core::CoreTokenComponent;
+use game_components_interfaces::minigame::{IMinigame, IMinigameTokenData};
 
 #[starknet::contract]
 mod MyGameToken {
@@ -178,17 +178,17 @@ scarb fmt -w
 ### Testing Commands
 
 ```bash
-# Run all tests for a package
-snforge test -p game_components_token
+# Run all tests for a module
+snforge test --filter token
 
 # Run with coverage
-snforge test -p game_components_token --coverage
+snforge test --filter token --coverage
 
 # Run a specific test by name
-snforge test -p game_components_token test_mint_basic
+snforge test --filter test_mint_basic
 
 # Run with custom fuzzer iterations
-snforge test -p game_components_token --fuzzer-runs 256
+snforge test --filter token --fuzzer-runs 256
 ```
 
 ## Deployment Scripts

@@ -6,8 +6,8 @@ edition.workspace = true
 [lib]
 
 [dependencies]
-game_components_leaderboard = { path = "../leaderboard" }
-game_components_tokenomics = { path = "../tokenomics" }
+game_components_metagame = { path = "../metagame" }
+game_components_economy = { path = "../economy" }
 game_components_interfaces = { path = "../interfaces" }
 starknet.workspace = true
 openzeppelin_token.workspace = true
