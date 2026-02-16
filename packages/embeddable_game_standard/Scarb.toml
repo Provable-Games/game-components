@@ -1,0 +1,27 @@
+[package]
+name = "game_components_embeddable_game_standard"
+version.workspace = true
+edition.workspace = true
+
+[lib]
+
+[dependencies]
+starknet.workspace = true
+openzeppelin_token.workspace = true
+openzeppelin_introspection.workspace = true
+openzeppelin_interfaces.workspace = true
+openzeppelin_access.workspace = true
+# Game components dependencies
+game_components_interfaces = { path = "../interfaces" }
+game_components_utilities = { path = "../utilities" }
+game_components_metagame = { path = "../metagame" }
+
+[dev-dependencies]
+snforge_std.workspace = true
+game_components_testing = { path = "../testing" }
+game_components_test_common = { path = "../test_common" }
+openzeppelin_token.workspace = true
+
+[[target.starknet-contract]]
+sierra = true
+casm = true

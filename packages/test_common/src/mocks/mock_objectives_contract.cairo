@@ -27,11 +27,11 @@ pub trait IObjectivesSetter<TContractState> {
 
 #[starknet::contract]
 pub mod MockObjectivesContract {
-    use game_components_minigame::extensions::objectives::interface::{
+    use game_components_embeddable_game_standard::minigame::extensions::objectives::interface::{
         IMINIGAME_OBJECTIVES_ID, IMinigameObjectives, IMinigameObjectivesDetails,
         IMinigameObjectivesSVG,
     };
-    use game_components_minigame::extensions::objectives::structs::{
+    use game_components_embeddable_game_standard::minigame::extensions::objectives::structs::{
         GameObjective, GameObjectiveDetails,
     };
     use openzeppelin_introspection::src5::SRC5Component;

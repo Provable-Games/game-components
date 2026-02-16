@@ -1,4 +1,1 @@
-pub mod full_token_contract;
-pub mod minigame_registry_contract;
-pub mod minimal_optimized_example;
-pub mod single_game_token_contract;
+// Examples moved to game_components_embeddable_game_standard::token::tests::examples

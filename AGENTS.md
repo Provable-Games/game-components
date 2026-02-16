@@ -28,29 +28,53 @@ You are a **senior Starknet smart contract engineer** specializing in Cairo deve
 ## Build Commands
 
 ```bash
-scarb build                                    # Build workspace
-snforge test -p <package_name>                 # Run tests for a package
-snforge test -p <package_name> --coverage      # Coverage for a package
-scarb fmt -w                                   # Format code
+scarb build                                              # Build workspace
+snforge test --filter <module>                           # Run tests for a module (e.g. token, leaderboard)
+snforge test --filter <module> --coverage                # Coverage for a module
+snforge test --filter <module> --fuzzer-runs 256         # Run with custom fuzzer iterations
+scarb fmt -w                                             # Format code
 ```
 
-## Package Overview
+**Important**: Tests are run by module filter, not by package. Each group package contains multiple modules. Use `snforge test --filter <module_name>` to run tests for a specific module (e.g., `snforge test --filter token`, `snforge test --filter leaderboard`).
 
-Each package has its own `AGENTS.md` with detailed documentation.
+## Project Structure
 
-| Package         | Purpose                                                                       |
-| --------------- | ----------------------------------------------------------------------------- |
-| **interfaces**  | Centralized interface/struct definitions for all components                   |
-| **metagame**    | High-level game coordination, token delegation, context management            |
-| **minigame**    | Individual game logic foundation (MUST implement `IMinigameTokenData`)        |
-| **token**       | ERC721 with compile-time feature flags (<4MB optimization)                    |
-| **leaderboard** | Tournament scoring and ranking                                                |
-| **registry**    | Game registration and discovery                                               |
-| **tokenomics**  | Ekubo TWAMM buyback and stream token distribution                             |
-| **presets**     | Ready-to-deploy contracts (LeaderboardPreset, AutonomousBuyback, StreamToken) |
-| **utils**       | Pure utilities: encoding, JSON, rendering                                     |
-| **test_common** | Shared mocks and example contracts (**do not modify existing mocks**)         |
-| **testing**     | Test constants and addresses                                                  |
+The workspace is organized into **group packages**, each containing multiple modules:
+
+```
+packages/
+├── embeddable_game_standard/    # Core game standard components
+│   ├── src/
+│   │   ├── token/               # ERC721 game token with compile-time feature flags
+│   │   ├── minigame/            # Individual game logic foundation
+│   │   ├── metagame/            # High-level game coordination & context
+│   │   └── registry/            # Game registration and discovery
+│   └── Scarb.toml
+├── metagame/                    # Metagame extension components
+│   ├── src/
+│   │   ├── leaderboard/         # Tournament scoring and ranking
+│   │   ├── registration/        # Player registration tracking
+│   │   ├── entry_requirement/   # Entry gating (token ownership, allowlists, validators)
+│   │   ├── entry_fee/           # ERC20 entry fees with share distribution
+│   │   └── prize/               # Prize management (ERC20/ERC721 rewards)
+│   └── Scarb.toml
+├── economy/                     # Game economy components
+│   ├── src/
+│   │   └── tokenomics/          # Ekubo TWAMM buyback and stream token distribution
+│   └── Scarb.toml
+├── utilities/                   # Shared utility libraries
+│   ├── src/
+│   │   ├── math/                # Fixed-point math (32.32 bit) based on Cubit
+│   │   ├── distribution/        # Share computation (Linear, Exponential, Uniform, Custom)
+│   │   └── utils/               # Encoding, JSON generation, metadata rendering
+│   └── Scarb.toml
+├── interfaces/                  # Centralized interface/struct definitions
+├── presets/                     # Ready-to-deploy contracts
+├── testing/                     # Shared test constants and addresses
+└── test_common/                 # Shared mock contracts and examples
+```
+
+Each module has its own `AGENTS.md` with detailed documentation inside its `src/` directory.
 
 ## Architecture Overview
 
@@ -77,46 +101,46 @@ When `update_game()` is called, the token checks if the minter implements `IMeta
 
 ## CI Configuration
 
-The `validate-config` job in CI automatically verifies that the package count matches `codecov.yml`. If they diverge, CI will fail with an actionable error message.
+The `validate-config` job in CI automatically verifies that the module count matches `codecov.yml`. If they diverge, CI will fail with an actionable error message.
 
-### Adding a New Package
+### Adding a New Module
 
-When adding a new package with tests, update **both** files:
+When adding a new module to a group package, update **both** files:
 
-1. **`.github/workflows/test.yml`** - Add the package to the matrix:
+1. **`.github/workflows/test.yml`** - Add the module to the matrix:
 
    ```yaml
    matrix:
-     package:
-       - game_components_metagame
-       - game_components_minigame
-       # ... existing packages ...
-       - game_components_NEW_PACKAGE # ← Add here
+     include:
+       - package: game_components_GROUP_PACKAGE
+         module: NEW_MODULE
+         runner: ubuntu-latest
+         fuzzer_runs: 256
    ```
 
-   For memory-intensive packages (like `token` or `minigame`), use the `include`/`exclude` pattern to assign a larger runner (e.g., `ubuntu-latest-4` or `ubuntu-latest-16`).
+   For memory-intensive modules (like `token` or `minigame`), assign a larger runner (e.g., `ubuntu-latest-4` or `ubuntu-latest-32`).
 
 2. **`codecov.yml`** - Update the build count:
    ```yaml
    notify:
-     after_n_builds: 14 # ← Must equal total package count in matrix
+     after_n_builds: 14 # ← Must equal total module count in matrix
    ```
 
-### Current Matrix (14 packages)
+### Current Matrix (14 modules)
 
-| Package | Runner | Fuzzer Runs |
-|---------|--------|-------------|
-| `game_components_metagame` | `ubuntu-latest` | 256 |
-| `game_components_minigame` | `ubuntu-latest-4` | 64 |
-| `game_components_registry` | `ubuntu-latest` | 256 |
-| `game_components_token` | `ubuntu-latest-32` | 32 |
-| `game_components_tokenomics` | `ubuntu-latest` | 256 |
-| `game_components_utils` | `ubuntu-latest` | 256 |
-| `game_components_leaderboard` | `ubuntu-latest` | 256 |
-| `game_components_presets` | `ubuntu-latest` | 256 |
-| `game_components_math` | `ubuntu-latest` | 256 |
-| `game_components_distribution` | `ubuntu-latest` | 256 |
-| `game_components_registration` | `ubuntu-latest` | 256 |
-| `game_components_entry_requirement` | `ubuntu-latest` | 256 |
-| `game_components_entry_fee` | `ubuntu-latest` | 256 |
-| `game_components_prize` | `ubuntu-latest` | 256 |
+| Group Package | Module | Runner | Fuzzer Runs |
+|---------------|--------|--------|-------------|
+| `embeddable_game_standard` | `token` | `ubuntu-latest-32` | 32 |
+| `embeddable_game_standard` | `minigame` | `ubuntu-latest-4` | 64 |
+| `embeddable_game_standard` | `metagame` | `ubuntu-latest` | 256 |
+| `embeddable_game_standard` | `registry` | `ubuntu-latest` | 256 |
+| `metagame` | `leaderboard` | `ubuntu-latest` | 256 |
+| `metagame` | `registration` | `ubuntu-latest` | 256 |
+| `metagame` | `entry_requirement` | `ubuntu-latest` | 256 |
+| `metagame` | `entry_fee` | `ubuntu-latest` | 256 |
+| `metagame` | `prize` | `ubuntu-latest` | 256 |
+| `economy` | `tokenomics` | `ubuntu-latest` | 256 |
+| `utilities` | `math` | `ubuntu-latest` | 256 |
+| `utilities` | `distribution` | `ubuntu-latest` | 256 |
+| `utilities` | `utils` | `ubuntu-latest` | 256 |
+| `presets` | `presets` | `ubuntu-latest` | 256 |

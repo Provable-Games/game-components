@@ -1,9 +1,5 @@
-pub mod extensions;
-pub mod interface;
-pub mod libs;
-pub mod metagame;
-pub mod structs;
-
-#[cfg(test)]
-mod tests;
-pub mod ticket_booth;
+pub mod leaderboard;
+pub mod registration;
+pub mod entry_requirement;
+pub mod entry_fee;
+pub mod prize;

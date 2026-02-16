@@ -21,8 +21,8 @@
 
 #[starknet::contract]
 mod LeaderboardPreset {
-    use game_components_leaderboard::leaderboard_component::LeaderboardComponent;
-    use game_components_leaderboard::leaderboard_component::LeaderboardComponent::{
+    use game_components_metagame::leaderboard::leaderboard_component::LeaderboardComponent;
+    use game_components_metagame::leaderboard::leaderboard_component::LeaderboardComponent::{
         LeaderboardAdminImpl, LeaderboardImpl, LeaderboardInternalTrait,
     };
     use openzeppelin_introspection::src5::SRC5Component;

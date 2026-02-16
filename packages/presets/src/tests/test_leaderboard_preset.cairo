@@ -4,11 +4,11 @@
 // Tests for the ready-to-deploy LeaderboardPreset contract that provides
 // multi-tournament leaderboard management with score submission and ranking.
 
-use game_components_leaderboard::interface::{
+use game_components_metagame::leaderboard::interface::{
     ILEADERBOARD_ID, ILeaderboardAdminDispatcher, ILeaderboardAdminDispatcherTrait,
     ILeaderboardDispatcher, ILeaderboardDispatcherTrait,
 };
-use game_components_leaderboard::leaderboard::leaderboard::LeaderboardResult;
+use game_components_metagame::leaderboard::leaderboard::leaderboard::LeaderboardResult;
 use game_components_testing::constants::{NEW_OWNER, OWNER, USER1, USER2};
 use openzeppelin_interfaces::introspection::{ISRC5Dispatcher, ISRC5DispatcherTrait};
 use snforge_std::{
@@ -394,8 +394,8 @@ fn test_all_events_emitted() {
             @array![
                 (
                     admin.contract_address,
-                    game_components_leaderboard::leaderboard_component::LeaderboardComponent::Event::TournamentConfigured(
-                        game_components_leaderboard::leaderboard_component::LeaderboardComponent::TournamentConfigured {
+                    game_components_metagame::leaderboard::leaderboard_component::LeaderboardComponent::Event::TournamentConfigured(
+                        game_components_metagame::leaderboard::leaderboard_component::LeaderboardComponent::TournamentConfigured {
                             tournament_id: WEEKLY_TOURNAMENT,
                             max_entries: 10,
                             ascending: false,
@@ -411,8 +411,8 @@ fn test_all_events_emitted() {
             @array![
                 (
                     leaderboard.contract_address,
-                    game_components_leaderboard::leaderboard_component::LeaderboardComponent::Event::ScoreSubmitted(
-                        game_components_leaderboard::leaderboard_component::LeaderboardComponent::ScoreSubmitted {
+                    game_components_metagame::leaderboard::leaderboard_component::LeaderboardComponent::Event::ScoreSubmitted(
+                        game_components_metagame::leaderboard::leaderboard_component::LeaderboardComponent::ScoreSubmitted {
                             tournament_id: WEEKLY_TOURNAMENT, token_id: 1, score: 100, position: 1,
                         },
                     ),
@@ -425,8 +425,8 @@ fn test_all_events_emitted() {
             @array![
                 (
                     admin.contract_address,
-                    game_components_leaderboard::leaderboard_component::LeaderboardComponent::Event::LeaderboardCleared(
-                        game_components_leaderboard::leaderboard_component::LeaderboardComponent::LeaderboardCleared {
+                    game_components_metagame::leaderboard::leaderboard_component::LeaderboardComponent::Event::LeaderboardCleared(
+                        game_components_metagame::leaderboard::leaderboard_component::LeaderboardComponent::LeaderboardCleared {
                             tournament_id: WEEKLY_TOURNAMENT,
                         },
                     ),
@@ -439,8 +439,8 @@ fn test_all_events_emitted() {
             @array![
                 (
                     admin.contract_address,
-                    game_components_leaderboard::leaderboard_component::LeaderboardComponent::Event::LeaderboardOwnershipTransferred(
-                        game_components_leaderboard::leaderboard_component::LeaderboardComponent::LeaderboardOwnershipTransferred {
+                    game_components_metagame::leaderboard::leaderboard_component::LeaderboardComponent::Event::LeaderboardOwnershipTransferred(
+                        game_components_metagame::leaderboard::leaderboard_component::LeaderboardComponent::LeaderboardOwnershipTransferred {
                             previous_owner: OWNER(), new_owner: NEW_OWNER(),
                         },
                     ),

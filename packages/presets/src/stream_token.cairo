@@ -14,8 +14,8 @@ pub mod StreamToken {
     use game_components_interfaces::tokenomics::stream::{
         DistributionOrder, LiquidityConfig, PremintAllocation,
     };
-    use game_components_tokenomics::ERC20_UNIT;
-    use game_components_tokenomics::stream::StreamComponent;
+    use game_components_economy::tokenomics::ERC20_UNIT;
+    use game_components_economy::tokenomics::stream::StreamComponent;
     use openzeppelin_token::erc20::{ERC20Component, ERC20HooksEmptyImpl};
     use starknet::ContractAddress;
 
