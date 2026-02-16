@@ -29,13 +29,13 @@ You are a **senior Starknet smart contract engineer** specializing in Cairo deve
 
 ```bash
 scarb build                                              # Build workspace
-snforge test --filter <module>                           # Run tests for a module (e.g. token, leaderboard)
-snforge test --filter <module> --coverage                # Coverage for a module
-snforge test --filter <module> --fuzzer-runs 256         # Run with custom fuzzer iterations
+snforge test <module>                                    # Run tests for a module (e.g. token, leaderboard)
+snforge test <module> --coverage                         # Coverage for a module
+snforge test <module> --fuzzer-runs 256                  # Run with custom fuzzer iterations
 scarb fmt -w                                             # Format code
 ```
 
-**Important**: Tests are run by module filter, not by package. Each group package contains multiple modules. Use `snforge test --filter <module_name>` to run tests for a specific module (e.g., `snforge test --filter token`, `snforge test --filter leaderboard`).
+**Important**: Tests are run by module filter, not by package. Each group package contains multiple modules. Use `snforge test <module_name>` to run tests for a specific module (e.g., `snforge test token`, `snforge test leaderboard`).
 
 ## Project Structure
 

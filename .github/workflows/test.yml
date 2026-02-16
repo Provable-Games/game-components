@@ -245,7 +245,7 @@ jobs:
           if [ "${{ matrix.package }}" = "game_components_${{ matrix.module }}" ]; then
             snforge test -p ${{ matrix.package }} --fuzzer-runs ${{ matrix.fuzzer_runs }} --coverage
           else
-            snforge test -p ${{ matrix.package }} --filter "::${{ matrix.module }}::" --fuzzer-runs ${{ matrix.fuzzer_runs }} --coverage
+            snforge test -p ${{ matrix.package }} "::${{ matrix.module }}::" --fuzzer-runs ${{ matrix.fuzzer_runs }} --coverage
           fi
 
       - name: Upload coverage to Codecov
