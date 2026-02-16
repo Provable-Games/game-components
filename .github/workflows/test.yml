@@ -124,7 +124,7 @@ jobs:
             fuzzer_runs: 32
           - package: game_components_embeddable_game_standard
             module: minigame
-            runner: ubuntu-latest-4
+            runner: ubuntu-latest
             fuzzer_runs: 64
           - package: game_components_embeddable_game_standard
             module: metagame
