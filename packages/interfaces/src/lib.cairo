@@ -14,6 +14,7 @@ pub mod entry_fee;
 pub mod entry_fee_extension;
 pub mod entry_requirement;
 pub mod entry_validator;
+pub mod extension;
 pub mod leaderboard;
 
 // Interface modules
@@ -31,7 +32,8 @@ pub use distribution::Distribution;
 
 // Entry Fee
 pub use entry_fee::{
-    AdditionalShare, EntryFee, IEntryFee, IEntryFeeDispatcher, IEntryFeeDispatcherTrait,
+    AdditionalShare, EntryFee, EntryFeeConfig, IEntryFee, IEntryFeeDispatcher,
+    IEntryFeeDispatcherTrait,
 };
 
 // Entry Fee Extension
@@ -42,15 +44,17 @@ pub use entry_fee_extension::{
 
 // Entry Requirement
 pub use entry_requirement::{
-    EntryRequirement, EntryRequirementType, ExtensionConfig, IEntryRequirement,
-    IEntryRequirementDispatcher, IEntryRequirementDispatcherTrait, NFTQualification,
-    QualificationEntries, QualificationProof,
+    EntryRequirement, EntryRequirementType, IEntryRequirement, IEntryRequirementDispatcher,
+    IEntryRequirementDispatcherTrait, NFTQualification, QualificationEntries, QualificationProof,
 };
 
 // Entry Validator
 pub use entry_validator::{
     IENTRY_VALIDATOR_ID, IEntryValidator, IEntryValidatorDispatcher, IEntryValidatorDispatcherTrait,
 };
+
+// Extension
+pub use extension::ExtensionConfig;
 
 // Leaderboard
 pub use leaderboard::{
@@ -89,8 +93,8 @@ pub use minigame::{
 
 // Prize
 pub use prize::{
-    ERC20Data, ERC721Data, IPrize, IPrizeDispatcher, IPrizeDispatcherTrait, Prize, PrizeType,
-    TokenTypeData,
+    ERC20Data, ERC721Data, IPrize, IPrizeDispatcher, IPrizeDispatcherTrait, Prize, PrizeConfig,
+    PrizeData, PrizeType, TokenTypeData,
 };
 
 // Prize Extension

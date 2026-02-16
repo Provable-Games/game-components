@@ -2,7 +2,7 @@
 #[starknet::contract]
 pub mod PrizeMock {
     use openzeppelin_introspection::src5::SRC5Component;
-    use crate::models::{Prize, PrizeType};
+    use crate::models::{PrizeData, PrizeType};
     use crate::prize::PrizeComponent;
 
     component!(path: PrizeComponent, storage: prize, event: PrizeEvent);
@@ -94,7 +94,7 @@ pub mod PrizeMock {
 
     /// Store a prize directly (for component testing without token transfers)
     #[external(v0)]
-    fn set_prize(ref self: ContractState, prize_id: u64, prize: Prize) {
+    fn set_prize(ref self: ContractState, prize_id: u64, prize: PrizeData) {
         self.prize.set_prize(prize_id, prize);
     }
 

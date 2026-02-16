@@ -1,4 +1,5 @@
 use game_components_interfaces::distribution::Distribution;
+use game_components_interfaces::extension::ExtensionConfig;
 use starknet::ContractAddress;
 
 pub const IPRIZE_ID: felt252 = 0x03a632c0af289ff670e58cb3ecee0e6c2c781dc7615a30603e2d2c583bc2ab45;
@@ -22,13 +23,28 @@ pub enum TokenTypeData {
     erc721: ERC721Data,
 }
 
+/// Prize data as stored/returned (with id, context_id, sponsor)
 #[derive(Drop, Serde)]
-pub struct Prize {
+pub struct PrizeData {
     pub id: u64,
     pub context_id: u64,
     pub token_address: ContractAddress,
     pub token_type: TokenTypeData,
     pub sponsor_address: ContractAddress,
+}
+
+/// Prize input config (token_address + token_type)
+#[derive(Drop, Serde)]
+pub struct PrizeConfig {
+    pub token_address: ContractAddress,
+    pub token_type: TokenTypeData,
+}
+
+/// Prize enum: dispatch to either store token info or set extension
+#[derive(Drop, Serde)]
+pub enum Prize {
+    Config: PrizeConfig,
+    Extension: ExtensionConfig,
 }
 
 #[allow(starknet::store_no_default_variant)]
@@ -41,7 +57,7 @@ pub enum PrizeType {
 #[starknet::interface]
 pub trait IPrize<TState> {
     /// Get a prize by its ID
-    fn get_prize(self: @TState, prize_id: u64) -> Prize;
+    fn get_prize(self: @TState, prize_id: u64) -> PrizeData;
 
     /// Get total prizes count
     fn get_total_prizes(self: @TState) -> u64;
