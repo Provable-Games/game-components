@@ -408,6 +408,7 @@ jobs:
           echo "${DELIMITER}" >> "$GITHUB_OUTPUT"
 
       - name: Run Claude review
+        id: claude-review
         uses: anthropics/claude-code-action@beta
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
@@ -415,12 +416,18 @@ jobs:
           allowed_tools: "Bash(git diff *),Bash(git log *),Bash(git show *),Read,Glob,Grep"
 
       - name: Check for blocking findings
-        if: always()
+        if: always() && steps.claude-review.outcome != 'cancelled' && steps.claude-review.outcome != 'skipped'
         env:
           GH_TOKEN: ${{ github.token }}
           HEADER: "## Claude Review - Cairo/Starknet Contract Review"
           REVIEW_MARKER: run=${{ github.run_id }} attempt=${{ github.run_attempt }} sha=${{ github.event.pull_request.head.sha }} scope=packages
+          REVIEW_OUTCOME: ${{ steps.claude-review.outcome }}
         run: |
+          if [ "$REVIEW_OUTCOME" = "failure" ]; then
+            echo "::error::Claude review step failed — no comment expected"
+            exit 1
+          fi
+
           MAX_ATTEMPTS=6
           SLEEP_SECONDS=10
           BODY=""
@@ -638,6 +645,7 @@ jobs:
           echo "${DELIMITER}" >> "$GITHUB_OUTPUT"
 
       - name: Run Claude review
+        id: claude-review
         uses: anthropics/claude-code-action@beta
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
@@ -645,12 +653,18 @@ jobs:
           allowed_tools: "Bash(git diff *),Bash(git log *),Bash(git show *),Read,Glob,Grep"
 
       - name: Check for blocking findings
-        if: always()
+        if: always() && steps.claude-review.outcome != 'cancelled' && steps.claude-review.outcome != 'skipped'
         env:
           GH_TOKEN: ${{ github.token }}
           HEADER: "## Claude Review - General Engineering Review"
           REVIEW_MARKER: run=${{ github.run_id }} attempt=${{ github.run_attempt }} sha=${{ github.event.pull_request.head.sha }} scope=general
+          REVIEW_OUTCOME: ${{ steps.claude-review.outcome }}
         run: |
+          if [ "$REVIEW_OUTCOME" = "failure" ]; then
+            echo "::error::Claude review step failed — no comment expected"
+            exit 1
+          fi
+
           MAX_ATTEMPTS=6
           SLEEP_SECONDS=10
           BODY=""
