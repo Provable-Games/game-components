@@ -7,16 +7,11 @@ use starknet::ContractAddress;
 use starknet::storage_access::StorePacking;
 use crate::prize::libs::share_math::{SHARES_PER_SLOT, get_packed_share, set_packed_share};
 
-// Packing constants for PackedERC20Data into felt252
-// Layout: [amount: 128 bits][payout_type: 8 bits][param: 16 bits][count: 32 bits] = 184 bits
-// payout_type: 0 = Position (single recipient), 1+ = Distribution type (param is weight)
-const TWO_POW_128: felt252 = 0x100000000000000000000000000000000;
-const TWO_POW_136: felt252 = 0x10000000000000000000000000000000000;
-const TWO_POW_152: felt252 = 0x1000000000000000000000000000000000000000;
-const MASK_128: u256 = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF;
-const MASK_8: u256 = 0xFF;
-const MASK_16: u256 = 0xFFFF;
-const MASK_32: u256 = 0xFFFFFFFF;
+/// NonZero<u128> constants for DivRem-based unpacking.
+mod nz128 {
+    pub const TWO_POW_8: NonZero<u128> = 0x100;
+    pub const TWO_POW_16: NonZero<u128> = 0x10000;
+}
 
 // Re-export SHARES_PER_SLOT as CUSTOM_SHARES_PER_SLOT for backward compatibility
 pub use crate::prize::libs::share_math::SHARES_PER_SLOT as CUSTOM_SHARES_PER_SLOT;
@@ -39,21 +34,44 @@ struct PackedERC20Data {
     count: u32,
 }
 
+/// u128-aligned StorePacking for PackedERC20Data.
+///
+/// Bit layout (184 bits total, no field straddles the u128 boundary):
+///
+/// Low u128 (128 bits):
+///   amount(128)
+///
+/// High u128 (56 bits):
+///   payout_type(8) | param(16) | count(32)
+///
+/// All DivRem operations use native u128_safe_divmod Sierra hints.
 impl PackedERC20DataPacking of StorePacking<PackedERC20Data, felt252> {
     fn pack(value: PackedERC20Data) -> felt252 {
-        value.amount.into()
-            + (value.payout_type.into() * TWO_POW_128)
-            + (value.param.into() * TWO_POW_136)
-            + (value.count.into() * TWO_POW_152)
+        let low: u128 = value.amount;
+
+        let high: u128 = value.payout_type.into()
+            + value.param.into() * 0x100_u128 // shift 8
+            + value.count.into() * 0x1000000_u128; // shift 24
+
+        let packed = u256 { low, high };
+        packed.try_into().unwrap()
     }
 
     fn unpack(value: felt252) -> PackedERC20Data {
-        let value_u256: u256 = value.into();
-        let amount: u128 = (value_u256 & MASK_128).try_into().unwrap();
-        let payout_type: u8 = ((value_u256 / TWO_POW_128.into()) & MASK_8).try_into().unwrap();
-        let param: u16 = ((value_u256 / TWO_POW_136.into()) & MASK_16).try_into().unwrap();
-        let count: u32 = ((value_u256 / TWO_POW_152.into()) & MASK_32).try_into().unwrap();
-        PackedERC20Data { amount, payout_type, param, count }
+        let packed: u256 = value.into();
+
+        let amount: u128 = packed.low;
+
+        let high = packed.high;
+        let (hi, payout_type) = DivRem::div_rem(high, nz128::TWO_POW_8);
+        let (count, param) = DivRem::div_rem(hi, nz128::TWO_POW_16);
+
+        PackedERC20Data {
+            amount,
+            payout_type: payout_type.try_into().unwrap(),
+            param: param.try_into().unwrap(),
+            count: count.try_into().unwrap(),
+        }
     }
 }
 
@@ -255,5 +273,323 @@ pub impl CustomSharesImpl of CustomSharesTrait {
             i += 1;
         }
         result
+    }
+}
+
+#[cfg(test)]
+mod packed_erc20_data_tests {
+    use starknet::storage_access::StorePacking;
+    use super::{PackedERC20Data, PackedERC20DataPacking};
+
+    // -------------------------------------------------------------------------
+    // Helpers
+    // -------------------------------------------------------------------------
+
+    fn build_packed_erc20(
+        amount: u128, payout_type: u8, param: u16, count: u32,
+    ) -> PackedERC20Data {
+        PackedERC20Data { amount, payout_type, param, count }
+    }
+
+    fn assert_roundtrip(data: PackedERC20Data) {
+        let packed: felt252 = PackedERC20DataPacking::pack(data);
+        let unpacked: PackedERC20Data = PackedERC20DataPacking::unpack(packed);
+        assert!(unpacked.amount == data.amount, "amount mismatch");
+        assert!(unpacked.payout_type == data.payout_type, "payout_type mismatch");
+        assert!(unpacked.param == data.param, "param mismatch");
+        assert!(unpacked.count == data.count, "count mismatch");
+    }
+
+    // -------------------------------------------------------------------------
+    // 1. Zero values roundtrip
+    // -------------------------------------------------------------------------
+
+    #[test]
+    fn test_zero_values_roundtrip() {
+        let data = build_packed_erc20(0, 0, 0, 0);
+        let packed: felt252 = PackedERC20DataPacking::pack(data);
+        assert!(packed == 0, "packed zero should be zero");
+        assert_roundtrip(data);
+    }
+
+    // -------------------------------------------------------------------------
+    // 2. Max values
+    // -------------------------------------------------------------------------
+
+    #[test]
+    fn test_max_values_roundtrip() {
+        let data = build_packed_erc20(
+            0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF_u128, // u128 max
+            0xFF, // u8 max
+            0xFFFF, // u16 max
+            0xFFFFFFFF // u32 max
+        );
+        assert_roundtrip(data);
+    }
+
+    #[test]
+    fn test_max_amount_only() {
+        let data = build_packed_erc20(0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF_u128, 0, 0, 0);
+        assert_roundtrip(data);
+    }
+
+    #[test]
+    fn test_max_payout_type_only() {
+        let data = build_packed_erc20(0, 0xFF, 0, 0);
+        assert_roundtrip(data);
+    }
+
+    #[test]
+    fn test_max_param_only() {
+        let data = build_packed_erc20(0, 0, 0xFFFF, 0);
+        assert_roundtrip(data);
+    }
+
+    #[test]
+    fn test_max_count_only() {
+        let data = build_packed_erc20(0, 0, 0, 0xFFFFFFFF);
+        assert_roundtrip(data);
+    }
+
+    // -------------------------------------------------------------------------
+    // 3. Near-max values
+    // -------------------------------------------------------------------------
+
+    #[test]
+    fn test_near_max_values() {
+        let data = build_packed_erc20(
+            0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFE_u128, // u128 max - 1
+            0xFE, // u8 max - 1
+            0xFFFE, // u16 max - 1
+            0xFFFFFFFE // u32 max - 1
+        );
+        assert_roundtrip(data);
+    }
+
+    #[test]
+    fn test_one_values() {
+        let data = build_packed_erc20(1, 1, 1, 1);
+        assert_roundtrip(data);
+    }
+
+    #[test]
+    fn test_boundary_values() {
+        // Values at power-of-2 boundaries
+        let data = build_packed_erc20(
+            0x80000000000000000000000000000000_u128, // 2^127
+            0x80, // 2^7
+            0x8000, // 2^15
+            0x80000000 // 2^31
+        );
+        assert_roundtrip(data);
+    }
+
+    // -------------------------------------------------------------------------
+    // 4. Mixed realistic values (payout types 0-4)
+    // -------------------------------------------------------------------------
+
+    #[test]
+    fn test_payout_type_position() {
+        // Position-based: no distribution param needed
+        let data = build_packed_erc20(1000000000000000000_u128, 0, 0, 10);
+        assert_roundtrip(data);
+    }
+
+    #[test]
+    fn test_payout_type_linear() {
+        // Linear distribution with weight param
+        let data = build_packed_erc20(5000000000000000000_u128, 1, 500, 5);
+        assert_roundtrip(data);
+    }
+
+    #[test]
+    fn test_payout_type_exponential() {
+        // Exponential distribution with decay param
+        let data = build_packed_erc20(10000000000000000000_u128, 2, 200, 8);
+        assert_roundtrip(data);
+    }
+
+    #[test]
+    fn test_payout_type_uniform() {
+        // Uniform distribution, param unused
+        let data = build_packed_erc20(2500000000000000000_u128, 3, 0, 100);
+        assert_roundtrip(data);
+    }
+
+    #[test]
+    fn test_payout_type_custom() {
+        // Custom distribution, param unused
+        let data = build_packed_erc20(7500000000000000000_u128, 4, 0, 15);
+        assert_roundtrip(data);
+    }
+
+    #[test]
+    fn test_realistic_large_tournament() {
+        // Large prize pool, many participants
+        let data = build_packed_erc20(
+            100000000000000000000000_u128, // 100k tokens (18 decimals)
+            2, // exponential
+            1000, // decay factor
+            1000 // 1000 participants
+        );
+        assert_roundtrip(data);
+    }
+
+    // -------------------------------------------------------------------------
+    // 5. Single field isolation
+    // -------------------------------------------------------------------------
+
+    #[test]
+    fn test_isolation_amount_does_not_affect_others() {
+        let data = build_packed_erc20(0xABCDEF0123456789_u128, 0, 0, 0);
+        let packed: felt252 = PackedERC20DataPacking::pack(data);
+        let unpacked: PackedERC20Data = PackedERC20DataPacking::unpack(packed);
+        assert!(unpacked.amount == 0xABCDEF0123456789_u128, "amount wrong");
+        assert!(unpacked.payout_type == 0, "payout_type should be zero");
+        assert!(unpacked.param == 0, "param should be zero");
+        assert!(unpacked.count == 0, "count should be zero");
+    }
+
+    #[test]
+    fn test_isolation_payout_type_does_not_affect_others() {
+        let data = build_packed_erc20(0, 0xAB, 0, 0);
+        let packed: felt252 = PackedERC20DataPacking::pack(data);
+        let unpacked: PackedERC20Data = PackedERC20DataPacking::unpack(packed);
+        assert!(unpacked.amount == 0, "amount should be zero");
+        assert!(unpacked.payout_type == 0xAB, "payout_type wrong");
+        assert!(unpacked.param == 0, "param should be zero");
+        assert!(unpacked.count == 0, "count should be zero");
+    }
+
+    #[test]
+    fn test_isolation_param_does_not_affect_others() {
+        let data = build_packed_erc20(0, 0, 0xBEEF, 0);
+        let packed: felt252 = PackedERC20DataPacking::pack(data);
+        let unpacked: PackedERC20Data = PackedERC20DataPacking::unpack(packed);
+        assert!(unpacked.amount == 0, "amount should be zero");
+        assert!(unpacked.payout_type == 0, "payout_type should be zero");
+        assert!(unpacked.param == 0xBEEF, "param wrong");
+        assert!(unpacked.count == 0, "count should be zero");
+    }
+
+    #[test]
+    fn test_isolation_count_does_not_affect_others() {
+        let data = build_packed_erc20(0, 0, 0, 0xDEADBEEF);
+        let packed: felt252 = PackedERC20DataPacking::pack(data);
+        let unpacked: PackedERC20Data = PackedERC20DataPacking::unpack(packed);
+        assert!(unpacked.amount == 0, "amount should be zero");
+        assert!(unpacked.payout_type == 0, "payout_type should be zero");
+        assert!(unpacked.param == 0, "param should be zero");
+        assert!(unpacked.count == 0xDEADBEEF, "count wrong");
+    }
+
+    // -------------------------------------------------------------------------
+    // 6. Alternating max/zero
+    // -------------------------------------------------------------------------
+
+    #[test]
+    fn test_alternating_max_zero_a() {
+        // amount=max, payout_type=0, param=max, count=0
+        let data = build_packed_erc20(0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF_u128, 0, 0xFFFF, 0);
+        assert_roundtrip(data);
+    }
+
+    #[test]
+    fn test_alternating_max_zero_b() {
+        // amount=0, payout_type=max, param=0, count=max
+        let data = build_packed_erc20(0, 0xFF, 0, 0xFFFFFFFF);
+        assert_roundtrip(data);
+    }
+
+    #[test]
+    fn test_alternating_zero_max_a() {
+        // amount=0, payout_type=0, param=max, count=max
+        let data = build_packed_erc20(0, 0, 0xFFFF, 0xFFFFFFFF);
+        assert_roundtrip(data);
+    }
+
+    #[test]
+    fn test_alternating_zero_max_b() {
+        // amount=max, payout_type=max, param=0, count=0
+        let data = build_packed_erc20(0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF_u128, 0xFF, 0, 0);
+        assert_roundtrip(data);
+    }
+
+    // -------------------------------------------------------------------------
+    // 7. Idempotency (pack -> unpack -> pack produces same felt252)
+    // -------------------------------------------------------------------------
+
+    #[test]
+    fn test_idempotency_zero() {
+        let data = build_packed_erc20(0, 0, 0, 0);
+        let packed1: felt252 = PackedERC20DataPacking::pack(data);
+        let unpacked: PackedERC20Data = PackedERC20DataPacking::unpack(packed1);
+        let packed2: felt252 = PackedERC20DataPacking::pack(unpacked);
+        assert!(packed1 == packed2, "idempotency failed for zero");
+    }
+
+    #[test]
+    fn test_idempotency_max() {
+        let data = build_packed_erc20(
+            0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF_u128, 0xFF, 0xFFFF, 0xFFFFFFFF,
+        );
+        let packed1: felt252 = PackedERC20DataPacking::pack(data);
+        let unpacked: PackedERC20Data = PackedERC20DataPacking::unpack(packed1);
+        let packed2: felt252 = PackedERC20DataPacking::pack(unpacked);
+        assert!(packed1 == packed2, "idempotency failed for max");
+    }
+
+    #[test]
+    fn test_idempotency_mixed() {
+        let data = build_packed_erc20(42000000000000000000_u128, 2, 300, 50);
+        let packed1: felt252 = PackedERC20DataPacking::pack(data);
+        let unpacked: PackedERC20Data = PackedERC20DataPacking::unpack(packed1);
+        let packed2: felt252 = PackedERC20DataPacking::pack(unpacked);
+        assert!(packed1 == packed2, "idempotency failed for mixed");
+    }
+
+    #[test]
+    fn test_double_roundtrip() {
+        let data = build_packed_erc20(9999999999_u128, 3, 12345, 67890);
+        let packed1: felt252 = PackedERC20DataPacking::pack(data);
+        let unpacked1: PackedERC20Data = PackedERC20DataPacking::unpack(packed1);
+        let packed2: felt252 = PackedERC20DataPacking::pack(unpacked1);
+        let unpacked2: PackedERC20Data = PackedERC20DataPacking::unpack(packed2);
+        assert!(unpacked1.amount == unpacked2.amount, "double roundtrip amount mismatch");
+        assert!(
+            unpacked1.payout_type == unpacked2.payout_type, "double roundtrip payout_type mismatch",
+        );
+        assert!(unpacked1.param == unpacked2.param, "double roundtrip param mismatch");
+        assert!(unpacked1.count == unpacked2.count, "double roundtrip count mismatch");
+    }
+
+    // -------------------------------------------------------------------------
+    // 8. Fuzz roundtrip with bounded inputs
+    // -------------------------------------------------------------------------
+
+    #[test]
+    #[fuzzer(runs: 100)]
+    fn test_fuzz_roundtrip(amount: u128, payout_type: u8, param: u16, count: u32) {
+        let data = build_packed_erc20(amount, payout_type, param, count);
+        assert_roundtrip(data);
+    }
+
+    #[test]
+    #[fuzzer(runs: 100)]
+    fn test_fuzz_idempotency(amount: u128, payout_type: u8, param: u16, count: u32) {
+        let data = build_packed_erc20(amount, payout_type, param, count);
+        let packed1: felt252 = PackedERC20DataPacking::pack(data);
+        let unpacked: PackedERC20Data = PackedERC20DataPacking::unpack(packed1);
+        let packed2: felt252 = PackedERC20DataPacking::pack(unpacked);
+        assert!(packed1 == packed2, "fuzz idempotency failed");
+    }
+
+    #[test]
+    #[fuzzer(runs: 100)]
+    fn test_fuzz_realistic_payout_types(amount: u128, param: u16, count: u32) {
+        // Constrain payout_type to valid range 0-4
+        let payout_type: u8 = (amount % 5).try_into().unwrap();
+        let data = build_packed_erc20(amount, payout_type, param, count);
+        assert_roundtrip(data);
     }
 }

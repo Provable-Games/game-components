@@ -10,16 +10,14 @@ pub const BASIS_POINTS: u16 = 10000;
 // Note: The public EntryFee struct is imported from game_components_interfaces::entry_fee above
 // The following internal types are for storage and implementation details only
 
-// Constants for packing/unpacking EntryFeeData
-const TWO_POW_1: u128 = 0x2; // 2^1
-const TWO_POW_8: u128 = 0x100; // 2^8
-const TWO_POW_14: u128 = 0x4000; // 2^14
-const TWO_POW_15: u128 = 0x8000; // 2^15
-const TWO_POW_128: felt252 = 0x100000000000000000000000000000000; // 2^128
-const MASK_1: u128 = 0x1; // 1 bit
-const MASK_8: u128 = 0xFF; // 8 bits
-const MASK_14: u128 = 0x3FFF; // 14 bits of 1s (max 16383)
-const MASK_15: u128 = 0x7FFF; // 15 bits of 1s
+/// NonZero<u128> constants for DivRem-based unpacking.
+/// Each constant is a power of 2 matching the field width.
+/// DivRem extracts field (remainder) and shifts (quotient) in one operation.
+mod nz128 {
+    pub const TWO_POW_1: NonZero<u128> = 0x2;
+    pub const TWO_POW_8: NonZero<u128> = 0x100;
+    pub const TWO_POW_14: NonZero<u128> = 0x4000;
+}
 
 // Re-export SHARES_PER_SLOT for backward compatibility
 pub use crate::entry_fee::libs::share_math::SHARES_PER_SLOT;
@@ -39,60 +37,53 @@ pub struct EntryFeeData {
     pub additional_count: u8 // 8 bits, number of additional shares
 }
 
+/// u128-aligned StorePacking for EntryFeeData.
+///
+/// Bit layout (165 bits total, no field straddles the u128 boundary):
+///
+/// Low u128 (128 bits):
+///   amount(128)
+///
+/// High u128 (37 bits):
+///   game_creator_share(14) | refund_share(14) | game_creator_claimed(1) | additional_count(8)
+///
+/// All DivRem operations use native u128_safe_divmod Sierra hints.
 pub impl EntryFeeDataStorePacking of StorePacking<EntryFeeData, felt252> {
     fn pack(value: EntryFeeData) -> felt252 {
-        // Layout: amount(128) | game_creator_share(14) | refund_share(14) |
-        // game_creator_claimed(1) | additional_count(8)
+        let low: u128 = value.amount;
+
         let game_creator_claimed_u128: u128 = if value.game_creator_claimed {
             1
         } else {
             0
         };
-        let packed: felt252 = value.amount.into()
-            + (value.game_creator_share.into() * TWO_POW_128)
-            + (value.refund_share.into() * TWO_POW_128 * TWO_POW_14.into())
-            + (game_creator_claimed_u128.into()
-                * TWO_POW_128
-                * TWO_POW_14.into()
-                * TWO_POW_14.into())
-            + (value.additional_count.into()
-                * TWO_POW_128
-                * TWO_POW_14.into()
-                * TWO_POW_14.into()
-                * TWO_POW_1.into());
-        packed
+
+        let high: u128 = value.game_creator_share.into()
+            + value.refund_share.into() * 0x4000_u128 // shift 14
+            + game_creator_claimed_u128 * 0x10000000_u128 // shift 28
+            + value.additional_count.into() * 0x20000000_u128; // shift 29
+
+        let packed = u256 { low, high };
+        packed.try_into().unwrap()
     }
 
     fn unpack(value: felt252) -> EntryFeeData {
-        let value_u256: u256 = value.into();
-        let two_pow_128_u256: u256 = TWO_POW_128.into();
-        let two_pow_14_u256: u256 = TWO_POW_14.into();
-        let two_pow_1_u256: u256 = TWO_POW_1.into();
-        let mask_14_u256: u256 = MASK_14.into();
-        let mask_1_u256: u256 = MASK_1.into();
-        let mask_8_u256: u256 = MASK_8.into();
+        let packed: u256 = value.into();
 
-        let amount: u128 = (value_u256 & 0xffffffffffffffffffffffffffffffff).try_into().unwrap();
-        let game_creator_share: u16 = ((value_u256 / two_pow_128_u256) & mask_14_u256)
-            .try_into()
-            .unwrap();
-        let refund_share: u16 = ((value_u256 / (two_pow_128_u256 * two_pow_14_u256)) & mask_14_u256)
-            .try_into()
-            .unwrap();
-        let game_creator_claimed_u8: u8 = ((value_u256
-            / (two_pow_128_u256 * two_pow_14_u256 * two_pow_14_u256))
-            & mask_1_u256)
-            .try_into()
-            .unwrap();
-        let game_creator_claimed: bool = game_creator_claimed_u8 == 1;
-        let additional_count: u8 = ((value_u256
-            / (two_pow_128_u256 * two_pow_14_u256 * two_pow_14_u256 * two_pow_1_u256))
-            & mask_8_u256)
-            .try_into()
-            .unwrap();
+        let amount: u128 = packed.low;
+
+        let high = packed.high;
+        let (hi, game_creator_share) = DivRem::div_rem(high, nz128::TWO_POW_14);
+        let (hi, refund_share) = DivRem::div_rem(hi, nz128::TWO_POW_14);
+        let (additional_count, game_creator_claimed_u128) = DivRem::div_rem(hi, nz128::TWO_POW_1);
+        let game_creator_claimed: bool = game_creator_claimed_u128 == 1;
 
         EntryFeeData {
-            amount, game_creator_share, refund_share, game_creator_claimed, additional_count,
+            amount,
+            game_creator_share: game_creator_share.try_into().unwrap(),
+            refund_share: refund_share.try_into().unwrap(),
+            game_creator_claimed,
+            additional_count: additional_count.try_into().unwrap(),
         }
     }
 }
@@ -180,4 +171,281 @@ pub enum EntryFeeClaimType {
     Refund: felt252,
     /// Claim an additional share by index
     AdditionalShare: u8,
+}
+
+// =============================================================================
+// TESTS
+// =============================================================================
+
+#[cfg(test)]
+mod tests {
+    use super::{EntryFeeData, EntryFeeDataStorePacking};
+
+    // =========================================================================
+    // Helpers
+    // =========================================================================
+
+    fn build_entry_fee_data(
+        amount: u128,
+        game_creator_share: u16,
+        refund_share: u16,
+        game_creator_claimed: bool,
+        additional_count: u8,
+    ) -> EntryFeeData {
+        EntryFeeData {
+            amount, game_creator_share, refund_share, game_creator_claimed, additional_count,
+        }
+    }
+
+    fn assert_roundtrip(data: EntryFeeData) {
+        let packed = EntryFeeDataStorePacking::pack(data);
+        let unpacked = EntryFeeDataStorePacking::unpack(packed);
+        assert!(unpacked.amount == data.amount, "amount mismatch");
+        assert!(
+            unpacked.game_creator_share == data.game_creator_share, "game_creator_share mismatch",
+        );
+        assert!(unpacked.refund_share == data.refund_share, "refund_share mismatch");
+        assert!(
+            unpacked.game_creator_claimed == data.game_creator_claimed,
+            "game_creator_claimed mismatch",
+        );
+        assert!(unpacked.additional_count == data.additional_count, "additional_count mismatch");
+    }
+
+    // =========================================================================
+    // 1. Zero values roundtrip
+    // =========================================================================
+
+    #[test]
+    fn test_zero_values_roundtrip() {
+        let data = build_entry_fee_data(0, 0, 0, false, 0);
+        let packed = EntryFeeDataStorePacking::pack(data);
+        assert!(packed == 0, "packed zero values should be 0");
+        assert_roundtrip(data);
+    }
+
+    // =========================================================================
+    // 2. Max values (each field at 2^N - 1)
+    // =========================================================================
+
+    #[test]
+    fn test_max_values_roundtrip() {
+        let data = build_entry_fee_data(
+            0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF_u128, // u128::MAX
+            0x3FFF, // 14-bit max
+            0x3FFF, // 14-bit max
+            true, // 1-bit max
+            0xFF // 8-bit max
+        );
+        assert_roundtrip(data);
+    }
+
+    // =========================================================================
+    // 3. Near-max values (2^N - 2)
+    // =========================================================================
+
+    #[test]
+    fn test_near_max_values_roundtrip() {
+        let data = build_entry_fee_data(
+            0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFE_u128, // u128::MAX - 1
+            0x3FFE, // 14-bit max - 1
+            0x3FFE, // 14-bit max - 1
+            false, // only 0 or 1
+            0xFE // 8-bit max - 1
+        );
+        assert_roundtrip(data);
+    }
+
+    // =========================================================================
+    // 4. Mixed realistic values
+    // =========================================================================
+
+    #[test]
+    fn test_realistic_tournament_entry() {
+        // 0.1 ETH = 10^17 wei, creator gets 10% (1000 bps), refund 5% (500 bps), 3 additional
+        let data = build_entry_fee_data(100000000000000000_u128, 1000, 500, false, 3);
+        assert_roundtrip(data);
+    }
+
+    #[test]
+    fn test_realistic_claimed_entry() {
+        // 1 USDC = 10^6, creator 50% (5000 bps), no refund, claimed, 0 additional
+        let data = build_entry_fee_data(1000000_u128, 5000, 0, true, 0);
+        assert_roundtrip(data);
+    }
+
+    #[test]
+    fn test_realistic_full_shares() {
+        // All shares configured, 16 additional shares (max packed in one slot)
+        let data = build_entry_fee_data(500000000000000000_u128, 2500, 2500, false, 16);
+        assert_roundtrip(data);
+    }
+
+    // =========================================================================
+    // 5. Single field isolation (each field solo, others zero/false)
+    // =========================================================================
+
+    #[test]
+    fn test_isolation_amount_only() {
+        let data = build_entry_fee_data(123456789_u128, 0, 0, false, 0);
+        assert_roundtrip(data);
+    }
+
+    #[test]
+    fn test_isolation_amount_max() {
+        let data = build_entry_fee_data(0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF_u128, 0, 0, false, 0);
+        assert_roundtrip(data);
+    }
+
+    #[test]
+    fn test_isolation_game_creator_share_only() {
+        let data = build_entry_fee_data(0, 0x3FFF, 0, false, 0);
+        assert_roundtrip(data);
+    }
+
+    #[test]
+    fn test_isolation_refund_share_only() {
+        let data = build_entry_fee_data(0, 0, 0x3FFF, false, 0);
+        assert_roundtrip(data);
+    }
+
+    #[test]
+    fn test_isolation_game_creator_claimed_only() {
+        let data = build_entry_fee_data(0, 0, 0, true, 0);
+        assert_roundtrip(data);
+    }
+
+    #[test]
+    fn test_isolation_additional_count_only() {
+        let data = build_entry_fee_data(0, 0, 0, false, 0xFF);
+        assert_roundtrip(data);
+    }
+
+    // =========================================================================
+    // 6. Alternating max/zero patterns
+    // =========================================================================
+
+    #[test]
+    fn test_alternating_max_zero_pattern_a() {
+        // amount=MAX, gc_share=0, refund_share=MAX, claimed=false, count=MAX
+        let data = build_entry_fee_data(
+            0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF_u128, 0, 0x3FFF, false, 0xFF,
+        );
+        assert_roundtrip(data);
+    }
+
+    #[test]
+    fn test_alternating_max_zero_pattern_b() {
+        // amount=0, gc_share=MAX, refund_share=0, claimed=true, count=0
+        let data = build_entry_fee_data(0, 0x3FFF, 0, true, 0);
+        assert_roundtrip(data);
+    }
+
+    #[test]
+    fn test_alternating_max_zero_pattern_c() {
+        // amount=MAX, gc_share=MAX, refund_share=0, claimed=true, count=0
+        let data = build_entry_fee_data(
+            0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF_u128, 0x3FFF, 0, true, 0,
+        );
+        assert_roundtrip(data);
+    }
+
+    #[test]
+    fn test_alternating_max_zero_pattern_d() {
+        // amount=0, gc_share=0, refund_share=MAX, claimed=false, count=MAX
+        let data = build_entry_fee_data(0, 0, 0x3FFF, false, 0xFF);
+        assert_roundtrip(data);
+    }
+
+    // =========================================================================
+    // 7. Idempotency (double pack/unpack)
+    // =========================================================================
+
+    #[test]
+    fn test_idempotency_double_roundtrip() {
+        let data = build_entry_fee_data(999999999_u128, 7500, 2500, true, 5);
+        let packed_1 = EntryFeeDataStorePacking::pack(data);
+        let unpacked_1 = EntryFeeDataStorePacking::unpack(packed_1);
+        let packed_2 = EntryFeeDataStorePacking::pack(unpacked_1);
+        let unpacked_2 = EntryFeeDataStorePacking::unpack(packed_2);
+
+        assert!(packed_1 == packed_2, "packed values should be identical after double roundtrip");
+        assert!(unpacked_2.amount == data.amount, "amount mismatch after double roundtrip");
+        assert!(
+            unpacked_2.game_creator_share == data.game_creator_share,
+            "game_creator_share mismatch after double roundtrip",
+        );
+        assert!(
+            unpacked_2.refund_share == data.refund_share,
+            "refund_share mismatch after double roundtrip",
+        );
+        assert!(
+            unpacked_2.game_creator_claimed == data.game_creator_claimed,
+            "game_creator_claimed mismatch after double roundtrip",
+        );
+        assert!(
+            unpacked_2.additional_count == data.additional_count,
+            "additional_count mismatch after double roundtrip",
+        );
+    }
+
+    #[test]
+    fn test_idempotency_max_values() {
+        let data = build_entry_fee_data(
+            0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF_u128, 0x3FFF, 0x3FFF, true, 0xFF,
+        );
+        let packed_1 = EntryFeeDataStorePacking::pack(data);
+        let unpacked_1 = EntryFeeDataStorePacking::unpack(packed_1);
+        let packed_2 = EntryFeeDataStorePacking::pack(unpacked_1);
+
+        assert!(packed_1 == packed_2, "max values should be idempotent");
+    }
+
+    // =========================================================================
+    // 8. Fuzz roundtrip with bounded inputs
+    // =========================================================================
+
+    #[test]
+    #[fuzzer(runs: 100)]
+    fn test_fuzz_roundtrip(
+        amount: u128,
+        raw_gc_share: u16,
+        raw_refund_share: u16,
+        raw_claimed: u8,
+        additional_count: u8,
+    ) {
+        // Bound inputs to valid bit widths
+        let game_creator_share: u16 = raw_gc_share % 0x4000; // 14 bits: 0..16383
+        let refund_share: u16 = raw_refund_share % 0x4000; // 14 bits: 0..16383
+        let game_creator_claimed: bool = (raw_claimed % 2) == 1; // 1 bit
+
+        let data = build_entry_fee_data(
+            amount, game_creator_share, refund_share, game_creator_claimed, additional_count,
+        );
+        assert_roundtrip(data);
+    }
+
+    #[test]
+    #[fuzzer(runs: 100)]
+    fn test_fuzz_idempotency(
+        amount: u128,
+        raw_gc_share: u16,
+        raw_refund_share: u16,
+        raw_claimed: u8,
+        additional_count: u8,
+    ) {
+        let game_creator_share: u16 = raw_gc_share % 0x4000;
+        let refund_share: u16 = raw_refund_share % 0x4000;
+        let game_creator_claimed: bool = (raw_claimed % 2) == 1;
+
+        let data = build_entry_fee_data(
+            amount, game_creator_share, refund_share, game_creator_claimed, additional_count,
+        );
+
+        let packed_1 = EntryFeeDataStorePacking::pack(data);
+        let unpacked_1 = EntryFeeDataStorePacking::unpack(packed_1);
+        let packed_2 = EntryFeeDataStorePacking::pack(unpacked_1);
+
+        assert!(packed_1 == packed_2, "fuzz: packed values should be idempotent");
+    }
 }
