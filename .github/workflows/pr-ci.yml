@@ -191,7 +191,14 @@ jobs:
             HAS_TESTS="true"
           fi
 
-          echo "test_matrix=$MATRIX" >> "$GITHUB_OUTPUT"
+          # Use multiline delimiter to avoid GitHub's secret-masking heuristic
+          # (single-line JSON outputs can be silently dropped if they match masked patterns)
+          DELIMITER="EOF_MATRIX_$(date +%s)"
+          {
+            echo "test_matrix<<${DELIMITER}"
+            echo "$MATRIX"
+            echo "${DELIMITER}"
+          } >> "$GITHUB_OUTPUT"
           echo "has_tests=$HAS_TESTS" >> "$GITHUB_OUTPUT"
           echo "Selected $(echo "$INCLUDES" | jq 'length') modules for testing"
           echo "$MATRIX" | jq .
