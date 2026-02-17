@@ -16,6 +16,8 @@ jobs:
       pull-requests: read
     outputs:
       packages: ${{ steps.filter.outputs.packages }}
+      has_tests: ${{ steps.compute-matrix.outputs.has_tests }}
+      test_matrix: ${{ steps.compute-matrix.outputs.test_matrix }}
       packages_review: ${{ steps.filter.outputs.packages_review }}
       general_review: ${{ steps.filter.outputs.general_review }}
       infra_ci: ${{ steps.filter.outputs.infra_ci }}
@@ -49,6 +51,150 @@ jobs:
               - ".github/workflows/**"
               - ".github/prompts/**"
               - ".github/pull_request_template.md"
+            embeddable_game_standard:
+              - "packages/embeddable_game_standard/**"
+            metagame_pkg:
+              - "packages/metagame/**"
+            economy:
+              - "packages/economy/**"
+            utilities:
+              - "packages/utilities/**"
+            interfaces:
+              - "packages/interfaces/**"
+            presets:
+              - "packages/presets/**"
+            testing:
+              - "packages/testing/**"
+            test_common:
+              - "packages/test_common/**"
+            tool_versions:
+              - ".tool-versions"
+
+      - name: Compute test matrix from changed packages
+        id: compute-matrix
+        env:
+          FILTER_INTERFACES: ${{ steps.filter.outputs.interfaces }}
+          FILTER_TESTING: ${{ steps.filter.outputs.testing }}
+          FILTER_UTILITIES: ${{ steps.filter.outputs.utilities }}
+          FILTER_METAGAME_PKG: ${{ steps.filter.outputs.metagame_pkg }}
+          FILTER_ECONOMY: ${{ steps.filter.outputs.economy }}
+          FILTER_EGS: ${{ steps.filter.outputs.embeddable_game_standard }}
+          FILTER_TEST_COMMON: ${{ steps.filter.outputs.test_common }}
+          FILTER_PRESETS: ${{ steps.filter.outputs.presets }}
+          FILTER_TOOL_VERSIONS: ${{ steps.filter.outputs.tool_versions }}
+        run: |
+          # Full module catalog (must match the static matrix in main-ci.yml)
+          # Format: package|module|runner|fuzzer_runs
+          ALL_MODULES=$(cat <<'CATALOG'
+          game_components_embeddable_game_standard|token|ubuntu-latest-32|32
+          game_components_embeddable_game_standard|minigame|ubuntu-latest-32|32
+          game_components_embeddable_game_standard|metagame|ubuntu-latest-32|256
+          game_components_embeddable_game_standard|registry|ubuntu-latest-32|256
+          game_components_metagame|leaderboard|ubuntu-latest-4|256
+          game_components_metagame|registration|ubuntu-latest-4|256
+          game_components_metagame|entry_requirement|ubuntu-latest-4|256
+          game_components_metagame|entry_fee|ubuntu-latest-4|256
+          game_components_metagame|prize|ubuntu-latest-4|256
+          game_components_economy|tokenomics|ubuntu-latest-4|256
+          game_components_utilities|math|ubuntu-latest-4|256
+          game_components_utilities|distribution|ubuntu-latest-4|256
+          game_components_utilities|utils|ubuntu-latest-4|256
+          game_components_presets|presets|ubuntu-latest-4|256
+          CATALOG
+          )
+
+          # Determine which group packages need testing based on transitive deps
+          # interfaces & testing & .tool-versions → ALL
+          # utilities → utilities + metagame + embeddable_game_standard + presets
+          # metagame_pkg → metagame + embeddable_game_standard + presets
+          # economy → economy + presets
+          # embeddable_game_standard → embeddable_game_standard + presets
+          # test_common → embeddable_game_standard + metagame + presets
+          # presets → presets
+
+          RUN_ALL="false"
+          NEED_EGS="false"
+          NEED_METAGAME="false"
+          NEED_ECONOMY="false"
+          NEED_UTILITIES="false"
+          NEED_PRESETS="false"
+
+          if [ "$FILTER_INTERFACES" = "true" ] || [ "$FILTER_TESTING" = "true" ] || [ "$FILTER_TOOL_VERSIONS" = "true" ]; then
+            RUN_ALL="true"
+          fi
+
+          if [ "$RUN_ALL" != "true" ]; then
+            if [ "$FILTER_UTILITIES" = "true" ]; then
+              NEED_UTILITIES="true"
+              NEED_METAGAME="true"
+              NEED_EGS="true"
+              NEED_PRESETS="true"
+            fi
+            if [ "$FILTER_METAGAME_PKG" = "true" ]; then
+              NEED_METAGAME="true"
+              NEED_EGS="true"
+              NEED_PRESETS="true"
+            fi
+            if [ "$FILTER_ECONOMY" = "true" ]; then
+              NEED_ECONOMY="true"
+              NEED_PRESETS="true"
+            fi
+            if [ "$FILTER_EGS" = "true" ]; then
+              NEED_EGS="true"
+              NEED_PRESETS="true"
+            fi
+            if [ "$FILTER_TEST_COMMON" = "true" ]; then
+              NEED_EGS="true"
+              NEED_METAGAME="true"
+              NEED_PRESETS="true"
+            fi
+            if [ "$FILTER_PRESETS" = "true" ]; then
+              NEED_PRESETS="true"
+            fi
+          fi
+
+          # Build the JSON matrix
+          INCLUDES="[]"
+          while IFS='|' read -r pkg mod runner fuzz; do
+            # Trim whitespace
+            pkg=$(echo "$pkg" | xargs)
+            mod=$(echo "$mod" | xargs)
+            runner=$(echo "$runner" | xargs)
+            fuzz=$(echo "$fuzz" | xargs)
+            [ -z "$pkg" ] && continue
+
+            INCLUDE="false"
+            if [ "$RUN_ALL" = "true" ]; then
+              INCLUDE="true"
+            elif [ "$pkg" = "game_components_embeddable_game_standard" ] && [ "$NEED_EGS" = "true" ]; then
+              INCLUDE="true"
+            elif [ "$pkg" = "game_components_metagame" ] && [ "$NEED_METAGAME" = "true" ]; then
+              INCLUDE="true"
+            elif [ "$pkg" = "game_components_economy" ] && [ "$NEED_ECONOMY" = "true" ]; then
+              INCLUDE="true"
+            elif [ "$pkg" = "game_components_utilities" ] && [ "$NEED_UTILITIES" = "true" ]; then
+              INCLUDE="true"
+            elif [ "$pkg" = "game_components_presets" ] && [ "$NEED_PRESETS" = "true" ]; then
+              INCLUDE="true"
+            fi
+
+            if [ "$INCLUDE" = "true" ]; then
+              INCLUDES=$(echo "$INCLUDES" | jq -c \
+                --arg p "$pkg" --arg m "$mod" --arg r "$runner" --arg f "$fuzz" \
+                '. + [{"package": $p, "module": $m, "runner": $r, "fuzzer_runs": ($f | tonumber)}]')
+            fi
+          done <<< "$ALL_MODULES"
+
+          MATRIX=$(echo "$INCLUDES" | jq -c '{include: .}')
+          HAS_TESTS="false"
+          if [ "$(echo "$INCLUDES" | jq 'length')" -gt 0 ]; then
+            HAS_TESTS="true"
+          fi
+
+          echo "test_matrix=$MATRIX" >> "$GITHUB_OUTPUT"
+          echo "has_tests=$HAS_TESTS" >> "$GITHUB_OUTPUT"
+          echo "Selected $(echo "$INCLUDES" | jq 'length') modules for testing"
+          echo "$MATRIX" | jq .
 
       - name: Determine AI review availability
         id: ai-gate
@@ -155,7 +301,7 @@ jobs:
 
   setup:
     needs: [changes, lint]
-    if: needs.changes.outputs.packages == 'true'
+    if: needs.changes.outputs.has_tests == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -199,77 +345,13 @@ jobs:
 
   test:
     name: test (${{ matrix.module }})
-    needs: setup
+    needs: [changes, setup]
+    if: needs.changes.outputs.has_tests == 'true'
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 10
     strategy:
       fail-fast: true
-      matrix:
-        # NOTE: When adding/removing modules, also update:
-        #   - codecov.yml: after_n_builds must equal module count
-        #   - AGENTS.md: CI Configuration section
-        include:
-          # Embeddable Game Standard
-          - package: game_components_embeddable_game_standard
-            module: token
-            runner: ubuntu-latest-32
-            fuzzer_runs: 32
-          - package: game_components_embeddable_game_standard
-            module: minigame
-            runner: ubuntu-latest-32
-            fuzzer_runs: 32
-          - package: game_components_embeddable_game_standard
-            module: metagame
-            runner: ubuntu-latest-32
-            fuzzer_runs: 256
-          - package: game_components_embeddable_game_standard
-            module: registry
-            runner: ubuntu-latest-32
-            fuzzer_runs: 256
-          # Metagame
-          - package: game_components_metagame
-            module: leaderboard
-            runner: ubuntu-latest-4
-            fuzzer_runs: 256
-          - package: game_components_metagame
-            module: registration
-            runner: ubuntu-latest-4
-            fuzzer_runs: 256
-          - package: game_components_metagame
-            module: entry_requirement
-            runner: ubuntu-latest-4
-            fuzzer_runs: 256
-          - package: game_components_metagame
-            module: entry_fee
-            runner: ubuntu-latest-4
-            fuzzer_runs: 256
-          - package: game_components_metagame
-            module: prize
-            runner: ubuntu-latest-4
-            fuzzer_runs: 256
-          # Economy
-          - package: game_components_economy
-            module: tokenomics
-            runner: ubuntu-latest-4
-            fuzzer_runs: 256
-          # Utilities
-          - package: game_components_utilities
-            module: math
-            runner: ubuntu-latest-4
-            fuzzer_runs: 256
-          - package: game_components_utilities
-            module: distribution
-            runner: ubuntu-latest-4
-            fuzzer_runs: 256
-          - package: game_components_utilities
-            module: utils
-            runner: ubuntu-latest-4
-            fuzzer_runs: 256
-          # Presets (standalone package, no module filter)
-          - package: game_components_presets
-            module: presets
-            runner: ubuntu-latest-4
-            fuzzer_runs: 256
+      matrix: ${{ fromJson(needs.changes.outputs.test_matrix) }}
     steps:
       - uses: actions/checkout@v6
 
