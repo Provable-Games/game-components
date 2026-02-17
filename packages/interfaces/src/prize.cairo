@@ -1,5 +1,5 @@
 use game_components_interfaces::distribution::Distribution;
-use game_components_interfaces::extension::ExtensionConfig;
+use interfaces::extension::ExtensionConfig;
 use starknet::ContractAddress;
 
 pub const IPRIZE_ID: felt252 = 0x03a632c0af289ff670e58cb3ecee0e6c2c781dc7615a30603e2d2c583bc2ab45;

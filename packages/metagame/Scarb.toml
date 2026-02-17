@@ -11,6 +11,7 @@ openzeppelin_interfaces.workspace = true
 openzeppelin_introspection.workspace = true
 game_components_interfaces = { path = "../interfaces" }
 game_components_utilities = { path = "../utilities" }
+interfaces = { git = "https://github.com/Provable-Games/metagame_extensions.git", branch = "next" }
 
 [dev-dependencies]
 snforge_std.workspace = true

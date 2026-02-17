@@ -1,4 +1,4 @@
-pub use game_components_interfaces::extension::ExtensionConfig;
+pub use interfaces::extension::ExtensionConfig;
 use starknet::ContractAddress;
 
 pub const IENTRY_REQUIREMENT_ID: felt252 =

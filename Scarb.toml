@@ -42,6 +42,7 @@ ekubo = { git = "https://github.com/EkuboProtocol/starknet-contracts.git", tag =
 starknet.workspace = true
 # Group packages
 game_components_interfaces = { path = "packages/interfaces" }
+interfaces = { git = "https://github.com/Provable-Games/metagame_extensions.git", branch = "next" }
 game_components_embeddable_game_standard = { path = "packages/embeddable_game_standard" }
 game_components_metagame = { path = "packages/metagame" }
 game_components_economy = { path = "packages/economy" }

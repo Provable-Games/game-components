@@ -11,8 +11,8 @@ pub mod EntryRequirementComponent {
     use core::num::traits::Zero;
     use core::poseidon::poseidon_hash_span;
     use game_components_interfaces::entry_requirement::{IENTRY_REQUIREMENT_ID, IEntryRequirement};
-    use game_components_interfaces::entry_validator::{
-        IENTRY_VALIDATOR_ID, IEntryValidatorDispatcher, IEntryValidatorDispatcherTrait,
+    use interfaces::entry_requirement_extension::{
+        IENTRY_REQUIREMENT_EXTENSION_ID, IEntryValidatorDispatcher, IEntryValidatorDispatcherTrait,
     };
     use openzeppelin_interfaces::erc721::{IERC721Dispatcher, IERC721DispatcherTrait, IERC721_ID};
     use openzeppelin_interfaces::introspection::{ISRC5Dispatcher, ISRC5DispatcherTrait};
@@ -132,7 +132,7 @@ pub mod EntryRequirementComponent {
                             let src5 = ISRC5Dispatcher { contract_address: config.address };
                             let display_address: felt252 = config.address.into();
                             assert!(
-                                src5.supports_interface(IENTRY_VALIDATOR_ID),
+                                src5.supports_interface(IENTRY_REQUIREMENT_EXTENSION_ID),
                                 "EntryRequirement: Extension {} does not support IEntryValidator",
                                 display_address,
                             );
@@ -332,7 +332,7 @@ pub mod EntryRequirementComponent {
                     let src5_dispatcher = ISRC5Dispatcher { contract_address: extension_address };
                     let display_address: felt252 = extension_address.into();
                     assert!(
-                        src5_dispatcher.supports_interface(IENTRY_VALIDATOR_ID),
+                        src5_dispatcher.supports_interface(IENTRY_REQUIREMENT_EXTENSION_ID),
                         "EntryRequirement: Extension address {} does not support IEntryValidator interface",
                         display_address,
                     );
