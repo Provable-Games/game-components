@@ -137,46 +137,46 @@ jobs:
           # Metagame
           - package: game_components_metagame
             module: leaderboard
-            runner: ubuntu-latest
+            runner: ubuntu-latest-4
             fuzzer_runs: 256
           - package: game_components_metagame
             module: registration
-            runner: ubuntu-latest
+            runner: ubuntu-latest-4
             fuzzer_runs: 256
           - package: game_components_metagame
             module: entry_requirement
-            runner: ubuntu-latest
+            runner: ubuntu-latest-4
             fuzzer_runs: 256
           - package: game_components_metagame
             module: entry_fee
-            runner: ubuntu-latest
+            runner: ubuntu-latest-4
             fuzzer_runs: 256
           - package: game_components_metagame
             module: prize
-            runner: ubuntu-latest
+            runner: ubuntu-latest-4
             fuzzer_runs: 256
           # Economy
           - package: game_components_economy
             module: tokenomics
-            runner: ubuntu-latest
+            runner: ubuntu-latest-4
             fuzzer_runs: 256
           # Utilities
           - package: game_components_utilities
             module: math
-            runner: ubuntu-latest
+            runner: ubuntu-latest-4
             fuzzer_runs: 256
           - package: game_components_utilities
             module: distribution
-            runner: ubuntu-latest
+            runner: ubuntu-latest-4
             fuzzer_runs: 256
           - package: game_components_utilities
             module: utils
-            runner: ubuntu-latest
+            runner: ubuntu-latest-4
             fuzzer_runs: 256
           # Presets (standalone package, no module filter)
           - package: game_components_presets
             module: presets
-            runner: ubuntu-latest
+            runner: ubuntu-latest-4
             fuzzer_runs: 256
     steps:
       - uses: actions/checkout@v6
