@@ -1,52 +1,69 @@
-name: lint and test
+name: Main CI
 
 on:
   push:
-    branches:
-      - main
-      - next
-    paths-ignore:
-      - "scripts/**"
-  pull_request:
-    paths-ignore:
-      - "scripts/**"
+    branches: [main, next]
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: main-ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  lint:
-    name: lint
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      packages: ${{ steps.filter.outputs.packages }}
+      infra_ci: ${{ steps.filter.outputs.infra_ci }}
+      general_ci: ${{ steps.filter.outputs.general_ci }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            packages:
+              - "packages/**"
+              - ".tool-versions"
+            infra_ci:
+              - ".github/workflows/**"
+              - ".github/prompts/**"
+              - ".github/pull_request_template.md"
+            general_ci:
+              - "codecov.yml"
+              - ".tool-versions"
+
+  infra-validate:
+    needs: changes
+    if: needs.changes.outputs.infra_ci == 'true' || needs.changes.outputs.general_ci == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v6
 
-      - name: Extract scarb version
-        run: echo "SCARB_VERSION=$(grep '^scarb ' .tool-versions | awk '{print $2}')" >> "$GITHUB_ENV"
+      - name: Validate workflow YAML
+        run: |
+          YAML_CLI="yaml@2.8.1"
+          for file in .github/workflows/*.yml .github/workflows/*.yaml; do
+            [ -f "$file" ] || continue
+            npx -y "$YAML_CLI" valid < "$file"
+          done
 
-      - uses: software-mansion/setup-scarb@v1
-        with:
-          scarb-version: ${{ env.SCARB_VERSION }}
-          cache: false # We handle caching manually via actions/cache
-
-      - name: Cairo lint
-        run: scarb fmt --check --workspace
-
-  validate-config:
-    name: validate config
-    runs-on: ubuntu-latest
-    timeout-minutes: 1
-    steps:
-      - uses: actions/checkout@v6
+          if [ -f codecov.yml ]; then
+            npx -y "$YAML_CLI" valid < codecov.yml
+          fi
 
       - name: Validate package count matches codecov config
         run: |
-          # Count test matrix entries (lines with "module:" in the include block)
-          matrix_count=$(grep -cE '^\s+module:' .github/workflows/test.yml)
-
-          # Extract after_n_builds value from codecov.yml
+          matrix_count=$(grep -cE '^\s+module:' .github/workflows/main-ci.yml)
           codecov_count=$(grep 'after_n_builds:' codecov.yml | grep -oE '[0-9]+')
 
           echo "Matrix modules: $matrix_count"
@@ -60,9 +77,26 @@ jobs:
 
           echo "Configuration validated: $matrix_count modules"
 
+  lint:
+    needs: changes
+    if: needs.changes.outputs.packages == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup Scarb
+        uses: software-mansion/setup-scarb@v1
+        with:
+          tool-versions: .tool-versions
+          cache: false
+
+      - name: Scarb fmt
+        run: scarb fmt --check --workspace
+
   setup:
-    name: setup
-    needs: lint
+    needs: [changes, lint]
+    if: needs.changes.outputs.packages == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -76,13 +110,12 @@ jobs:
       - uses: software-mansion/setup-scarb@v1
         with:
           scarb-version: ${{ env.SCARB_VERSION }}
-          cache: false # We handle caching manually via actions/cache
+          cache: false
 
       - uses: foundry-rs/setup-snfoundry@v4
         with:
           starknet-foundry-version: ${{ env.FOUNDRY_VERSION }}
 
-      # Restore caches before fetching dependencies
       - name: Cache Scarb dependencies
         uses: actions/cache@v4
         with:
@@ -189,13 +222,12 @@ jobs:
       - uses: software-mansion/setup-scarb@v1
         with:
           scarb-version: ${{ env.SCARB_VERSION }}
-          cache: false # We handle caching manually via actions/cache
+          cache: false
 
       - uses: foundry-rs/setup-snfoundry@v4
         with:
           starknet-foundry-version: ${{ env.FOUNDRY_VERSION }}
 
-      # Restore Scarb deps cache (populated by setup job)
       - name: Cache Scarb dependencies
         uses: actions/cache@v4
         with:
@@ -204,7 +236,6 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-scarb-deps-
 
-      # Restore Cargo cache (snforge plugin already compiled)
       - name: Cache Cargo (snforge plugin)
         uses: actions/cache@v4
         with:
@@ -229,7 +260,6 @@ jobs:
           (curl -L https://raw.githubusercontent.com/software-mansion/universal-sierra-compiler/master/scripts/install.sh | sh) &
           wait
 
-      # Cache compiled artifacts - saves ~20s per package when source unchanged
       - name: Cache compiled packages
         uses: actions/cache@v4
         with:
@@ -238,8 +268,6 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-target-${{ matrix.package }}-${{ matrix.module }}-${{ env.SCARB_VERSION }}-
 
-      # snforge test auto-builds the package before testing
-      # For group packages, filter to module level; for standalone packages, run all tests
       - name: Run tests with coverage
         run: |
           if [ "${{ matrix.package }}" = "game_components_${{ matrix.module }}" ]; then
@@ -254,3 +282,31 @@ jobs:
           files: ./coverage.lcov
           flags: ${{ matrix.module }}
           token: ${{ secrets.CODECOV_TOKEN }}
+
+  main-ci:
+    needs:
+      - changes
+      - infra-validate
+      - lint
+      - setup
+      - test
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Evaluate results
+        env:
+          NEEDS_JSON: ${{ toJson(needs) }}
+        run: |
+          FAILED=$(echo "$NEEDS_JSON" | jq -r '
+            to_entries[]
+            | select(.value.result == "failure" or .value.result == "cancelled")
+            | .key
+          ')
+
+          if [ -n "$FAILED" ]; then
+            echo "::error::Failing jobs:"
+            echo "$FAILED"
+            exit 1
+          fi
+
+          echo "All required jobs passed or were skipped"

@@ -107,7 +107,7 @@ The `validate-config` job in CI automatically verifies that the module count mat
 
 When adding a new module to a group package, update **both** files:
 
-1. **`.github/workflows/test.yml`** - Add the module to the matrix:
+1. **`.github/workflows/main-ci.yml`** and **`.github/workflows/pr-ci.yml`** - Add the module to both matrices:
 
    ```yaml
    matrix:
