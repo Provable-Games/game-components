@@ -16,6 +16,11 @@ openzeppelin_access.workspace = true
 ekubo.workspace = true
 
 [[target.starknet-contract]]
+build-external-contracts = [
+    "game_components_test_common::mocks::mock_erc20::MockERC20",
+    "game_components_test_common::mocks::mock_leaderboard_contract::MockLeaderboardContract",
+    "game_components_test_common::mocks::mock_game_details::MockGameDetails",
+]
 
 [dev-dependencies]
 snforge_std.workspace = true

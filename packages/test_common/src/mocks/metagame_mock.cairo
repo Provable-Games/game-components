@@ -1,7 +1,7 @@
 use starknet::ContractAddress;
 
 #[starknet::interface]
-pub trait IMetagameStarknetMock<TContractState> {
+pub trait IMetagameMock<TContractState> {
     fn mint_game(
         ref self: TContractState,
         game_address: Option<ContractAddress>,
@@ -21,7 +21,7 @@ pub trait IMetagameStarknetMock<TContractState> {
 }
 
 #[starknet::interface]
-pub trait IMetagameStarknetMockInit<TContractState> {
+pub trait IMetagameMockInit<TContractState> {
     fn initializer(
         ref self: TContractState,
         context_address: Option<ContractAddress>,
@@ -40,7 +40,7 @@ pub trait IMetagameCallbackMockView<TContractState> {
 }
 
 #[starknet::contract]
-pub mod metagame_starknet_mock {
+pub mod metagame_mock {
     use game_components_embeddable_game_standard::metagame::extensions::callback::callback::MetagameCallbackComponent;
     use game_components_embeddable_game_standard::metagame::extensions::context::context::ContextComponent;
     use game_components_embeddable_game_standard::metagame::extensions::context::interface::{
@@ -167,7 +167,7 @@ pub mod metagame_starknet_mock {
     }
 
     #[abi(embed_v0)]
-    impl MetagameMockImpl of super::IMetagameStarknetMock<ContractState> {
+    impl MetagameMockImpl of super::IMetagameMock<ContractState> {
         fn mint_game(
             ref self: ContractState,
             game_address: Option<ContractAddress>,
@@ -246,7 +246,7 @@ pub mod metagame_starknet_mock {
     }
 
     #[abi(embed_v0)]
-    impl MetagameInitializerImpl of super::IMetagameStarknetMockInit<ContractState> {
+    impl MetagameInitializerImpl of super::IMetagameMockInit<ContractState> {
         fn initializer(
             ref self: ContractState,
             context_address: Option<ContractAddress>,

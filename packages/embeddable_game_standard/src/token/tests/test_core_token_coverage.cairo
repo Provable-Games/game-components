@@ -13,7 +13,7 @@ use snforge_std::{
 };
 use crate::token::interface::IMinigameTokenMixinDispatcherTrait;
 use crate::token::structs::PlayerNameUpdate;
-use super::mocks::minigame_starknet_mock::IMinigameStarknetMockDispatcherTrait;
+use super::mocks::minigame_mock::IMinigameMockDispatcherTrait;
 use super::mocks::mock_game::IMockGameDispatcherTrait;
 use super::setup::{
     ALICE, BOB, CHARLIE, CURRENT_TIME, OWNER, deploy_basic_mock_game,

@@ -6,8 +6,8 @@ use snforge_std::{EventSpyTrait, spy_events};
 use starknet::ContractAddress;
 use crate::token::extensions::context::interface::IMINIGAME_TOKEN_CONTEXT_ID;
 use crate::token::interface::IMinigameTokenMixinDispatcherTrait;
-use super::mocks::metagame_starknet_mock::IMetagameStarknetMockDispatcherTrait;
-use super::mocks::minigame_starknet_mock::IMinigameStarknetMockDispatcherTrait;
+use super::mocks::metagame_mock::IMetagameMockDispatcherTrait;
+use super::mocks::minigame_mock::IMinigameMockDispatcherTrait;
 
 // Import setup helpers
 use super::setup::{ALICE, BOB, RENDERER_ADDRESS, setup, setup_multi_game};

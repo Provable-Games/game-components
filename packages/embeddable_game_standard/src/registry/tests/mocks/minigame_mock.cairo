@@ -1,7 +1,7 @@
 /// A minimal mock minigame contract for registry testing
 /// Only needs to support SRC5 for interface detection
 #[starknet::contract]
-pub mod registry_minigame_starknet_mock {
+pub mod registry_minigame_mock {
     use game_components_embeddable_game_standard::minigame::interface::IMINIGAME_ID;
     use openzeppelin_introspection::src5::SRC5Component;
 

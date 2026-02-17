@@ -5,12 +5,10 @@ use snforge_std::{
 };
 use starknet::ContractAddress;
 use crate::token::interface::IMinigameTokenMixinDispatcherTrait;
-use super::mocks::metagame_starknet_mock::{
-    IMetagameCallbackMockViewDispatcherTrait, IMetagameStarknetMockDispatcherTrait,
+use super::mocks::metagame_mock::{
+    IMetagameCallbackMockViewDispatcherTrait, IMetagameMockDispatcherTrait,
 };
-use super::mocks::minigame_starknet_mock::{
-    IMinigameStarknetMockDispatcherTrait, IMinigameStarknetMockInitDispatcherTrait,
-};
+use super::mocks::minigame_mock::{IMinigameMockDispatcherTrait, IMinigameMockInitDispatcherTrait};
 
 // Import test helpers from setup module
 use super::setup::{

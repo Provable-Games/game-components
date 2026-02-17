@@ -1,7 +1,7 @@
 use openzeppelin_interfaces::erc721::ERC721ABIDispatcherTrait;
 use snforge_std::{CheatSpan, EventSpyTrait, cheat_caller_address, spy_events};
 use crate::token::interface::IMinigameTokenMixinDispatcherTrait;
-use super::mocks::minigame_starknet_mock::IMinigameStarknetMockInitDispatcherTrait;
+use super::mocks::minigame_mock::IMinigameMockInitDispatcherTrait;
 
 // Import IMockGameDispatcher trait
 use super::mocks::mock_game::{IMockGameDispatcherTrait};

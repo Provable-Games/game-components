@@ -10,7 +10,7 @@ use game_components_embeddable_game_standard::minigame::interface::{
 use openzeppelin_interfaces::erc721::ERC721ABIDispatcherTrait;
 use snforge_std::{mock_call, start_cheat_block_timestamp, stop_cheat_block_timestamp};
 use crate::token::interface::IMinigameTokenMixinDispatcherTrait;
-use super::mocks::minigame_starknet_mock::IMinigameStarknetMockDispatcherTrait;
+use super::mocks::minigame_mock::IMinigameMockDispatcherTrait;
 // Import setup helpers
 use super::setup::{setup};
 
