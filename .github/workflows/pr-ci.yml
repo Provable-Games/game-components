@@ -17,7 +17,11 @@ jobs:
     outputs:
       packages: ${{ steps.filter.outputs.packages }}
       has_tests: ${{ steps.compute-matrix.outputs.has_tests }}
-      test_matrix: ${{ steps.compute-matrix.outputs.test_matrix }}
+      need_egs: ${{ steps.compute-matrix.outputs.need_egs }}
+      need_metagame: ${{ steps.compute-matrix.outputs.need_metagame }}
+      need_economy: ${{ steps.compute-matrix.outputs.need_economy }}
+      need_utilities: ${{ steps.compute-matrix.outputs.need_utilities }}
+      need_presets: ${{ steps.compute-matrix.outputs.need_presets }}
       packages_review: ${{ steps.filter.outputs.packages_review }}
       general_review: ${{ steps.filter.outputs.general_review }}
       infra_ci: ${{ steps.filter.outputs.infra_ci }}
@@ -83,26 +87,6 @@ jobs:
           FILTER_PRESETS: ${{ steps.filter.outputs.presets }}
           FILTER_TOOL_VERSIONS: ${{ steps.filter.outputs.tool_versions }}
         run: |
-          # Full module catalog (must match the static matrix in main-ci.yml)
-          # Format: package|module|runner|fuzzer_runs
-          ALL_MODULES=$(cat <<'CATALOG'
-          game_components_embeddable_game_standard|token|ubuntu-latest-32|32
-          game_components_embeddable_game_standard|minigame|ubuntu-latest-32|32
-          game_components_embeddable_game_standard|metagame|ubuntu-latest-32|256
-          game_components_embeddable_game_standard|registry|ubuntu-latest-32|256
-          game_components_metagame|leaderboard|ubuntu-latest-4|256
-          game_components_metagame|registration|ubuntu-latest-4|256
-          game_components_metagame|entry_requirement|ubuntu-latest-4|256
-          game_components_metagame|entry_fee|ubuntu-latest-4|256
-          game_components_metagame|prize|ubuntu-latest-4|256
-          game_components_economy|tokenomics|ubuntu-latest-4|256
-          game_components_utilities|math|ubuntu-latest-4|256
-          game_components_utilities|distribution|ubuntu-latest-4|256
-          game_components_utilities|utils|ubuntu-latest-4|256
-          game_components_presets|presets|ubuntu-latest-4|256
-          CATALOG
-          )
-
           # Determine which group packages need testing based on transitive deps
           # interfaces & testing & .tool-versions → ALL
           # utilities → utilities + metagame + embeddable_game_standard + presets
@@ -153,55 +137,29 @@ jobs:
             fi
           fi
 
-          # Build the JSON matrix
-          INCLUDES="[]"
-          while IFS='|' read -r pkg mod runner fuzz; do
-            # Trim whitespace
-            pkg=$(echo "$pkg" | xargs)
-            mod=$(echo "$mod" | xargs)
-            runner=$(echo "$runner" | xargs)
-            fuzz=$(echo "$fuzz" | xargs)
-            [ -z "$pkg" ] && continue
-
-            INCLUDE="false"
-            if [ "$RUN_ALL" = "true" ]; then
-              INCLUDE="true"
-            elif [ "$pkg" = "game_components_embeddable_game_standard" ] && [ "$NEED_EGS" = "true" ]; then
-              INCLUDE="true"
-            elif [ "$pkg" = "game_components_metagame" ] && [ "$NEED_METAGAME" = "true" ]; then
-              INCLUDE="true"
-            elif [ "$pkg" = "game_components_economy" ] && [ "$NEED_ECONOMY" = "true" ]; then
-              INCLUDE="true"
-            elif [ "$pkg" = "game_components_utilities" ] && [ "$NEED_UTILITIES" = "true" ]; then
-              INCLUDE="true"
-            elif [ "$pkg" = "game_components_presets" ] && [ "$NEED_PRESETS" = "true" ]; then
-              INCLUDE="true"
-            fi
-
-            if [ "$INCLUDE" = "true" ]; then
-              INCLUDES=$(echo "$INCLUDES" | jq -c \
-                --arg p "$pkg" --arg m "$mod" --arg r "$runner" --arg f "$fuzz" \
-                '. + [{"package": $p, "module": $m, "runner": $r, "fuzzer_runs": ($f | tonumber)}]')
-            fi
-          done <<< "$ALL_MODULES"
-
-          MATRIX=$(echo "$INCLUDES" | jq -c '{include: .}')
-          HAS_TESTS="false"
-          if [ "$(echo "$INCLUDES" | jq 'length')" -gt 0 ]; then
-            HAS_TESTS="true"
+          if [ "$RUN_ALL" = "true" ]; then
+            NEED_EGS="true"
+            NEED_METAGAME="true"
+            NEED_ECONOMY="true"
+            NEED_UTILITIES="true"
+            NEED_PRESETS="true"
           fi
 
-          # Use multiline delimiter to avoid GitHub's secret-masking heuristic
-          # (single-line JSON outputs can be silently dropped if they match masked patterns)
-          DELIMITER="EOF_MATRIX_$(date +%s)"
-          {
-            echo "test_matrix<<${DELIMITER}"
-            echo "$MATRIX"
-            echo "${DELIMITER}"
-          } >> "$GITHUB_OUTPUT"
+          HAS_TESTS="false"
+          for flag in "$NEED_EGS" "$NEED_METAGAME" "$NEED_ECONOMY" "$NEED_UTILITIES" "$NEED_PRESETS"; do
+            if [ "$flag" = "true" ]; then
+              HAS_TESTS="true"
+              break
+            fi
+          done
+
           echo "has_tests=$HAS_TESTS" >> "$GITHUB_OUTPUT"
-          echo "Selected $(echo "$INCLUDES" | jq 'length') modules for testing"
-          echo "$MATRIX" | jq .
+          echo "need_egs=$NEED_EGS" >> "$GITHUB_OUTPUT"
+          echo "need_metagame=$NEED_METAGAME" >> "$GITHUB_OUTPUT"
+          echo "need_economy=$NEED_ECONOMY" >> "$GITHUB_OUTPUT"
+          echo "need_utilities=$NEED_UTILITIES" >> "$GITHUB_OUTPUT"
+          echo "need_presets=$NEED_PRESETS" >> "$GITHUB_OUTPUT"
+          echo "Packages to test: egs=$NEED_EGS metagame=$NEED_METAGAME economy=$NEED_ECONOMY utilities=$NEED_UTILITIES presets=$NEED_PRESETS"
 
       - name: Determine AI review availability
         id: ai-gate
@@ -311,8 +269,54 @@ jobs:
     if: needs.changes.outputs.has_tests == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    outputs:
+      test_matrix: ${{ steps.build-matrix.outputs.test_matrix }}
     steps:
       - uses: actions/checkout@v6
+
+      - name: Build test matrix from package flags
+        id: build-matrix
+        env:
+          NEED_EGS: ${{ needs.changes.outputs.need_egs }}
+          NEED_METAGAME: ${{ needs.changes.outputs.need_metagame }}
+          NEED_ECONOMY: ${{ needs.changes.outputs.need_economy }}
+          NEED_UTILITIES: ${{ needs.changes.outputs.need_utilities }}
+          NEED_PRESETS: ${{ needs.changes.outputs.need_presets }}
+        run: |
+          # Build JSON matrix from per-package boolean flags
+          # Module catalog must match main-ci.yml
+          INCLUDES="[]"
+          add() { INCLUDES=$(echo "$INCLUDES" | jq -c --arg p "$1" --arg m "$2" --arg r "$3" --argjson f "$4" '. + [{package:$p,module:$m,runner:$r,fuzzer_runs:$f}]'); }
+
+          if [ "$NEED_EGS" = "true" ]; then
+            add game_components_embeddable_game_standard token ubuntu-latest-32 32
+            add game_components_embeddable_game_standard minigame ubuntu-latest-32 32
+            add game_components_embeddable_game_standard metagame ubuntu-latest-32 256
+            add game_components_embeddable_game_standard registry ubuntu-latest-32 256
+          fi
+          if [ "$NEED_METAGAME" = "true" ]; then
+            add game_components_metagame leaderboard ubuntu-latest-4 256
+            add game_components_metagame registration ubuntu-latest-4 256
+            add game_components_metagame entry_requirement ubuntu-latest-4 256
+            add game_components_metagame entry_fee ubuntu-latest-4 256
+            add game_components_metagame prize ubuntu-latest-4 256
+          fi
+          if [ "$NEED_ECONOMY" = "true" ]; then
+            add game_components_economy tokenomics ubuntu-latest-4 256
+          fi
+          if [ "$NEED_UTILITIES" = "true" ]; then
+            add game_components_utilities math ubuntu-latest-4 256
+            add game_components_utilities distribution ubuntu-latest-4 256
+            add game_components_utilities utils ubuntu-latest-4 256
+          fi
+          if [ "$NEED_PRESETS" = "true" ]; then
+            add game_components_presets presets ubuntu-latest-4 256
+          fi
+
+          MATRIX=$(echo "$INCLUDES" | jq -c '{include:.}')
+          echo "test_matrix=$MATRIX" >> "$GITHUB_OUTPUT"
+          echo "Matrix: $(echo "$INCLUDES" | jq 'length') modules"
+          echo "$MATRIX" | jq .
 
       - name: Extract tool versions
         run: |
@@ -358,7 +362,7 @@ jobs:
     timeout-minutes: 10
     strategy:
       fail-fast: true
-      matrix: ${{ fromJson(needs.changes.outputs.test_matrix) }}
+      matrix: ${{ fromJson(needs.setup.outputs.test_matrix) }}
     steps:
       - uses: actions/checkout@v6
 
