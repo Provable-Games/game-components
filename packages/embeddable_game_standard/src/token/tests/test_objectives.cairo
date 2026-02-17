@@ -6,7 +6,7 @@ use openzeppelin_interfaces::introspection::ISRC5DispatcherTrait;
 use snforge_std::{EventSpyTrait, spy_events};
 use crate::token::extensions::objectives::interface::IMINIGAME_TOKEN_OBJECTIVES_ID;
 use crate::token::interface::IMinigameTokenMixinDispatcherTrait;
-use super::mocks::minigame_starknet_mock::IMinigameStarknetMockDispatcherTrait;
+use super::mocks::minigame_mock::IMinigameMockDispatcherTrait;
 
 // Import setup helpers
 use super::setup::{ALICE, BOB, setup, setup_multi_game};

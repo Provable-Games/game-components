@@ -7,7 +7,7 @@ fn addr(value: felt252) -> ContractAddress {
 }
 use snforge_std::{EventSpyTrait, spy_events};
 use crate::token::interface::IMinigameTokenMixinDispatcherTrait;
-use super::mocks::metagame_starknet_mock::IMetagameStarknetMockDispatcherTrait;
+use super::mocks::metagame_mock::IMetagameMockDispatcherTrait;
 use super::setup::{ALICE, BOB, setup};
 
 #[test]

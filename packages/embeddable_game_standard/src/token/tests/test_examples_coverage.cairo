@@ -9,7 +9,7 @@ use snforge_std::{
     CheatSpan, cheat_caller_address, start_cheat_block_timestamp, stop_cheat_block_timestamp,
 };
 use crate::token::interface::IMinigameTokenMixinDispatcherTrait;
-use super::mocks::metagame_starknet_mock::IMetagameStarknetMockDispatcherTrait;
+use super::mocks::metagame_mock::IMetagameMockDispatcherTrait;
 use super::mocks::mock_game::IMockGameDispatcherTrait;
 use super::setup::{
     ALICE, BOB, CHARLIE, deploy_basic_mock_game, deploy_optimized_token_with_game, setup,

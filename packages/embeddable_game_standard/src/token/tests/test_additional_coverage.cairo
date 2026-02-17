@@ -15,7 +15,7 @@ use snforge_std::{
     start_cheat_block_timestamp, stop_cheat_block_timestamp,
 };
 use crate::token::interface::IMinigameTokenMixinDispatcherTrait;
-use super::mocks::minigame_starknet_mock::IMinigameStarknetMockDispatcherTrait;
+use super::mocks::minigame_mock::IMinigameMockDispatcherTrait;
 use super::mocks::mock_game::IMockGameDispatcherTrait;
 use super::setup::{
     ALICE, BOB, CHARLIE, CURRENT_TIME, FAR_FUTURE_TIME, FUTURE_TIME, PAST_TIME, RENDERER_ADDRESS,

@@ -1,3 +1,1 @@
-pub mod metagame_starknet_mock;
-pub mod minigame_starknet_mock;
-pub mod mock_game;
+pub use game_components_test_common::mocks::{metagame_mock, minigame_mock, mock_game};

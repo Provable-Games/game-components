@@ -13,7 +13,7 @@ use snforge_std::{
     CheatSpan, cheat_caller_address, start_cheat_block_timestamp, stop_cheat_block_timestamp,
 };
 use crate::token::interface::IMinigameTokenMixinDispatcherTrait;
-use super::mocks::minigame_starknet_mock::IMinigameStarknetMockDispatcherTrait;
+use super::mocks::minigame_mock::IMinigameMockDispatcherTrait;
 use super::mocks::mock_game::IMockGameDispatcherTrait;
 use super::setup::{
     ALICE, BOB, CURRENT_TIME, FAR_FUTURE_TIME, PAST_TIME, RENDERER_ADDRESS, deploy_basic_mock_game,

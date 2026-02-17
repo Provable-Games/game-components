@@ -14,13 +14,12 @@ use starknet::ContractAddress;
 use crate::token::interface::IMinigameTokenMixinDispatcher;
 
 // Import from local mocks
-use super::mocks::metagame_starknet_mock::{
-    IMetagameCallbackMockViewDispatcher, IMetagameStarknetMockDispatcher,
-    IMetagameStarknetMockInitDispatcher, IMetagameStarknetMockInitDispatcherTrait,
+use super::mocks::metagame_mock::{
+    IMetagameCallbackMockViewDispatcher, IMetagameMockDispatcher, IMetagameMockInitDispatcher,
+    IMetagameMockInitDispatcherTrait,
 };
-use super::mocks::minigame_starknet_mock::{
-    IMinigameStarknetMockDispatcher, IMinigameStarknetMockInitDispatcher,
-    IMinigameStarknetMockInitDispatcherTrait,
+use super::mocks::minigame_mock::{
+    IMinigameMockDispatcher, IMinigameMockInitDispatcher, IMinigameMockInitDispatcherTrait,
 };
 use super::mocks::mock_game::IMockGameDispatcher;
 
@@ -32,11 +31,11 @@ use super::mocks::mock_game::IMockGameDispatcher;
 pub struct TestContracts {
     pub minigame_registry: IMinigameRegistryDispatcher,
     pub minigame: IMinigameDispatcher,
-    pub mock_minigame: IMinigameStarknetMockDispatcher,
+    pub mock_minigame: IMinigameMockDispatcher,
     pub test_token: IMinigameTokenMixinDispatcher,
     pub erc721: ERC721ABIDispatcher,
     pub src5: ISRC5Dispatcher,
-    pub metagame_mock: IMetagameStarknetMockDispatcher,
+    pub metagame_mock: IMetagameMockDispatcher,
     pub metagame_callback_view: IMetagameCallbackMockViewDispatcher,
 }
 
@@ -44,16 +43,16 @@ pub struct TestContracts {
 // MOCK CONTRACT DEPLOYMENT HELPERS
 // ================================================================================================
 
-/// Deploy minigame_starknet_mock contract
+/// Deploy minigame_mock contract
 pub fn deploy_mock_game() -> (
-    IMinigameDispatcher, IMinigameStarknetMockInitDispatcher, IMinigameStarknetMockDispatcher,
+    IMinigameDispatcher, IMinigameMockInitDispatcher, IMinigameMockDispatcher,
 ) {
-    let contract = declare("minigame_starknet_mock").unwrap().contract_class();
+    let contract = declare("minigame_mock").unwrap().contract_class();
     let (contract_address, _) = contract.deploy(@array![]).unwrap();
 
     let minigame_dispatcher = IMinigameDispatcher { contract_address };
-    let minigame_init_dispatcher = IMinigameStarknetMockInitDispatcher { contract_address };
-    let minigame_mock_dispatcher = IMinigameStarknetMockDispatcher { contract_address };
+    let minigame_init_dispatcher = IMinigameMockInitDispatcher { contract_address };
+    let minigame_mock_dispatcher = IMinigameMockDispatcher { contract_address };
     (minigame_dispatcher, minigame_init_dispatcher, minigame_mock_dispatcher)
 }
 
@@ -67,15 +66,15 @@ pub fn deploy_basic_mock_game() -> (IMinigameDispatcher, IMockGameDispatcher) {
     (minigame_dispatcher, mock_game_dispatcher)
 }
 
-/// Deploy metagame_starknet_mock contract
+/// Deploy metagame_mock contract
 pub fn deploy_mock_metagame_contract() -> (
-    IMetagameDispatcher, IMetagameStarknetMockInitDispatcher, IMetagameStarknetMockDispatcher,
+    IMetagameDispatcher, IMetagameMockInitDispatcher, IMetagameMockDispatcher,
 ) {
-    let contract = declare("metagame_starknet_mock").unwrap().contract_class();
+    let contract = declare("metagame_mock").unwrap().contract_class();
     let (contract_address, _) = contract.deploy(@array![]).unwrap();
     let metagame_dispatcher = IMetagameDispatcher { contract_address };
-    let metagame_init_dispatcher = IMetagameStarknetMockInitDispatcher { contract_address };
-    let metagame_mock_dispatcher = IMetagameStarknetMockDispatcher { contract_address };
+    let metagame_init_dispatcher = IMetagameMockInitDispatcher { contract_address };
+    let metagame_mock_dispatcher = IMetagameMockDispatcher { contract_address };
     (metagame_dispatcher, metagame_init_dispatcher, metagame_mock_dispatcher)
 }
 

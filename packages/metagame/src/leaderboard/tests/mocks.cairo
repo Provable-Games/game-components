@@ -1,3 +1,1 @@
-// Mock contracts for leaderboard testing - local copies needed for snforge to discover
-pub mod mock_game_details;
-pub mod mock_leaderboard_contract;
+pub use game_components_test_common::mocks::{mock_game_details, mock_leaderboard_contract};

@@ -24,14 +24,15 @@ Located in `src/mocks/`:
 
 | Mock | Purpose |
 |------|---------|
-| `mock_game.cairo` | Game contract implementing `IMinigame` |
+| `metagame_mock.cairo` | Metagame component mock with callback tracking |
+| `minigame_mock.cairo` | Full minigame mock with settings, objectives, and scoring |
+| `mock_erc20.cairo` | ERC20 token with mint/burn for testing |
+| `mock_game.cairo` | Simple game contract implementing `IMinigameTokenData` |
 | `mock_game_details.cairo` | Game details provider |
 | `mock_leaderboard_contract.cairo` | Leaderboard for testing submissions |
 | `mock_objectives_contract.cairo` | `IMinigameObjectives` implementation |
-| `mock_settings_contract.cairo` | `IMinigameSettings` implementation |
 | `mock_registry_contract.cairo` | Registry for game registration tests |
-| `metagame_starknet_mock.cairo` | Metagame component mock |
-| `minigame_starknet_mock.cairo` | Minigame component mock |
+| `mock_settings_contract.cairo` | `IMinigameSettings` implementation |
 
 ---
 
@@ -41,10 +42,10 @@ Located in `src/examples/`:
 
 | Example | Purpose |
 |---------|---------|
+| `full_token_contract.cairo` | All features enabled reference |
+| `minigame_registry_contract.cairo` | Registry with token support |
 | `minimal_optimized_example.cairo` | Minimal token (~50% size reduction) |
 | `single_game_token_contract.cairo` | Token supporting single game only |
-| `minigame_registry_contract.cairo` | Registry with token support |
-| `full_token_contract.cairo` | All features enabled reference |
 
 ---
 
@@ -55,7 +56,9 @@ Import mocks in test files:
 ```cairo
 use game_components_test_common::mocks::mock_game::MockGame;
 use game_components_test_common::mocks::mock_settings_contract::MockSettings;
-use game_components_test_common::examples::minimal_optimized_example::MinimalToken;
+use game_components_test_common::mocks::minigame_mock::{IMinigameMockDispatcher, IMinigameMockInitDispatcher};
+use game_components_test_common::mocks::metagame_mock::{IMetagameMockDispatcher, IMetagameMockInitDispatcher};
+use game_components_test_common::mocks::mock_erc20::{IMockERC20Dispatcher, MockERC20};
 ```
 
 Deploy in tests:
@@ -66,6 +69,15 @@ fn deploy_mock_game() -> IMinigameDispatcher {
     let (address, _) = contract.deploy(@array![]).unwrap();
     IMinigameDispatcher { contract_address: address }
 }
+```
+
+Re-export from local mocks module (for packages that previously had local copies):
+
+```cairo
+// In your package's tests/mocks.cairo
+pub use game_components_test_common::mocks::minigame_mock;
+pub use game_components_test_common::mocks::metagame_mock;
+pub use game_components_test_common::mocks::mock_erc20;
 ```
 
 ---

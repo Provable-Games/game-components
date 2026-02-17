@@ -41,7 +41,7 @@ fn deploy_mock_registry() -> IMinigameRegistryDispatcher {
 
 /// Deploy a mock minigame contract for registration testing
 fn deploy_mock_minigame_for_registration() -> ContractAddress {
-    let contract = declare("registry_minigame_starknet_mock").unwrap().contract_class();
+    let contract = declare("registry_minigame_mock").unwrap().contract_class();
     let (contract_address, _) = contract.deploy(@array![]).unwrap();
     contract_address
 }

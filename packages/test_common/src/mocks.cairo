@@ -1,3 +1,7 @@
+pub mod metagame_mock;
+pub mod minigame_mock;
+pub mod mock_erc20;
+pub mod mock_game;
 pub mod mock_game_details;
 pub mod mock_leaderboard_contract;
 pub mod mock_objectives_contract;

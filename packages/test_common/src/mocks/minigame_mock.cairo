@@ -1,7 +1,7 @@
 use starknet::ContractAddress;
 
 #[starknet::interface]
-pub trait IMinigameStarknetMock<TContractState> {
+pub trait IMinigameMock<TContractState> {
     fn mint(
         ref self: TContractState,
         player_name: Option<felt252>,
@@ -25,7 +25,7 @@ pub trait IMinigameStarknetMock<TContractState> {
 }
 
 #[starknet::interface]
-pub trait IMinigameStarknetMockInit<TContractState> {
+pub trait IMinigameMockInit<TContractState> {
     fn initializer(
         ref self: TContractState,
         game_creator: ContractAddress,
@@ -46,7 +46,7 @@ pub trait IMinigameStarknetMockInit<TContractState> {
 }
 
 #[starknet::contract]
-pub mod minigame_starknet_mock {
+pub mod minigame_mock {
     use game_components_embeddable_game_standard::minigame::extensions::objectives::interface::{
         IMINIGAME_OBJECTIVES_ID, IMinigameObjectives, IMinigameObjectivesDetails,
     };
@@ -366,7 +366,7 @@ pub mod minigame_starknet_mock {
     }
 
     #[abi(embed_v0)]
-    impl GameMockImpl of super::IMinigameStarknetMock<ContractState> {
+    impl GameMockImpl of super::IMinigameMock<ContractState> {
         fn mint(
             ref self: ContractState,
             player_name: Option<felt252>,
@@ -474,7 +474,7 @@ pub mod minigame_starknet_mock {
     }
 
     #[abi(embed_v0)]
-    impl GameInitializerImpl of super::IMinigameStarknetMockInit<ContractState> {
+    impl GameInitializerImpl of super::IMinigameMockInit<ContractState> {
         fn initializer(
             ref self: ContractState,
             game_creator: ContractAddress,
