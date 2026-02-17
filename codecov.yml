@@ -1,7 +1,7 @@
 codecov:
   require_ci_to_pass: true
   notify:
-    # Must equal package count in .github/workflows/test.yml matrix
+    # Must equal package count in .github/workflows/main-ci.yml matrix
     # See AGENTS.md "CI Configuration" section when adding packages
     after_n_builds: 14
 
