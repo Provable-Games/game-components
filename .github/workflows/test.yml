@@ -128,11 +128,11 @@ jobs:
             fuzzer_runs: 32
           - package: game_components_embeddable_game_standard
             module: metagame
-            runner: ubuntu-latest
+            runner: ubuntu-latest-32
             fuzzer_runs: 256
           - package: game_components_embeddable_game_standard
             module: registry
-            runner: ubuntu-latest
+            runner: ubuntu-latest-32
             fuzzer_runs: 256
           # Metagame
           - package: game_components_metagame
