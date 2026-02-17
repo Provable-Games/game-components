@@ -10,10 +10,10 @@
 pub mod EntryFeeComponent {
     use core::num::traits::Zero;
     use game_components_interfaces::entry_fee::{IENTRY_FEE_ID, IEntryFee};
-    use game_components_interfaces::entry_fee_extension::{
+    use interfaces::entry_fee_extension::{
         IENTRY_FEE_EXTENSION_ID, IEntryFeeExtensionDispatcher, IEntryFeeExtensionDispatcherTrait,
     };
-    use game_components_interfaces::extension::ExtensionConfig;
+    use interfaces::extension::ExtensionConfig;
     use openzeppelin_interfaces::erc20::{IERC20Dispatcher, IERC20DispatcherTrait};
     use openzeppelin_interfaces::introspection::{ISRC5Dispatcher, ISRC5DispatcherTrait};
     use openzeppelin_introspection::src5::SRC5Component;

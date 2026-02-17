@@ -11,9 +11,9 @@
 pub mod PrizeComponent {
     use core::num::traits::Zero;
     use core::poseidon::poseidon_hash_span;
-    use game_components_interfaces::extension::ExtensionConfig;
     use game_components_interfaces::prize::{IPRIZE_ID, IPrize};
-    use game_components_interfaces::prize_extension::{
+    use interfaces::extension::ExtensionConfig;
+    use interfaces::prize_extension::{
         IPRIZE_EXTENSION_ID, IPrizeExtensionDispatcher, IPrizeExtensionDispatcherTrait,
     };
     use openzeppelin_interfaces::erc20::{IERC20Dispatcher, IERC20DispatcherTrait};

@@ -11,17 +11,13 @@ pub use structs::{
 // Budokan-extracted interfaces
 pub mod distribution;
 pub mod entry_fee;
-pub mod entry_fee_extension;
 pub mod entry_requirement;
-pub mod entry_validator;
-pub mod extension;
 pub mod leaderboard;
 
 // Interface modules
 pub mod metagame;
 pub mod minigame;
 pub mod prize;
-pub mod prize_extension;
 pub mod registration;
 pub mod registry;
 pub mod token;
@@ -36,25 +32,11 @@ pub use entry_fee::{
     IEntryFeeDispatcherTrait,
 };
 
-// Entry Fee Extension
-pub use entry_fee_extension::{
-    IENTRY_FEE_EXTENSION_ID, IEntryFeeExtension, IEntryFeeExtensionDispatcher,
-    IEntryFeeExtensionDispatcherTrait,
-};
-
 // Entry Requirement
 pub use entry_requirement::{
     EntryRequirement, EntryRequirementType, IEntryRequirement, IEntryRequirementDispatcher,
     IEntryRequirementDispatcherTrait, NFTQualification, QualificationEntries, QualificationProof,
 };
-
-// Entry Validator
-pub use entry_validator::{
-    IENTRY_VALIDATOR_ID, IEntryValidator, IEntryValidatorDispatcher, IEntryValidatorDispatcherTrait,
-};
-
-// Extension
-pub use extension::ExtensionConfig;
 
 // Leaderboard
 pub use leaderboard::{
@@ -95,11 +77,6 @@ pub use minigame::{
 pub use prize::{
     ERC20Data, ERC721Data, IPrize, IPrizeDispatcher, IPrizeDispatcherTrait, Prize, PrizeConfig,
     PrizeData, PrizeType, TokenTypeData,
-};
-
-// Prize Extension
-pub use prize_extension::{
-    IPRIZE_EXTENSION_ID, IPrizeExtension, IPrizeExtensionDispatcher, IPrizeExtensionDispatcherTrait,
 };
 
 // Registration

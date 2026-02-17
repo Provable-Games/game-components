@@ -1,4 +1,4 @@
-use game_components_interfaces::extension::ExtensionConfig;
+use interfaces::extension::ExtensionConfig;
 use starknet::ContractAddress;
 
 pub const IENTRY_FEE_ID: felt252 =
