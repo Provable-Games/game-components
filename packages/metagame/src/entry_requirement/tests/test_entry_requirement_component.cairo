@@ -81,7 +81,7 @@ fn test_get_entry_requirement_returns_none_after_explicit_set() {
 #[test]
 fn test_set_and_get_token_requirement() {
     let mock = deploy_entry_requirement_mock();
-    let token_addr = make_address(0xABC);
+    let token_addr = deploy_erc721_mock();
     let context_id: u64 = 42;
 
     let req = EntryRequirement {
@@ -172,7 +172,7 @@ fn test_set_and_get_extension_requirement() {
 #[test]
 fn test_set_entry_requirement_to_none() {
     let mock = deploy_entry_requirement_mock();
-    let token_addr = make_address(0xABC);
+    let token_addr = deploy_erc721_mock();
     let context_id: u64 = 42;
 
     // First set a requirement
@@ -194,14 +194,14 @@ fn test_set_requirement_overwrites_previous() {
     let context_id: u64 = 10;
 
     // Set token requirement
-    let token_addr = make_address(0xABC);
+    let token_addr = deploy_erc721_mock();
     let req1 = EntryRequirement {
         entry_limit: 10, entry_requirement_type: EntryRequirementType::token(token_addr),
     };
     mock.set_entry_requirement(context_id, Option::Some(req1));
 
     // Overwrite with different token requirement
-    let token_addr2 = make_address(0xDEF);
+    let token_addr2 = deploy_erc721_mock();
     let req2 = EntryRequirement {
         entry_limit: 20, entry_requirement_type: EntryRequirementType::token(token_addr2),
     };
@@ -222,7 +222,7 @@ fn test_set_requirement_overwrites_previous() {
 fn test_different_context_ids_are_independent() {
     let mock = deploy_entry_requirement_mock();
 
-    let token_addr = make_address(0xAAA);
+    let token_addr = deploy_erc721_mock();
     let req = EntryRequirement {
         entry_limit: 5, entry_requirement_type: EntryRequirementType::token(token_addr),
     };
@@ -255,7 +255,7 @@ fn test_explicitly_cleared_context_is_none() {
     let mock = deploy_entry_requirement_mock();
 
     // Set then clear context 1
-    let token_addr = make_address(0xAAA);
+    let token_addr = deploy_erc721_mock();
     let req = EntryRequirement {
         entry_limit: 5, entry_requirement_type: EntryRequirementType::token(token_addr),
     };

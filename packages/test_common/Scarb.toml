@@ -14,6 +14,7 @@ game_components_interfaces = { path = "../interfaces" }
 game_components_embeddable_game_standard = { path = "../embeddable_game_standard" }
 game_components_metagame = { path = "../metagame" }
 game_components_utilities = { path = "../utilities" }
+interfaces = { git = "https://github.com/Provable-Games/metagame_extensions.git", branch = "next" }
 
 [lib]
 
