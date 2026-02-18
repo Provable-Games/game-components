@@ -117,6 +117,13 @@ pub mod EntryRequirementComponent {
                 Option::Some(req) => {
                     let (req_type, entry_limit) = match req.entry_requirement_type {
                         EntryRequirementType::token(token) => {
+                            let src5 = ISRC5Dispatcher { contract_address: token };
+                            let display_address: felt252 = token.into();
+                            assert!(
+                                src5.supports_interface(IERC721_ID),
+                                "EntryRequirement: Token {} does not support IERC721",
+                                display_address,
+                            );
                             self.EntryRequirement_token.entry(context_id).write(token);
                             (REQ_TYPE_TOKEN, req.entry_limit)
                         },
