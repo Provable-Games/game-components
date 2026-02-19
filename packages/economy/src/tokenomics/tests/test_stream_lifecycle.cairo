@@ -46,6 +46,7 @@ fn deploy_stream_token_with_multiple_orders() -> StreamTokenSetup {
         stream_token_amount: 1000_u128 * 1_000_000_000_000_000_000,
         paired_token_amount: 100_u128 * 1_000_000_000_000_000_000,
         min_liquidity: 1,
+        liquidity_owner: OWNER(),
     };
 
     // Create 2 orders with SAME buy_token and fee to trigger increase_sell_amount
@@ -102,6 +103,26 @@ fn deploy_stream_token_with_multiple_orders() -> StreamTokenSetup {
 // Full Lifecycle Tests with Mocked Ekubo
 // ============================================================================
 
+// Mock NFT address returned by get_nft_address
+fn MOCK_NFT() -> starknet::ContractAddress {
+    'MOCK_NFT'.try_into().unwrap()
+}
+
+/// Set up mocks for the LP NFT transfer (get_nft_address + transfer_from)
+fn mock_nft_transfer(mock_positions: starknet::ContractAddress) {
+    start_mock_call(mock_positions, selector!("get_nft_address"), MOCK_NFT());
+    start_mock_call(mock_positions, selector!("transfer_from"), ());
+    start_mock_call(MOCK_NFT(), selector!("transferFrom"), ());
+    start_mock_call(MOCK_NFT(), selector!("transfer_from"), ());
+}
+
+fn stop_mock_nft_transfer(mock_positions: starknet::ContractAddress) {
+    stop_mock_call(mock_positions, selector!("get_nft_address"));
+    stop_mock_call(mock_positions, selector!("transfer_from"));
+    stop_mock_call(MOCK_NFT(), selector!("transferFrom"));
+    stop_mock_call(MOCK_NFT(), selector!("transfer_from"));
+}
+
 /// Test provide_initial_liquidity succeeds with mocked Ekubo calls
 #[test]
 fn test_provide_initial_liquidity_with_mocks() {
@@ -121,6 +142,9 @@ fn test_provide_initial_liquidity_with_mocks() {
         selector!("mint_and_deposit_and_clear_both"),
         (1_u64, 1000_u128, 500_u256, 500_u256),
     );
+
+    // Mock NFT transfer (get_nft_address + transfer_from)
+    mock_nft_transfer(mock_positions);
 
     // Verify initial state
     assert!(setup.token.get_deployment_state() == 0, "Should be state 0 after construction");
@@ -147,6 +171,7 @@ fn test_provide_initial_liquidity_with_mocks() {
     // Clean up mocks
     stop_mock_call(mock_core, selector!("initialize_pool"));
     stop_mock_call(mock_positions, selector!("mint_and_deposit_and_clear_both"));
+    stop_mock_nft_transfer(mock_positions);
 }
 
 /// Test full lifecycle: provide_initial_liquidity -> start_distributions
@@ -164,6 +189,7 @@ fn test_start_distributions_with_mocks() {
         selector!("mint_and_deposit_and_clear_both"),
         (1_u64, 1000_u128, 500_u256, 500_u256),
     );
+    mock_nft_transfer(mock_positions);
 
     // Mock Ekubo Positions mint_and_increase_sell_amount for start_distributions
     // Returns: (position_id: u64, sale_rate: u128)
@@ -194,6 +220,7 @@ fn test_start_distributions_with_mocks() {
     stop_mock_call(mock_core, selector!("initialize_pool"));
     stop_mock_call(mock_positions, selector!("mint_and_deposit_and_clear_both"));
     stop_mock_call(mock_positions, selector!("mint_and_increase_sell_amount"));
+    stop_mock_nft_transfer(mock_positions);
 }
 
 /// Test claim_distribution_proceeds with mocks
@@ -212,6 +239,7 @@ fn test_claim_distribution_proceeds_with_mocks() {
         (1_u64, 1000_u128, 500_u256, 500_u256),
     );
     start_mock_call(mock_positions, selector!("mint_and_increase_sell_amount"), (2_u64, 100_u128));
+    mock_nft_transfer(mock_positions);
 
     // Mock withdraw_proceeds_from_sale_to to return proceeds
     start_mock_call(mock_positions, selector!("withdraw_proceeds_from_sale_to"), 250_u128);
@@ -237,6 +265,7 @@ fn test_claim_distribution_proceeds_with_mocks() {
     stop_mock_call(mock_positions, selector!("mint_and_deposit_and_clear_both"));
     stop_mock_call(mock_positions, selector!("mint_and_increase_sell_amount"));
     stop_mock_call(mock_positions, selector!("withdraw_proceeds_from_sale_to"));
+    stop_mock_nft_transfer(mock_positions);
 }
 
 /// Test lifecycle emits correct events
@@ -253,6 +282,7 @@ fn test_lifecycle_events_with_mocks() {
         selector!("mint_and_deposit_and_clear_both"),
         (1_u64, 1000_u128, 500_u256, 500_u256),
     );
+    mock_nft_transfer(mock_positions);
 
     let setup_dispatcher = IStreamTokenSetupDispatcher { contract_address: setup.token_address };
 
@@ -277,8 +307,24 @@ fn test_lifecycle_events_with_mocks() {
             ],
         );
 
+    // Verify LiquidityPositionTransferred event
+    spy
+        .assert_emitted(
+            @array![
+                (
+                    setup.token_address,
+                    StreamComponent::Event::LiquidityPositionTransferred(
+                        StreamComponent::LiquidityPositionTransferred {
+                            position_id: 1, owner: OWNER(),
+                        },
+                    ),
+                ),
+            ],
+        );
+
     stop_mock_call(mock_core, selector!("initialize_pool"));
     stop_mock_call(mock_positions, selector!("mint_and_deposit_and_clear_both"));
+    stop_mock_nft_transfer(mock_positions);
 }
 
 /// Test DistributionStarted event
@@ -296,6 +342,7 @@ fn test_distribution_started_event_with_mocks() {
         (1_u64, 1000_u128, 500_u256, 500_u256),
     );
     start_mock_call(mock_positions, selector!("mint_and_increase_sell_amount"), (2_u64, 100_u128));
+    mock_nft_transfer(mock_positions);
 
     let setup_dispatcher = IStreamTokenSetupDispatcher { contract_address: setup.token_address };
 
@@ -335,6 +382,7 @@ fn test_distribution_started_event_with_mocks() {
     stop_mock_call(mock_core, selector!("initialize_pool"));
     stop_mock_call(mock_positions, selector!("mint_and_deposit_and_clear_both"));
     stop_mock_call(mock_positions, selector!("mint_and_increase_sell_amount"));
+    stop_mock_nft_transfer(mock_positions);
 }
 
 /// Test ProceedsClaimed event
@@ -353,6 +401,7 @@ fn test_proceeds_claimed_event_with_mocks() {
     );
     start_mock_call(mock_positions, selector!("mint_and_increase_sell_amount"), (2_u64, 100_u128));
     start_mock_call(mock_positions, selector!("withdraw_proceeds_from_sale_to"), 250_u128);
+    mock_nft_transfer(mock_positions);
 
     let setup_dispatcher = IStreamTokenSetupDispatcher { contract_address: setup.token_address };
 
@@ -384,6 +433,7 @@ fn test_proceeds_claimed_event_with_mocks() {
     stop_mock_call(mock_positions, selector!("mint_and_deposit_and_clear_both"));
     stop_mock_call(mock_positions, selector!("mint_and_increase_sell_amount"));
     stop_mock_call(mock_positions, selector!("withdraw_proceeds_from_sale_to"));
+    stop_mock_nft_transfer(mock_positions);
 }
 
 /// Test start_distributions with multiple orders sharing same buy_token/fee
@@ -402,6 +452,7 @@ fn test_start_distributions_multiple_orders_same_pool() {
         selector!("mint_and_deposit_and_clear_both"),
         (1_u64, 1000_u128, 500_u256, 500_u256),
     );
+    mock_nft_transfer(mock_positions);
 
     // Mock mint_and_increase_sell_amount for FIRST order (creates new position)
     // Returns: (position_id: u64, sale_rate: u128)
@@ -443,4 +494,5 @@ fn test_start_distributions_multiple_orders_same_pool() {
     stop_mock_call(mock_positions, selector!("mint_and_deposit_and_clear_both"));
     stop_mock_call(mock_positions, selector!("mint_and_increase_sell_amount"));
     stop_mock_call(mock_positions, selector!("increase_sell_amount"));
+    stop_mock_nft_transfer(mock_positions);
 }

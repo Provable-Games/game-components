@@ -102,6 +102,7 @@ fn deploy_stream_token() -> StreamTokenSetup {
         stream_token_amount: 1000_u128 * ERC20_UNIT,
         paired_token_amount: 100_u128 * ERC20_UNIT,
         min_liquidity: 1,
+        liquidity_owner: OWNER(),
     };
 
     // Distribution orders
@@ -165,6 +166,7 @@ fn deploy_stream_token_with_multiple_orders() -> StreamTokenSetup {
         stream_token_amount: 1000_u128 * ERC20_UNIT,
         paired_token_amount: 100_u128 * ERC20_UNIT,
         min_liquidity: 1,
+        liquidity_owner: OWNER(),
     };
 
     // Multiple distribution orders

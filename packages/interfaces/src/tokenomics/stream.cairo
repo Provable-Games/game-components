@@ -57,6 +57,8 @@ pub struct LiquidityConfig {
     pub paired_token_amount: u128,
     /// Minimum liquidity to accept (slippage protection)
     pub min_liquidity: u128,
+    /// Address to receive the LP position NFT (can withdraw/manage liquidity)
+    pub liquidity_owner: ContractAddress,
 }
 
 /// Parameters for creating a new stream token
@@ -114,6 +116,9 @@ pub trait IStreamToken<TContractState> {
 
     /// Get the liquidity position ID
     fn get_liquidity_position_id(self: @TContractState) -> u64;
+
+    /// Get the liquidity owner address (receives LP position NFT)
+    fn get_liquidity_owner(self: @TContractState) -> ContractAddress;
 
     /// Get the primary pool ID (for the liquidity pool)
     fn get_pool_id(self: @TContractState) -> u256;

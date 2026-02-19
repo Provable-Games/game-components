@@ -65,6 +65,7 @@ fn default_create_params(paired_token: ContractAddress) -> CreateTokenParams {
         stream_token_amount: 1000_u128 * 1_000_000_000_000_000_000,
         paired_token_amount: 100_u128 * 1_000_000_000_000_000_000,
         min_liquidity: 1,
+        liquidity_owner: OWNER(),
     };
 
     let distribution_orders: Array<DistributionOrder> = array![
@@ -300,6 +301,7 @@ fn test_create_token_no_distribution_orders_fails() {
         stream_token_amount: 1000_u128 * 1_000_000_000_000_000_000,
         paired_token_amount: 100_u128 * 1_000_000_000_000_000_000,
         min_liquidity: 1,
+        liquidity_owner: OWNER(),
     };
 
     let empty_orders: Array<DistributionOrder> = array![];
@@ -339,6 +341,7 @@ fn test_create_token_too_many_orders_fails() {
         stream_token_amount: 1000_u128 * 1_000_000_000_000_000_000,
         paired_token_amount: 100_u128 * 1_000_000_000_000_000_000,
         min_liquidity: 1,
+        liquidity_owner: OWNER(),
     };
 
     // Create 11 orders (more than max 10)
@@ -394,6 +397,7 @@ fn test_create_token_supply_too_low_fails() {
         stream_token_amount: 1000_u128 * 1_000_000_000_000_000_000,
         paired_token_amount: 100_u128 * 1_000_000_000_000_000_000,
         min_liquidity: 1,
+        liquidity_owner: OWNER(),
     };
 
     let distribution_orders: Array<DistributionOrder> = array![
@@ -541,6 +545,7 @@ fn create_params_with_premints(
         stream_token_amount: 1000_u128 * 1_000_000_000_000_000_000,
         paired_token_amount: 100_u128 * 1_000_000_000_000_000_000,
         min_liquidity: 1,
+        liquidity_owner: OWNER(),
     };
 
     let distribution_orders: Array<DistributionOrder> = array![
@@ -596,6 +601,7 @@ fn test_create_token_with_premints_supply_too_low_fails() {
         stream_token_amount: 1000_u128 * 1_000_000_000_000_000_000, // 1000 tokens
         paired_token_amount: 100_u128 * 1_000_000_000_000_000_000,
         min_liquidity: 1,
+        liquidity_owner: OWNER(),
     };
 
     let distribution_orders: Array<DistributionOrder> = array![

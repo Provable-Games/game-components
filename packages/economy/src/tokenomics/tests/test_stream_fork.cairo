@@ -47,6 +47,7 @@ fn deploy_stream_token_mainnet() -> (ContractAddress, IStreamTokenDispatcher, IE
         stream_token_amount: 1000 * TOKEN_UNIT,
         paired_token_amount: 100 * TOKEN_UNIT,
         min_liquidity: 1,
+        liquidity_owner: OWNER(),
     };
 
     let distribution_orders: Array<DistributionOrder> = array![
@@ -103,6 +104,7 @@ fn deploy_stream_token_mainnet_with_premints(
         stream_token_amount: 1000 * TOKEN_UNIT,
         paired_token_amount: 100 * TOKEN_UNIT,
         min_liquidity: 1,
+        liquidity_owner: OWNER(),
     };
 
     let distribution_orders: Array<DistributionOrder> = array![

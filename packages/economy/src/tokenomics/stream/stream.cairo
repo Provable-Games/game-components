@@ -16,6 +16,7 @@ pub mod StreamComponent {
     use core::poseidon::PoseidonTrait;
     use ekubo::interfaces::core::{ICoreDispatcher, ICoreDispatcherTrait};
     use ekubo::interfaces::erc20::IERC20Dispatcher as EkuboIERC20Dispatcher;
+    use ekubo::interfaces::erc721::{IERC721Dispatcher, IERC721DispatcherTrait};
     use ekubo::interfaces::extensions::twamm::OrderKey;
     use ekubo::interfaces::positions::{IPositionsDispatcher, IPositionsDispatcherTrait};
     use ekubo::lens::token_registry::{ITokenRegistryDispatcher, ITokenRegistryDispatcherTrait};
@@ -55,6 +56,8 @@ pub mod StreamComponent {
         Stream_primary_min_liquidity: u128,
         /// Liquidity position ID
         Stream_liquidity_position_id: u64,
+        /// Liquidity owner (receives LP position NFT)
+        Stream_liquidity_owner: ContractAddress,
         /// Primary pool ID
         Stream_pool_id: u256,
         /// Distribution orders
@@ -72,6 +75,7 @@ pub mod StreamComponent {
     pub enum Event {
         PoolInitialized: PoolInitialized,
         LiquidityProvided: LiquidityProvided,
+        LiquidityPositionTransferred: LiquidityPositionTransferred,
         DistributionStarted: DistributionStarted,
         ProceedsClaimed: ProceedsClaimed,
         Preminted: Preminted,
@@ -100,6 +104,14 @@ pub mod StreamComponent {
         pub liquidity: u128,
         pub token0_amount: u256,
         pub token1_amount: u256,
+    }
+
+    /// Emitted when the LP position NFT is transferred to the liquidity owner
+    #[derive(Drop, starknet::Event)]
+    pub struct LiquidityPositionTransferred {
+        pub position_id: u64,
+        #[key]
+        pub owner: ContractAddress,
     }
 
     /// Emitted when a distribution order starts
@@ -235,6 +247,10 @@ pub mod StreamComponent {
             self.Stream_pool_id.read()
         }
 
+        fn get_liquidity_owner(self: @ComponentState<TContractState>) -> ContractAddress {
+            self.Stream_liquidity_owner.read()
+        }
+
         fn get_deployment_state(self: @ComponentState<TContractState>) -> u8 {
             self.Stream_deployment_state.read()
         }
@@ -289,6 +305,13 @@ pub mod StreamComponent {
                         token1_amount: token1_cleared,
                     },
                 );
+
+            // Transfer LP position NFT to liquidity owner
+            let nft_address = positions_dispatcher.get_nft_address();
+            let nft = IERC721Dispatcher { contract_address: nft_address };
+            let liquidity_owner = self.Stream_liquidity_owner.read();
+            nft.transfer_from(get_contract_address(), liquidity_owner, position_id.into());
+            self.emit(LiquidityPositionTransferred { position_id, owner: liquidity_owner });
 
             (position_id, liquidity, token0_cleared, token1_cleared)
         }
@@ -384,6 +407,10 @@ pub mod StreamComponent {
             );
             assert(liquidity_config.stream_token_amount > 0, Errors::STREAM_INVALID_STREAM_AMOUNT);
             assert(liquidity_config.paired_token_amount > 0, Errors::STREAM_INVALID_PAIRED_AMOUNT);
+            assert(
+                liquidity_config.liquidity_owner != zero_address,
+                Errors::STREAM_INVALID_LIQUIDITY_OWNER,
+            );
 
             // Store configuration
             self.Stream_factory.write(factory);
@@ -402,6 +429,7 @@ pub mod StreamComponent {
             self.Stream_primary_stream_token_amount.write(liquidity_config.stream_token_amount);
             self.Stream_primary_paired_token_amount.write(liquidity_config.paired_token_amount);
             self.Stream_primary_min_liquidity.write(liquidity_config.min_liquidity);
+            self.Stream_liquidity_owner.write(liquidity_config.liquidity_owner);
 
             // Store distribution orders
             let order_count: u32 = distribution_orders.len();

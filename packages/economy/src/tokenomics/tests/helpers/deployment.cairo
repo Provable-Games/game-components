@@ -125,6 +125,7 @@ pub fn deploy_stream_token() -> StreamTokenSetup {
         stream_token_amount: 1000_u128 * 1_000_000_000_000_000_000, // 1000 tokens
         paired_token_amount: 100_u128 * 1_000_000_000_000_000_000, // 100 tokens
         min_liquidity: 1,
+        liquidity_owner: OWNER(),
     };
 
     // Distribution order - sells stream tokens for buy_token
@@ -205,6 +206,7 @@ pub fn deploy_stream_token_with_premints(
         stream_token_amount: 1000_u128 * 1_000_000_000_000_000_000, // 1000 tokens
         paired_token_amount: 100_u128 * 1_000_000_000_000_000_000, // 100 tokens
         min_liquidity: 1,
+        liquidity_owner: OWNER(),
     };
 
     // Distribution order - sells stream tokens for buy_token
