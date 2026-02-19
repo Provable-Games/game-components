@@ -1,0 +1,312 @@
+name: Main CI
+
+on:
+  push:
+    branches: [main, next]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: main-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      packages: ${{ steps.filter.outputs.packages }}
+      infra_ci: ${{ steps.filter.outputs.infra_ci }}
+      general_ci: ${{ steps.filter.outputs.general_ci }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            packages:
+              - "packages/**"
+              - ".tool-versions"
+            infra_ci:
+              - ".github/workflows/**"
+              - ".github/prompts/**"
+              - ".github/pull_request_template.md"
+            general_ci:
+              - "codecov.yml"
+              - ".tool-versions"
+
+  infra-validate:
+    needs: changes
+    if: needs.changes.outputs.infra_ci == 'true' || needs.changes.outputs.general_ci == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Validate workflow YAML
+        run: |
+          YAML_CLI="yaml@2.8.1"
+          for file in .github/workflows/*.yml .github/workflows/*.yaml; do
+            [ -f "$file" ] || continue
+            npx -y "$YAML_CLI" valid < "$file"
+          done
+
+          if [ -f codecov.yml ]; then
+            npx -y "$YAML_CLI" valid < codecov.yml
+          fi
+
+      - name: Validate package count matches codecov config
+        run: |
+          matrix_count=$(grep -cE '^\s+module:' .github/workflows/main-ci.yml)
+          codecov_count=$(grep 'after_n_builds:' codecov.yml | grep -oE '[0-9]+')
+
+          echo "Matrix modules: $matrix_count"
+          echo "Codecov after_n_builds: $codecov_count"
+
+          if [ "$matrix_count" != "$codecov_count" ]; then
+            echo "::error::Matrix has $matrix_count modules but codecov.yml expects $codecov_count builds"
+            echo "::error::Update codecov.yml after_n_builds to match module count"
+            exit 1
+          fi
+
+          echo "Configuration validated: $matrix_count modules"
+
+  lint:
+    needs: changes
+    if: needs.changes.outputs.packages == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup Scarb
+        uses: software-mansion/setup-scarb@v1
+        with:
+          tool-versions: .tool-versions
+          cache: false
+
+      - name: Scarb fmt
+        run: scarb fmt --check --workspace
+
+  setup:
+    needs: [changes, lint]
+    if: needs.changes.outputs.packages == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Extract tool versions
+        run: |
+          echo "SCARB_VERSION=$(grep '^scarb ' .tool-versions | awk '{print $2}')" >> "$GITHUB_ENV"
+          echo "FOUNDRY_VERSION=$(grep '^starknet-foundry ' .tool-versions | awk '{print $2}')" >> "$GITHUB_ENV"
+
+      - uses: software-mansion/setup-scarb@v1
+        with:
+          scarb-version: ${{ env.SCARB_VERSION }}
+          cache: false
+
+      - uses: foundry-rs/setup-snfoundry@v4
+        with:
+          starknet-foundry-version: ${{ env.FOUNDRY_VERSION }}
+
+      - name: Cache Scarb dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/scarb
+          key: ${{ runner.os }}-scarb-deps-${{ hashFiles('**/Scarb.toml', '**/Scarb.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-scarb-deps-
+
+      - name: Cache Cargo (snforge plugin + Scarb Rust deps)
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo
+          key: ${{ runner.os }}-cargo-snforge-${{ env.FOUNDRY_VERSION }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-snforge-
+
+      - name: Fetch dependencies
+        run: scarb fetch
+
+      - name: Warm snforge plugin cache
+        run: snforge --version
+
+  test:
+    name: test (${{ matrix.module }})
+    needs: setup
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 10
+    strategy:
+      fail-fast: true
+      matrix:
+        # NOTE: When adding/removing modules, also update:
+        #   - codecov.yml: after_n_builds must equal module count
+        #   - AGENTS.md: CI Configuration section
+        include:
+          # Embeddable Game Standard
+          - package: game_components_embeddable_game_standard
+            module: token
+            runner: ubuntu-latest-32
+            fuzzer_runs: 32
+          - package: game_components_embeddable_game_standard
+            module: minigame
+            runner: ubuntu-latest-32
+            fuzzer_runs: 32
+          - package: game_components_embeddable_game_standard
+            module: metagame
+            runner: ubuntu-latest-32
+            fuzzer_runs: 256
+          - package: game_components_embeddable_game_standard
+            module: registry
+            runner: ubuntu-latest-32
+            fuzzer_runs: 256
+          # Metagame
+          - package: game_components_metagame
+            module: leaderboard
+            runner: ubuntu-latest-4
+            fuzzer_runs: 256
+          - package: game_components_metagame
+            module: registration
+            runner: ubuntu-latest-4
+            fuzzer_runs: 256
+          - package: game_components_metagame
+            module: entry_requirement
+            runner: ubuntu-latest-4
+            fuzzer_runs: 256
+          - package: game_components_metagame
+            module: entry_fee
+            runner: ubuntu-latest-4
+            fuzzer_runs: 256
+          - package: game_components_metagame
+            module: prize
+            runner: ubuntu-latest-4
+            fuzzer_runs: 256
+          # Economy
+          - package: game_components_economy
+            module: tokenomics
+            runner: ubuntu-latest-4
+            fuzzer_runs: 256
+          # Utilities
+          - package: game_components_utilities
+            module: math
+            runner: ubuntu-latest-4
+            fuzzer_runs: 256
+          - package: game_components_utilities
+            module: distribution
+            runner: ubuntu-latest-4
+            fuzzer_runs: 256
+          - package: game_components_utilities
+            module: utils
+            runner: ubuntu-latest-4
+            fuzzer_runs: 256
+          # Presets (standalone package, no module filter)
+          - package: game_components_presets
+            module: presets
+            runner: ubuntu-latest-4
+            fuzzer_runs: 256
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Extract tool versions
+        run: |
+          echo "SCARB_VERSION=$(grep '^scarb ' .tool-versions | awk '{print $2}')" >> "$GITHUB_ENV"
+          echo "FOUNDRY_VERSION=$(grep '^starknet-foundry ' .tool-versions | awk '{print $2}')" >> "$GITHUB_ENV"
+
+      - uses: software-mansion/setup-scarb@v1
+        with:
+          scarb-version: ${{ env.SCARB_VERSION }}
+          cache: false
+
+      - uses: foundry-rs/setup-snfoundry@v4
+        with:
+          starknet-foundry-version: ${{ env.FOUNDRY_VERSION }}
+
+      - name: Cache Scarb dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/scarb
+          key: ${{ runner.os }}-scarb-deps-${{ hashFiles('**/Scarb.toml', '**/Scarb.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-scarb-deps-
+
+      - name: Cache Cargo (snforge plugin)
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo
+          key: ${{ runner.os }}-cargo-snforge-${{ env.FOUNDRY_VERSION }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-snforge-
+
+      - name: Cache tools
+        uses: actions/cache@v4
+        id: cache-tools
+        with:
+          path: |
+            ~/.local/bin/cairo-coverage
+            ~/.local/bin/universal-sierra-compiler
+          key: ${{ runner.os }}-tools-cairo-coverage-universal-sierra-compiler-v1
+
+      - name: Install tools
+        if: steps.cache-tools.outputs.cache-hit != 'true'
+        run: |
+          (curl -L https://raw.githubusercontent.com/software-mansion/cairo-coverage/main/scripts/install.sh | sh) &
+          (curl -L https://raw.githubusercontent.com/software-mansion/universal-sierra-compiler/master/scripts/install.sh | sh) &
+          wait
+
+      - name: Cache compiled packages
+        uses: actions/cache@v4
+        with:
+          path: target/
+          key: ${{ runner.os }}-target-${{ matrix.package }}-${{ matrix.module }}-${{ env.SCARB_VERSION }}-${{ hashFiles('packages/**/*.cairo', '**/Scarb.toml', '**/Scarb.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-target-${{ matrix.package }}-${{ matrix.module }}-${{ env.SCARB_VERSION }}-
+
+      - name: Run tests with coverage
+        run: |
+          if [ "${{ matrix.package }}" = "game_components_${{ matrix.module }}" ]; then
+            snforge test -p ${{ matrix.package }} --fuzzer-runs ${{ matrix.fuzzer_runs }} --coverage
+          else
+            snforge test -p ${{ matrix.package }} "::${{ matrix.module }}::" --fuzzer-runs ${{ matrix.fuzzer_runs }} --coverage
+          fi
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          files: ./coverage.lcov
+          flags: ${{ matrix.module }}
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+  main-ci:
+    needs:
+      - changes
+      - infra-validate
+      - lint
+      - setup
+      - test
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Evaluate results
+        env:
+          NEEDS_JSON: ${{ toJson(needs) }}
+        run: |
+          FAILED=$(echo "$NEEDS_JSON" | jq -r '
+            to_entries[]
+            | select(.value.result == "failure" or .value.result == "cancelled")
+            | .key
+          ')
+
+          if [ -n "$FAILED" ]; then
+            echo "::error::Failing jobs:"
+            echo "$FAILED"
+            exit 1
+          fi
+
+          echo "All required jobs passed or were skipped"
