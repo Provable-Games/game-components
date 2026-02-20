@@ -12,7 +12,8 @@ pub mod EntryRequirementComponent {
     use core::poseidon::poseidon_hash_span;
     use game_components_interfaces::entry_requirement::{IENTRY_REQUIREMENT_ID, IEntryRequirement};
     use interfaces::entry_requirement_extension::{
-        IENTRY_REQUIREMENT_EXTENSION_ID, IEntryValidatorDispatcher, IEntryValidatorDispatcherTrait,
+        IENTRY_REQUIREMENT_EXTENSION_ID, IEntryRequirementExtensionDispatcher,
+        IEntryRequirementExtensionDispatcherTrait,
     };
     use openzeppelin_interfaces::erc721::{IERC721Dispatcher, IERC721DispatcherTrait, IERC721_ID};
     use openzeppelin_interfaces::introspection::{ISRC5Dispatcher, ISRC5DispatcherTrait};
@@ -140,7 +141,7 @@ pub mod EntryRequirementComponent {
                             let display_address: felt252 = config.address.into();
                             assert!(
                                 src5.supports_interface(IENTRY_REQUIREMENT_EXTENSION_ID),
-                                "EntryRequirement: Extension {} does not support IEntryValidator",
+                                "EntryRequirement: Extension {} does not support IEntryRequirementExtension",
                                 display_address,
                             );
                             self
@@ -298,7 +299,7 @@ pub mod EntryRequirementComponent {
                             "EntryRequirement: Provided qualification proof is not of type 'Extension'",
                         ),
                     };
-                    let entry_validator_dispatcher = IEntryValidatorDispatcher {
+                    let entry_validator_dispatcher = IEntryRequirementExtensionDispatcher {
                         contract_address: extension_config.address,
                     };
                     let caller_address = get_caller_address();
@@ -315,7 +316,7 @@ pub mod EntryRequirementComponent {
         }
 
         /// Validates entry requirement configuration at creation time.
-        /// Checks SRC5 interfaces (ERC721 for token, IEntryValidator for extension).
+        /// Checks SRC5 interfaces (ERC721 for token, IEntryRequirementExtension for extension).
         fn assert_valid_entry_requirement(
             self: @ComponentState<TContractState>, entry_requirement: EntryRequirement,
         ) {
@@ -340,7 +341,7 @@ pub mod EntryRequirementComponent {
                     let display_address: felt252 = extension_address.into();
                     assert!(
                         src5_dispatcher.supports_interface(IENTRY_REQUIREMENT_EXTENSION_ID),
-                        "EntryRequirement: Extension address {} does not support IEntryValidator interface",
+                        "EntryRequirement: Extension address {} does not support IEntryRequirementExtension interface",
                         display_address,
                     );
                 },
@@ -370,7 +371,7 @@ pub mod EntryRequirementComponent {
             match entry_requirement.entry_requirement_type {
                 EntryRequirementType::extension(extension_config) => {
                     let extension_address = extension_config.address;
-                    let entry_validator_dispatcher = IEntryValidatorDispatcher {
+                    let entry_validator_dispatcher = IEntryRequirementExtensionDispatcher {
                         contract_address: extension_address,
                     };
                     let display_extension_address: felt252 = extension_address.into();

@@ -708,7 +708,7 @@ fn test_assert_valid_entry_requirement_extension_valid() {
         ),
     };
 
-    // Should not panic - EntryValidatorMock supports IEntryValidator
+    // Should not panic - EntryValidatorMock supports IEntryRequirementExtension
     mock.assert_valid_entry_requirement(req);
 }
 
@@ -732,7 +732,7 @@ fn test_assert_valid_entry_requirement_extension_zero_address() {
 #[should_panic(expected: "EntryRequirement: Extension address")]
 fn test_assert_valid_entry_requirement_extension_not_entry_validator() {
     let mock = deploy_entry_requirement_mock();
-    // Deploy an ERC721 mock (doesn't support IEntryValidator)
+    // Deploy an ERC721 mock (doesn't support IEntryRequirementExtension)
     let erc721_addr = deploy_erc721_mock();
 
     let req = EntryRequirement {
