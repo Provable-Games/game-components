@@ -12,7 +12,8 @@ pub mod EntryRequirementComponent {
     use core::poseidon::poseidon_hash_span;
     use game_components_interfaces::entry_requirement::{IENTRY_REQUIREMENT_ID, IEntryRequirement};
     use interfaces::entry_requirement_extension::{
-        IENTRY_REQUIREMENT_EXTENSION_ID, IEntryRequirementExtensionDispatcher, IEntryRequirementExtensionDispatcherTrait,
+        IENTRY_REQUIREMENT_EXTENSION_ID, IEntryRequirementExtensionDispatcher,
+        IEntryRequirementExtensionDispatcherTrait,
     };
     use openzeppelin_interfaces::erc721::{IERC721Dispatcher, IERC721DispatcherTrait, IERC721_ID};
     use openzeppelin_interfaces::introspection::{ISRC5Dispatcher, ISRC5DispatcherTrait};
