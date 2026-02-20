@@ -2018,3 +2018,335 @@ fn test_reconfigure_with_entries() {
     assert!(config.max_entries == 2, "Max entries should be updated");
     assert!(config.ascending == true, "Ascending should be updated");
 }
+
+// ==============================================================================
+// AUTO-POSITIONED SUBMIT_SCORE TESTS
+// ==============================================================================
+// Tests for the new submit_score(context_id, token_id, score) method that
+// auto-finds the correct position (vs submit_score_at which requires explicit position).
+
+// Test AUTO-01: Submit score to empty leaderboard auto-positions at 1
+#[test]
+fn test_auto_submit_score_empty_leaderboard() {
+    let (leaderboard, admin) = deploy_mock_leaderboard();
+    let (game_address, game_admin) = deploy_mock_game_details();
+
+    configure_tournament_with_game(admin, TOURNAMENT_1, 10, false, game_address);
+    game_admin.set_score(1, 100);
+
+    let result = leaderboard.submit_score(TOURNAMENT_1, 1, 100);
+
+    match result {
+        LeaderboardResult::Success => {},
+        _ => panic!("Should succeed in empty leaderboard"),
+    }
+
+    assert!(leaderboard.get_leaderboard_length(TOURNAMENT_1) == 1, "Should have 1 entry");
+    let entries = leaderboard.get_entries(TOURNAMENT_1);
+    assert!(*entries.at(0).id == 1, "Entry should be token 1");
+    assert!(*entries.at(0).score == 100, "Score should be 100");
+}
+
+// Test AUTO-02: Multiple auto-submissions maintain correct descending order
+#[test]
+fn test_auto_submit_score_descending_order() {
+    let (leaderboard, admin) = deploy_mock_leaderboard();
+    let (game_address, game_admin) = deploy_mock_game_details();
+
+    configure_tournament_with_game(admin, TOURNAMENT_1, 10, false, game_address);
+
+    game_admin.set_score(1, 80);
+    game_admin.set_score(2, 100);
+    game_admin.set_score(3, 90);
+
+    // Submit in arbitrary order - auto-positioning should sort them
+    let _ = leaderboard.submit_score(TOURNAMENT_1, 1, 80);
+    let _ = leaderboard.submit_score(TOURNAMENT_1, 2, 100);
+    let _ = leaderboard.submit_score(TOURNAMENT_1, 3, 90);
+
+    let entries = leaderboard.get_entries(TOURNAMENT_1);
+    assert!(entries.len() == 3, "Should have 3 entries");
+    assert!(*entries.at(0).score == 100, "First should be 100");
+    assert!(*entries.at(1).score == 90, "Second should be 90");
+    assert!(*entries.at(2).score == 80, "Third should be 80");
+}
+
+// Test AUTO-03: Auto-submit in ascending mode
+#[test]
+fn test_auto_submit_score_ascending_order() {
+    let (leaderboard, admin) = deploy_mock_leaderboard();
+    let (game_address, game_admin) = deploy_mock_game_details();
+
+    configure_tournament_with_game(admin, TOURNAMENT_1, 10, true, game_address);
+
+    game_admin.set_score(1, 30);
+    game_admin.set_score(2, 10);
+    game_admin.set_score(3, 20);
+
+    let _ = leaderboard.submit_score(TOURNAMENT_1, 1, 30);
+    let _ = leaderboard.submit_score(TOURNAMENT_1, 2, 10);
+    let _ = leaderboard.submit_score(TOURNAMENT_1, 3, 20);
+
+    let entries = leaderboard.get_entries(TOURNAMENT_1);
+    assert!(entries.len() == 3, "Should have 3 entries");
+    assert!(*entries.at(0).score == 10, "First should be 10 (lowest)");
+    assert!(*entries.at(1).score == 20, "Second should be 20");
+    assert!(*entries.at(2).score == 30, "Third should be 30");
+}
+
+// Test AUTO-04: Auto-submit displaces last entry when full
+#[test]
+fn test_auto_submit_score_displaces_last() {
+    let (leaderboard, admin) = deploy_mock_leaderboard();
+    let (game_address, game_admin) = deploy_mock_game_details();
+
+    configure_tournament_with_game(admin, TOURNAMENT_1, 3, false, game_address);
+
+    game_admin.set_score(1, 100);
+    game_admin.set_score(2, 80);
+    game_admin.set_score(3, 60);
+    game_admin.set_score(4, 90);
+
+    // Fill leaderboard
+    let _ = leaderboard.submit_score(TOURNAMENT_1, 1, 100);
+    let _ = leaderboard.submit_score(TOURNAMENT_1, 2, 80);
+    let _ = leaderboard.submit_score(TOURNAMENT_1, 3, 60);
+
+    assert!(leaderboard.is_full(TOURNAMENT_1), "Should be full");
+
+    // Submit higher score - should displace token 3 (score 60)
+    let result = leaderboard.submit_score(TOURNAMENT_1, 4, 90);
+
+    match result {
+        LeaderboardResult::Success => {},
+        _ => panic!("Should succeed and displace last"),
+    }
+
+    let entries = leaderboard.get_entries(TOURNAMENT_1);
+    assert!(entries.len() == 3, "Should still have 3 entries");
+    assert!(*entries.at(0).score == 100, "First should be 100");
+    assert!(*entries.at(1).score == 90, "Second should be 90");
+    assert!(*entries.at(2).score == 80, "Third should be 80 (60 dropped)");
+
+    let pos3 = leaderboard.get_position(TOURNAMENT_1, 3);
+    assert!(pos3 == Option::None, "Token 3 should have been displaced");
+}
+
+// Test AUTO-05: Auto-submit duplicate entry fails
+#[test]
+fn test_auto_submit_score_duplicate_fails() {
+    let (leaderboard, admin) = deploy_mock_leaderboard();
+    let (game_address, game_admin) = deploy_mock_game_details();
+
+    configure_tournament_with_game(admin, TOURNAMENT_1, 10, false, game_address);
+    game_admin.set_score(1, 100);
+
+    let _ = leaderboard.submit_score(TOURNAMENT_1, 1, 100);
+
+    // Duplicate
+    let result = leaderboard.submit_score(TOURNAMENT_1, 1, 150);
+
+    match result {
+        LeaderboardResult::DuplicateEntry => {},
+        _ => panic!("Duplicate auto-submit should fail"),
+    }
+}
+
+// Test AUTO-06: Auto-submit with tiebreaker (lower ID wins)
+#[test]
+fn test_auto_submit_score_tiebreaker() {
+    let (leaderboard, admin) = deploy_mock_leaderboard();
+    let (game_address, game_admin) = deploy_mock_game_details();
+
+    configure_tournament_with_game(admin, TOURNAMENT_1, 10, false, game_address);
+
+    game_admin.set_score(5, 100);
+    game_admin.set_score(1, 100);
+
+    // Submit higher ID first
+    let _ = leaderboard.submit_score(TOURNAMENT_1, 5, 100);
+    // Submit lower ID - should auto-position before ID 5
+    let _ = leaderboard.submit_score(TOURNAMENT_1, 1, 100);
+
+    let entries = leaderboard.get_entries(TOURNAMENT_1);
+    assert!(*entries.at(0).id == 1, "ID 1 should be first (lower ID wins tiebreaker)");
+    assert!(*entries.at(1).id == 5, "ID 5 should be second");
+}
+
+// Test AUTO-07: Auto-submit to single-entry leaderboard
+#[test]
+fn test_auto_submit_score_single_entry_leaderboard() {
+    let (leaderboard, admin) = deploy_mock_leaderboard();
+    let (game_address, game_admin) = deploy_mock_game_details();
+
+    configure_tournament_with_game(admin, TOURNAMENT_1, 1, false, game_address);
+
+    game_admin.set_score(1, 50);
+    game_admin.set_score(2, 100);
+
+    let _ = leaderboard.submit_score(TOURNAMENT_1, 1, 50);
+    assert!(leaderboard.is_full(TOURNAMENT_1), "Should be full");
+
+    // Higher score should displace
+    let result = leaderboard.submit_score(TOURNAMENT_1, 2, 100);
+
+    match result {
+        LeaderboardResult::Success => {},
+        _ => panic!("Higher score should displace in single-entry leaderboard"),
+    }
+
+    let entries = leaderboard.get_entries(TOURNAMENT_1);
+    assert!(entries.len() == 1, "Should have 1 entry");
+    assert!(*entries.at(0).id == 2, "Token 2 should be the entry");
+}
+
+// Test AUTO-08: Auto-submit many entries builds correct leaderboard
+#[test]
+fn test_auto_submit_score_many_entries() {
+    let (leaderboard, admin) = deploy_mock_leaderboard();
+    let (game_address, game_admin) = deploy_mock_game_details();
+
+    configure_tournament_with_game(admin, TOURNAMENT_1, 10, false, game_address);
+
+    // Submit 8 entries in reverse score order
+    let mut i: u64 = 1;
+    loop {
+        if i > 8 {
+            break;
+        }
+        let score: u64 = i * 10; // 10, 20, 30, ..., 80
+        let token_id: felt252 = i.into();
+        game_admin.set_score(token_id, score);
+        let _ = leaderboard.submit_score(TOURNAMENT_1, token_id, score);
+        i += 1;
+    }
+
+    let entries = leaderboard.get_entries(TOURNAMENT_1);
+    assert!(entries.len() == 8, "Should have 8 entries");
+    // Descending: 80, 70, 60, 50, 40, 30, 20, 10
+    assert!(*entries.at(0).score == 80, "First should be 80");
+    assert!(*entries.at(7).score == 10, "Last should be 10");
+}
+
+// Test AUTO-09: Auto-submit with score that doesn't qualify
+#[test]
+fn test_auto_submit_score_doesnt_qualify() {
+    let (leaderboard, admin) = deploy_mock_leaderboard();
+    let (game_address, game_admin) = deploy_mock_game_details();
+
+    configure_tournament_with_game(admin, TOURNAMENT_1, 3, false, game_address);
+
+    game_admin.set_score(1, 100);
+    game_admin.set_score(2, 80);
+    game_admin.set_score(3, 60);
+    game_admin.set_score(4, 50); // Lower than all
+
+    let _ = leaderboard.submit_score(TOURNAMENT_1, 1, 100);
+    let _ = leaderboard.submit_score(TOURNAMENT_1, 2, 80);
+    let _ = leaderboard.submit_score(TOURNAMENT_1, 3, 60);
+
+    // Score 50 doesn't qualify when full leaderboard has min 60
+    let result = leaderboard.submit_score(TOURNAMENT_1, 4, 50);
+
+    // Should not succeed - low score doesn't make the leaderboard
+    match result {
+        LeaderboardResult::Success => panic!("Low score should not succeed"),
+        _ => {},
+    }
+
+    // Token 4 should not be in the leaderboard
+    let pos = leaderboard.get_position(TOURNAMENT_1, 4);
+    assert!(pos == Option::None, "Token 4 should not be in leaderboard");
+    assert!(leaderboard.get_leaderboard_length(TOURNAMENT_1) == 3, "Should still have 3 entries");
+}
+
+// Test AUTO-10: Auto-submit ascending mode displacement
+#[test]
+fn test_auto_submit_score_ascending_displacement() {
+    let (leaderboard, admin) = deploy_mock_leaderboard();
+    let (game_address, game_admin) = deploy_mock_game_details();
+
+    configure_tournament_with_game(admin, TOURNAMENT_1, 3, true, game_address);
+
+    game_admin.set_score(1, 10);
+    game_admin.set_score(2, 20);
+    game_admin.set_score(3, 30);
+    game_admin.set_score(4, 15);
+
+    // Fill: 10, 20, 30 (ascending)
+    let _ = leaderboard.submit_score(TOURNAMENT_1, 1, 10);
+    let _ = leaderboard.submit_score(TOURNAMENT_1, 2, 20);
+    let _ = leaderboard.submit_score(TOURNAMENT_1, 3, 30);
+
+    // 15 should displace 30 (worst in ascending mode)
+    let result = leaderboard.submit_score(TOURNAMENT_1, 4, 15);
+
+    match result {
+        LeaderboardResult::Success => {},
+        _ => panic!("Should succeed in ascending displacement"),
+    }
+
+    let entries = leaderboard.get_entries(TOURNAMENT_1);
+    assert!(entries.len() == 3, "Should have 3 entries");
+    assert!(*entries.at(0).score == 10, "First should be 10");
+    assert!(*entries.at(1).score == 15, "Second should be 15");
+    assert!(*entries.at(2).score == 20, "Third should be 20 (30 displaced)");
+}
+
+// Test AUTO-11: Auto-submit positions correctly verified via get_position
+#[test]
+fn test_auto_submit_score_verify_positions() {
+    let (leaderboard, admin) = deploy_mock_leaderboard();
+    let (game_address, game_admin) = deploy_mock_game_details();
+
+    configure_tournament_with_game(admin, TOURNAMENT_1, 10, false, game_address);
+
+    game_admin.set_score(1, 50);
+    game_admin.set_score(2, 100);
+    game_admin.set_score(3, 75);
+
+    let _ = leaderboard.submit_score(TOURNAMENT_1, 1, 50);
+    let _ = leaderboard.submit_score(TOURNAMENT_1, 2, 100);
+    let _ = leaderboard.submit_score(TOURNAMENT_1, 3, 75);
+
+    // Descending order: 100, 75, 50
+    assert!(leaderboard.get_position(TOURNAMENT_1, 2) == Option::Some(1), "Token 2 at pos 1");
+    assert!(leaderboard.get_position(TOURNAMENT_1, 3) == Option::Some(2), "Token 3 at pos 2");
+    assert!(leaderboard.get_position(TOURNAMENT_1, 1) == Option::Some(3), "Token 1 at pos 3");
+}
+
+// Test AUTO-12: Full lifecycle with auto-submit
+#[test]
+fn test_auto_submit_score_full_lifecycle() {
+    let (leaderboard, admin) = deploy_mock_leaderboard();
+    let (game_address, game_admin) = deploy_mock_game_details();
+
+    // 1. Configure
+    configure_tournament_with_game(admin, TOURNAMENT_1, 5, false, game_address);
+
+    // 2. Submit scores via auto-positioning
+    game_admin.set_score(1, 100);
+    game_admin.set_score(2, 80);
+    game_admin.set_score(3, 90);
+
+    let _ = leaderboard.submit_score(TOURNAMENT_1, 1, 100);
+    let _ = leaderboard.submit_score(TOURNAMENT_1, 2, 80);
+    let _ = leaderboard.submit_score(TOURNAMENT_1, 3, 90);
+
+    // 3. Verify order
+    let entries = leaderboard.get_entries(TOURNAMENT_1);
+    assert!(*entries.at(0).score == 100, "First 100");
+    assert!(*entries.at(1).score == 90, "Second 90");
+    assert!(*entries.at(2).score == 80, "Third 80");
+
+    // 4. Clear
+    start_cheat_caller_address(admin.contract_address, OWNER());
+    admin.clear(TOURNAMENT_1);
+    stop_cheat_caller_address(admin.contract_address);
+
+    assert!(leaderboard.get_leaderboard_length(TOURNAMENT_1) == 0, "Should be empty");
+
+    // 5. Re-submit after clear
+    let _ = leaderboard.submit_score(TOURNAMENT_1, 1, 100);
+    assert!(leaderboard.get_leaderboard_length(TOURNAMENT_1) == 1, "Should have 1 entry again");
+}
