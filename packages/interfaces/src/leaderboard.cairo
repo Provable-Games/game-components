@@ -23,14 +23,9 @@ pub trait IGameDetails<TState> {
 /// Supports managing leaderboards for multiple contexts (tournaments, seasons, etc.)
 #[starknet::interface]
 pub trait ILeaderboard<TState> {
-    /// Submit a score (auto-finds correct position)
-    fn submit_score(
-        ref self: TState, context_id: u64, token_id: felt252, score: u64,
-    ) -> LeaderboardResult;
-
     /// Submit a score at an explicit position
-    fn submit_score_at(
-        ref self: TState, context_id: u64, token_id: felt252, score: u64, position: u8,
+    fn submit_score(
+        ref self: TState, context_id: u64, token_id: felt252, score: u64, position: u32,
     ) -> LeaderboardResult;
 
     /// Get all leaderboard entries with scores for a context
@@ -40,7 +35,7 @@ pub trait ILeaderboard<TState> {
     fn get_top_entries(self: @TState, context_id: u64, count: u32) -> Array<LeaderboardEntry>;
 
     /// Get the position of a specific token in a context
-    fn get_position(self: @TState, context_id: u64, token_id: felt252) -> Option<u8>;
+    fn get_position(self: @TState, context_id: u64, token_id: felt252) -> Option<u32>;
 
     /// Check if a score qualifies for a context's leaderboard
     fn qualifies(self: @TState, context_id: u64, score: u64) -> bool;

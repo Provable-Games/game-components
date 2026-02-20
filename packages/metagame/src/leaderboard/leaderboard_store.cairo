@@ -30,17 +30,17 @@ pub trait LeaderboardStoreTrait<T> {
         context_id: u64,
         token_id: felt252,
         score: u64,
-        position: u8,
+        position: u32,
         config: LeaderboardStoreConfig,
     ) -> LeaderboardResult;
 
     /// Submit a score, automatically finding the correct position
     fn submit_score_auto(
         ref self: T, context_id: u64, token_id: felt252, score: u64, config: LeaderboardStoreConfig,
-    ) -> (LeaderboardResult, u8);
+    ) -> (LeaderboardResult, u32);
 
     /// Get the position of an entry in the leaderboard (1-based)
-    fn get_entry_position(self: @T, context_id: u64, token_id: felt252) -> Option<u8>;
+    fn get_entry_position(self: @T, context_id: u64, token_id: felt252) -> Option<u32>;
 
     /// Check if a score qualifies for the leaderboard
     fn qualifies_for_leaderboard(
@@ -80,7 +80,7 @@ pub impl LeaderboardStoreImpl<T, +Store<T>, +Drop<T>> of LeaderboardStoreTrait<T
         context_id: u64,
         token_id: felt252,
         score: u64,
-        position: u8,
+        position: u32,
         config: LeaderboardStoreConfig,
     ) -> LeaderboardResult {
         // Get current leaderboard entries
@@ -130,7 +130,7 @@ pub impl LeaderboardStoreImpl<T, +Store<T>, +Drop<T>> of LeaderboardStoreTrait<T
     /// Submit a score, automatically finding the correct position
     fn submit_score_auto(
         ref self: T, context_id: u64, token_id: felt252, score: u64, config: LeaderboardStoreConfig,
-    ) -> (LeaderboardResult, u8) {
+    ) -> (LeaderboardResult, u32) {
         let current_entries = self.get_leaderboard_entries(context_id, config.game_address);
         let lb_config = LeaderboardConfig {
             max_entries: config.max_entries, ascending: config.ascending, allow_ties: true,
@@ -141,7 +141,7 @@ pub impl LeaderboardStoreImpl<T, +Store<T>, +Drop<T>> of LeaderboardStoreTrait<T
             @lb_config, @current_entries, @new_entry,
         );
 
-        let position: u8 = match position_index {
+        let position: u32 = match position_index {
             Option::Some(idx) => {
                 match LeaderboardUtilsImpl::index_to_position(idx) {
                     Option::Some(pos) => pos,
@@ -157,7 +157,7 @@ pub impl LeaderboardStoreImpl<T, +Store<T>, +Drop<T>> of LeaderboardStoreTrait<T
     }
 
     /// Get the position of an entry in the leaderboard (1-based)
-    fn get_entry_position(self: @T, context_id: u64, token_id: felt252) -> Option<u8> {
+    fn get_entry_position(self: @T, context_id: u64, token_id: felt252) -> Option<u32> {
         let token_ids = self.get_leaderboard(context_id);
 
         let mut i = 0_u32;
