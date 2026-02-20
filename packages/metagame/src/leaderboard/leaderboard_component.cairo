@@ -50,7 +50,7 @@ pub mod LeaderboardComponent {
     pub trait LeaderboardHooksTrait<TContractState> {
         /// Called after a score is successfully submitted
         fn on_score_submitted(
-            ref self: TContractState, context_id: u64, token_id: felt252, score: u64, position: u8,
+            ref self: TContractState, context_id: u64, token_id: felt252, score: u64, position: u32,
         );
 
         /// Called after a leaderboard context is configured
@@ -137,34 +137,7 @@ pub mod LeaderboardComponent {
             context_id: u64,
             token_id: felt252,
             score: u64,
-        ) -> LeaderboardResult {
-            let config = LeaderboardStoreConfig {
-                max_entries: self.max_entries.read(context_id),
-                ascending: self.ascending.read(context_id),
-                game_address: self.game_address.read(context_id),
-            };
-
-            let (result, position) = self.submit_score_auto(context_id, token_id, score, config);
-
-            match result {
-                LeaderboardResult::Success => {
-                    let mut contract = self.get_contract_mut();
-                    LeaderboardHooksTrait::on_score_submitted(
-                        ref contract, context_id, token_id, score, position,
-                    );
-                },
-                _ => {},
-            }
-
-            result
-        }
-
-        fn submit_score_at(
-            ref self: ComponentState<TContractState>,
-            context_id: u64,
-            token_id: felt252,
-            score: u64,
-            position: u8,
+            position: u32,
         ) -> LeaderboardResult {
             let config = LeaderboardStoreConfig {
                 max_entries: self.max_entries.read(context_id),
@@ -205,7 +178,7 @@ pub mod LeaderboardComponent {
 
         fn get_position(
             self: @ComponentState<TContractState>, context_id: u64, token_id: felt252,
-        ) -> Option<u8> {
+        ) -> Option<u32> {
             self.get_entry_position(context_id, token_id)
         }
 
@@ -362,7 +335,7 @@ pub impl LeaderboardHooksEmptyImpl<
     TContractState,
 > of LeaderboardComponent::LeaderboardHooksTrait<TContractState> {
     fn on_score_submitted(
-        ref self: TContractState, context_id: u64, token_id: felt252, score: u64, position: u8,
+        ref self: TContractState, context_id: u64, token_id: felt252, score: u64, position: u32,
     ) {}
 
     fn on_configured(

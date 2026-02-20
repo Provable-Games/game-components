@@ -280,10 +280,10 @@ pub mod leaderboard {
     /// Utility functions for leaderboard management
     pub trait LeaderboardUtils {
         /// Convert 1-based position to 0-based index
-        fn position_to_index(position: u8) -> Option<u32>;
+        fn position_to_index(position: u32) -> Option<u32>;
 
         /// Convert 0-based index to 1-based position
-        fn index_to_position(index: u32) -> Option<u8>;
+        fn index_to_position(index: u32) -> Option<u32>;
 
         /// Create a new empty leaderboard
         fn new() -> Array<LeaderboardEntry>;
@@ -307,20 +307,16 @@ pub mod leaderboard {
 
     /// Implementation of LeaderboardUtils
     pub impl LeaderboardUtilsImpl of LeaderboardUtils {
-        fn position_to_index(position: u8) -> Option<u32> {
+        fn position_to_index(position: u32) -> Option<u32> {
             if position == 0 {
                 Option::None
             } else {
-                Option::Some((position - 1).into())
+                Option::Some(position - 1)
             }
         }
 
-        fn index_to_position(index: u32) -> Option<u8> {
-            if index > 254 {
-                Option::None
-            } else {
-                Option::Some((index + 1).try_into().unwrap())
-            }
+        fn index_to_position(index: u32) -> Option<u32> {
+            Option::Some(index + 1)
         }
 
         fn new() -> Array<LeaderboardEntry> {
