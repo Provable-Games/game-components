@@ -12,8 +12,8 @@ use game_components_metagame::leaderboard::leaderboard::leaderboard::{
 use game_components_metagame::leaderboard::models::Leaderboard;
 use game_components_metagame::leaderboard::store::Store;
 /// Leaderboard Store Helper Module
-/// This module provides helper functions to integrate the pure leaderboard library with Dojo's
-/// store. It replaces the component approach with direct store operations
+/// This module provides helper functions to integrate the pure leaderboard library with store
+/// operations.
 
 use starknet::ContractAddress;
 
@@ -21,25 +21,30 @@ use starknet::ContractAddress;
 pub trait LeaderboardStoreTrait<T> {
     /// Get leaderboard entries with scores
     fn get_leaderboard_entries(
-        self: @T, tournament_id: u64, game_address: ContractAddress,
+        self: @T, context_id: u64, game_address: ContractAddress,
     ) -> Array<LeaderboardEntry>;
 
-    /// Submit a score to the leaderboard
+    /// Submit a score to the leaderboard at a specific position
     fn submit_score_to_leaderboard(
         ref self: T,
-        tournament_id: u64,
+        context_id: u64,
         token_id: felt252,
         score: u64,
         position: u8,
         config: LeaderboardStoreConfig,
     ) -> LeaderboardResult;
 
+    /// Submit a score, automatically finding the correct position
+    fn submit_score_auto(
+        ref self: T, context_id: u64, token_id: felt252, score: u64, config: LeaderboardStoreConfig,
+    ) -> (LeaderboardResult, u8);
+
     /// Get the position of an entry in the leaderboard (1-based)
-    fn get_entry_position(self: @T, tournament_id: u64, token_id: felt252) -> Option<u8>;
+    fn get_entry_position(self: @T, context_id: u64, token_id: felt252) -> Option<u8>;
 
     /// Check if a score qualifies for the leaderboard
     fn qualifies_for_leaderboard(
-        self: @T, tournament_id: u64, score: u64, config: LeaderboardStoreConfig,
+        self: @T, context_id: u64, score: u64, config: LeaderboardStoreConfig,
     ) -> bool;
 }
 
@@ -47,9 +52,9 @@ pub trait LeaderboardStoreTrait<T> {
 pub impl LeaderboardStoreImpl<T, +Store<T>, +Drop<T>> of LeaderboardStoreTrait<T> {
     /// Get leaderboard entries with scores
     fn get_leaderboard_entries(
-        self: @T, tournament_id: u64, game_address: ContractAddress,
+        self: @T, context_id: u64, game_address: ContractAddress,
     ) -> Array<LeaderboardEntry> {
-        let token_ids = self.get_leaderboard(tournament_id);
+        let token_ids = self.get_leaderboard(context_id);
 
         // Convert token IDs to LeaderboardEntry structs
         let mut entries = ArrayTrait::new();
@@ -69,17 +74,17 @@ pub impl LeaderboardStoreImpl<T, +Store<T>, +Drop<T>> of LeaderboardStoreTrait<T
         entries
     }
 
-    /// Submit a score to the leaderboard
+    /// Submit a score to the leaderboard at a specific position
     fn submit_score_to_leaderboard(
         ref self: T,
-        tournament_id: u64,
+        context_id: u64,
         token_id: felt252,
         score: u64,
         position: u8,
         config: LeaderboardStoreConfig,
     ) -> LeaderboardResult {
         // Get current leaderboard entries
-        let current_entries = self.get_leaderboard_entries(tournament_id, config.game_address);
+        let current_entries = self.get_leaderboard_entries(context_id, config.game_address);
 
         // Create leaderboard config
         let lb_config = LeaderboardConfig {
@@ -114,7 +119,7 @@ pub impl LeaderboardStoreImpl<T, +Store<T>, +Drop<T>> of LeaderboardStoreTrait<T
                 }
 
                 // Save updated leaderboard
-                self.set_leaderboard(@Leaderboard { tournament_id, token_ids });
+                self.set_leaderboard(@Leaderboard { context_id, token_ids });
 
                 LeaderboardResult::Success
             },
@@ -122,9 +127,38 @@ pub impl LeaderboardStoreImpl<T, +Store<T>, +Drop<T>> of LeaderboardStoreTrait<T
         }
     }
 
+    /// Submit a score, automatically finding the correct position
+    fn submit_score_auto(
+        ref self: T, context_id: u64, token_id: felt252, score: u64, config: LeaderboardStoreConfig,
+    ) -> (LeaderboardResult, u8) {
+        let current_entries = self.get_leaderboard_entries(context_id, config.game_address);
+        let lb_config = LeaderboardConfig {
+            max_entries: config.max_entries, ascending: config.ascending, allow_ties: true,
+        };
+        let new_entry = LeaderboardEntry { id: token_id, score };
+
+        let position_index = LeaderboardOperationsImpl::find_insert_position(
+            @lb_config, @current_entries, @new_entry,
+        );
+
+        let position: u8 = match position_index {
+            Option::Some(idx) => {
+                match LeaderboardUtilsImpl::index_to_position(idx) {
+                    Option::Some(pos) => pos,
+                    Option::None => { return (LeaderboardResult::InvalidPosition, 0); },
+                }
+            },
+            Option::None => { return (LeaderboardResult::InvalidPosition, 0); },
+        };
+
+        let result = self
+            .submit_score_to_leaderboard(context_id, token_id, score, position, config);
+        (result, position)
+    }
+
     /// Get the position of an entry in the leaderboard (1-based)
-    fn get_entry_position(self: @T, tournament_id: u64, token_id: felt252) -> Option<u8> {
-        let token_ids = self.get_leaderboard(tournament_id);
+    fn get_entry_position(self: @T, context_id: u64, token_id: felt252) -> Option<u8> {
+        let token_ids = self.get_leaderboard(context_id);
 
         let mut i = 0_u32;
         loop {
@@ -140,9 +174,9 @@ pub impl LeaderboardStoreImpl<T, +Store<T>, +Drop<T>> of LeaderboardStoreTrait<T
 
     /// Check if a score qualifies for the leaderboard
     fn qualifies_for_leaderboard(
-        self: @T, tournament_id: u64, score: u64, config: LeaderboardStoreConfig,
+        self: @T, context_id: u64, score: u64, config: LeaderboardStoreConfig,
     ) -> bool {
-        let entries = self.get_leaderboard_entries(tournament_id, config.game_address);
+        let entries = self.get_leaderboard_entries(context_id, config.game_address);
         let lb_config = LeaderboardConfig {
             max_entries: config.max_entries, ascending: config.ascending, allow_ties: true,
         };
@@ -154,32 +188,32 @@ pub impl LeaderboardStoreImpl<T, +Store<T>, +Drop<T>> of LeaderboardStoreTrait<T
 /// Additional helper functions for leaderboard operations
 pub trait LeaderboardStoreHelpersTrait<T> {
     /// Get top N winners from the leaderboard
-    fn get_top_winners(self: @T, tournament_id: u64, count: u32) -> Array<felt252>;
+    fn get_top_winners(self: @T, context_id: u64, count: u32) -> Array<felt252>;
 
     /// Check if the leaderboard is full
-    fn is_leaderboard_full(self: @T, tournament_id: u64, max_entries: u32) -> bool;
+    fn is_leaderboard_full(self: @T, context_id: u64, max_entries: u32) -> bool;
 
     /// Get the minimum qualifying score for the leaderboard
     fn get_minimum_qualifying_score(
-        self: @T, tournament_id: u64, config: LeaderboardStoreConfig,
+        self: @T, context_id: u64, config: LeaderboardStoreConfig,
     ) -> Option<u64>;
 
     /// Get a range of leaderboard entries (for pagination)
     fn get_leaderboard_range(
-        self: @T, tournament_id: u64, start: u32, count: u32, game_address: ContractAddress,
+        self: @T, context_id: u64, start: u32, count: u32, game_address: ContractAddress,
     ) -> Array<LeaderboardEntry>;
 
     /// Find the position where a score would be inserted
     fn find_score_position(
-        self: @T, tournament_id: u64, score: u64, config: LeaderboardStoreConfig,
+        self: @T, context_id: u64, score: u64, config: LeaderboardStoreConfig,
     ) -> Option<u32>;
 }
 
 /// Implementation of additional helper functions
 pub impl LeaderboardStoreHelpersImpl<T, +Store<T>, +Drop<T>> of LeaderboardStoreHelpersTrait<T> {
     /// Get top N winners from the leaderboard
-    fn get_top_winners(self: @T, tournament_id: u64, count: u32) -> Array<felt252> {
-        let token_ids = self.get_leaderboard(tournament_id);
+    fn get_top_winners(self: @T, context_id: u64, count: u32) -> Array<felt252> {
+        let token_ids = self.get_leaderboard(context_id);
 
         // Take first N entries
         let mut result = ArrayTrait::new();
@@ -198,16 +232,16 @@ pub impl LeaderboardStoreHelpersImpl<T, +Store<T>, +Drop<T>> of LeaderboardStore
     }
 
     /// Check if the leaderboard is full
-    fn is_leaderboard_full(self: @T, tournament_id: u64, max_entries: u32) -> bool {
-        let token_ids = self.get_leaderboard(tournament_id);
+    fn is_leaderboard_full(self: @T, context_id: u64, max_entries: u32) -> bool {
+        let token_ids = self.get_leaderboard(context_id);
         token_ids.len() >= max_entries
     }
 
     /// Get the minimum qualifying score for the leaderboard
     fn get_minimum_qualifying_score(
-        self: @T, tournament_id: u64, config: LeaderboardStoreConfig,
+        self: @T, context_id: u64, config: LeaderboardStoreConfig,
     ) -> Option<u64> {
-        let entries = self.get_leaderboard_entries(tournament_id, config.game_address);
+        let entries = self.get_leaderboard_entries(context_id, config.game_address);
         let lb_config = LeaderboardConfig {
             max_entries: config.max_entries, ascending: config.ascending, allow_ties: true,
         };
@@ -217,17 +251,17 @@ pub impl LeaderboardStoreHelpersImpl<T, +Store<T>, +Drop<T>> of LeaderboardStore
 
     /// Get a range of leaderboard entries (for pagination)
     fn get_leaderboard_range(
-        self: @T, tournament_id: u64, start: u32, count: u32, game_address: ContractAddress,
+        self: @T, context_id: u64, start: u32, count: u32, game_address: ContractAddress,
     ) -> Array<LeaderboardEntry> {
-        let entries = self.get_leaderboard_entries(tournament_id, game_address);
+        let entries = self.get_leaderboard_entries(context_id, game_address);
         LeaderboardUtilsImpl::get_range(@entries, start, count)
     }
 
     /// Find the position where a score would be inserted
     fn find_score_position(
-        self: @T, tournament_id: u64, score: u64, config: LeaderboardStoreConfig,
+        self: @T, context_id: u64, score: u64, config: LeaderboardStoreConfig,
     ) -> Option<u32> {
-        let entries = self.get_leaderboard_entries(tournament_id, config.game_address);
+        let entries = self.get_leaderboard_entries(context_id, config.game_address);
         let lb_config = LeaderboardConfig {
             max_entries: config.max_entries, ascending: config.ascending, allow_ties: true,
         };

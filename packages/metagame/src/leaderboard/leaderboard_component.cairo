@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 
 /// Leaderboard Component
-/// A reusable component for managing tournament leaderboards
-/// Supports multiple tournaments with separate leaderboards per tournament_id
+/// A reusable component for managing leaderboards
+/// Supports multiple contexts with separate leaderboards per context_id
 #[starknet::component]
 pub mod LeaderboardComponent {
     use core::num::traits::Zero;
@@ -30,56 +30,45 @@ pub mod LeaderboardComponent {
     #[storage]
     pub struct Storage {
         owner: ContractAddress,
-        // Per-tournament entry counts
-        entries_count: Map<u64, u32>, // tournament_id -> count
-        // Per-tournament entries: (tournament_id, position) -> token_id
-        entries: Map<(u64, u32), felt252>,
-        // Per-tournament configuration
-        max_entries: Map<u64, u32>, // tournament_id -> max_entries
-        ascending: Map<u64, bool>, // tournament_id -> ascending
-        game_address: Map<u64, ContractAddress> // tournament_id -> game_address
+        entries_count: Map<u64, u32>, // context_id -> count
+        entries: Map<(u64, u32), felt252>, // (context_id, position) -> token_id
+        max_entries: Map<u64, u32>, // context_id -> max_entries
+        ascending: Map<u64, bool>, // context_id -> ascending
+        game_address: Map<u64, ContractAddress> // context_id -> game_address
     }
 
     #[event]
     #[derive(Drop, starknet::Event)]
-    pub enum Event {
-        TournamentConfigured: TournamentConfigured,
-        ScoreSubmitted: ScoreSubmitted,
-        LeaderboardCleared: LeaderboardCleared,
-        LeaderboardOwnershipTransferred: LeaderboardOwnershipTransferred,
-    }
+    pub enum Event {}
 
-    #[derive(Drop, starknet::Event)]
-    pub struct TournamentConfigured {
-        #[key]
-        pub tournament_id: u64,
-        pub max_entries: u32,
-        pub ascending: bool,
-        pub game_address: ContractAddress,
-    }
+    // ==========================================================================
+    // HOOKS TRAIT
+    // ==========================================================================
+    // Allows the embedding contract to define custom behavior on leaderboard
+    // operations. Implementers can emit events, update state, etc.
 
-    #[derive(Drop, starknet::Event)]
-    pub struct ScoreSubmitted {
-        #[key]
-        pub tournament_id: u64,
-        #[key]
-        pub token_id: felt252,
-        pub score: u64,
-        pub position: u8,
-    }
+    pub trait LeaderboardHooksTrait<TContractState> {
+        /// Called after a score is successfully submitted
+        fn on_score_submitted(
+            ref self: TContractState, context_id: u64, token_id: felt252, score: u64, position: u8,
+        );
 
-    #[derive(Drop, starknet::Event)]
-    pub struct LeaderboardCleared {
-        #[key]
-        pub tournament_id: u64,
-    }
+        /// Called after a leaderboard context is configured
+        fn on_configured(
+            ref self: TContractState,
+            context_id: u64,
+            max_entries: u32,
+            ascending: bool,
+            game_address: ContractAddress,
+        );
 
-    #[derive(Drop, starknet::Event)]
-    pub struct LeaderboardOwnershipTransferred {
-        #[key]
-        pub previous_owner: ContractAddress,
-        #[key]
-        pub new_owner: ContractAddress,
+        /// Called after a leaderboard is cleared
+        fn on_cleared(ref self: TContractState, context_id: u64);
+
+        /// Called after ownership is transferred
+        fn on_ownership_transferred(
+            ref self: TContractState, previous_owner: ContractAddress, new_owner: ContractAddress,
+        );
     }
 
     // Implement the Store trait for this component
@@ -87,9 +76,9 @@ pub mod LeaderboardComponent {
         TContractState, +HasComponent<TContractState>,
     > of Store<ComponentState<TContractState>> {
         fn get_leaderboard(
-            self: @ComponentState<TContractState>, tournament_id: u64,
+            self: @ComponentState<TContractState>, context_id: u64,
         ) -> Span<felt252> {
-            let count = self.entries_count.read(tournament_id);
+            let count = self.entries_count.read(context_id);
             let mut result = ArrayTrait::new();
             let mut i = 0_u32;
 
@@ -97,7 +86,7 @@ pub mod LeaderboardComponent {
                 if i >= count {
                     break;
                 }
-                let token_id = self.entries.read((tournament_id, i));
+                let token_id = self.entries.read((context_id, i));
                 result.append(token_id);
                 i += 1;
             }
@@ -106,22 +95,22 @@ pub mod LeaderboardComponent {
         }
 
         fn set_leaderboard(ref self: ComponentState<TContractState>, leaderboard: @Leaderboard) {
-            let tournament_id = *leaderboard.tournament_id;
+            let context_id = *leaderboard.context_id;
 
             // Clear existing entries
-            let old_count = self.entries_count.read(tournament_id);
+            let old_count = self.entries_count.read(context_id);
             let mut i = 0_u32;
             loop {
                 if i >= old_count {
                     break;
                 }
-                self.entries.write((tournament_id, i), 0);
+                self.entries.write((context_id, i), 0);
                 i += 1;
             }
 
             // Write new entries
             let new_count = leaderboard.token_ids.len();
-            self.entries_count.write(tournament_id, new_count);
+            self.entries_count.write(context_id, new_count);
 
             let mut j = 0_u32;
             loop {
@@ -129,7 +118,7 @@ pub mod LeaderboardComponent {
                     break;
                 }
                 let token_id = *leaderboard.token_ids.at(j);
-                self.entries.write((tournament_id, j), token_id);
+                self.entries.write((context_id, j), token_id);
                 j += 1;
             };
         }
@@ -139,29 +128,59 @@ pub mod LeaderboardComponent {
     impl LeaderboardComponent<
         TContractState,
         +HasComponent<TContractState>,
+        +LeaderboardHooksTrait<TContractState>,
         impl SRC5: SRC5Component::HasComponent<TContractState>,
         +Drop<TContractState>,
     > of ILeaderboard<ComponentState<TContractState>> {
         fn submit_score(
             ref self: ComponentState<TContractState>,
-            tournament_id: u64,
+            context_id: u64,
+            token_id: felt252,
+            score: u64,
+        ) -> LeaderboardResult {
+            let config = LeaderboardStoreConfig {
+                max_entries: self.max_entries.read(context_id),
+                ascending: self.ascending.read(context_id),
+                game_address: self.game_address.read(context_id),
+            };
+
+            let (result, position) = self.submit_score_auto(context_id, token_id, score, config);
+
+            match result {
+                LeaderboardResult::Success => {
+                    let mut contract = self.get_contract_mut();
+                    LeaderboardHooksTrait::on_score_submitted(
+                        ref contract, context_id, token_id, score, position,
+                    );
+                },
+                _ => {},
+            }
+
+            result
+        }
+
+        fn submit_score_at(
+            ref self: ComponentState<TContractState>,
+            context_id: u64,
             token_id: felt252,
             score: u64,
             position: u8,
         ) -> LeaderboardResult {
-            // Read config from storage
             let config = LeaderboardStoreConfig {
-                max_entries: self.max_entries.read(tournament_id),
-                ascending: self.ascending.read(tournament_id),
-                game_address: self.game_address.read(tournament_id),
+                max_entries: self.max_entries.read(context_id),
+                ascending: self.ascending.read(context_id),
+                game_address: self.game_address.read(context_id),
             };
 
             let result = self
-                .submit_score_to_leaderboard(tournament_id, token_id, score, position, config);
+                .submit_score_to_leaderboard(context_id, token_id, score, position, config);
 
             match result {
                 LeaderboardResult::Success => {
-                    self.emit(ScoreSubmitted { tournament_id, token_id, score, position });
+                    let mut contract = self.get_contract_mut();
+                    LeaderboardHooksTrait::on_score_submitted(
+                        ref contract, context_id, token_id, score, position,
+                    );
                 },
                 _ => {},
             }
@@ -170,95 +189,98 @@ pub mod LeaderboardComponent {
         }
 
         fn get_entries(
-            self: @ComponentState<TContractState>, tournament_id: u64,
+            self: @ComponentState<TContractState>, context_id: u64,
         ) -> Array<LeaderboardEntry> {
-            let game_address = self.game_address.read(tournament_id);
-            self.get_leaderboard_entries(tournament_id, game_address)
+            let game_address = self.game_address.read(context_id);
+            self.get_leaderboard_entries(context_id, game_address)
         }
 
         fn get_top_entries(
-            self: @ComponentState<TContractState>, tournament_id: u64, count: u32,
+            self: @ComponentState<TContractState>, context_id: u64, count: u32,
         ) -> Array<LeaderboardEntry> {
-            let game_address = self.game_address.read(tournament_id);
-            let entries = self.get_leaderboard_entries(tournament_id, game_address);
+            let game_address = self.game_address.read(context_id);
+            let entries = self.get_leaderboard_entries(context_id, game_address);
             LeaderboardUtilsImpl::get_top_n(@entries, count)
         }
 
         fn get_position(
-            self: @ComponentState<TContractState>, tournament_id: u64, token_id: felt252,
+            self: @ComponentState<TContractState>, context_id: u64, token_id: felt252,
         ) -> Option<u8> {
-            self.get_entry_position(tournament_id, token_id)
+            self.get_entry_position(context_id, token_id)
         }
 
-        fn qualifies(
-            self: @ComponentState<TContractState>, tournament_id: u64, score: u64,
-        ) -> bool {
+        fn qualifies(self: @ComponentState<TContractState>, context_id: u64, score: u64) -> bool {
             let config = LeaderboardStoreConfig {
-                max_entries: self.max_entries.read(tournament_id),
-                ascending: self.ascending.read(tournament_id),
-                game_address: self.game_address.read(tournament_id),
+                max_entries: self.max_entries.read(context_id),
+                ascending: self.ascending.read(context_id),
+                game_address: self.game_address.read(context_id),
             };
-            self.qualifies_for_leaderboard(tournament_id, score, config)
+            self.qualifies_for_leaderboard(context_id, score, config)
         }
 
-        fn is_full(self: @ComponentState<TContractState>, tournament_id: u64) -> bool {
-            let max_entries = self.max_entries.read(tournament_id);
-            self.is_leaderboard_full(tournament_id, max_entries)
+        fn is_full(self: @ComponentState<TContractState>, context_id: u64) -> bool {
+            let max_entries = self.max_entries.read(context_id);
+            self.is_leaderboard_full(context_id, max_entries)
         }
 
-        fn get_leaderboard_length(
-            self: @ComponentState<TContractState>, tournament_id: u64,
-        ) -> u32 {
-            self.entries_count.read(tournament_id)
+        fn get_leaderboard_length(self: @ComponentState<TContractState>, context_id: u64) -> u32 {
+            self.entries_count.read(context_id)
         }
 
-        fn get_tournament_config(
-            self: @ComponentState<TContractState>, tournament_id: u64,
+        fn get_config(
+            self: @ComponentState<TContractState>, context_id: u64,
         ) -> LeaderboardStoreConfig {
             LeaderboardStoreConfig {
-                max_entries: self.max_entries.read(tournament_id),
-                ascending: self.ascending.read(tournament_id),
-                game_address: self.game_address.read(tournament_id),
+                max_entries: self.max_entries.read(context_id),
+                ascending: self.ascending.read(context_id),
+                game_address: self.game_address.read(context_id),
             }
         }
     }
 
     #[embeddable_as(LeaderboardAdminImpl)]
     impl LeaderboardAdmin<
-        TContractState, +HasComponent<TContractState>, +Drop<TContractState>,
+        TContractState,
+        +HasComponent<TContractState>,
+        +LeaderboardHooksTrait<TContractState>,
+        +Drop<TContractState>,
     > of ILeaderboardAdmin<ComponentState<TContractState>> {
-        fn configure_tournament(
+        fn configure(
             ref self: ComponentState<TContractState>,
-            tournament_id: u64,
+            context_id: u64,
             max_entries: u32,
             ascending: bool,
             game_address: ContractAddress,
         ) {
             self.assert_only_owner();
 
-            self.max_entries.write(tournament_id, max_entries);
-            self.ascending.write(tournament_id, ascending);
-            self.game_address.write(tournament_id, game_address);
+            self.max_entries.write(context_id, max_entries);
+            self.ascending.write(context_id, ascending);
+            self.game_address.write(context_id, game_address);
 
-            self.emit(TournamentConfigured { tournament_id, max_entries, ascending, game_address });
+            let mut contract = self.get_contract_mut();
+            LeaderboardHooksTrait::on_configured(
+                ref contract, context_id, max_entries, ascending, game_address,
+            );
         }
 
-        fn clear_leaderboard(ref self: ComponentState<TContractState>, tournament_id: u64) {
+        fn clear(ref self: ComponentState<TContractState>, context_id: u64) {
             self.assert_only_owner();
 
-            // Clear all entries for this tournament
-            let count = self.entries_count.read(tournament_id);
+            // Clear all entries for this context
+            let count = self.entries_count.read(context_id);
             let mut i = 0_u32;
             loop {
                 if i >= count {
                     break;
                 }
-                self.entries.write((tournament_id, i), 0);
+                self.entries.write((context_id, i), 0);
                 i += 1;
             }
-            self.entries_count.write(tournament_id, 0);
+            self.entries_count.write(context_id, 0);
 
-            self.emit(LeaderboardCleared { tournament_id });
+            let mut contract = self.get_contract_mut();
+            LeaderboardHooksTrait::on_cleared(ref contract, context_id);
         }
 
         fn owner(self: @ComponentState<TContractState>) -> ContractAddress {
@@ -273,7 +295,10 @@ pub mod LeaderboardComponent {
             let previous_owner = self.owner.read();
             self.owner.write(new_owner);
 
-            self.emit(LeaderboardOwnershipTransferred { previous_owner, new_owner });
+            let mut contract = self.get_contract_mut();
+            LeaderboardHooksTrait::on_ownership_transferred(
+                ref contract, previous_owner, new_owner,
+            );
         }
     }
 
@@ -281,6 +306,7 @@ pub mod LeaderboardComponent {
     pub impl LeaderboardInternalImpl<
         TContractState,
         +HasComponent<TContractState>,
+        +LeaderboardHooksTrait<TContractState>,
         impl SRC5: SRC5Component::HasComponent<TContractState>,
         +Drop<TContractState>,
     > of LeaderboardInternalTrait<TContractState> {
@@ -295,20 +321,23 @@ pub mod LeaderboardComponent {
             src5_component.register_interface(ILEADERBOARD_ID);
         }
 
-        /// Internal method to configure tournament (no owner check)
-        /// Used by owning contract to set up tournaments
-        fn _configure_tournament(
+        /// Internal method to configure a context (no owner check)
+        /// Used by owning contract to set up leaderboard contexts
+        fn _configure(
             ref self: ComponentState<TContractState>,
-            tournament_id: u64,
+            context_id: u64,
             max_entries: u32,
             ascending: bool,
             game_address: ContractAddress,
         ) {
-            self.max_entries.write(tournament_id, max_entries);
-            self.ascending.write(tournament_id, ascending);
-            self.game_address.write(tournament_id, game_address);
+            self.max_entries.write(context_id, max_entries);
+            self.ascending.write(context_id, ascending);
+            self.game_address.write(context_id, game_address);
 
-            self.emit(TournamentConfigured { tournament_id, max_entries, ascending, game_address });
+            let mut contract = self.get_contract_mut();
+            LeaderboardHooksTrait::on_configured(
+                ref contract, context_id, max_entries, ascending, game_address,
+            );
         }
     }
 
@@ -322,4 +351,33 @@ pub mod LeaderboardComponent {
             assert!(caller == owner, "Only owner can call this function");
         }
     }
+}
+
+// ==============================================================================
+// EMPTY HOOKS IMPLEMENTATION
+// ==============================================================================
+// Provides a no-op implementation for contracts that don't need custom behavior.
+
+pub impl LeaderboardHooksEmptyImpl<
+    TContractState,
+> of LeaderboardComponent::LeaderboardHooksTrait<TContractState> {
+    fn on_score_submitted(
+        ref self: TContractState, context_id: u64, token_id: felt252, score: u64, position: u8,
+    ) {}
+
+    fn on_configured(
+        ref self: TContractState,
+        context_id: u64,
+        max_entries: u32,
+        ascending: bool,
+        game_address: starknet::ContractAddress,
+    ) {}
+
+    fn on_cleared(ref self: TContractState, context_id: u64) {}
+
+    fn on_ownership_transferred(
+        ref self: TContractState,
+        previous_owner: starknet::ContractAddress,
+        new_owner: starknet::ContractAddress,
+    ) {}
 }

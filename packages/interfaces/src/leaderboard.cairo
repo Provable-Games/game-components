@@ -19,51 +19,56 @@ pub trait IGameDetails<TState> {
     fn score(self: @TState, token_id: felt252) -> u64;
 }
 
-/// Multi-tournament leaderboard interface
-/// Supports managing leaderboards for multiple tournaments
+/// Multi-context leaderboard interface
+/// Supports managing leaderboards for multiple contexts (tournaments, seasons, etc.)
 #[starknet::interface]
 pub trait ILeaderboard<TState> {
-    /// Submit a score to a tournament's leaderboard
+    /// Submit a score (auto-finds correct position)
     fn submit_score(
-        ref self: TState, tournament_id: u64, token_id: felt252, score: u64, position: u8,
+        ref self: TState, context_id: u64, token_id: felt252, score: u64,
     ) -> LeaderboardResult;
 
-    /// Get all leaderboard entries with scores for a tournament
-    fn get_entries(self: @TState, tournament_id: u64) -> Array<LeaderboardEntry>;
+    /// Submit a score at an explicit position
+    fn submit_score_at(
+        ref self: TState, context_id: u64, token_id: felt252, score: u64, position: u8,
+    ) -> LeaderboardResult;
 
-    /// Get top N entries for a tournament
-    fn get_top_entries(self: @TState, tournament_id: u64, count: u32) -> Array<LeaderboardEntry>;
+    /// Get all leaderboard entries with scores for a context
+    fn get_entries(self: @TState, context_id: u64) -> Array<LeaderboardEntry>;
 
-    /// Get the position of a specific token in a tournament
-    fn get_position(self: @TState, tournament_id: u64, token_id: felt252) -> Option<u8>;
+    /// Get top N entries for a context
+    fn get_top_entries(self: @TState, context_id: u64, count: u32) -> Array<LeaderboardEntry>;
 
-    /// Check if a score qualifies for a tournament's leaderboard
-    fn qualifies(self: @TState, tournament_id: u64, score: u64) -> bool;
+    /// Get the position of a specific token in a context
+    fn get_position(self: @TState, context_id: u64, token_id: felt252) -> Option<u8>;
 
-    /// Check if a tournament's leaderboard is full
-    fn is_full(self: @TState, tournament_id: u64) -> bool;
+    /// Check if a score qualifies for a context's leaderboard
+    fn qualifies(self: @TState, context_id: u64, score: u64) -> bool;
 
-    /// Get the number of entries in a tournament's leaderboard
-    fn get_leaderboard_length(self: @TState, tournament_id: u64) -> u32;
+    /// Check if a context's leaderboard is full
+    fn is_full(self: @TState, context_id: u64) -> bool;
 
-    /// Get the configuration for a tournament's leaderboard
-    fn get_tournament_config(self: @TState, tournament_id: u64) -> LeaderboardStoreConfig;
+    /// Get the number of entries in a context's leaderboard
+    fn get_leaderboard_length(self: @TState, context_id: u64) -> u32;
+
+    /// Get the configuration for a context's leaderboard
+    fn get_config(self: @TState, context_id: u64) -> LeaderboardStoreConfig;
 }
 
 /// Admin interface for leaderboard management
 #[starknet::interface]
 pub trait ILeaderboardAdmin<TState> {
-    /// Configure a tournament's leaderboard settings (admin only)
-    fn configure_tournament(
+    /// Configure a context's leaderboard settings (admin only)
+    fn configure(
         ref self: TState,
-        tournament_id: u64,
+        context_id: u64,
         max_entries: u32,
         ascending: bool,
         game_address: ContractAddress,
     );
 
-    /// Clear a tournament's leaderboard (admin only)
-    fn clear_leaderboard(ref self: TState, tournament_id: u64);
+    /// Clear a context's leaderboard (admin only)
+    fn clear(ref self: TState, context_id: u64);
 
     /// Get the admin/owner address
     fn owner(self: @TState) -> ContractAddress;

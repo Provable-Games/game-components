@@ -1,7 +1,7 @@
 /// Interface for additional mock leaderboard test functions
 #[starknet::interface]
 pub trait IMockLeaderboardTest<TContractState> {
-    fn get_entry_count(self: @TContractState, tournament_id: u64) -> u32;
+    fn get_entry_count(self: @TContractState, context_id: u64) -> u32;
 }
 
 /// Mock leaderboard contract for testing LeaderboardComponent
@@ -14,9 +14,11 @@ pub mod MockLeaderboardContract {
     use game_components_metagame::leaderboard::leaderboard::leaderboard::{
         LeaderboardEntry, LeaderboardResult,
     };
-    use game_components_metagame::leaderboard::leaderboard_component::LeaderboardComponent;
     use game_components_metagame::leaderboard::leaderboard_component::LeaderboardComponent::{
         LeaderboardAdminImpl, LeaderboardImpl, LeaderboardInternalTrait,
+    };
+    use game_components_metagame::leaderboard::leaderboard_component::{
+        LeaderboardComponent, LeaderboardHooksEmptyImpl,
     };
     #[allow(unused_imports)]
     use game_components_metagame::leaderboard::leaderboard_store::LeaderboardStoreConfig;
@@ -25,6 +27,9 @@ pub mod MockLeaderboardContract {
 
     component!(path: LeaderboardComponent, storage: leaderboard, event: LeaderboardEvent);
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
+
+    // Empty hooks implementation (no-op for all hooks)
+    impl LeaderboardHooks = LeaderboardHooksEmptyImpl<ContractState>;
 
     // Embed the leaderboard implementation
     #[abi(embed_v0)]
@@ -62,8 +67,8 @@ pub mod MockLeaderboardContract {
 
     #[abi(embed_v0)]
     impl MockLeaderboardTestImpl of super::IMockLeaderboardTest<ContractState> {
-        fn get_entry_count(self: @ContractState, tournament_id: u64) -> u32 {
-            self.leaderboard.get_leaderboard_length(tournament_id)
+        fn get_entry_count(self: @ContractState, context_id: u64) -> u32 {
+            self.leaderboard.get_leaderboard_length(context_id)
         }
     }
 }
