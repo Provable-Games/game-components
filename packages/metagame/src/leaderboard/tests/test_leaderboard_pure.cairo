@@ -947,13 +947,15 @@ fn test_fuzz_position_index_roundtrip(position: u8) {
         return;
     }
 
+    let position_u32: u32 = position.into();
+
     // Convert position to index
-    match LeaderboardUtilsImpl::position_to_index(position) {
+    match LeaderboardUtilsImpl::position_to_index(position_u32) {
         Option::Some(index) => {
             // Convert back to position
             match LeaderboardUtilsImpl::index_to_position(index) {
                 Option::Some(back_position) => {
-                    assert!(back_position == position, "Roundtrip should preserve position");
+                    assert!(back_position == position_u32, "Roundtrip should preserve position");
                 },
                 Option::None => { panic!("Should convert back to position"); },
             }

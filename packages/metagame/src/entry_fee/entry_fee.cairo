@@ -27,17 +27,17 @@ pub mod EntryFeeComponent {
         AdditionalShare, EntryFee, EntryFeeClaimType, EntryFeeConfig, EntryFeeData,
         EntryFeeDataStorePacking, EntryFeeDeposit, PackedAdditionalShares,
         PackedAdditionalSharesImpl, PackedAdditionalSharesTrait, SHARES_PER_SLOT,
-        StoredAdditionalShare,
+        StoredAdditionalShare, unpack_additional_count, unpack_game_creator_claimed,
     };
 
     #[storage]
     pub struct Storage {
         /// Entry fee token address keyed by context_id
         EntryFee_token: Map<u64, ContractAddress>,
-        /// Packed entry fee data keyed by context_id
+        /// Raw packed entry fee data keyed by context_id (felt252 for selective unpacking)
         /// Contains: amount, game_creator_share, refund_share, game_creator_claimed,
         /// additional_count
-        EntryFee_data: Map<u64, EntryFeeData>,
+        EntryFee_data: Map<u64, felt252>,
         /// Additional share recipients per context: (context_id, index) -> recipient
         /// Recipients must be stored separately as ContractAddress is 251 bits
         EntryFee_additional_recipient: Map<(u64, u8), ContractAddress>,
@@ -84,7 +84,8 @@ pub mod EntryFeeComponent {
                 return Option::None;
             }
 
-            let data = self.EntryFee_data.entry(context_id).read();
+            let packed = self.EntryFee_data.entry(context_id).read();
+            let data = EntryFeeDataStorePacking::unpack(packed);
             let additional_shares = self._get_additional_shares(context_id);
 
             // Convert stored shares back to Option<u16>
@@ -117,8 +118,8 @@ pub mod EntryFeeComponent {
         fn _get_additional_shares(
             self: @ComponentState<TContractState>, context_id: u64,
         ) -> Span<AdditionalShare> {
-            let data = self.EntryFee_data.entry(context_id).read();
-            let count = data.additional_count;
+            let packed = self.EntryFee_data.entry(context_id).read();
+            let count = unpack_additional_count(packed);
             if count == 0 {
                 return array![].span();
             }
@@ -216,7 +217,7 @@ pub mod EntryFeeComponent {
                 game_creator_claimed: false,
                 additional_count,
             };
-            self.EntryFee_data.entry(context_id).write(data);
+            self.EntryFee_data.entry(context_id).write(EntryFeeDataStorePacking::pack(data));
 
             // Store additional shares using packed storage
             let mut current_slot: u8 = 0;
@@ -317,8 +318,8 @@ pub mod EntryFeeComponent {
         ) -> bool {
             match claim_type {
                 EntryFeeClaimType::GameCreator => {
-                    let data = self.EntryFee_data.entry(context_id).read();
-                    data.game_creator_claimed
+                    let packed = self.EntryFee_data.entry(context_id).read();
+                    unpack_game_creator_claimed(packed)
                 },
                 EntryFeeClaimType::Refund(token_id) => {
                     self.EntryFee_refund_claimed.entry((context_id, token_id)).read()
@@ -344,10 +345,14 @@ pub mod EntryFeeComponent {
         ) {
             match claim_type {
                 EntryFeeClaimType::GameCreator => {
-                    // Read current data, update game_creator_claimed, write back
-                    let mut data = self.EntryFee_data.entry(context_id).read();
+                    // Read raw packed, full unpack, modify, repack, write back
+                    let packed = self.EntryFee_data.entry(context_id).read();
+                    let mut data = EntryFeeDataStorePacking::unpack(packed);
                     data.game_creator_claimed = true;
-                    self.EntryFee_data.entry(context_id).write(data);
+                    self
+                        .EntryFee_data
+                        .entry(context_id)
+                        .write(EntryFeeDataStorePacking::pack(data));
                 },
                 EntryFeeClaimType::Refund(token_id) => {
                     self.EntryFee_refund_claimed.entry((context_id, token_id)).write(true);
