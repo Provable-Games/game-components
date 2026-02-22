@@ -4,6 +4,7 @@ use crate::entry_fee::models::{AdditionalShare, EntryFee, EntryFeeClaimType, Ent
 #[starknet::interface]
 trait IEntryFeeMock<TContractState> {
     fn set_entry_fee(ref self: TContractState, context_id: u64, entry_fee: EntryFee);
+    fn get_entry_fee(self: @TContractState, context_id: u64) -> Option<EntryFeeConfig>;
     fn get_additional_shares(self: @TContractState, context_id: u64) -> Span<AdditionalShare>;
     fn is_claimed(self: @TContractState, context_id: u64, claim_type: EntryFeeClaimType) -> bool;
     fn set_claimed(ref self: TContractState, context_id: u64, claim_type: EntryFeeClaimType);

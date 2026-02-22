@@ -88,6 +88,22 @@ pub impl EntryFeeDataStorePacking of StorePacking<EntryFeeData, felt252> {
     }
 }
 
+/// Extract only additional_count from packed EntryFeeData felt252.
+/// Avoids full unpack when only the count is needed.
+pub fn unpack_additional_count(packed: felt252) -> u8 {
+    let packed: u256 = packed.into();
+    // additional_count is in high u128 at bits 29..36 (shift right 29)
+    (packed.high / 0x20000000_u128).try_into().unwrap()
+}
+
+/// Extract only game_creator_claimed from packed EntryFeeData felt252.
+/// Avoids full unpack when only checking claim status.
+pub fn unpack_game_creator_claimed(packed: felt252) -> bool {
+    let packed: u256 = packed.into();
+    // game_creator_claimed is in high u128 at bit 28 (shift right 28, mask 1)
+    ((packed.high / 0x10000000_u128) & 1) == 1
+}
+
 /// Stored additional share data with claim status
 /// Packs: share_bps (14 bits) | claimed (1 bit) = 15 bits
 #[derive(Copy, Drop, Serde)]
@@ -179,7 +195,10 @@ pub enum EntryFeeClaimType {
 
 #[cfg(test)]
 mod tests {
-    use super::{EntryFeeData, EntryFeeDataStorePacking};
+    use super::{
+        EntryFeeData, EntryFeeDataStorePacking, unpack_additional_count,
+        unpack_game_creator_claimed,
+    };
 
     // =========================================================================
     // Helpers
@@ -447,5 +466,103 @@ mod tests {
         let packed_2 = EntryFeeDataStorePacking::pack(unpacked_1);
 
         assert!(packed_1 == packed_2, "fuzz: packed values should be idempotent");
+    }
+
+    // =========================================================================
+    // 9. Individual unpack helpers — correctness
+    // =========================================================================
+
+    #[test]
+    fn test_unpack_additional_count_matches_full() {
+        let data = build_entry_fee_data(100000000000000000_u128, 1000, 500, false, 7);
+        let packed = EntryFeeDataStorePacking::pack(data);
+        let full = EntryFeeDataStorePacking::unpack(packed);
+        assert!(unpack_additional_count(packed) == full.additional_count);
+    }
+
+    #[test]
+    fn test_unpack_game_creator_claimed_matches_full() {
+        let data = build_entry_fee_data(100000000000000000_u128, 1000, 500, true, 3);
+        let packed = EntryFeeDataStorePacking::pack(data);
+        let full = EntryFeeDataStorePacking::unpack(packed);
+        assert!(unpack_game_creator_claimed(packed) == full.game_creator_claimed);
+    }
+
+    #[test]
+    fn test_unpack_additional_count_zero() {
+        let packed = EntryFeeDataStorePacking::pack(build_entry_fee_data(0, 0, 0, false, 0));
+        assert!(unpack_additional_count(packed) == 0);
+    }
+
+    #[test]
+    fn test_unpack_additional_count_max() {
+        let packed = EntryFeeDataStorePacking::pack(build_entry_fee_data(0, 0, 0, false, 0xFF));
+        assert!(unpack_additional_count(packed) == 0xFF);
+    }
+
+    #[test]
+    fn test_unpack_game_creator_claimed_false() {
+        let packed = EntryFeeDataStorePacking::pack(build_entry_fee_data(0, 0, 0, false, 0));
+        assert!(!unpack_game_creator_claimed(packed));
+    }
+
+    #[test]
+    fn test_unpack_game_creator_claimed_true() {
+        let packed = EntryFeeDataStorePacking::pack(build_entry_fee_data(0, 0, 0, true, 0));
+        assert!(unpack_game_creator_claimed(packed));
+    }
+
+    #[test]
+    #[fuzzer(runs: 100)]
+    fn test_fuzz_unpack_additional_count(
+        amount: u128, raw_gc_share: u16, raw_refund_share: u16, raw_claimed: u8, count: u8,
+    ) {
+        let game_creator_share = raw_gc_share % 0x4000;
+        let refund_share = raw_refund_share % 0x4000;
+        let claimed = (raw_claimed % 2) == 1;
+        let data = build_entry_fee_data(amount, game_creator_share, refund_share, claimed, count);
+        let packed = EntryFeeDataStorePacking::pack(data);
+        assert!(unpack_additional_count(packed) == count);
+    }
+
+    #[test]
+    #[fuzzer(runs: 100)]
+    fn test_fuzz_unpack_game_creator_claimed(
+        amount: u128, raw_gc_share: u16, raw_refund_share: u16, raw_claimed: u8, count: u8,
+    ) {
+        let game_creator_share = raw_gc_share % 0x4000;
+        let refund_share = raw_refund_share % 0x4000;
+        let claimed = (raw_claimed % 2) == 1;
+        let data = build_entry_fee_data(amount, game_creator_share, refund_share, claimed, count);
+        let packed = EntryFeeDataStorePacking::pack(data);
+        assert!(unpack_game_creator_claimed(packed) == claimed);
+    }
+
+    // =========================================================================
+    // 10. Gas benchmarks — full unpack vs selective
+    // =========================================================================
+
+    #[test]
+    fn bench_entry_fee_full_unpack() {
+        let data = build_entry_fee_data(100000000000000000_u128, 1000, 500, true, 5);
+        let packed = EntryFeeDataStorePacking::pack(data);
+        let unpacked = EntryFeeDataStorePacking::unpack(packed);
+        assert!(unpacked.additional_count == 5);
+    }
+
+    #[test]
+    fn bench_entry_fee_additional_count_only() {
+        let data = build_entry_fee_data(100000000000000000_u128, 1000, 500, true, 5);
+        let packed = EntryFeeDataStorePacking::pack(data);
+        let count = unpack_additional_count(packed);
+        assert!(count == 5);
+    }
+
+    #[test]
+    fn bench_entry_fee_game_creator_claimed_only() {
+        let data = build_entry_fee_data(100000000000000000_u128, 1000, 500, true, 5);
+        let packed = EntryFeeDataStorePacking::pack(data);
+        let claimed = unpack_game_creator_claimed(packed);
+        assert!(claimed);
     }
 }

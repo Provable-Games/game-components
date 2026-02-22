@@ -25,6 +25,7 @@ use crate::entry_fee::models::{AdditionalShare, EntryFee, EntryFeeClaimType, Ent
 #[starknet::interface]
 trait IEntryFeeMock<TContractState> {
     fn set_entry_fee(ref self: TContractState, context_id: u64, entry_fee: EntryFee);
+    fn get_entry_fee(self: @TContractState, context_id: u64) -> Option<EntryFeeConfig>;
     fn get_additional_shares(self: @TContractState, context_id: u64) -> Span<AdditionalShare>;
     fn is_claimed(self: @TContractState, context_id: u64, claim_type: EntryFeeClaimType) -> bool;
     fn set_claimed(ref self: TContractState, context_id: u64, claim_type: EntryFeeClaimType);
@@ -229,4 +230,62 @@ fn test_storage_gas_claim_multiple_shares() {
     assert!(
         mock.is_claimed(1, EntryFeeClaimType::AdditionalShare(15)), "share 15 should be claimed",
     );
+}
+
+// ============================================================================
+// get_entry_fee roundtrip tests (covers _get_entry_fee with explicit unpack)
+// ============================================================================
+
+/// No entry fee set → get_entry_fee returns None
+#[test]
+fn test_get_entry_fee_none_when_unset() {
+    let mock = deploy_mock();
+    let result = mock.get_entry_fee(999);
+    assert!(result.is_none(), "should be None when no entry fee set");
+}
+
+/// Full config roundtrip with game_creator_share and refund_share set
+#[test]
+fn test_get_entry_fee_roundtrip_with_shares() {
+    let mock = deploy_mock();
+
+    let entry_fee = EntryFee::Config(
+        EntryFeeConfig {
+            token_address: make_address(0xABCD),
+            amount: 500_000,
+            game_creator_share: Option::Some(1000), // 10%
+            refund_share: Option::Some(500), // 5%
+            additional_shares: create_additional_shares(2).span(),
+        },
+    );
+    mock.set_entry_fee(1, entry_fee);
+
+    let config = mock.get_entry_fee(1).expect('should be Some');
+    assert!(config.amount == 500_000, "amount mismatch");
+    assert!(config.game_creator_share == Option::Some(1000), "game_creator_share mismatch");
+    assert!(config.refund_share == Option::Some(500), "refund_share mismatch");
+    assert!(config.additional_shares.len() == 2, "additional_shares count mismatch");
+}
+
+/// Config with shares set to None (0 stored → None on read)
+#[test]
+fn test_get_entry_fee_roundtrip_no_shares() {
+    let mock = deploy_mock();
+
+    let entry_fee = EntryFee::Config(
+        EntryFeeConfig {
+            token_address: make_address(0x1),
+            amount: 1000,
+            game_creator_share: Option::None,
+            refund_share: Option::None,
+            additional_shares: array![].span(),
+        },
+    );
+    mock.set_entry_fee(1, entry_fee);
+
+    let config = mock.get_entry_fee(1).expect('should be Some');
+    assert!(config.amount == 1000, "amount mismatch");
+    assert!(config.game_creator_share.is_none(), "game_creator_share should be None");
+    assert!(config.refund_share.is_none(), "refund_share should be None");
+    assert!(config.additional_shares.len() == 0, "should have 0 additional shares");
 }
