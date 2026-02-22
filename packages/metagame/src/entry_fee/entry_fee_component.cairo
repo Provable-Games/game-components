@@ -248,10 +248,13 @@ pub mod EntryFeeComponent {
                     let erc20_dispatcher = IERC20Dispatcher {
                         contract_address: config.token_address,
                     };
-                    erc20_dispatcher
-                        .transfer_from(
-                            get_caller_address(), get_contract_address(), config.amount.into(),
-                        );
+                    assert!(
+                        erc20_dispatcher
+                            .transfer_from(
+                                get_caller_address(), get_contract_address(), config.amount.into(),
+                            ),
+                        "EntryFee: ERC20 transfer_from failed",
+                    );
                 },
                 EntryFeeDeposit::Extension(pay_params) => {
                     let extension_address = EntryFeeStoreTrait::get_extension(@self, context_id);
@@ -273,7 +276,10 @@ pub mod EntryFeeComponent {
         ) {
             if amount > 0 {
                 let erc20_dispatcher = IERC20Dispatcher { contract_address: token_address };
-                erc20_dispatcher.transfer(recipient, amount.into());
+                assert!(
+                    erc20_dispatcher.transfer(recipient, amount.into()),
+                    "EntryFee: ERC20 transfer failed",
+                );
             }
         }
 

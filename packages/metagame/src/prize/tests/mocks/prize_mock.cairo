@@ -117,4 +117,34 @@ pub mod PrizeMock {
     fn assert_prize_not_claimed(self: @ContractState, context_id: u64, prize_type: PrizeType) {
         self.prize.assert_prize_not_claimed(context_id, prize_type);
     }
+
+    /// Get custom shares for a prize
+    #[external(v0)]
+    fn get_custom_shares(self: @ContractState, prize_id: u64) -> Array<u16> {
+        self.prize._get_custom_shares(prize_id)
+    }
+
+    /// Read extension config for a context and prize
+    #[external(v0)]
+    fn read_extension_config(
+        self: @ContractState, context_id: u64, prize_id: u64,
+    ) -> Span<felt252> {
+        self.prize.read_extension_config(context_id, prize_id)
+    }
+
+    /// Write extension config for a context and prize
+    #[external(v0)]
+    fn write_extension_config(
+        ref self: ContractState, context_id: u64, prize_id: u64, config: Span<felt252>,
+    ) {
+        self.prize.write_extension_config(context_id, prize_id, config);
+    }
+
+    /// Get extension address for a context and prize
+    #[external(v0)]
+    fn get_extension_address(
+        self: @ContractState, context_id: u64, prize_id: u64,
+    ) -> starknet::ContractAddress {
+        self.prize.get_extension_address(context_id, prize_id)
+    }
 }

@@ -15,6 +15,8 @@ trait IPrizeMockExtended<TContractState> {
     fn increment_prize_count(ref self: TContractState) -> u64;
     fn assert_prize_exists(self: @TContractState, prize_id: u64);
     fn assert_prize_not_claimed(self: @TContractState, context_id: u64, prize_type: PrizeType);
+    // Embeddable IPrize method
+    fn is_prize_claimed(self: @TContractState, context_id: u64, prize_type: PrizeType) -> bool;
 }
 
 fn deploy_prize_mock() -> IPrizeMockExtendedDispatcher {
@@ -29,11 +31,11 @@ fn make_erc20_prize(
     PrizeData {
         id,
         context_id,
-        token_address: starknet::contract_address_const::<0xE2C20>(),
+        token_address: core::traits::TryInto::try_into(0xE2C20).unwrap(),
         token_type: TokenTypeData::erc20(
             ERC20Data { amount, distribution, distribution_count: count },
         ),
-        sponsor_address: starknet::contract_address_const::<0x999>(),
+        sponsor_address: core::traits::TryInto::try_into(0x999).unwrap(),
     }
 }
 
@@ -41,9 +43,9 @@ fn make_erc721_prize(id: u64, context_id: u64, token_id: u128) -> PrizeData {
     PrizeData {
         id,
         context_id,
-        token_address: starknet::contract_address_const::<0xE2C721>(),
+        token_address: core::traits::TryInto::try_into(0xE2C721).unwrap(),
         token_type: TokenTypeData::erc721(ERC721Data { id: token_id }),
-        sponsor_address: starknet::contract_address_const::<0x999>(),
+        sponsor_address: core::traits::TryInto::try_into(0x999).unwrap(),
     }
 }
 
@@ -187,4 +189,24 @@ fn test_assert_prize_not_claimed_succeeds_when_unclaimed() {
 
     // Should not panic (nothing claimed)
     mock.assert_prize_not_claimed(context_id, prize_type);
+}
+
+// ============================================================================
+// is_prize_claimed (embeddable IPrize) tests
+// ============================================================================
+
+#[test]
+fn test_is_prize_claimed_false_by_default() {
+    let mock = deploy_prize_mock();
+    assert!(!mock.is_prize_claimed(1, PrizeType::Single(1)), "should not be claimed by default");
+}
+
+#[test]
+fn test_is_prize_claimed_true_after_set() {
+    let mock = deploy_prize_mock();
+    let context_id: u64 = 42;
+    let prize_type = PrizeType::Single(1);
+
+    mock.set_claimed(context_id, prize_type);
+    assert!(mock.is_prize_claimed(context_id, prize_type), "should be claimed after set");
 }

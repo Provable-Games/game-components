@@ -294,8 +294,13 @@ pub mod PrizeComponent {
                     let amount = *erc20_data.amount;
                     let token_dispatcher = IERC20Dispatcher { contract_address: token_address };
                     assert!(amount > 0, "Prize: ERC20 prize token amount must be greater than 0");
-                    token_dispatcher
-                        .transfer_from(get_caller_address(), get_contract_address(), amount.into());
+                    assert!(
+                        token_dispatcher
+                            .transfer_from(
+                                get_caller_address(), get_contract_address(), amount.into(),
+                            ),
+                        "Prize: ERC20 transfer_from failed",
+                    );
                 },
                 TokenTypeData::erc721(erc721_data) => {
                     let token_id = *erc721_data.id;
@@ -354,7 +359,7 @@ pub mod PrizeComponent {
             recipient: ContractAddress,
         ) {
             let erc20 = IERC20Dispatcher { contract_address: token_address };
-            erc20.transfer(recipient, amount.into());
+            assert!(erc20.transfer(recipient, amount.into()), "Prize: ERC20 transfer failed");
         }
 
         /// Payout ERC721 to a recipient
@@ -374,7 +379,10 @@ pub mod PrizeComponent {
         ) {
             let prize = PrizeStoreTrait::get_prize(@self, prize_id);
             let erc20 = IERC20Dispatcher { contract_address: prize.token_address };
-            erc20.transfer(prize.sponsor_address, amount.into());
+            assert!(
+                erc20.transfer(prize.sponsor_address, amount.into()),
+                "Prize: ERC20 refund transfer failed",
+            );
         }
 
         /// Refund ERC721 prize to the original sponsor

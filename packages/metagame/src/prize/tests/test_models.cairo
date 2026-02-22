@@ -9,9 +9,9 @@ fn make_prize(token_type: TokenTypeData) -> PrizeData {
     PrizeData {
         id: 0,
         context_id: 1,
-        token_address: starknet::contract_address_const::<0x123>(),
+        token_address: core::traits::TryInto::try_into(0x123).unwrap(),
         token_type,
-        sponsor_address: starknet::contract_address_const::<0x456>(),
+        sponsor_address: core::traits::TryInto::try_into(0x456).unwrap(),
     }
 }
 
@@ -181,8 +181,8 @@ fn test_pack_unpack_token_type_erc721() {
 
 #[test]
 fn test_stored_prize_from_to_roundtrip_erc20() {
-    let token_addr = starknet::contract_address_const::<0xABC>();
-    let sponsor_addr = starknet::contract_address_const::<0xDEF>();
+    let token_addr = core::traits::TryInto::try_into(0xABC).unwrap();
+    let sponsor_addr = core::traits::TryInto::try_into(0xDEF).unwrap();
 
     let prize = PrizeData {
         id: 7,
@@ -209,8 +209,8 @@ fn test_stored_prize_from_to_roundtrip_erc20() {
 
 #[test]
 fn test_stored_prize_from_to_roundtrip_erc721() {
-    let token_addr = starknet::contract_address_const::<0xABC>();
-    let sponsor_addr = starknet::contract_address_const::<0xDEF>();
+    let token_addr = core::traits::TryInto::try_into(0xABC).unwrap();
+    let sponsor_addr = core::traits::TryInto::try_into(0xDEF).unwrap();
 
     let prize = PrizeData {
         id: 3,

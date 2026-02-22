@@ -76,4 +76,9 @@ pub mod EntryRequirementMock {
     fn assert_valid_entry_requirement(self: @ContractState, entry_requirement: EntryRequirement) {
         self.entry_req.assert_valid_entry_requirement(entry_requirement);
     }
+
+    #[external(v0)]
+    fn hash_qualification_proof(self: @ContractState, proof: QualificationProof) -> felt252 {
+        self.entry_req.hash_qualification_proof(proof)
+    }
 }
