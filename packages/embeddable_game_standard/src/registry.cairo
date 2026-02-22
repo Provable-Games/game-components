@@ -3,6 +3,9 @@
 
 pub mod interface;
 pub mod registry;
+pub mod registry_component;
+pub mod registry_store;
+pub mod store;
 
 #[cfg(test)]
 mod tests;

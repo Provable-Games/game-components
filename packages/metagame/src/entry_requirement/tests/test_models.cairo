@@ -1,4 +1,4 @@
-use crate::entry_requirement::models::{EntryRequirementMeta, EntryRequirementMetaStorePacking};
+use crate::entry_requirement::structs::{EntryRequirementMeta, EntryRequirementMetaStorePacking};
 
 // ============================================================================
 // StorePacking roundtrip tests

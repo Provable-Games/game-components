@@ -1,6 +1,6 @@
 use snforge_std::{ContractClassTrait, DeclareResultTrait, declare};
 use starknet::ContractAddress;
-use crate::entry_requirement::models::{
+use crate::entry_requirement::structs::{
     EntryRequirement, EntryRequirementType, ExtensionConfig, NFTQualification, QualificationEntries,
     QualificationProof,
 };

@@ -2,8 +2,8 @@
 #[starknet::contract]
 pub mod PrizeMock {
     use openzeppelin_introspection::src5::SRC5Component;
-    use crate::prize::models::{PrizeData, PrizeType};
-    use crate::prize::prize::PrizeComponent;
+    use crate::prize::prize_component::PrizeComponent;
+    use crate::prize::structs::{PrizeData, PrizeType};
 
     component!(path: PrizeComponent, storage: prize, event: PrizeEvent);
     component!(path: SRC5Component, storage: src5, event: SRC5Event);

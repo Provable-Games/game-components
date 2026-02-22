@@ -2,8 +2,8 @@
 #[starknet::contract]
 pub mod EntryFeeMock {
     use openzeppelin_introspection::src5::SRC5Component;
-    use crate::entry_fee::entry_fee::EntryFeeComponent;
-    use crate::entry_fee::models::{AdditionalShare, EntryFee, EntryFeeClaimType};
+    use crate::entry_fee::entry_fee_component::EntryFeeComponent;
+    use crate::entry_fee::structs::{AdditionalShare, EntryFee, EntryFeeClaimType};
 
     component!(path: EntryFeeComponent, storage: entry_fee, event: EntryFeeEvent);
     component!(path: SRC5Component, storage: src5, event: SRC5Event);

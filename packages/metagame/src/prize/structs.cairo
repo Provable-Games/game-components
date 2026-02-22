@@ -117,16 +117,16 @@ fn pack_token_type(token_type: TokenTypeData) -> PackedTokenTypeData {
                 Option::None => (PAYOUT_TYPE_POSITION, 0_u16),
                 Option::Some(dist) => {
                     match dist {
-                        game_components_utilities::distribution::models::Distribution::Linear(w) => (
+                        game_components_utilities::distribution::structs::Distribution::Linear(w) => (
                             PAYOUT_TYPE_LINEAR, w,
                         ),
-                        game_components_utilities::distribution::models::Distribution::Exponential(w) => (
+                        game_components_utilities::distribution::structs::Distribution::Exponential(w) => (
                             PAYOUT_TYPE_EXPONENTIAL, w,
                         ),
-                        game_components_utilities::distribution::models::Distribution::Uniform => (
+                        game_components_utilities::distribution::structs::Distribution::Uniform => (
                             PAYOUT_TYPE_UNIFORM, 0_u16,
                         ),
-                        game_components_utilities::distribution::models::Distribution::Custom(_) => (
+                        game_components_utilities::distribution::structs::Distribution::Custom(_) => (
                             PAYOUT_TYPE_CUSTOM, 0_u16,
                         ),
                     }
@@ -154,21 +154,23 @@ fn unpack_token_type(packed_token_type: PackedTokenTypeData) -> TokenTypeData {
                 Option::None
             } else if packed.payout_type == PAYOUT_TYPE_LINEAR {
                 Option::Some(
-                    game_components_utilities::distribution::models::Distribution::Linear(
+                    game_components_utilities::distribution::structs::Distribution::Linear(
                         packed.param,
                     ),
                 )
             } else if packed.payout_type == PAYOUT_TYPE_EXPONENTIAL {
                 Option::Some(
-                    game_components_utilities::distribution::models::Distribution::Exponential(
+                    game_components_utilities::distribution::structs::Distribution::Exponential(
                         packed.param,
                     ),
                 )
             } else if packed.payout_type == PAYOUT_TYPE_UNIFORM {
-                Option::Some(game_components_utilities::distribution::models::Distribution::Uniform)
+                Option::Some(
+                    game_components_utilities::distribution::structs::Distribution::Uniform,
+                )
             } else {
                 Option::Some(
-                    game_components_utilities::distribution::models::Distribution::Custom(
+                    game_components_utilities::distribution::structs::Distribution::Custom(
                         array![].span(),
                     ),
                 )

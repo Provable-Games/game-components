@@ -1,5 +1,5 @@
-use game_components_utilities::distribution::models::Distribution;
-use crate::prize::models::{ERC20Data, ERC721Data, PrizeData, StoredPrizeTrait, TokenTypeData};
+use game_components_utilities::distribution::structs::Distribution;
+use crate::prize::structs::{ERC20Data, ERC721Data, PrizeData, StoredPrizeTrait, TokenTypeData};
 
 // ============================================================================
 // pack_token_type / unpack_token_type roundtrip tests via StoredPrizeTrait

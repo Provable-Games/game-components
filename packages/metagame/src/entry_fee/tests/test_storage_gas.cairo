@@ -20,7 +20,7 @@ use starknet::ContractAddress;
 ///
 /// Note: Recipients are still stored separately (ContractAddress = 251 bits, cannot pack)
 
-use crate::entry_fee::models::{AdditionalShare, EntryFee, EntryFeeClaimType, EntryFeeConfig};
+use crate::entry_fee::structs::{AdditionalShare, EntryFee, EntryFeeClaimType, EntryFeeConfig};
 
 #[starknet::interface]
 trait IEntryFeeMock<TContractState> {

@@ -1,6 +1,6 @@
-use game_components_utilities::distribution::models::Distribution;
+use game_components_utilities::distribution::structs::Distribution;
 use snforge_std::{ContractClassTrait, DeclareResultTrait, declare};
-use crate::prize::models::{ERC20Data, ERC721Data, PrizeData, PrizeType, TokenTypeData};
+use crate::prize::structs::{ERC20Data, ERC721Data, PrizeData, PrizeType, TokenTypeData};
 
 #[starknet::interface]
 trait IPrizeMockExtended<TContractState> {

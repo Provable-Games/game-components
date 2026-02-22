@@ -17,7 +17,7 @@ use snforge_std::{ContractClassTrait, DeclareResultTrait, declare};
 /// Note: Poseidon hash computation is relatively cheap on Starknet, but
 /// avoiding redundant computations still saves gas in hot paths.
 
-use crate::prize::models::PrizeType;
+use crate::prize::structs::PrizeType;
 
 #[starknet::interface]
 trait IPrizeMock<TContractState> {

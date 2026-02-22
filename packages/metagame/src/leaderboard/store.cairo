@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-use game_components_metagame::leaderboard::models::Leaderboard;
+use game_components_metagame::leaderboard::structs::Leaderboard;
 
 /// Generic store trait for leaderboard operations
 pub trait Store<T> {

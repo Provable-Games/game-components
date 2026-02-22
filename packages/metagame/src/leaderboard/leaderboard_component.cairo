@@ -24,8 +24,8 @@ pub mod LeaderboardComponent {
         LeaderboardStoreHelpersImpl, LeaderboardStoreHelpersTrait, LeaderboardStoreImpl,
         LeaderboardStoreTrait,
     };
-    use crate::leaderboard::models::Leaderboard;
     use crate::leaderboard::store::Store;
+    use crate::leaderboard::structs::Leaderboard;
 
     #[storage]
     pub struct Storage {

@@ -50,7 +50,7 @@ fn calculate_dust(distribution, total_payouts, available_share) -> u16
 
 ```cairo
 use game_components_distribution::calculator::{calculate_share, calculate_share_with_dust};
-use game_components_distribution::models::{Distribution, BASIS_POINTS};
+use game_components_distribution::structs::{Distribution, BASIS_POINTS};
 
 // Linear distribution: 3 winners splitting 100%
 let dist = Distribution::Linear(10); // weight 1.0

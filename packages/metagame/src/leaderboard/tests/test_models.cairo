@@ -4,7 +4,7 @@
 // Tests for the Leaderboard struct in models.cairo
 // Covers struct creation, field access, and Serde (serialization/deserialization)
 
-use game_components_metagame::leaderboard::models::Leaderboard;
+use game_components_metagame::leaderboard::structs::Leaderboard;
 use game_components_testing::constants::MAX_U64;
 
 // ==============================================================================

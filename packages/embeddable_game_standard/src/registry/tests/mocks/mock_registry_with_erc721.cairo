@@ -3,7 +3,7 @@
 #[starknet::contract]
 pub mod MockRegistryWithERC721 {
     use game_components_embeddable_game_standard::registry::interface::IMINIGAME_REGISTRY_ID;
-    use game_components_embeddable_game_standard::registry::registry::MinigameRegistryComponent;
+    use game_components_embeddable_game_standard::registry::registry_component::MinigameRegistryComponent;
     use openzeppelin_introspection::src5::SRC5Component;
     use openzeppelin_token::erc721::{ERC721Component, ERC721HooksEmptyImpl};
     use starknet::ContractAddress;
