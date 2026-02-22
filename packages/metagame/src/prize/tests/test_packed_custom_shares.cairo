@@ -1,4 +1,4 @@
-use crate::prize::models::{CUSTOM_SHARES_PER_SLOT, CustomSharesImpl, CustomSharesTrait};
+use crate::prize::structs::{CUSTOM_SHARES_PER_SLOT, CustomSharesImpl, CustomSharesTrait};
 
 /// Test basic pack/unpack roundtrip for a single share
 #[test]

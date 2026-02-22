@@ -1,5 +1,5 @@
 use snforge_std::{ContractClassTrait, DeclareResultTrait, declare};
-use crate::entry_fee::models::{AdditionalShare, EntryFee, EntryFeeClaimType, EntryFeeConfig};
+use crate::entry_fee::structs::{AdditionalShare, EntryFee, EntryFeeClaimType, EntryFeeConfig};
 
 #[starknet::interface]
 trait IEntryFeeMock<TContractState> {

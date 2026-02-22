@@ -1,4 +1,4 @@
-use crate::entry_fee::models::{
+use crate::entry_fee::structs::{
     PackedAdditionalSharesImpl, PackedAdditionalSharesTrait, SHARES_PER_SLOT, StoredAdditionalShare,
 };
 

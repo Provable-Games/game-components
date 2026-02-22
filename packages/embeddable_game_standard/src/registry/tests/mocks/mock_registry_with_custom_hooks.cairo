@@ -11,7 +11,7 @@ pub trait IMockRegistryHookTracker<TContractState> {
 
 #[starknet::contract]
 pub mod MockRegistryWithCustomHooks {
-    use game_components_embeddable_game_standard::registry::registry::MinigameRegistryComponent;
+    use game_components_embeddable_game_standard::registry::registry_component::MinigameRegistryComponent;
     use openzeppelin_introspection::src5::SRC5Component;
     use starknet::ContractAddress;
     use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};

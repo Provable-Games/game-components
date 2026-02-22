@@ -2,8 +2,9 @@
 #[starknet::contract]
 pub mod EntryFeeMock {
     use openzeppelin_introspection::src5::SRC5Component;
-    use crate::entry_fee::entry_fee::EntryFeeComponent;
-    use crate::entry_fee::models::{AdditionalShare, EntryFee, EntryFeeClaimType};
+    use starknet::ContractAddress;
+    use crate::entry_fee::entry_fee_component::EntryFeeComponent;
+    use crate::entry_fee::structs::{AdditionalShare, EntryFee, EntryFeeClaimType};
 
     component!(path: EntryFeeComponent, storage: entry_fee, event: EntryFeeEvent);
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
@@ -53,5 +54,20 @@ pub mod EntryFeeMock {
     #[external(v0)]
     fn set_claimed(ref self: ContractState, context_id: u64, claim_type: EntryFeeClaimType) {
         self.entry_fee.set_claimed(context_id, claim_type);
+    }
+
+    #[external(v0)]
+    fn read_extension_config(self: @ContractState, context_id: u64) -> Span<felt252> {
+        self.entry_fee.read_extension_config(context_id)
+    }
+
+    #[external(v0)]
+    fn write_extension_config(ref self: ContractState, context_id: u64, config: Span<felt252>) {
+        self.entry_fee.write_extension_config(context_id, config);
+    }
+
+    #[external(v0)]
+    fn get_extension_address(self: @ContractState, context_id: u64) -> ContractAddress {
+        self.entry_fee.get_extension_address(context_id)
     }
 }

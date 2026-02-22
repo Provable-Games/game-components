@@ -1,5 +1,8 @@
 pub mod entry_fee;
-pub mod models;
+pub mod entry_fee_component;
+pub mod entry_fee_store;
+pub mod store;
+pub mod structs;
 
 // Libs (pure logic)
 pub mod libs {

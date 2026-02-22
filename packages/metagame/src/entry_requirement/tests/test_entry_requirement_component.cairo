@@ -1,6 +1,6 @@
 use snforge_std::{ContractClassTrait, DeclareResultTrait, declare};
 use starknet::ContractAddress;
-use crate::entry_requirement::models::{
+use crate::entry_requirement::structs::{
     EntryRequirement, EntryRequirementType, ExtensionConfig, NFTQualification, QualificationEntries,
     QualificationProof,
 };
@@ -34,6 +34,7 @@ trait IEntryRequirementMock<TContractState> {
         qualifier: QualificationProof,
     ) -> ContractAddress;
     fn assert_valid_entry_requirement(self: @TContractState, entry_requirement: EntryRequirement);
+    fn hash_qualification_proof(self: @TContractState, proof: QualificationProof) -> felt252;
 }
 
 #[starknet::interface]
@@ -743,4 +744,158 @@ fn test_assert_valid_entry_requirement_extension_not_entry_validator() {
     };
 
     mock.assert_valid_entry_requirement(req);
+}
+
+// ============================================================================
+// Helper deploy function for AcceptingLimitedEntryValidatorMock
+// ============================================================================
+
+fn deploy_accepting_limited_entry_validator_mock(
+    owner: ContractAddress, registration_only: bool,
+) -> ContractAddress {
+    let contract_class = declare("AcceptingLimitedEntryValidatorMock")
+        .expect('declare failed')
+        .contract_class();
+    let mut calldata = array![];
+    owner.serialize(ref calldata);
+    registration_only.serialize(ref calldata);
+    let (contract_address, _) = contract_class.deploy(@calldata).expect('deploy failed');
+    contract_address
+}
+
+// ============================================================================
+// update_qualification_entries - Extension path tests
+// ============================================================================
+
+#[test]
+fn test_update_qualification_entries_extension_none_entries_left() {
+    // EntryValidatorMock returns Option::None from entries_left
+    // This means no limit check - should succeed silently
+    let mock = deploy_entry_requirement_mock();
+    let caller = make_address(0x555);
+    let validator_addr = deploy_entry_validator_mock(caller, false);
+    let context_id: u64 = 80;
+
+    let req = EntryRequirement {
+        entry_limit: 10,
+        entry_requirement_type: EntryRequirementType::extension(
+            ExtensionConfig { address: validator_addr, config: array![].span() },
+        ),
+    };
+
+    snforge_std::cheat_caller_address(
+        mock.contract_address, caller, snforge_std::CheatSpan::TargetCalls(1),
+    );
+    // Should not panic - entries_left returns None (no limit)
+    mock
+        .update_qualification_entries(
+            context_id, QualificationProof::Extension(array![].span()), req,
+        );
+}
+
+#[test]
+fn test_update_qualification_entries_extension_some_entries_remaining() {
+    // AcceptingLimitedEntryValidatorMock returns Option::Some(5)
+    // entries_left > 0 - should succeed
+    let mock = deploy_entry_requirement_mock();
+    let caller = make_address(0x555);
+    let validator_addr = deploy_accepting_limited_entry_validator_mock(caller, false);
+    let context_id: u64 = 81;
+
+    let req = EntryRequirement {
+        entry_limit: 10,
+        entry_requirement_type: EntryRequirementType::extension(
+            ExtensionConfig { address: validator_addr, config: array![].span() },
+        ),
+    };
+
+    snforge_std::cheat_caller_address(
+        mock.contract_address, caller, snforge_std::CheatSpan::TargetCalls(1),
+    );
+    // Should not panic - entries_left returns Some(5) which is > 0
+    mock
+        .update_qualification_entries(
+            context_id, QualificationProof::Extension(array![].span()), req,
+        );
+}
+
+#[test]
+#[should_panic(expected: "EntryRequirement: No entries left according to extension")]
+fn test_update_qualification_entries_extension_zero_entries_left() {
+    // RejectingEntryValidatorMock returns Option::Some(0)
+    // entries_left == 0 - should panic
+    let mock = deploy_entry_requirement_mock();
+    let caller = make_address(0x555);
+    let validator_addr = deploy_rejecting_entry_validator_mock(caller, false);
+    let context_id: u64 = 82;
+
+    let req = EntryRequirement {
+        entry_limit: 10,
+        entry_requirement_type: EntryRequirementType::extension(
+            ExtensionConfig { address: validator_addr, config: array![].span() },
+        ),
+    };
+
+    snforge_std::cheat_caller_address(
+        mock.contract_address, caller, snforge_std::CheatSpan::TargetCalls(1),
+    );
+    mock
+        .update_qualification_entries(
+            context_id, QualificationProof::Extension(array![].span()), req,
+        );
+}
+
+#[test]
+#[should_panic(
+    expected: "EntryRequirement: Provided qualification proof is not of type 'Extension'",
+)]
+fn test_update_qualification_entries_extension_wrong_proof_type() {
+    let mock = deploy_entry_requirement_mock();
+    let caller = make_address(0x555);
+    let validator_addr = deploy_entry_validator_mock(caller, false);
+    let context_id: u64 = 83;
+
+    let req = EntryRequirement {
+        entry_limit: 10,
+        entry_requirement_type: EntryRequirementType::extension(
+            ExtensionConfig { address: validator_addr, config: array![].span() },
+        ),
+    };
+
+    // Pass Address proof for extension requirement - should panic
+    mock
+        .update_qualification_entries(
+            context_id, QualificationProof::Address(make_address(0x123)), req,
+        );
+}
+
+// ============================================================================
+// hash_qualification_proof tests
+// ============================================================================
+
+#[test]
+fn test_hash_qualification_proof_deterministic() {
+    let mock = deploy_entry_requirement_mock();
+    let proof = QualificationProof::Address(make_address(0x123));
+
+    let hash1 = mock.hash_qualification_proof(proof);
+    let hash2 = mock.hash_qualification_proof(proof);
+    assert!(hash1 == hash2, "same proof should produce same hash");
+    assert!(hash1 != 0, "hash should be non-zero");
+}
+
+#[test]
+fn test_hash_qualification_proof_different_proofs_different_hashes() {
+    let mock = deploy_entry_requirement_mock();
+    let proof_addr = QualificationProof::Address(make_address(0x123));
+    let proof_nft = QualificationProof::NFT(NFTQualification { token_id: 42 });
+    let proof_ext = QualificationProof::Extension(array![0x1].span());
+
+    let hash_addr = mock.hash_qualification_proof(proof_addr);
+    let hash_nft = mock.hash_qualification_proof(proof_nft);
+    let hash_ext = mock.hash_qualification_proof(proof_ext);
+
+    assert!(hash_addr != hash_nft, "address and nft proofs should have different hashes");
+    assert!(hash_addr != hash_ext, "address and extension proofs should have different hashes");
+    assert!(hash_nft != hash_ext, "nft and extension proofs should have different hashes");
 }

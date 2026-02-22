@@ -1,7 +1,7 @@
 #[starknet::contract]
 pub mod RegistrationMock {
     use game_components_interfaces::registration::Registration;
-    use crate::registration::registration::RegistrationComponent;
+    use crate::registration::registration_component::RegistrationComponent;
 
     component!(path: RegistrationComponent, storage: registration, event: RegistrationEvent);
 

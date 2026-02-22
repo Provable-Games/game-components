@@ -2,7 +2,7 @@
 /// This contract tests that hooks can prevent game registration
 #[starknet::contract]
 pub mod MockRegistryWithRejectingHook {
-    use game_components_embeddable_game_standard::registry::registry::MinigameRegistryComponent;
+    use game_components_embeddable_game_standard::registry::registry_component::MinigameRegistryComponent;
     use openzeppelin_introspection::src5::SRC5Component;
     use starknet::ContractAddress;
 

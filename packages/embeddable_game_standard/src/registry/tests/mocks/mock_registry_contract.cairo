@@ -9,7 +9,7 @@ pub trait IMockRegistryInit<TContractState> {
 #[starknet::contract]
 pub mod MockRegistryContract {
     use game_components_embeddable_game_standard::registry::interface::IMinigameRegistry;
-    use game_components_embeddable_game_standard::registry::registry::{
+    use game_components_embeddable_game_standard::registry::registry_component::{
         MinigameRegistryComponent, MinigameRegistryHooksEmptyImpl,
     };
     use openzeppelin_introspection::src5::SRC5Component;

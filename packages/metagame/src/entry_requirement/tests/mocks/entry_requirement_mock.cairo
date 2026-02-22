@@ -2,8 +2,8 @@
 pub mod EntryRequirementMock {
     use openzeppelin_introspection::src5::SRC5Component;
     use starknet::ContractAddress;
-    use crate::entry_requirement::entry_requirement::EntryRequirementComponent;
-    use crate::entry_requirement::models::{
+    use crate::entry_requirement::entry_requirement_component::EntryRequirementComponent;
+    use crate::entry_requirement::structs::{
         EntryRequirement, QualificationEntries, QualificationProof,
     };
 
@@ -75,5 +75,10 @@ pub mod EntryRequirementMock {
     #[external(v0)]
     fn assert_valid_entry_requirement(self: @ContractState, entry_requirement: EntryRequirement) {
         self.entry_req.assert_valid_entry_requirement(entry_requirement);
+    }
+
+    #[external(v0)]
+    fn hash_qualification_proof(self: @ContractState, proof: QualificationProof) -> felt252 {
+        self.entry_req.hash_qualification_proof(proof)
     }
 }

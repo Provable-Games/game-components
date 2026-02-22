@@ -9,8 +9,8 @@ pub use game_components_interfaces::leaderboard::{
 use game_components_metagame::leaderboard::leaderboard::leaderboard::{
     LeaderboardOperationsImpl, LeaderboardUtilsImpl,
 };
-use game_components_metagame::leaderboard::models::Leaderboard;
 use game_components_metagame::leaderboard::store::Store;
+use game_components_metagame::leaderboard::structs::Leaderboard;
 /// Leaderboard Store Helper Module
 /// This module provides helper functions to integrate the pure leaderboard library with store
 /// operations.

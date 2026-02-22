@@ -1,4 +1,4 @@
-use crate::registration::models::RegistrationEntryData;
+use crate::registration::structs::RegistrationEntryData;
 
 // ============================================================================
 // RegistrationEntryData basic construction tests

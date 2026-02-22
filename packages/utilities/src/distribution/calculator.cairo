@@ -4,7 +4,7 @@
 //! These functions are stateless and can be used without the DistributionComponent.
 
 use game_components_utilities::math::{FixedTrait, ONE};
-use crate::distribution::models::Distribution;
+use crate::distribution::structs::Distribution;
 
 /// Calculate the distribution share for a given payout index in basis points
 /// Returns the share (0-10000) for the specified payout index
@@ -223,7 +223,7 @@ fn calculate_custom_share(payout_index: u32, shares: Span<u16>) -> u16 {
 
 #[cfg(test)]
 mod tests {
-    use crate::distribution::models::{BASIS_POINTS, Distribution};
+    use crate::distribution::structs::{BASIS_POINTS, Distribution};
     use super::{calculate_dust, calculate_share, calculate_share_with_dust, calculate_total};
 
     #[test]
