@@ -1,6 +1,6 @@
 use core::num::traits::Bounded;
-use crate::token::libs::LifecycleTrait;
 use crate::token::structs::Lifecycle;
+use crate::token::token::LifecycleTrait;
 
 // ================================================================================================
 // LIFECYCLE TESTS (UT-LIFE-*)

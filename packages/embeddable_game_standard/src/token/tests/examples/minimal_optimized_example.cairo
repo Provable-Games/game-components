@@ -7,11 +7,11 @@ use openzeppelin_introspection::src5::SRC5Component;
 use openzeppelin_token::common::erc2981::erc2981::{DefaultConfig, ERC2981Component};
 use openzeppelin_token::erc721::ERC721Component;
 use starknet::ContractAddress;
-use crate::token::core::core_token::CoreTokenComponent;
-use crate::token::core::noop_traits::{
+use crate::token::extensions::minter::minter::MinterComponent;
+use crate::token::noop_traits::{
     NoOpContext, NoOpObjectives, NoOpRenderer, NoOpSettings, NoOpSoulbound,
 };
-use crate::token::extensions::minter::minter::MinterComponent;
+use crate::token::token_component::CoreTokenComponent;
 
 // Override default configuration for minimal contract
 mod config {

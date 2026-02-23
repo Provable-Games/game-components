@@ -1,6 +1,6 @@
 use game_components_embeddable_game_standard::metagame::extensions::context::structs::GameContextDetails;
 use starknet::ContractAddress;
-use crate::token::core::traits::{
+use crate::token::traits::{
     OptionalContext, OptionalMinter, OptionalObjectives, OptionalRenderer, OptionalSettings,
     OptionalSoulbound,
 };

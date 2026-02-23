@@ -37,7 +37,7 @@ pub mod MockMinigameContract {
     use crate::minigame::extensions::settings::settings::SettingsComponent;
     use crate::minigame::extensions::settings::structs::{GameSetting, GameSettingDetails};
     use crate::minigame::interface::{IMinigameDetails, IMinigameTokenData};
-    use crate::minigame::minigame::MinigameComponent;
+    use crate::minigame::minigame_component::MinigameComponent;
     use crate::minigame::structs::GameDetail;
 
     component!(path: MinigameComponent, storage: minigame, event: MinigameEvent);

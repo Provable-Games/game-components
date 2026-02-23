@@ -434,7 +434,7 @@ mod MockCallbackContract {
     use starknet::ContractAddress;
     use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
     use crate::metagame::extensions::callback::callback::MetagameCallbackComponent;
-    use crate::metagame::metagame::MetagameComponent;
+    use crate::metagame::metagame_component::MetagameComponent;
     use super::IMockCallbackView;
 
     component!(path: MetagameCallbackComponent, storage: callback, event: CallbackEvent);
@@ -548,7 +548,7 @@ mod MockEmptyCallbackContract {
     use crate::metagame::extensions::callback::callback::{
         MetagameCallbackComponent, MetagameCallbackHooksEmptyImpl,
     };
-    use crate::metagame::metagame::MetagameComponent;
+    use crate::metagame::metagame_component::MetagameComponent;
 
     component!(path: MetagameCallbackComponent, storage: callback, event: CallbackEvent);
     component!(path: MetagameComponent, storage: metagame, event: MetagameEvent);

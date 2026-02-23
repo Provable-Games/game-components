@@ -188,6 +188,10 @@ jobs:
             module: prize
             runner: ubuntu-latest-4
             fuzzer_runs: 256
+          - package: game_components_metagame
+            module: ticket_booth
+            runner: ubuntu-latest-4
+            fuzzer_runs: 256
           # Economy
           - package: game_components_economy
             module: tokenomics

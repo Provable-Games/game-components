@@ -430,7 +430,7 @@ mod MockMetagameContract {
     use openzeppelin_introspection::src5::SRC5Component;
     use starknet::ContractAddress;
     use crate::metagame::extensions::context::structs::GameContextDetails;
-    use crate::metagame::metagame::MetagameComponent;
+    use crate::metagame::metagame_component::MetagameComponent;
 
     component!(path: MetagameComponent, storage: metagame, event: MetagameEvent);
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
@@ -586,7 +586,7 @@ mod MockContext {
 #[starknet::contract]
 mod MockMinigameToken {
     use core::num::traits::Zero;
-    use game_components_embeddable_game_standard::token::core::interface::{
+    use game_components_embeddable_game_standard::token::interface::{
         IMINIGAME_TOKEN_ID, IMinigameToken,
     };
     use game_components_embeddable_game_standard::token::structs::{
@@ -1169,7 +1169,7 @@ fn test_mint_batch_through_component() {
 mod MockMetagameContractForErrors {
     use openzeppelin_introspection::src5::SRC5Component;
     use starknet::ContractAddress;
-    use crate::metagame::metagame::MetagameComponent;
+    use crate::metagame::metagame_component::MetagameComponent;
 
     component!(path: MetagameComponent, storage: metagame, event: MetagameEvent);
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
@@ -1241,7 +1241,7 @@ mod MockMetagameContractWithBatch {
     use openzeppelin_introspection::src5::SRC5Component;
     use starknet::ContractAddress;
     use crate::metagame::extensions::context::structs::GameContextDetails;
-    use crate::metagame::metagame::MetagameComponent;
+    use crate::metagame::metagame_component::MetagameComponent;
 
     component!(path: MetagameComponent, storage: metagame, event: MetagameEvent);
     component!(path: SRC5Component, storage: src5, event: SRC5Event);

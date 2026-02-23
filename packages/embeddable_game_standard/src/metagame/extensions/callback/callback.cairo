@@ -15,8 +15,8 @@ pub mod MetagameCallbackComponent {
     use crate::metagame::extensions::callback::interface::{
         IMETAGAME_CALLBACK_ID, IMetagameCallback,
     };
-    use crate::metagame::metagame::MetagameComponent;
-    use crate::metagame::metagame::MetagameComponent::MetagameImpl;
+    use crate::metagame::metagame_component::MetagameComponent;
+    use crate::metagame::metagame_component::MetagameComponent::MetagameImpl;
 
     // ==========================================================================
     // STORAGE

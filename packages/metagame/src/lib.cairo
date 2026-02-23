@@ -3,3 +3,4 @@ pub mod entry_requirement;
 pub mod leaderboard;
 pub mod prize;
 pub mod registration;
+pub mod ticket_booth;

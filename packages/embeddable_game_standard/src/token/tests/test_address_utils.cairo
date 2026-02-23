@@ -3,7 +3,7 @@
 
 use core::num::traits::Zero;
 use starknet::ContractAddress;
-use crate::token::libs::address_utils::{
+use crate::token::token::address_utils::{
     address_to_option, addresses_equal, assert_not_zero_address, has_non_zero_address,
     is_non_zero_address, is_zero_address, unwrap_or_address, unwrap_or_zero,
 };

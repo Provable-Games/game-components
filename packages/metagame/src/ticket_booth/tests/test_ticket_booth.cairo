@@ -12,9 +12,9 @@ use snforge_std::{
     start_cheat_caller_address, stop_cheat_block_timestamp,
 };
 use starknet::ContractAddress;
-use crate::metagame::ticket_booth::TicketBoothComponent::{
-    GameExpiration, GoldenPass, GoldenPassInfo, ITicketBoothDispatcher, ITicketBoothDispatcherTrait,
-    PaymentType,
+use crate::ticket_booth::structs::{GameExpiration, GoldenPass, GoldenPassInfo, PaymentType};
+use crate::ticket_booth::ticket_booth_component::TicketBoothComponent::{
+    ITicketBoothDispatcher, ITicketBoothDispatcherTrait,
 };
 
 // =============================================================================
@@ -46,6 +46,14 @@ fn GAME_ADDRESS() -> ContractAddress {
 #[starknet::interface]
 trait IMockERC721Setter<TContractState> {
     fn set_owner(ref self: TContractState, token_id: u256, owner: ContractAddress);
+}
+
+#[starknet::interface]
+trait IMockERC20Setter<TContractState> {
+    fn set_balance(ref self: TContractState, account: ContractAddress, amount: u256);
+    fn set_allowance(
+        ref self: TContractState, owner: ContractAddress, spender: ContractAddress, amount: u256,
+    );
 }
 
 // =============================================================================
@@ -751,7 +759,7 @@ fn test_fuzz_opening_time(opening_time: u64) {
 #[starknet::contract]
 mod MockTicketBoothContract {
     use starknet::ContractAddress;
-    use crate::metagame::ticket_booth::TicketBoothComponent;
+    use crate::ticket_booth::ticket_booth_component::TicketBoothComponent;
 
     component!(path: TicketBoothComponent, storage: ticket_booth, event: TicketBoothEvent);
 
@@ -784,7 +792,7 @@ mod MockTicketBoothContract {
         settings_id: Option<u32>,
         start_time: Option<u64>,
         expiration_time: Option<u64>,
-        golden_passes: Option<Span<(ContractAddress, TicketBoothComponent::GoldenPass)>>,
+        golden_passes: Option<Span<(ContractAddress, crate::ticket_booth::structs::GoldenPass)>>,
     ) {
         self
             .ticket_booth
@@ -876,6 +884,19 @@ mod MockERC20ForTicketBooth {
             true
         }
     }
+
+    #[abi(embed_v0)]
+    impl MockERC20SetterImpl of super::IMockERC20Setter<ContractState> {
+        fn set_balance(ref self: ContractState, account: ContractAddress, amount: u256) {
+            self.balances.write(account, amount);
+        }
+
+        fn set_allowance(
+            ref self: ContractState, owner: ContractAddress, spender: ContractAddress, amount: u256,
+        ) {
+            self.allowances.write((owner, spender), amount);
+        }
+    }
 }
 
 // Mock ERC721 for golden pass NFT
@@ -952,13 +973,11 @@ mod MockERC721ForTicketBooth {
 #[starknet::contract]
 mod MockMinigameTokenForTicketBooth {
     use core::num::traits::Zero;
-    use game_components_embeddable_game_standard::metagame::extensions::context::structs::GameContextDetails;
-    use game_components_embeddable_game_standard::token::core::interface::{
-        IMINIGAME_TOKEN_ID, IMinigameToken,
-    };
-    use game_components_embeddable_game_standard::token::structs::{
+    use game_components_interfaces::structs::metagame::GameContextDetails;
+    use game_components_interfaces::structs::token::{
         Lifecycle, MintParams, PlayerNameUpdate, TokenMetadata, TokenMutableState,
     };
+    use game_components_interfaces::token::{IMINIGAME_TOKEN_ID, IMinigameToken};
     use openzeppelin_interfaces::introspection::ISRC5;
     use starknet::ContractAddress;
     use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
@@ -1127,6 +1146,148 @@ mod MockMinigameTokenForTicketBooth {
                 || interface_id == openzeppelin_interfaces::introspection::ISRC5_ID
         }
     }
+}
+
+// =============================================================================
+// PURE LIBRARY TESTS
+// =============================================================================
+
+// TB-U-62: calculate_ticket_expiration with Some duration
+#[test]
+fn test_calculate_ticket_expiration_with_duration() {
+    let result = crate::ticket_booth::ticket_booth::calculate_ticket_expiration(
+        Option::Some(3600), 1000,
+    );
+    assert!(result == Option::Some(4600), "Should be current_time + duration");
+}
+
+// TB-U-63: calculate_ticket_expiration with None duration
+#[test]
+fn test_calculate_ticket_expiration_with_none() {
+    let result = crate::ticket_booth::ticket_booth::calculate_ticket_expiration(Option::None, 1000);
+    assert!(result.is_none(), "Should be None when no duration");
+}
+
+// TB-U-64: calculate_golden_pass_expiration variants
+#[test]
+fn test_calculate_golden_pass_expiration_none() {
+    let result = crate::ticket_booth::ticket_booth::calculate_golden_pass_expiration(
+        @GameExpiration::None, 1000,
+    );
+    assert!(result.is_none(), "None expiration should return None");
+}
+
+#[test]
+fn test_calculate_golden_pass_expiration_fixed() {
+    let result = crate::ticket_booth::ticket_booth::calculate_golden_pass_expiration(
+        @GameExpiration::Fixed(5000), 1000,
+    );
+    assert!(result == Option::Some(5000), "Fixed should return the fixed timestamp");
+}
+
+#[test]
+fn test_calculate_golden_pass_expiration_dynamic() {
+    let result = crate::ticket_booth::ticket_booth::calculate_golden_pass_expiration(
+        @GameExpiration::Dynamic(3600), 1000,
+    );
+    assert!(result == Option::Some(4600), "Dynamic should return current_time + duration");
+}
+
+// TB-U-65: is_golden_pass_configured
+#[test]
+fn test_is_golden_pass_configured_true() {
+    let pass = GoldenPass {
+        cooldown: 100, game_expiration: GameExpiration::None, pass_expiration: 0,
+    };
+    assert!(
+        crate::ticket_booth::ticket_booth::is_golden_pass_configured(@pass),
+        "Should be configured with cooldown > 0",
+    );
+}
+
+#[test]
+fn test_is_golden_pass_configured_false() {
+    let pass = GoldenPass {
+        cooldown: 0, game_expiration: GameExpiration::None, pass_expiration: 0,
+    };
+    assert!(
+        !crate::ticket_booth::ticket_booth::is_golden_pass_configured(@pass),
+        "Should not be configured with cooldown = 0",
+    );
+}
+
+// TB-U-66: is_golden_pass_usable edge cases
+#[test]
+fn test_is_golden_pass_usable_zero_cooldown() {
+    let pass = GoldenPass {
+        cooldown: 0, game_expiration: GameExpiration::None, pass_expiration: 0,
+    };
+    assert!(
+        !crate::ticket_booth::ticket_booth::is_golden_pass_usable(@pass, 0, 1000),
+        "Should not be usable with zero cooldown",
+    );
+}
+
+#[test]
+fn test_is_golden_pass_usable_not_expired_cooldown_met() {
+    let pass = GoldenPass {
+        cooldown: 100, game_expiration: GameExpiration::None, pass_expiration: 5000,
+    };
+    // last_used=0, cooldown=100, current_time=1000 >= 0+100
+    assert!(
+        crate::ticket_booth::ticket_booth::is_golden_pass_usable(@pass, 0, 1000),
+        "Should be usable when not expired and cooldown met",
+    );
+}
+
+#[test]
+fn test_is_golden_pass_usable_expired() {
+    let pass = GoldenPass {
+        cooldown: 100, game_expiration: GameExpiration::None, pass_expiration: 500,
+    };
+    // pass_expiration=500, current_time=1000 >= 500 => expired
+    assert!(
+        !crate::ticket_booth::ticket_booth::is_golden_pass_usable(@pass, 0, 1000),
+        "Should not be usable when expired",
+    );
+}
+
+// =============================================================================
+// BUY GAME WITH BURN PATH (ticket_receiver_address = zero)
+// =============================================================================
+
+// TB-U-67: Buy game with zero ticket_receiver triggers burn fallback
+#[test]
+fn test_buy_game_ticket_zero_receiver_burn_fallback() {
+    let game_token = deploy_mock_minigame_token();
+    let payment_token = deploy_mock_erc20();
+    let zero_receiver: ContractAddress = 0.try_into().unwrap();
+
+    let (address, dispatcher) = deploy_ticket_booth(
+        DEFAULT_OPENING_TIME,
+        game_token,
+        payment_token,
+        DEFAULT_COST,
+        zero_receiver, // Zero receiver triggers burn path
+        Option::None,
+        Option::None,
+        Option::None,
+        Option::None,
+        Option::None,
+    );
+
+    // Fund ALICE with tokens by setting balance directly
+    let mock_setter = IMockERC20SetterDispatcher { contract_address: payment_token };
+    mock_setter.set_balance(ALICE(), DEFAULT_COST.into());
+    mock_setter.set_allowance(ALICE(), address, DEFAULT_COST.into());
+
+    start_cheat_block_timestamp(address, FUTURE_TIME);
+    start_cheat_caller_address(address, ALICE());
+
+    // This exercises the burn fallback path (burn_from will fail on mock,
+    // falling back to transfer_from to zero address)
+    let token_id = dispatcher.buy_game(PaymentType::Ticket, Option::None, ALICE(), false);
+    assert!(token_id != 0, "Should mint a token");
 }
 
 // =============================================================================
@@ -1381,7 +1542,7 @@ fn test_buy_game_golden_pass_expired() {
 #[starknet::contract]
 mod MockTicketBoothContractWithClientUrl {
     use starknet::ContractAddress;
-    use crate::metagame::ticket_booth::TicketBoothComponent;
+    use crate::ticket_booth::ticket_booth_component::TicketBoothComponent;
 
     component!(path: TicketBoothComponent, storage: ticket_booth, event: TicketBoothEvent);
 
@@ -1414,7 +1575,7 @@ mod MockTicketBoothContractWithClientUrl {
         settings_id: Option<u32>,
         start_time: Option<u64>,
         expiration_time: Option<u64>,
-        golden_passes: Option<Span<(ContractAddress, TicketBoothComponent::GoldenPass)>>,
+        golden_passes: Option<Span<(ContractAddress, crate::ticket_booth::structs::GoldenPass)>>,
     ) {
         self
             .ticket_booth
@@ -1439,7 +1600,7 @@ mod MockTicketBoothContractWithClientUrl {
 #[starknet::contract]
 mod MockTicketBoothContractWithRenderer {
     use starknet::ContractAddress;
-    use crate::metagame::ticket_booth::TicketBoothComponent;
+    use crate::ticket_booth::ticket_booth_component::TicketBoothComponent;
 
     component!(path: TicketBoothComponent, storage: ticket_booth, event: TicketBoothEvent);
 

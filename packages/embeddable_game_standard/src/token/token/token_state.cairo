@@ -1,8 +1,8 @@
 // Pure Cairo library for token state management
 // Contains logic for token playability, metadata creation, and state transitions
 
-use crate::token::libs::LifecycleTrait;
 use crate::token::structs::{Lifecycle, TokenMetadata};
+use crate::token::token::LifecycleTrait;
 
 /// Checks if a token is playable based on its lifecycle, game state, and objectives
 ///

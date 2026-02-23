@@ -1,7 +1,7 @@
 ///
 /// Ticket Booth Component
 ///
-/// A payment-enabled metagame component that charges tokens for game access
+/// A payment-enabled metagame component that charges tokens for game access.
 ///
 /// The component provides internal functions for updating configuration.
 /// Contracts using this component have two options:
@@ -14,6 +14,9 @@
 pub mod TicketBoothComponent {
     use core::byte_array::ByteArray;
     use core::num::traits::Zero;
+    use game_components_interfaces::token::{
+        IMinigameTokenDispatcher, IMinigameTokenDispatcherTrait,
+    };
     use openzeppelin_interfaces::erc20::{IERC20Dispatcher, IERC20DispatcherTrait};
     use openzeppelin_interfaces::erc721::{IERC721Dispatcher, IERC721DispatcherTrait};
     use starknet::contract_address::ContractAddress;
@@ -22,7 +25,8 @@ pub mod TicketBoothComponent {
         StoragePointerWriteAccess,
     };
     use starknet::{get_block_timestamp, get_caller_address};
-    use crate::metagame::libs;
+    use crate::ticket_booth::structs::{GameExpiration, GoldenPass, GoldenPassInfo, PaymentType};
+    use crate::ticket_booth::ticket_booth;
 
     #[starknet::interface]
     trait IERC20Burnable<TContractState> {
@@ -44,33 +48,6 @@ pub mod TicketBoothComponent {
         renderer_address: Option<ContractAddress>,
         golden_passes: Map<ContractAddress, GoldenPass>,
         golden_pass_last_used: Map<(ContractAddress, u128), u64>,
-    }
-
-    #[derive(Drop, Serde, Clone, starknet::Store)]
-    pub enum GameExpiration {
-        #[default]
-        None,
-        Fixed: u64, // set to the exact timestamp
-        Dynamic: u64 // add duration to current time
-    }
-
-    #[derive(Drop, Serde, Clone, starknet::Store)]
-    pub struct GoldenPass {
-        pub cooldown: u64, // Duration after which the pass can be used again, must be greater than 0
-        pub game_expiration: GameExpiration,
-        pub pass_expiration: u64 // timestamp when the pass expires (becoming unusable), 0 means no expiration
-    }
-
-    #[derive(Drop, Serde, Clone)]
-    pub struct GoldenPassInfo {
-        pub address: ContractAddress,
-        pub token_id: u128,
-    }
-
-    #[derive(Drop, Serde, Clone)]
-    pub enum PaymentType {
-        Ticket,
-        GoldenPass: GoldenPassInfo,
     }
 
     #[event]
@@ -137,12 +114,9 @@ pub mod TicketBoothComponent {
             let expiration = match payment_type.clone() {
                 PaymentType::Ticket => {
                     self.handle_ticket_payment(caller);
-
-                    // Calculate expiration by adding expiration_time to current_time
-                    match self.expiration_time.read() {
-                        Option::Some(duration) => Option::Some(current_time + duration),
-                        Option::None => Option::None,
-                    }
+                    ticket_booth::calculate_ticket_expiration(
+                        self.expiration_time.read(), current_time,
+                    )
                 },
                 PaymentType::GoldenPass(golden_pass_info) => {
                     self
@@ -171,7 +145,7 @@ pub mod TicketBoothComponent {
             self: @ComponentState<TContractState>, golden_pass_address: ContractAddress,
         ) -> Option<GoldenPass> {
             let golden_pass = self.golden_passes.read(golden_pass_address);
-            if golden_pass.cooldown > 0_u64 {
+            if ticket_booth::is_golden_pass_configured(@golden_pass) {
                 Option::Some(golden_pass)
             } else {
                 Option::None
@@ -192,21 +166,9 @@ pub mod TicketBoothComponent {
             token_id: u128,
         ) -> bool {
             let golden_pass_config = self.golden_passes.read(golden_pass_address);
-            if golden_pass_config.cooldown == 0_u64 {
-                return false;
-            }
-
             let current_time = get_block_timestamp();
-
-            // Check if the pass is expired
-            if golden_pass_config.pass_expiration > 0_u64
-                && current_time >= golden_pass_config.pass_expiration {
-                return false;
-            }
-
-            // Check cooldown
             let last_used = self.golden_pass_last_used.read((golden_pass_address, token_id));
-            current_time >= last_used + golden_pass_config.cooldown
+            ticket_booth::is_golden_pass_usable(@golden_pass_config, last_used, current_time)
         }
 
         fn ticket_receiver_address(self: @ComponentState<TContractState>) -> ContractAddress {
@@ -378,20 +340,9 @@ pub mod TicketBoothComponent {
                 .write((golden_pass_address, golden_pass_token_id), current_time);
 
             // Calculate expiration based on GameExpiration enum
-            match golden_pass_config.game_expiration {
-                GameExpiration::None => {
-                    // No expiration
-                    Option::None
-                },
-                GameExpiration::Fixed(expiration_time) => {
-                    // Fixed expiration: set to the exact timestamp
-                    Option::Some(expiration_time)
-                },
-                GameExpiration::Dynamic(duration) => {
-                    // Dynamic expiration: add duration to current_time
-                    Option::Some(current_time + duration)
-                },
-            }
+            ticket_booth::calculate_golden_pass_expiration(
+                @golden_pass_config.game_expiration, current_time,
+            )
         }
 
         fn mint_game(
@@ -402,25 +353,26 @@ pub mod TicketBoothComponent {
             start_time: Option<u64>,
             expiration: Option<u64>,
         ) -> felt252 {
-            let token_id = libs::mint(
-                self.game_token_address.read(),
-                Option::Some(self.game_address.read()),
-                player_name,
-                self.settings_id.read(),
-                start_time,
-                expiration,
-                Option::None,
-                Option::None,
-                self.client_url.read(),
-                self.renderer_address.read(),
-                to,
-                soulbound,
-                false,
-                0,
-                0,
-            );
-
-            token_id
+            let minigame_token_dispatcher = IMinigameTokenDispatcher {
+                contract_address: self.game_token_address.read(),
+            };
+            minigame_token_dispatcher
+                .mint(
+                    self.game_address.read(),
+                    player_name,
+                    self.settings_id.read(),
+                    start_time,
+                    expiration,
+                    Option::None,
+                    Option::None,
+                    self.client_url.read(),
+                    self.renderer_address.read(),
+                    to,
+                    soulbound,
+                    false,
+                    0,
+                    0,
+                )
         }
 
         fn assert_before_opening(ref self: ComponentState<TContractState>) {

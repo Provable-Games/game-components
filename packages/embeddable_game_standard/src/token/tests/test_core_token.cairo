@@ -9,8 +9,7 @@ use snforge_std::{
     start_cheat_block_timestamp, stop_cheat_block_timestamp,
 };
 use starknet::ContractAddress;
-use crate::token::core::interface::IMINIGAME_TOKEN_ID;
-use crate::token::interface::IMinigameTokenMixinDispatcherTrait;
+use crate::token::interface::{IMINIGAME_TOKEN_ID, IMinigameTokenMixinDispatcherTrait};
 use crate::token::structs::{MintParams, PlayerNameUpdate};
 use super::mocks::mock_game::IMockGameDispatcherTrait;
 use super::setup::{

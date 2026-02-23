@@ -6,10 +6,10 @@ pub mod MinterComponent {
     use starknet::storage::{
         Map, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess,
     };
-    use crate::token::core::traits::OptionalMinter;
     use crate::token::extensions::minter::interface::{
         IMINIGAME_TOKEN_MINTER_ID, IMinigameTokenMinter,
     };
+    use crate::token::traits::OptionalMinter;
 
     #[storage]
     pub struct Storage {

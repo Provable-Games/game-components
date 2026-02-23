@@ -10,11 +10,11 @@ pub mod RendererComponent {
         Map, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess,
     };
     use starknet::{ContractAddress, get_caller_address, get_contract_address};
-    use crate::token::core::traits::OptionalRenderer;
     use crate::token::extensions::renderer::interface::{
         IMINIGAME_TOKEN_RENDERER_ID, IMinigameTokenRenderer,
     };
-    use crate::token::libs::address_utils;
+    use crate::token::token::address_utils;
+    use crate::token::traits::OptionalRenderer;
 
     #[storage]
     pub struct Storage {

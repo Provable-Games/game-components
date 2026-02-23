@@ -1,10 +1,13 @@
-// Re-export from interfaces package for backward compatibility
+// Re-export from interfaces package
 pub use game_components_interfaces::registry::{
     GameMetadata, IMINIGAME_REGISTRY_ID, IMinigameRegistry, IMinigameRegistryDispatcher,
     IMinigameRegistryDispatcherTrait,
 };
 pub use game_components_interfaces::structs::metagame::GameContextDetails;
 pub use game_components_interfaces::structs::minigame::{GameObjective, GameSetting};
+pub use game_components_interfaces::token::{
+    IMINIGAME_TOKEN_ID, IMinigameToken, IMinigameTokenDispatcher, IMinigameTokenDispatcherTrait,
+};
 use starknet::ContractAddress;
 use crate::token::structs::{MintParams, PlayerNameUpdate, TokenMetadata, TokenMutableState};
 

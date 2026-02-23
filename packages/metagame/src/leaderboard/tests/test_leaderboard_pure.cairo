@@ -332,8 +332,8 @@ fn test_utils_functions() {
         "Index 254 should be position 255",
     );
     assert!(
-        LeaderboardUtilsImpl::index_to_position(255) == Option::None,
-        "Index 255 should be None (overflow)",
+        LeaderboardUtilsImpl::index_to_position(255) == Option::Some(256),
+        "Index 255 should be position 256",
     );
 
     // Test get_top_n
@@ -693,10 +693,10 @@ fn test_position_to_index_middle() {
 
 #[test]
 fn test_index_to_position_large() {
-    // Index 1000 should return None (overflow)
+    // After u32 refactoring, large indices are valid positions
     assert!(
-        LeaderboardUtilsImpl::index_to_position(1000) == Option::None,
-        "Index 1000 should return None",
+        LeaderboardUtilsImpl::index_to_position(1000) == Option::Some(1001),
+        "Index 1000 should be position 1001",
     );
 }
 
