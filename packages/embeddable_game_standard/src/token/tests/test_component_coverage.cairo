@@ -359,7 +359,7 @@ fn test_erc721_balance_of_after_mint() {
 #[test]
 fn test_supports_minigame_token_interface() {
     let test_contracts = setup();
-    use crate::token::core::interface::IMINIGAME_TOKEN_ID;
+    use crate::token::interface::IMINIGAME_TOKEN_ID;
     let supports = test_contracts.src5.supports_interface(IMINIGAME_TOKEN_ID);
     assert!(supports, "Should support IMinigameToken interface");
 }

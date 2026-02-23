@@ -16,12 +16,14 @@ pub mod SettingsComponent {
         InternalTrait as SRC5InternalTrait, SRC5Impl,
     };
     use starknet::{ContractAddress, get_caller_address, get_contract_address};
-    use crate::token::core::interface::{IMinigameTokenDispatcher, IMinigameTokenDispatcherTrait};
-    use crate::token::core::traits::OptionalSettings;
     use crate::token::extensions::settings::interface::{
         IMINIGAME_TOKEN_SETTINGS_ID, IMinigameTokenSettings,
     };
-    use crate::token::interface::{IMinigameRegistryDispatcher, IMinigameRegistryDispatcherTrait};
+    use crate::token::interface::{
+        IMinigameRegistryDispatcher, IMinigameRegistryDispatcherTrait, IMinigameTokenDispatcher,
+        IMinigameTokenDispatcherTrait,
+    };
+    use crate::token::traits::OptionalSettings;
 
     #[storage]
     pub struct Storage {}

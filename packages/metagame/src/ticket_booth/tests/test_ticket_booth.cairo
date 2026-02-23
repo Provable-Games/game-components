@@ -12,9 +12,9 @@ use snforge_std::{
     start_cheat_caller_address, stop_cheat_block_timestamp,
 };
 use starknet::ContractAddress;
-use crate::metagame::ticket_booth::TicketBoothComponent::{
-    GameExpiration, GoldenPass, GoldenPassInfo, ITicketBoothDispatcher, ITicketBoothDispatcherTrait,
-    PaymentType,
+use crate::ticket_booth::structs::{GameExpiration, GoldenPass, GoldenPassInfo, PaymentType};
+use crate::ticket_booth::ticket_booth_component::TicketBoothComponent::{
+    ITicketBoothDispatcher, ITicketBoothDispatcherTrait,
 };
 
 // =============================================================================
@@ -751,7 +751,7 @@ fn test_fuzz_opening_time(opening_time: u64) {
 #[starknet::contract]
 mod MockTicketBoothContract {
     use starknet::ContractAddress;
-    use crate::metagame::ticket_booth::TicketBoothComponent;
+    use crate::ticket_booth::ticket_booth_component::TicketBoothComponent;
 
     component!(path: TicketBoothComponent, storage: ticket_booth, event: TicketBoothEvent);
 
@@ -784,7 +784,7 @@ mod MockTicketBoothContract {
         settings_id: Option<u32>,
         start_time: Option<u64>,
         expiration_time: Option<u64>,
-        golden_passes: Option<Span<(ContractAddress, TicketBoothComponent::GoldenPass)>>,
+        golden_passes: Option<Span<(ContractAddress, crate::ticket_booth::structs::GoldenPass)>>,
     ) {
         self
             .ticket_booth
@@ -952,13 +952,11 @@ mod MockERC721ForTicketBooth {
 #[starknet::contract]
 mod MockMinigameTokenForTicketBooth {
     use core::num::traits::Zero;
-    use game_components_embeddable_game_standard::metagame::extensions::context::structs::GameContextDetails;
-    use game_components_embeddable_game_standard::token::core::interface::{
-        IMINIGAME_TOKEN_ID, IMinigameToken,
-    };
-    use game_components_embeddable_game_standard::token::structs::{
+    use game_components_interfaces::structs::metagame::GameContextDetails;
+    use game_components_interfaces::structs::token::{
         Lifecycle, MintParams, PlayerNameUpdate, TokenMetadata, TokenMutableState,
     };
+    use game_components_interfaces::token::{IMINIGAME_TOKEN_ID, IMinigameToken};
     use openzeppelin_interfaces::introspection::ISRC5;
     use starknet::ContractAddress;
     use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
@@ -1381,7 +1379,7 @@ fn test_buy_game_golden_pass_expired() {
 #[starknet::contract]
 mod MockTicketBoothContractWithClientUrl {
     use starknet::ContractAddress;
-    use crate::metagame::ticket_booth::TicketBoothComponent;
+    use crate::ticket_booth::ticket_booth_component::TicketBoothComponent;
 
     component!(path: TicketBoothComponent, storage: ticket_booth, event: TicketBoothEvent);
 
@@ -1414,7 +1412,7 @@ mod MockTicketBoothContractWithClientUrl {
         settings_id: Option<u32>,
         start_time: Option<u64>,
         expiration_time: Option<u64>,
-        golden_passes: Option<Span<(ContractAddress, TicketBoothComponent::GoldenPass)>>,
+        golden_passes: Option<Span<(ContractAddress, crate::ticket_booth::structs::GoldenPass)>>,
     ) {
         self
             .ticket_booth
@@ -1439,7 +1437,7 @@ mod MockTicketBoothContractWithClientUrl {
 #[starknet::contract]
 mod MockTicketBoothContractWithRenderer {
     use starknet::ContractAddress;
-    use crate::metagame::ticket_booth::TicketBoothComponent;
+    use crate::ticket_booth::ticket_booth_component::TicketBoothComponent;
 
     component!(path: TicketBoothComponent, storage: ticket_booth, event: TicketBoothEvent);
 

@@ -23,16 +23,18 @@ pub mod CoreTokenComponent {
     };
     use starknet::syscalls::call_contract_syscall;
     use starknet::{ContractAddress, get_block_timestamp, get_caller_address, get_tx_info};
-    use crate::token::core::interface::{IMINIGAME_TOKEN_ID, IMinigameToken};
-    use crate::token::core::traits::{
-        OptionalContext, OptionalMinter, OptionalObjectives, OptionalRenderer, OptionalSettings,
+    use crate::token::interface::{
+        IMINIGAME_TOKEN_ID, IMinigameRegistryDispatcher, IMinigameRegistryDispatcherTrait,
+        IMinigameToken,
     };
-    use crate::token::interface::{IMinigameRegistryDispatcher, IMinigameRegistryDispatcherTrait};
-    use crate::token::libs::{LifecycleTrait, token_state};
     use crate::token::structs::{
         LifecycleStorePacking, MintParams, PlayerNameUpdate, TokenMetadata, TokenMutableState,
         TokenMutableStateStorePacking, extract_tx_hash_bits, pack_token_id, to_token_metadata,
         unpack_game_id, unpack_minted_by, unpack_objective_id, unpack_soulbound, unpack_token_id,
+    };
+    use crate::token::token::{LifecycleTrait, token_state};
+    use crate::token::traits::{
+        OptionalContext, OptionalMinter, OptionalObjectives, OptionalRenderer, OptionalSettings,
     };
 
     #[storage]

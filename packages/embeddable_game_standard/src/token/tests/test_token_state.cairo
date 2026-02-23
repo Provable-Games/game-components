@@ -2,13 +2,13 @@
 // Tests pure token state management functions
 
 use core::num::traits::Bounded;
-use crate::token::libs::LifecycleTrait;
-use crate::token::libs::token_state::{
+use crate::token::structs::{Lifecycle, TokenMetadata};
+use crate::token::token::LifecycleTrait;
+use crate::token::token::token_state::{
     create_game_token_metadata, create_lifecycle_with_defaults, ensure_game_over_transition,
     ensure_objectives_completion_transition, is_multi_game_token, is_single_game_token,
     is_token_playable,
 };
-use crate::token::structs::{Lifecycle, TokenMetadata};
 
 // =============================================================================
 // TEST HELPERS

@@ -8,15 +8,15 @@ use game_components_embeddable_game_standard::metagame::extensions::context::str
 use game_components_embeddable_game_standard::minigame::extensions::settings::structs::GameSettingDetails;
 use game_components_embeddable_game_standard::minigame::structs::GameDetail;
 use game_components_embeddable_game_standard::registry::interface::GameMetadata;
-
-// Game components imports - use the actual package paths
-use game_components_embeddable_game_standard::token::core::core_token::CoreTokenComponent;
 use game_components_embeddable_game_standard::token::extensions::context::context::ContextComponent;
 use game_components_embeddable_game_standard::token::extensions::minter::minter::MinterComponent;
 use game_components_embeddable_game_standard::token::extensions::objectives::objectives::ObjectivesComponent;
 use game_components_embeddable_game_standard::token::extensions::renderer::renderer::RendererComponent;
 use game_components_embeddable_game_standard::token::extensions::settings::settings::SettingsComponent;
 use game_components_embeddable_game_standard::token::structs::TokenMetadata;
+
+// Game components imports - use the actual package paths
+use game_components_embeddable_game_standard::token::token_component::CoreTokenComponent;
 use game_components_utilities::utils::renderer::create_custom_metadata;
 use openzeppelin_interfaces::erc2981::IERC2981;
 use openzeppelin_interfaces::erc721::IERC721Metadata;

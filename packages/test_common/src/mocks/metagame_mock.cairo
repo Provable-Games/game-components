@@ -49,8 +49,8 @@ pub mod metagame_mock {
     use game_components_embeddable_game_standard::metagame::extensions::context::structs::{
         GameContext, GameContextDetails,
     };
-    use game_components_embeddable_game_standard::metagame::metagame::MetagameComponent;
-    use game_components_embeddable_game_standard::metagame::metagame::MetagameComponent::InternalTrait as MetagameInternalTrait;
+    use game_components_embeddable_game_standard::metagame::metagame_component::MetagameComponent;
+    use game_components_embeddable_game_standard::metagame::metagame_component::MetagameComponent::InternalTrait as MetagameInternalTrait;
     use openzeppelin_introspection::src5::SRC5Component;
     use starknet::ContractAddress;
     use starknet::storage::{

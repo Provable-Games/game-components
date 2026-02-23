@@ -1,4 +1,4 @@
-use game_components_embeddable_game_standard::token::core::interface::{
+use game_components_embeddable_game_standard::token::interface::{
     IMinigameTokenDispatcher, IMinigameTokenDispatcherTrait,
 };
 use snforge_std::{ContractClassTrait, DeclareResultTrait, declare};
@@ -253,7 +253,7 @@ mod MockMetagameFuzz {
     use openzeppelin_introspection::src5::SRC5Component;
     use starknet::ContractAddress;
     use crate::metagame::extensions::context::structs::GameContextDetails;
-    use crate::metagame::metagame::MetagameComponent;
+    use crate::metagame::metagame_component::MetagameComponent;
 
     component!(path: MetagameComponent, storage: metagame, event: MetagameEvent);
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
@@ -469,7 +469,7 @@ mod MockMinigameFuzz {
 mod MockMinigameTokenFuzz {
     use core::num::traits::Zero;
     use game_components_embeddable_game_standard::metagame::extensions::context::structs::GameContextDetails;
-    use game_components_embeddable_game_standard::token::core::interface::{
+    use game_components_embeddable_game_standard::token::interface::{
         IMINIGAME_TOKEN_ID, IMinigameToken,
     };
     use game_components_embeddable_game_standard::token::structs::{

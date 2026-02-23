@@ -7,7 +7,7 @@ use game_components_testing::constants::{
 };
 use snforge_std::{mock_call, start_cheat_caller_address};
 use starknet::ContractAddress;
-use crate::minigame::libs;
+use crate::minigame::minigame as libs;
 use crate::minigame::structs::MintGameParams;
 
 // =============================================================================

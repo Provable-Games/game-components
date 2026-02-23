@@ -23,13 +23,13 @@ use openzeppelin_token::erc721::ERC721Component;
 use starknet::ContractAddress;
 use starknet::storage::StoragePointerReadAccess;
 use starknet::syscalls::call_contract_syscall;
-use crate::token::core::core_token::CoreTokenComponent;
 use crate::token::extensions::context::context::ContextComponent;
 use crate::token::extensions::minter::minter::MinterComponent;
 use crate::token::extensions::objectives::objectives::ObjectivesComponent;
 use crate::token::extensions::renderer::renderer::RendererComponent;
 use crate::token::extensions::settings::settings::SettingsComponent;
 use crate::token::structs::TokenMetadata;
+use crate::token::token_component::CoreTokenComponent;
 
 
 #[starknet::contract]

@@ -223,7 +223,7 @@ mod TokenMockContextProvider {
 
 #[starknet::contract]
 mod TokenMockMetagameWithContext {
-    use game_components_embeddable_game_standard::metagame::metagame::MetagameComponent;
+    use game_components_embeddable_game_standard::metagame::metagame_component::MetagameComponent;
     use openzeppelin_introspection::src5::SRC5Component;
     use starknet::ContractAddress;
     // GameContextDetails imported above

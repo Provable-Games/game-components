@@ -1,197 +1,253 @@
+use core::num::traits::Zero;
+use game_components_embeddable_game_standard::metagame::extensions::context::structs::GameContextDetails;
+use game_components_embeddable_game_standard::registry::interface::{
+    IMinigameRegistryDispatcher, IMinigameRegistryDispatcherTrait,
+};
+use game_components_embeddable_game_standard::token::interface::{
+    IMinigameTokenDispatcher, IMinigameTokenDispatcherTrait,
+};
+use game_components_embeddable_game_standard::token::structs::MintParams;
+use openzeppelin_interfaces::erc721::{IERC721Dispatcher, IERC721DispatcherTrait};
+use starknet::ContractAddress;
+use crate::minigame::structs::MintGameParams;
+
+/// Performs pre-action validation for the game playability
 ///
-/// Game Component
+/// # Arguments
+/// * `minigame_token_address` - The address of the minigame token contract
+/// * `token_id` - The game token ID to validate
+pub fn pre_action(minigame_token_address: ContractAddress, token_id: felt252) {
+    assert_game_token_playable(minigame_token_address, token_id);
+}
+
+/// Performs post-action updates to the game state
 ///
-#[starknet::component]
-pub mod MinigameComponent {
-    use core::num::traits::Zero;
-    use game_components_embeddable_game_standard::metagame::extensions::context::structs::GameContextDetails;
-    use game_components_embeddable_game_standard::registry::interface::{
-        IMINIGAME_REGISTRY_ID, IMinigameRegistryDispatcher, IMinigameRegistryDispatcherTrait,
+/// # Arguments
+/// * `minigame_token_address` - The address of the minigame token contract
+/// * `token_id` - The game token ID to update
+pub fn post_action(minigame_token_address: ContractAddress, token_id: felt252) {
+    let minigame_token_dispatcher = IMinigameTokenDispatcher {
+        contract_address: minigame_token_address,
     };
-    use game_components_embeddable_game_standard::token::core::interface::{
-        IMINIGAME_TOKEN_ID, IMinigameTokenDispatcher, IMinigameTokenDispatcherTrait,
-    };
-    use openzeppelin_interfaces::introspection::{ISRC5Dispatcher, ISRC5DispatcherTrait};
-    use openzeppelin_introspection::src5::SRC5Component;
-    use openzeppelin_introspection::src5::SRC5Component::{
-        InternalTrait as SRC5InternalTrait, SRC5Impl,
-    };
-    use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
-    use starknet::{ContractAddress, get_contract_address};
-    use crate::minigame::interface::{IMINIGAME_ID, IMinigame, IMinigameTokenData};
-    use crate::minigame::libs;
-    use crate::minigame::structs::MintGameParams;
+    minigame_token_dispatcher.update_game(token_id);
+}
 
-    #[storage]
-    pub struct Storage {
-        token_address: ContractAddress,
-        settings_address: ContractAddress,
-        objectives_address: ContractAddress,
+/// Asserts that the specified token is owned by someone
+///
+/// # Arguments
+/// * `minigame_token_address` - The address of the minigame token contract
+/// * `token_id` - The token ID to check ownership for
+pub fn require_owned_token(minigame_token_address: ContractAddress, token_id: felt252) {
+    let erc721_dispatcher = IERC721Dispatcher { contract_address: minigame_token_address };
+    let token_owner = erc721_dispatcher.owner_of(token_id.into());
+    assert!(!token_owner.is_zero(), "Token {} does not exist or is not owned by anyone", token_id);
+}
+
+/// Asserts that the caller owns the specified token
+///
+/// # Arguments
+/// * `minigame_token_address` - The address of the minigame token contract
+/// * `token_id` - The token ID to check ownership for
+pub fn assert_token_ownership(minigame_token_address: ContractAddress, token_id: felt252) {
+    let erc721_dispatcher = IERC721Dispatcher { contract_address: minigame_token_address };
+    let token_owner = erc721_dispatcher.owner_of(token_id.into());
+    assert!(
+        token_owner == starknet::get_caller_address(), "Caller is not owner of token {}", token_id,
+    );
+}
+
+/// Asserts that the game token is in a playable state
+///
+/// # Arguments
+/// * `minigame_token_address` - The address of the minigame token contract
+/// * `token_id` - The token ID to check playability for
+pub fn assert_game_token_playable(minigame_token_address: ContractAddress, token_id: felt252) {
+    let minigame_token_dispatcher = IMinigameTokenDispatcher {
+        contract_address: minigame_token_address,
+    };
+    let is_playable = minigame_token_dispatcher.is_playable(token_id);
+    assert!(is_playable, "Game is not playable");
+}
+
+/// Registers a game with the denshokan contract
+///
+/// # Arguments
+/// * `minigame_token_address` - The address of the minigame token contract
+/// * `creator_address` - The address of the game creator
+/// * `name` - The name of the game
+/// * `description` - The description of the game
+/// * `developer` - The developer of the game
+/// * `publisher` - The publisher of the game
+/// * `genre` - The genre of the game
+/// * `image` - The image URL of the game
+/// * `color` - Optional color theme for the game
+/// * `client_url` - Optional client URL
+/// * `renderer_address` - Optional renderer contract address
+/// * `royalty_fraction` - Optional royalty fraction in basis points (e.g., 500 = 5%)
+pub fn register_game(
+    minigame_token_address: ContractAddress,
+    creator_address: ContractAddress,
+    name: ByteArray,
+    description: ByteArray,
+    developer: ByteArray,
+    publisher: ByteArray,
+    genre: ByteArray,
+    image: ByteArray,
+    color: Option<ByteArray>,
+    client_url: Option<ByteArray>,
+    renderer_address: Option<ContractAddress>,
+    royalty_fraction: Option<u128>,
+) {
+    let minigame_token_dispatcher = IMinigameRegistryDispatcher {
+        contract_address: minigame_token_address,
+    };
+    minigame_token_dispatcher
+        .register_game(
+            creator_address,
+            name,
+            description,
+            developer,
+            publisher,
+            genre,
+            image,
+            color,
+            client_url,
+            renderer_address,
+            royalty_fraction,
+        );
+}
+
+/// Mints a game token through the denshokan contract
+///
+/// # Arguments
+/// * `minigame_token_address` - The address of the minigame token contract
+/// * `game_address` - The address of the game contract minting the token
+/// * `player_name` - Optional player name
+/// * `settings_id` - Optional settings ID
+/// * `start` - Optional start time
+/// * `end` - Optional end time
+/// * `objective_id` - Optional objective ID
+/// * `context` - Optional context data
+/// * `client_url` - Optional client URL
+/// * `renderer_address` - Optional renderer contract address
+/// * `to` - Address to mint the token to
+/// * `soulbound` - Whether the token should be soulbound
+///
+/// # Returns
+/// * `felt252` - The minted token ID
+pub fn mint(
+    minigame_token_address: ContractAddress,
+    game_address: ContractAddress,
+    player_name: Option<felt252>,
+    settings_id: Option<u32>,
+    start: Option<u64>,
+    end: Option<u64>,
+    objective_id: Option<u32>,
+    context: Option<GameContextDetails>,
+    client_url: Option<ByteArray>,
+    renderer_address: Option<ContractAddress>,
+    to: ContractAddress,
+    soulbound: bool,
+    paymaster: bool,
+    salt: u16,
+    metadata: u16,
+) -> felt252 {
+    let minigame_token_dispatcher = IMinigameTokenDispatcher {
+        contract_address: minigame_token_address,
+    };
+    minigame_token_dispatcher
+        .mint(
+            game_address,
+            player_name,
+            settings_id,
+            start,
+            end,
+            objective_id,
+            context,
+            client_url,
+            renderer_address,
+            to,
+            soulbound,
+            paymaster,
+            salt,
+            metadata,
+        )
+}
+
+/// Mints multiple game tokens in batch through the denshokan contract
+///
+/// # Arguments
+/// * `minigame_token_address` - The address of the minigame token contract
+/// * `game_address` - The address of the game contract minting the tokens
+/// * `mints` - Array of mint parameters for each token
+///
+/// # Returns
+/// * `Array<felt252>` - Array of minted token IDs
+pub fn mint_batch(
+    minigame_token_address: ContractAddress,
+    game_address: ContractAddress,
+    mints: Array<MintGameParams>,
+) -> Array<felt252> {
+    let minigame_token_dispatcher = IMinigameTokenDispatcher {
+        contract_address: minigame_token_address,
+    };
+
+    // Convert MintGameParams to MintParams
+    let mut mint_params_array = array![];
+    let mut index = 0;
+    loop {
+        if index >= mints.len() {
+            break;
+        }
+        let mint_game_param = mints.at(index);
+
+        // Clone non-copyable Option types
+        let context_clone = match mint_game_param.context {
+            Option::Some(ctx) => Option::Some(ctx.clone()),
+            Option::None => Option::None,
+        };
+
+        let client_url_clone = match mint_game_param.client_url {
+            Option::Some(url) => Option::Some(url.clone()),
+            Option::None => Option::None,
+        };
+
+        mint_params_array
+            .append(
+                MintParams {
+                    game_address: game_address,
+                    player_name: *mint_game_param.player_name,
+                    settings_id: *mint_game_param.settings_id,
+                    start: *mint_game_param.start,
+                    end: *mint_game_param.end,
+                    objective_id: *mint_game_param.objective_id,
+                    context: context_clone,
+                    client_url: client_url_clone,
+                    renderer_address: *mint_game_param.renderer_address,
+                    to: *mint_game_param.to,
+                    soulbound: *mint_game_param.soulbound,
+                    paymaster: *mint_game_param.paymaster,
+                    salt: *mint_game_param.salt,
+                    metadata: *mint_game_param.metadata,
+                },
+            );
+        index += 1;
     }
 
-    #[embeddable_as(MinigameImpl)]
-    impl Minigame<
-        TContractState,
-        +HasComponent<TContractState>,
-        +IMinigameTokenData<TContractState>,
-        impl SRC5: SRC5Component::HasComponent<TContractState>,
-        +Drop<TContractState>,
-    > of IMinigame<ComponentState<TContractState>> {
-        fn token_address(self: @ComponentState<TContractState>) -> ContractAddress {
-            self.token_address.read()
-        }
+    minigame_token_dispatcher.mint_batch(mint_params_array)
+}
 
-        fn settings_address(self: @ComponentState<TContractState>) -> ContractAddress {
-            self.settings_address.read()
-        }
-
-        fn objectives_address(self: @ComponentState<TContractState>) -> ContractAddress {
-            self.objectives_address.read()
-        }
-
-        fn mint_game(
-            self: @ComponentState<TContractState>,
-            player_name: Option<felt252>,
-            settings_id: Option<u32>,
-            start: Option<u64>,
-            end: Option<u64>,
-            objective_id: Option<u32>,
-            context: Option<GameContextDetails>,
-            client_url: Option<ByteArray>,
-            renderer_address: Option<ContractAddress>,
-            to: ContractAddress,
-            soulbound: bool,
-            paymaster: bool,
-            salt: u16,
-            metadata: u16,
-        ) -> felt252 {
-            libs::mint(
-                self.token_address.read(),
-                get_contract_address(),
-                player_name,
-                settings_id,
-                start,
-                end,
-                objective_id,
-                context,
-                client_url,
-                renderer_address,
-                to,
-                soulbound,
-                paymaster,
-                salt,
-                metadata,
-            )
-        }
-
-        fn mint_game_batch(
-            self: @ComponentState<TContractState>, mints: Array<MintGameParams>,
-        ) -> Array<felt252> {
-            libs::mint_batch(self.token_address.read(), get_contract_address(), mints)
-        }
-    }
-
-    #[generate_trait]
-    pub impl InternalImpl<
-        TContractState,
-        +HasComponent<TContractState>,
-        impl SRC5: SRC5Component::HasComponent<TContractState>,
-        +Drop<TContractState>,
-    > of InternalTrait<TContractState> {
-        fn initializer(
-            ref self: ComponentState<TContractState>,
-            creator_address: ContractAddress,
-            name: ByteArray,
-            description: ByteArray,
-            developer: ByteArray,
-            publisher: ByteArray,
-            genre: ByteArray,
-            image: ByteArray,
-            color: Option<ByteArray>,
-            client_url: Option<ByteArray>,
-            renderer_address: Option<ContractAddress>,
-            settings_address: Option<ContractAddress>,
-            objectives_address: Option<ContractAddress>,
-            token_address: ContractAddress,
-            royalty_fraction: Option<u128>,
-        ) {
-            // Register base SRC5 interface
-            self.register_game_interface();
-
-            // Store the namespace, token address, and feature flags
-            self.token_address.write(token_address.clone());
-
-            let token_src5_dispatcher = ISRC5Dispatcher { contract_address: token_address };
-            let supports_minigame_token = token_src5_dispatcher
-                .supports_interface(IMINIGAME_TOKEN_ID);
-            assert!(supports_minigame_token, "Minigame: Token does not support IMINIGAME_TOKEN_ID");
-            let minigame_token_dispatcher = IMinigameTokenDispatcher {
-                contract_address: token_address,
-            };
-            let minigame_registry_address = minigame_token_dispatcher.game_registry_address();
-            if !minigame_registry_address.is_zero() {
-                let minigame_registry_src5_dispatcher = ISRC5Dispatcher {
-                    contract_address: minigame_registry_address,
-                };
-                let supports_minigame_registry = minigame_registry_src5_dispatcher
-                    .supports_interface(IMINIGAME_REGISTRY_ID);
-                if supports_minigame_registry {
-                    let minigame_registry_dispatcher = IMinigameRegistryDispatcher {
-                        contract_address: minigame_registry_address,
-                    };
-                    minigame_registry_dispatcher
-                        .register_game(
-                            creator_address,
-                            name,
-                            description,
-                            developer,
-                            publisher,
-                            genre,
-                            image,
-                            color,
-                            client_url,
-                            renderer_address,
-                            royalty_fraction,
-                        );
-                }
-            }
-
-            // Store the settings and objectives addresses
-            if let Option::Some(settings_address) = settings_address {
-                self.settings_address.write(settings_address);
-            }
-            if let Option::Some(objectives_address) = objectives_address {
-                self.objectives_address.write(objectives_address);
-            }
-        }
-
-        fn register_game_interface(ref self: ComponentState<TContractState>) {
-            let mut src5_component = get_dep_component_mut!(ref self, SRC5);
-            src5_component.register_interface(IMINIGAME_ID);
-        }
-
-        fn pre_action(self: @ComponentState<TContractState>, token_id: felt252) {
-            libs::pre_action(self.token_address.read(), token_id);
-        }
-
-        fn post_action(self: @ComponentState<TContractState>, token_id: felt252) {
-            libs::post_action(self.token_address.read(), token_id);
-        }
-
-        fn get_player_name(self: @ComponentState<TContractState>, token_id: felt252) -> felt252 {
-            libs::get_player_name(self.token_address.read(), token_id)
-        }
-
-        fn require_owned_token(self: @ComponentState<TContractState>, token_id: felt252) {
-            libs::require_owned_token(self.token_address.read(), token_id);
-        }
-
-        fn assert_token_ownership(self: @ComponentState<TContractState>, token_id: felt252) {
-            libs::assert_token_ownership(self.token_address.read(), token_id);
-        }
-
-        fn assert_game_token_playable(self: @ComponentState<TContractState>, token_id: felt252) {
-            libs::assert_game_token_playable(self.token_address.read(), token_id);
-        }
-    }
+/// Gets the player name for a game token
+///
+/// # Arguments
+/// * `minigame_token_address` - The address of the minigame token contract
+/// * `token_id` - The token ID to get the player name for
+///
+/// # Returns
+/// * `felt252` - The player name
+pub fn get_player_name(minigame_token_address: ContractAddress, token_id: felt252) -> felt252 {
+    let minigame_token_dispatcher = IMinigameTokenDispatcher {
+        contract_address: minigame_token_address,
+    };
+    minigame_token_dispatcher.player_name(token_id)
 }

@@ -56,7 +56,8 @@ packages/
 │   │   ├── registration/        # Player registration tracking
 │   │   ├── entry_requirement/   # Entry gating (token ownership, allowlists, validators)
 │   │   ├── entry_fee/           # ERC20 entry fees with share distribution
-│   │   └── prize/               # Prize management (ERC20/ERC721 rewards)
+│   │   ├── prize/               # Prize management (ERC20/ERC721 rewards)
+│   │   └── ticket_booth/        # Payment-enabled game access (tickets & golden passes)
 │   └── Scarb.toml
 ├── economy/                     # Game economy components
 │   ├── src/
@@ -123,24 +124,25 @@ When adding a new module to a group package, update **both** files:
 2. **`codecov.yml`** - Update the build count:
    ```yaml
    notify:
-     after_n_builds: 14 # ← Must equal total module count in matrix
+     after_n_builds: 15 # ← Must equal total module count in matrix
    ```
 
-### Current Matrix (14 modules)
+### Current Matrix (15 modules)
 
 | Group Package | Module | Runner | Fuzzer Runs |
 |---------------|--------|--------|-------------|
 | `embeddable_game_standard` | `token` | `ubuntu-latest-32` | 32 |
-| `embeddable_game_standard` | `minigame` | `ubuntu-latest-4` | 64 |
-| `embeddable_game_standard` | `metagame` | `ubuntu-latest` | 256 |
-| `embeddable_game_standard` | `registry` | `ubuntu-latest` | 256 |
-| `metagame` | `leaderboard` | `ubuntu-latest` | 256 |
-| `metagame` | `registration` | `ubuntu-latest` | 256 |
-| `metagame` | `entry_requirement` | `ubuntu-latest` | 256 |
-| `metagame` | `entry_fee` | `ubuntu-latest` | 256 |
-| `metagame` | `prize` | `ubuntu-latest` | 256 |
-| `economy` | `tokenomics` | `ubuntu-latest` | 256 |
-| `utilities` | `math` | `ubuntu-latest` | 256 |
-| `utilities` | `distribution` | `ubuntu-latest` | 256 |
-| `utilities` | `utils` | `ubuntu-latest` | 256 |
-| `presets` | `presets` | `ubuntu-latest` | 256 |
+| `embeddable_game_standard` | `minigame` | `ubuntu-latest-32` | 32 |
+| `embeddable_game_standard` | `metagame` | `ubuntu-latest-32` | 256 |
+| `embeddable_game_standard` | `registry` | `ubuntu-latest-32` | 256 |
+| `metagame` | `leaderboard` | `ubuntu-latest-4` | 256 |
+| `metagame` | `registration` | `ubuntu-latest-4` | 256 |
+| `metagame` | `entry_requirement` | `ubuntu-latest-4` | 256 |
+| `metagame` | `entry_fee` | `ubuntu-latest-4` | 256 |
+| `metagame` | `prize` | `ubuntu-latest-4` | 256 |
+| `metagame` | `ticket_booth` | `ubuntu-latest-4` | 256 |
+| `economy` | `tokenomics` | `ubuntu-latest-4` | 256 |
+| `utilities` | `math` | `ubuntu-latest-4` | 256 |
+| `utilities` | `distribution` | `ubuntu-latest-4` | 256 |
+| `utilities` | `utils` | `ubuntu-latest-4` | 256 |
+| `presets` | `presets` | `ubuntu-latest-4` | 256 |

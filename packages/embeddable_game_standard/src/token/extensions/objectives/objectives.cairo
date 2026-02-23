@@ -19,12 +19,14 @@ pub mod ObjectivesComponent {
         InternalTrait as SRC5InternalTrait, SRC5Impl,
     };
     use starknet::{ContractAddress, get_caller_address, get_contract_address};
-    use crate::token::core::interface::{IMinigameTokenDispatcher, IMinigameTokenDispatcherTrait};
-    use crate::token::core::traits::OptionalObjectives;
     use crate::token::extensions::objectives::interface::{
         IMINIGAME_TOKEN_OBJECTIVES_ID, IMinigameTokenObjectives,
     };
-    use crate::token::interface::{IMinigameRegistryDispatcher, IMinigameRegistryDispatcherTrait};
+    use crate::token::interface::{
+        IMinigameRegistryDispatcher, IMinigameRegistryDispatcherTrait, IMinigameTokenDispatcher,
+        IMinigameTokenDispatcherTrait,
+    };
+    use crate::token::traits::OptionalObjectives;
 
     #[storage]
     pub struct Storage {}

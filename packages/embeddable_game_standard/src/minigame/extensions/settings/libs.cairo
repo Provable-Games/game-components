@@ -1,8 +1,8 @@
-use game_components_embeddable_game_standard::token::core::interface::{
-    IMinigameTokenDispatcher, IMinigameTokenDispatcherTrait,
-};
 use game_components_embeddable_game_standard::token::extensions::settings::interface::{
     IMinigameTokenSettingsDispatcher, IMinigameTokenSettingsDispatcherTrait,
+};
+use game_components_embeddable_game_standard::token::interface::{
+    IMinigameTokenDispatcher, IMinigameTokenDispatcherTrait,
 };
 use starknet::ContractAddress;
 use crate::minigame::extensions::settings::structs::GameSettingDetails;
