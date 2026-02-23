@@ -12,8 +12,8 @@ use game_components_metagame::leaderboard::leaderboard::leaderboard::Leaderboard
 use game_components_testing::constants::{NEW_OWNER, OWNER, USER1, USER2};
 use openzeppelin_interfaces::introspection::{ISRC5Dispatcher, ISRC5DispatcherTrait};
 use snforge_std::{
-    ContractClassTrait, DeclareResultTrait, EventSpyAssertionsTrait, EventSpyTrait, declare,
-    spy_events, start_cheat_caller_address, stop_cheat_caller_address,
+    ContractClassTrait, DeclareResultTrait, declare, start_cheat_caller_address,
+    stop_cheat_caller_address,
 };
 use starknet::ContractAddress;
 use super::mocks::mock_game_details::{
@@ -66,7 +66,7 @@ fn setup_tournament(
     game_address: ContractAddress,
 ) {
     start_cheat_caller_address(admin.contract_address, OWNER());
-    admin.configure_tournament(tournament_id, max_entries, ascending, game_address);
+    admin.configure(tournament_id, max_entries, ascending, game_address);
     stop_cheat_caller_address(admin.contract_address);
 }
 
@@ -119,7 +119,7 @@ fn test_complete_tournament_lifecycle() {
     setup_tournament(admin, WEEKLY_TOURNAMENT, 10, false, game_address);
 
     // Verify configuration
-    let config = leaderboard.get_tournament_config(WEEKLY_TOURNAMENT);
+    let config = leaderboard.get_config(WEEKLY_TOURNAMENT);
     assert!(config.max_entries == 10, "Max entries should be 10");
 
     // 2. Set up player scores
@@ -157,7 +157,7 @@ fn test_complete_tournament_lifecycle() {
 
     // 7. Clear for next week
     start_cheat_caller_address(admin.contract_address, OWNER());
-    admin.clear_leaderboard(WEEKLY_TOURNAMENT);
+    admin.clear(WEEKLY_TOURNAMENT);
     stop_cheat_caller_address(admin.contract_address);
 
     assert!(
@@ -226,10 +226,10 @@ fn test_ownership_transfer() {
     // Old owner can't configure anymore
     // New owner can configure
     start_cheat_caller_address(admin.contract_address, NEW_OWNER());
-    admin.configure_tournament(MONTHLY_TOURNAMENT, 20, true, game_address);
+    admin.configure(MONTHLY_TOURNAMENT, 20, true, game_address);
     stop_cheat_caller_address(admin.contract_address);
 
-    let config = leaderboard.get_tournament_config(MONTHLY_TOURNAMENT);
+    let config = leaderboard.get_config(MONTHLY_TOURNAMENT);
     assert!(config.max_entries == 20, "New owner should be able to configure");
 }
 
@@ -241,7 +241,7 @@ fn test_non_owner_cannot_configure() {
     let (game_address, _) = deploy_mock_game();
 
     start_cheat_caller_address(admin.contract_address, USER1());
-    admin.configure_tournament(WEEKLY_TOURNAMENT, 10, false, game_address);
+    admin.configure(WEEKLY_TOURNAMENT, 10, false, game_address);
     stop_cheat_caller_address(admin.contract_address);
 }
 
@@ -252,7 +252,7 @@ fn test_non_owner_cannot_clear() {
     let (_, admin) = deploy_leaderboard_preset(OWNER());
 
     start_cheat_caller_address(admin.contract_address, USER1());
-    admin.clear_leaderboard(WEEKLY_TOURNAMENT);
+    admin.clear(WEEKLY_TOURNAMENT);
     stop_cheat_caller_address(admin.contract_address);
 }
 
@@ -361,17 +361,17 @@ fn test_empty_leaderboard_queries() {
 // EVENT TESTS
 // ==============================================================================
 
-// Test PR-LB-13: All events are emitted correctly
+// Test PR-LB-13: Full lifecycle completes without error
+// Note: LeaderboardComponent uses hooks pattern (empty Event enum).
+// Event emission is the responsibility of the embedding contract's hooks.
 #[test]
-fn test_all_events_emitted() {
+fn test_full_lifecycle_operations() {
     let (leaderboard, admin) = deploy_leaderboard_preset(OWNER());
     let (game_address, game_admin) = deploy_mock_game();
 
-    let mut spy = spy_events();
-
     // Configure tournament
     start_cheat_caller_address(admin.contract_address, OWNER());
-    admin.configure_tournament(WEEKLY_TOURNAMENT, 10, false, game_address);
+    admin.configure(WEEKLY_TOURNAMENT, 10, false, game_address);
     stop_cheat_caller_address(admin.contract_address);
 
     // Submit score
@@ -380,73 +380,19 @@ fn test_all_events_emitted() {
 
     // Clear leaderboard
     start_cheat_caller_address(admin.contract_address, OWNER());
-    admin.clear_leaderboard(WEEKLY_TOURNAMENT);
+    admin.clear(WEEKLY_TOURNAMENT);
     stop_cheat_caller_address(admin.contract_address);
+
+    assert!(
+        leaderboard.get_leaderboard_length(WEEKLY_TOURNAMENT) == 0, "Should be empty after clear",
+    );
 
     // Transfer ownership
     start_cheat_caller_address(admin.contract_address, OWNER());
     admin.transfer_ownership(NEW_OWNER());
     stop_cheat_caller_address(admin.contract_address);
 
-    // Verify all events
-    spy
-        .assert_emitted(
-            @array![
-                (
-                    admin.contract_address,
-                    game_components_metagame::leaderboard::leaderboard_component::LeaderboardComponent::Event::TournamentConfigured(
-                        game_components_metagame::leaderboard::leaderboard_component::LeaderboardComponent::TournamentConfigured {
-                            tournament_id: WEEKLY_TOURNAMENT,
-                            max_entries: 10,
-                            ascending: false,
-                            game_address: game_address,
-                        },
-                    ),
-                ),
-            ],
-        );
-
-    spy
-        .assert_emitted(
-            @array![
-                (
-                    leaderboard.contract_address,
-                    game_components_metagame::leaderboard::leaderboard_component::LeaderboardComponent::Event::ScoreSubmitted(
-                        game_components_metagame::leaderboard::leaderboard_component::LeaderboardComponent::ScoreSubmitted {
-                            tournament_id: WEEKLY_TOURNAMENT, token_id: 1, score: 100, position: 1,
-                        },
-                    ),
-                ),
-            ],
-        );
-
-    spy
-        .assert_emitted(
-            @array![
-                (
-                    admin.contract_address,
-                    game_components_metagame::leaderboard::leaderboard_component::LeaderboardComponent::Event::LeaderboardCleared(
-                        game_components_metagame::leaderboard::leaderboard_component::LeaderboardComponent::LeaderboardCleared {
-                            tournament_id: WEEKLY_TOURNAMENT,
-                        },
-                    ),
-                ),
-            ],
-        );
-
-    spy
-        .assert_emitted(
-            @array![
-                (
-                    admin.contract_address,
-                    game_components_metagame::leaderboard::leaderboard_component::LeaderboardComponent::Event::LeaderboardOwnershipTransferred(
-                        game_components_metagame::leaderboard::leaderboard_component::LeaderboardComponent::LeaderboardOwnershipTransferred {
-                            previous_owner: OWNER(), new_owner: NEW_OWNER(),
-                        },
-                    ),
-                ),
-            ],
-        );
+    assert!(admin.owner() == NEW_OWNER(), "Owner should be transferred");
 }
 
 // ==============================================================================
@@ -463,16 +409,16 @@ fn test_reconfigure_tournament() {
     // Initial configuration
     setup_tournament(admin, WEEKLY_TOURNAMENT, 10, false, game_address);
 
-    let config1 = leaderboard.get_tournament_config(WEEKLY_TOURNAMENT);
+    let config1 = leaderboard.get_config(WEEKLY_TOURNAMENT);
     assert!(config1.max_entries == 10, "Initial max_entries is 10");
     assert!(config1.ascending == false, "Initial ascending is false");
 
     // Reconfigure
     start_cheat_caller_address(admin.contract_address, OWNER());
-    admin.configure_tournament(WEEKLY_TOURNAMENT, 20, true, new_game_address);
+    admin.configure(WEEKLY_TOURNAMENT, 20, true, new_game_address);
     stop_cheat_caller_address(admin.contract_address);
 
-    let config2 = leaderboard.get_tournament_config(WEEKLY_TOURNAMENT);
+    let config2 = leaderboard.get_config(WEEKLY_TOURNAMENT);
     assert!(config2.max_entries == 20, "Updated max_entries is 20");
     assert!(config2.ascending == true, "Updated ascending is true");
     assert!(config2.game_address == new_game_address, "Updated game address");
@@ -581,7 +527,7 @@ fn test_empty_leaderboard_is_not_full() {
 fn test_get_config_unconfigured_tournament() {
     let (leaderboard, _) = deploy_leaderboard_preset(OWNER());
 
-    let config = leaderboard.get_tournament_config(999);
+    let config = leaderboard.get_config(999);
     // Should return default values
     assert!(config.max_entries == 0, "Unconfigured max_entries should be 0");
     assert!(config.ascending == false, "Unconfigured ascending should be false");
@@ -590,21 +536,21 @@ fn test_get_config_unconfigured_tournament() {
 // TC-CLR-03: Clear empty leaderboard
 #[test]
 fn test_clear_empty_leaderboard() {
-    let (_, admin) = deploy_leaderboard_preset(OWNER());
+    let (leaderboard, admin) = deploy_leaderboard_preset(OWNER());
     let (game_address, _) = deploy_mock_game();
 
     setup_tournament(admin, WEEKLY_TOURNAMENT, 10, false, game_address);
 
-    let mut spy = spy_events();
-
     // Clear empty leaderboard - should not error
     start_cheat_caller_address(admin.contract_address, OWNER());
-    admin.clear_leaderboard(WEEKLY_TOURNAMENT);
+    admin.clear(WEEKLY_TOURNAMENT);
     stop_cheat_caller_address(admin.contract_address);
 
-    // Verify event still emitted
-    let events = spy.get_events();
-    assert!(events.events.len() > 0, "Should emit clear event even for empty leaderboard");
+    // Verify leaderboard is still empty
+    assert!(
+        leaderboard.get_leaderboard_length(WEEKLY_TOURNAMENT) == 0,
+        "Should still be empty after clearing empty leaderboard",
+    );
 }
 
 // TC-CLR-04: Clear does not affect other tournaments
@@ -624,7 +570,7 @@ fn test_clear_does_not_affect_other_tournaments() {
 
     // Clear only weekly
     start_cheat_caller_address(admin.contract_address, OWNER());
-    admin.clear_leaderboard(WEEKLY_TOURNAMENT);
+    admin.clear(WEEKLY_TOURNAMENT);
     stop_cheat_caller_address(admin.contract_address);
 
     // Weekly should be empty
@@ -650,7 +596,7 @@ fn test_old_owner_cannot_configure_after_transfer() {
 
     // Old owner tries to configure
     start_cheat_caller_address(admin.contract_address, OWNER());
-    admin.configure_tournament(WEEKLY_TOURNAMENT, 10, false, game_address);
+    admin.configure(WEEKLY_TOURNAMENT, 10, false, game_address);
     stop_cheat_caller_address(admin.contract_address);
 }
 
@@ -699,12 +645,12 @@ fn test_ownership_transfer_preserves_tournaments() {
         leaderboard.get_leaderboard_length(WEEKLY_TOURNAMENT) == 1, "Entries should be preserved",
     );
 
-    let config = leaderboard.get_tournament_config(WEEKLY_TOURNAMENT);
+    let config = leaderboard.get_config(WEEKLY_TOURNAMENT);
     assert!(config.max_entries == 10, "Config should be preserved");
 
     // New owner can manage
     start_cheat_caller_address(admin.contract_address, NEW_OWNER());
-    admin.clear_leaderboard(WEEKLY_TOURNAMENT);
+    admin.clear(WEEKLY_TOURNAMENT);
     stop_cheat_caller_address(admin.contract_address);
 
     assert!(leaderboard.get_leaderboard_length(WEEKLY_TOURNAMENT) == 0, "New owner should clear");
@@ -717,8 +663,8 @@ fn test_ownership_transfer_preserves_tournaments() {
 // FUZZ-SUB-01: Fuzz submit_score positions
 #[test]
 #[fuzzer]
-fn test_fuzz_submit_score_positions(position: u8) {
-    // Valid positions are 1-255, skip 0
+fn test_fuzz_submit_score_positions(position: u32) {
+    // Valid positions are 1-50, skip 0
     if position == 0 || position > 50 {
         return;
     }
@@ -762,10 +708,10 @@ fn test_fuzz_configure_tournament(tournament_id: u64, max_entries: u32, ascendin
     let (game_address, _) = deploy_mock_game();
 
     start_cheat_caller_address(admin.contract_address, OWNER());
-    admin.configure_tournament(tournament_id, max_entries, ascending, game_address);
+    admin.configure(tournament_id, max_entries, ascending, game_address);
     stop_cheat_caller_address(admin.contract_address);
 
-    let config = leaderboard.get_tournament_config(tournament_id);
+    let config = leaderboard.get_config(tournament_id);
     assert!(config.max_entries == max_entries, "Max entries mismatch");
     assert!(config.ascending == ascending, "Ascending mismatch");
     assert!(config.game_address == game_address, "Game address mismatch");
@@ -1089,7 +1035,7 @@ fn test_tournaments_are_independent() {
 
     // Clearing one doesn't affect other
     start_cheat_caller_address(admin.contract_address, OWNER());
-    admin.clear_leaderboard(1);
+    admin.clear(1);
     stop_cheat_caller_address(admin.contract_address);
 
     assert!(leaderboard.get_leaderboard_length(1) == 0, "Tournament 1 should be cleared");
@@ -1275,7 +1221,7 @@ fn test_clear_large_leaderboard() {
     assert!(leaderboard.get_leaderboard_length(WEEKLY_TOURNAMENT) == 10, "Should have 10 entries");
 
     start_cheat_caller_address(admin.contract_address, OWNER());
-    admin.clear_leaderboard(WEEKLY_TOURNAMENT);
+    admin.clear(WEEKLY_TOURNAMENT);
     stop_cheat_caller_address(admin.contract_address);
 
     assert!(
