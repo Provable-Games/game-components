@@ -1,0 +1,281 @@
+// SPDX-License-Identifier: BUSL-1.1
+
+// Import types and interfaces from interfaces package
+// Re-export LeaderboardStoreConfig for backward compatibility
+pub use game_components_interfaces::leaderboard::{
+    IGameDetailsDispatcher, IGameDetailsDispatcherTrait, LeaderboardConfig, LeaderboardEntry,
+    LeaderboardResult, LeaderboardStoreConfig,
+};
+use game_components_metagame::leaderboard::leaderboard::leaderboard::{
+    LeaderboardOperationsImpl, LeaderboardUtilsImpl,
+};
+use game_components_metagame::leaderboard::store::Store;
+use game_components_metagame::leaderboard::structs::Leaderboard;
+/// Leaderboard Store Helper Module
+/// This module provides helper functions to integrate the pure leaderboard library with store
+/// operations.
+
+use starknet::ContractAddress;
+
+/// Main trait for leaderboard store operations
+pub trait LeaderboardStoreTrait<T> {
+    /// Get leaderboard entries with scores
+    fn get_leaderboard_entries(
+        self: @T, context_id: u64, game_address: ContractAddress,
+    ) -> Array<LeaderboardEntry>;
+
+    /// Submit a score to the leaderboard at a specific position
+    fn submit_score_to_leaderboard(
+        ref self: T,
+        context_id: u64,
+        token_id: felt252,
+        score: u64,
+        position: u32,
+        config: LeaderboardStoreConfig,
+    ) -> LeaderboardResult;
+
+    /// Submit a score, automatically finding the correct position
+    fn submit_score_auto(
+        ref self: T, context_id: u64, token_id: felt252, score: u64, config: LeaderboardStoreConfig,
+    ) -> (LeaderboardResult, u32);
+
+    /// Get the position of an entry in the leaderboard (1-based)
+    fn get_entry_position(self: @T, context_id: u64, token_id: felt252) -> Option<u32>;
+
+    /// Check if a score qualifies for the leaderboard
+    fn qualifies_for_leaderboard(
+        self: @T, context_id: u64, score: u64, config: LeaderboardStoreConfig,
+    ) -> bool;
+}
+
+/// Implementation of LeaderboardStoreTrait
+pub impl LeaderboardStoreImpl<T, +Store<T>, +Drop<T>> of LeaderboardStoreTrait<T> {
+    /// Get leaderboard entries with scores
+    fn get_leaderboard_entries(
+        self: @T, context_id: u64, game_address: ContractAddress,
+    ) -> Array<LeaderboardEntry> {
+        let token_ids = self.get_leaderboard(context_id);
+
+        // Convert token IDs to LeaderboardEntry structs
+        let mut entries = ArrayTrait::new();
+        let mut i = 0_u32;
+
+        loop {
+            if i >= token_ids.len() {
+                break;
+            }
+
+            let token_id = *token_ids.at(i);
+            let score = get_score_for_token(game_address, token_id);
+            entries.append(LeaderboardEntry { id: token_id, score });
+            i += 1;
+        }
+
+        entries
+    }
+
+    /// Submit a score to the leaderboard at a specific position
+    fn submit_score_to_leaderboard(
+        ref self: T,
+        context_id: u64,
+        token_id: felt252,
+        score: u64,
+        position: u32,
+        config: LeaderboardStoreConfig,
+    ) -> LeaderboardResult {
+        // Get current leaderboard entries
+        let current_entries = self.get_leaderboard_entries(context_id, config.game_address);
+
+        // Create leaderboard config
+        let lb_config = LeaderboardConfig {
+            max_entries: config.max_entries, ascending: config.ascending, allow_ties: true,
+        };
+
+        // Create new entry
+        let new_entry = LeaderboardEntry { id: token_id, score };
+
+        // Convert 1-based position to 0-based index
+        let position_index = match LeaderboardUtilsImpl::position_to_index(position) {
+            Option::Some(idx) => idx,
+            Option::None => { return LeaderboardResult::InvalidPosition; },
+        };
+
+        // Validate and insert
+        let (updated_entries, result) = LeaderboardOperationsImpl::insert_entry(
+            @lb_config, @current_entries, @new_entry, position_index,
+        );
+
+        match result {
+            LeaderboardResult::Success => {
+                // Convert back to token IDs array for storage
+                let mut token_ids = ArrayTrait::new();
+                let mut i = 0_u32;
+                loop {
+                    if i >= updated_entries.len() {
+                        break;
+                    }
+                    token_ids.append(*updated_entries.at(i).id);
+                    i += 1;
+                }
+
+                // Save updated leaderboard
+                self.set_leaderboard(@Leaderboard { context_id, token_ids });
+
+                LeaderboardResult::Success
+            },
+            _ => result,
+        }
+    }
+
+    /// Submit a score, automatically finding the correct position
+    fn submit_score_auto(
+        ref self: T, context_id: u64, token_id: felt252, score: u64, config: LeaderboardStoreConfig,
+    ) -> (LeaderboardResult, u32) {
+        let current_entries = self.get_leaderboard_entries(context_id, config.game_address);
+        let lb_config = LeaderboardConfig {
+            max_entries: config.max_entries, ascending: config.ascending, allow_ties: true,
+        };
+        let new_entry = LeaderboardEntry { id: token_id, score };
+
+        let position_index = LeaderboardOperationsImpl::find_insert_position(
+            @lb_config, @current_entries, @new_entry,
+        );
+
+        let position: u32 = match position_index {
+            Option::Some(idx) => {
+                match LeaderboardUtilsImpl::index_to_position(idx) {
+                    Option::Some(pos) => pos,
+                    Option::None => { return (LeaderboardResult::InvalidPosition, 0); },
+                }
+            },
+            Option::None => { return (LeaderboardResult::InvalidPosition, 0); },
+        };
+
+        let result = self
+            .submit_score_to_leaderboard(context_id, token_id, score, position, config);
+        (result, position)
+    }
+
+    /// Get the position of an entry in the leaderboard (1-based)
+    fn get_entry_position(self: @T, context_id: u64, token_id: felt252) -> Option<u32> {
+        let token_ids = self.get_leaderboard(context_id);
+
+        let mut i = 0_u32;
+        loop {
+            if i >= token_ids.len() {
+                break Option::None;
+            }
+            if *token_ids.at(i) == token_id {
+                break LeaderboardUtilsImpl::index_to_position(i);
+            }
+            i += 1;
+        }
+    }
+
+    /// Check if a score qualifies for the leaderboard
+    fn qualifies_for_leaderboard(
+        self: @T, context_id: u64, score: u64, config: LeaderboardStoreConfig,
+    ) -> bool {
+        let entries = self.get_leaderboard_entries(context_id, config.game_address);
+        let lb_config = LeaderboardConfig {
+            max_entries: config.max_entries, ascending: config.ascending, allow_ties: true,
+        };
+
+        LeaderboardOperationsImpl::qualifies_for_leaderboard(@lb_config, @entries, score)
+    }
+}
+
+/// Additional helper functions for leaderboard operations
+pub trait LeaderboardStoreHelpersTrait<T> {
+    /// Get top N winners from the leaderboard
+    fn get_top_winners(self: @T, context_id: u64, count: u32) -> Array<felt252>;
+
+    /// Check if the leaderboard is full
+    fn is_leaderboard_full(self: @T, context_id: u64, max_entries: u32) -> bool;
+
+    /// Get the minimum qualifying score for the leaderboard
+    fn get_minimum_qualifying_score(
+        self: @T, context_id: u64, config: LeaderboardStoreConfig,
+    ) -> Option<u64>;
+
+    /// Get a range of leaderboard entries (for pagination)
+    fn get_leaderboard_range(
+        self: @T, context_id: u64, start: u32, count: u32, game_address: ContractAddress,
+    ) -> Array<LeaderboardEntry>;
+
+    /// Find the position where a score would be inserted
+    fn find_score_position(
+        self: @T, context_id: u64, score: u64, config: LeaderboardStoreConfig,
+    ) -> Option<u32>;
+}
+
+/// Implementation of additional helper functions
+pub impl LeaderboardStoreHelpersImpl<T, +Store<T>, +Drop<T>> of LeaderboardStoreHelpersTrait<T> {
+    /// Get top N winners from the leaderboard
+    fn get_top_winners(self: @T, context_id: u64, count: u32) -> Array<felt252> {
+        let token_ids = self.get_leaderboard(context_id);
+
+        // Take first N entries
+        let mut result = ArrayTrait::new();
+        let mut i = 0_u32;
+        let limit = core::cmp::min(count, token_ids.len());
+
+        loop {
+            if i >= limit {
+                break;
+            }
+            result.append(*token_ids.at(i));
+            i += 1;
+        }
+
+        result
+    }
+
+    /// Check if the leaderboard is full
+    fn is_leaderboard_full(self: @T, context_id: u64, max_entries: u32) -> bool {
+        let token_ids = self.get_leaderboard(context_id);
+        token_ids.len() >= max_entries
+    }
+
+    /// Get the minimum qualifying score for the leaderboard
+    fn get_minimum_qualifying_score(
+        self: @T, context_id: u64, config: LeaderboardStoreConfig,
+    ) -> Option<u64> {
+        let entries = self.get_leaderboard_entries(context_id, config.game_address);
+        let lb_config = LeaderboardConfig {
+            max_entries: config.max_entries, ascending: config.ascending, allow_ties: true,
+        };
+
+        LeaderboardUtilsImpl::get_qualifying_score(@lb_config, @entries)
+    }
+
+    /// Get a range of leaderboard entries (for pagination)
+    fn get_leaderboard_range(
+        self: @T, context_id: u64, start: u32, count: u32, game_address: ContractAddress,
+    ) -> Array<LeaderboardEntry> {
+        let entries = self.get_leaderboard_entries(context_id, game_address);
+        LeaderboardUtilsImpl::get_range(@entries, start, count)
+    }
+
+    /// Find the position where a score would be inserted
+    fn find_score_position(
+        self: @T, context_id: u64, score: u64, config: LeaderboardStoreConfig,
+    ) -> Option<u32> {
+        let entries = self.get_leaderboard_entries(context_id, config.game_address);
+        let lb_config = LeaderboardConfig {
+            max_entries: config.max_entries, ascending: config.ascending, allow_ties: true,
+        };
+
+        // Create a temporary entry to find position
+        let temp_entry = LeaderboardEntry { id: 0, score };
+
+        LeaderboardOperationsImpl::find_insert_position(@lb_config, @entries, @temp_entry)
+    }
+}
+
+/// Internal helper functions
+/// Get score for a token from the game contract
+fn get_score_for_token(game_address: ContractAddress, token_id: felt252) -> u64 {
+    let game_dispatcher = IGameDetailsDispatcher { contract_address: game_address };
+    game_dispatcher.score(token_id)
+}

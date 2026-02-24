@@ -21,15 +21,19 @@
 
 #[starknet::contract]
 mod LeaderboardPreset {
-    use game_components_leaderboard::leaderboard_component::LeaderboardComponent;
-    use game_components_leaderboard::leaderboard_component::LeaderboardComponent::{
+    use game_components_metagame::leaderboard::leaderboard_component::LeaderboardComponent::{
         LeaderboardAdminImpl, LeaderboardImpl, LeaderboardInternalTrait,
+    };
+    use game_components_metagame::leaderboard::leaderboard_component::{
+        LeaderboardComponent, LeaderboardHooksEmptyImpl,
     };
     use openzeppelin_introspection::src5::SRC5Component;
     use starknet::ContractAddress;
 
     component!(path: LeaderboardComponent, storage: leaderboard, event: LeaderboardEvent);
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
+
+    impl LeaderboardHooks = LeaderboardHooksEmptyImpl<ContractState>;
 
     // Leaderboard Mixin
     #[abi(embed_v0)]

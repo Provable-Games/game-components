@@ -1,31 +1,28 @@
 # Game Components Library
 
-[![Cairo](https://img.shields.io/badge/Cairo-2.10.1-blue)](https://github.com/starkware-libs/cairo)
-[![StarkNet](https://img.shields.io/badge/StarkNet-2.10.1-orange)](https://starknet.io/)
+<!-- Version badges - keep in sync with Scarb.toml -->
+
+[![Scarb](https://img.shields.io/badge/Scarb-2.15.1-blue)](https://github.com/software-mansion/scarb)
+[![Starknet Foundry](https://img.shields.io/badge/snforge-0.55.0-purple)](https://foundry-rs.github.io/starknet-foundry/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Coverage](https://img.shields.io/badge/Coverage-90%25+-brightgreen)](./packages/test_starknet/coverage/)
+[![Docs](https://img.shields.io/badge/Docs-Embeddable%20Game%20Standard-blue)](https://docs.provable.games/embeddable-game-standard)
+[![codecov](https://codecov.io/gh/Provable-Games/game-components/branch/next/graph/badge.svg?token=YNYQOJ76VV)](https://codecov.io/gh/Provable-Games/game-components)
 
-A modular Cairo smart contract library for building on-chain games on StarkNet. Provides reusable components for managing game state, player tokens, and tournament/event systems with comprehensive testing and deployment tools.
+A modular Cairo smart contract library for building on-chain games on Starknet. Provides reusable components for managing game state, player tokens, and tournament/event systems with comprehensive testing and deployment tools.
 
-## 🎯 **Overview**
-
-Game Components is designed to solve the complexity of building on-chain games by providing three core architectural components that work seamlessly together:
-
-- **🏆 Metagame**: High-level game management and tournament/event coordination
-- **🎮 Minigame**: Individual game logic and mechanics implementation
-- **🃏 MinigameToken**: ERC721-based NFTs representing playable game instances
-
-## 🏗️ **Architecture**
+## Architecture
 
 ### Component Relationships
 
 ```
 Metagame
   ├── minigame_token_address ──→ MinigameToken (ERC721)
-  └── context_address ──→ IMetagameContext (optional)
+  ├── context_address ──→ IMetagameContext (optional)
+  └── IMetagameCallback ◀── update_game() dispatches callbacks
 
 MinigameToken
   ├── game_address ──→ Minigame
+  ├── registry_address ──→ Registry (multi-game mode)
   └── token_metadata
       ├── settings_id ──→ IMinigameSettings
       └── objectives ──→ IMinigameObjectives
@@ -41,17 +38,70 @@ Minigame
 1. **Setup**: Deploy contracts with extension addresses configured
 2. **Mint**: Create tokens with game configuration and metadata
 3. **Play**: Validate `is_playable()` and update game state through minigame logic
-4. **Sync**: Call `update_game()` to synchronize token state with game results
+4. **Sync**: Call `update_game()` to synchronize token state with game results. If the minter implements `IMetagameCallback`, callbacks are dispatched automatically (`on_game_action`, `on_game_over`, `on_objective_complete`)
 5. **Complete**: Game ends when `game_over()` returns true or all objectives achieved
 
-## 🚀 **Quick Start**
+## Packages
+
+### Embeddable Game Standard
+
+Core components for onboarding games onto Starknet.
+
+| Module | Description | Docs |
+|--------|-------------|------|
+| [**token**](packages/embeddable_game_standard/src/token/) | ERC721 NFT representing playable game instances with compile-time feature flags (<4MB optimization) | [README](packages/embeddable_game_standard/src/token/README.md) |
+| [**minigame**](packages/embeddable_game_standard/src/minigame/) | Individual game logic foundation requiring `IMinigameTokenData` implementation | [README](packages/embeddable_game_standard/src/minigame/README.md) |
+| [**metagame**](packages/embeddable_game_standard/src/metagame/) | High-level game management, token delegation, and context coordination | [README](packages/embeddable_game_standard/src/metagame/README.md) |
+| [**registry**](packages/embeddable_game_standard/src/registry/) | Game registration, discovery, and metadata management | [README](packages/embeddable_game_standard/src/registry/README.md) |
+
+### Metagame
+
+Components for applications that coordinate and interact with games.
+
+| Module | Description | Docs |
+|--------|-------------|------|
+| [**leaderboard**](packages/metagame/src/leaderboard/) | Tournament scoring, ranking, and multi-tournament support | [README](packages/metagame/src/leaderboard/README.md) |
+| [**registration**](packages/metagame/src/registration/) | Player registration tracking for tournaments, quests, and other contexts | [README](packages/metagame/src/registration/README.md) |
+| [**entry_requirement**](packages/metagame/src/entry_requirement/) | Entry gating via token ownership, allowlists, or external validators | [README](packages/metagame/src/entry_requirement/README.md) |
+| [**entry_fee**](packages/metagame/src/entry_fee/) | Entry fee management with ERC20 deposits and share distribution | [README](packages/metagame/src/entry_fee/README.md) |
+| [**prize**](packages/metagame/src/prize/) | Prize management for ERC20/ERC721 rewards with claim tracking | [README](packages/metagame/src/prize/README.md) |
+| [**presets**](packages/presets/) | Ready-to-deploy contracts (LeaderboardPreset, AutonomousBuyback, StreamToken) | [README](packages/presets/src/README.md) |
+
+### Game Economy
+
+| Module | Description | Docs |
+|--------|-------------|------|
+| [**tokenomics**](packages/economy/src/tokenomics/) | Ekubo TWAMM buyback and stream token distribution | [README](packages/economy/src/tokenomics/README.md) |
+
+### Utilities
+
+| Module | Description | Docs |
+|--------|-------------|------|
+| [**math**](packages/utilities/src/math/) | Fixed-point math library (32.32 bit) based on Cubit | [README](packages/utilities/src/math/README.md) |
+| [**distribution**](packages/utilities/src/distribution/) | Share computation with Linear, Exponential, Uniform, and Custom distributions | [README](packages/utilities/src/distribution/README.md) |
+| [**utils**](packages/utilities/src/utils/) | Encoding, JSON generation, and token metadata rendering | [README](packages/utilities/src/utils/README.md) |
+
+### Cross-Cutting
+
+| Package | Description | Docs |
+|---------|-------------|------|
+| [**interfaces**](packages/interfaces/) | Centralized interface and struct definitions shared across all components | [README](packages/interfaces/src/README.md) |
+
+### Testing Infrastructure
+
+| Package | Description |
+|---------|-------------|
+| **testing** | Shared test constants and addresses |
+| **test_common** | Shared mock contracts and example implementations |
+
+## Quick Start
 
 ### Prerequisites
 
-- **Cairo**: 2.10.1 (exact version required)
-- **StarkNet**: 2.10.1
-- **StarkNet Foundry**: 0.45.0
-- **Scarb**: Latest compatible version
+<!-- Keep versions in sync with Scarb.toml -->
+
+- **Scarb**: 2.15.1
+- **Starknet Foundry**: 0.55.0
 
 ### Installation
 
@@ -63,153 +113,45 @@ cd game-components
 # Build the entire workspace
 scarb build
 
+# Run tests for a specific module
+snforge test --filter token
+
 # Run tests with coverage
-cd packages/test_starknet && snforge test --coverage
+snforge test --filter token --coverage
 ```
 
 ### Basic Usage
 
 ```cairo
 // Deploy a simple game token
-use game_components_token::core::CoreTokenComponent;
-use game_components_minigame::interface::{IMinigame, IMinigameTokenData};
+use game_components_embeddable_game_standard::token::core::CoreTokenComponent;
+use game_components_interfaces::minigame::{IMinigame, IMinigameTokenData};
 
 #[starknet::contract]
 mod MyGameToken {
     use super::CoreTokenComponent;
-    
+
     component!(path: CoreTokenComponent, storage: core_token, event: CoreTokenEvent);
-    
+
     #[abi(embed_v0)]
     impl CoreTokenImpl = CoreTokenComponent::CoreTokenImpl<ContractState>;
 }
 ```
 
-## 📦 **Packages**
-
-### Core Components
-
-#### 🏆 **Metagame** (`packages/metagame/`)
-High-level game management providing:
-- Token delegation and minting coordination
-- Optional tournament/event context management
-- Game registration and validation
-- Cross-game player tracking
-
-**Key Interfaces:**
-```cairo
-trait IMetagame<TContractState> {
-    fn context_address(self: @TContractState) -> ContractAddress;
-    fn default_token_address(self: @TContractState) -> ContractAddress;
-}
-```
-
-#### 🎮 **Minigame** (`packages/minigame/`)
-Individual game logic implementation requiring:
-- Implementation of `IMinigameTokenData` trait with `score()` and `game_over()` methods
-- Support for optional settings and objectives extensions
-- Integration with token contracts for NFT lifecycle management
-
-**Required Implementation:**
-```cairo
-trait IMinigameTokenData<TState> {
-    fn score(self: @TState, token_id: u64) -> u32;
-    fn game_over(self: @TState, token_id: u64) -> bool;
-}
-```
-
-#### 🃏 **MinigameToken** (`packages/token/`)
-ERC721-based NFT representing playable game instances with:
-- **Optimized Architecture**: Compile-time feature flags eliminate unused code
-- **Modular Extensions**: Minter, renderer, soulbound, multi-game, objectives, context
-- **Lifecycle Management**: Start/end times, playability validation
-- **Game State Tracking**: Score, objectives, completion status
-
-**Revolutionary Size Optimization:**
-- Traditional contracts: 7-9MB (exceeded StarkNet 4MB limit)
-- Optimized architecture: <4MB with full feature sophistication
-- Compile-time configuration eliminates unused features while preserving runtime complexity
-
-### Additional Packages
-
-#### 🧪 **test_starknet** (`packages/test_starknet/`)
-StarkNet-native testing environment:
-- **Purpose**: Fast, isolated testing with comprehensive coverage
-- **Coverage**: 90%+ requirement enforced by cairo-coverage
-- **Test Types**: Unit, integration, fuzz, lifecycle, and event testing
-- **Mock Infrastructure**: Comprehensive mocks for all interfaces
-
-```bash
-cd packages/test_starknet
-snforge test --coverage
-cairo-coverage  # Generate detailed coverage reports
-```
-
-#### 🛠️ **utils** (`packages/utils/`)
-Shared utilities providing:
-- JSON encoding/decoding helpers
-- Renderer trait implementations
-- Common data structures and patterns
-
-## 🔧 **Development Workflow**
-
-### Build Commands
-
-```bash
-# Build entire workspace
-scarb build
-
-# Build specific packages
-cd packages/test_starknet && scarb build
-
-# Format code
-scarb fmt -w
-```
-
-### Testing Commands
-
-```bash
-# Run StarkNet Foundry tests
-cd packages/test_starknet && snforge test
-
-# Run with coverage (required 90%+)
-snforge test --coverage
-cairo-coverage
-
-# Run specific test
-snforge test test_mint_basic
-```
-
-### ⚠️ **Critical Testing Requirements**
-
-This project enforces **90% minimum test coverage** using cairo-coverage. Any code changes without adequate tests will fail CI validation.
-
-**Test Coverage Protocol:**
-1. Write comprehensive unit tests for all new functions
-2. Include edge cases, boundary conditions, and failure scenarios  
-3. Add integration tests for cross-contract interactions
-4. Create fuzz tests for user inputs and mathematical operations
-5. Run `cairo-coverage` locally before pushing
-
-**Test Infrastructure Warnings:**
-- **NEVER** modify existing test infrastructure without understanding all dependencies
-- Run `grep -r "filename" tests/` before modifying any mock contracts
-- Create NEW mocks instead of modifying existing ones
-- Establish passing test baseline before making changes
-
-## 🎨 **Extension System**
+## Extension System
 
 Game Components uses interface-based extensions for modularity:
 
-### Available Extensions
-
-- **Settings**: Game configuration (difficulty, modes, custom parameters)
-- **Objectives**: Achievements and goals tracking with completion rewards
-- **Context**: Tournament/event metadata and cross-game coordination
-- **Minter**: Custom minting logic and access control
-- **Renderer**: Dynamic UI/metadata generation for tokens
-- **Soulbound**: Non-transferable tokens for achievements
-- **Multi-game**: Support multiple games in one token collection
+| Extension | Purpose |
+|-----------|---------|
+| **Settings** | Game configuration (difficulty, modes, custom parameters) |
+| **Objectives** | Achievements and goals tracking with completion rewards |
+| **Context** | Tournament/event metadata and cross-game coordination |
+| **Callback** | Automatic metagame notifications on score/game_over/objective events |
+| **Minter** | Custom minting logic and access control |
+| **Renderer** | Dynamic UI/metadata generation for tokens |
+| **Soulbound** | Non-transferable tokens for achievements |
+| **Multi-game** | Support multiple games in one token collection |
 
 ### Implementation Pattern
 
@@ -221,9 +163,35 @@ if src5_component.supports_interface(IMINIGAME_SETTINGS_ID) {
 }
 ```
 
-## 📱 **Deployment & Scripts**
+## Development Workflow
 
-### Deployment Scripts
+### Build Commands
+
+```bash
+# Build entire workspace
+scarb build
+
+# Format code
+scarb fmt -w
+```
+
+### Testing Commands
+
+```bash
+# Run all tests for a module
+snforge test --filter token
+
+# Run with coverage
+snforge test --filter token --coverage
+
+# Run a specific test by name
+snforge test --filter test_mint_basic
+
+# Run with custom fuzzer iterations
+snforge test --filter token --fuzzer-runs 256
+```
+
+## Deployment Scripts
 
 ```bash
 # Deploy mock contracts for testing
@@ -232,105 +200,20 @@ if src5_component.supports_interface(IMINIGAME_SETTINGS_ID) {
 # Deploy optimized token contract
 ./scripts/deploy_optimized_token.sh
 
+# Deploy StreamToken factory
+./scripts/deploy_stream_token_factory.sh
+
 # Create game settings
 ./scripts/create_settings.sh
-
-# Create objectives
-./scripts/create_objectives.sh
 
 # Mint game tokens
 ./scripts/mint_games.sh
 ```
 
-### Configuration Files
-
-- `Scarb.toml`: Workspace configuration and dependencies
-- `CLAUDE.md`: Development guidelines and AI assistant instructions
-- `argent_account.json`: Account configuration for deployments
-- `deployments/`: Deployment artifacts and contract addresses
-
-## 🌟 **Key Features**
-
-### For Game Developers
-- **Rapid Development**: Pre-built components eliminate boilerplate
-- **Modular Design**: Pick only the extensions you need
-- **Size Optimized**: Compile-time optimization stays under StarkNet limits
-- **Battle Tested**: 90%+ test coverage with comprehensive edge case handling
-
-### For Players
-- **True Ownership**: ERC721 tokens represent actual game instances
-- **Interoperability**: Games can interact through shared interfaces
-- **Tournament Support**: Participate in cross-game events and competitions
-- **Achievement System**: Objectives and progress tracking across games
-
-### For Tournament Organizers
-- **Metagame Integration**: Coordinate multiple games in single events
-- **Context Management**: Rich metadata for tournaments and competitions
-- **Player Tracking**: Cross-game player statistics and achievements
-- **Flexible Configuration**: Support for various tournament formats
-
-## 🤝 **Contributing**
-
-### Development Guidelines
-
-1. **Security First**: Thorough edge case analysis prevents fund losses
-2. **Gas Optimization**: Efficient transactions without sacrificing readability
-3. **Comprehensive Testing**: 90%+ coverage requirement with no exceptions
-4. **Clear Documentation**: Enable team collaboration and maintainability
-
-### Code Standards
-
-- Follow existing Cairo patterns and component architecture
-- Use SRC5 interface discovery for capability detection
-- Implement proper storage isolation via `#[substorage(v0)]`
-- Maintain dispatcher pattern for cross-contract calls
-- Extensive use of Option types for optional parameters
-
-### Pull Request Process
-
-1. Ensure `scarb build && scarb test` passes with zero warnings
-2. Verify 90%+ test coverage with `cairo-coverage`
-3. Run `scarb fmt -w` to format code
-4. Update documentation for any new features
-5. Test deployment scripts if contract changes are made
-
-## 📚 **Examples**
-
-See individual package READMEs for detailed examples:
-- [`packages/token/README.md`](packages/token/README.md) - Token optimization patterns
-- [`packages/test_starknet/README.md`](packages/test_starknet/README.md) - Testing approaches
-
-### Simple Game Implementation
-
-```cairo
-#[starknet::contract]
-mod TicTacToe {
-    use game_components_minigame::interface::{IMinigameTokenData};
-    
-    impl GameLogic of IMinigameTokenData<ContractState> {
-        fn score(self: @ContractState, token_id: u64) -> u32 {
-            // Return current game score
-            self.game_scores.read(token_id)
-        }
-        
-        fn game_over(self: @ContractState, token_id: u64) -> bool {
-            // Check if game is complete
-            self.check_win_condition(token_id) || self.is_board_full(token_id)
-        }
-    }
-}
-```
-
-## 🔗 **Resources**
-
-- **Cairo Documentation**: [cairo-lang.org](https://cairo-lang.org/)
-- **StarkNet Developer Docs**: [starknet.io/developers](https://starknet.io/developers)
-- **OpenZeppelin Cairo**: [github.com/OpenZeppelin/cairo-contracts](https://github.com/OpenZeppelin/cairo-contracts)
-
-## 📄 **License**
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ---
 
-**Built with ❤️ for the StarkNet gaming ecosystem by [Provable Games](https://provable.games)**
+**Built with love for the Starknet gaming ecosystem by [Provable Games](https://provable.games)**

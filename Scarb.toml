@@ -1,13 +1,13 @@
 [workspace]
 members = [
+    "packages/interfaces",
+    "packages/embeddable_game_standard",
     "packages/metagame",
-    "packages/minigame",
-    "packages/token",
-    # Test packages can be uncommented when needed
-    "packages/test_starknet",
-    "packages/utils",
-    "packages/leaderboard",
+    "packages/economy",
+    "packages/utilities",
     "packages/presets",
+    "packages/testing",
+    "packages/test_common",
 ]
 
 [package]
@@ -19,7 +19,7 @@ edition.workspace = true
 [workspace.package]
 version = "1.5.1"
 edition = "2024_07"
-cairo-version = "2.13.1"
+cairo-version = "2.15.1"
 authors = ["Provable Games <maintainers@provable.games>"]
 keywords = [
     "openzeppelin",
@@ -30,24 +30,27 @@ keywords = [
 ]
 
 [workspace.dependencies]
-starknet = "2.13.1"
-snforge_std = { git = "https://github.com/foundry-rs/starknet-foundry", tag = "v0.53.0" }
-openzeppelin_introspection = { git = "https://github.com/OpenZeppelin/cairo-contracts.git", tag = "v3.0.0-alpha.3" }
-openzeppelin_token = { git = "https://github.com/OpenZeppelin/cairo-contracts.git", tag = "v3.0.0-alpha.3" }
-openzeppelin_interfaces = { git = "https://github.com/OpenZeppelin/cairo-contracts.git", tag = "v3.0.0-alpha.3" }
+starknet = "2.15.1"
+snforge_std = { git = "https://github.com/foundry-rs/starknet-foundry", tag = "v0.55.0" }
+openzeppelin_access = { git = "https://github.com/OpenZeppelin/cairo-contracts.git", tag = "v3.0.0" }
+openzeppelin_introspection = { git = "https://github.com/OpenZeppelin/cairo-contracts.git", tag = "v3.0.0" }
+openzeppelin_token = { git = "https://github.com/OpenZeppelin/cairo-contracts.git", tag = "v3.0.0" }
+openzeppelin_interfaces = { git = "https://github.com/OpenZeppelin/cairo-contracts.git", tag = "v3.0.0" }
+ekubo = { git = "https://github.com/EkuboProtocol/starknet-contracts.git", tag = "v4.0.1" }
 
 [dependencies]
 starknet.workspace = true
-# Common packages
+# Group packages
+game_components_interfaces = { path = "packages/interfaces" }
+interfaces = { git = "https://github.com/Provable-Games/metagame_extensions.git", branch = "next" }
+game_components_embeddable_game_standard = { path = "packages/embeddable_game_standard" }
 game_components_metagame = { path = "packages/metagame" }
-game_components_minigame = { path = "packages/minigame" }
-game_components_token = { path = "packages/token" }
-# Test packages
-# game_components_test_dojo = { path = "packages/test_dojo" }  # Excluded - must be built separately
-game_components_test_starknet = { path = "packages/test_starknet" }
-game_components_utils = { path = "packages/utils" }
-game_components_leaderboard = { path = "packages/leaderboard" }
+game_components_economy = { path = "packages/economy" }
+game_components_utilities = { path = "packages/utilities" }
 game_components_presets = { path = "packages/presets" }
+# Shared testing infrastructure
+game_components_testing = { path = "packages/testing" }
+game_components_test_common = { path = "packages/test_common" }
 
 [dev-dependencies]
 snforge_std.workspace = true
@@ -58,3 +61,14 @@ snforge_std.workspace = true
 unstable-add-statements-functions-debug-info = true
 unstable-add-statements-code-locations-debug-info = true
 inlining-strategy = "avoid"
+
+[tool.scarb]
+allow-prebuilt-plugins = ["snforge_std"]
+
+[tool.snforge]
+fuzzer_runs = 24
+
+[[tool.snforge.fork]]
+name = "MAINNET"
+url = "https://api.cartridge.gg/x/starknet/mainnet/rpc/v0_9"
+block_id.tag = "latest"

@@ -5,17 +5,25 @@ edition.workspace = true
 
 [lib]
 
-[cairo]
-sierra-replace-ids = true
-
 [dependencies]
-game_components_leaderboard = { path = "../leaderboard" }
+game_components_metagame = { path = "../metagame" }
+game_components_economy = { path = "../economy" }
+game_components_interfaces = { path = "../interfaces" }
 starknet.workspace = true
 openzeppelin_token.workspace = true
 openzeppelin_introspection.workspace = true
-openzeppelin_access = { git = "https://github.com/OpenZeppelin/cairo-contracts.git", tag = "v3.0.0-alpha.3" }
+openzeppelin_access.workspace = true
+ekubo.workspace = true
 
 [[target.starknet-contract]]
+build-external-contracts = [
+    "game_components_test_common::mocks::mock_erc20::MockERC20",
+    "game_components_test_common::mocks::mock_leaderboard_contract::MockLeaderboardContract",
+    "game_components_test_common::mocks::mock_game_details::MockGameDetails",
+]
 
 [dev-dependencies]
 snforge_std.workspace = true
+game_components_testing = { path = "../testing" }
+game_components_test_common = { path = "../test_common" }
+openzeppelin_interfaces.workspace = true

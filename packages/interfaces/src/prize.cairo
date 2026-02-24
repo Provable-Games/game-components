@@ -1,0 +1,71 @@
+use game_components_interfaces::distribution::Distribution;
+use interfaces::extension::ExtensionConfig;
+use starknet::ContractAddress;
+
+/// SNIP-5 interface ID derived via src5_rs: XOR of extended function selectors
+/// - get_prize(u64)->PrizeData
+/// - get_total_prizes()->u64
+/// - is_prize_claimed(u64,PrizeType)->E((),())
+pub const IPRIZE_ID: felt252 = 0x2a7a3be3dafc2154ab2780a63f0457adc535ad295bc44ce46cc3fbb11019641;
+
+#[derive(Drop, Serde)]
+pub struct ERC20Data {
+    pub amount: u128,
+    pub distribution: Option<Distribution>,
+    pub distribution_count: Option<u32>,
+}
+
+#[derive(Copy, Drop, Serde, starknet::Store)]
+pub struct ERC721Data {
+    pub id: u128,
+}
+
+#[allow(starknet::store_no_default_variant)]
+#[derive(Drop, Serde)]
+pub enum TokenTypeData {
+    erc20: ERC20Data,
+    erc721: ERC721Data,
+}
+
+/// Prize data as stored/returned (with id, context_id, sponsor)
+#[derive(Drop, Serde)]
+pub struct PrizeData {
+    pub id: u64,
+    pub context_id: u64,
+    pub token_address: ContractAddress,
+    pub token_type: TokenTypeData,
+    pub sponsor_address: ContractAddress,
+}
+
+/// Prize input config (token_address + token_type)
+#[derive(Drop, Serde)]
+pub struct PrizeConfig {
+    pub token_address: ContractAddress,
+    pub token_type: TokenTypeData,
+}
+
+/// Prize enum: dispatch to either store token info or set extension
+#[derive(Drop, Serde)]
+pub enum Prize {
+    Config: PrizeConfig,
+    Extension: ExtensionConfig,
+}
+
+#[allow(starknet::store_no_default_variant)]
+#[derive(Copy, Drop, Serde, PartialEq)]
+pub enum PrizeType {
+    Single: u64,
+    Distributed: (u64, u32),
+}
+
+#[starknet::interface]
+pub trait IPrize<TState> {
+    /// Get a prize by its ID
+    fn get_prize(self: @TState, prize_id: u64) -> PrizeData;
+
+    /// Get total prizes count
+    fn get_total_prizes(self: @TState) -> u64;
+
+    /// Check if a prize has been claimed
+    fn is_prize_claimed(self: @TState, context_id: u64, prize_type: PrizeType) -> bool;
+}
