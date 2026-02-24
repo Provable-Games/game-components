@@ -2,7 +2,11 @@ use game_components_interfaces::distribution::Distribution;
 use interfaces::extension::ExtensionConfig;
 use starknet::ContractAddress;
 
-pub const IPRIZE_ID: felt252 = 0x03a632c0af289ff670e58cb3ecee0e6c2c781dc7615a30603e2d2c583bc2ab45;
+/// SNIP-5 interface ID derived via src5_rs: XOR of extended function selectors
+/// - get_prize(u64)->PrizeData
+/// - get_total_prizes()->u64
+/// - is_prize_claimed(u64,PrizeType)->E((),())
+pub const IPRIZE_ID: felt252 = 0x2a7a3be3dafc2154ab2780a63f0457adc535ad295bc44ce46cc3fbb11019641;
 
 #[derive(Drop, Serde)]
 pub struct ERC20Data {

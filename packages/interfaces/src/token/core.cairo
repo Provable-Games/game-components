@@ -3,8 +3,10 @@ use starknet::ContractAddress;
 use crate::structs::metagame::GameContextDetails;
 use crate::structs::token::{MintParams, PlayerNameUpdate, TokenMetadata, TokenMutableState};
 
+/// SNIP-5 interface ID derived via src5_rs: XOR of extended function selectors
+/// See /tmp/all_game_interfaces.cairo or run `src5_rs parse` for full derivation.
 pub const IMINIGAME_TOKEN_ID: felt252 =
-    0xa08df7e54b63300eeacf85a0f3289c405351278620b5af7e5d868b91f4d43d;
+    0x3ada6a6dc9a3b4b3034600a86f30b17d36dc428ed185e192e25bb86e690001a;
 
 #[starknet::interface]
 pub trait IMinigameToken<TState> {

@@ -2,8 +2,10 @@
 use starknet::ContractAddress;
 use crate::structs::minigame::GameObjectiveDetails;
 
+/// SNIP-5 interface ID derived via src5_rs: XOR of extended function selectors
+/// - create_objective(ContractAddress,ContractAddress,u32,u32,GameObjectiveDetails)
 pub const IMINIGAME_TOKEN_OBJECTIVES_ID: felt252 =
-    0x8bb87efb8f7d4c796d9138d561d415d0db463db97873626f104b6e660ed6cf;
+    0x2c9b37fb2982c9480e67f2da4c7730a8cde17b5fb021f3d530305f2f3a0b929;
 
 #[starknet::interface]
 pub trait IMinigameTokenObjectives<TState> {

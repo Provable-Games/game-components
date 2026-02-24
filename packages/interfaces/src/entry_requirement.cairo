@@ -1,8 +1,11 @@
 pub use interfaces::extension::ExtensionConfig;
 use starknet::ContractAddress;
 
+/// SNIP-5 interface ID derived via src5_rs: XOR of extended function selectors
+/// - get_entry_requirement(u64)->Option<EntryRequirement>
+/// - get_qualification_entries(u64,QualificationProof)->QualificationEntries
 pub const IENTRY_REQUIREMENT_ID: felt252 =
-    0x01a96fed356e101112c0cc86d357a4ca8ec9c41f7f7d34a88c03e7083ddceb55;
+    0x153355c05540b99cd8196c632c72891a6039efdc0b4097d8161fbeed3809182;
 
 #[derive(Copy, Drop, Serde, PartialEq)]
 pub struct EntryRequirement {

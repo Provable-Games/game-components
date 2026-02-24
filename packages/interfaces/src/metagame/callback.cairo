@@ -5,10 +5,12 @@
 // contracts when game state changes (score updates, game over, objectives
 // completed). This enables tournament score aggregation without manual sync.
 
-/// Interface ID for IMetagameCallback (SRC5 compliant)
-/// Note: constant kept at original value for backwards compatibility
+/// SNIP-5 interface ID derived via src5_rs: XOR of extended function selectors
+/// - on_game_action((u128,u128),u64)
+/// - on_game_over((u128,u128),u64)
+/// - on_objective_complete((u128,u128))
 pub const IMETAGAME_CALLBACK_ID: felt252 =
-    0x04d4f4758b99dcb4f1e2dc37c3a6e8c7a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6;
+    0x3b4312c1422de8c35936cc79948381ab8ef9fd083d8c8e20317164690aa1600;
 
 /// Interface for metagame contracts to receive callbacks from token contracts
 #[starknet::interface]

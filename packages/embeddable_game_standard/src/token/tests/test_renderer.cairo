@@ -965,7 +965,7 @@ fn test_supports_renderer_interface() {
 #[test]
 fn test_renderer_interface_id_value() {
     assert!(
-        IMINIGAME_TOKEN_RENDERER_ID == 0x8f54cc9eac088fdd5b0e849eef269b521a434b60ff8f2d8ae60cac2fbcc33e,
+        IMINIGAME_TOKEN_RENDERER_ID == 0x2899a752da88d6acf4ed54cc644238f3956b4db3c9885d3ad94f6149f0ec465,
         "Interface ID should match expected value",
     );
 }

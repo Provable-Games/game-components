@@ -23,7 +23,7 @@ Feature flags in `src/config.cairo` eliminate unused code at compile time:
 
 ### Core Interface (IMinigameToken)
 
-**Interface ID:** `IMINIGAME_TOKEN_ID = 0xa08df7e54b63300eeacf85a0f3289c405351278620b5af7e5d868b91f4d43d`
+**Interface ID:** `IMINIGAME_TOKEN_ID = 0x3ada6a6dc9a3b4b3034600a86f30b17d36dc428ed185e192e25bb86e690001a`
 
 | Method             | Signature                                  | Description                  |
 | ------------------ | ------------------------------------------ | ---------------------------- |
@@ -39,10 +39,10 @@ Feature flags in `src/config.cairo` eliminate unused code at compile time:
 
 | Extension  | Interface ID | Key Methods                                                   |
 | ---------- | ------------ | ------------------------------------------------------------- |
-| Minter     | `0x0214...`  | get_minter_address(), get_minter_id(), minter_exists()        |
-| Objectives | `0x08bb...`  | create_objective()                                            |
-| Settings   | `0x02e0...`  | create_settings()                                             |
-| Renderer   | `0x08f5...`  | get_renderer(), has_custom_renderer(), reset_token_renderer() |
+| Minter     | `0x2198...`  | get_minter_address(), get_minter_id(), minter_exists()        |
+| Objectives | `0x2c9b...`  | create_objective()                                            |
+| Settings   | `0x229b...`  | create_settings()                                             |
+| Renderer   | `0x2899...`  | get_renderer(), has_custom_renderer(), reset_token_renderer() |
 | Context    | -            | Game context attachment via GameContextDetails                |
 
 ### Storage Optimization - StorePacking

@@ -2,8 +2,13 @@
 use starknet::ContractAddress;
 pub use crate::structs::registry::GameMetadata;
 
+/// SNIP-5 interface ID derived via src5_rs: XOR of extended function selectors
+/// - game_count, game_id_from_address, game_address_from_id, game_metadata,
+///   is_game_registered, register_game, set_game_royalty, game_metadata_batch,
+///   games_registered_batch, get_games, get_games_by_developer,
+///   get_games_by_publisher, get_games_by_genre
 pub const IMINIGAME_REGISTRY_ID: felt252 =
-    0x014a8d6e4bf56a4bbf869257d1f846e5a2ac1e3508466147556f186143409be1;
+    0x3607d1f9cf92726b22f1cd06ed993357e0891e4abb317625eb503bd6a7694b7;
 
 #[starknet::interface]
 pub trait IMinigameRegistry<TState> {

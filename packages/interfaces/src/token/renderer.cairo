@@ -1,7 +1,13 @@
 // Token renderer extension interface
 
+/// SNIP-5 interface ID derived via src5_rs: XOR of extended function selectors
+/// - get_renderer(felt252)->ContractAddress
+/// - has_custom_renderer(felt252)->E((),())
+/// - reset_token_renderer(felt252)
+/// - reset_token_renderer_batch((@Array<felt252>))
+/// - get_renderer_batch((@Array<felt252>))->Array<ContractAddress>
 pub const IMINIGAME_TOKEN_RENDERER_ID: felt252 =
-    0x8f54cc9eac088fdd5b0e849eef269b521a434b60ff8f2d8ae60cac2fbcc33e;
+    0x2899a752da88d6acf4ed54cc644238f3956b4db3c9885d3ad94f6149f0ec465;
 
 #[starknet::interface]
 pub trait IMinigameTokenRenderer<TState> {

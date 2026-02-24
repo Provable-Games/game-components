@@ -1,8 +1,10 @@
 use interfaces::extension::ExtensionConfig;
 use starknet::ContractAddress;
 
+/// SNIP-5 interface ID derived via src5_rs: XOR of extended function selectors
+/// - get_entry_fee(u64)->Option<EntryFeeConfig>
 pub const IENTRY_FEE_ID: felt252 =
-    0x022972c149377b51478a25ad70c95a0d3df9e6cfc5d7a0757c2a01acc8aedbd1;
+    0x2386e28587616f249621004456b4ed72932c1f731b2a732d87d8a722ee739a1;
 
 /// Additional share configuration for entry fee distribution
 /// These shares are deducted from the total pool before position-based distribution

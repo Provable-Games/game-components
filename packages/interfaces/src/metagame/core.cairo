@@ -1,8 +1,10 @@
 // Core metagame interface
 use starknet::ContractAddress;
 
-pub const IMETAGAME_ID: felt252 =
-    0x0260d5160a283a03815f6c3799926c7bdbec5f22e759f992fb8faf172243ab20;
+/// SNIP-5 interface ID derived via src5_rs: XOR of extended function selectors
+/// - context_address()->ContractAddress
+/// - default_token_address()->ContractAddress
+pub const IMETAGAME_ID: felt252 = 0x7997c74299c045696726f0f7f0165f85817acbb0964e23ff77e11e34eff6f2;
 
 #[starknet::interface]
 pub trait IMetagame<TContractState> {

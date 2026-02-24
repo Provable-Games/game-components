@@ -8,9 +8,11 @@ pub use crate::structs::leaderboard::{
     LeaderboardConfig, LeaderboardEntry, LeaderboardResult, LeaderboardStoreConfig,
 };
 
-// Interface ID constant
+/// SNIP-5 interface ID derived via src5_rs: XOR of extended function selectors
+/// - submit_score, get_entries, get_top_entries, get_position, qualifies,
+///   is_full, get_leaderboard_length, get_config
 pub const ILEADERBOARD_ID: felt252 =
-    0x03c0f9265d397c10970f24822e4b57cac7d8895f8c449b7c9caaa26910499705;
+    0x381684b12c5a80d08222695ee5eca750b99e56cb53101a47378c542859907e1;
 
 /// Interface for retrieving game scores
 /// Implemented by game contracts to provide score data for leaderboard entries

@@ -1,8 +1,11 @@
 // Minigame settings extension interface
 use crate::structs::minigame::GameSettingDetails;
 
+/// SNIP-5 interface ID derived via src5_rs: XOR of extended function selectors
+/// - settings_exist(u32)->E((),())
+/// - settings_exist_batch((@Array<u32>))->Array<E((),())>
 pub const IMINIGAME_SETTINGS_ID: felt252 =
-    0x0379f4343538c65a38349fb1318328629dd950d3624101aeaac1b4bd45a39eff;
+    0x1a58ab3ee416cc018f93236fd0bb995de89ee536626c268491121e51a46a0f4;
 
 #[starknet::interface]
 pub trait IMinigameSettings<TState> {

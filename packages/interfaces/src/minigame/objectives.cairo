@@ -1,8 +1,12 @@
 // Minigame objectives extension interface
 use crate::structs::minigame::{GameObjective, GameObjectiveDetails};
 
+/// SNIP-5 interface ID derived via src5_rs: XOR of extended function selectors
+/// - objective_exists(u32)->E((),())
+/// - completed_objective(felt252,u32)->E((),())
+/// - objective_exists_batch((@Array<u32>))->Array<E((),())>
 pub const IMINIGAME_OBJECTIVES_ID: felt252 =
-    0x0213cfcf73543e549f00c7cad49cf27a1e544d71315ff981930aaf77ac0709bd;
+    0xac0aaa451454d78741d9fafe803b69c8b31d073156020b08496104356db5e5;
 
 #[starknet::interface]
 pub trait IMinigameObjectives<TState> {

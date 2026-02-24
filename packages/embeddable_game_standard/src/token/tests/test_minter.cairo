@@ -801,7 +801,7 @@ fn test_minter_src5_interface_support() {
 #[test]
 fn test_minter_interface_id_value() {
     assert!(
-        IMINIGAME_TOKEN_MINTER_ID == 0x021482384f4a706dbe387c9fc12175768c24904c5f5f258f1189a6d545eb3104,
+        IMINIGAME_TOKEN_MINTER_ID == 0x2198424b9ee68499f53f33ad952598acbd6d141af6c6863c9c56b117063acca,
         "Interface ID should match expected value",
     );
 }
