@@ -231,18 +231,16 @@ jobs:
             npx -y "$YAML_CLI" valid < codecov.yml
           fi
 
-      - name: Validate module count matches codecov config
+      - name: Validate package count matches codecov config
         run: |
-          # Count total modules from the setup script's add() calls in pr-ci.yml
-          # This is the canonical module catalog shared by both CI workflows
-          matrix_count=$(grep -cE '^\s+add ' .github/workflows/pr-ci.yml)
+          matrix_count=$(grep -cE '^\s+module:' .github/workflows/main-ci.yml)
           codecov_count=$(grep 'after_n_builds:' codecov.yml | grep -oE '[0-9]+')
 
-          echo "Module catalog: $matrix_count modules"
+          echo "Matrix modules: $matrix_count"
           echo "Codecov after_n_builds: $codecov_count"
 
           if [ "$matrix_count" != "$codecov_count" ]; then
-            echo "::error::Module catalog has $matrix_count modules but codecov.yml expects $codecov_count builds"
+            echo "::error::Matrix has $matrix_count modules but codecov.yml expects $codecov_count builds"
             echo "::error::Update codecov.yml after_n_builds to match module count"
             exit 1
           fi
