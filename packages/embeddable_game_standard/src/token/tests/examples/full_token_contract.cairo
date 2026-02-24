@@ -401,6 +401,7 @@ pub mod FullTokenContract {
                     score,
                     minted_by_address,
                     player_name,
+                    "",
                 )
             } else {
                 // return the blank NFT renderer
