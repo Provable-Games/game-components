@@ -321,6 +321,7 @@ pub mod SingleGameTokenContract {
                     score,
                     minted_by_address,
                     player_name,
+                    "",
                 )
             } else {
                 // Fallback if no game address is set
