@@ -300,6 +300,7 @@ jobs:
             add game_components_metagame entry_requirement ubuntu-latest-4 256
             add game_components_metagame entry_fee ubuntu-latest-4 256
             add game_components_metagame prize ubuntu-latest-4 256
+            add game_components_metagame ticket_booth ubuntu-latest-4 256
           fi
           if [ "$NEED_ECONOMY" = "true" ]; then
             add game_components_economy tokenomics ubuntu-latest-4 256
