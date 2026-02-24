@@ -50,7 +50,7 @@ Automatic callbacks from token contracts on game state changes.
 
 | Interface | Methods |
 |-----------|---------|
-| `IMetagameCallback` | `on_score_update(token_id, score)` |
+| `IMetagameCallback` | `on_game_action(token_id, score)` |
 | | `on_game_over(token_id, final_score)` |
 | | `on_objective_complete(token_id)` |
 

@@ -20,7 +20,7 @@ use crate::metagame::extensions::callback::interface::{
 
 #[starknet::interface]
 trait IMockCallbackView<TContractState> {
-    fn score_update_count(self: @TContractState) -> u32;
+    fn game_action_count(self: @TContractState) -> u32;
     fn game_over_count(self: @TContractState) -> u32;
     fn objective_complete_count(self: @TContractState) -> u32;
     fn last_token_id(self: @TContractState) -> u256;
@@ -92,31 +92,31 @@ fn test_callback_supports_src5_base() {
 }
 
 // =============================================================================
-// ON_SCORE_UPDATE TESTS
+// ON_GAME_ACTION TESTS
 // =============================================================================
 
-// CB-U-03: on_score_update delegates to hooks trait
+// CB-U-03: on_game_action delegates to hooks trait
 #[test]
-fn test_on_score_update_delegates_to_hooks() {
+fn test_on_game_action_delegates_to_hooks() {
     let (address, dispatcher, token_addr) = deploy_callback_contract();
 
     start_cheat_caller_address(address, token_addr);
-    dispatcher.on_score_update(1, 100);
+    dispatcher.on_game_action(1, 100);
     stop_cheat_caller_address(address);
 
     let view = IMockCallbackViewDispatcher { contract_address: address };
-    assert!(view.score_update_count() == 1, "Score update count should be 1");
+    assert!(view.game_action_count() == 1, "Game action count should be 1");
     assert!(view.last_token_id() == 1, "Token ID should be 1");
     assert!(view.last_score() == 100, "Score should be 100");
 }
 
-// CB-U-04: on_score_update with zero score
+// CB-U-04: on_game_action with zero score
 #[test]
-fn test_on_score_update_with_zero_score() {
+fn test_on_game_action_with_zero_score() {
     let (address, dispatcher, token_addr) = deploy_callback_contract();
 
     start_cheat_caller_address(address, token_addr);
-    dispatcher.on_score_update(5, 0);
+    dispatcher.on_game_action(5, 0);
     stop_cheat_caller_address(address);
 
     let view = IMockCallbackViewDispatcher { contract_address: address };
@@ -124,46 +124,46 @@ fn test_on_score_update_with_zero_score() {
     assert!(view.last_score() == 0, "Score should be 0");
 }
 
-// CB-U-05: on_score_update with max u64 score
+// CB-U-05: on_game_action with max u64 score
 #[test]
-fn test_on_score_update_with_max_score() {
+fn test_on_game_action_with_max_score() {
     let (address, dispatcher, token_addr) = deploy_callback_contract();
 
     start_cheat_caller_address(address, token_addr);
-    dispatcher.on_score_update(1, MAX_U64);
+    dispatcher.on_game_action(1, MAX_U64);
     stop_cheat_caller_address(address);
 
     let view = IMockCallbackViewDispatcher { contract_address: address };
     assert!(view.last_score() == MAX_U64, "Should handle max u64 score");
 }
 
-// CB-U-06: on_score_update with large token_id
+// CB-U-06: on_game_action with large token_id
 #[test]
-fn test_on_score_update_with_large_token_id() {
+fn test_on_game_action_with_large_token_id() {
     let (address, dispatcher, token_addr) = deploy_callback_contract();
 
     let large_token_id: u256 = 0xFFFFFFFFFFFFFFFF; // max u64 as u256
     start_cheat_caller_address(address, token_addr);
-    dispatcher.on_score_update(large_token_id, 50);
+    dispatcher.on_game_action(large_token_id, 50);
     stop_cheat_caller_address(address);
 
     let view = IMockCallbackViewDispatcher { contract_address: address };
     assert!(view.last_token_id() == large_token_id, "Should handle large token ID");
 }
 
-// CB-U-multiple: Multiple score updates
+// CB-U-multiple: Multiple game actions
 #[test]
-fn test_on_score_update_multiple_calls() {
+fn test_on_game_action_multiple_calls() {
     let (address, dispatcher, token_addr) = deploy_callback_contract();
 
     start_cheat_caller_address(address, token_addr);
-    dispatcher.on_score_update(1, 100);
-    dispatcher.on_score_update(2, 200);
-    dispatcher.on_score_update(3, 300);
+    dispatcher.on_game_action(1, 100);
+    dispatcher.on_game_action(2, 200);
+    dispatcher.on_game_action(3, 300);
     stop_cheat_caller_address(address);
 
     let view = IMockCallbackViewDispatcher { contract_address: address };
-    assert!(view.score_update_count() == 3, "Score update count should be 3");
+    assert!(view.game_action_count() == 3, "Game action count should be 3");
     assert!(view.last_token_id() == 3, "Last token ID should be 3");
     assert!(view.last_score() == 300, "Last score should be 300");
 }
@@ -280,15 +280,15 @@ fn test_on_objective_complete_with_large_token_id() {
 // EMPTY HOOKS IMPLEMENTATION TESTS
 // =============================================================================
 
-// CB-U-14: Empty hooks on_score_update is no-op
+// CB-U-14: Empty hooks on_game_action is no-op
 #[test]
-fn test_empty_hooks_on_score_update() {
+fn test_empty_hooks_on_game_action() {
     let (address, token_addr) = deploy_empty_callback_contract();
     let dispatcher = IMetagameCallbackDispatcher { contract_address: address };
 
     start_cheat_caller_address(address, token_addr);
     // Should not panic
-    dispatcher.on_score_update(1, 100);
+    dispatcher.on_game_action(1, 100);
     stop_cheat_caller_address(address);
 }
 
@@ -320,13 +320,13 @@ fn test_empty_hooks_on_objective_complete() {
 // CALLER VALIDATION / REJECTION TESTS
 // =============================================================================
 
-// CB-U-17: on_score_update rejects unauthorized caller
+// CB-U-17: on_game_action rejects unauthorized caller
 #[test]
 #[should_panic(expected: "MetagameCallback: caller is not the token contract")]
-fn test_on_score_update_rejects_unauthorized_caller() {
+fn test_on_game_action_rejects_unauthorized_caller() {
     let (_, dispatcher, _) = deploy_callback_contract();
     // Call without cheating caller — default caller is not the token address
-    dispatcher.on_score_update(1, 100);
+    dispatcher.on_game_action(1, 100);
 }
 
 // CB-U-18: on_game_over rejects unauthorized caller
@@ -349,16 +349,16 @@ fn test_on_objective_complete_rejects_unauthorized_caller() {
 // FUZZ TESTS
 // =============================================================================
 
-// CB-F-01: Fuzz on_score_update parameters
+// CB-F-01: Fuzz on_game_action parameters
 #[test]
 #[fuzzer(runs: 100)]
-fn test_fuzz_on_score_update(token_id: u64, score: u64) {
+fn test_fuzz_on_game_action(token_id: u64, score: u64) {
     let (address, dispatcher, token_addr) = deploy_callback_contract();
 
     // Convert u64 to u256 for the interface
     let token_id_u256: u256 = token_id.into();
     start_cheat_caller_address(address, token_addr);
-    dispatcher.on_score_update(token_id_u256, score);
+    dispatcher.on_game_action(token_id_u256, score);
     stop_cheat_caller_address(address);
 
     let view = IMockCallbackViewDispatcher { contract_address: address };
@@ -407,8 +407,8 @@ fn test_multiple_callback_types() {
     let (address, dispatcher, token_addr) = deploy_callback_contract();
 
     start_cheat_caller_address(address, token_addr);
-    // Score update
-    dispatcher.on_score_update(1, 100);
+    // Game action
+    dispatcher.on_game_action(1, 100);
 
     // Game over
     dispatcher.on_game_over(1, 500);
@@ -418,7 +418,7 @@ fn test_multiple_callback_types() {
     stop_cheat_caller_address(address);
 
     let view = IMockCallbackViewDispatcher { contract_address: address };
-    assert!(view.score_update_count() == 1, "Should have 1 score update");
+    assert!(view.game_action_count() == 1, "Should have 1 game action");
     assert!(view.game_over_count() == 1, "Should have 1 game over");
     assert!(view.objective_complete_count() == 1, "Should have 1 objective complete");
 }
@@ -443,8 +443,8 @@ mod MockCallbackContract {
 
     // Custom hooks implementation that tracks calls
     impl CallbackHooksImpl of MetagameCallbackComponent::MetagameCallbackHooksTrait<ContractState> {
-        fn on_score_update(ref self: ContractState, token_id: u256, score: u64) {
-            self.score_update_count.write(self.score_update_count.read() + 1);
+        fn on_game_action(ref self: ContractState, token_id: u256, score: u64) {
+            self.game_action_count.write(self.game_action_count.read() + 1);
             self.last_token_id.write(token_id);
             self.cb_last_score.write(score);
         }
@@ -482,7 +482,7 @@ mod MockCallbackContract {
         #[substorage(v0)]
         src5: SRC5Component::Storage,
         // Tracking storage
-        score_update_count: u32,
+        game_action_count: u32,
         game_over_count: u32,
         objective_complete_count: u32,
         last_token_id: u256,
@@ -514,8 +514,8 @@ mod MockCallbackContract {
     // View functions for test assertions
     #[abi(embed_v0)]
     impl MockCallbackViewImpl of IMockCallbackView<ContractState> {
-        fn score_update_count(self: @ContractState) -> u32 {
-            self.score_update_count.read()
+        fn game_action_count(self: @ContractState) -> u32 {
+            self.game_action_count.read()
         }
 
         fn game_over_count(self: @ContractState) -> u32 {

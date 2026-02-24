@@ -84,7 +84,7 @@ Metagame ──→ MinigameToken (ERC721) ──→ Minigame
   │  ▲               │                      │
   │  │               └── Registry            ├── Settings (optional)
   │  │                                       └── Objectives (optional)
-  │  └── IMetagameCallback (on_score_update, on_game_over, on_objective_complete)
+  │  └── IMetagameCallback (on_game_action, on_game_over, on_objective_complete)
   └── Context (optional)
 ```
 
