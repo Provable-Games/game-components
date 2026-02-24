@@ -1,0 +1,47 @@
+codecov:
+  require_ci_to_pass: true
+  notify:
+    # Must equal package count in .github/workflows/main-ci.yml matrix
+    # See AGENTS.md "CI Configuration" section when adding packages
+    after_n_builds: 15
+
+comment:
+  layout: "diff, files, header, footer"
+  behavior: default
+
+coverage:
+  precision: 2
+  round: down
+  # The value range where you want the value to be green
+  # Hold ourselves to a high bar.
+  # TMP 80 floor until cairo-coverage becomes more stable
+  range: 80..100
+  status:
+    project:
+      default:
+        # Use the coverage from the base commit (pull request base) coverage to compare against.
+        # Once we have a baseline we can be more strict.
+        # TMP threshold until cairo-coverage becomes more stable
+        target: auto
+        threshold: 4%
+    patch:
+      default:
+        # Require new code to have 80%+ coverage.
+        # TMP target and threshold until cairo-coverage becomes more stable
+        target: 80%
+        threshold: 4%
+
+flag_management:
+  default_rules:
+    carryforward: true
+
+ignore:
+  - "**/tests/**"
+  - "docs/"
+  - "scripts/"
+  - "packages/test_common/"
+  - "packages/testing/"
+  - "packages/interfaces/"
+
+github_checks:
+  annotations: false
