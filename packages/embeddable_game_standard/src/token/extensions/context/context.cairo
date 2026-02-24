@@ -4,7 +4,7 @@ pub mod ContextComponent {
     use game_components_embeddable_game_standard::metagame::extensions::context::structs::GameContextDetails;
     use game_components_utilities::utils::json::create_context_json;
     use openzeppelin_interfaces::introspection::{ISRC5Dispatcher, ISRC5DispatcherTrait};
-    use openzeppelin_introspection::src5::SRC5Component;
+    use openzeppelin_introspection::src5::SRC5Component::{self, InternalTrait as SRC5InternalTrait};
     use starknet::ContractAddress;
     use crate::token::extensions::context::interface::IMINIGAME_TOKEN_CONTEXT_ID;
     use crate::token::traits::OptionalContext;
@@ -59,9 +59,7 @@ pub mod ContextComponent {
     > of InternalTrait<TContractState> {
         fn initializer(ref self: ComponentState<TContractState>) {
             let mut src5_component = get_dep_component_mut!(ref self, SRC5);
-            SRC5Component::InternalImpl::register_interface(
-                ref src5_component, IMINIGAME_TOKEN_CONTEXT_ID,
-            );
+            src5_component.register_interface(IMINIGAME_TOKEN_CONTEXT_ID);
         }
     }
 }
