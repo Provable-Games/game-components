@@ -333,21 +333,13 @@ fn test_mint_with_context_provider_set() {
     assert!(token_id > 0, "Token ID should be valid with context");
 }
 
-// Test MG-U-06: Mint with context but no provider
+// Test MG-U-06: Mint with context but no game address (blank token)
+// Context is silently ignored for blank tokens since context processing
+// only occurs when game_address is Some.
 #[test]
-#[should_panic]
 fn test_mint_with_context_no_provider() {
-    // Deploy mock token contract
-    let token_contract = declare("MinigameRegistryContract").unwrap().contract_class();
-    let mut calldata = array![];
-    let name: ByteArray = "Test Token";
-    let symbol: ByteArray = "TST";
-    let base_uri: ByteArray = "https://test.com/";
-    name.serialize(ref calldata);
-    symbol.serialize(ref calldata);
-    base_uri.serialize(ref calldata);
-    calldata.append(1); // Option::None for event_relayer_address
-    let (token_address, _) = token_contract.deploy(@calldata).unwrap();
+    // Deploy a real token contract that supports IMinigameToken
+    let (_token_dispatcher, _, _, token_address) = deploy_optimized_token_default();
 
     // Deploy metagame contract WITHOUT context provider
     let metagame_contract = declare("MockMetagameContract").unwrap().contract_class();
@@ -358,17 +350,17 @@ fn test_mint_with_context_no_provider() {
     let (metagame_address, _) = metagame_contract.deploy(@calldata).unwrap();
     let dispatcher = IMockMetagameDispatcher { contract_address: metagame_address };
 
-    // Try to mint with context when no provider is set
+    // Mint with context but no game_address — context is ignored for blank tokens
     use game_components_metagame::extensions::context::structs::{GameContextDetails};
     let context = GameContextDetails {
-        name: "Invalid Context",
-        description: "Should fail",
+        name: "Ignored Context",
+        description: "Should be silently ignored",
         id: Option::Some(1),
         context: array![].span(),
     };
 
     let to_address = addr(0x1234);
-    dispatcher
+    let token_id = dispatcher
         .mint(
             Option::None,
             Option::None,
@@ -376,12 +368,14 @@ fn test_mint_with_context_no_provider() {
             Option::None,
             Option::None,
             Option::None,
-            Option::Some(context), // This should cause panic
+            Option::Some(context),
             Option::None,
             Option::None,
             to_address,
             false,
         );
+
+    assert!(token_id == 1, "First token ID should be 1");
 }
 
 // Test MG-U-10: Mint with max objectives (255)

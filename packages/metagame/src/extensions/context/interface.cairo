@@ -1,7 +1,9 @@
 use crate::extensions::context::structs::GameContextDetails;
 
+/// SNIP-5 interface ID derived via src5_rs: XOR of extended function selectors
+/// - has_context(u64)->E((),())
 pub const IMETAGAME_CONTEXT_ID: felt252 =
-    0x0c2e78065b81a310a1cb470d14a7b88875542ad05286b3263cf3c254082386e;
+    0x3b6bca2fc494503dcfa4284efdff9553578f0144d6f8bc4495ea95b0b4b0f57;
 
 #[starknet::interface]
 pub trait IMetagameContext<TState> {

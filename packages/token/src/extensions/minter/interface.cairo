@@ -1,5 +1,10 @@
+/// SNIP-5 interface ID derived via src5_rs: XOR of extended function selectors
+/// - get_minter_address(u64)->ContractAddress
+/// - get_minter_id(ContractAddress)->u64
+/// - minter_exists(ContractAddress)->E((),())
+/// - total_minters()->u64
 pub const IMINIGAME_TOKEN_MINTER_ID: felt252 =
-    0x021482384f4a706dbe387c9fc12175768c24904c5f5f258f1189a6d545eb3104;
+    0x2198424b9ee68499f53f33ad952598acbd6d141af6c6863c9c56b117063acca;
 
 #[starknet::interface]
 pub trait IMinigameTokenMinter<TState> {

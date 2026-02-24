@@ -4,8 +4,11 @@ use starknet::ContractAddress;
 use crate::leaderboard::leaderboard::{LeaderboardEntry, LeaderboardResult};
 use crate::leaderboard_store::LeaderboardStoreConfig;
 
+/// SNIP-5 interface ID derived via src5_rs: XOR of extended function selectors
+/// - submit_score, get_entries, get_top_entries, get_position, qualifies,
+///   is_full, get_leaderboard_length, get_tournament_config
 pub const ILEADERBOARD_ID: felt252 =
-    0x03c0f9265d397c10970f24822e4b57cac7d8895f8c449b7c9caaa26910499705;
+    0x2e67714ab68e08c9a52bce45fd875aadf655e1e0aa4503bb3552cc33d6eb52;
 
 #[starknet::interface]
 pub trait IGameDetails<TState> {

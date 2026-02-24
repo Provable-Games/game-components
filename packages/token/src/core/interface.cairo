@@ -2,8 +2,13 @@ use game_components_metagame::extensions::context::structs::GameContextDetails;
 use starknet::ContractAddress;
 use crate::structs::TokenMetadata;
 
+/// SNIP-5 interface ID derived via src5_rs: XOR of extended function selectors
+/// - token_metadata, is_playable, settings_id, player_name, objectives_count, minted_by,
+///   game_address, game_registry_address, event_relayer_address, is_soulbound,
+///   renderer_address, token_game_address, mint, mint_batch, set_token_metadata,
+///   update_game, update_player_name
 pub const IMINIGAME_TOKEN_ID: felt252 =
-    0xa08df7e54b63300eeacf85a0f3289c405351278620b5af7e5d868b91f4d43d;
+    0x2e1de7c3c78221bb0b821bc2da96d8b1811c947d899d918dded08c9e43b48c4;
 
 #[starknet::interface]
 pub trait IMinigameToken<TState> {

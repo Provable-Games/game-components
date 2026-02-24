@@ -1,2 +1,3 @@
-pub const IMINIGAME_TOKEN_CONTEXT_ID: felt252 =
-    0x02b329e82f6f6b94f8949b36c5dc95acf86c6083b08d99bc81e399b4b0e8d19a;
+// This file intentionally left empty.
+// IMINIGAME_TOKEN_CONTEXT_ID was removed because no corresponding trait exists.
+// Interface IDs should only be derived from actual SNIP-5 trait definitions.

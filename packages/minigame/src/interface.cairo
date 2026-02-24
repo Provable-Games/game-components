@@ -2,8 +2,12 @@ use game_components_metagame::extensions::context::structs::GameContextDetails;
 use starknet::ContractAddress;
 use crate::structs::GameDetail;
 
-pub const IMINIGAME_ID: felt252 =
-    0x02c0f9265d397c10970f24822e4b57cac7d8895f8c449b7c9caaa26910499704;
+/// SNIP-5 interface ID derived via src5_rs: XOR of extended function selectors
+/// - token_address()->ContractAddress
+/// - settings_address()->ContractAddress
+/// - objectives_address()->ContractAddress
+/// - mint_game(...)
+pub const IMINIGAME_ID: felt252 = 0x2f31b86998f0149c6a68c8ae77f6a09f22427dae80c92e7ffe3cc13029ba702;
 
 #[starknet::interface]
 pub trait IMinigame<TState> {

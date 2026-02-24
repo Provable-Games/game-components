@@ -1,8 +1,13 @@
 use game_components_minigame::extensions::objectives::structs::GameObjective;
 use starknet::ContractAddress;
 
+/// SNIP-5 interface ID derived via src5_rs: XOR of extended function selectors
+/// - objectives(u64)->Array<(u32,E((),()))>
+/// - objective_ids(u64)->(@Array<u32>)
+/// - all_objectives_completed(u64)->E((),())
+/// - create_objective(ContractAddress,ContractAddress,u32,GameObjective)
 pub const IMINIGAME_TOKEN_OBJECTIVES_ID: felt252 =
-    0x8bb87efb8f7d4c796d9138d561d415d0db463db97873626f104b6e660ed6cf;
+    0x24388022f3ac79ab2d16c1e1091938431e1ff4ffe67386872e519257db01525;
 
 #[starknet::interface]
 pub trait IMinigameTokenObjectives<TState> {

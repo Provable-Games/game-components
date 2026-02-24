@@ -1,7 +1,10 @@
 use starknet::ContractAddress;
 
+/// SNIP-5 interface ID derived via src5_rs: XOR of extended function selectors
+/// - game_count, game_id_from_address, game_address_from_id, game_metadata,
+///   is_game_registered, register_game
 pub const IMINIGAME_REGISTRY_ID: felt252 =
-    0x014a8d6e4bf56a4bbf869257d1f846e5a2ac1e3508466147556f186143409be1;
+    0x351a31fa94cfe371322b36b297fc11c5d288f7a9cc0682ef098c6aaf032b622;
 
 #[derive(Drop, Serde, Clone, starknet::Store)]
 pub struct GameMetadata {
