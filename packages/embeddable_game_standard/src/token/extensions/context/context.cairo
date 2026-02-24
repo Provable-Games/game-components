@@ -59,7 +59,9 @@ pub mod ContextComponent {
     > of InternalTrait<TContractState> {
         fn initializer(ref self: ComponentState<TContractState>) {
             let mut src5_component = get_dep_component_mut!(ref self, SRC5);
-            src5_component.register_interface(IMINIGAME_TOKEN_CONTEXT_ID);
+            SRC5Component::InternalImpl::register_interface(
+                ref src5_component, IMINIGAME_TOKEN_CONTEXT_ID,
+            );
         }
     }
 }
