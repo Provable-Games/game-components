@@ -607,9 +607,9 @@ fn test_lifecycle_boundary_conditions() {
 // METAGAME CALLBACK INTEGRATION TESTS
 // ================================================================================================
 
-// CB-INT-01: update_game triggers on_score_update callback
+// CB-INT-01: update_game triggers on_game_action callback
 #[test]
-fn test_update_game_triggers_score_callback() {
+fn test_update_game_triggers_game_action_callback() {
     let test_contracts = setup();
 
     // Mint token through metagame mock (registers metagame as minter)
@@ -638,9 +638,9 @@ fn test_update_game_triggers_score_callback() {
     // Call update_game to sync state and trigger callbacks
     test_contracts.test_token.update_game(token_id);
 
-    // Verify on_score_update was called
+    // Verify on_game_action was called
     let cb_view = test_contracts.metagame_callback_view;
-    assert!(cb_view.score_update_count() == 1, "on_score_update should be called once");
+    assert!(cb_view.game_action_count() == 1, "on_game_action should be called once");
     assert!(
         cb_view.last_callback_token_id() == token_id.into(),
         "Callback should receive correct token_id",
@@ -679,11 +679,11 @@ fn test_update_game_triggers_game_over_callback() {
     // Call update_game
     test_contracts.test_token.update_game(token_id);
 
-    // Verify both on_score_update and on_game_over were called
+    // Verify both on_game_action and on_game_over were called
     let cb_view = test_contracts.metagame_callback_view;
-    assert!(cb_view.score_update_count() == 1, "on_score_update should be called");
+    assert!(cb_view.game_action_count() == 1, "on_game_action should be called");
     assert!(cb_view.game_over_count() == 1, "on_game_over should be called on transition");
-    assert!(cb_view.last_callback_score() == score, "on_game_over should receive final score");
+    assert!(cb_view.last_callback_score() == score, "Callback should receive final score");
 }
 
 // CB-INT-03: on_game_over only fires once (transition guard)
@@ -721,7 +721,7 @@ fn test_update_game_no_game_over_callback_without_transition() {
 
     // Verify on_game_over was called only once (first transition)
     let cb_view = test_contracts.metagame_callback_view;
-    assert!(cb_view.score_update_count() == 2, "on_score_update should be called twice");
+    assert!(cb_view.game_action_count() == 2, "on_game_action should be called twice");
     assert!(cb_view.game_over_count() == 1, "on_game_over should only fire once on transition");
 }
 
@@ -760,7 +760,7 @@ fn test_update_game_triggers_objective_complete_callback() {
 
     // Verify on_objective_complete was called
     let cb_view = test_contracts.metagame_callback_view;
-    assert!(cb_view.score_update_count() == 1, "on_score_update should be called");
+    assert!(cb_view.game_action_count() == 1, "on_game_action should be called");
     assert!(cb_view.game_over_count() == 1, "on_game_over should be called");
     assert!(
         cb_view.objective_complete_count() == 1,
@@ -806,6 +806,6 @@ fn test_update_game_no_callback_for_non_callback_minter() {
 
     // Verify no callbacks were dispatched (minter doesn't support IMetagameCallback)
     let cb_view = test_contracts.metagame_callback_view;
-    assert!(cb_view.score_update_count() == 0, "No callbacks for non-callback minter");
+    assert!(cb_view.game_action_count() == 0, "No callbacks for non-callback minter");
     assert!(cb_view.game_over_count() == 0, "No game_over callback for non-callback minter");
 }

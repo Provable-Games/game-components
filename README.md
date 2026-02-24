@@ -38,7 +38,7 @@ Minigame
 1. **Setup**: Deploy contracts with extension addresses configured
 2. **Mint**: Create tokens with game configuration and metadata
 3. **Play**: Validate `is_playable()` and update game state through minigame logic
-4. **Sync**: Call `update_game()` to synchronize token state with game results. If the minter implements `IMetagameCallback`, callbacks are dispatched automatically (`on_score_update`, `on_game_over`, `on_objective_complete`)
+4. **Sync**: Call `update_game()` to synchronize token state with game results. If the minter implements `IMetagameCallback`, callbacks are dispatched automatically (`on_game_action`, `on_game_over`, `on_objective_complete`)
 5. **Complete**: Game ends when `game_over()` returns true or all objectives achieved
 
 ## Packages

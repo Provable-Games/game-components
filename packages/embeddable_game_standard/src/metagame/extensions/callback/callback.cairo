@@ -32,10 +32,10 @@ pub mod MetagameCallbackComponent {
     // Implementers can aggregate scores, emit events, update leaderboards, etc.
 
     pub trait MetagameCallbackHooksTrait<TContractState> {
-        /// Called when a token's score is updated.
+        /// Called on every update_game() call to notify the metagame of a game action.
         /// @param token_id The token ID (packed u256)
-        /// @param score The new score value
-        fn on_score_update(ref self: TContractState, token_id: u256, score: u64);
+        /// @param score The current score value
+        fn on_game_action(ref self: TContractState, token_id: u256, score: u64);
 
         /// Called when a game ends (game_over transitions to true).
         /// @param token_id The token ID (packed u256)
@@ -62,10 +62,10 @@ pub mod MetagameCallbackComponent {
         impl Metagame: MetagameComponent::HasComponent<TContractState>,
         impl SRC5: SRC5Component::HasComponent<TContractState>,
     > of IMetagameCallback<ComponentState<TContractState>> {
-        fn on_score_update(ref self: ComponentState<TContractState>, token_id: u256, score: u64) {
+        fn on_game_action(ref self: ComponentState<TContractState>, token_id: u256, score: u64) {
             self.assert_only_token();
             let mut contract = self.get_contract_mut();
-            MetagameCallbackHooksTrait::on_score_update(ref contract, token_id, score);
+            MetagameCallbackHooksTrait::on_game_action(ref contract, token_id, score);
         }
 
         fn on_game_over(
@@ -123,9 +123,9 @@ pub mod MetagameCallbackComponent {
 pub impl MetagameCallbackHooksEmptyImpl<
     TContractState,
 > of MetagameCallbackComponent::MetagameCallbackHooksTrait<TContractState> {
-    fn on_score_update(
+    fn on_game_action(
         ref self: TContractState, token_id: u256, score: u64,
-    ) { // No-op: contracts can override for custom score handling
+    ) { // No-op: contracts can override for custom game action handling
     }
 
     fn on_game_over(

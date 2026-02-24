@@ -32,7 +32,7 @@ pub trait IMetagameMockInit<TContractState> {
 
 #[starknet::interface]
 pub trait IMetagameCallbackMockView<TContractState> {
-    fn score_update_count(self: @TContractState) -> u32;
+    fn game_action_count(self: @TContractState) -> u32;
     fn game_over_count(self: @TContractState) -> u32;
     fn objective_complete_count(self: @TContractState) -> u32;
     fn last_callback_token_id(self: @TContractState) -> felt252;
@@ -65,8 +65,8 @@ pub mod metagame_mock {
 
     // Callback hooks implementation that tracks calls for test assertions
     impl CallbackHooksImpl of MetagameCallbackComponent::MetagameCallbackHooksTrait<ContractState> {
-        fn on_score_update(ref self: ContractState, token_id: u256, score: u64) {
-            self.cb_score_update_count.write(self.cb_score_update_count.read() + 1);
+        fn on_game_action(ref self: ContractState, token_id: u256, score: u64) {
+            self.cb_game_action_count.write(self.cb_game_action_count.read() + 1);
             self.cb_last_token_id.write(token_id);
             self.cb_last_score.write(score);
         }
@@ -114,7 +114,7 @@ pub mod metagame_mock {
         token_context_value: Map<(felt252, u32), ByteArray>, // (token_id, index) -> context value
         token_context_exists: Map<felt252, bool>, // token_id -> exists
         // Callback tracking storage
-        cb_score_update_count: u32,
+        cb_game_action_count: u32,
         cb_game_over_count: u32,
         cb_objective_complete_count: u32,
         cb_last_token_id: u256,
@@ -224,8 +224,8 @@ pub mod metagame_mock {
 
     #[abi(embed_v0)]
     impl MetagameCallbackMockViewImpl of super::IMetagameCallbackMockView<ContractState> {
-        fn score_update_count(self: @ContractState) -> u32 {
-            self.cb_score_update_count.read()
+        fn game_action_count(self: @ContractState) -> u32 {
+            self.cb_game_action_count.read()
         }
 
         fn game_over_count(self: @ContractState) -> u32 {

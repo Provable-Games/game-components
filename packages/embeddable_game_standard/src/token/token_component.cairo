@@ -555,8 +555,8 @@ pub mod CoreTokenComponent {
                 if supports_callback {
                     let callback = IMetagameCallbackDispatcher { contract_address: minter_address };
 
-                    // Always notify score update
-                    callback.on_score_update(token_id.into(), score);
+                    // Always notify game action
+                    callback.on_game_action(token_id.into(), score);
 
                     // Notify game over if transitioned
                     if game_over_transition {
