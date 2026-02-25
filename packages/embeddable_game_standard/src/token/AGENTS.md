@@ -1,25 +1,6 @@
 ## Token Package - MinigameToken (ERC721)
 
-ERC721 NFT representing playable game instances with compile-time feature optimization.
-
-### Contract Size Optimization (<4MB limit)
-
-Feature flags in `src/config.cairo` eliminate unused code at compile time:
-
-| Flag                | Default | Description                          |
-| ------------------- | ------- | ------------------------------------ |
-| CORE_TOKEN_ENABLED  | true    | Base token functionality (always on) |
-| ERC721_ENABLED      | true    | ERC721 standard implementation       |
-| SRC5_ENABLED        | true    | Interface discovery                  |
-| MINTER_ENABLED      | true    | Token minting authorization          |
-| MULTI_GAME_ENABLED  | true    | Multiple games per token contract    |
-| OBJECTIVES_ENABLED  | true    | Token objective tracking             |
-| SETTINGS_ENABLED    | true    | Token settings management            |
-| SOULBOUND_ENABLED   | true    | Non-transferable tokens              |
-| CONTEXT_ENABLED     | true    | Game context attachment              |
-| RENDERER_ENABLED    | true    | Custom token rendering               |
-| LIFECYCLE_ENABLED   | true    | Start/end timestamp validation       |
-| PLAYABILITY_ENABLED | true    | Playability checks                   |
+ERC721 NFT representing playable game instances.
 
 ### Core Interface (IMinigameToken)
 

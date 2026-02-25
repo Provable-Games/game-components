@@ -13,17 +13,6 @@ use crate::token::noop_traits::{
 };
 use crate::token::token_component::CoreTokenComponent;
 
-// Override default configuration for minimal contract
-mod config {
-    pub const MINTER_ENABLED: bool = true; // Only enable minter
-    pub const MULTI_GAME_ENABLED: bool = false; // Disable multi-game
-    pub const OBJECTIVES_ENABLED: bool = false; // Disable objectives
-    pub const SETTINGS_ENABLED: bool = false; // Disable settings
-    pub const SOULBOUND_ENABLED: bool = false; // Disable soulbound
-    pub const CONTEXT_ENABLED: bool = false; // Disable context
-    pub const RENDERER_ENABLED: bool = false; // Disable renderer
-}
-
 #[starknet::contract]
 pub mod MinimalOptimizedContract {
     use core::num::traits::Zero;
@@ -134,10 +123,7 @@ pub mod MinimalOptimizedContract {
         self.erc2981.initializer(royalty_receiver, 500);
         self.core_token.initializer(game_address, creator_address, Option::None);
 
-        // Only initialize enabled components
-        if config::MINTER_ENABLED {
-            self.minter.initializer();
-        }
-        // All other components are disabled - no initialization needed!
+        // Initialize minter
+        self.minter.initializer();
     }
 }

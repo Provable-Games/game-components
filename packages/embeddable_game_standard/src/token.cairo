@@ -1,4 +1,3 @@
-pub mod config;
 pub mod extensions;
 pub mod interface;
 pub mod noop_traits;
