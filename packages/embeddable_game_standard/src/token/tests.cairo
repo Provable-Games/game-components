@@ -9,7 +9,6 @@ mod test_additional_coverage;
 mod test_address_utils;
 mod test_batch_views;
 mod test_component_coverage;
-mod test_config;
 mod test_context;
 mod test_context_coverage;
 mod test_core_token;
