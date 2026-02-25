@@ -58,6 +58,26 @@ pub trait IMinigameToken<TState> {
     /// Each MintParams contains all configuration for that token.
     fn mint_batch(ref self: TState, mints: Array<MintParams>) -> Array<felt252>;
 
+    /// Batch mint identical tokens to multiple recipients.
+    /// Shares all parameters across recipients and auto-increments salt (base_salt + index).
+    fn mint_batch_recipients(
+        ref self: TState,
+        game_address: ContractAddress,
+        player_name: Option<felt252>,
+        settings_id: Option<u32>,
+        start: Option<u64>,
+        end: Option<u64>,
+        objective_id: Option<u32>,
+        context: Option<GameContextDetails>,
+        client_url: Option<ByteArray>,
+        renderer_address: Option<ContractAddress>,
+        recipients: Array<ContractAddress>,
+        soulbound: bool,
+        paymaster: bool,
+        salt: u16,
+        metadata: u16,
+    ) -> Array<felt252>;
+
     fn update_game(ref self: TState, token_id: felt252);
     fn update_player_name(ref self: TState, token_id: felt252, name: felt252);
 

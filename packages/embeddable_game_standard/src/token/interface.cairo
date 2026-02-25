@@ -63,6 +63,23 @@ pub trait IMinigameTokenMixin<TState> {
 
     // Batch write functions
     fn mint_batch(ref self: TState, mints: Array<MintParams>) -> Array<felt252>;
+    fn mint_batch_recipients(
+        ref self: TState,
+        game_address: ContractAddress,
+        player_name: Option<felt252>,
+        settings_id: Option<u32>,
+        start: Option<u64>,
+        end: Option<u64>,
+        objective_id: Option<u32>,
+        context: Option<GameContextDetails>,
+        client_url: Option<ByteArray>,
+        renderer_address: Option<ContractAddress>,
+        recipients: Array<ContractAddress>,
+        soulbound: bool,
+        paymaster: bool,
+        salt: u16,
+        metadata: u16,
+    ) -> Array<felt252>;
     fn update_game_batch(ref self: TState, token_ids: Span<felt252>);
     fn update_player_name_batch(ref self: TState, updates: Span<PlayerNameUpdate>);
 
