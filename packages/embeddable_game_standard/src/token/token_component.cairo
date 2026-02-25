@@ -449,6 +449,72 @@ pub mod CoreTokenComponent {
             token_ids
         }
 
+        /// Batch mint identical tokens to multiple recipients with auto-incrementing salt.
+        fn mint_batch_recipients(
+            ref self: ComponentState<TContractState>,
+            game_address: ContractAddress,
+            player_name: Option<felt252>,
+            settings_id: Option<u32>,
+            start: Option<u64>,
+            end: Option<u64>,
+            objective_id: Option<u32>,
+            context: Option<GameContextDetails>,
+            client_url: Option<ByteArray>,
+            renderer_address: Option<ContractAddress>,
+            mut recipients: Array<ContractAddress>,
+            soulbound: bool,
+            paymaster: bool,
+            salt: u16,
+            metadata: u16,
+        ) -> Array<felt252> {
+            let count = recipients.len();
+            assert!(count > 0, "MinigameToken: recipients array cannot be empty");
+            // Ensure salt won't overflow u16 during auto-increment
+            let max_salt: u32 = salt.into() + count - 1;
+            assert!(
+                max_salt <= 0xFFFF, "MinigameToken: salt overflow, reduce base salt or recipients",
+            );
+
+            let mut token_ids: Array<felt252> = ArrayTrait::new();
+            let mut index: u16 = 0;
+            loop {
+                match recipients.pop_front() {
+                    Option::Some(to) => {
+                        let current_salt = salt + index;
+                        let ctx = match @context {
+                            Option::Some(c) => Option::Some(c.clone()),
+                            Option::None => Option::None,
+                        };
+                        let url = match @client_url {
+                            Option::Some(u) => Option::Some(u.clone()),
+                            Option::None => Option::None,
+                        };
+                        let token_id = self
+                            .mint_game(
+                                game_address,
+                                player_name,
+                                settings_id,
+                                start,
+                                end,
+                                objective_id,
+                                ctx,
+                                url,
+                                renderer_address,
+                                to,
+                                soulbound,
+                                paymaster,
+                                current_salt,
+                                metadata,
+                            );
+                        token_ids.append(token_id);
+                        index += 1;
+                    },
+                    Option::None => { break; },
+                }
+            }
+            token_ids
+        }
+
         fn update_game(ref self: ComponentState<TContractState>, token_id: felt252) {
             // Validate token exists
             let mut contract = self.get_contract_mut();

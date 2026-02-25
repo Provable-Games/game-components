@@ -725,6 +725,26 @@ mod MockTokenContract {
             results
         }
 
+        fn mint_batch_recipients(
+            ref self: ContractState,
+            game_address: ContractAddress,
+            player_name: Option<felt252>,
+            settings_id: Option<u32>,
+            start: Option<u64>,
+            end: Option<u64>,
+            objective_id: Option<u32>,
+            context: Option<GameContextDetails>,
+            client_url: Option<ByteArray>,
+            renderer_address: Option<ContractAddress>,
+            recipients: Array<ContractAddress>,
+            soulbound: bool,
+            paymaster: bool,
+            salt: u16,
+            metadata: u16,
+        ) -> Array<felt252> {
+            panic!("not implemented")
+        }
+
         fn update_game(ref self: ContractState, token_id: felt252) {}
 
         fn update_player_name(ref self: ContractState, token_id: felt252, name: felt252) {
