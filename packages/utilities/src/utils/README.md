@@ -68,8 +68,11 @@ Generates data URIs for token metadata and SVG images.
 ```cairo
 use game_components_utils::renderer::{create_default_svg, create_custom_metadata};
 
-// Default SVG with game logo and basic info
-let svg_uri = create_default_svg(token_id, game_metadata, score, player_name);
+// Default SVG with animated game card design
+let svg_uri = create_default_svg(
+    game_metadata, token_metadata, score, player_name,
+    settings_details, objective_details, context_details,
+);
 // Result: "data:image/svg+xml;base64,..."
 
 // Full custom metadata with all extensions
@@ -77,12 +80,12 @@ let metadata_uri = create_custom_metadata(
     token_id, token_name, token_description,
     game_metadata, game_details_image, game_details,
     settings_details, context_details, token_metadata,
-    score, minted_by, player_name, objective_ids,
+    score, minted_by, player_name, objective_name,
 );
 // Result: "data:application/json;base64,..."
 ```
 
-**SVG features:** 470x600 pixel canvas, circular logo with clip-path, game name/developer/player name/score display, configurable color from `GameMetadata`.
+**SVG features:** 470x600 pixel animated game card with cyberpunk/dark-tech aesthetic, pinstripe background, animated gradient border and shimmer, status badge pills (ACTIVE/FINISHED, SOULBOUND, OBJ DONE/PENDING), two-column panels with accent left-borders, timeline progress bar with datetimes, context section with key:value pairs, SVG icon symbols, and game color accent throughout.
 
 **Metadata JSON includes:** Standard NFT fields (name, description, image), game traits (game_id, developer, minted_by, score), lifecycle traits (minted_time, start_time, end_time, expired), optional traits (settings, context, objectives).
 
