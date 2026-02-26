@@ -42,9 +42,7 @@ pub trait IMinigameTokenMixin<TState> {
     fn token_mutable_state_batch(
         self: @TState, token_ids: Span<felt252>,
     ) -> Array<TokenMutableState>;
-    fn token_full_state_batch(
-        self: @TState, token_ids: Span<felt252>,
-    ) -> Array<TokenFullState>;
+    fn token_full_state_batch(self: @TState, token_ids: Span<felt252>) -> Array<TokenFullState>;
 
     fn mint(
         ref self: TState,

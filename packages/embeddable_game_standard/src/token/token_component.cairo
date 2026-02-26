@@ -431,7 +431,7 @@ pub mod CoreTokenComponent {
                         },
                     );
                 i += 1;
-            };
+            }
 
             results
         }
