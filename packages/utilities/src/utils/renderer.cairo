@@ -121,7 +121,11 @@ pub fn create_default_svg(
     objective_details: GameObjectiveDetails,
     context_details: GameContextDetails,
 ) -> ByteArray {
-    let accent = game_metadata.color.clone();
+    let accent = if game_metadata.color.len() == 0 {
+        "#ffffff"
+    } else {
+        game_metadata.color.clone()
+    };
     let _game_id = format!("{}", token_metadata.game_id);
     let _score = format!("{}", score);
     let _game_name = format!("{}", game_metadata.name);
