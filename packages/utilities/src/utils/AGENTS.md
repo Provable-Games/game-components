@@ -70,8 +70,11 @@ Generates data URIs for token metadata and SVG images.
 ```cairo
 use game_components_utils::renderer::{create_default_svg, create_custom_metadata};
 
-// Default SVG with game logo and basic info
-let svg_uri = create_default_svg(token_id, game_metadata, score, player_name);
+// Default SVG with animated game card design
+let svg_uri = create_default_svg(
+    game_metadata, token_metadata, score, player_name,
+    settings_details, objective_details, context_details,
+);
 // Result: "data:image/svg+xml;base64,..."
 
 // Full custom metadata with all extensions
@@ -88,16 +91,23 @@ let metadata_uri = create_custom_metadata(
     score,
     minted_by,
     player_name,
-    objective_ids,       // Span<u32>
+    objective_name,      // ByteArray
 );
 // Result: "data:application/json;base64,..."
 ```
 
 **SVG Features:**
-- 470x600 pixel canvas with rounded corners
-- Circular logo with clip-path
-- Game name, developer, player name, score display
-- Configurable color from GameMetadata
+- 470x600 pixel animated game card with cyberpunk/dark-tech aesthetic
+- Pinstripe pattern background with animated gradient border and shimmer
+- Header with EGS logo placeholder, game name, developer, genre, game ID badge
+- Reduced-height game image area (110px)
+- Status badge pills: ACTIVE/FINISHED (green/red), SOULBOUND (accent/grey), OBJ DONE/PENDING
+- Two-column panels with accent left-border strips (player, score, settings, objective)
+- Timeline progress bar with start/end datetimes and animated marker
+- Context section with name and up to 3 key:value pairs
+- SVG icon symbols (star, user, check, x-mark, lock, clock)
+- Datetime format: "YYYY-MM-DD HH:MM"
+- Game color accent used for border, separators, badges, and highlights
 
 **Metadata JSON includes:**
 - Standard NFT fields: name, description, image

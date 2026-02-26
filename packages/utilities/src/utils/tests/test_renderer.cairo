@@ -7,6 +7,9 @@
 use game_components_embeddable_game_standard::metagame::extensions::context::structs::{
     GameContext, GameContextDetails,
 };
+use game_components_embeddable_game_standard::minigame::extensions::objectives::structs::{
+    GameObjective, GameObjectiveDetails,
+};
 use game_components_embeddable_game_standard::minigame::extensions::settings::structs::{
     GameSetting, GameSettingDetails,
 };
@@ -88,8 +91,20 @@ fn default_context_details() -> GameContextDetails {
     }
 }
 
+fn default_objective_details() -> GameObjectiveDetails {
+    GameObjectiveDetails {
+        name: "Clear All Blocks",
+        description: "Complete the puzzle",
+        objectives: array![GameObjective { name: "Blocks", value: "0" }].span(),
+    }
+}
+
 fn empty_settings_details() -> GameSettingDetails {
     GameSettingDetails { name: "", description: "", settings: array![].span() }
+}
+
+fn empty_objective_details() -> GameObjectiveDetails {
+    GameObjectiveDetails { name: "", description: "", objectives: array![].span() }
 }
 
 fn empty_context_details() -> GameContextDetails {
@@ -156,8 +171,18 @@ fn starts_with(haystack: @ByteArray, needle: @ByteArray) -> bool {
 
 #[test]
 fn test_default_svg_basic() {
+    start_cheat_block_timestamp_global(1656763200); // midway 2022-2023
     let game_metadata = default_game_metadata();
-    let result = create_default_svg(1000, game_metadata, 500, 'TestPlayer');
+    let result = create_default_svg(
+        game_metadata,
+        default_token_metadata(),
+        500,
+        'TestPlayer',
+        default_settings_details(),
+        default_objective_details(),
+        default_context_details(),
+    );
+    stop_cheat_block_timestamp_global();
 
     // Should be a data URI
     assert!(starts_with(@result, @"data:image/svg+xml;base64,"), "Should be SVG data URI");
@@ -166,84 +191,239 @@ fn test_default_svg_basic() {
 
 #[test]
 fn test_default_svg_zero_score() {
+    start_cheat_block_timestamp_global(1656763200);
     let game_metadata = default_game_metadata();
-    let result = create_default_svg(1, game_metadata, 0, 'Player');
+    let result = create_default_svg(
+        game_metadata,
+        default_token_metadata(),
+        0,
+        'Player',
+        default_settings_details(),
+        default_objective_details(),
+        default_context_details(),
+    );
+    stop_cheat_block_timestamp_global();
 
     assert!(starts_with(@result, @"data:image/svg+xml;base64,"), "Should be SVG data URI");
 }
 
 #[test]
 fn test_default_svg_max_score() {
+    start_cheat_block_timestamp_global(1656763200);
     let game_metadata = default_game_metadata();
-    let result = create_default_svg(1, game_metadata, 4294967295, 'Player');
+    let result = create_default_svg(
+        game_metadata,
+        default_token_metadata(),
+        4294967295,
+        'Player',
+        default_settings_details(),
+        default_objective_details(),
+        default_context_details(),
+    );
+    stop_cheat_block_timestamp_global();
 
     assert!(starts_with(@result, @"data:image/svg+xml;base64,"), "Should be SVG data URI");
 }
 
 #[test]
-fn test_default_svg_zero_token_id() {
+fn test_default_svg_game_over() {
+    start_cheat_block_timestamp_global(1656763200);
     let game_metadata = default_game_metadata();
-    let result = create_default_svg(0, game_metadata, 100, 'Player');
+    let mut token_metadata = default_token_metadata();
+    token_metadata.game_over = true;
+    let result = create_default_svg(
+        game_metadata,
+        token_metadata,
+        100,
+        'Player',
+        default_settings_details(),
+        default_objective_details(),
+        default_context_details(),
+    );
+    stop_cheat_block_timestamp_global();
 
     assert!(starts_with(@result, @"data:image/svg+xml;base64,"), "Should be SVG data URI");
 }
 
 #[test]
-fn test_default_svg_max_token_id() {
+fn test_default_svg_soulbound() {
+    start_cheat_block_timestamp_global(1656763200);
     let game_metadata = default_game_metadata();
-    let result = create_default_svg(18446744073709551615, game_metadata, 100, 'Player');
+    let mut token_metadata = default_token_metadata();
+    token_metadata.soulbound = true;
+    let result = create_default_svg(
+        game_metadata,
+        token_metadata,
+        100,
+        'Player',
+        default_settings_details(),
+        default_objective_details(),
+        default_context_details(),
+    );
+    stop_cheat_block_timestamp_global();
 
     assert!(starts_with(@result, @"data:image/svg+xml;base64,"), "Should be SVG data URI");
 }
 
 #[test]
 fn test_default_svg_empty_player_name() {
+    start_cheat_block_timestamp_global(1656763200);
     let game_metadata = default_game_metadata();
     // player_name = 0 means no player name
-    let result = create_default_svg(1, game_metadata, 100, 0);
+    let result = create_default_svg(
+        game_metadata,
+        default_token_metadata(),
+        100,
+        0,
+        default_settings_details(),
+        default_objective_details(),
+        empty_context_details(),
+    );
+    stop_cheat_block_timestamp_global();
 
     assert!(starts_with(@result, @"data:image/svg+xml;base64,"), "Should be SVG data URI");
 }
 
 #[test]
 fn test_default_svg_long_player_name() {
+    start_cheat_block_timestamp_global(1656763200);
     let game_metadata = default_game_metadata();
     // Maximum felt252 short string is 31 bytes
-    let result = create_default_svg(1, game_metadata, 100, 'ThisIsALongPlayerNameTest');
+    let result = create_default_svg(
+        game_metadata,
+        default_token_metadata(),
+        100,
+        'ThisIsALongPlayerNameTest',
+        default_settings_details(),
+        default_objective_details(),
+        default_context_details(),
+    );
+    stop_cheat_block_timestamp_global();
 
     assert!(starts_with(@result, @"data:image/svg+xml;base64,"), "Should be SVG data URI");
 }
 
 #[test]
 fn test_default_svg_empty_game_name() {
+    start_cheat_block_timestamp_global(1656763200);
     let mut game_metadata = default_game_metadata();
     game_metadata.name = "";
     game_metadata.developer = "";
 
-    let result = create_default_svg(1, game_metadata, 100, 'Player');
+    let result = create_default_svg(
+        game_metadata,
+        default_token_metadata(),
+        100,
+        'Player',
+        default_settings_details(),
+        default_objective_details(),
+        empty_context_details(),
+    );
+    stop_cheat_block_timestamp_global();
 
     assert!(starts_with(@result, @"data:image/svg+xml;base64,"), "Should handle empty strings");
 }
 
 #[test]
 fn test_default_svg_special_color() {
+    start_cheat_block_timestamp_global(1656763200);
     let mut game_metadata = default_game_metadata();
     game_metadata.color = "#4f46e5";
 
-    let result = create_default_svg(1, game_metadata, 100, 'Player');
+    let result = create_default_svg(
+        game_metadata,
+        default_token_metadata(),
+        100,
+        'Player',
+        default_settings_details(),
+        default_objective_details(),
+        default_context_details(),
+    );
+    stop_cheat_block_timestamp_global();
 
     assert!(starts_with(@result, @"data:image/svg+xml;base64,"), "Should handle hex colors");
 }
 
 #[test]
 #[fuzzer(runs: 50)]
-fn test_default_svg_fuzz(token_id: felt252, score: u64) {
+fn test_default_svg_fuzz(score: u64, game_id: u64) {
+    start_cheat_block_timestamp_global(1656763200);
     let game_metadata = default_game_metadata();
-    let result = create_default_svg(token_id, game_metadata, score, 'Player');
+    let mut token_metadata = default_token_metadata();
+    token_metadata.game_id = game_id;
+    let result = create_default_svg(
+        game_metadata,
+        token_metadata,
+        score,
+        'Player',
+        default_settings_details(),
+        default_objective_details(),
+        default_context_details(),
+    );
+    stop_cheat_block_timestamp_global();
 
     // Should not panic and produce valid output
     assert!(starts_with(@result, @"data:image/svg+xml;base64,"), "Should produce valid URI");
     assert!(result.len() > 30, "Should have content");
+}
+
+// ==============================================================================
+// CREATE_DEFAULT_SVG TESTS - TIMELINE EDGE CASES
+// ==============================================================================
+
+#[test]
+fn test_default_svg_timeline_before_start() {
+    // Current time before lifecycle start
+    start_cheat_block_timestamp_global(1600000000);
+    let result = create_default_svg(
+        default_game_metadata(),
+        default_token_metadata(),
+        100,
+        'Player',
+        default_settings_details(),
+        default_objective_details(),
+        empty_context_details(),
+    );
+    stop_cheat_block_timestamp_global();
+
+    assert!(starts_with(@result, @"data:image/svg+xml;base64,"), "Should handle before-start");
+}
+
+#[test]
+fn test_default_svg_timeline_after_end() {
+    // Current time after lifecycle end
+    start_cheat_block_timestamp_global(1700000000);
+    let result = create_default_svg(
+        default_game_metadata(),
+        default_token_metadata(),
+        100,
+        'Player',
+        default_settings_details(),
+        default_objective_details(),
+        empty_context_details(),
+    );
+    stop_cheat_block_timestamp_global();
+
+    assert!(starts_with(@result, @"data:image/svg+xml;base64,"), "Should handle after-end");
+}
+
+#[test]
+fn test_default_svg_timeline_no_end() {
+    start_cheat_block_timestamp_global(1656763200);
+    let mut token_metadata = default_token_metadata();
+    token_metadata.lifecycle.end = 0;
+    let result = create_default_svg(
+        default_game_metadata(),
+        token_metadata,
+        100,
+        'Player',
+        default_settings_details(),
+        default_objective_details(),
+        empty_context_details(),
+    );
+    stop_cheat_block_timestamp_global();
+
+    assert!(starts_with(@result, @"data:image/svg+xml;base64,"), "Should handle no end time");
 }
 
 // ==============================================================================
@@ -1132,12 +1312,22 @@ fn test_custom_metadata_fuzz_objective_count(objective_id: u32) {
 
 #[test]
 fn test_default_svg_data_uri_image() {
+    start_cheat_block_timestamp_global(1656763200);
     let mut game_metadata = default_game_metadata();
     game_metadata
         .image =
             "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==";
 
-    let result = create_default_svg(1, game_metadata, 100, 'Player');
+    let result = create_default_svg(
+        game_metadata,
+        default_token_metadata(),
+        100,
+        'Player',
+        default_settings_details(),
+        default_objective_details(),
+        empty_context_details(),
+    );
+    stop_cheat_block_timestamp_global();
 
     assert!(starts_with(@result, @"data:image/svg+xml;base64,"), "Should handle data URI images");
 }

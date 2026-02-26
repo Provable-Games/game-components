@@ -26,7 +26,7 @@ pub struct MintGameParams {
     pub metadata: u16,
 }
 
-#[derive(Drop, Serde)]
+#[derive(Drop, Serde, Clone)]
 pub struct GameSettingDetails {
     pub name: ByteArray,
     pub description: ByteArray,
@@ -39,7 +39,7 @@ pub struct GameSetting {
     pub value: ByteArray,
 }
 
-#[derive(Drop, Serde)]
+#[derive(Drop, Serde, Clone)]
 pub struct GameObjectiveDetails {
     pub name: ByteArray,
     pub description: ByteArray,
