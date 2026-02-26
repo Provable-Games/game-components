@@ -16,4 +16,6 @@ pub use minigame::{
     MintGameParams,
 };
 pub use registry::GameMetadata;
-pub use token::{Lifecycle, MintParams, PlayerNameUpdate, TokenMetadata, TokenMutableState};
+pub use token::{
+    Lifecycle, MintParams, PlayerNameUpdate, TokenFullState, TokenMetadata, TokenMutableState,
+};

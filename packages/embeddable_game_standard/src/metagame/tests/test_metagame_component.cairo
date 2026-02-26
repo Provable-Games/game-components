@@ -590,7 +590,7 @@ mod MockMinigameToken {
         IMINIGAME_TOKEN_ID, IMinigameToken,
     };
     use game_components_embeddable_game_standard::token::structs::{
-        Lifecycle, MintParams, PlayerNameUpdate, TokenMetadata, TokenMutableState,
+        Lifecycle, MintParams, PlayerNameUpdate, TokenFullState, TokenMetadata, TokenMutableState,
     };
     use openzeppelin_interfaces::introspection::ISRC5;
     use starknet::ContractAddress;
@@ -819,6 +819,12 @@ mod MockMinigameToken {
                 i += 1;
             }
             results
+        }
+
+        fn token_full_state_batch(
+            self: @ContractState, token_ids: Span<felt252>,
+        ) -> Array<TokenFullState> {
+            array![]
         }
 
         fn mint(

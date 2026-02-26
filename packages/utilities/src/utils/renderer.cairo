@@ -90,7 +90,7 @@ fn bool_to_str(val: bool) -> ByteArray {
 }
 
 pub fn create_default_svg(
-    token_id: u64, game_metadata: GameMetadata, score: u64, player_name: felt252,
+    token_id: felt252, game_metadata: GameMetadata, score: u64, player_name: felt252,
 ) -> ByteArray {
     let rect = create_rect(game_metadata.color.clone());
     let logo_element = logo(game_metadata.image);
@@ -129,7 +129,7 @@ pub fn create_default_svg(
 }
 
 pub fn create_custom_metadata(
-    token_id: u64,
+    token_id: felt252,
     token_name: ByteArray,
     token_description: ByteArray,
     game_metadata: GameMetadata,
