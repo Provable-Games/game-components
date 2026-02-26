@@ -86,3 +86,17 @@ impl TokenMutableStateDefault of Default<TokenMutableState> {
     }
 }
 
+/// Full state for a token including mutable state not in packed token ID
+/// Used for batch queries to minimize RPC calls
+#[derive(Drop, Serde)]
+pub struct TokenFullState {
+    pub token_id: felt252,
+    pub owner: ContractAddress,
+    pub player_name: felt252,
+    pub is_playable: bool,
+    pub game_address: ContractAddress,
+    pub game_over: bool,
+    pub completed_objective: bool,
+    pub lifecycle: Lifecycle,
+}
+

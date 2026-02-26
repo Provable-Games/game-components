@@ -9,7 +9,9 @@ pub use game_components_interfaces::token::{
     IMINIGAME_TOKEN_ID, IMinigameToken, IMinigameTokenDispatcher, IMinigameTokenDispatcherTrait,
 };
 use starknet::ContractAddress;
-use crate::token::structs::{MintParams, PlayerNameUpdate, TokenMetadata, TokenMutableState};
+use crate::token::structs::{
+    MintParams, PlayerNameUpdate, TokenFullState, TokenMetadata, TokenMutableState,
+};
 
 #[starknet::interface]
 pub trait IMinigameTokenMixin<TState> {
@@ -40,6 +42,7 @@ pub trait IMinigameTokenMixin<TState> {
     fn token_mutable_state_batch(
         self: @TState, token_ids: Span<felt252>,
     ) -> Array<TokenMutableState>;
+    fn token_full_state_batch(self: @TState, token_ids: Span<felt252>) -> Array<TokenFullState>;
 
     fn mint(
         ref self: TState,

@@ -237,7 +237,7 @@ fn test_default_svg_special_color() {
 
 #[test]
 #[fuzzer(runs: 50)]
-fn test_default_svg_fuzz(token_id: u64, score: u64) {
+fn test_default_svg_fuzz(token_id: felt252, score: u64) {
     let game_metadata = default_game_metadata();
     let result = create_default_svg(token_id, game_metadata, score, 'Player');
 
@@ -1011,7 +1011,7 @@ fn test_custom_metadata_many_game_details() {
 
 #[test]
 #[fuzzer(runs: 50)]
-fn test_custom_metadata_fuzz_token_id(token_id: u64) {
+fn test_custom_metadata_fuzz_token_id(token_id: felt252) {
     start_cheat_block_timestamp_global(2000000000);
 
     let result = create_custom_metadata(

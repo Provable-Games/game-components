@@ -1,12 +1,14 @@
 // Core token interface
 use starknet::ContractAddress;
 use crate::structs::metagame::GameContextDetails;
-use crate::structs::token::{MintParams, PlayerNameUpdate, TokenMetadata, TokenMutableState};
+use crate::structs::token::{
+    MintParams, PlayerNameUpdate, TokenFullState, TokenMetadata, TokenMutableState,
+};
 
 /// SNIP-5 interface ID derived via src5_rs: XOR of extended function selectors
 /// See /tmp/all_game_interfaces.cairo or run `src5_rs parse` for full derivation.
 pub const IMINIGAME_TOKEN_ID: felt252 =
-    0x3ada6a6dc9a3b4b3034600a86f30b17d36dc428ed185e192e25bb86e690001a;
+    0x22fd651ec5a158c7b8de22fed9991d129c16f928ec8a65afb01bbbeef165634;
 
 #[starknet::interface]
 pub trait IMinigameToken<TState> {
@@ -36,6 +38,7 @@ pub trait IMinigameToken<TState> {
     fn token_mutable_state_batch(
         self: @TState, token_ids: Span<felt252>,
     ) -> Array<TokenMutableState>;
+    fn token_full_state_batch(self: @TState, token_ids: Span<felt252>) -> Array<TokenFullState>;
 
     fn mint(
         ref self: TState,

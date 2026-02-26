@@ -28,9 +28,10 @@ pub mod CoreTokenComponent {
         IMinigameToken,
     };
     use crate::token::structs::{
-        LifecycleStorePacking, MintParams, PlayerNameUpdate, TokenMetadata, TokenMutableState,
-        TokenMutableStateStorePacking, extract_tx_hash_bits, pack_token_id, to_token_metadata,
-        unpack_game_id, unpack_minted_by, unpack_objective_id, unpack_soulbound, unpack_token_id,
+        LifecycleStorePacking, MintParams, PlayerNameUpdate, TokenFullState, TokenMetadata,
+        TokenMutableState, TokenMutableStateStorePacking, extract_tx_hash_bits, pack_token_id,
+        to_token_metadata, unpack_game_id, unpack_minted_by, unpack_objective_id, unpack_soulbound,
+        unpack_token_id,
     };
     use crate::token::token::{LifecycleTrait, token_state};
     use crate::token::traits::{
@@ -376,6 +377,62 @@ pub mod CoreTokenComponent {
                 results.append(self.token_game_address(token_id));
                 i += 1;
             }
+            results
+        }
+
+        fn token_full_state_batch(
+            self: @ComponentState<TContractState>, token_ids: Span<felt252>,
+        ) -> Array<TokenFullState> {
+            assert!(token_ids.len() > 0, "MinigameToken: token_ids array cannot be empty");
+            let current_time = get_block_timestamp();
+            let contract = self.get_contract();
+            let erc721_component = ERC721::get_component(contract);
+
+            // Cache: (game_id, resolved_address) to avoid redundant registry lookups
+            let mut game_cache: Array<(u32, ContractAddress)> = array![];
+            let mut results: Array<TokenFullState> = ArrayTrait::new();
+
+            let mut i: u32 = 0;
+            loop {
+                if i >= token_ids.len() {
+                    break;
+                }
+                let token_id = *token_ids.at(i);
+
+                // Local unpack + mutable state read (no cross-contract dispatch)
+                let packed = unpack_token_id(token_id);
+                let mutable_state = self.token_mutable_state.entry(token_id).read();
+                let metadata = to_token_metadata(packed, mutable_state);
+
+                // Local storage reads (same contract, no dispatch)
+                let player_name = self.token_player_names.entry(token_id).read();
+
+                // Internal ERC721 component access (no dispatch)
+                let owner = erc721_component._owner_of(token_id.into());
+
+                // Compute is_playable locally (pure math)
+                let is_playable = token_state::is_token_playable(@metadata, current_time);
+
+                // Resolve game_address with cache (1 registry dispatch per unique game_id)
+                let game_address = self
+                    ._resolve_game_address_cached(packed.game_id, ref game_cache);
+
+                results
+                    .append(
+                        TokenFullState {
+                            token_id,
+                            owner,
+                            player_name,
+                            is_playable,
+                            game_address,
+                            game_over: mutable_state.game_over,
+                            completed_objective: mutable_state.completed_objective,
+                            lifecycle: metadata.lifecycle,
+                        },
+                    );
+                i += 1;
+            }
+
             results
         }
 
@@ -904,6 +961,33 @@ pub mod CoreTokenComponent {
                     "MinigameToken: Game address does not match component's game address",
                 );
                 (game_address, 0)
+            }
+        }
+
+        fn _resolve_game_address_cached(
+            self: @ComponentState<TContractState>,
+            game_id: u32,
+            ref cache: Array<(u32, ContractAddress)>,
+        ) -> ContractAddress {
+            // Scan cache for existing entry
+            let mut j: u32 = 0;
+            let found: Option<ContractAddress> = loop {
+                if j >= cache.len() {
+                    break Option::None;
+                }
+                let (cached_id, cached_addr) = *cache.at(j);
+                if cached_id == game_id {
+                    break Option::Some(cached_addr);
+                }
+                j += 1;
+            };
+            match found {
+                Option::Some(addr) => addr,
+                Option::None => {
+                    let address = self.resolve_game_address(game_id.into());
+                    cache.append((game_id, address));
+                    address
+                },
             }
         }
 

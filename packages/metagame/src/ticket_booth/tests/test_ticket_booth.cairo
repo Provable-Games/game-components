@@ -975,7 +975,7 @@ mod MockMinigameTokenForTicketBooth {
     use core::num::traits::Zero;
     use game_components_interfaces::structs::metagame::GameContextDetails;
     use game_components_interfaces::structs::token::{
-        Lifecycle, MintParams, PlayerNameUpdate, TokenMetadata, TokenMutableState,
+        Lifecycle, MintParams, PlayerNameUpdate, TokenFullState, TokenMetadata, TokenMutableState,
     };
     use game_components_interfaces::token::{IMINIGAME_TOKEN_ID, IMinigameToken};
     use openzeppelin_interfaces::introspection::ISRC5;
@@ -1100,6 +1100,12 @@ mod MockMinigameTokenForTicketBooth {
         fn token_mutable_state_batch(
             self: @ContractState, token_ids: Span<felt252>,
         ) -> Array<TokenMutableState> {
+            array![]
+        }
+
+        fn token_full_state_batch(
+            self: @ContractState, token_ids: Span<felt252>,
+        ) -> Array<TokenFullState> {
             array![]
         }
 

@@ -4,7 +4,7 @@ ERC721 NFT representing playable game instances.
 
 ### Core Interface (IMinigameToken)
 
-**Interface ID:** `IMINIGAME_TOKEN_ID = 0x3ada6a6dc9a3b4b3034600a86f30b17d36dc428ed185e192e25bb86e690001a`
+**Interface ID:** `IMINIGAME_TOKEN_ID = 0x22fd651ec5a158c7b8de22fed9991d129c16f928ec8a65afb01bbbeef165634`
 
 | Method             | Signature                                  | Description                  |
 | ------------------ | ------------------------------------------ | ---------------------------- |
