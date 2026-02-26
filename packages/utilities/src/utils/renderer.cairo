@@ -307,11 +307,11 @@ pub fn create_default_svg(
     svg.append(@"<g class='card'>");
 
     // Left edge paths (visible when card tilts left, opacity animated via sl)
-    svg.append(@"<path class='el-o' d='M-4 16 Q-4 0 16 0 L16 600 Q-4 600 -4 584 Z'/>");
-    svg.append(@"<path class='el-i' d='M0 16 Q0 0 16 0 L16 600 Q0 600 0 584 Z'/>");
+    svg.append(@"<path class='el-o' d='M-8 16 Q-8 0 16 0 L16 600 Q-8 600 -8 584 Z'/>");
+    svg.append(@"<path class='el-i' d='M-4 16 Q-4 0 16 0 L16 600 Q-4 600 -4 584 Z'/>");
     // Right edge paths (visible when card tilts right, opacity animated via sr)
-    svg.append(@"<path class='er-o' d='M474 16 Q474 0 454 0 L454 600 Q474 600 474 584 Z'/>");
-    svg.append(@"<path class='er-i' d='M470 16 Q470 0 454 0 L454 600 Q470 600 470 584 Z'/>");
+    svg.append(@"<path class='er-o' d='M478 16 Q478 0 454 0 L454 600 Q478 600 478 584 Z'/>");
+    svg.append(@"<path class='er-i' d='M474 16 Q474 0 454 0 L454 600 Q474 600 474 584 Z'/>");
 
     // Background layers
     svg.append(@"<rect width='470' height='600' rx='16' fill='url(#pin)'/>");
@@ -320,7 +320,7 @@ pub fn create_default_svg(
     // Animated gradient border with glow
     svg
         .append(
-            @"<rect x='1.5' y='1.5' width='467' height='597' rx='15' fill='none' stroke='url(#accentGrad)' stroke-width='3' filter='url(#glow)'/>",
+            @"<rect x='3' y='3' width='464' height='594' rx='15' fill='none' stroke='url(#accentGrad)' stroke-width='6' filter='url(#glow)'/>",
         );
     // Shimmer sweep
     svg.append(@"<rect width='470' height='600' rx='16' fill='url(#shimmer)'/>");
@@ -951,7 +951,7 @@ mod tests {
             publisher: "Starknet Games",
             genre: "Puzzle",
             image: "https://zkube.vercel.app/assets/pwa-512x512.png",
-            color: "white",
+            color: "blue",
             client_url: "https://zkube.vercel.app",
             renderer_address: 0x9876543210987654321098765432109876543210.try_into().unwrap(),
             royalty_fraction: 500,
