@@ -13,7 +13,7 @@ use game_components_embeddable_game_standard::minigame::structs::GameDetail;
 use game_components_embeddable_game_standard::registry::interface::{
     IMinigameRegistryDispatcher, IMinigameRegistryDispatcherTrait,
 };
-use game_components_utilities::utils::renderer::{create_custom_metadata, create_default_svg};
+use game_components_utilities::renderer::svg::{create_custom_metadata, create_default_svg};
 use openzeppelin_interfaces::erc2981::IERC2981;
 use openzeppelin_interfaces::erc721::IERC721Metadata;
 use openzeppelin_introspection::src5::SRC5Component;
@@ -390,6 +390,8 @@ pub mod FullTokenContract {
                                 settings_details.clone(),
                                 objective_details.clone(),
                                 context_details.clone(),
+                                token_name.clone(),
+                                self.erc721.ERC721_symbol.read(),
                             ),
                         }
                     },
@@ -401,6 +403,8 @@ pub mod FullTokenContract {
                         settings_details.clone(),
                         objective_details.clone(),
                         context_details.clone(),
+                        token_name.clone(),
+                        self.erc721.ERC721_symbol.read(),
                     ),
                 };
 

@@ -120,6 +120,8 @@ pub fn create_default_svg(
     settings_details: GameSettingDetails,
     objective_details: GameObjectiveDetails,
     context_details: GameContextDetails,
+    token_name: ByteArray,
+    token_symbol: ByteArray,
 ) -> ByteArray {
     let accent = if game_metadata.color.len() == 0 {
         "#ffffff"
@@ -191,7 +193,7 @@ pub fn create_default_svg(
     // SVG open
     svg
         .append(
-            @"<svg xmlns='http://www.w3.org/2000/svg' width='530' height='620' viewBox='-30 -10 530 620'>",
+            @"<svg xmlns='http://www.w3.org/2000/svg' width='590' height='680' viewBox='-60 -40 590 680'>",
         );
 
     // Defs: gradients, patterns, filters, icons
@@ -253,6 +255,9 @@ pub fn create_default_svg(
     svg.append(@"<stop offset='100%' stop-color='#000' stop-opacity='0.3'/>");
     svg.append(@"</radialGradient>");
 
+    // Clip path for inward-only border stroke
+    svg.append(@"<clipPath id='card-clip'><rect width='470' height='600' rx='16'/></clipPath>");
+
     // Icon symbols (16x16 viewBox)
     // Star icon (score)
     svg
@@ -303,31 +308,29 @@ pub fn create_default_svg(
     // Styles with card tilt animation and split left/right edge thickness
     svg
         .append(
-            @"<style>.l{fill:#c9c9d1;font-size:13px;letter-spacing:0.5px}.v{fill:#fff;font-size:16px}.vs{fill:#fff;font-size:13px}text{font-family:'Courier New',Courier,monospace;text-transform:uppercase}@keyframes tilt{0%,100%{transform:perspective(800px) rotateY(-8deg)}50%{transform:perspective(800px) rotateY(8deg)}}@keyframes sl{0%,100%{opacity:1}20%{opacity:0.15}25%,75%{opacity:0}80%{opacity:0.15}}@keyframes sr{0%,25%,75%,100%{opacity:0}30%{opacity:0.15}50%{opacity:1}70%{opacity:0.15}}.card{animation:tilt 6s ease-in-out infinite;transform-origin:235px 300px}.el-o{fill:#1a1a1e;animation:sl 6s ease-in-out infinite}.el-i{fill:#2a2a30;animation:sl 6s ease-in-out infinite}.er-o{fill:#1a1a1e;animation:sr 6s ease-in-out infinite}.er-i{fill:#2a2a30;animation:sr 6s ease-in-out infinite}</style>",
+            @"<style>.l{fill:#c9c9d1;font-size:13px;letter-spacing:0.5px}.v{fill:#fff;font-size:16px}.vs{fill:#fff;font-size:13px}text{font-family:'Courier New',Courier,monospace;text-transform:uppercase}@keyframes tilt{0%,100%{transform:perspective(800px) rotateY(-8deg)}50%{transform:perspective(800px) rotateY(8deg)}}@keyframes sl{0%,100%{opacity:1}20%{opacity:0.15}25%,75%{opacity:0}80%{opacity:0.15}}@keyframes sr{0%,25%,75%,100%{opacity:0}30%{opacity:0.15}50%{opacity:1}70%{opacity:0.15}}.card{animation:tilt 6s ease-in-out infinite;transform-origin:235px 300px}.el{fill:#3a3a42;animation:sl 6s ease-in-out infinite}.er{fill:#3a3a42;animation:sr 6s ease-in-out infinite}</style>",
         );
     svg.append(@"</defs>");
 
     // Card group with tilt animation and 3D depth
     svg.append(@"<g class='card'>");
 
-    // Left edge paths (visible when card tilts left, opacity animated via sl)
-    svg.append(@"<path class='el-o' d='M-8 16 Q-8 0 16 0 L16 600 Q-8 600 -8 584 Z'/>");
-    svg.append(@"<path class='el-i' d='M-4 16 Q-4 0 16 0 L16 600 Q-4 600 -4 584 Z'/>");
-    // Right edge paths (visible when card tilts right, opacity animated via sr)
-    svg.append(@"<path class='er-o' d='M478 16 Q478 0 454 0 L454 600 Q478 600 478 584 Z'/>");
-    svg.append(@"<path class='er-i' d='M474 16 Q474 0 454 0 L454 600 Q474 600 474 584 Z'/>");
+    // Left edge (visible when card tilts left, opacity animated via sl)
+    svg.append(@"<path class='el' d='M-12 20 Q-12 4 16 4 L16 596 Q-12 596 -12 580 Z'/>");
+    // Right edge (visible when card tilts right, opacity animated via sr)
+    svg.append(@"<path class='er' d='M482 20 Q482 4 454 4 L454 596 Q482 596 482 580 Z'/>");
 
     // Background layers
     svg.append(@"<rect width='470' height='600' rx='16' fill='url(#pin)'/>");
     svg.append(@"<rect width='470' height='600' rx='16' fill='url(#vignette)'/>");
     svg.append(@"<rect width='470' height='600' rx='16' fill='url(#scan)'/>");
-    // Animated gradient border with glow
-    svg
-        .append(
-            @"<rect x='3' y='3' width='464' height='594' rx='15' fill='none' stroke='url(#accentGrad)' stroke-width='6' filter='url(#glow)'/>",
-        );
     // Shimmer sweep
     svg.append(@"<rect width='470' height='600' rx='16' fill='url(#shimmer)'/>");
+    // Animated gradient border (on top of all fills)
+    svg
+        .append(
+            @"<rect width='470' height='600' rx='16' fill='none' stroke='url(#accentGrad)' stroke-width='20' clip-path='url(#card-clip)'/>",
+        );
 
     // ── Header: EGS logo placeholder + game name + game ID ──
     svg.append(@"<rect x='18' y='24' width='44' height='44' rx='8' fill='url(#panel)' stroke='");
@@ -343,24 +346,39 @@ pub fn create_default_svg(
     svg += _game_name;
     svg.append(@"</text>");
     // Developer + Genre
-    svg.append(@"<text x='72' y='56' class='l'>");
+    svg
+        .append(
+            @"<text x='72' y='56' style='fill:#888;font-size:9px;letter-spacing:1px'>DEVELOPER </text>",
+        );
+    svg.append(@"<text x='138' y='56' class='l'>");
     svg += _developer;
     svg.append(@"</text>");
-    svg.append(@"<text x='72' y='70' class='l' style='font-size:11px'>");
+    svg
+        .append(
+            @"<text x='72' y='70' style='fill:#888;font-size:9px;letter-spacing:1px'>GENRE </text>",
+        );
+    svg.append(@"<text x='112' y='70' class='l' style='font-size:11px'>");
     svg += _genre;
     svg.append(@"</text>");
 
-    // Game ID badge (top right)
-    svg.append(@"<text x='440' y='38' text-anchor='end' style='fill:");
-    svg.append(@accent);
-    svg.append(@";font-size:20px'>GAME #");
-    svg += _game_id;
+    // Token name + symbol (top right)
+    svg
+        .append(
+            @"<text x='440' y='38' text-anchor='end' style='fill:#fff;font-size:18px;letter-spacing:1px'>",
+        );
+    svg += token_name;
+    svg.append(@"</text>");
+    svg
+        .append(
+            @"<text x='440' y='56' text-anchor='end' style='fill:#888;font-size:11px;letter-spacing:1px'>",
+        );
+    svg += token_symbol;
     svg.append(@"</text>");
 
     // Accent separator
-    svg.append(@"<line x1='25' y1='80' x2='445' y2='80' stroke='");
+    svg.append(@"<line x1='25' y1='82' x2='445' y2='82' stroke='");
     svg.append(@accent);
-    svg.append(@"' stroke-width='1' opacity='0.5'/>");
+    svg.append(@"' stroke-width='3' opacity='0.5'/>");
 
     // ── Game image area (centered square) ──
     svg
@@ -401,7 +419,7 @@ pub fn create_default_svg(
         svg.append(@"<text x='39' y='132' style='fill:#fff;font-size:13px'>ACTIVE</text>");
     }
 
-    // Badge 2: BINDING (bottom-left, y:152-208)
+    // Badge 2: SOULBOUND (bottom-left, y:152-208)
     svg
         .append(
             @"<rect x='25' y='152' width='142' height='56' rx='8' fill='url(#panel)' stroke='#3a3a40' stroke-width='1'/>",
@@ -415,7 +433,7 @@ pub fn create_default_svg(
         svg.append(@"'/>");
         svg
             .append(
-                @"<text x='58' y='175' style='fill:#888;font-size:9px;letter-spacing:1px'>BINDING</text>",
+                @"<text x='58' y='175' style='fill:#888;font-size:9px;letter-spacing:1px'>SOULBOUND</text>",
             );
         svg.append(@"<text x='39' y='196' style='fill:#fff;font-size:13px'>SOULBOUND</text>");
     } else {
@@ -426,7 +444,7 @@ pub fn create_default_svg(
             );
         svg
             .append(
-                @"<text x='58' y='175' style='fill:#888;font-size:9px;letter-spacing:1px'>BINDING</text>",
+                @"<text x='58' y='175' style='fill:#888;font-size:9px;letter-spacing:1px'>SOULBOUND</text>",
             );
         svg.append(@"<text x='39' y='196' style='fill:#888;font-size:13px'>TRANSFERABLE</text>");
     }
@@ -446,7 +464,7 @@ pub fn create_default_svg(
             .append(
                 @"<text x='336' y='111' style='fill:#888;font-size:9px;letter-spacing:1px'>PAYMASTER</text>",
             );
-        svg.append(@"<text x='317' y='132' style='fill:#fff;font-size:13px'>SPONSORED</text>");
+        svg.append(@"<text x='317' y='132' style='fill:#fff;font-size:13px'>FREE GAS</text>");
     } else {
         svg.append(@"<rect x='303' y='88' width='4' height='56' rx='2' fill='#555'/>");
         svg
@@ -457,7 +475,7 @@ pub fn create_default_svg(
             .append(
                 @"<text x='336' y='111' style='fill:#888;font-size:9px;letter-spacing:1px'>PAYMASTER</text>",
             );
-        svg.append(@"<text x='317' y='132' style='fill:#888;font-size:13px'>STANDARD</text>");
+        svg.append(@"<text x='317' y='132' style='fill:#888;font-size:13px'>PAID GAS</text>");
     }
 
     // Badge 4: OBJECTIVE (bottom-right, y:152-208)
@@ -487,7 +505,7 @@ pub fn create_default_svg(
             .append(
                 @"<text x='336' y='175' style='fill:#888;font-size:9px;letter-spacing:1px'>OBJECTIVE</text>",
             );
-        svg.append(@"<text x='317' y='196' style='fill:#888;font-size:13px'>PENDING</text>");
+        svg.append(@"<text x='317' y='196' style='fill:#888;font-size:13px'>NOT COMPLETE</text>");
     }
 
     // ── Game Description (y:220-248, up to 3 word-wrapped lines) ──
@@ -523,7 +541,7 @@ pub fn create_default_svg(
                     bp -= 1;
                 }
             };
-            let y_pos: u32 = 220 + line_num * 14;
+            let y_pos: u32 = 232 + line_num * 14;
             svg.append(@"<text x='235' y='");
             svg += format!("{}", y_pos);
             svg.append(@"' text-anchor='middle' style='fill:#888;font-size:10px'>");
@@ -553,109 +571,109 @@ pub fn create_default_svg(
         };
     }
 
-    // ── Two-Col Panels Row 1 (y:264-314): PLAYER | SCORE ──
+    // ── Two-Col Panels Row 1 (y:276-326): PLAYER | SCORE ──
     // Player panel with accent left-border
     svg
         .append(
-            @"<rect x='25' y='264' width='205' height='50' rx='8' fill='url(#panel)' stroke='#3a3a40' stroke-width='1'/>",
+            @"<rect x='25' y='276' width='205' height='50' rx='8' fill='url(#panel)' stroke='#3a3a40' stroke-width='1'/>",
         );
-    svg.append(@"<rect x='25' y='264' width='4' height='50' rx='2' fill='");
+    svg.append(@"<rect x='25' y='276' width='4' height='50' rx='2' fill='");
     svg.append(@accent);
     svg.append(@"'/>");
     svg
         .append(
-            @"<use href='#ico-user' x='37' y='273' width='14' height='14' style='color:#c9c9d1'/>",
+            @"<use href='#ico-user' x='37' y='285' width='14' height='14' style='color:#c9c9d1'/>",
         );
-    svg.append(@"<text x='56' y='285' class='l'>PLAYER</text>");
-    svg.append(@"<text x='37' y='304' class='vs'>");
+    svg.append(@"<text x='56' y='297' class='l'>PLAYER</text>");
+    svg.append(@"<text x='37' y='316' class='vs'>");
     svg += _player_name;
     svg.append(@"</text>");
 
     // Score panel with accent left-border
     svg
         .append(
-            @"<rect x='240' y='264' width='205' height='50' rx='8' fill='url(#panel)' stroke='#3a3a40' stroke-width='1'/>",
+            @"<rect x='240' y='276' width='205' height='50' rx='8' fill='url(#panel)' stroke='#3a3a40' stroke-width='1'/>",
         );
-    svg.append(@"<rect x='240' y='264' width='4' height='50' rx='2' fill='");
+    svg.append(@"<rect x='240' y='276' width='4' height='50' rx='2' fill='");
     svg.append(@accent);
     svg.append(@"'/>");
     svg
         .append(
-            @"<use href='#ico-star' x='252' y='273' width='14' height='14' style='color:#c9c9d1'/>",
+            @"<use href='#ico-star' x='252' y='285' width='14' height='14' style='color:#c9c9d1'/>",
         );
-    svg.append(@"<text x='271' y='285' class='l'>SCORE</text>");
-    svg.append(@"<text x='252' y='304' class='v'>");
+    svg.append(@"<text x='271' y='297' class='l'>SCORE</text>");
+    svg.append(@"<text x='252' y='316' class='v'>");
     svg += _score;
     svg.append(@"</text>");
 
-    // ── Two-Col Panels Row 2 (y:322-372): SETTINGS | OBJECTIVE ──
+    // ── Two-Col Panels Row 2 (y:334-384): SETTINGS | OBJECTIVE ──
     // Settings panel with gear icon
     svg
         .append(
-            @"<rect x='25' y='322' width='205' height='50' rx='8' fill='url(#panel)' stroke='#3a3a40' stroke-width='1'/>",
+            @"<rect x='25' y='334' width='205' height='50' rx='8' fill='url(#panel)' stroke='#3a3a40' stroke-width='1'/>",
         );
-    svg.append(@"<rect x='25' y='322' width='4' height='50' rx='2' fill='");
+    svg.append(@"<rect x='25' y='334' width='4' height='50' rx='2' fill='");
     svg.append(@accent);
     svg.append(@"'/>");
     svg
         .append(
-            @"<use href='#ico-gear' x='37' y='331' width='14' height='14' style='color:#c9c9d1'/>",
+            @"<use href='#ico-gear' x='37' y='343' width='14' height='14' style='color:#c9c9d1'/>",
         );
-    svg.append(@"<text x='56' y='343' class='l'>SETTINGS</text>");
-    svg.append(@"<text x='37' y='362' class='vs'>");
+    svg.append(@"<text x='56' y='355' class='l'>SETTINGS</text>");
+    svg.append(@"<text x='37' y='374' class='vs'>");
     svg += _settings_name;
     svg.append(@"</text>");
 
     // Objective panel with target icon
     svg
         .append(
-            @"<rect x='240' y='322' width='205' height='50' rx='8' fill='url(#panel)' stroke='#3a3a40' stroke-width='1'/>",
+            @"<rect x='240' y='334' width='205' height='50' rx='8' fill='url(#panel)' stroke='#3a3a40' stroke-width='1'/>",
         );
-    svg.append(@"<rect x='240' y='322' width='4' height='50' rx='2' fill='");
+    svg.append(@"<rect x='240' y='334' width='4' height='50' rx='2' fill='");
     svg.append(@accent);
     svg.append(@"'/>");
     svg
         .append(
-            @"<use href='#ico-target' x='252' y='331' width='14' height='14' style='color:#c9c9d1'/>",
+            @"<use href='#ico-target' x='252' y='343' width='14' height='14' style='color:#c9c9d1'/>",
         );
-    svg.append(@"<text x='271' y='343' class='l'>OBJECTIVE</text>");
-    svg.append(@"<text x='252' y='362' class='vs'>");
+    svg.append(@"<text x='271' y='355' class='l'>OBJECTIVE</text>");
+    svg.append(@"<text x='252' y='374' class='vs'>");
     svg += _objective_name;
     svg.append(@"</text>");
 
-    // ── Timeline Bordered Section (y:380-438) ──
+    // ── Timeline Bordered Section (y:392-450) ──
     svg
         .append(
-            @"<rect x='25' y='380' width='420' height='58' rx='8' fill='url(#panel)' stroke='#3a3a40' stroke-width='1'/>",
+            @"<rect x='25' y='392' width='420' height='58' rx='8' fill='url(#panel)' stroke='#3a3a40' stroke-width='1'/>",
         );
-    svg.append(@"<rect x='25' y='380' width='4' height='58' rx='2' fill='");
+    svg.append(@"<rect x='25' y='392' width='4' height='58' rx='2' fill='");
     svg.append(@accent);
     svg.append(@"'/>");
     svg
         .append(
-            @"<use href='#ico-clock' x='37' y='388' width='14' height='14' style='color:#c9c9d1'/>",
+            @"<use href='#ico-clock' x='37' y='400' width='14' height='14' style='color:#c9c9d1'/>",
         );
-    svg.append(@"<text x='56' y='400' class='l'>TIMELINE</text>");
+    svg.append(@"<text x='56' y='412' class='l'>TIMELINE</text>");
     // Start flag + datetime
     svg
         .append(
-            @"<use href='#ico-flag' x='37' y='406' width='12' height='12' style='color:#10b981'/>",
+            @"<use href='#ico-flag' x='37' y='418' width='12' height='12' style='color:#10b981'/>",
         );
-    svg.append(@"<text x='52' y='416' style='fill:#888;font-size:10px'>");
+    svg.append(@"<text x='52' y='428' style='fill:#888;font-size:10px'>");
     svg += _start;
     svg.append(@"</text>");
     // End flag + datetime (right-aligned)
-    svg.append(@"<text x='419' y='416' text-anchor='end' style='fill:#888;font-size:10px'>");
+    svg.append(@"<text x='419' y='428' text-anchor='end' style='fill:#888;font-size:10px'>");
     svg += _end;
     svg.append(@"</text>");
     svg
         .append(
-            @"<use href='#ico-flag' x='421' y='406' width='12' height='12' style='color:#ef4444'/>",
+            @"<use href='#ico-flag' x='421' y='418' width='12' height='12' style='color:#ef4444'/>",
         );
     // Track background
-    svg.append(@"<rect x='37' y='426' width='396' height='6' rx='3' fill='#3a3a40'/>");
+    svg.append(@"<rect x='37' y='438' width='396' height='6' rx='3' fill='#3a3a40'/>");
     // Filled portion
-    svg.append(@"<rect x='37' y='426' width='");
+    svg.append(@"<rect x='37' y='438' width='");
     svg += format!("{}", fill_width);
     svg.append(@"' height='6' rx='3' fill='");
     svg.append(@accent);
@@ -663,20 +681,20 @@ pub fn create_default_svg(
     // Marker circle
     svg.append(@"<circle cx='");
     svg += format!("{}", marker_x);
-    svg.append(@"' cy='429' r='5' fill='");
+    svg.append(@"' cy='441' r='5' fill='");
     svg.append(@accent);
     svg.append(@"' stroke='#fff' stroke-width='1.5'/>");
 
-    // ── Context Bordered Section (y:446-514) ──
+    // ── Context Bordered Section (y:458-526) ──
     svg
         .append(
-            @"<rect x='25' y='446' width='420' height='68' rx='8' fill='url(#panel)' stroke='#3a3a40' stroke-width='1'/>",
+            @"<rect x='25' y='458' width='420' height='68' rx='8' fill='url(#panel)' stroke='#3a3a40' stroke-width='1'/>",
         );
-    svg.append(@"<rect x='25' y='446' width='4' height='68' rx='2' fill='");
+    svg.append(@"<rect x='25' y='458' width='4' height='68' rx='2' fill='");
     svg.append(@accent);
     svg.append(@"'/>");
-    svg.append(@"<text x='37' y='464' class='l'>CONTEXT</text>");
-    svg.append(@"<text x='112' y='464' class='vs'>");
+    svg.append(@"<text x='37' y='476' class='l'>CONTEXT</text>");
+    svg.append(@"<text x='112' y='476' class='vs'>");
     svg += _context_name;
     svg.append(@"</text>");
 
@@ -690,7 +708,7 @@ pub fn create_default_svg(
             3
         };
         let mut ctx_i: u32 = 0;
-        let y_base: u32 = 479;
+        let y_base: u32 = 491;
         loop {
             if ctx_i >= max_entries {
                 break;
@@ -709,23 +727,26 @@ pub fn create_default_svg(
     }
 
     // ── Footer ──
-    svg.append(@"<line x1='25' y1='522' x2='445' y2='522' stroke='");
+    svg.append(@"<line x1='25' y1='538' x2='445' y2='538' stroke='");
     svg.append(@accent);
-    svg.append(@"' stroke-width='1' opacity='0.3'/>");
+    svg.append(@"' stroke-width='3' opacity='0.5'/>");
     // Royalty (left) + Minted (right)
     svg
         .append(
-            @"<text x='25' y='538' style='fill:#888;font-size:10px;letter-spacing:1px'>ROYALTY: ",
+            @"<text x='25' y='554' style='fill:#888;font-size:10px;letter-spacing:1px'>ROYALTY: ",
         );
     svg += _royalty;
     svg.append(@"</text>");
-    svg.append(@"<text x='445' y='538' text-anchor='end' style='fill:#555;font-size:9px'>MINTED ");
+    svg
+        .append(
+            @"<text x='445' y='554' text-anchor='end' style='fill:#888;font-size:10px;letter-spacing:1px'>MINTED ",
+        );
     svg += _minted_at;
     svg.append(@"</text>");
     // EGS footer
     svg
         .append(
-            @"<text x='235' y='556' text-anchor='middle' class='l' style='font-size:13px;letter-spacing:2px'>EMBEDDABLE GAME STANDARD</text>",
+            @"<text x='235' y='578' text-anchor='middle' class='l' style='font-size:13px;letter-spacing:2px'>EMBEDDABLE GAME STANDARD</text>",
         );
 
     svg.append(@"</g>"); // close card group
@@ -970,6 +991,8 @@ mod tests {
             default_settings_details(),
             default_objective_details(),
             default_context_details(),
+            "Test Token",
+            "TT",
         );
 
         stop_cheat_block_timestamp_global();
