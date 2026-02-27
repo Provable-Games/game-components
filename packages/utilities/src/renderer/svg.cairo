@@ -226,9 +226,6 @@ pub fn create_default_svg(
     svg.append(@"<path fill='#242428' opacity='.3' d='M0 0h12v6H0z'/>");
     svg.append(@"</pattern>");
     // Glow filter
-    svg.append(@"<filter id='glow'><feGaussianBlur stdDeviation='3' result='blur'/>");
-    svg.append(@"<feMerge><feMergeNode in='blur'/><feMergeNode in='SourceGraphic'/></feMerge>");
-    svg.append(@"</filter>");
     // Scanline pattern
     svg.append(@"<pattern id='scan' width='470' height='4' patternUnits='userSpaceOnUse'>");
     svg.append(@"<rect width='470' height='2' fill='#000' opacity='0.06'/>");
