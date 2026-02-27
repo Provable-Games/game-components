@@ -305,7 +305,7 @@ pub fn create_default_svg(
     // Styles with card tilt animation and split left/right edge thickness
     svg
         .append(
-            @"<style>.l{fill:#c9c9d1;font-size:13px;letter-spacing:0.5px}.v{fill:#fff;font-size:16px}.vs{fill:#fff;font-size:13px}text{font-family:'Courier New',Courier,monospace;text-transform:uppercase}@keyframes tilt{0%,100%{transform:perspective(800px) rotateY(-8deg)}50%{transform:perspective(800px) rotateY(8deg)}}@keyframes sl{0%,100%{opacity:1}20%{opacity:0.15}25%,75%{opacity:0}80%{opacity:0.15}}@keyframes sr{0%,25%,75%,100%{opacity:0}30%{opacity:0.15}50%{opacity:1}70%{opacity:0.15}}.card{animation:tilt 6s ease-in-out infinite;transform-origin:235px 300px}.el{fill:#3a3a42;animation:sl 6s ease-in-out infinite}.er{fill:#3a3a42;animation:sr 6s ease-in-out infinite}</style>",
+            @"<style>.l{fill:#c9c9d1;font-size:13px;letter-spacing:0.5px}.v{fill:#fff;font-size:16px}.vs{fill:#fff;font-size:13px}text{font-family:'Courier New',Courier,monospace;text-transform:uppercase}@keyframes tilt{0%,100%{transform:perspective(800px) rotateY(-20deg)}50%{transform:perspective(800px) rotateY(20deg)}}@keyframes sl{0%,100%{opacity:1}20%{opacity:0.15}25%,75%{opacity:0}80%{opacity:0.15}}@keyframes sr{0%,25%,75%,100%{opacity:0}30%{opacity:0.15}50%{opacity:1}70%{opacity:0.15}}.card{animation:tilt 6s ease-in-out infinite;transform-origin:235px 300px}.el{fill:#3a3a42;animation:sl 6s ease-in-out infinite}.er{fill:#3a3a42;animation:sr 6s ease-in-out infinite}</style>",
         );
     svg.append(@"</defs>");
 
@@ -382,9 +382,15 @@ pub fn create_default_svg(
         .append(
             @"<rect x='175' y='88' width='120' height='120' rx='10' fill='url(#panel)' stroke='#3a3a40' stroke-width='1'/>",
         );
-    svg.append(@"<image x='180' y='93' width='110' height='110' href='");
+    svg
+        .append(
+            @"<foreignObject x='180' y='93' width='110' height='110'><xhtml:img xmlns:xhtml='http://www.w3.org/1999/xhtml' src='",
+        );
     svg += game_metadata.image;
-    svg.append(@"' preserveAspectRatio='xMidYMid meet'/>");
+    svg
+        .append(
+            @"' style='width:100%;height:100%;image-rendering:-webkit-optimize-contrast;-ms-interpolation-mode:nearest-neighbor;image-rendering:-moz-crisp-edges;image-rendering:pixelated;'/></foreignObject>",
+        );
 
     // ── Status Badge Panels flanking game image (2 left, 2 right) ──
     // Badge 1: STATUS (top-left, y:88-144)
