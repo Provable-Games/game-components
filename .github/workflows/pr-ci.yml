@@ -309,6 +309,7 @@ jobs:
             add game_components_utilities math ubuntu-latest-4 256
             add game_components_utilities distribution ubuntu-latest-4 256
             add game_components_utilities utils ubuntu-latest-4 256
+            add game_components_utilities renderer ubuntu-latest-4 256
           fi
           if [ "$NEED_PRESETS" = "true" ]; then
             add game_components_presets presets ubuntu-latest-4 256

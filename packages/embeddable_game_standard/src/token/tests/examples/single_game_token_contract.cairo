@@ -8,7 +8,7 @@ use game_components_embeddable_game_standard::metagame::extensions::context::str
 use game_components_embeddable_game_standard::minigame::extensions::settings::structs::GameSettingDetails;
 use game_components_embeddable_game_standard::minigame::structs::GameDetail;
 use game_components_embeddable_game_standard::registry::interface::GameMetadata;
-use game_components_utilities::utils::renderer::create_custom_metadata;
+use game_components_utilities::renderer::svg::create_custom_metadata;
 use openzeppelin_interfaces::erc2981::IERC2981;
 use openzeppelin_interfaces::erc721::IERC721Metadata;
 use openzeppelin_introspection::src5::SRC5Component;

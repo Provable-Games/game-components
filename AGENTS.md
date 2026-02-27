@@ -127,7 +127,7 @@ When adding a new module to a group package, update **both** files:
      after_n_builds: 15 # ← Must equal total module count in matrix
    ```
 
-### Current Matrix (15 modules)
+### Current Matrix (16 modules)
 
 | Group Package | Module | Runner | Fuzzer Runs |
 |---------------|--------|--------|-------------|
@@ -145,4 +145,5 @@ When adding a new module to a group package, update **both** files:
 | `utilities` | `math` | `ubuntu-latest-4` | 256 |
 | `utilities` | `distribution` | `ubuntu-latest-4` | 256 |
 | `utilities` | `utils` | `ubuntu-latest-4` | 256 |
+| `utilities` | `renderer` | `ubuntu-latest-4` | 256 |
 | `presets` | `presets` | `ubuntu-latest-4` | 256 |
