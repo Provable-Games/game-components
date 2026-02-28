@@ -39,7 +39,7 @@ pub struct GameMetadata {
     pub client_url: ByteArray,
     pub renderer_address: ContractAddress,
     pub royalty_fraction: u128,  // Basis points (500 = 5%)
-    pub agent_skills: ByteArray, // Comma-separated agent skills (e.g. "combat,navigation,trading")
+    pub agent_skills: ByteArray, // Game-specific agent skill definitions
     pub created_at: u64,
 }
 ```
