@@ -158,6 +158,16 @@ pub mod CoreTokenComponent {
             self.token_mutable_state.entry(token_id).read()
         }
 
+        fn agent_skills(self: @ComponentState<TContractState>, token_id: felt252) -> ByteArray {
+            let game_id: u64 = unpack_game_id(token_id).into();
+            let game_registry_address = self.game_registry_address.read();
+            if game_registry_address.is_zero() {
+                return "";
+            }
+            let registry = IMinigameRegistryDispatcher { contract_address: game_registry_address };
+            registry.agent_skills(game_id)
+        }
+
         fn minted_by(self: @ComponentState<TContractState>, token_id: felt252) -> felt252 {
             let minted_by_val: u64 = unpack_minted_by(token_id);
             minted_by_val.into()

@@ -114,6 +114,7 @@ pub mod MinigameComponent {
             objectives_address: Option<ContractAddress>,
             token_address: ContractAddress,
             royalty_fraction: Option<u128>,
+            agent_skills: Option<ByteArray>,
         ) {
             // Register base SRC5 interface
             self.register_game_interface();
@@ -152,6 +153,7 @@ pub mod MinigameComponent {
                             client_url,
                             renderer_address,
                             royalty_fraction,
+                            agent_skills,
                         );
                 }
             }

@@ -97,6 +97,7 @@ pub fn register_game(
     client_url: Option<ByteArray>,
     renderer_address: Option<ContractAddress>,
     royalty_fraction: Option<u128>,
+    agent_skills: Option<ByteArray>,
 ) {
     let minigame_token_dispatcher = IMinigameRegistryDispatcher {
         contract_address: minigame_token_address,
@@ -114,6 +115,7 @@ pub fn register_game(
             client_url,
             renderer_address,
             royalty_fraction,
+            agent_skills,
         );
 }
 

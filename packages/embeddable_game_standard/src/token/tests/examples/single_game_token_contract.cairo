@@ -222,6 +222,7 @@ pub mod SingleGameTokenContract {
                     client_url: "https://example.com/game",
                     renderer_address: renderer_address,
                     royalty_fraction: royalty_frac,
+                    agent_skills: "",
                     created_at: 0,
                 };
 

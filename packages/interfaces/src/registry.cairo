@@ -4,11 +4,11 @@ pub use crate::structs::registry::GameMetadata;
 
 /// SNIP-5 interface ID derived via src5_rs: XOR of extended function selectors
 /// - game_count, game_id_from_address, game_address_from_id, game_metadata,
-///   is_game_registered, register_game, set_game_royalty, game_metadata_batch,
-///   games_registered_batch, get_games, get_games_by_developer,
-///   get_games_by_publisher, get_games_by_genre
+///   is_game_registered, register_game, set_game_royalty, agent_skills,
+///   game_metadata_batch, games_registered_batch, get_games,
+///   get_games_by_developer, get_games_by_publisher, get_games_by_genre
 pub const IMINIGAME_REGISTRY_ID: felt252 =
-    0x3607d1f9cf92726b22f1cd06ed993357e0891e4abb317625eb503bd6a7694b7;
+    0x218630ee7c93daa9cb7812e2f3cb186c3f58942eb6f4af2217d5c1a0faa925c;
 
 #[starknet::interface]
 pub trait IMinigameRegistry<TState> {
@@ -30,6 +30,7 @@ pub trait IMinigameRegistry<TState> {
         client_url: Option<ByteArray>,
         renderer_address: Option<ContractAddress>,
         royalty_fraction: Option<u128>,
+        agent_skills: Option<ByteArray>,
     ) -> u64;
     /// Set the royalty fraction for a game.
     /// Only the owner of the game creator token (game_id) can call this.
@@ -40,6 +41,9 @@ pub trait IMinigameRegistry<TState> {
     fn game_metadata_batch(self: @TState, game_ids: Span<u64>) -> Array<GameMetadata>;
     fn games_registered_batch(self: @TState, addresses: Span<ContractAddress>) -> Array<bool>;
     fn get_games(self: @TState, start: u64, count: u64) -> Array<GameMetadata>;
+
+    /// Get the agent skills for a registered game
+    fn agent_skills(self: @TState, game_id: u64) -> ByteArray;
 
     // Filtered view functions
     fn get_games_by_developer(
