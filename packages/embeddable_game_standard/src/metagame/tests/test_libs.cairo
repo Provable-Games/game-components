@@ -844,6 +844,10 @@ mod MockMinigameTokenForLibs {
             TokenMutableState { game_over: false, completed_objective: false }
         }
 
+        fn agent_skills(self: @ContractState, token_id: felt252) -> ByteArray {
+            ""
+        }
+
         fn token_metadata_batch(
             self: @ContractState, token_ids: Span<felt252>,
         ) -> Array<TokenMetadata> {
@@ -1228,6 +1232,7 @@ mod MockRegistryForLibs {
                 client_url: "",
                 renderer_address: Zero::zero(),
                 royalty_fraction: 0,
+                agent_skills: "",
                 created_at: 0,
             }
         }
@@ -1251,10 +1256,15 @@ mod MockRegistryForLibs {
             client_url: Option<ByteArray>,
             renderer_address: Option<ContractAddress>,
             royalty_fraction: Option<u128>,
+            agent_skills: Option<ByteArray>,
         ) -> u64 {
             1
         }
         fn set_game_royalty(ref self: ContractState, game_id: u64, royalty_fraction: u128) {}
+
+        fn agent_skills(self: @ContractState, game_id: u64) -> ByteArray {
+            ""
+        }
 
         fn game_metadata_batch(self: @ContractState, game_ids: Span<u64>) -> Array<GameMetadata> {
             let mut results: Array<GameMetadata> = ArrayTrait::new();
@@ -1658,6 +1668,10 @@ mod MockMinigameTokenWithRegistry {
         }
         fn token_mutable_state(self: @ContractState, token_id: felt252) -> TokenMutableState {
             TokenMutableState { game_over: false, completed_objective: false }
+        }
+
+        fn agent_skills(self: @ContractState, token_id: felt252) -> ByteArray {
+            ""
         }
 
         fn token_metadata_batch(

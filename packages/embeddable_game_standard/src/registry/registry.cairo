@@ -15,13 +15,15 @@ pub mod registry {
     }
 
     /// Apply defaults for optional metadata fields.
-    /// Returns resolved values for color, client_url, renderer_address, and royalty_fraction.
+    /// Returns resolved values for color, client_url, renderer_address, royalty_fraction,
+    /// and agent_skills.
     pub fn apply_metadata_defaults(
         color: Option<ByteArray>,
         client_url: Option<ByteArray>,
         renderer_address: Option<ContractAddress>,
         royalty_fraction: Option<u128>,
-    ) -> (ByteArray, ByteArray, ContractAddress, u128) {
+        agent_skills: Option<ByteArray>,
+    ) -> (ByteArray, ByteArray, ContractAddress, u128, ByteArray) {
         let final_color = match color {
             Option::Some(c) => c,
             Option::None => "",
@@ -38,6 +40,16 @@ pub mod registry {
             Option::Some(fraction) => fraction,
             Option::None => 0,
         };
-        (final_color, final_client_url, final_renderer_address, final_royalty_fraction)
+        let final_agent_skills = match agent_skills {
+            Option::Some(skills) => skills,
+            Option::None => "",
+        };
+        (
+            final_color,
+            final_client_url,
+            final_renderer_address,
+            final_royalty_fraction,
+            final_agent_skills,
+        )
     }
 }

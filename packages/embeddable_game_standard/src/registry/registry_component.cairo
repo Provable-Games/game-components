@@ -65,6 +65,7 @@ pub mod MinigameRegistryComponent {
         pub client_url: ByteArray,
         pub renderer_address: ContractAddress,
         pub royalty_fraction: u128,
+        pub agent_skills: ByteArray,
     }
 
     #[derive(Drop, starknet::Event)]
@@ -193,6 +194,7 @@ pub mod MinigameRegistryComponent {
             client_url: Option<ByteArray>,
             renderer_address: Option<ContractAddress>,
             royalty_fraction: Option<u128>,
+            agent_skills: Option<ByteArray>,
         ) -> u64 {
             let game_count = self.game_counter.read();
             let new_game_id = game_count + 1;
@@ -221,9 +223,15 @@ pub mod MinigameRegistryComponent {
             self.emit(GameRegistryUpdate { id: new_game_id, contract_address: caller_address });
 
             // Prepare optional fields using pure library
-            let (final_color, final_client_url, final_renderer_address, final_royalty_fraction) =
+            let (
+                final_color,
+                final_client_url,
+                final_renderer_address,
+                final_royalty_fraction,
+                final_agent_skills,
+            ) =
                 apply_metadata_defaults(
-                color, client_url, renderer_address, royalty_fraction,
+                color, client_url, renderer_address, royalty_fraction, agent_skills,
             );
 
             // Store game metadata
@@ -239,6 +247,7 @@ pub mod MinigameRegistryComponent {
                 client_url: final_client_url.clone(),
                 renderer_address: final_renderer_address,
                 royalty_fraction: final_royalty_fraction,
+                agent_skills: final_agent_skills.clone(),
                 created_at: get_block_timestamp(),
             };
 
@@ -261,6 +270,7 @@ pub mod MinigameRegistryComponent {
                         client_url: final_client_url,
                         renderer_address: final_renderer_address,
                         royalty_fraction: final_royalty_fraction,
+                        agent_skills: final_agent_skills,
                     },
                 );
 
@@ -311,6 +321,10 @@ pub mod MinigameRegistryComponent {
 
             // Emit royalty update event
             self.emit(GameRoyaltyUpdate { game_id, royalty_fraction });
+        }
+
+        fn agent_skills(self: @ComponentState<TContractState>, game_id: u64) -> ByteArray {
+            self.game_metadata.entry(game_id).read().agent_skills
         }
 
         fn game_metadata_batch(

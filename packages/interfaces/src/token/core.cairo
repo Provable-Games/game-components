@@ -6,9 +6,9 @@ use crate::structs::token::{
 };
 
 /// SNIP-5 interface ID derived via src5_rs: XOR of extended function selectors
-/// See /tmp/all_game_interfaces.cairo or run `src5_rs parse` for full derivation.
+/// Includes agent_skills view function. Run `src5_rs parse` for full derivation.
 pub const IMINIGAME_TOKEN_ID: felt252 =
-    0x22fd651ec5a158c7b8de22fed9991d129c16f928ec8a65afb01bbbeef165634;
+    0xe67e1d4ee0d7c0cd75c9082845e0641ca255f8fe509d2b121db0b2287c4e8d;
 
 #[starknet::interface]
 pub trait IMinigameToken<TState> {
@@ -24,6 +24,7 @@ pub trait IMinigameToken<TState> {
     fn renderer_address(self: @TState, token_id: felt252) -> ContractAddress;
     fn token_game_address(self: @TState, token_id: felt252) -> ContractAddress;
     fn token_mutable_state(self: @TState, token_id: felt252) -> TokenMutableState;
+    fn agent_skills(self: @TState, token_id: felt252) -> ByteArray;
 
     // Batch view functions
     fn token_metadata_batch(self: @TState, token_ids: Span<felt252>) -> Array<TokenMetadata>;

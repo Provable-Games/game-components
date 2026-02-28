@@ -53,6 +53,7 @@ fn register_game_with_name(
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
         );
     stop_cheat_caller_address(registry.contract_address);
     game_id
@@ -448,6 +449,7 @@ fn register_game_with_metadata(
             publisher,
             genre,
             "Image",
+            Option::None,
             Option::None,
             Option::None,
             Option::None,

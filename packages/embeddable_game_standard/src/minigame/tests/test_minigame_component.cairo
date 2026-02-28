@@ -69,7 +69,8 @@ fn test_initialize_with_all_addresses() {
             Option::Some(settings_address),
             Option::Some(objectives_address),
             token_address,
-            Option::None // royalty_fraction
+            Option::None, // royalty_fraction
+            Option::None,
         );
 
     // Verify addresses are stored correctly
@@ -120,7 +121,8 @@ fn test_get_token_address() {
             Option::None,
             Option::None,
             token_address,
-            Option::None // royalty_fraction
+            Option::None, // royalty_fraction
+            Option::None,
         );
 
     // Verify token_address returns correct value
@@ -158,7 +160,8 @@ fn test_get_settings_address() {
             Option::Some(settings_address),
             Option::None,
             token_address,
-            Option::None // royalty_fraction
+            Option::None, // royalty_fraction
+            Option::None,
         );
 
     // Verify settings_address returns correct value
@@ -198,7 +201,8 @@ fn test_get_objectives_address() {
             Option::None,
             Option::Some(objectives_address),
             token_address,
-            Option::None // royalty_fraction
+            Option::None, // royalty_fraction
+            Option::None,
         );
 
     // Verify objectives_address returns correct value
@@ -237,7 +241,8 @@ fn test_initialize_with_no_optional_addresses() {
             Option::None, // settings_address - will default to contract address in mock
             Option::None, // objectives_address - will default to contract address in mock
             token_address,
-            Option::None // royalty_fraction
+            Option::None, // royalty_fraction
+            Option::None,
         );
 
     // Verify token_address is stored
@@ -271,6 +276,7 @@ fn test_initialize_with_invalid_token() {
             Option::None,
             token_address,
             Option::None,
+            Option::None,
         );
 }
 
@@ -299,6 +305,7 @@ fn test_initialize_verifies_src5_interface() {
             Option::None,
             Option::None,
             token_address,
+            Option::None,
             Option::None,
         );
 
@@ -334,7 +341,8 @@ fn test_initialize_with_all_optional_metadata() {
             Option::None,
             Option::None,
             token_address,
-            Option::Some(500_u128) // 5% royalty
+            Option::Some(500_u128), // 5% royalty
+            Option::None,
         );
 
     assert!(minigame_dispatcher.token_address() == token_address, "Token address mismatch");
@@ -366,6 +374,7 @@ fn test_initialize_with_only_settings_address() {
             Option::Some(settings_address),
             Option::None, // no objectives
             token_address,
+            Option::None,
             Option::None,
         );
 
@@ -443,6 +452,7 @@ fn test_mint_game_with_all_parameters() {
             Option::None,
             token_address,
             Option::None,
+            Option::None,
         );
 
     let token_id = minigame_dispatcher
@@ -492,6 +502,7 @@ fn test_mint_game_with_minimal_parameters() {
             Option::None,
             Option::None,
             token_address,
+            Option::None,
             Option::None,
         );
 
@@ -543,6 +554,7 @@ fn test_mint_game_as_soulbound() {
             Option::None,
             token_address,
             Option::None,
+            Option::None,
         );
 
     let token_id = minigame_dispatcher
@@ -592,6 +604,7 @@ fn test_mint_game_as_transferable() {
             Option::None,
             Option::None,
             token_address,
+            Option::None,
             Option::None,
         );
 
@@ -643,6 +656,7 @@ fn test_mint_game_with_player_name() {
             Option::None,
             token_address,
             Option::None,
+            Option::None,
         );
 
     let token_id = minigame_dispatcher
@@ -692,6 +706,7 @@ fn test_mint_game_with_time_bounds() {
             Option::None,
             Option::None,
             token_address,
+            Option::None,
             Option::None,
         );
 
@@ -746,6 +761,7 @@ fn test_mint_game_batch_multiple() {
             Option::None,
             Option::None,
             token_address,
+            Option::None,
             Option::None,
         );
 
@@ -830,6 +846,7 @@ fn test_mint_game_batch_empty() {
             Option::None,
             token_address,
             Option::None,
+            Option::None,
         );
 
     let result = minigame_dispatcher.mint_game_batch(array![]);
@@ -864,6 +881,7 @@ fn test_mint_game_batch_single() {
             Option::None,
             Option::None,
             token_address,
+            Option::None,
             Option::None,
         );
 
@@ -917,6 +935,7 @@ fn test_mint_game_batch_mixed_params() {
             Option::None,
             Option::None,
             token_address,
+            Option::None,
             Option::None,
         );
 
@@ -985,6 +1004,7 @@ fn test_mint_game_batch_multiple_recipients() {
             Option::None,
             Option::None,
             token_address,
+            Option::None,
             Option::None,
         );
 
@@ -1157,6 +1177,7 @@ fn test_mint_game_fuzz_player_name(player_name: felt252) {
             Option::None,
             token_address,
             Option::None,
+            Option::None,
         );
 
     let token_id = minigame_dispatcher
@@ -1207,6 +1228,7 @@ fn test_mint_game_fuzz_settings_id(settings_id: u32) {
             Option::None,
             Option::None,
             token_address,
+            Option::None,
             Option::None,
         );
 
@@ -1518,6 +1540,7 @@ fn test_initialize_with_registry_supports_interface() {
             Option::None,
             token_address,
             Option::Some(500_u128),
+            Option::None,
         );
 
     assert!(minigame_dispatcher.token_address() == token_address, "Token address mismatch");
@@ -1554,6 +1577,7 @@ fn test_initialize_with_registry_no_support() {
             Option::None,
             Option::None,
             token_address,
+            Option::None,
             Option::None,
         );
 
@@ -1622,6 +1646,7 @@ fn test_mint_game_fuzz_objective_id(objective_id: u32) {
             Option::None,
             token_address,
             Option::None,
+            Option::None,
         );
 
     let token_id = minigame_dispatcher
@@ -1675,6 +1700,7 @@ fn test_mint_game_with_context() {
             Option::None,
             Option::None,
             token_address,
+            Option::None,
             Option::None,
         );
 
@@ -1736,6 +1762,7 @@ fn test_mint_game_batch_with_context() {
             Option::None,
             Option::None,
             token_address,
+            Option::None,
             Option::None,
         );
 
@@ -1962,7 +1989,8 @@ fn test_initialize_with_all_optional_params() {
             Option::Some(settings_address),
             Option::Some(objectives_address),
             token_address,
-            Option::Some(2500_u128) // 25% royalty
+            Option::Some(2500_u128), // 25% royalty
+            Option::None,
         );
 
     assert!(minigame_dispatcher.token_address() == token_address, "Token address mismatch");
@@ -2002,6 +2030,7 @@ fn test_initialize_with_external_extension_addresses() {
             Option::Some(external_settings),
             Option::Some(external_objectives),
             token_address,
+            Option::None,
             Option::None,
         );
 
@@ -2073,6 +2102,7 @@ fn test_mint_game_batch_large() {
             Option::None,
             token_address,
             Option::None,
+            Option::None,
         );
 
     let result = minigame_dispatcher.mint_game_batch(mints);
@@ -2107,6 +2137,7 @@ fn test_mint_game_soulbound() {
             Option::None,
             Option::None,
             token_address,
+            Option::None,
             Option::None,
         );
 
@@ -2158,6 +2189,7 @@ fn test_mint_game_with_client_url() {
             Option::None,
             token_address,
             Option::None,
+            Option::None,
         );
 
     let token_id = minigame_dispatcher
@@ -2208,6 +2240,7 @@ fn test_mint_game_with_renderer_address() {
             Option::None,
             Option::None,
             token_address,
+            Option::None,
             Option::None,
         );
 

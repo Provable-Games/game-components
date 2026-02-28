@@ -39,6 +39,8 @@ pub struct GameMetadata {
     pub client_url: ByteArray,
     pub renderer_address: ContractAddress,
     pub royalty_fraction: u128,  // Basis points (500 = 5%)
+    pub agent_skills: ByteArray, // Game-specific agent skill definitions
+    pub created_at: u64,
 }
 ```
 
@@ -58,7 +60,7 @@ Use `MinigameRegistryHooksEmptyImpl` for no-op default.
 ## Events
 
 - `GameRegistryUpdate { id, contract_address }` - Game registered
-- `GameMetadataUpdate { id, contract_address, name, description, ... }` - Full metadata stored
+- `GameMetadataUpdate { id, contract_address, name, description, ..., agent_skills }` - Full metadata stored
 - `GameRoyaltyUpdate { game_id, royalty_fraction }` - Royalty updated
 
 ## Interface ID

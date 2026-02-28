@@ -28,6 +28,7 @@ pub trait IMinigameTokenMixin<TState> {
     fn renderer_address(self: @TState, token_id: felt252) -> ContractAddress;
     fn token_game_address(self: @TState, token_id: felt252) -> ContractAddress;
     fn token_mutable_state(self: @TState, token_id: felt252) -> TokenMutableState;
+    fn agent_skills(self: @TState, token_id: felt252) -> ByteArray;
 
     // Batch view functions
     fn token_metadata_batch(self: @TState, token_ids: Span<felt252>) -> Array<TokenMetadata>;
@@ -207,6 +208,7 @@ pub trait ITokenEventRelayer<TContractState> {
         color: ByteArray,
         client_url: ByteArray,
         renderer_address: ContractAddress,
+        agent_skills: ByteArray,
     );
     fn emit_game_registry_update(
         ref self: TContractState, id: u64, contract_address: ContractAddress,

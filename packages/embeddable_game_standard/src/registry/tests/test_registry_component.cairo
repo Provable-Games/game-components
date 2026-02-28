@@ -90,6 +90,7 @@ fn register_game(registry: IMinigameRegistryDispatcher, game_address: ContractAd
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
         );
     stop_cheat_caller_address(registry.contract_address);
     game_id
@@ -146,7 +147,8 @@ fn test_game_count_increments_after_registration() {
             Option::None,
             Option::None,
             Option::None,
-            Option::None // royalty_fraction
+            Option::None, // royalty_fraction
+            Option::None,
         );
     stop_cheat_caller_address(registry.contract_address);
 
@@ -174,7 +176,8 @@ fn test_game_id_from_address_returns_correct_id() {
             Option::None,
             Option::None,
             Option::None,
-            Option::None // royalty_fraction
+            Option::None, // royalty_fraction
+            Option::None,
         );
     stop_cheat_caller_address(registry.contract_address);
 
@@ -204,7 +207,8 @@ fn test_game_address_from_id_returns_correct_address() {
             Option::None,
             Option::None,
             Option::None,
-            Option::None // royalty_fraction
+            Option::None, // royalty_fraction
+            Option::None,
         );
     stop_cheat_caller_address(registry.contract_address);
 
@@ -236,7 +240,8 @@ fn test_is_game_registered_returns_true_for_registered() {
             Option::None,
             Option::None,
             Option::None,
-            Option::None // royalty_fraction
+            Option::None, // royalty_fraction
+            Option::None,
         );
     stop_cheat_caller_address(registry.contract_address);
 
@@ -276,7 +281,8 @@ fn test_game_metadata_returns_correct_data() {
             Option::Some("blue"),
             Option::Some("https://game.example.com"),
             Option::Some(RENDERER_ADDRESS()),
-            Option::None // royalty_fraction
+            Option::None, // royalty_fraction
+            Option::None,
         );
     stop_cheat_caller_address(registry.contract_address);
 
@@ -347,7 +353,8 @@ fn test_register_game_with_none_optional_fields() {
             Option::None, // color
             Option::None, // client_url
             Option::None, // renderer_address
-            Option::None // royalty_fraction
+            Option::None, // royalty_fraction
+            Option::None,
         );
     stop_cheat_caller_address(registry.contract_address);
 
@@ -382,7 +389,8 @@ fn test_register_game_returns_incremental_ids() {
             Option::None,
             Option::None,
             Option::None,
-            Option::None // royalty_fraction
+            Option::None, // royalty_fraction
+            Option::None,
         );
     stop_cheat_caller_address(registry.contract_address);
 
@@ -403,7 +411,8 @@ fn test_register_game_returns_incremental_ids() {
             Option::None,
             Option::None,
             Option::None,
-            Option::None // royalty_fraction
+            Option::None, // royalty_fraction
+            Option::None,
         );
     stop_cheat_caller_address(registry.contract_address);
 
@@ -433,7 +442,8 @@ fn test_register_game_with_all_optional_fields() {
             Option::Some("purple"),
             Option::Some("https://fullgame.example.com"),
             Option::Some(RENDERER_ADDRESS()),
-            Option::Some(1000) // 10% royalty
+            Option::Some(1000), // 10% royalty
+            Option::None,
         );
     stop_cheat_caller_address(registry.contract_address);
 
@@ -466,7 +476,8 @@ fn test_register_game_with_mixed_optional_fields() {
             Option::Some("red"), // color provided
             Option::None, // client_url not provided
             Option::Some(RENDERER_ADDRESS()), // renderer provided
-            Option::None // royalty not provided
+            Option::None, // royalty not provided
+            Option::None,
         );
     stop_cheat_caller_address(registry.contract_address);
 
@@ -498,6 +509,7 @@ fn test_register_game_with_empty_strings() {
             "", // empty image
             Option::Some(""), // empty color
             Option::Some(""), // empty client_url
+            Option::None,
             Option::None,
             Option::None,
         );
@@ -537,6 +549,7 @@ fn test_register_game_with_long_metadata() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
         );
     stop_cheat_caller_address(registry.contract_address);
 
@@ -566,6 +579,7 @@ fn test_register_game_stores_correct_contract_address() {
             "Pub",
             "Genre",
             "img.png",
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -608,7 +622,8 @@ fn test_register_game_fails_for_non_minigame() {
             Option::None,
             Option::None,
             Option::None,
-            Option::None // royalty_fraction
+            Option::None, // royalty_fraction
+            Option::None,
         );
     stop_cheat_caller_address(registry.contract_address);
 }
@@ -637,7 +652,8 @@ fn test_register_game_fails_for_duplicate() {
             Option::None,
             Option::None,
             Option::None,
-            Option::None // royalty_fraction
+            Option::None, // royalty_fraction
+            Option::None,
         );
 
     // Second registration - should panic
@@ -653,7 +669,8 @@ fn test_register_game_fails_for_duplicate() {
             Option::None,
             Option::None,
             Option::None,
-            Option::None // royalty_fraction
+            Option::None, // royalty_fraction
+            Option::None,
         );
 
     stop_cheat_caller_address(registry.contract_address);
@@ -678,6 +695,7 @@ fn test_register_game_fails_with_expected_error_non_minigame() {
             "Pub",
             "Genre",
             "img.png",
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -710,6 +728,7 @@ fn test_register_game_fails_with_expected_error_duplicate() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
         );
 
     // Second registration - should panic with specific error
@@ -722,6 +741,7 @@ fn test_register_game_fails_with_expected_error_duplicate() {
             "Pub",
             "Genre",
             "img.png",
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -755,7 +775,8 @@ fn test_set_game_royalty_success() {
             Option::None,
             Option::None,
             Option::None,
-            Option::Some(100) // initial 1% royalty
+            Option::Some(100), // initial 1% royalty
+            Option::None,
         );
     stop_cheat_caller_address(registry.contract_address);
 
@@ -791,6 +812,7 @@ fn test_set_game_royalty_updates_metadata() {
             Option::Some("https://example.com"),
             Option::Some(RENDERER_ADDRESS()),
             Option::Some(100),
+            Option::None,
         );
     stop_cheat_caller_address(registry.contract_address);
 
@@ -831,6 +853,7 @@ fn test_set_game_royalty_emits_event() {
             "Pub",
             "Genre",
             "img.png",
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -882,6 +905,7 @@ fn test_set_game_royalty_multiple_updates() {
             Option::None,
             Option::None,
             Option::Some(100),
+            Option::None,
         );
     stop_cheat_caller_address(registry.contract_address);
 
@@ -924,7 +948,8 @@ fn test_set_game_royalty_to_zero() {
             Option::None,
             Option::None,
             Option::None,
-            Option::Some(500) // Start with 5%
+            Option::Some(500), // Start with 5%
+            Option::None,
         );
     stop_cheat_caller_address(registry.contract_address);
 
@@ -955,6 +980,7 @@ fn test_set_game_royalty_max_value() {
             "Pub",
             "Genre",
             "img.png",
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -996,6 +1022,7 @@ fn test_set_game_royalty_fails_non_owner() {
             "Pub",
             "Genre",
             "img.png",
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -1055,7 +1082,8 @@ fn test_register_game_emits_registry_update_event() {
             Option::None,
             Option::None,
             Option::None,
-            Option::None // royalty_fraction
+            Option::None, // royalty_fraction
+            Option::None,
         );
     stop_cheat_caller_address(registry.contract_address);
 
@@ -1098,7 +1126,8 @@ fn test_register_game_emits_metadata_update_event() {
             Option::Some("red"),
             Option::Some("https://example.com"),
             Option::Some(RENDERER_ADDRESS()),
-            Option::Some(500) // 5% royalty
+            Option::Some(500), // 5% royalty
+            Option::None,
         );
     stop_cheat_caller_address(registry.contract_address);
 
@@ -1122,6 +1151,7 @@ fn test_register_game_emits_metadata_update_event() {
                             client_url: "https://example.com",
                             renderer_address: RENDERER_ADDRESS(),
                             royalty_fraction: 500,
+                            agent_skills: "",
                         },
                     ),
                 ),
@@ -1149,6 +1179,7 @@ fn test_register_game_events_order() {
             "Pub",
             "Genre",
             "img.png",
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -1192,6 +1223,7 @@ fn test_register_game_events_order() {
                             client_url: "",
                             renderer_address: ZERO_ADDRESS(),
                             royalty_fraction: 0,
+                            agent_skills: "",
                         },
                     ),
                 ),
@@ -1217,6 +1249,7 @@ fn test_royalty_event_contains_correct_data() {
             "Pub",
             "Genre",
             "img.png",
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -1275,6 +1308,7 @@ fn test_before_register_hook_called() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
         );
     stop_cheat_caller_address(registry.contract_address);
 
@@ -1313,6 +1347,7 @@ fn test_after_register_hook_called() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
         );
     stop_cheat_caller_address(registry.contract_address);
 
@@ -1343,6 +1378,7 @@ fn test_before_hook_can_reject_registration() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
         ); // Should panic from hook
 }
 
@@ -1364,6 +1400,7 @@ fn test_after_hook_receives_correct_game_id() {
             "Pub",
             "Genre",
             "img.png",
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -1421,7 +1458,8 @@ fn test_multiple_games_with_different_metadata() {
             Option::Some("green"),
             Option::Some("https://puzzle.com"),
             Option::None,
-            Option::None // royalty_fraction
+            Option::None, // royalty_fraction
+            Option::None,
         );
     stop_cheat_caller_address(registry.contract_address);
 
@@ -1442,7 +1480,8 @@ fn test_multiple_games_with_different_metadata() {
             Option::Some("red"),
             Option::Some("https://action.com"),
             Option::Some(RENDERER_ADDRESS()),
-            Option::None // royalty_fraction
+            Option::None, // royalty_fraction
+            Option::None,
         );
     stop_cheat_caller_address(registry.contract_address);
 
@@ -1491,6 +1530,7 @@ fn test_max_game_registrations() {
                 Option::None,
                 Option::None,
                 Option::None,
+                Option::None,
             );
         stop_cheat_caller_address(registry.contract_address);
 
@@ -1527,6 +1567,7 @@ fn test_unicode_metadata_fields() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
         );
     stop_cheat_caller_address(registry.contract_address);
 
@@ -1559,6 +1600,7 @@ fn test_special_characters_in_urls() {
             Option::Some(special_url.clone()),
             Option::None,
             Option::None,
+            Option::None,
         );
     stop_cheat_caller_address(registry.contract_address);
 
@@ -1589,6 +1631,7 @@ fn test_renderer_address_zero_explicitly() {
             Option::None,
             Option::None, // renderer as None
             Option::None,
+            Option::None,
         );
     stop_cheat_caller_address(registry.contract_address);
 
@@ -1609,6 +1652,7 @@ fn test_renderer_address_zero_explicitly() {
             Option::None,
             Option::None,
             Option::Some(ZERO_ADDRESS()), // renderer as Some(zero)
+            Option::None,
             Option::None,
         );
     stop_cheat_caller_address(registry.contract_address);
@@ -1643,7 +1687,8 @@ fn test_royalty_fraction_basis_points_max() {
             Option::None,
             Option::None,
             Option::None,
-            Option::Some(10000) // 100% royalty
+            Option::Some(10000), // 100% royalty
+            Option::None,
         );
     stop_cheat_caller_address(registry.contract_address);
 
@@ -1678,6 +1723,7 @@ fn test_fuzz_register_game_royalty_fraction(royalty: u128) {
             Option::None,
             Option::None,
             Option::Some(royalty),
+            Option::None,
         );
     stop_cheat_caller_address(registry.contract_address);
 
@@ -1724,6 +1770,7 @@ fn test_fuzz_multiple_registrations(num_games: u8) {
                 Option::None,
                 Option::None,
                 Option::None,
+                Option::None,
             );
         stop_cheat_caller_address(registry.contract_address);
 
@@ -1763,7 +1810,8 @@ fn test_registry_with_real_minigame_contract() {
             Option::Some("gold"),
             Option::Some("https://realgame.example.com"),
             Option::Some(RENDERER_ADDRESS()),
-            Option::Some(250) // 2.5% royalty
+            Option::Some(250), // 2.5% royalty
+            Option::None,
         );
     stop_cheat_caller_address(registry.contract_address);
 
@@ -1804,6 +1852,7 @@ fn test_registry_with_custom_hooks() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
         );
     stop_cheat_caller_address(registry.contract_address);
 
@@ -1840,6 +1889,7 @@ fn test_registry_with_erc721_owner_check() {
             Option::None,
             Option::None,
             Option::Some(100),
+            Option::None,
         );
     stop_cheat_caller_address(registry.contract_address);
 

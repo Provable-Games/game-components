@@ -55,6 +55,7 @@ fn register_game_full(
     client_url: Option<ByteArray>,
     renderer_address: Option<ContractAddress>,
     royalty_fraction: Option<u128>,
+    agent_skills: Option<ByteArray>,
 ) -> u64 {
     mock_call(game_address, selector!("supports_interface"), true, 10);
 
@@ -72,6 +73,7 @@ fn register_game_full(
             client_url,
             renderer_address,
             royalty_fraction,
+            agent_skills,
         );
     stop_cheat_caller_address(registry.contract_address);
     game_id
@@ -97,6 +99,7 @@ fn register_game_with_metadata(
         Option::None,
         Option::None,
         Option::None,
+        Option::None,
     )
 }
 
@@ -107,11 +110,12 @@ fn register_game_with_metadata(
 #[test]
 fn test_apply_metadata_defaults_all_some() {
     let renderer: ContractAddress = RENDERER_ADDRESS();
-    let (color, client_url, renderer_addr, royalty) = apply_metadata_defaults(
+    let (color, client_url, renderer_addr, royalty, _agent_skills) = apply_metadata_defaults(
         Option::Some("blue"),
         Option::Some("https://example.com"),
         Option::Some(renderer),
         Option::Some(500),
+        Option::None,
     );
 
     assert!(color == "blue", "Color should be 'blue'");
@@ -122,8 +126,8 @@ fn test_apply_metadata_defaults_all_some() {
 
 #[test]
 fn test_apply_metadata_defaults_all_none() {
-    let (color, client_url, renderer_addr, royalty) = apply_metadata_defaults(
-        Option::None, Option::None, Option::None, Option::None,
+    let (color, client_url, renderer_addr, royalty, _agent_skills) = apply_metadata_defaults(
+        Option::None, Option::None, Option::None, Option::None, Option::None,
     );
 
     assert!(color == "", "Color should default to empty string");
@@ -134,8 +138,8 @@ fn test_apply_metadata_defaults_all_none() {
 
 #[test]
 fn test_apply_metadata_defaults_mixed_color_some_rest_none() {
-    let (color, client_url, renderer_addr, royalty) = apply_metadata_defaults(
-        Option::Some("red"), Option::None, Option::None, Option::None,
+    let (color, client_url, renderer_addr, royalty, _agent_skills) = apply_metadata_defaults(
+        Option::Some("red"), Option::None, Option::None, Option::None, Option::None,
     );
 
     assert!(color == "red", "Color should be 'red'");
@@ -146,8 +150,12 @@ fn test_apply_metadata_defaults_mixed_color_some_rest_none() {
 
 #[test]
 fn test_apply_metadata_defaults_mixed_url_and_royalty_some() {
-    let (color, client_url, renderer_addr, royalty) = apply_metadata_defaults(
-        Option::None, Option::Some("https://game.io"), Option::None, Option::Some(1000),
+    let (color, client_url, renderer_addr, royalty, _agent_skills) = apply_metadata_defaults(
+        Option::None,
+        Option::Some("https://game.io"),
+        Option::None,
+        Option::Some(1000),
+        Option::None,
     );
 
     assert!(color == "", "Color should default to empty string");
@@ -159,8 +167,8 @@ fn test_apply_metadata_defaults_mixed_url_and_royalty_some() {
 #[test]
 fn test_apply_metadata_defaults_mixed_renderer_some_rest_none() {
     let renderer: ContractAddress = addr(0xABC);
-    let (color, client_url, renderer_addr, royalty) = apply_metadata_defaults(
-        Option::None, Option::None, Option::Some(renderer), Option::None,
+    let (color, client_url, renderer_addr, royalty, _agent_skills) = apply_metadata_defaults(
+        Option::None, Option::None, Option::Some(renderer), Option::None, Option::None,
     );
 
     assert!(color == "", "Color should default to empty string");
@@ -171,8 +179,8 @@ fn test_apply_metadata_defaults_mixed_renderer_some_rest_none() {
 
 #[test]
 fn test_apply_metadata_defaults_empty_string_for_color() {
-    let (color, _client_url, _renderer_addr, _royalty) = apply_metadata_defaults(
-        Option::Some(""), Option::None, Option::None, Option::None,
+    let (color, _client_url, _renderer_addr, _royalty, _agent_skills) = apply_metadata_defaults(
+        Option::Some(""), Option::None, Option::None, Option::None, Option::None,
     );
 
     assert!(color == "", "Explicit empty string should remain empty");
@@ -180,8 +188,8 @@ fn test_apply_metadata_defaults_empty_string_for_color() {
 
 #[test]
 fn test_apply_metadata_defaults_empty_string_for_client_url() {
-    let (_color, client_url, _renderer_addr, _royalty) = apply_metadata_defaults(
-        Option::None, Option::Some(""), Option::None, Option::None,
+    let (_color, client_url, _renderer_addr, _royalty, _agent_skills) = apply_metadata_defaults(
+        Option::None, Option::Some(""), Option::None, Option::None, Option::None,
     );
 
     assert!(client_url == "", "Explicit empty client_url should remain empty");
@@ -189,8 +197,8 @@ fn test_apply_metadata_defaults_empty_string_for_client_url() {
 
 #[test]
 fn test_apply_metadata_defaults_zero_renderer_address() {
-    let (_color, _client_url, renderer_addr, _royalty) = apply_metadata_defaults(
-        Option::None, Option::None, Option::Some(ZERO_ADDRESS()), Option::None,
+    let (_color, _client_url, renderer_addr, _royalty, _agent_skills) = apply_metadata_defaults(
+        Option::None, Option::None, Option::Some(ZERO_ADDRESS()), Option::None, Option::None,
     );
 
     assert!(renderer_addr.is_zero(), "Explicit zero address should be zero");
@@ -198,8 +206,8 @@ fn test_apply_metadata_defaults_zero_renderer_address() {
 
 #[test]
 fn test_apply_metadata_defaults_zero_royalty_explicit() {
-    let (_color, _client_url, _renderer_addr, royalty) = apply_metadata_defaults(
-        Option::None, Option::None, Option::None, Option::Some(0),
+    let (_color, _client_url, _renderer_addr, royalty, _agent_skills) = apply_metadata_defaults(
+        Option::None, Option::None, Option::None, Option::Some(0), Option::None,
     );
 
     assert!(royalty == 0, "Explicit zero royalty should be 0");
@@ -208,8 +216,8 @@ fn test_apply_metadata_defaults_zero_royalty_explicit() {
 #[test]
 fn test_apply_metadata_defaults_max_royalty() {
     let max: u128 = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF;
-    let (_color, _client_url, _renderer_addr, royalty) = apply_metadata_defaults(
-        Option::None, Option::None, Option::None, Option::Some(max),
+    let (_color, _client_url, _renderer_addr, royalty, _agent_skills) = apply_metadata_defaults(
+        Option::None, Option::None, Option::None, Option::Some(max), Option::None,
     );
 
     assert!(royalty == max, "Max u128 royalty should be stored");
@@ -220,9 +228,10 @@ fn test_apply_metadata_defaults_long_strings() {
     let long_color: ByteArray = "a very long color name that definitely exceeds 31 bytes boundary";
     let long_url: ByteArray =
         "https://example.com/very/long/path/that/exceeds/31/bytes/and/keeps/going?param=value";
-    let (color, client_url, _renderer_addr, _royalty) = apply_metadata_defaults(
+    let (color, client_url, _renderer_addr, _royalty, _agent_skills) = apply_metadata_defaults(
         Option::Some(long_color.clone()),
         Option::Some(long_url.clone()),
+        Option::None,
         Option::None,
         Option::None,
     );
@@ -287,6 +296,7 @@ fn test_register_game_all_some_optional_params() {
         Option::Some("https://mygame.example.com"),
         Option::Some(renderer),
         Option::Some(750),
+        Option::None,
     );
 
     let metadata = registry.game_metadata(game_id);
@@ -311,6 +321,7 @@ fn test_register_game_all_none_optional_params() {
         "Dev",
         "Pub",
         "Action",
+        Option::None,
         Option::None,
         Option::None,
         Option::None,
@@ -341,6 +352,7 @@ fn test_register_game_mixed_color_and_renderer_some() {
         Option::None,
         Option::Some(renderer),
         Option::None,
+        Option::None,
     );
 
     let metadata = registry.game_metadata(game_id);
@@ -366,6 +378,7 @@ fn test_register_game_mixed_url_and_royalty_some() {
         Option::Some("https://strategy.io"),
         Option::None,
         Option::Some(250),
+        Option::None,
     );
 
     let metadata = registry.game_metadata(game_id);
@@ -420,6 +433,7 @@ fn test_game_metadata_batch_single_with_optional_fields() {
         Option::Some("https://batch.io"),
         Option::Some(RENDERER_ADDRESS()),
         Option::Some(300),
+        Option::None,
     );
 
     let game_ids: Array<u64> = array![game_id];
@@ -871,8 +885,9 @@ fn test_get_games_by_genre_pagination_correctness() {
 #[test]
 #[fuzzer]
 fn test_fuzz_apply_metadata_defaults_royalty(royalty: u128) {
-    let (_color, _client_url, _renderer_addr, result_royalty) = apply_metadata_defaults(
-        Option::None, Option::None, Option::None, Option::Some(royalty),
+    let (_color, _client_url, _renderer_addr, result_royalty, _agent_skills) =
+        apply_metadata_defaults(
+        Option::None, Option::None, Option::None, Option::Some(royalty), Option::None,
     );
     assert!(result_royalty == royalty, "Royalty should always be preserved");
 }

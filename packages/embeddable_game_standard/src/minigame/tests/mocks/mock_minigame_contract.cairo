@@ -18,6 +18,7 @@ pub trait IMockMinigameInit<TContractState> {
         objectives_address: Option<ContractAddress>,
         minigame_token_address: ContractAddress,
         royalty_fraction: Option<u128>,
+        agent_skills: Option<ByteArray>,
     );
 }
 
@@ -327,6 +328,7 @@ pub mod MockMinigameContract {
             objectives_address: Option<ContractAddress>,
             minigame_token_address: ContractAddress,
             royalty_fraction: Option<u128>,
+            agent_skills: Option<ByteArray>,
         ) {
             // Initialize optional features
             let settings_address = match settings_address {
@@ -368,6 +370,7 @@ pub mod MockMinigameContract {
                     objectives_address,
                     minigame_token_address,
                     royalty_fraction,
+                    agent_skills,
                 );
         }
     }
