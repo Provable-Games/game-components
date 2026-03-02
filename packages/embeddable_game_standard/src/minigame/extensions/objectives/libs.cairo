@@ -12,23 +12,19 @@ use crate::minigame::extensions::objectives::structs::GameObjectiveDetails;
 /// * `game_address` - The address of the game contract creating the objective
 /// * `creator_address` - The address of the creator
 /// * `objective_id` - The ID of the objective to create
-/// * `settings_id` - The settings ID to associate with this objective (0 = no settings)
 /// * `objective_details` - The objective details struct
 pub fn create_objective(
     minigame_token_address: ContractAddress,
     game_address: ContractAddress,
     creator_address: ContractAddress,
     objective_id: u32,
-    settings_id: u32,
     objective_details: GameObjectiveDetails,
 ) {
     let minigame_token_dispatcher = IMinigameTokenObjectivesDispatcher {
         contract_address: minigame_token_address,
     };
     minigame_token_dispatcher
-        .create_objective(
-            game_address, creator_address, objective_id, settings_id, objective_details,
-        );
+        .create_objective(game_address, creator_address, objective_id, objective_details);
 }
 // /// Asserts that an objective exists by checking the game contract
 // ///

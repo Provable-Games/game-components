@@ -18,7 +18,6 @@ pub trait IMinigameMock<TContractState> {
     fn start_game(ref self: TContractState, token_id: felt252);
     fn end_game(ref self: TContractState, token_id: felt252, score: u64);
     fn create_objective_score(ref self: TContractState, score: u64);
-    fn create_objective_score_with_settings(ref self: TContractState, score: u64, settings_id: u32);
     fn create_settings_difficulty(
         ref self: TContractState, name: ByteArray, description: ByteArray, difficulty: u8,
     );
@@ -330,10 +329,6 @@ pub mod minigame_mock {
             }
         }
 
-        fn objective_settings_id(self: @ContractState, objective_id: u32) -> u32 {
-            0
-        }
-
         fn objectives_details_batch(
             self: @ContractState, objective_ids: Span<u32>,
         ) -> Array<GameObjectiveDetails> {
@@ -344,21 +339,6 @@ pub mod minigame_mock {
                     break;
                 }
                 results.append(self.objectives_details(*objective_ids.at(index)));
-                index += 1;
-            }
-            results
-        }
-
-        fn objective_settings_id_batch(
-            self: @ContractState, objective_ids: Span<u32>,
-        ) -> Array<u32> {
-            let mut results = array![];
-            let mut index = 0;
-            loop {
-                if index >= objective_ids.len() {
-                    break;
-                }
-                results.append(self.objective_settings_id(*objective_ids.at(index)));
                 index += 1;
             }
             results
@@ -416,12 +396,6 @@ pub mod minigame_mock {
         }
 
         fn create_objective_score(ref self: ContractState, score: u64) {
-            self.create_objective_score_with_settings(score, 0_u32);
-        }
-
-        fn create_objective_score_with_settings(
-            ref self: ContractState, score: u64, settings_id: u32,
-        ) {
             let objective_count = self.objective_count.read();
             let new_objective_id = objective_count + 1;
 
@@ -435,7 +409,6 @@ pub mod minigame_mock {
                 .objectives
                 .create_objective(
                     new_objective_id,
-                    settings_id,
                     GameObjectiveDetails {
                         name: "Score Objective",
                         description: "Achieve target score",

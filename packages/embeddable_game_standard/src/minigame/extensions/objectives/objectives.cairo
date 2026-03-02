@@ -32,11 +32,9 @@ pub mod ObjectivesComponent {
             src5_component.register_interface(IMINIGAME_OBJECTIVES_ID);
         }
 
-        // TODO: remove association with settings id. Bokendo will do this
         fn create_objective(
             self: @ComponentState<TContractState>,
             objective_id: u32,
-            settings_id: u32,
             objective_details: GameObjectiveDetails,
             minigame_token_address: ContractAddress,
         ) {
@@ -45,7 +43,6 @@ pub mod ObjectivesComponent {
                 get_contract_address(),
                 get_caller_address(),
                 objective_id,
-                settings_id,
                 objective_details,
             );
         }

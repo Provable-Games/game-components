@@ -98,7 +98,7 @@ When `update_game()` is called, the token checks if the minter implements `IMeta
 - SRC5 interface discovery (`supports_interface`)
 - `#[substorage(v0)]` for storage isolation
 - Dispatcher pattern for cross-contract calls
-- Interface IDs as constants (e.g., `IMINIGAME_ID`)
+- Interface IDs as constants (e.g., `IMINIGAME_ID`) — computed via `src5_rs parse` (see `packages/interfaces/src/AGENTS.md` for the full procedure; the tool requires a stripped-down file without `<TState>` generics or `self` params)
 
 ## CI Configuration
 
