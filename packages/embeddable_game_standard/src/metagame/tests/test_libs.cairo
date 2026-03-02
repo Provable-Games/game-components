@@ -807,6 +807,8 @@ mod MockMinigameTokenForLibs {
             token_id != 0
         }
 
+        fn assert_is_playable(self: @ContractState, token_id: felt252) {}
+
         fn settings_id(self: @ContractState, token_id: felt252) -> u32 {
             0
         }
@@ -1639,6 +1641,7 @@ mod MockMinigameTokenWithRegistry {
         fn is_playable(self: @ContractState, token_id: felt252) -> bool {
             token_id != 0
         }
+        fn assert_is_playable(self: @ContractState, token_id: felt252) {}
         fn settings_id(self: @ContractState, token_id: felt252) -> u32 {
             0
         }

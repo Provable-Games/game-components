@@ -470,6 +470,8 @@ mod MockTokenContract {
             token_id != 0
         }
 
+        fn assert_is_playable(self: @ContractState, token_id: felt252) {}
+
         fn settings_id(self: @ContractState, token_id: felt252) -> u32 {
             0
         }

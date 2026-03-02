@@ -301,21 +301,46 @@ pub fn create_default_svg(
         .append(
             @"<symbol id='ico-flag' viewBox='0 0 16 16'><path fill='none' stroke='currentColor' stroke-width='1.5' stroke-linecap='round' d='M4 14V2'/><path fill='currentColor' d='M4 2l8 3-8 3z'/></symbol>",
         );
-
-    // Styles with card tilt animation and split left/right edge thickness
+    // Play icon (active status)
     svg
         .append(
-            @"<style>.l{fill:#c9c9d1;font-size:13px;letter-spacing:0.5px}.v{fill:#fff;font-size:16px}.vs{fill:#fff;font-size:13px}text{font-family:'Courier New',Courier,monospace;text-transform:uppercase}@keyframes tilt{0%,100%{transform:perspective(800px) rotateY(-20deg)}50%{transform:perspective(800px) rotateY(20deg)}}@keyframes sl{0%,100%{opacity:1}20%{opacity:0.15}25%,75%{opacity:0}80%{opacity:0.15}}@keyframes sr{0%,25%,75%,100%{opacity:0}30%{opacity:0.15}50%{opacity:1}70%{opacity:0.15}}.card{animation:tilt 6s ease-in-out infinite;transform-origin:235px 300px}.el{fill:#3a3a42;animation:sl 6s ease-in-out infinite}.er{fill:#3a3a42;animation:sr 6s ease-in-out infinite}</style>",
+            @"<symbol id='ico-play' viewBox='0 0 16 16'><path fill='currentColor' d='M4 2l10 6-10 6z'/></symbol>",
+        );
+    // Skull icon (game over status)
+    svg
+        .append(
+            @"<symbol id='ico-skull' viewBox='0 0 16 16'><circle fill='currentColor' cx='8' cy='6.5' r='5.5'/><rect fill='currentColor' x='5' y='11' width='6' height='4' rx='1'/><circle fill='#1e1e22' cx='6' cy='6' r='1.5'/><circle fill='#1e1e22' cx='10' cy='6' r='1.5'/><ellipse fill='#1e1e22' cx='8' cy='9' rx='1' ry='0.7'/></symbol>",
+        );
+    // Hourglass icon (expired status)
+    svg
+        .append(
+            @"<symbol id='ico-hourglass' viewBox='0 0 16 16'><path fill='currentColor' d='M4 1h8v4L9 8l3 3v4H4v-4l3-3-3-3z'/><rect fill='#1e1e22' x='5' y='2' width='6' height='2'/><rect fill='#1e1e22' x='5' y='12' width='6' height='2'/></symbol>",
+        );
+    // Pause icon (not started status)
+    svg
+        .append(
+            @"<symbol id='ico-pause' viewBox='0 0 16 16'><rect fill='currentColor' x='3' y='2' width='4' height='12' rx='1'/><rect fill='currentColor' x='9' y='2' width='4' height='12' rx='1'/></symbol>",
+        );
+    // Transfer icon (dual arrows for transferable)
+    svg
+        .append(
+            @"<symbol id='ico-transfer' viewBox='0 0 16 16'><path fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' d='M2 5h12M10 1l4 4-4 4'/><path fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' d='M14 11H2M6 7l-4 4 4 4'/></symbol>",
+        );
+
+    // Styles with card rotation and edge depth
+    svg
+        .append(
+            @"<style>.l{fill:#c9c9d1;font-size:13px;letter-spacing:0.5px}.v{fill:#fff;font-size:16px}.vs{fill:#fff;font-size:13px}text{font-family:'Courier New',Courier,monospace;text-transform:uppercase}@keyframes tilt{0%,100%{transform:rotateY(-20deg)}50%{transform:rotateY(20deg)}}@keyframes sl{0%,100%{opacity:1}20%{opacity:0.15}25%,75%{opacity:0}80%{opacity:0.15}}@keyframes sr{0%,25%,75%,100%{opacity:0}30%{opacity:0.15}50%{opacity:1}70%{opacity:0.15}}.card{animation:tilt 6s ease-in-out infinite;transform-origin:235px 300px}.el{fill:#3a3a42;animation:sl 6s ease-in-out infinite}.er{fill:#3a3a42;animation:sr 6s ease-in-out infinite}</style>",
         );
     svg.append(@"</defs>");
 
-    // Card group with tilt animation and 3D depth
+    // Card group with rotation and 3D depth
     svg.append(@"<g class='card'>");
 
-    // Left edge (visible when card tilts left, opacity animated via sl)
-    svg.append(@"<path class='el' d='M-12 20 Q-12 4 16 4 L16 596 Q-12 596 -12 580 Z'/>");
-    // Right edge (visible when card tilts right, opacity animated via sr)
-    svg.append(@"<path class='er' d='M482 20 Q482 4 454 4 L454 596 Q482 596 482 580 Z'/>");
+    // Left edge (visible when card rotates left)
+    svg.append(@"<path class='el' d='M-12 17 Q-12 1 16 1 L16 599 Q-12 599 -12 583 Z'/>");
+    // Right edge (visible when card rotates right)
+    svg.append(@"<path class='er' d='M482 17 Q482 1 454 1 L454 599 Q482 599 482 583 Z'/>");
 
     // Background layers
     svg.append(@"<rect width='470' height='600' rx='16' fill='url(#pin)'/>");
@@ -399,21 +424,47 @@ pub fn create_default_svg(
             @"<rect x='25' y='88' width='142' height='56' rx='8' fill='url(#panel)' stroke='#3a3a40' stroke-width='1'/>",
         );
     if token_metadata.game_over {
-        svg.append(@"<rect x='25' y='88' width='4' height='56' rx='2' fill='#ef4444'/>");
+        // Game Over: amber skull
+        svg.append(@"<rect x='25' y='88' width='4' height='56' rx='2' fill='#f59e0b'/>");
         svg
             .append(
-                @"<use href='#ico-x' x='39' y='102' width='14' height='14' style='color:#ef4444'/>",
+                @"<use href='#ico-skull' x='39' y='102' width='14' height='14' style='color:#f59e0b'/>",
             );
         svg
             .append(
                 @"<text x='58' y='111' style='fill:#888;font-size:9px;letter-spacing:1px'>STATUS</text>",
             );
-        svg.append(@"<text x='39' y='132' style='fill:#fff;font-size:13px'>FINISHED</text>");
+        svg.append(@"<text x='39' y='132' style='fill:#fff;font-size:13px'>GAME OVER</text>");
+    } else if token_metadata.lifecycle.end > 0 && current_ts >= token_metadata.lifecycle.end {
+        // Expired: red hourglass
+        svg.append(@"<rect x='25' y='88' width='4' height='56' rx='2' fill='#ef4444'/>");
+        svg
+            .append(
+                @"<use href='#ico-hourglass' x='39' y='102' width='14' height='14' style='color:#ef4444'/>",
+            );
+        svg
+            .append(
+                @"<text x='58' y='111' style='fill:#888;font-size:9px;letter-spacing:1px'>STATUS</text>",
+            );
+        svg.append(@"<text x='39' y='132' style='fill:#fff;font-size:13px'>EXPIRED</text>");
+    } else if token_metadata.lifecycle.start > 0 && current_ts < token_metadata.lifecycle.start {
+        // Not Started: blue pause
+        svg.append(@"<rect x='25' y='88' width='4' height='56' rx='2' fill='#3b82f6'/>");
+        svg
+            .append(
+                @"<use href='#ico-pause' x='39' y='102' width='14' height='14' style='color:#3b82f6'/>",
+            );
+        svg
+            .append(
+                @"<text x='58' y='111' style='fill:#888;font-size:9px;letter-spacing:1px'>STATUS</text>",
+            );
+        svg.append(@"<text x='39' y='132' style='fill:#fff;font-size:13px'>NOT STARTED</text>");
     } else {
+        // Active: green play
         svg.append(@"<rect x='25' y='88' width='4' height='56' rx='2' fill='#10b981'/>");
         svg
             .append(
-                @"<use href='#ico-check' x='39' y='102' width='14' height='14' style='color:#10b981'/>",
+                @"<use href='#ico-play' x='39' y='102' width='14' height='14' style='color:#10b981'/>",
             );
         svg
             .append(
@@ -428,28 +479,27 @@ pub fn create_default_svg(
             @"<rect x='25' y='152' width='142' height='56' rx='8' fill='url(#panel)' stroke='#3a3a40' stroke-width='1'/>",
         );
     if token_metadata.soulbound {
-        svg.append(@"<rect x='25' y='152' width='4' height='56' rx='2' fill='");
-        svg.append(@accent);
-        svg.append(@"'/>");
-        svg.append(@"<use href='#ico-lock' x='39' y='166' width='14' height='14' style='color:");
-        svg.append(@accent);
-        svg.append(@"'/>");
+        svg.append(@"<rect x='25' y='152' width='4' height='56' rx='2' fill='#a855f7'/>");
         svg
             .append(
-                @"<text x='58' y='175' style='fill:#888;font-size:9px;letter-spacing:1px'>SOULBOUND</text>",
+                @"<use href='#ico-lock' x='39' y='166' width='14' height='14' style='color:#a855f7'/>",
+            );
+        svg
+            .append(
+                @"<text x='58' y='175' style='fill:#888;font-size:9px;letter-spacing:1px'>OWNERSHIP</text>",
             );
         svg.append(@"<text x='39' y='196' style='fill:#fff;font-size:13px'>SOULBOUND</text>");
     } else {
-        svg.append(@"<rect x='25' y='152' width='4' height='56' rx='2' fill='#555'/>");
+        svg.append(@"<rect x='25' y='152' width='4' height='56' rx='2' fill='#10b981'/>");
         svg
             .append(
-                @"<use href='#ico-lock' x='39' y='166' width='14' height='14' style='color:#555'/>",
+                @"<use href='#ico-transfer' x='39' y='166' width='14' height='14' style='color:#10b981'/>",
             );
         svg
             .append(
-                @"<text x='58' y='175' style='fill:#888;font-size:9px;letter-spacing:1px'>SOULBOUND</text>",
+                @"<text x='58' y='175' style='fill:#888;font-size:9px;letter-spacing:1px'>OWNERSHIP</text>",
             );
-        svg.append(@"<text x='39' y='196' style='fill:#888;font-size:13px'>TRANSFERABLE</text>");
+        svg.append(@"<text x='39' y='196' style='fill:#fff;font-size:13px'>TRANSFERABLE</text>");
     }
 
     // Badge 3: PAYMASTER (top-right, y:88-144)
@@ -487,28 +537,41 @@ pub fn create_default_svg(
             @"<rect x='303' y='152' width='142' height='56' rx='8' fill='url(#panel)' stroke='#3a3a40' stroke-width='1'/>",
         );
     if token_metadata.completed_objective {
-        svg.append(@"<rect x='303' y='152' width='4' height='56' rx='2' fill='");
-        svg.append(@accent);
-        svg.append(@"'/>");
-        svg.append(@"<use href='#ico-check' x='317' y='166' width='14' height='14' style='color:");
-        svg.append(@accent);
-        svg.append(@"'/>");
+        // Objective complete: green check
+        svg.append(@"<rect x='303' y='152' width='4' height='56' rx='2' fill='#10b981'/>");
+        svg
+            .append(
+                @"<use href='#ico-check' x='317' y='166' width='14' height='14' style='color:#10b981'/>",
+            );
         svg
             .append(
                 @"<text x='336' y='175' style='fill:#888;font-size:9px;letter-spacing:1px'>OBJECTIVE</text>",
             );
         svg.append(@"<text x='317' y='196' style='fill:#fff;font-size:13px'>COMPLETE</text>");
-    } else {
-        svg.append(@"<rect x='303' y='152' width='4' height='56' rx='2' fill='#555'/>");
+    } else if token_metadata.objective_id > 0 {
+        // Objective assigned but not complete: amber target
+        svg.append(@"<rect x='303' y='152' width='4' height='56' rx='2' fill='#f59e0b'/>");
         svg
             .append(
-                @"<use href='#ico-x' x='317' y='166' width='14' height='14' style='color:#555'/>",
+                @"<use href='#ico-target' x='317' y='166' width='14' height='14' style='color:#f59e0b'/>",
             );
         svg
             .append(
                 @"<text x='336' y='175' style='fill:#888;font-size:9px;letter-spacing:1px'>OBJECTIVE</text>",
             );
-        svg.append(@"<text x='317' y='196' style='fill:#888;font-size:13px'>NOT COMPLETE</text>");
+        svg.append(@"<text x='317' y='196' style='fill:#fff;font-size:13px'>PENDING</text>");
+    } else {
+        // No objective: greyed out
+        svg.append(@"<rect x='303' y='152' width='4' height='56' rx='2' fill='#555'/>");
+        svg
+            .append(
+                @"<use href='#ico-target' x='317' y='166' width='14' height='14' style='color:#555'/>",
+            );
+        svg
+            .append(
+                @"<text x='336' y='175' style='fill:#888;font-size:9px;letter-spacing:1px'>OBJECTIVE</text>",
+            );
+        svg.append(@"<text x='317' y='196' style='fill:#888;font-size:13px'>NONE</text>");
     }
 
     // ── Game Description (y:220-248, up to 3 word-wrapped lines) ──

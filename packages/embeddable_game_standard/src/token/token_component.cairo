@@ -140,6 +140,10 @@ pub mod CoreTokenComponent {
             token_state::is_token_playable(@metadata, current_time)
         }
 
+        fn assert_is_playable(self: @ComponentState<TContractState>, token_id: felt252) {
+            self.assert_playable(token_id);
+        }
+
         fn settings_id(self: @ComponentState<TContractState>, token_id: felt252) -> u32 {
             crate::token::structs::unpack_settings_id(token_id)
         }
@@ -1029,10 +1033,24 @@ pub mod CoreTokenComponent {
         fn assert_playable(self: @ComponentState<TContractState>, token_id: felt252) {
             let metadata = CoreToken::token_metadata(self, token_id);
             let current_time = get_block_timestamp();
-            let is_active = metadata.lifecycle.is_playable(current_time);
+
+            assert!(!metadata.game_over, "MinigameToken: Token is not playable - game is over");
             assert!(
-                is_active && !metadata.completed_objective && !metadata.game_over,
-                "MinigameToken: Token is not playable",
+                !metadata.completed_objective,
+                "MinigameToken: Token is not playable - objective already completed",
+            );
+            let lifecycle = metadata.lifecycle;
+            assert!(
+                lifecycle.can_start(current_time),
+                "MinigameToken: Token is not playable - game has not started (now={}, start={})",
+                current_time,
+                lifecycle.start,
+            );
+            assert!(
+                !lifecycle.has_expired(current_time),
+                "MinigameToken: Token is not playable - game has expired (now={}, end={})",
+                current_time,
+                lifecycle.end,
             );
         }
 

@@ -65,8 +65,7 @@ pub fn assert_game_token_playable(minigame_token_address: ContractAddress, token
     let minigame_token_dispatcher = IMinigameTokenDispatcher {
         contract_address: minigame_token_address,
     };
-    let is_playable = minigame_token_dispatcher.is_playable(token_id);
-    assert!(is_playable, "Game is not playable");
+    minigame_token_dispatcher.assert_is_playable(token_id);
 }
 
 /// Registers a game with the denshokan contract

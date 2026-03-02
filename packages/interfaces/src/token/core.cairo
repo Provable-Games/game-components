@@ -14,6 +14,7 @@ pub const IMINIGAME_TOKEN_ID: felt252 =
 pub trait IMinigameToken<TState> {
     fn token_metadata(self: @TState, token_id: felt252) -> TokenMetadata;
     fn is_playable(self: @TState, token_id: felt252) -> bool;
+    fn assert_is_playable(self: @TState, token_id: felt252);
     fn settings_id(self: @TState, token_id: felt252) -> u32;
     fn player_name(self: @TState, token_id: felt252) -> felt252;
     fn objective_id(self: @TState, token_id: felt252) -> u32;
