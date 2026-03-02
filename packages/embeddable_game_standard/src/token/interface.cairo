@@ -29,6 +29,7 @@ pub trait IMinigameTokenMixin<TState> {
     fn renderer_address(self: @TState, token_id: felt252) -> ContractAddress;
     fn token_game_address(self: @TState, token_id: felt252) -> ContractAddress;
     fn token_mutable_state(self: @TState, token_id: felt252) -> TokenMutableState;
+    fn client_url(self: @TState, token_id: felt252) -> ByteArray;
     fn agent_skills(self: @TState, token_id: felt252) -> ByteArray;
 
     // Batch view functions

@@ -391,8 +391,6 @@ pub mod FullTokenContract {
                                 settings_details.clone(),
                                 objective_details.clone(),
                                 context_details.clone(),
-                                token_name.clone(),
-                                self.erc721.ERC721_symbol.read(),
                             ),
                         }
                     },
@@ -404,8 +402,6 @@ pub mod FullTokenContract {
                         settings_details.clone(),
                         objective_details.clone(),
                         context_details.clone(),
-                        token_name.clone(),
-                        self.erc721.ERC721_symbol.read(),
                     ),
                 };
 
