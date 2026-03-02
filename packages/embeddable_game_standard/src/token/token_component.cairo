@@ -162,6 +162,20 @@ pub mod CoreTokenComponent {
             self.token_mutable_state.entry(token_id).read()
         }
 
+        fn client_url(self: @ComponentState<TContractState>, token_id: felt252) -> ByteArray {
+            let token_url = self.token_client_url.entry(token_id).read();
+            if token_url.len() > 0 {
+                return token_url;
+            }
+            let game_registry_address = self.game_registry_address.read();
+            if game_registry_address.is_zero() {
+                return "";
+            }
+            let game_id: u64 = unpack_game_id(token_id).into();
+            let registry = IMinigameRegistryDispatcher { contract_address: game_registry_address };
+            registry.game_metadata(game_id).client_url
+        }
+
         fn agent_skills(self: @ComponentState<TContractState>, token_id: felt252) -> ByteArray {
             let game_id: u64 = unpack_game_id(token_id).into();
             let game_registry_address = self.game_registry_address.read();

@@ -390,8 +390,7 @@ pub mod FullTokenContract {
                                 settings_details.clone(),
                                 objective_details.clone(),
                                 context_details.clone(),
-                                token_name.clone(),
-                                self.erc721.ERC721_symbol.read(),
+                                game_metadata.client_url.clone(),
                             ),
                         }
                     },
@@ -403,8 +402,7 @@ pub mod FullTokenContract {
                         settings_details.clone(),
                         objective_details.clone(),
                         context_details.clone(),
-                        token_name.clone(),
-                        self.erc721.ERC721_symbol.read(),
+                        game_metadata.client_url.clone(),
                     ),
                 };
 

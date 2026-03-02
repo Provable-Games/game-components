@@ -32,6 +32,7 @@ pub mod ObjectivesComponent {
             src5_component.register_interface(IMINIGAME_OBJECTIVES_ID);
         }
 
+        // TODO: remove association with settings id. Bokendo will do this
         fn create_objective(
             self: @ComponentState<TContractState>,
             objective_id: u32,

@@ -112,6 +112,7 @@ fn calculate_timeline_progress(start: u64, end: u64, current: u64) -> u64 {
     (current - start) * 100 / (end - start)
 }
 
+// TODO: look at adapting to look more like a game cartridge (metal bits at bottom)
 pub fn create_default_svg(
     game_metadata: GameMetadata,
     token_metadata: TokenMetadata,
@@ -120,8 +121,7 @@ pub fn create_default_svg(
     settings_details: GameSettingDetails,
     objective_details: GameObjectiveDetails,
     context_details: GameContextDetails,
-    token_name: ByteArray,
-    token_symbol: ByteArray,
+    client_url: ByteArray,
 ) -> ByteArray {
     let accent = if game_metadata.color.len() == 0 {
         "#ffffff"
@@ -327,6 +327,12 @@ pub fn create_default_svg(
             @"<symbol id='ico-transfer' viewBox='0 0 16 16'><path fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' d='M2 5h12M10 1l4 4-4 4'/><path fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' d='M14 11H2M6 7l-4 4 4 4'/></symbol>",
         );
 
+    // Link icon (client URL)
+    svg
+        .append(
+            @"<symbol id='ico-link' viewBox='0 0 16 16'><path fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' d='M6.5 9.5a3.5 3.5 0 005 0l2-2a3.5 3.5 0 00-5-5l-1 1'/><path fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' d='M9.5 6.5a3.5 3.5 0 00-5 0l-2 2a3.5 3.5 0 005 5l1-1'/></symbol>",
+        );
+
     // Styles with card rotation and edge depth
     svg
         .append(
@@ -383,18 +389,12 @@ pub fn create_default_svg(
     svg += _genre;
     svg.append(@"</text>");
 
-    // Token name + symbol (top right)
+    // Player name (top right)
     svg
         .append(
-            @"<text x='440' y='38' text-anchor='end' style='fill:#fff;font-size:18px;letter-spacing:1px'>",
+            @"<text x='440' y='41' text-anchor='end' style='fill:#fff;font-size:18px;letter-spacing:1px'>",
         );
-    svg += token_name;
-    svg.append(@"</text>");
-    svg
-        .append(
-            @"<text x='440' y='56' text-anchor='end' style='fill:#888;font-size:11px;letter-spacing:1px'>",
-        );
-    svg += token_symbol;
+    svg += _player_name.clone();
     svg.append(@"</text>");
 
     // Accent separator
@@ -412,10 +412,7 @@ pub fn create_default_svg(
             @"<foreignObject x='180' y='93' width='110' height='110'><xhtml:img xmlns:xhtml='http://www.w3.org/1999/xhtml' src='",
         );
     svg += game_metadata.image;
-    svg
-        .append(
-            @"' style='width:100%;height:100%;image-rendering:-webkit-optimize-contrast;-ms-interpolation-mode:nearest-neighbor;image-rendering:-moz-crisp-edges;image-rendering:pixelated;'/></foreignObject>",
-        );
+    svg.append(@"' style='width:100%;height:100%'/></foreignObject>");
 
     // ── Status Badge Panels flanking game image (2 left, 2 right) ──
     // Badge 1: STATUS (top-left, y:88-144)
@@ -637,8 +634,8 @@ pub fn create_default_svg(
         };
     }
 
-    // ── Two-Col Panels Row 1 (y:276-326): PLAYER | SCORE ──
-    // Player panel with accent left-border
+    // ── Two-Col Panels Row 1 (y:276-326): SCORE | CLIENT URL ──
+    // Score panel with accent left-border
     svg
         .append(
             @"<rect x='25' y='276' width='205' height='50' rx='8' fill='url(#panel)' stroke='#3a3a40' stroke-width='1'/>",
@@ -648,14 +645,14 @@ pub fn create_default_svg(
     svg.append(@"'/>");
     svg
         .append(
-            @"<use href='#ico-user' x='37' y='285' width='14' height='14' style='color:#c9c9d1'/>",
+            @"<use href='#ico-star' x='37' y='285' width='14' height='14' style='color:#c9c9d1'/>",
         );
-    svg.append(@"<text x='56' y='297' class='l'>PLAYER</text>");
-    svg.append(@"<text x='37' y='316' class='vs'>");
-    svg += _player_name;
+    svg.append(@"<text x='56' y='297' class='l'>SCORE</text>");
+    svg.append(@"<text x='37' y='316' class='v'>");
+    svg += _score;
     svg.append(@"</text>");
 
-    // Score panel with accent left-border
+    // Client URL panel with link icon
     svg
         .append(
             @"<rect x='240' y='276' width='205' height='50' rx='8' fill='url(#panel)' stroke='#3a3a40' stroke-width='1'/>",
@@ -665,11 +662,15 @@ pub fn create_default_svg(
     svg.append(@"'/>");
     svg
         .append(
-            @"<use href='#ico-star' x='252' y='285' width='14' height='14' style='color:#c9c9d1'/>",
+            @"<use href='#ico-link' x='252' y='285' width='14' height='14' style='color:#c9c9d1'/>",
         );
-    svg.append(@"<text x='271' y='297' class='l'>SCORE</text>");
-    svg.append(@"<text x='252' y='316' class='v'>");
-    svg += _score;
+    svg.append(@"<text x='271' y='297' class='l'>CLIENT URL</text>");
+    svg.append(@"<text x='252' y='316' class='vs' style='font-size:9px'>");
+    if client_url.len() > 0 {
+        svg += client_url;
+    } else {
+        svg.append(@"---");
+    }
     svg.append(@"</text>");
 
     // ── Two-Col Panels Row 2 (y:334-384): SETTINGS | OBJECTIVE ──
@@ -1058,8 +1059,7 @@ mod tests {
             default_settings_details(),
             default_objective_details(),
             default_context_details(),
-            "Test Token",
-            "TT",
+            "https://zkube.vercel.app",
         );
 
         stop_cheat_block_timestamp_global();

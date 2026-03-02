@@ -512,6 +512,10 @@ mod MockTokenContract {
             TokenMutableState { game_over: false, completed_objective: false }
         }
 
+        fn client_url(self: @ContractState, token_id: felt252) -> ByteArray {
+            ""
+        }
+
         fn agent_skills(self: @ContractState, token_id: felt252) -> ByteArray {
             ""
         }

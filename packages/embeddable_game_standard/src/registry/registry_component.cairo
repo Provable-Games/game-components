@@ -181,6 +181,7 @@ pub mod MinigameRegistryComponent {
             RegistryStoreTrait::is_game_registered(self, contract_address)
         }
 
+        // TODO: swap skills ByteArray for contract address
         fn register_game(
             ref self: ComponentState<TContractState>,
             creator_address: ContractAddress,
