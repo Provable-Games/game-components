@@ -121,6 +121,7 @@ pub fn create_default_svg(
     settings_details: GameSettingDetails,
     objective_details: GameObjectiveDetails,
     context_details: GameContextDetails,
+    client_url: ByteArray,
 ) -> ByteArray {
     let accent = if game_metadata.color.len() == 0 {
         "#ffffff"
@@ -665,8 +666,8 @@ pub fn create_default_svg(
         );
     svg.append(@"<text x='271' y='297' class='l'>CLIENT URL</text>");
     svg.append(@"<text x='252' y='316' class='vs' style='font-size:9px'>");
-    if game_metadata.client_url.len() > 0 {
-        svg += game_metadata.client_url;
+    if client_url.len() > 0 {
+        svg += client_url;
     } else {
         svg.append(@"---");
     }
@@ -1058,6 +1059,7 @@ mod tests {
             default_settings_details(),
             default_objective_details(),
             default_context_details(),
+            "https://zkube.vercel.app",
         );
 
         stop_cheat_block_timestamp_global();

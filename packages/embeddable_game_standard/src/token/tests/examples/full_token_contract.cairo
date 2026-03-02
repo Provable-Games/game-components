@@ -390,6 +390,7 @@ pub mod FullTokenContract {
                                 settings_details.clone(),
                                 objective_details.clone(),
                                 context_details.clone(),
+                                game_metadata.client_url.clone(),
                             ),
                         }
                     },
@@ -401,6 +402,7 @@ pub mod FullTokenContract {
                         settings_details.clone(),
                         objective_details.clone(),
                         context_details.clone(),
+                        game_metadata.client_url.clone(),
                     ),
                 };
 

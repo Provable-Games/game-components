@@ -182,6 +182,7 @@ fn test_default_svg_basic() {
         default_settings_details(),
         default_objective_details(),
         default_context_details(),
+        "https://test.game.com",
     );
     stop_cheat_block_timestamp_global();
 
@@ -202,6 +203,7 @@ fn test_default_svg_zero_score() {
         default_settings_details(),
         default_objective_details(),
         default_context_details(),
+        "https://test.game.com",
     );
     stop_cheat_block_timestamp_global();
 
@@ -220,6 +222,7 @@ fn test_default_svg_max_score() {
         default_settings_details(),
         default_objective_details(),
         default_context_details(),
+        "https://test.game.com",
     );
     stop_cheat_block_timestamp_global();
 
@@ -240,6 +243,7 @@ fn test_default_svg_game_over() {
         default_settings_details(),
         default_objective_details(),
         default_context_details(),
+        "https://test.game.com",
     );
     stop_cheat_block_timestamp_global();
 
@@ -260,6 +264,7 @@ fn test_default_svg_soulbound() {
         default_settings_details(),
         default_objective_details(),
         default_context_details(),
+        "https://test.game.com",
     );
     stop_cheat_block_timestamp_global();
 
@@ -279,6 +284,7 @@ fn test_default_svg_empty_player_name() {
         default_settings_details(),
         default_objective_details(),
         empty_context_details(),
+        "https://test.game.com",
     );
     stop_cheat_block_timestamp_global();
 
@@ -298,6 +304,7 @@ fn test_default_svg_long_player_name() {
         default_settings_details(),
         default_objective_details(),
         default_context_details(),
+        "https://test.game.com",
     );
     stop_cheat_block_timestamp_global();
 
@@ -319,6 +326,7 @@ fn test_default_svg_empty_game_name() {
         default_settings_details(),
         default_objective_details(),
         empty_context_details(),
+        "https://test.game.com",
     );
     stop_cheat_block_timestamp_global();
 
@@ -339,6 +347,7 @@ fn test_default_svg_special_color() {
         default_settings_details(),
         default_objective_details(),
         default_context_details(),
+        "https://test.game.com",
     );
     stop_cheat_block_timestamp_global();
 
@@ -360,6 +369,7 @@ fn test_default_svg_fuzz(score: u64, game_id: u64) {
         default_settings_details(),
         default_objective_details(),
         default_context_details(),
+        "https://test.game.com",
     );
     stop_cheat_block_timestamp_global();
 
@@ -384,6 +394,7 @@ fn test_default_svg_timeline_before_start() {
         default_settings_details(),
         default_objective_details(),
         empty_context_details(),
+        "https://test.game.com",
     );
     stop_cheat_block_timestamp_global();
 
@@ -402,6 +413,7 @@ fn test_default_svg_timeline_after_end() {
         default_settings_details(),
         default_objective_details(),
         empty_context_details(),
+        "https://test.game.com",
     );
     stop_cheat_block_timestamp_global();
 
@@ -421,6 +433,7 @@ fn test_default_svg_timeline_no_end() {
         default_settings_details(),
         default_objective_details(),
         empty_context_details(),
+        "https://test.game.com",
     );
     stop_cheat_block_timestamp_global();
 
@@ -1327,6 +1340,7 @@ fn test_default_svg_data_uri_image() {
         default_settings_details(),
         default_objective_details(),
         empty_context_details(),
+        "https://test.game.com",
     );
     stop_cheat_block_timestamp_global();
 
