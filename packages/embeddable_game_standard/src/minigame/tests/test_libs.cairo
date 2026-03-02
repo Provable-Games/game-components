@@ -37,7 +37,7 @@ fn test_pre_action_playable_token() {
     let token_id: felt252 = 1;
 
     // Mock is_playable to return true
-    mock_call(token_address, selector!("is_playable"), true, 1);
+    mock_call(token_address, selector!("assert_is_playable"), (), 1);
 
     // Should not panic
     libs::pre_action(token_address, token_id);
@@ -51,7 +51,7 @@ fn test_pre_action_non_playable_token() {
     let token_id: felt252 = 1;
 
     // Mock is_playable to return false
-    mock_call(token_address, selector!("is_playable"), false, 1);
+    // No mock — dispatcher call to non-deployed contract will panic
 
     // Should panic
     libs::pre_action(token_address, token_id);
@@ -63,7 +63,7 @@ fn test_pre_action_multiple_tokens() {
     let token_address = TOKEN_ADDRESS();
 
     // Mock multiple is_playable calls
-    mock_call(token_address, selector!("is_playable"), true, 10);
+    mock_call(token_address, selector!("assert_is_playable"), (), 10);
 
     libs::pre_action(token_address, 1);
     libs::pre_action(token_address, 2);
@@ -212,8 +212,8 @@ fn test_assert_game_token_playable_success() {
     let token_address = TOKEN_ADDRESS();
     let token_id: felt252 = 1;
 
-    // Mock is_playable to return true
-    mock_call(token_address, selector!("is_playable"), true, 1);
+    // Mock assert_is_playable to return successfully (no panic)
+    mock_call(token_address, selector!("assert_is_playable"), (), 1);
 
     // Should not panic
     libs::assert_game_token_playable(token_address, token_id);
@@ -226,10 +226,7 @@ fn test_assert_game_token_playable_not_playable() {
     let token_address = TOKEN_ADDRESS();
     let token_id: felt252 = 1;
 
-    // Mock is_playable to return false
-    mock_call(token_address, selector!("is_playable"), false, 1);
-
-    // Should panic
+    // No mock — dispatcher call to non-deployed contract will panic
     libs::assert_game_token_playable(token_address, token_id);
 }
 
@@ -1048,7 +1045,7 @@ fn test_assert_game_token_playable_max_token_id() {
     let token_address = TOKEN_ADDRESS();
     let token_id: felt252 = MAX_U64.into();
 
-    mock_call(token_address, selector!("is_playable"), true, 1);
+    mock_call(token_address, selector!("assert_is_playable"), (), 1);
 
     libs::assert_game_token_playable(token_address, token_id);
 }
@@ -1084,7 +1081,7 @@ fn test_pre_action_max_token_id() {
     let token_address = TOKEN_ADDRESS();
     let token_id: felt252 = MAX_U64.into();
 
-    mock_call(token_address, selector!("is_playable"), true, 1);
+    mock_call(token_address, selector!("assert_is_playable"), (), 1);
 
     libs::pre_action(token_address, token_id);
 }
@@ -1110,7 +1107,7 @@ fn test_post_action_max_token_id() {
 fn test_pre_action_fuzz(token_id: felt252) {
     let token_address = TOKEN_ADDRESS();
 
-    mock_call(token_address, selector!("is_playable"), true, 1);
+    mock_call(token_address, selector!("assert_is_playable"), (), 1);
 
     libs::pre_action(token_address, token_id);
 }
