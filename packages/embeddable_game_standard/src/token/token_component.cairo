@@ -140,6 +140,10 @@ pub mod CoreTokenComponent {
             token_state::is_token_playable(@metadata, current_time)
         }
 
+        fn assert_is_playable(self: @ComponentState<TContractState>, token_id: felt252) {
+            self.assert_playable(token_id);
+        }
+
         fn settings_id(self: @ComponentState<TContractState>, token_id: felt252) -> u32 {
             crate::token::structs::unpack_settings_id(token_id)
         }
