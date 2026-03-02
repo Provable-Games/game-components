@@ -7,9 +7,6 @@ pub mod ObjectivesComponent {
     use game_components_embeddable_game_standard::minigame::extensions::objectives::structs::{
         GameObjective, GameObjectiveDetails,
     };
-    use game_components_embeddable_game_standard::minigame::extensions::settings::interface::{
-        IMINIGAME_SETTINGS_ID, IMinigameSettingsDispatcher, IMinigameSettingsDispatcherTrait,
-    };
     use game_components_embeddable_game_standard::minigame::interface::{
         IMinigameDispatcher, IMinigameDispatcherTrait,
     };
@@ -43,8 +40,6 @@ pub mod ObjectivesComponent {
         pub game_address: ContractAddress,
         #[key]
         pub objective_id: u32,
-        #[key]
-        pub settings_id: u32,
         pub creator_address: ContractAddress,
         pub name: ByteArray,
         pub description: ByteArray,
@@ -60,7 +55,6 @@ pub mod ObjectivesComponent {
             game_address: ContractAddress,
             creator_address: ContractAddress,
             objective_id: u32,
-            settings_id: u32,
             objective_details: GameObjectiveDetails,
         ) {
             // Check caller is objectives address
@@ -95,38 +89,12 @@ pub mod ObjectivesComponent {
                 game_address_display,
             );
 
-            // Validate settings_id if non-zero
-            if settings_id != 0 {
-                let settings_address = minigame_dispatcher.settings_address();
-                assert!(
-                    !settings_address.is_zero(),
-                    "MinigameTokenObjectives: Game has no settings contract but settings_id {} was provided",
-                    settings_id,
-                );
-                let settings_src5_dispatcher = ISRC5Dispatcher {
-                    contract_address: settings_address,
-                };
-                assert!(
-                    settings_src5_dispatcher.supports_interface(IMINIGAME_SETTINGS_ID),
-                    "MinigameTokenObjectives: Settings contract does not support IMinigameSettings interface",
-                );
-                let settings_dispatcher = IMinigameSettingsDispatcher {
-                    contract_address: settings_address,
-                };
-                assert!(
-                    settings_dispatcher.settings_exist(settings_id),
-                    "MinigameTokenObjectives: Settings ID {} does not exist",
-                    settings_id,
-                );
-            }
-
             // Emit native event with struct fields directly
             self
                 .emit(
                     ObjectiveCreated {
                         game_address,
                         objective_id,
-                        settings_id,
                         creator_address,
                         name: objective_details.name,
                         description: objective_details.description,

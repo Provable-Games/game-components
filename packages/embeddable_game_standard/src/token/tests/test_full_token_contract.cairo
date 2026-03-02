@@ -71,7 +71,6 @@ fn test_mint_minimal_parameters() { // UT-MINT-001
 }
 
 #[test]
-// #[ignore] // TODO: Fix ENTRYPOINT_NOT_FOUND error with objectives/settings
 fn test_mint_with_all_parameters() { // UT-MINT-002
     let test_contracts = setup_multi_game();
 
