@@ -112,7 +112,6 @@ fn calculate_timeline_progress(start: u64, end: u64, current: u64) -> u64 {
     (current - start) * 100 / (end - start)
 }
 
-// TODO: look at adapting to look more like a game cartridge (metal bits at bottom)
 pub fn create_default_svg(
     game_metadata: GameMetadata,
     token_metadata: TokenMetadata,
@@ -251,6 +250,16 @@ pub fn create_default_svg(
     svg.append(@"<stop offset='0%' stop-color='#000' stop-opacity='0'/>");
     svg.append(@"<stop offset='100%' stop-color='#000' stop-opacity='0.3'/>");
     svg.append(@"</radialGradient>");
+
+    // Connector pin gradient and pattern
+    svg
+        .append(
+            @"<linearGradient id='pinGold' x1='0' y1='0' x2='0' y2='1'><stop offset='0%' stop-color='#d4a843'/><stop offset='50%' stop-color='#f0d060'/><stop offset='100%' stop-color='#b8922e'/></linearGradient>",
+        );
+    svg
+        .append(
+            @"<pattern id='cpins' width='10' height='8' patternUnits='userSpaceOnUse'><rect x='2' y='0' width='6' height='8' rx='1' fill='url(#pinGold)'/></pattern>",
+        );
 
     // Clip path for inward-only border stroke
     svg.append(@"<clipPath id='card-clip'><rect width='470' height='600' rx='16'/></clipPath>");
@@ -815,6 +824,10 @@ pub fn create_default_svg(
         .append(
             @"<text x='235' y='578' text-anchor='middle' class='l' style='font-size:13px;letter-spacing:2px'>EMBEDDABLE GAME STANDARD</text>",
         );
+
+    // Connector pins (cartridge bottom, inside card)
+    svg.append(@"<rect x='30' y='588' width='410' height='12' rx='2' fill='#111114'/>");
+    svg.append(@"<rect x='38' y='590' width='394' height='8' fill='url(#cpins)'/>");
 
     svg.append(@"</g>"); // close card group
     svg.append(@"</svg>");
