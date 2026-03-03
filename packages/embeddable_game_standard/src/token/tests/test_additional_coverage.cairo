@@ -473,7 +473,7 @@ fn test_core_token_full_params_mint() {
             Option::None, // context
             Option::Some("https://game.com"), // client_url
             Option::Some(RENDERER_ADDRESS()),
-            Option::None, // renderer_address
+            Option::None, // skills_address
             ALICE(),
             true, // soulbound
             false,

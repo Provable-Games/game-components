@@ -107,8 +107,8 @@ fn test_optimized_contract_context_operations() {
             Option::None, // end
             Option::None, // objective_id
             Option::None, // client_url
-            Option::None,
             Option::None, // renderer_address
+            Option::None, // skills_address
             ALICE(),
             false,
             false,

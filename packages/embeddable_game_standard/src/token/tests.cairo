@@ -27,5 +27,6 @@ mod test_objectives;
 mod test_packed_token_id;
 mod test_renderer;
 mod test_settings;
+mod test_skills;
 mod test_structs_coverage;
 mod test_token_state;

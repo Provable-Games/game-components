@@ -47,8 +47,8 @@ fn test_mint_minimal_parameters() { // UT-MINT-001
             Option::None, // objective_id
             Option::None, // context
             Option::None, // client_url
-            Option::None,
             Option::None, // renderer_address
+            Option::None, // skills_address
             ALICE(),
             false,
             false,

@@ -124,6 +124,17 @@ pub trait IMinigameTokenMixin<TState> {
     fn get_renderer_batch(
         self: @TState, token_ids: Span<felt252>,
     ) -> Array<starknet::ContractAddress>;
+
+    // Skills functionality
+    fn get_skills_address(self: @TState, token_id: felt252) -> starknet::ContractAddress;
+    fn has_custom_skills(self: @TState, token_id: felt252) -> bool;
+    fn reset_token_skills(ref self: TState, token_id: felt252);
+
+    // Skills batch operations
+    fn reset_token_skills_batch(ref self: TState, token_ids: Span<felt252>);
+    fn get_skills_address_batch(
+        self: @TState, token_ids: Span<felt252>,
+    ) -> Array<starknet::ContractAddress>;
 }
 
 // ==============================================================================

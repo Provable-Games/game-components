@@ -186,8 +186,8 @@ fn test_mint_minimal() {
             Option::None, // objective_ids
             Option::None, // context
             Option::None, // client_url
-            Option::None,
             Option::None, // renderer_address
+            Option::None, // skills_address
             to_address,
             false, // soulbound
             false,

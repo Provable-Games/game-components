@@ -92,8 +92,8 @@ fn test_token_metadata_with_all_fields_set() {
             Option::None, // objective_id
             Option::None, // context
             Option::None, // client_url
-            Option::None,
             Option::None, // renderer_address
+            Option::None, // skills_address
             ALICE(),
             true, // soulbound
             false,
