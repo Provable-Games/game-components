@@ -119,8 +119,6 @@ fn test_mint_with_all_parameters() { // UT-MINT-002
 
     let metadata = test_contracts.test_token.token_metadata(token_id);
     assert!(metadata.soulbound == true, "Should be soulbound");
-    // TODO: settings_id validation is not working - investigate impl resolution
-    // assert!(metadata.settings_id == 1, "Settings ID should be 1");
     // Lifecycle timestamps are stored as delays relative to minted_at (block_timestamp).
     // With default block_timestamp=0: start_delay=CURRENT_TIME, end_delay=FUTURE_TIME
     // lifecycle.start = minted_at + start_delay = 0 + CURRENT_TIME = CURRENT_TIME
@@ -165,7 +163,6 @@ fn test_mint_soulbound_token() { // UT-MINT-003
         );
 
     assert!(test_contracts.test_token.is_soulbound(token_id) == true, "Token should be soulbound");
-    // TODO: Add transfer restriction test when soulbound hooks are properly implemented
 }
 
 #[test]
@@ -836,8 +833,6 @@ fn test_settings_id_view() { // UT-VIEW-003
         );
 
     assert!(test_contracts.test_token.settings_id(token_id1) == 0, "Settings ID should be 0");
-    // Test with settings (would need settings contract setup)
-// TODO: Add test with actual settings once settings contract is available
 }
 
 #[test]
