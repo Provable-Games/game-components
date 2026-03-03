@@ -43,7 +43,7 @@ let metadata_uri = create_custom_metadata(
 ```
 
 **SVG Features:**
-- 470x600 pixel animated game card with cyberpunk/dark-tech aesthetic
+- 470x600 pixel animated game card with cyberpunk/dark-tech aesthetic and gold cartridge connector pins at bottom
 - 590x680 viewport with extra padding for dramatic 3D tilt effect
 - Pinstripe pattern background with animated gradient border and shimmer
 - Header with EGS logo placeholder, game name, developer, genre, game ID badge
