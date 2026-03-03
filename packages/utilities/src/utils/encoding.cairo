@@ -1,4 +1,4 @@
-use core::num::traits::Bounded;
+use core::num::traits::{Bounded, Zero};
 
 #[inline(always)]
 fn get_base64_char_set() -> Span<u8> {
@@ -181,4 +181,12 @@ pub impl U256BytesUsedTraitImpl of BytesUsedTrait<u256> {
             return BytesUsedTrait::<u128>::bytes_used(self.high.try_into().unwrap()) + 16;
         }
     }
+}
+
+pub fn felt252_to_byte_array(value: felt252) -> ByteArray {
+    let mut result: ByteArray = Default::default();
+    if value.is_non_zero() {
+        result.append_word(value, U256BytesUsedTraitImpl::bytes_used(value.into()).into());
+    }
+    result
 }

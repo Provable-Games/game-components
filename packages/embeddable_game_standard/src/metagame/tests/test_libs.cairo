@@ -48,8 +48,8 @@ fn sample_context() -> GameContextDetails {
         description: "A test tournament for verification",
         id: Option::Some(1),
         context: array![
-            GameContext { name: "Prize", value: "1000 USD" },
-            GameContext { name: "Duration", value: "7 days" },
+            GameContext { name: 'Prize', value: '1000 USD' },
+            GameContext { name: 'Duration', value: '7 days' },
         ]
             .span(),
     }

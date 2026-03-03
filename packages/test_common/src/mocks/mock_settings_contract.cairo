@@ -38,8 +38,8 @@ pub mod MockSettingsContract {
         // Store settings item count for each settings_id
         settings_item_count: Map<u32, u32>,
         // Store settings as nested maps - (settings_id, index) -> key/value
-        settings_keys: Map<(u32, u32), ByteArray>,
-        settings_values: Map<(u32, u32), ByteArray>,
+        settings_keys: Map<(u32, u32), felt252>,
+        settings_values: Map<(u32, u32), felt252>,
         // Total number of settings created
         total_settings_count: u32,
     }
@@ -71,19 +71,19 @@ pub mod MockSettingsContract {
         self.settings_name.write(1, "Easy Mode");
         self.settings_description.write(1, "Beginner friendly settings");
         self.settings_item_count.write(1, 2);
-        self.settings_keys.write((1, 0), "difficulty");
-        self.settings_values.write((1, 0), "easy");
-        self.settings_keys.write((1, 1), "lives");
-        self.settings_values.write((1, 1), "5");
+        self.settings_keys.write((1, 0), 'difficulty');
+        self.settings_values.write((1, 0), 'easy');
+        self.settings_keys.write((1, 1), 'lives');
+        self.settings_values.write((1, 1), '5');
 
         self.settings_exist.write(2, true);
         self.settings_name.write(2, "Hard Mode");
         self.settings_description.write(2, "Expert settings");
         self.settings_item_count.write(2, 2);
-        self.settings_keys.write((2, 0), "difficulty");
-        self.settings_values.write((2, 0), "hard");
-        self.settings_keys.write((2, 1), "lives");
-        self.settings_values.write((2, 1), "1");
+        self.settings_keys.write((2, 0), 'difficulty');
+        self.settings_values.write((2, 0), 'hard');
+        self.settings_keys.write((2, 1), 'lives');
+        self.settings_values.write((2, 1), '1');
 
         // Set total settings count
         self.total_settings_count.write(2);
@@ -194,8 +194,8 @@ pub mod MockSettingsContract {
                 }
 
                 let setting = settings.settings.at(i);
-                self.settings_keys.write((settings_id, i), setting.name.clone());
-                self.settings_values.write((settings_id, i), setting.value.clone());
+                self.settings_keys.write((settings_id, i), *setting.name);
+                self.settings_values.write((settings_id, i), *setting.value);
 
                 i += 1;
             }

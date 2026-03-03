@@ -138,7 +138,7 @@ fn test_create_settings_with_settings_data() {
 
     mock_call(token_address, selector!("create_settings"), (), 1);
 
-    let settings = array![GameSetting { name: "speed", value: "fast" }].span();
+    let settings = array![GameSetting { name: 'speed', value: 'fast' }].span();
 
     libs::create_settings(
         token_address,
@@ -161,8 +161,8 @@ fn test_create_settings_multiple_settings() {
     mock_call(token_address, selector!("create_settings"), (), 1);
 
     let settings = array![
-        GameSetting { name: "difficulty", value: "hard" },
-        GameSetting { name: "lives", value: "3" }, GameSetting { name: "time_limit", value: "300" },
+        GameSetting { name: 'difficulty', value: 'hard' },
+        GameSetting { name: 'lives', value: '3' }, GameSetting { name: 'time_limit', value: '300' },
     ]
         .span();
 
@@ -319,7 +319,7 @@ fn test_create_settings_many_items() {
         if i >= 20 {
             break;
         }
-        settings_items.append(GameSetting { name: "s", value: "v" });
+        settings_items.append(GameSetting { name: 's', value: 'v' });
         i += 1;
     }
 
@@ -359,7 +359,7 @@ fn test_create_then_get_settings() {
         GameSettingDetails {
             name: "Integration Test",
             description: "Testing create then get",
-            settings: array![GameSetting { name: "test", value: "value" }].span(),
+            settings: array![GameSetting { name: 'test', value: 'value' }].span(),
         },
     );
 

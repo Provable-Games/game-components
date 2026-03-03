@@ -45,7 +45,7 @@ fn test_create_objective_valid_parameters() {
     // Mock create_objective call
     mock_call(token_address, selector!("create_objective"), (), 1);
 
-    let objectives = array![GameObjective { name: "First Blood", value: "Get the first kill" }];
+    let objectives = array![GameObjective { name: 'First Blood', value: 'Get the first kill' }];
     libs::create_objective(
         token_address,
         game_address,
@@ -66,7 +66,7 @@ fn test_create_objective_empty_name() {
 
     mock_call(token_address, selector!("create_objective"), (), 1);
 
-    let objectives = array![GameObjective { name: "Objective 1", value: "Some description" }];
+    let objectives = array![GameObjective { name: 'Objective 1', value: 'Some description' }];
     libs::create_objective(
         token_address,
         game_address,
@@ -85,7 +85,7 @@ fn test_create_objective_empty_description() {
 
     mock_call(token_address, selector!("create_objective"), (), 1);
 
-    let objectives = array![GameObjective { name: "Empty Desc Objective", value: "value" }];
+    let objectives = array![GameObjective { name: 'Empty Desc Objective', value: 'value' }];
     libs::create_objective(
         token_address,
         game_address,
@@ -104,7 +104,7 @@ fn test_create_objective_max_objective_id() {
 
     mock_call(token_address, selector!("create_objective"), (), 1);
 
-    let objectives = array![GameObjective { name: "Max ID Objective", value: "Testing boundary" }];
+    let objectives = array![GameObjective { name: 'Max ID Objective', value: 'Testing boundary' }];
     libs::create_objective(
         token_address,
         game_address,
@@ -123,7 +123,7 @@ fn test_create_objective_zero_objective_id() {
 
     mock_call(token_address, selector!("create_objective"), (), 1);
 
-    let objectives = array![GameObjective { name: "Zero ID Objective", value: "Testing zero" }];
+    let objectives = array![GameObjective { name: 'Zero ID Objective', value: 'Testing zero' }];
     libs::create_objective(
         token_address,
         game_address,
@@ -145,7 +145,7 @@ fn test_create_objective_long_name() {
     let long_name: ByteArray =
         "This is a very long objective name that tests the limits of ByteArray storage and handling in the contract system";
 
-    let objectives = array![GameObjective { name: "Sub-objective", value: "Normal value" }];
+    let objectives = array![GameObjective { name: 'Sub-objective', value: 'Normal value' }];
     libs::create_objective(
         token_address,
         game_address,
@@ -167,7 +167,7 @@ fn test_create_objective_long_description() {
     let long_description: ByteArray =
         "This is a very long objective description containing multiple sentences. It tests how the contract handles large ByteArray values. The objectives system should support arbitrary length descriptions for flexibility.";
 
-    let objectives = array![GameObjective { name: "Normal Name", value: "value" }];
+    let objectives = array![GameObjective { name: 'Normal Name', value: 'value' }];
     libs::create_objective(
         token_address,
         game_address,
@@ -187,7 +187,7 @@ fn test_create_objective_special_chars_name() {
     mock_call(token_address, selector!("create_objective"), (), 1);
 
     let objectives = array![
-        GameObjective { name: "Special: !@#$%^&*()", value: "Testing special characters" },
+        GameObjective { name: 'Special: !@#$%^&*()', value: 'Testing special chars' },
     ];
     libs::create_objective(
         token_address,
@@ -207,12 +207,7 @@ fn test_create_objective_complex_content() {
 
     mock_call(token_address, selector!("create_objective"), (), 1);
 
-    let objectives = array![
-        GameObjective {
-            name: "Multi-line\ndescription\nwith newlines",
-            value: "Value with\ttabs\tand\tnewlines\n",
-        },
-    ];
+    let objectives = array![GameObjective { name: 'complex_description', value: 'complex_value' }];
     libs::create_objective(
         token_address,
         game_address,
@@ -232,9 +227,9 @@ fn test_create_objective_multiple_in_span() {
     mock_call(token_address, selector!("create_objective"), (), 1);
 
     let objectives = array![
-        GameObjective { name: "First Blood", value: "Get the first kill" },
-        GameObjective { name: "Double Kill", value: "Get two kills quickly" },
-        GameObjective { name: "Triple Kill", value: "Get three kills quickly" },
+        GameObjective { name: 'First Blood', value: 'Get the first kill' },
+        GameObjective { name: 'Double Kill', value: 'Get two kills quickly' },
+        GameObjective { name: 'Triple Kill', value: 'Get three kills quickly' },
     ];
     libs::create_objective(
         token_address,
@@ -263,8 +258,8 @@ fn test_game_objective_details_struct_construction() {
     let name: ByteArray = "Complex Objective";
     let description: ByteArray = "Multi-line\ndescription\nwith special chars: !@#$%";
     let objectives = array![
-        GameObjective { name: "Sub 1", value: "Value 1" },
-        GameObjective { name: "Sub 2", value: "Value 2" },
+        GameObjective { name: 'Sub 1', value: 'Value 1' },
+        GameObjective { name: 'Sub 2', value: 'Value 2' },
     ];
 
     libs::create_objective(
@@ -286,9 +281,9 @@ fn test_create_multiple_objectives_sequentially() {
     // Mock multiple create_objective calls
     mock_call(token_address, selector!("create_objective"), (), 10);
 
-    let obj1 = array![GameObjective { name: "Obj 1", value: "Desc 1" }];
-    let obj2 = array![GameObjective { name: "Obj 2", value: "Desc 2" }];
-    let obj3 = array![GameObjective { name: "Obj 3", value: "Desc 3" }];
+    let obj1 = array![GameObjective { name: 'Obj 1', value: 'Desc 1' }];
+    let obj2 = array![GameObjective { name: 'Obj 2', value: 'Desc 2' }];
+    let obj3 = array![GameObjective { name: 'Obj 3', value: 'Desc 3' }];
 
     libs::create_objective(
         token_address,
@@ -325,8 +320,8 @@ fn test_create_objectives_different_games() {
 
     mock_call(token_address, selector!("create_objective"), (), 10);
 
-    let obj1 = array![GameObjective { name: "Game 1 Objective", value: "From game 1" }];
-    let obj2 = array![GameObjective { name: "Game 2 Objective", value: "From game 2" }];
+    let obj1 = array![GameObjective { name: 'Game 1 Objective', value: 'From game 1' }];
+    let obj2 = array![GameObjective { name: 'Game 2 Objective', value: 'From game 2' }];
 
     libs::create_objective(
         token_address,
@@ -355,8 +350,8 @@ fn test_create_objectives_different_creators() {
 
     mock_call(token_address, selector!("create_objective"), (), 10);
 
-    let obj1 = array![GameObjective { name: "Creator 1 Objective", value: "From creator 1" }];
-    let obj2 = array![GameObjective { name: "Creator 2 Objective", value: "From creator 2" }];
+    let obj1 = array![GameObjective { name: 'Creator 1 Objective', value: 'From creator 1' }];
+    let obj2 = array![GameObjective { name: 'Creator 2 Objective', value: 'From creator 2' }];
 
     libs::create_objective(
         token_address,
@@ -387,7 +382,7 @@ fn test_all_params_passed_through() {
 
     mock_call(token_address, selector!("create_objective"), (), 1);
 
-    let objectives = array![GameObjective { name: "Sub", value: "Value" }];
+    let objectives = array![GameObjective { name: 'Sub', value: 'Value' }];
     libs::create_objective(
         token_address,
         game_address,
@@ -410,7 +405,7 @@ fn test_create_objective_both_empty() {
 
     mock_call(token_address, selector!("create_objective"), (), 1);
 
-    let objectives = array![GameObjective { name: "", value: "" }];
+    let objectives = array![GameObjective { name: '', value: '' }];
     libs::create_objective(
         token_address,
         game_address,
@@ -434,7 +429,7 @@ fn test_create_objective_very_long_strings() {
     let long_description: ByteArray =
         "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB";
 
-    let objectives = array![GameObjective { name: "Long", value: "strings" }];
+    let objectives = array![GameObjective { name: 'Long', value: 'strings' }];
     libs::create_objective(
         token_address,
         game_address,
@@ -453,7 +448,7 @@ fn test_create_objectives_consecutive_ids() {
 
     mock_call(token_address, selector!("create_objective"), (), 100);
 
-    let objectives = array![GameObjective { name: "Objective", value: "Value" }];
+    let objectives = array![GameObjective { name: 'Objective', value: 'Value' }];
 
     let mut i: u32 = 0;
     loop {
@@ -480,7 +475,7 @@ fn test_create_objectives_boundary_ids() {
 
     mock_call(token_address, selector!("create_objective"), (), 10);
 
-    let objectives = array![GameObjective { name: "Boundary", value: "Value" }];
+    let objectives = array![GameObjective { name: 'Boundary', value: 'Value' }];
 
     libs::create_objective(
         token_address,
@@ -548,7 +543,7 @@ fn test_create_objective_fuzz_ids(objective_id: u32) {
 
     mock_call(token_address, selector!("create_objective"), (), 1);
 
-    let objectives = array![GameObjective { name: "Fuzz Test", value: "Fuzz Value" }];
+    let objectives = array![GameObjective { name: 'Fuzz Test', value: 'Fuzz Value' }];
     libs::create_objective(
         token_address,
         game_address,
@@ -570,7 +565,7 @@ fn test_create_objective_fuzz_content(seed: felt252) {
 
     let objective_id: u32 = (seed.try_into().unwrap_or(0_u128) % 1000000).try_into().unwrap();
 
-    let objectives = array![GameObjective { name: "Fuzz Name", value: "Fuzz Value" }];
+    let objectives = array![GameObjective { name: 'Fuzz Name', value: 'Fuzz Value' }];
     libs::create_objective(
         token_address,
         game_address,
@@ -593,7 +588,7 @@ fn test_create_objectives_sparse_ids() {
 
     mock_call(token_address, selector!("create_objective"), (), 5);
 
-    let objectives = array![GameObjective { name: "Sparse", value: "value" }];
+    let objectives = array![GameObjective { name: 'Sparse', value: 'value' }];
 
     libs::create_objective(
         token_address,
@@ -634,7 +629,7 @@ fn test_create_objective_spaces_only() {
 
     mock_call(token_address, selector!("create_objective"), (), 1);
 
-    let objectives = array![GameObjective { name: "     ", value: "Normal value" }];
+    let objectives = array![GameObjective { name: '     ', value: 'Normal value' }];
     libs::create_objective(
         token_address,
         game_address,
@@ -655,8 +650,8 @@ fn test_create_objective_different_tokens() {
     mock_call(token1, selector!("create_objective"), (), 1);
     mock_call(token2, selector!("create_objective"), (), 1);
 
-    let obj1 = array![GameObjective { name: "Token 1 Obj", value: "v1" }];
-    let obj2 = array![GameObjective { name: "Token 2 Obj", value: "v2" }];
+    let obj1 = array![GameObjective { name: 'Token 1 Obj', value: 'v1' }];
+    let obj2 = array![GameObjective { name: 'Token 2 Obj', value: 'v2' }];
 
     libs::create_objective(
         token1,

@@ -110,8 +110,8 @@ pub mod metagame_mock {
         token_counter: u64,
         // Token context storage - mimicking the Dojo Context model
         token_context_count: Map<felt252, u32>, // token_id -> count of contexts
-        token_context_name: Map<(felt252, u32), ByteArray>, // (token_id, index) -> context name
-        token_context_value: Map<(felt252, u32), ByteArray>, // (token_id, index) -> context value
+        token_context_name: Map<(felt252, u32), felt252>, // (token_id, index) -> context name
+        token_context_value: Map<(felt252, u32), felt252>, // (token_id, index) -> context value
         token_context_exists: Map<felt252, bool>, // token_id -> exists
         // Callback tracking storage
         cb_game_action_count: u32,
@@ -149,11 +149,10 @@ pub mod metagame_mock {
 
             let mut i = 0;
             while i < context_count {
-                let context_name = self.token_context_name.read((token_id, i));
-                let context_value = self.token_context_value.read((token_id, i));
+                let name = self.token_context_name.read((token_id, i));
+                let value = self.token_context_value.read((token_id, i));
 
-                let game_context = GameContext { name: context_name, value: context_value };
-                contexts.append(game_context);
+                contexts.append(GameContext { name, value });
                 i += 1;
             }
 
@@ -184,7 +183,7 @@ pub mod metagame_mock {
             salt: u16,
             metadata: u16,
         ) -> felt252 {
-            let context = array![GameContext { name: "Test Context 1", value: "Test Context" }]
+            let context = array![GameContext { name: 'Test Context 1', value: 'Test Context' }]
                 .span();
             let context_details = GameContextDetails {
                 name: "Test App",
@@ -214,8 +213,8 @@ pub mod metagame_mock {
 
             // Store the context data in our local storage
             self.token_context_count.write(token_id, 1);
-            self.token_context_name.write((token_id, 0), "Test Context 1");
-            self.token_context_value.write((token_id, 0), "Test Context");
+            self.token_context_name.write((token_id, 0), 'Test Context 1');
+            self.token_context_value.write((token_id, 0), 'Test Context');
             self.token_context_exists.write(token_id, true);
 
             token_id

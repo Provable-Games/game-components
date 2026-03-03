@@ -4,9 +4,9 @@ use crate::structs::minigame::GameObjectiveDetails;
 
 /// SNIP-5 interface ID derived via src5_rs: XOR of extended function selectors
 /// -
-/// create_objective(ContractAddress,ContractAddress,u32,((Array<bytes31>,felt252,usize),(Array<bytes31>,felt252,usize),(@Array<((Array<bytes31>,felt252,usize),(Array<bytes31>,felt252,usize))>)))
+/// create_objective(ContractAddress,ContractAddress,u32,((Array<bytes31>,felt252,usize),(Array<bytes31>,felt252,usize),(@Array<(felt252,felt252)>)))
 pub const IMINIGAME_TOKEN_OBJECTIVES_ID: felt252 =
-    0x82edb5ff654d5a1b77ab3c2dce61b5a22fc1d8223eb615fcf3810b50430d04;
+    0x1e9f4982a68b67ddda6e894e8e620fe12ae877cf303308fe16814ceb2706077;
 
 #[starknet::interface]
 pub trait IMinigameTokenObjectives<TState> {

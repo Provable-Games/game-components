@@ -1709,8 +1709,8 @@ fn test_mint_game_with_context() {
         description: "A test context for minting",
         id: Option::Some(1_u32),
         context: array![
-            GameContext { name: "level", value: "1" },
-            GameContext { name: "difficulty", value: "easy" },
+            GameContext { name: 'level', value: '1' },
+            GameContext { name: 'difficulty', value: 'easy' },
         ]
             .span(),
     };
@@ -1770,7 +1770,7 @@ fn test_mint_game_batch_with_context() {
         name: "Context 1",
         description: "First context",
         id: Option::Some(1_u32),
-        context: array![GameContext { name: "key", value: "value1" }].span(),
+        context: array![GameContext { name: 'key', value: 'value1' }].span(),
     };
 
     let context2 = GameContextDetails {

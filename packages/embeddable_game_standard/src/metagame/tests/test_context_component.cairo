@@ -138,8 +138,8 @@ mod MockContextContract {
                 description: description,
                 id: Option::Some(1),
                 context: array![
-                    GameContext { name: "Prize", value: "1000 USD" },
-                    GameContext { name: "Duration", value: "7 days" },
+                    GameContext { name: 'Prize', value: '1000 USD' },
+                    GameContext { name: 'Duration', value: '7 days' },
                 ]
                     .span(),
             }
@@ -239,8 +239,8 @@ fn test_mint_with_context_external_provider() {
         description: "Annual gaming tournament",
         id: Option::Some(1),
         context: array![
-            GameContext { name: "Prize", value: "1000 USD" },
-            GameContext { name: "Duration", value: "7 days" },
+            GameContext { name: 'Prize', value: '1000 USD' },
+            GameContext { name: 'Duration', value: '7 days' },
         ]
             .span(),
     };
@@ -317,7 +317,7 @@ fn test_get_context_valid_token() {
         name: "Championship",
         description: "World Championship",
         id: Option::Some(20),
-        context: array![GameContext { name: "Stage", value: "Qualifier" }].span(),
+        context: array![GameContext { name: 'Stage', value: 'Qualifier' }].span(),
     };
 
     let setter = IContextSetterDispatcher { contract_address };
@@ -377,7 +377,7 @@ fn test_context_with_100_items() {
         if i >= 100 {
             break;
         }
-        context_items.append(GameContext { name: "Item", value: "Value" });
+        context_items.append(GameContext { name: 'Item', value: 'Value' });
         i += 1;
     }
 

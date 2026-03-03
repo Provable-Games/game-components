@@ -84,7 +84,7 @@ fn test_mint_with_all_parameters() { // UT-MINT-002
     mock_call(test_contracts.minigame.contract_address, selector!("settings_exist"), true, 1);
 
     let objective_id: u32 = 1;
-    let game_contexts = array![GameContext { name: "tournament", value: "42" }];
+    let game_contexts = array![GameContext { name: 'tournament', value: '42' }];
     let _context = GameContextDetails {
         name: "Tournament",
         description: "Tournament mode",

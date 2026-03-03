@@ -268,8 +268,8 @@ fn test_mint_with_context_provider_set() {
         description: "A test tournament",
         id: Option::Some(42),
         context: array![
-            GameContext { name: "Prize", value: "1000 USD" },
-            GameContext { name: "Duration", value: "7 days" },
+            GameContext { name: 'Prize', value: '1000 USD' },
+            GameContext { name: 'Duration', value: '7 days' },
         ]
             .span(),
     };
@@ -560,9 +560,9 @@ mod MockContext {
                 description: self.context_description.read(),
                 id: self.context_id.read(),
                 context: array![
-                    GameContext { name: "Round", value: "Qualifier Round" },
-                    GameContext { name: "Round", value: "Semi Finals" },
-                    GameContext { name: "Round", value: "Finals" },
+                    GameContext { name: 'Round', value: 'Qualifier Round' },
+                    GameContext { name: 'Round', value: 'Semi Finals' },
+                    GameContext { name: 'Round', value: 'Finals' },
                 ]
                     .span(),
             }

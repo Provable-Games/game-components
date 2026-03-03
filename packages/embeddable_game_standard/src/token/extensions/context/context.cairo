@@ -2,7 +2,6 @@
 pub mod ContextComponent {
     use game_components_embeddable_game_standard::metagame::extensions::context::interface::IMETAGAME_CONTEXT_ID;
     use game_components_embeddable_game_standard::metagame::extensions::context::structs::GameContextDetails;
-    use game_components_utilities::utils::json::create_context_json;
     use openzeppelin_interfaces::introspection::{ISRC5Dispatcher, ISRC5DispatcherTrait};
     use openzeppelin_introspection::src5::SRC5Component::{self, InternalTrait as SRC5InternalTrait};
     use starknet::ContractAddress;
@@ -22,7 +21,7 @@ pub mod ContextComponent {
     pub struct TokenContextUpdate {
         #[key]
         pub token_id: felt252,
-        pub data: ByteArray,
+        pub details: GameContextDetails,
     }
 
     // Implementation of the OptionalContext trait for integration with CoreTokenComponent
@@ -40,13 +39,10 @@ pub mod ContextComponent {
                 src5_dispatcher.supports_interface(IMETAGAME_CONTEXT_ID),
                 "MinigameTokenContext: Minter does not implement IMetagameContext",
             );
-            let context_json = create_context_json(
-                context.name, context.description, context.id, context.context,
-            );
 
-            // Emit native event
+            // Emit native event with full details struct
             let mut component = HasComponent::get_component_mut(ref self);
-            component.emit(TokenContextUpdate { token_id: token_id, data: context_json });
+            component.emit(TokenContextUpdate { token_id: token_id, details: context });
         }
     }
 

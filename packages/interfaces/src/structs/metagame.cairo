@@ -8,8 +8,8 @@ pub struct GameContextDetails {
     pub context: Span<GameContext>,
 }
 
-#[derive(Drop, Serde, Clone)]
+#[derive(Drop, Serde, Copy, Clone)]
 pub struct GameContext {
-    pub name: ByteArray,
-    pub value: ByteArray,
+    pub name: felt252,
+    pub value: felt252,
 }
