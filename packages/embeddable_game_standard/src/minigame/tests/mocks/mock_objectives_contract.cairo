@@ -180,12 +180,12 @@ pub mod MockObjectivesContract {
             // Return mock objective details for the objective_id
             let obj = self.objective_details.read(objective_id);
             let objectives = array![
-                GameObjective { name: "points", value: format!("{}", obj.points) },
+                GameObjective { name: 'points', value: obj.points.into() },
                 GameObjective {
-                    name: "required", value: if obj.is_required {
-                        "true"
+                    name: 'required', value: if obj.is_required {
+                        'true'
                     } else {
-                        "false"
+                        'false'
                     },
                 },
             ];

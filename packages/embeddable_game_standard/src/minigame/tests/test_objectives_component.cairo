@@ -99,17 +99,13 @@ fn test_get_objectives_details_for_objective_id() {
 
     // Check points property
     let points_obj = details.objectives.at(0);
-    let expected_points_name: ByteArray = "points";
-    let expected_points_value: ByteArray = "10";
-    assert!(points_obj.name == @expected_points_name, "Points name mismatch");
-    assert!(points_obj.value == @expected_points_value, "Points value mismatch");
+    assert!(*points_obj.name == 'points', "Points name mismatch");
+    assert!(*points_obj.value == 10_u32.into(), "Points value mismatch");
 
     // Check required property
     let required_obj = details.objectives.at(1);
-    let expected_required_name: ByteArray = "required";
-    let expected_required_value: ByteArray = "true";
-    assert!(required_obj.name == @expected_required_name, "Required name mismatch");
-    assert!(required_obj.value == @expected_required_value, "Required value mismatch");
+    assert!(*required_obj.name == 'required', "Required name mismatch");
+    assert!(*required_obj.value == 'true', "Required value mismatch");
 }
 
 // Test OBJ-U-06: Create objective with valid data
@@ -521,8 +517,7 @@ fn test_objectives_details_various_objectives() {
 
     // Check that objective 3 is not required
     let required_obj = details3.objectives.at(1);
-    let expected_required_value: ByteArray = "false";
-    assert!(required_obj.value == @expected_required_value, "Objective 3 should not be required");
+    assert!(*required_obj.value == 'false', "Objective 3 should not be required");
 }
 
 // Test OBJ-MOCK-04: Test objectives_details for objective with high points
@@ -541,8 +536,7 @@ fn test_objectives_details_high_points() {
 
     // Check points
     let points_obj = details.objectives.at(0);
-    let expected_points_value: ByteArray = "100";
-    assert!(points_obj.value == @expected_points_value, "Objective 100 should have 100 points");
+    assert!(*points_obj.value == 100_u32.into(), "Objective 100 should have 100 points");
 }
 
 // Test OBJ-MOCK-05: Test objectives_details with different required states
@@ -555,16 +549,14 @@ fn test_objectives_details_required_states() {
     // Test required objective (1 and 2 are required)
     let details1 = objectives_details_dispatcher.objectives_details(1);
     let required1 = details1.objectives.at(1);
-    let expected_true: ByteArray = "true";
-    assert!(required1.value == @expected_true, "Objective 1 should be required");
+    assert!(*required1.value == 'true', "Objective 1 should be required");
 
     let details2 = objectives_details_dispatcher.objectives_details(2);
     let required2 = details2.objectives.at(1);
-    assert!(required2.value == @expected_true, "Objective 2 should be required");
+    assert!(*required2.value == 'true', "Objective 2 should be required");
 
     // Test non-required objective (3 is not required)
     let details3 = objectives_details_dispatcher.objectives_details(3);
     let required3 = details3.objectives.at(1);
-    let expected_false: ByteArray = "false";
-    assert!(required3.value == @expected_false, "Objective 3 should not be required");
+    assert!(*required3.value == 'false', "Objective 3 should not be required");
 }

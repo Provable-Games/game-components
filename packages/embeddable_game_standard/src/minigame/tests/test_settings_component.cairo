@@ -97,9 +97,9 @@ fn test_create_settings_valid_data() {
         name: "Custom Mode",
         description: "User defined settings",
         settings: array![
-            GameSetting { name: "speed", value: "fast" },
-            GameSetting { name: "powerups", value: "enabled" },
-            GameSetting { name: "time_limit", value: "300" },
+            GameSetting { name: 'speed', value: 'fast' },
+            GameSetting { name: 'powerups', value: 'enabled' },
+            GameSetting { name: 'time_limit', value: '300' },
         ]
             .span(),
     };
@@ -125,7 +125,7 @@ fn test_create_settings_empty_name() {
     let empty_name_settings = GameSettingDetails {
         name: "", // Empty name
         description: "Settings with no name",
-        settings: array![GameSetting { name: "test", value: "value" }].span(),
+        settings: array![GameSetting { name: 'test', value: 'value' }].span(),
     };
 
     let setter = ISettingsSetterDispatcher { contract_address };
@@ -150,9 +150,7 @@ fn test_create_settings_50_items() {
             break;
         }
         // Use simpler strings to avoid data size limits
-        let mut name_bytes = "s";
-        let mut value_bytes = "v";
-        settings_items.append(GameSetting { name: name_bytes, value: value_bytes });
+        settings_items.append(GameSetting { name: 's', value: 'v' });
         i += 1;
     }
 
@@ -287,7 +285,7 @@ fn test_create_settings_long_strings() {
     let new_settings = GameSettingDetails {
         name: long_name.clone(),
         description: long_description.clone(),
-        settings: array![GameSetting { name: "key", value: "value" }].span(),
+        settings: array![GameSetting { name: 'key', value: 'value' }].span(),
     };
 
     let setter = ISettingsSetterDispatcher { contract_address };
@@ -378,11 +376,11 @@ fn test_settings_details_iteration() {
         name: "Iteration Test",
         description: "Testing loop iteration",
         settings: array![
-            GameSetting { name: "item1", value: "value1" },
-            GameSetting { name: "item2", value: "value2" },
-            GameSetting { name: "item3", value: "value3" },
-            GameSetting { name: "item4", value: "value4" },
-            GameSetting { name: "item5", value: "value5" },
+            GameSetting { name: 'item1', value: 'value1' },
+            GameSetting { name: 'item2', value: 'value2' },
+            GameSetting { name: 'item3', value: 'value3' },
+            GameSetting { name: 'item4', value: 'value4' },
+            GameSetting { name: 'item5', value: 'value5' },
         ]
             .span(),
     };

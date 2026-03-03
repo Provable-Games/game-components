@@ -76,8 +76,8 @@ fn default_settings_details() -> GameSettingDetails {
         name: "Test Settings",
         description: "Test settings description",
         settings: array![
-            GameSetting { name: "Difficulty", value: "Medium" },
-            GameSetting { name: "Lives", value: "3" },
+            GameSetting { name: 'Difficulty', value: 'Medium' },
+            GameSetting { name: 'Lives', value: '3' },
         ]
             .span(),
     }
@@ -88,7 +88,7 @@ fn default_context_details() -> GameContextDetails {
         name: "Test Context",
         description: "Test context description",
         id: Option::Some(42),
-        context: array![GameContext { name: "Tournament", value: "Weekly #5" }].span(),
+        context: array![GameContext { name: 'Tournament', value: 'Weekly #5' }].span(),
     }
 }
 
@@ -96,7 +96,7 @@ fn default_objective_details() -> GameObjectiveDetails {
     GameObjectiveDetails {
         name: "Clear All Blocks",
         description: "Complete the puzzle",
-        objectives: array![GameObjective { name: "Blocks", value: "0" }].span(),
+        objectives: array![GameObjective { name: 'Blocks', value: '0' }].span(),
     }
 }
 
@@ -951,7 +951,7 @@ fn test_custom_metadata_context_with_id() {
         name: "Tournament",
         description: "Weekly tournament",
         id: Option::Some(42),
-        context: array![GameContext { name: "Round", value: "Finals" }].span(),
+        context: array![GameContext { name: 'Round', value: 'Finals' }].span(),
     };
 
     let result = create_custom_metadata(
@@ -985,7 +985,7 @@ fn test_custom_metadata_context_without_id() {
         name: "Casual Mode",
         description: "Relaxed gameplay",
         id: Option::None,
-        context: array![GameContext { name: "Mode", value: "Casual" }].span(),
+        context: array![GameContext { name: 'Mode', value: 'Casual' }].span(),
     };
 
     let result = create_custom_metadata(
@@ -1366,8 +1366,8 @@ fn test_custom_metadata_all_features_combined() {
         name: "Hard Mode",
         description: "Maximum difficulty",
         settings: array![
-            GameSetting { name: "Difficulty", value: "Extreme" },
-            GameSetting { name: "Perma-death", value: "On" },
+            GameSetting { name: 'Difficulty', value: 'Extreme' },
+            GameSetting { name: 'Perma-death', value: 'On' },
         ]
             .span(),
     };
@@ -1377,8 +1377,8 @@ fn test_custom_metadata_all_features_combined() {
         description: "Annual championship",
         id: Option::Some(2024),
         context: array![
-            GameContext { name: "Season", value: "2024" },
-            GameContext { name: "Division", value: "Pro" },
+            GameContext { name: 'Season', value: '2024' },
+            GameContext { name: 'Division', value: 'Pro' },
         ]
             .span(),
     };

@@ -4,9 +4,7 @@ pub mod SettingsComponent {
     use game_components_embeddable_game_standard::minigame::extensions::settings::interface::{
         IMINIGAME_SETTINGS_ID, IMinigameSettingsDispatcher, IMinigameSettingsDispatcherTrait,
     };
-    use game_components_embeddable_game_standard::minigame::extensions::settings::structs::{
-        GameSetting, GameSettingDetails,
-    };
+    use game_components_embeddable_game_standard::minigame::extensions::settings::structs::GameSettingDetails;
     use game_components_embeddable_game_standard::minigame::interface::{
         IMinigameDispatcher, IMinigameDispatcherTrait,
     };
@@ -41,9 +39,7 @@ pub mod SettingsComponent {
         #[key]
         pub settings_id: u32,
         pub creator_address: ContractAddress,
-        pub name: ByteArray,
-        pub description: ByteArray,
-        pub settings: Span<GameSetting>,
+        pub details: GameSettingDetails,
     }
 
     #[embeddable_as(SettingsImpl)]
@@ -89,16 +85,11 @@ pub mod SettingsComponent {
                 game_address_display,
             );
 
-            // Emit native event with struct fields directly
+            // Emit native event with full details struct
             self
                 .emit(
                     SettingsCreated {
-                        game_address,
-                        settings_id,
-                        creator_address,
-                        name: settings_details.name,
-                        description: settings_details.description,
-                        settings: settings_details.settings,
+                        game_address, settings_id, creator_address, details: settings_details,
                     },
                 );
         }

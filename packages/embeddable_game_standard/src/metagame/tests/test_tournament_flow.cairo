@@ -48,9 +48,9 @@ fn test_tournament_flow() {
         description: "Annual championship",
         id: Option::Some(1),
         context: array![
-            GameContext { name: "Round", value: "Qualifier Round" },
-            GameContext { name: "Round", value: "Semi Finals" },
-            GameContext { name: "Round", value: "Finals" },
+            GameContext { name: 'Round', value: 'Qualifier Round' },
+            GameContext { name: 'Round', value: 'Semi Finals' },
+            GameContext { name: 'Round', value: 'Finals' },
         ]
             .span(),
     };
@@ -378,9 +378,9 @@ mod MockContextProvider {
                 description: self.context_description.read(),
                 id: self.context_id.read(),
                 context: array![
-                    GameContext { name: "Round", value: "Qualifier Round" },
-                    GameContext { name: "Round", value: "Semi Finals" },
-                    GameContext { name: "Round", value: "Finals" },
+                    GameContext { name: 'Round', value: 'Qualifier Round' },
+                    GameContext { name: 'Round', value: 'Semi Finals' },
+                    GameContext { name: 'Round', value: 'Finals' },
                 ]
                     .span(),
             }

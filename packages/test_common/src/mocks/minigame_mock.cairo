@@ -260,9 +260,7 @@ pub mod minigame_mock {
             GameSettingDetails {
                 name,
                 description,
-                settings: array![
-                    GameSetting { name: "Difficulty", value: format!("{}", difficulty) },
-                ]
+                settings: array![GameSetting { name: 'Difficulty', value: difficulty.into() }]
                     .span(),
             }
         }
@@ -322,9 +320,7 @@ pub mod minigame_mock {
             GameObjectiveDetails {
                 name: "Score Target",
                 description: format!("Score Above {}", target_score),
-                objectives: array![
-                    GameObjective { name: "target", value: format!("{}", target_score) },
-                ]
+                objectives: array![GameObjective { name: 'target', value: target_score.into() }]
                     .span(),
             }
         }
@@ -402,9 +398,7 @@ pub mod minigame_mock {
             self.objective_scores.entry(new_objective_id).write((score, true));
             self.objective_count.write(new_objective_id);
 
-            let objectives = array![
-                GameObjective { name: "Score Target", value: format!("Score Above {}", score) },
-            ];
+            let objectives = array![GameObjective { name: 'Score Target', value: score.into() }];
             self
                 .objectives
                 .create_objective(
@@ -431,9 +425,7 @@ pub mod minigame_mock {
                 .write((name.clone(), description.clone(), true));
             self.settings_count.write(new_settings_id);
 
-            let settings = array![
-                GameSetting { name: "Difficulty", value: format!("{}", difficulty) },
-            ];
+            let settings = array![GameSetting { name: 'Difficulty', value: difficulty.into() }];
 
             self
                 .settings

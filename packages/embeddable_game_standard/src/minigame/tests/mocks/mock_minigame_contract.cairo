@@ -214,7 +214,7 @@ pub mod MockMinigameContract {
             GameSettingDetails {
                 name: "Mock Settings",
                 description: "Mock settings description",
-                settings: array![GameSetting { name: "Difficulty", value: "Normal" }].span(),
+                settings: array![GameSetting { name: 'Difficulty', value: 'Normal' }].span(),
             }
         }
 
@@ -270,7 +270,7 @@ pub mod MockMinigameContract {
             GameObjectiveDetails {
                 name: "Mock Objective",
                 description: "Mock objective description",
-                objectives: array![GameObjective { name: "Test Objective", value: "pending" }]
+                objectives: array![GameObjective { name: 'Test Objective', value: 'pending' }]
                     .span(),
             }
         }

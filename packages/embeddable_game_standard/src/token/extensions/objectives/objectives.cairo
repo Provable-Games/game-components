@@ -4,9 +4,7 @@ pub mod ObjectivesComponent {
     use game_components_embeddable_game_standard::minigame::extensions::objectives::interface::{
         IMINIGAME_OBJECTIVES_ID, IMinigameObjectivesDispatcher, IMinigameObjectivesDispatcherTrait,
     };
-    use game_components_embeddable_game_standard::minigame::extensions::objectives::structs::{
-        GameObjective, GameObjectiveDetails,
-    };
+    use game_components_embeddable_game_standard::minigame::extensions::objectives::structs::GameObjectiveDetails;
     use game_components_embeddable_game_standard::minigame::interface::{
         IMinigameDispatcher, IMinigameDispatcherTrait,
     };
@@ -41,9 +39,7 @@ pub mod ObjectivesComponent {
         #[key]
         pub objective_id: u32,
         pub creator_address: ContractAddress,
-        pub name: ByteArray,
-        pub description: ByteArray,
-        pub objectives: Span<GameObjective>,
+        pub details: GameObjectiveDetails,
     }
 
     #[embeddable_as(ObjectivesImpl)]
@@ -89,16 +85,11 @@ pub mod ObjectivesComponent {
                 game_address_display,
             );
 
-            // Emit native event with struct fields directly
+            // Emit native event with full details struct
             self
                 .emit(
                     ObjectiveCreated {
-                        game_address,
-                        objective_id,
-                        creator_address,
-                        name: objective_details.name,
-                        description: objective_details.description,
-                        objectives: objective_details.objectives,
+                        game_address, objective_id, creator_address, details: objective_details,
                     },
                 );
         }

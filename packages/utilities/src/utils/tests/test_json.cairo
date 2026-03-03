@@ -15,15 +15,15 @@ use crate::utils::json::{
 // HELPER FUNCTIONS
 // ==============================================================================
 
-fn setting(name: ByteArray, value: ByteArray) -> GameSetting {
+fn setting(name: felt252, value: felt252) -> GameSetting {
     GameSetting { name, value }
 }
 
-fn objective(name: ByteArray, value: ByteArray) -> GameObjective {
+fn objective(name: felt252, value: felt252) -> GameObjective {
     GameObjective { name, value }
 }
 
-fn context(name: ByteArray, value: ByteArray) -> GameContext {
+fn context(name: felt252, value: felt252) -> GameContext {
     GameContext { name, value }
 }
 
@@ -69,7 +69,7 @@ fn contains(haystack: @ByteArray, needle: @ByteArray) -> bool {
 
 #[test]
 fn test_settings_json_single_setting() {
-    let settings = array![setting("Difficulty", "Hard")].span();
+    let settings = array![setting('Difficulty', 'Hard')].span();
     let result = create_settings_json("Game", "Description", settings);
 
     assert!(contains(@result, @"\"Name\":\"Game\""), "Should contain Name field");
@@ -83,7 +83,7 @@ fn test_settings_json_single_setting() {
 
 #[test]
 fn test_settings_json_multiple_settings() {
-    let settings = array![setting("Difficulty", "Hard"), setting("Lives", "3")].span();
+    let settings = array![setting('Difficulty', 'Hard'), setting('Lives', '3')].span();
     let result = create_settings_json("Game", "Desc", settings);
 
     // Settings are in a nested JSON string
@@ -94,7 +94,7 @@ fn test_settings_json_multiple_settings() {
 
 #[test]
 fn test_settings_json_preserves_order() {
-    let settings = array![setting("A", "1"), setting("B", "2"), setting("C", "3")].span();
+    let settings = array![setting('A', '1'), setting('B', '2'), setting('C', '3')].span();
     let result = create_settings_json("Test", "Test", settings);
 
     // Check that all settings keys are present (settings are in nested JSON string)
@@ -119,7 +119,7 @@ fn test_settings_json_empty_settings() {
 
 #[test]
 fn test_settings_json_empty_name() {
-    let settings = array![setting("Key", "Value")].span();
+    let settings = array![setting('Key', 'Value')].span();
     let result = create_settings_json("", "Description", settings);
 
     assert!(contains(@result, @"\"Name\":\"\""), "Should handle empty name");
@@ -127,7 +127,7 @@ fn test_settings_json_empty_name() {
 
 #[test]
 fn test_settings_json_empty_description() {
-    let settings = array![setting("Key", "Value")].span();
+    let settings = array![setting('Key', 'Value')].span();
     let result = create_settings_json("Game", "", settings);
 
     assert!(contains(@result, @"\"Description\":\"\""), "Should handle empty description");
@@ -135,7 +135,7 @@ fn test_settings_json_empty_description() {
 
 #[test]
 fn test_settings_json_empty_setting_value() {
-    let settings = array![setting("Key", "")].span();
+    let settings = array![setting('Key', '')].span();
     let result = create_settings_json("Game", "Desc", settings);
 
     // Setting is in nested JSON string
@@ -145,7 +145,7 @@ fn test_settings_json_empty_setting_value() {
 #[test]
 fn test_settings_json_special_characters() {
     // Test with ASCII special characters
-    let settings = array![setting("Mode", "Easy-Mode")].span();
+    let settings = array![setting('Mode', 'Easy-Mode')].span();
     let result = create_settings_json("Game-v2", "Test Description", settings);
 
     assert!(contains(@result, @"Game-v2"), "Should handle special characters in name");
@@ -166,7 +166,7 @@ fn test_settings_json_fuzz_count(count: u8) {
         if i >= bounded_count {
             break;
         }
-        settings_arr.append(setting(format!("Key{}", i), format!("Value{}", i)));
+        settings_arr.append(setting(i.into(), i.into()));
         i += 1;
     }
 
@@ -182,7 +182,7 @@ fn test_settings_json_fuzz_count(count: u8) {
 
 #[test]
 fn test_objectives_json_single() {
-    let objectives = array![objective("Score 100", "100 points")].span();
+    let objectives = array![objective('Score 100', '100 points')].span();
     let result = create_objectives_json(objectives);
 
     assert!(contains(@result, @"\"Score 100\":\"100 points\""), "Should contain single objective");
@@ -190,7 +190,7 @@ fn test_objectives_json_single() {
 
 #[test]
 fn test_objectives_json_multiple() {
-    let objectives = array![objective("Score", "100"), objective("Kills", "10")].span();
+    let objectives = array![objective('Score', '100'), objective('Kills', '10')].span();
     let result = create_objectives_json(objectives);
 
     assert!(contains(@result, @"\"Score\":\"100\""), "Should contain first objective");
@@ -200,7 +200,7 @@ fn test_objectives_json_multiple() {
 #[test]
 fn test_objectives_json_preserves_order() {
     let objectives = array![
-        objective("First", "1"), objective("Second", "2"), objective("Third", "3"),
+        objective('First', '1'), objective('Second', '2'), objective('Third', '3'),
     ]
         .span();
     let result = create_objectives_json(objectives);
@@ -224,21 +224,19 @@ fn test_objectives_json_empty() {
 
 #[test]
 fn test_objectives_json_empty_value() {
-    let objectives = array![objective("Key", "")].span();
+    let objectives = array![objective('Key', '')].span();
     let result = create_objectives_json(objectives);
 
     assert!(contains(@result, @"\"Key\":\"\""), "Should handle empty value");
 }
 
 #[test]
-fn test_objectives_json_long_values() {
-    // Test with longer values
-    let long_value =
-        "This is a very long objective value that contains many characters to test how the JSON generator handles longer strings without issues";
-    let objectives = array![objective("Long Objective", long_value)].span();
+fn test_objectives_json_max_felt_values() {
+    // Test with values near felt252 max length (31 bytes)
+    let objectives = array![objective('Long Objective', 'A long value near limit')].span();
     let result = create_objectives_json(objectives);
 
-    assert!(result.len() > 0, "Should handle long values");
+    assert!(result.len() > 0, "Should handle max felt values");
     assert!(contains(@result, @"Long Objective"), "Should contain objective name");
 }
 
@@ -257,7 +255,7 @@ fn test_objectives_json_fuzz_count(count: u8) {
         if i >= bounded_count {
             break;
         }
-        objectives_arr.append(objective(format!("Objective{}", i), format!("Value{}", i)));
+        objectives_arr.append(objective(i.into(), i.into()));
         i += 1;
     }
 
@@ -277,7 +275,7 @@ fn test_objectives_json_fuzz_count(count: u8) {
 
 #[test]
 fn test_context_json_with_id() {
-    let contexts = array![context("Tournament", "Weekly")].span();
+    let contexts = array![context('Tournament', 'Weekly')].span();
     let result = create_context_json("Budokan", "Tournament system", Option::Some(1), contexts);
 
     assert!(contains(@result, @"\"Name\":\"Budokan\""), "Should contain name");
@@ -292,7 +290,7 @@ fn test_context_json_with_id() {
 
 #[test]
 fn test_context_json_without_id() {
-    let contexts = array![context("Mode", "Casual")].span();
+    let contexts = array![context('Mode', 'Casual')].span();
     let result = create_context_json("App", "Description", Option::None, contexts);
 
     assert!(contains(@result, @"\"Name\":\"App\""), "Should contain name");
@@ -302,7 +300,7 @@ fn test_context_json_without_id() {
 
 #[test]
 fn test_context_json_multiple_contexts() {
-    let contexts = array![context("Tournament", "Weekly"), context("Round", "1")].span();
+    let contexts = array![context('Tournament', 'Weekly'), context('Round', '1')].span();
     let result = create_context_json("Budokan", "Tournament", Option::Some(42), contexts);
 
     // Contexts are in nested JSON string
@@ -313,7 +311,7 @@ fn test_context_json_multiple_contexts() {
 
 #[test]
 fn test_context_json_field_order() {
-    let contexts = array![context("Key", "Value")].span();
+    let contexts = array![context('Key', 'Value')].span();
     let result = create_context_json("Name", "Desc", Option::Some(5), contexts);
 
     // Verify Name comes before Description
@@ -338,7 +336,7 @@ fn test_context_json_empty_contexts() {
 
 #[test]
 fn test_context_json_zero_id() {
-    let contexts = array![context("Key", "Value")].span();
+    let contexts = array![context('Key', 'Value')].span();
     let result = create_context_json("App", "Desc", Option::Some(0), contexts);
 
     assert!(contains(@result, @"\"Context Id\":\"0\""), "Should handle zero context ID");
@@ -346,7 +344,7 @@ fn test_context_json_zero_id() {
 
 #[test]
 fn test_context_json_large_id() {
-    let contexts = array![context("Key", "Value")].span();
+    let contexts = array![context('Key', 'Value')].span();
     let result = create_context_json("App", "Desc", Option::Some(4294967295), contexts);
 
     assert!(
@@ -356,7 +354,7 @@ fn test_context_json_large_id() {
 
 #[test]
 fn test_context_json_empty_name_desc() {
-    let contexts = array![context("Key", "Value")].span();
+    let contexts = array![context('Key', 'Value')].span();
     let result = create_context_json("", "", Option::None, contexts);
 
     assert!(contains(@result, @"\"Name\":\"\""), "Should handle empty name");
@@ -365,7 +363,7 @@ fn test_context_json_empty_name_desc() {
 
 #[test]
 fn test_context_json_special_characters() {
-    let contexts = array![context("Type-v2", "Value-1")].span();
+    let contexts = array![context('Type-v2', 'Value-1')].span();
     let result = create_context_json("App-Name", "Desc-Text", Option::Some(1), contexts);
 
     assert!(contains(@result, @"App-Name"), "Should handle special chars in name");
@@ -378,7 +376,7 @@ fn test_context_json_special_characters() {
 #[test]
 #[fuzzer(runs: 50)]
 fn test_context_json_fuzz_id(context_id: u32) {
-    let contexts = array![context("Key", "Value")].span();
+    let contexts = array![context('Key', 'Value')].span();
     let result = create_context_json("App", "Desc", Option::Some(context_id), contexts);
 
     // Should not panic and should contain the formatted ID
@@ -397,7 +395,7 @@ fn test_context_json_fuzz_count(count: u8) {
         if i >= bounded_count {
             break;
         }
-        contexts_arr.append(context(format!("Context{}", i), format!("Value{}", i)));
+        contexts_arr.append(context(i.into(), i.into()));
         i += 1;
     }
 
@@ -520,8 +518,8 @@ fn test_json_array_fuzz_count(count: u8) {
 fn test_settings_json_real_world_example() {
     // Simulate real game settings
     let settings = array![
-        setting("Difficulty", "Expert"), setting("Time Limit", "300"), setting("Lives", "3"),
-        setting("Power-ups", "Enabled"),
+        setting('Difficulty', 'Expert'), setting('Time Limit', '300'), setting('Lives', '3'),
+        setting('Power-ups', 'Enabled'),
     ]
         .span();
 
@@ -540,8 +538,8 @@ fn test_settings_json_real_world_example() {
 fn test_context_json_tournament_example() {
     // Simulate tournament context
     let contexts = array![
-        context("Tournament Id", "12345"), context("Round", "Quarter Finals"),
-        context("Prize Pool", "1000 STRK"),
+        context('Tournament Id', '12345'), context('Round', 'Quarter Finals'),
+        context('Prize Pool', '1000 STRK'),
     ]
         .span();
 
@@ -561,9 +559,9 @@ fn test_context_json_tournament_example() {
 fn test_objectives_json_game_example() {
     // Simulate game objectives
     let objectives = array![
-        objective("Complete Level 1", "Finish the tutorial"),
-        objective("Score 1000 Points", "Reach 1000 points in arcade mode"),
-        objective("No Deaths", "Complete a run without dying"),
+        objective('Complete Level 1', 'Finish the tutorial'),
+        objective('Score 1000 Points', 'Reach 1000 pts in arcade'),
+        objective('No Deaths', 'Complete run without dying'),
     ]
         .span();
 

@@ -1203,7 +1203,7 @@ fn test_mint_with_context() {
         name: "Test Context",
         description: "A test context",
         id: Option::Some(1_u32),
-        context: array![GameContext { name: "key1", value: "value1" }].span(),
+        context: array![GameContext { name: 'key1', value: 'value1' }].span(),
     };
 
     mock_call(token_address, selector!("mint"), expected_token_id, 1);
@@ -1240,7 +1240,7 @@ fn test_mint_batch_with_context() {
         description: "First context",
         id: Option::Some(1_u32),
         context: array![
-            GameContext { name: "level", value: "1" }, GameContext { name: "mode", value: "easy" },
+            GameContext { name: 'level', value: '1' }, GameContext { name: 'mode', value: 'easy' },
         ]
             .span(),
     };
@@ -1249,7 +1249,7 @@ fn test_mint_batch_with_context() {
         name: "Context 2",
         description: "Second context",
         id: Option::None,
-        context: array![GameContext { name: "level", value: "5" }].span(),
+        context: array![GameContext { name: 'level', value: '5' }].span(),
     };
 
     let mint1 = MintGameParams {
@@ -1302,7 +1302,7 @@ fn test_mint_batch_mixed_context() {
         name: "Mixed Context",
         description: "A mixed batch context",
         id: Option::Some(42_u32),
-        context: array![GameContext { name: "test", value: "mixed" }].span(),
+        context: array![GameContext { name: 'test', value: 'mixed' }].span(),
     };
 
     let mint1 = MintGameParams {
@@ -1375,9 +1375,9 @@ fn test_mint_with_context_and_all_params() {
         description: "A fully specified context",
         id: Option::Some(100_u32),
         context: array![
-            GameContext { name: "difficulty", value: "hard" },
-            GameContext { name: "multiplayer", value: "true" },
-            GameContext { name: "max_players", value: "4" },
+            GameContext { name: 'difficulty', value: 'hard' },
+            GameContext { name: 'multiplayer', value: 'true' },
+            GameContext { name: 'max_players', value: '4' },
         ]
             .span(),
     };

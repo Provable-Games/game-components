@@ -212,8 +212,8 @@ mod TokenMockContextProvider {
                 description: "Test tournament",
                 id: Option::Some(1),
                 context: array![
-                    GameContext { name: "Type", value: "Tournament" },
-                    GameContext { name: "Prize", value: "1000" },
+                    GameContext { name: 'Type', value: 'Tournament' },
+                    GameContext { name: 'Prize', value: '1000' },
                 ]
                     .span(),
             }

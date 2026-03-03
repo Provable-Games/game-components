@@ -2,6 +2,7 @@ use game_components_embeddable_game_standard::metagame::extensions::context::str
 use game_components_embeddable_game_standard::minigame::extensions::objectives::structs::GameObjective;
 use game_components_embeddable_game_standard::minigame::extensions::settings::structs::GameSetting;
 use graffiti::json::JsonImpl;
+use crate::utils::encoding::felt252_to_byte_array;
 
 pub fn create_settings_json(
     name: ByteArray, description: ByteArray, settings: Span<GameSetting>,
@@ -13,7 +14,8 @@ pub fn create_settings_json(
             break;
         }
         let setting = settings.at(settings_index);
-        settings_json = settings_json.add(setting.name.clone(), setting.value.clone());
+        settings_json = settings_json
+            .add(felt252_to_byte_array(*setting.name), felt252_to_byte_array(*setting.value));
         settings_index += 1;
     }
     let settings_json = settings_json.build();
@@ -35,7 +37,8 @@ pub fn create_objectives_json(objectives: Span<GameObjective>) -> ByteArray {
             break;
         }
         let objective = objectives.at(objective_index);
-        metadata = metadata.add(objective.name.clone(), objective.value.clone());
+        metadata = metadata
+            .add(felt252_to_byte_array(*objective.name), felt252_to_byte_array(*objective.value));
         objective_index += 1;
     }
     metadata.build()
@@ -51,7 +54,8 @@ pub fn create_context_json(
             break;
         }
         let context = contexts.at(contexts_index);
-        contexts_json = contexts_json.add(context.name.clone(), context.value.clone());
+        contexts_json = contexts_json
+            .add(felt252_to_byte_array(*context.name), felt252_to_byte_array(*context.value));
         contexts_index += 1;
     }
     let contexts_json = contexts_json.build();
@@ -106,8 +110,8 @@ mod tests {
     #[test]
     fn test_settings_json() {
         let settings = array![
-            GameSetting { name: "Test Setting 1", value: "Test Setting 1 Value" },
-            GameSetting { name: "Test Setting 2", value: "Test Setting 2 Value" },
+            GameSetting { name: 'Test Setting 1', value: 'Setting 1 Value' },
+            GameSetting { name: 'Test Setting 2', value: 'Setting 2 Value' },
         ]
             .span();
         let _current_1 = create_settings_json(
@@ -120,8 +124,8 @@ mod tests {
     #[test]
     fn test_objectives_json() {
         let objectives = array![
-            GameObjective { name: "Score 100 points", value: "100 points" },
-            GameObjective { name: "Kill 10 enemies", value: "10 enemies" },
+            GameObjective { name: 'Score 100 points', value: '100 points' },
+            GameObjective { name: 'Kill 10 enemies', value: '10 enemies' },
         ]
             .span();
         let _current_1 = create_objectives_json(objectives);
@@ -131,8 +135,8 @@ mod tests {
     #[test]
     fn test_contexts_json() {
         let contexts = array![
-            GameContext { name: "Test Context 1", value: "Test Context 1 Value" },
-            GameContext { name: "Test Context 2", value: "Test Context 2 Value" },
+            GameContext { name: 'Test Context 1', value: 'Context 1 Value' },
+            GameContext { name: 'Test Context 2', value: 'Context 2 Value' },
         ]
             .span();
         let _current_1 = create_context_json(
@@ -150,11 +154,8 @@ mod tests {
 
     #[test]
     fn test_budokan_context_json() {
-        let tournament_id: u64 = 12345;
-        let context = array![
-            GameContext { name: "Tournament Id", value: format!("{}", tournament_id) },
-        ]
-            .span();
+        let tournament_id: felt252 = 12345;
+        let context = array![GameContext { name: 'Tournament Id', value: tournament_id }].span();
         let context_json = create_context_json(
             "Budokan", "The onchain tournament system", Option::Some(1), context,
         );
@@ -163,10 +164,10 @@ mod tests {
 
     #[test]
     fn test_eternum_context_json() {
-        let quest_id: u64 = 67890;
+        let quest_id: felt252 = 67890;
         let context = array![
-            GameContext { name: "Quest Id", value: format!("{}", quest_id) },
-            GameContext { name: "Reward", value: "1000 Stone" },
+            GameContext { name: 'Quest Id', value: quest_id },
+            GameContext { name: 'Reward', value: '1000 Stone' },
         ]
             .span();
         let context_json = create_context_json(

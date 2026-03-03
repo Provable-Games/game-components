@@ -11,7 +11,7 @@ use game_components_embeddable_game_standard::registry::interface::GameMetadata;
 use game_components_embeddable_game_standard::token::structs::TokenMetadata;
 use graffiti::json::JsonImpl;
 use starknet::{ContractAddress, get_block_timestamp};
-use crate::utils::encoding::{U256BytesUsedTraitImpl, bytes_base64_encode};
+use crate::utils::encoding::{U256BytesUsedTraitImpl, bytes_base64_encode, felt252_to_byte_array};
 
 fn create_text(
     text: ByteArray,
@@ -785,9 +785,9 @@ pub fn create_default_svg(
             svg.append(@"<text x='37' y='");
             svg += format!("{}", y_pos);
             svg.append(@"' style='fill:#888;font-size:10px'>");
-            svg += entry.name.clone();
+            svg += felt252_to_byte_array(*entry.name);
             svg.append(@": ");
-            svg += entry.value.clone();
+            svg += felt252_to_byte_array(*entry.value);
             svg.append(@"</text>");
             ctx_i += 1;
         };
@@ -973,7 +973,7 @@ mod tests {
         GameSettingDetails {
             name: "Standard Mode",
             description: "Default game settings",
-            settings: array![GameSetting { name: "Difficulty", value: "Normal" }].span(),
+            settings: array![GameSetting { name: 'Difficulty', value: 'Normal' }].span(),
         }
     }
 
@@ -981,7 +981,7 @@ mod tests {
         GameObjectiveDetails {
             name: "Clear All Blocks",
             description: "Complete the puzzle",
-            objectives: array![GameObjective { name: "Blocks", value: "0" }].span(),
+            objectives: array![GameObjective { name: 'Blocks', value: '0' }].span(),
         }
     }
 
@@ -990,7 +990,7 @@ mod tests {
             name: "Test Context",
             description: "Test context description",
             id: Option::Some(42),
-            context: array![GameContext { name: "Tournament", value: "Weekly #5" }].span(),
+            context: array![GameContext { name: 'Tournament', value: 'Weekly #5' }].span(),
         }
     }
 
@@ -1089,9 +1089,9 @@ mod tests {
             name: "Difficulty Settings",
             description: "Game difficulty configuration",
             settings: array![
-                GameSetting { name: "Difficulty", value: "Hard" },
-                GameSetting { name: "Time Limit", value: "300" },
-                GameSetting { name: "Lives", value: "3" },
+                GameSetting { name: 'Difficulty', value: 'Hard' },
+                GameSetting { name: 'Time Limit', value: '300' },
+                GameSetting { name: 'Lives', value: '3' },
             ]
                 .span(),
         };
@@ -1101,9 +1101,9 @@ mod tests {
             description: "Weekly tournament settings",
             id: Option::Some(42),
             context: array![
-                GameContext { name: "Tournament", value: "Weekly Challenge #5" },
-                GameContext { name: "Prize Pool", value: "1000 STRK" },
-                GameContext { name: "Participants", value: "156" },
+                GameContext { name: 'Tournament', value: 'Weekly Challenge #5' },
+                GameContext { name: 'Prize Pool', value: '1000 STRK' },
+                GameContext { name: 'Participants', value: '156' },
             ]
                 .span(),
         };
@@ -1230,7 +1230,7 @@ mod tests {
         let settings_details = GameSettingDetails {
             name: "Basic Settings",
             description: "Simple game settings",
-            settings: array![GameSetting { name: "Mode", value: "Single Player" }].span(),
+            settings: array![GameSetting { name: 'Mode', value: 'Single Player' }].span(),
         };
 
         // Context with name but no ID
@@ -1238,7 +1238,7 @@ mod tests {
             name: "Casual Mode",
             description: "Relaxed gameplay mode",
             id: Option::None,
-            context: array![GameContext { name: "Mode Type", value: "Casual" }].span(),
+            context: array![GameContext { name: 'Mode Type', value: 'Casual' }].span(),
         };
 
         let token_metadata = TokenMetadata {
@@ -1297,8 +1297,8 @@ mod tests {
             name: "Adventure Settings",
             description: "Configuration for adventure mode",
             settings: array![
-                GameSetting { name: "Difficulty", value: "Medium" },
-                GameSetting { name: "Hints", value: "Enabled" },
+                GameSetting { name: 'Difficulty', value: 'Medium' },
+                GameSetting { name: 'Hints', value: 'Enabled' },
             ]
                 .span(),
         };
@@ -1308,8 +1308,8 @@ mod tests {
             description: "Epic adventure questline",
             id: Option::Some(1),
             context: array![
-                GameContext { name: "Chapter", value: "The Beginning" },
-                GameContext { name: "Location", value: "Mystical Forest" },
+                GameContext { name: 'Chapter', value: 'The Beginning' },
+                GameContext { name: 'Location', value: 'Mystical Forest' },
             ]
                 .span(),
         };
@@ -1375,9 +1375,9 @@ mod tests {
             name: "Test Settings",
             description: "Edge case testing",
             settings: array![
-                GameSetting { name: "Edge Case 1", value: "" }, // Empty value
-                GameSetting { name: "", value: "Edge Case 2" }, // Empty name
-                GameSetting { name: "Normal", value: "Value" },
+                GameSetting { name: 'Edge Case 1', value: 0 }, // Empty value
+                GameSetting { name: 0, value: 'Edge Case 2' }, // Empty name
+                GameSetting { name: 'Normal', value: 'Value' },
             ]
                 .span(),
         };
@@ -1387,9 +1387,9 @@ mod tests {
             description: "Edge case context",
             id: Option::Some(999999), // Large ID
             context: array![
-                GameContext { name: "Max Value", value: "999999999" },
-                GameContext { name: "Special Chars", value: "!@#$%^&*()" },
-                GameContext { name: "ASCII Only", value: "Game Trophy Winner" },
+                GameContext { name: 'Max Value', value: '999999999' },
+                GameContext { name: 'Special Chars', value: '!@#$%^&*()' },
+                GameContext { name: 'ASCII Only', value: 'Game Trophy Winner' },
             ]
                 .span(),
         };

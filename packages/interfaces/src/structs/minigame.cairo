@@ -33,10 +33,10 @@ pub struct GameSettingDetails {
     pub settings: Span<GameSetting>,
 }
 
-#[derive(Drop, Serde)]
+#[derive(Drop, Serde, Copy)]
 pub struct GameSetting {
-    pub name: ByteArray,
-    pub value: ByteArray,
+    pub name: felt252,
+    pub value: felt252,
 }
 
 #[derive(Drop, Serde, Clone)]
@@ -46,8 +46,8 @@ pub struct GameObjectiveDetails {
     pub objectives: Span<GameObjective>,
 }
 
-#[derive(Drop, Serde)]
+#[derive(Drop, Serde, Copy)]
 pub struct GameObjective {
-    pub name: ByteArray,
-    pub value: ByteArray,
+    pub name: felt252,
+    pub value: felt252,
 }
