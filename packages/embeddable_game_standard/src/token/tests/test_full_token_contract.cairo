@@ -102,9 +102,7 @@ fn test_mint_with_all_parameters() { // UT-MINT-002
             Option::Some(CURRENT_TIME),
             Option::Some(FUTURE_TIME),
             Option::Some(objective_id), // single objective_id
-            // Option::Some(context), // TODO: This checks for MetagameInterface from Caller so can
-            // only be provided from contract
-            Option::None,
+            Option::None, // context requires caller to implement IMetagameCallback (SRC5)
             Option::Some("https://client.game.com"),
             Option::Some(RENDERER_ADDRESS()),
             Option::None,
