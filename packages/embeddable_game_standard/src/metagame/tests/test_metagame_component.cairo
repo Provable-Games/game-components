@@ -19,6 +19,7 @@ trait IMockMetagame<TContractState> {
         context: Option<GameContextDetails>,
         client_url: Option<ByteArray>,
         renderer_address: Option<ContractAddress>,
+        skills_address: Option<ContractAddress>,
         to: ContractAddress,
         soulbound: bool,
         paymaster: bool,
@@ -185,6 +186,7 @@ fn test_mint_minimal() {
             Option::None, // objective_ids
             Option::None, // context
             Option::None, // client_url
+            Option::None,
             Option::None, // renderer_address
             to_address,
             false, // soulbound
@@ -230,6 +232,7 @@ fn test_mint_with_all_parameters() {
             Option::None, // context (requires special setup)
             Option::Some("https://game.example.com"),
             Option::Some(renderer_address),
+            Option::None,
             to_address,
             true, // soulbound
             false,
@@ -286,6 +289,7 @@ fn test_mint_with_context_provider_set() {
             Option::Some(context),
             Option::None,
             Option::None,
+            Option::None,
             to_address,
             false,
             false,
@@ -334,6 +338,7 @@ fn test_mint_with_context_no_provider() {
             Option::Some(context),
             Option::None,
             Option::None,
+            Option::None,
             to_address,
             false,
             false,
@@ -370,6 +375,7 @@ fn test_mint_with_objective_id() {
             Option::None,
             Option::None,
             Option::Some(42), // objective_id
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -410,6 +416,7 @@ fn test_mint_with_instant_game() {
             Option::None,
             Option::Some(timestamp), // start
             Option::Some(timestamp), // end (same as start)
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -484,6 +491,7 @@ mod MockMetagameContract {
             context: Option<GameContextDetails>,
             client_url: Option<ByteArray>,
             renderer_address: Option<ContractAddress>,
+            skills_address: Option<ContractAddress>,
             to: ContractAddress,
             soulbound: bool,
             paymaster: bool,
@@ -502,6 +510,7 @@ mod MockMetagameContract {
                     context,
                     client_url,
                     renderer_address,
+                    skills_address,
                     to,
                     soulbound,
                     paymaster,
@@ -689,8 +698,8 @@ mod MockMinigameToken {
             ""
         }
 
-        fn agent_skills(self: @ContractState, token_id: felt252) -> ByteArray {
-            ""
+        fn skills_address(self: @ContractState, token_id: felt252) -> ContractAddress {
+            0.try_into().unwrap()
         }
 
         fn token_metadata_batch(
@@ -848,6 +857,7 @@ mod MockMinigameToken {
             context: Option<GameContextDetails>,
             client_url: Option<ByteArray>,
             renderer_address: Option<ContractAddress>,
+            skills_address: Option<ContractAddress>,
             to: ContractAddress,
             soulbound: bool,
             paymaster: bool,
@@ -906,6 +916,7 @@ mod MockMinigameToken {
                         context_clone,
                         client_url_clone,
                         *params.renderer_address,
+                        Option::None,
                         *params.to,
                         *params.soulbound,
                         *params.paymaster,
@@ -929,6 +940,7 @@ mod MockMinigameToken {
             context: Option<GameContextDetails>,
             client_url: Option<ByteArray>,
             renderer_address: Option<ContractAddress>,
+            skills_address: Option<ContractAddress>,
             recipients: Array<ContractAddress>,
             soulbound: bool,
             paymaster: bool,
@@ -1016,6 +1028,7 @@ fn test_mint_with_renderer_address() {
             Option::None,
             Option::None,
             Option::Some(renderer_address),
+            Option::None,
             to_address,
             false,
             false,
@@ -1047,6 +1060,7 @@ fn test_mint_with_settings_id() {
             Option::None,
             Option::None,
             Option::Some(42), // settings_id
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -1090,6 +1104,7 @@ fn test_mint_multiple_sequential() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             to_address,
             false,
             false,
@@ -1108,6 +1123,7 @@ fn test_mint_multiple_sequential() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             to_address,
             false,
             false,
@@ -1119,6 +1135,7 @@ fn test_mint_multiple_sequential() {
         .mint(
             Option::None,
             Option::Some('Player3'),
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -1165,6 +1182,7 @@ fn test_mint_batch_through_component() {
             context: Option::None,
             client_url: Option::None,
             renderer_address: Option::None,
+            skills_address: Option::None,
             to: to_address,
             soulbound: false,
             paymaster: false,
@@ -1181,6 +1199,7 @@ fn test_mint_batch_through_component() {
             context: Option::None,
             client_url: Option::None,
             renderer_address: Option::None,
+            skills_address: Option::None,
             to: to_address,
             soulbound: true,
             paymaster: false,
@@ -1259,6 +1278,7 @@ trait IMockMetagameWithBatch<TContractState> {
         context: Option<GameContextDetails>,
         client_url: Option<ByteArray>,
         renderer_address: Option<ContractAddress>,
+        skills_address: Option<ContractAddress>,
         to: ContractAddress,
         soulbound: bool,
         paymaster: bool,
@@ -1329,6 +1349,7 @@ mod MockMetagameContractWithBatch {
             context: Option<GameContextDetails>,
             client_url: Option<ByteArray>,
             renderer_address: Option<ContractAddress>,
+            skills_address: Option<ContractAddress>,
             to: ContractAddress,
             soulbound: bool,
             paymaster: bool,
@@ -1347,6 +1368,7 @@ mod MockMetagameContractWithBatch {
                     context,
                     client_url,
                     renderer_address,
+                    skills_address,
                     to,
                     soulbound,
                     paymaster,

@@ -52,6 +52,7 @@ fn test_time_campaign() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -107,6 +108,7 @@ fn test_double_mint_attack() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -119,6 +121,7 @@ fn test_double_mint_attack() {
         .test_token
         .mint(
             test_contracts.minigame.contract_address,
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -150,6 +153,7 @@ fn test_update_game_any_caller() {
     let token_id = token_dispatcher
         .mint(
             game_address,
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -303,6 +307,7 @@ fn test_multi_minter_scenario() {
                     Option::None,
                     Option::None,
                     Option::None,
+                    Option::None,
                     minter,
                     false,
                     false,
@@ -368,6 +373,7 @@ fn test_game_contract_unresponsive() {
     let token_id = token_dispatcher
         .mint(
             game_address,
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -464,6 +470,7 @@ fn test_registry_lookup_edge_cases() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -483,6 +490,7 @@ fn test_registry_lookup_edge_cases() {
     let token_id2 = token_dispatcher
         .mint(
             last_game_address,
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -530,6 +538,7 @@ fn test_concurrent_operations() {
                 .test_token
                 .mint(
                     test_contracts.minigame.contract_address,
+                    Option::None,
                     Option::None,
                     Option::None,
                     Option::None,
@@ -586,6 +595,7 @@ fn test_lifecycle_boundary_conditions() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -618,6 +628,7 @@ fn test_update_game_triggers_game_action_callback() {
         .mint_game(
             Option::Some(test_contracts.minigame.contract_address),
             Option::Some('Player1'),
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -665,6 +676,7 @@ fn test_update_game_triggers_game_over_callback() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -697,6 +709,7 @@ fn test_update_game_no_game_over_callback_without_transition() {
         .mint_game(
             Option::Some(test_contracts.minigame.contract_address),
             Option::Some('Player3'),
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -745,6 +758,7 @@ fn test_update_game_triggers_objective_complete_callback() {
             Option::Some(1), // objective_id = 1
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -784,6 +798,7 @@ fn test_update_game_no_callback_for_non_callback_minter() {
         .mint(
             test_contracts.minigame.contract_address,
             Option::Some('Player5'),
+            Option::None,
             Option::None,
             Option::None,
             Option::None,

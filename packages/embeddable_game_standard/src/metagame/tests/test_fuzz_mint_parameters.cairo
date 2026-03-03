@@ -19,6 +19,7 @@ trait IMockMetagame<TContractState> {
         context: Option<GameContextDetails>,
         client_url: Option<ByteArray>,
         renderer_address: Option<ContractAddress>,
+        skills_address: Option<ContractAddress>,
         to: ContractAddress,
         soulbound: bool,
         paymaster: bool,
@@ -140,6 +141,7 @@ fn test_fuzz_player_names() {
                 Option::None,
                 Option::None,
                 Option::None,
+                Option::None,
                 owner,
                 false,
                 false,
@@ -197,6 +199,7 @@ fn test_property_token_id_monotonicity() {
                 Option::None,
                 Option::None,
                 Option::None,
+                Option::None,
                 owner,
                 false,
                 false,
@@ -233,6 +236,7 @@ fn try_mint_with_lifecycle(
             Option::None,
             Option::Some(start),
             Option::Some(end),
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -302,6 +306,7 @@ mod MockMetagameFuzz {
             context: Option<GameContextDetails>,
             client_url: Option<ByteArray>,
             renderer_address: Option<ContractAddress>,
+            skills_address: Option<ContractAddress>,
             to: ContractAddress,
             soulbound: bool,
             paymaster: bool,
@@ -320,6 +325,7 @@ mod MockMetagameFuzz {
                     context,
                     client_url,
                     renderer_address,
+                    Option::None,
                     to,
                     soulbound,
                     paymaster,
@@ -393,6 +399,7 @@ mod MockMinigameFuzz {
             context: Option<GameContextDetails>,
             client_url: Option<ByteArray>,
             renderer_address: Option<ContractAddress>,
+            skills_address: Option<ContractAddress>,
             to: ContractAddress,
             soulbound: bool,
             paymaster: bool,
@@ -570,8 +577,8 @@ mod MockMinigameTokenFuzz {
             ""
         }
 
-        fn agent_skills(self: @ContractState, token_id: felt252) -> ByteArray {
-            ""
+        fn skills_address(self: @ContractState, token_id: felt252) -> ContractAddress {
+            0.try_into().unwrap()
         }
 
         fn token_metadata_batch(
@@ -729,6 +736,7 @@ mod MockMinigameTokenFuzz {
             context: Option<GameContextDetails>,
             client_url: Option<ByteArray>,
             renderer_address: Option<ContractAddress>,
+            skills_address: Option<ContractAddress>,
             to: ContractAddress,
             soulbound: bool,
             paymaster: bool,
@@ -783,6 +791,7 @@ mod MockMinigameTokenFuzz {
                         context_clone,
                         client_url_clone,
                         *params.renderer_address,
+                        Option::None,
                         *params.to,
                         *params.soulbound,
                         *params.paymaster,
@@ -806,6 +815,7 @@ mod MockMinigameTokenFuzz {
             context: Option<GameContextDetails>,
             client_url: Option<ByteArray>,
             renderer_address: Option<ContractAddress>,
+            skills_address: Option<ContractAddress>,
             recipients: Array<ContractAddress>,
             soulbound: bool,
             paymaster: bool,

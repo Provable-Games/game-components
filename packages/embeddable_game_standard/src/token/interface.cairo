@@ -30,7 +30,7 @@ pub trait IMinigameTokenMixin<TState> {
     fn token_game_address(self: @TState, token_id: felt252) -> ContractAddress;
     fn token_mutable_state(self: @TState, token_id: felt252) -> TokenMutableState;
     fn client_url(self: @TState, token_id: felt252) -> ByteArray;
-    fn agent_skills(self: @TState, token_id: felt252) -> ByteArray;
+    fn skills_address(self: @TState, token_id: felt252) -> ContractAddress;
 
     // Batch view functions
     fn token_metadata_batch(self: @TState, token_ids: Span<felt252>) -> Array<TokenMetadata>;
@@ -58,6 +58,7 @@ pub trait IMinigameTokenMixin<TState> {
         context: Option<GameContextDetails>,
         client_url: Option<ByteArray>,
         renderer_address: Option<ContractAddress>,
+        skills_address: Option<ContractAddress>,
         to: ContractAddress,
         soulbound: bool,
         paymaster: bool,
@@ -80,6 +81,7 @@ pub trait IMinigameTokenMixin<TState> {
         context: Option<GameContextDetails>,
         client_url: Option<ByteArray>,
         renderer_address: Option<ContractAddress>,
+        skills_address: Option<ContractAddress>,
         recipients: Array<ContractAddress>,
         soulbound: bool,
         paymaster: bool,
@@ -210,7 +212,7 @@ pub trait ITokenEventRelayer<TContractState> {
         color: ByteArray,
         client_url: ByteArray,
         renderer_address: ContractAddress,
-        agent_skills: ByteArray,
+        skills_address: ContractAddress,
     );
     fn emit_game_registry_update(
         ref self: TContractState, id: u64, contract_address: ContractAddress,

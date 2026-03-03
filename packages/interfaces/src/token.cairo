@@ -6,6 +6,7 @@ pub mod minter;
 pub mod objectives;
 pub mod renderer;
 pub mod settings;
+pub mod skills;
 pub use context::IMINIGAME_TOKEN_CONTEXT_ID;
 
 // Re-export commonly used items at top level
@@ -27,4 +28,9 @@ pub use renderer::{
 pub use settings::{
     IMINIGAME_TOKEN_SETTINGS_ID, IMinigameTokenSettings, IMinigameTokenSettingsDispatcher,
     IMinigameTokenSettingsDispatcherTrait,
+};
+pub use skills::{
+    IMINIGAME_TOKEN_SKILLS_ID, IMinigameTokenSkills, IMinigameTokenSkillsDispatcher,
+    IMinigameTokenSkillsDispatcherTrait, ISKILLS_ID, ISkills, ISkillsDispatcher,
+    ISkillsDispatcherTrait,
 };

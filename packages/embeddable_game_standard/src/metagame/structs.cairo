@@ -13,6 +13,7 @@ pub struct MintMetagameParams {
     pub context: Option<GameContextDetails>,
     pub client_url: Option<ByteArray>,
     pub renderer_address: Option<ContractAddress>,
+    pub skills_address: Option<ContractAddress>,
     pub to: ContractAddress,
     pub soulbound: bool,
     pub paymaster: bool,

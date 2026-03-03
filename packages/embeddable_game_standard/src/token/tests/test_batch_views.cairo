@@ -32,6 +32,7 @@ fn test_token_metadata_batch_single() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -64,6 +65,7 @@ fn test_token_metadata_batch_multiple() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -83,6 +85,7 @@ fn test_token_metadata_batch_multiple() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             BOB(),
             true,
             false,
@@ -95,6 +98,7 @@ fn test_token_metadata_batch_multiple() {
         .mint(
             test_contracts.minigame.contract_address,
             Option::Some('Player3'),
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -161,6 +165,7 @@ fn test_is_playable_batch_multiple() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -172,6 +177,7 @@ fn test_is_playable_batch_multiple() {
         .test_token
         .mint(
             test_contracts.minigame.contract_address,
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -225,6 +231,7 @@ fn test_settings_id_batch_multiple() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -236,6 +243,7 @@ fn test_settings_id_batch_multiple() {
         .test_token
         .mint(
             test_contracts.minigame.contract_address,
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -289,6 +297,7 @@ fn test_player_name_batch_multiple() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -308,6 +317,7 @@ fn test_player_name_batch_multiple() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             BOB(),
             false,
             false,
@@ -320,6 +330,7 @@ fn test_player_name_batch_multiple() {
         .mint(
             test_contracts.minigame.contract_address,
             Option::None, // No name
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -373,6 +384,7 @@ fn test_objective_id_batch_multiple() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -384,6 +396,7 @@ fn test_objective_id_batch_multiple() {
         .test_token
         .mint(
             test_contracts.minigame.contract_address,
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -437,6 +450,7 @@ fn test_minted_by_batch_multiple() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -448,6 +462,7 @@ fn test_minted_by_batch_multiple() {
         .test_token
         .mint(
             test_contracts.minigame.contract_address,
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -502,6 +517,7 @@ fn test_is_soulbound_batch_multiple() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false, // Not soulbound
             false,
@@ -521,6 +537,7 @@ fn test_is_soulbound_batch_multiple() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             BOB(),
             true, // Soulbound
             false,
@@ -532,6 +549,7 @@ fn test_is_soulbound_batch_multiple() {
         .test_token
         .mint(
             test_contracts.minigame.contract_address,
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -602,6 +620,7 @@ fn test_token_game_address_batch_multiple() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -613,6 +632,7 @@ fn test_token_game_address_batch_multiple() {
         .test_token
         .mint(
             test_contracts.minigame.contract_address,
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -664,6 +684,7 @@ fn test_batch_matches_individual_calls() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -676,6 +697,7 @@ fn test_batch_matches_individual_calls() {
         .mint(
             test_contracts.minigame.contract_address,
             Option::Some('Bob'),
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -739,6 +761,7 @@ fn test_mint_batch_single() {
             context: Option::None,
             client_url: Option::None,
             renderer_address: Option::None,
+            skills_address: Option::None,
             to: ALICE(),
             soulbound: false,
             paymaster: false,
@@ -770,6 +793,7 @@ fn test_mint_batch_multiple() {
             context: Option::None,
             client_url: Option::None,
             renderer_address: Option::None,
+            skills_address: Option::None,
             to: ALICE(),
             soulbound: false,
             paymaster: false,
@@ -786,6 +810,7 @@ fn test_mint_batch_multiple() {
             context: Option::None,
             client_url: Option::None,
             renderer_address: Option::None,
+            skills_address: Option::None,
             to: BOB(),
             soulbound: true,
             paymaster: false,
@@ -802,6 +827,7 @@ fn test_mint_batch_multiple() {
             context: Option::None,
             client_url: Option::None,
             renderer_address: Option::None,
+            skills_address: Option::None,
             to: CHARLIE(),
             soulbound: false,
             paymaster: false,
@@ -844,6 +870,7 @@ fn test_mint_batch_different_settings() {
             context: Option::None,
             client_url: Option::None,
             renderer_address: Option::None,
+            skills_address: Option::None,
             to: ALICE(),
             soulbound: false,
             paymaster: false,
@@ -860,6 +887,7 @@ fn test_mint_batch_different_settings() {
             context: Option::None,
             client_url: Option::None,
             renderer_address: Option::None,
+            skills_address: Option::None,
             to: BOB(),
             soulbound: true,
             paymaster: false,
@@ -917,6 +945,7 @@ fn test_update_player_name_batch_multiple() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -929,6 +958,7 @@ fn test_update_player_name_batch_multiple() {
         .mint(
             test_contracts.minigame.contract_address,
             Option::Some('OldName2'),
+            Option::None,
             Option::None,
             Option::None,
             Option::None,

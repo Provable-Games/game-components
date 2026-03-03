@@ -465,6 +465,7 @@ fn test_mint_game_with_all_parameters() {
             Option::None, // context
             Option::Some("https://client.url"),
             Option::Some(renderer_address),
+            Option::None,
             ALICE(),
             true, // soulbound
             false, // paymaster
@@ -508,6 +509,7 @@ fn test_mint_game_with_minimal_parameters() {
 
     let token_id = minigame_dispatcher
         .mint_game(
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -567,6 +569,7 @@ fn test_mint_game_as_soulbound() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             true, // soulbound
             false, // paymaster
@@ -611,6 +614,7 @@ fn test_mint_game_as_transferable() {
     let token_id = minigame_dispatcher
         .mint_game(
             Option::Some('Player1'),
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -669,6 +673,7 @@ fn test_mint_game_with_player_name() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -716,6 +721,7 @@ fn test_mint_game_with_time_bounds() {
             Option::None,
             Option::Some(CURRENT_TIME),
             Option::Some(FUTURE_TIME),
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -775,6 +781,7 @@ fn test_mint_game_batch_multiple() {
             context: Option::None,
             client_url: Option::None,
             renderer_address: Option::None,
+            skills_address: Option::None,
             to: ALICE(),
             soulbound: false,
             paymaster: false,
@@ -790,6 +797,7 @@ fn test_mint_game_batch_multiple() {
             context: Option::None,
             client_url: Option::None,
             renderer_address: Option::None,
+            skills_address: Option::None,
             to: BOB(),
             soulbound: false,
             paymaster: false,
@@ -805,6 +813,7 @@ fn test_mint_game_batch_multiple() {
             context: Option::None,
             client_url: Option::None,
             renderer_address: Option::None,
+            skills_address: Option::None,
             to: USER1(),
             soulbound: false,
             paymaster: false,
@@ -895,6 +904,7 @@ fn test_mint_game_batch_single() {
             context: Option::None,
             client_url: Option::None,
             renderer_address: Option::None,
+            skills_address: Option::None,
             to: ALICE(),
             soulbound: false,
             paymaster: false,
@@ -949,6 +959,7 @@ fn test_mint_game_batch_mixed_params() {
             context: Option::None,
             client_url: Option::None,
             renderer_address: Option::None,
+            skills_address: Option::None,
             to: ALICE(),
             soulbound: true, // soulbound
             paymaster: false,
@@ -964,6 +975,7 @@ fn test_mint_game_batch_mixed_params() {
             context: Option::None,
             client_url: Option::None,
             renderer_address: Option::None,
+            skills_address: Option::None,
             to: BOB(),
             soulbound: false, // not soulbound
             paymaster: false,
@@ -1018,6 +1030,7 @@ fn test_mint_game_batch_multiple_recipients() {
             context: Option::None,
             client_url: Option::None,
             renderer_address: Option::None,
+            skills_address: Option::None,
             to: ALICE(),
             soulbound: false,
             paymaster: false,
@@ -1033,6 +1046,7 @@ fn test_mint_game_batch_multiple_recipients() {
             context: Option::None,
             client_url: Option::None,
             renderer_address: Option::None,
+            skills_address: Option::None,
             to: BOB(),
             soulbound: false,
             paymaster: false,
@@ -1048,6 +1062,7 @@ fn test_mint_game_batch_multiple_recipients() {
             context: Option::None,
             client_url: Option::None,
             renderer_address: Option::None,
+            skills_address: Option::None,
             to: USER1(),
             soulbound: false,
             paymaster: false,
@@ -1063,6 +1078,7 @@ fn test_mint_game_batch_multiple_recipients() {
             context: Option::None,
             client_url: Option::None,
             renderer_address: Option::None,
+            skills_address: Option::None,
             to: USER2(),
             soulbound: false,
             paymaster: false,
@@ -1190,6 +1206,7 @@ fn test_mint_game_fuzz_player_name(player_name: felt252) {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -1236,6 +1253,7 @@ fn test_mint_game_fuzz_settings_id(settings_id: u32) {
         .mint_game(
             Option::None,
             Option::Some(settings_id),
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -1659,6 +1677,7 @@ fn test_mint_game_fuzz_objective_id(objective_id: u32) {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -1723,6 +1742,7 @@ fn test_mint_game_with_context() {
             Option::None,
             Option::None,
             Option::Some(context),
+            Option::None,
             Option::None,
             Option::None,
             ALICE(),
@@ -1790,6 +1810,7 @@ fn test_mint_game_batch_with_context() {
             context: Option::Some(context1),
             client_url: Option::Some("https://url1.com"),
             renderer_address: Option::None,
+            skills_address: Option::None,
             to: ALICE(),
             soulbound: false,
             paymaster: false,
@@ -1805,6 +1826,7 @@ fn test_mint_game_batch_with_context() {
             context: Option::Some(context2),
             client_url: Option::None,
             renderer_address: Option::None,
+            skills_address: Option::None,
             to: BOB(),
             soulbound: true,
             paymaster: false,
@@ -2070,6 +2092,7 @@ fn test_mint_game_batch_large() {
                     context: Option::None,
                     client_url: Option::None,
                     renderer_address: Option::None,
+                    skills_address: Option::None,
                     to: ALICE(),
                     soulbound: false,
                     paymaster: false,
@@ -2151,6 +2174,7 @@ fn test_mint_game_soulbound() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             true, // soulbound
             false, // paymaster
@@ -2201,6 +2225,7 @@ fn test_mint_game_with_client_url() {
             Option::None,
             Option::None,
             Option::Some("https://custom-client.example.com"),
+            Option::None,
             Option::None,
             ALICE(),
             false,
@@ -2254,6 +2279,7 @@ fn test_mint_game_with_renderer_address() {
             Option::None,
             Option::None,
             Option::Some(renderer_address),
+            Option::None,
             ALICE(),
             false,
             false,

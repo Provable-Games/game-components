@@ -1061,8 +1061,8 @@ mod MockMinigameTokenForTicketBooth {
             ""
         }
 
-        fn agent_skills(self: @ContractState, token_id: felt252) -> ByteArray {
-            ""
+        fn skills_address(self: @ContractState, token_id: felt252) -> ContractAddress {
+            0.try_into().unwrap()
         }
 
         fn token_metadata_batch(
@@ -1130,6 +1130,7 @@ mod MockMinigameTokenForTicketBooth {
             context: Option<GameContextDetails>,
             client_url: Option<ByteArray>,
             renderer_address: Option<ContractAddress>,
+            skills_address: Option<ContractAddress>,
             to: ContractAddress,
             soulbound: bool,
             paymaster: bool,
@@ -1157,6 +1158,7 @@ mod MockMinigameTokenForTicketBooth {
             context: Option<GameContextDetails>,
             client_url: Option<ByteArray>,
             renderer_address: Option<ContractAddress>,
+            skills_address: Option<ContractAddress>,
             recipients: Array<ContractAddress>,
             soulbound: bool,
             paymaster: bool,

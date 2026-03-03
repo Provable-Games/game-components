@@ -36,6 +36,7 @@ pub mod CoreTokenComponent {
     use crate::token::token::{LifecycleTrait, token_state};
     use crate::token::traits::{
         OptionalContext, OptionalMinter, OptionalObjectives, OptionalRenderer, OptionalSettings,
+        OptionalSkills,
     };
 
     #[storage]
@@ -122,6 +123,7 @@ pub mod CoreTokenComponent {
         impl ObjectivesOpt: OptionalObjectives<TContractState>,
         impl SettingsOpt: OptionalSettings<TContractState>,
         impl RendererOpt: OptionalRenderer<TContractState>,
+        impl SkillsOpt: OptionalSkills<TContractState>,
         +Drop<TContractState>,
         +ERC721Component::ERC721HooksTrait<TContractState>,
         +ERC2981Component::ImmutableConfig,
@@ -176,14 +178,31 @@ pub mod CoreTokenComponent {
             registry.game_metadata(game_id).client_url
         }
 
-        fn agent_skills(self: @ComponentState<TContractState>, token_id: felt252) -> ByteArray {
-            let game_id: u64 = unpack_game_id(token_id).into();
-            let game_registry_address = self.game_registry_address.read();
-            if game_registry_address.is_zero() {
-                return "";
+        fn skills_address(
+            self: @ComponentState<TContractState>, token_id: felt252,
+        ) -> ContractAddress {
+            let contract_self = self.get_contract();
+            let skills = SkillsOpt::get_token_skills(contract_self, token_id);
+            match skills {
+                Option::Some(addr) => addr,
+                Option::None => {
+                    let game_id = unpack_game_id(token_id);
+                    if game_id == 0 {
+                        // Single game token - return zero (no agent skills)
+                        0.try_into().unwrap()
+                    } else {
+                        let game_registry_address = self.game_registry_address.read();
+                        if game_registry_address.is_zero() {
+                            return 0.try_into().unwrap();
+                        }
+                        let registry = IMinigameRegistryDispatcher {
+                            contract_address: game_registry_address,
+                        };
+                        let game_metadata = registry.game_metadata(game_id.into());
+                        game_metadata.skills_address
+                    }
+                },
             }
-            let registry = IMinigameRegistryDispatcher { contract_address: game_registry_address };
-            registry.agent_skills(game_id)
         }
 
         fn minted_by(self: @ComponentState<TContractState>, token_id: felt252) -> felt252 {
@@ -475,6 +494,7 @@ pub mod CoreTokenComponent {
             context: Option<GameContextDetails>,
             client_url: Option<ByteArray>,
             renderer_address: Option<ContractAddress>,
+            skills_address: Option<ContractAddress>,
             to: ContractAddress,
             soulbound: bool,
             paymaster: bool,
@@ -492,6 +512,7 @@ pub mod CoreTokenComponent {
                     context,
                     client_url,
                     renderer_address,
+                    skills_address,
                     to,
                     soulbound,
                     paymaster,
@@ -520,6 +541,7 @@ pub mod CoreTokenComponent {
                                 params.context,
                                 params.client_url,
                                 params.renderer_address,
+                                params.skills_address,
                                 params.to,
                                 params.soulbound,
                                 params.paymaster,
@@ -546,6 +568,7 @@ pub mod CoreTokenComponent {
             context: Option<GameContextDetails>,
             client_url: Option<ByteArray>,
             renderer_address: Option<ContractAddress>,
+            skills_address: Option<ContractAddress>,
             mut recipients: Array<ContractAddress>,
             soulbound: bool,
             paymaster: bool,
@@ -585,6 +608,7 @@ pub mod CoreTokenComponent {
                                 ctx,
                                 url,
                                 renderer_address,
+                                skills_address,
                                 to,
                                 soulbound,
                                 paymaster,
@@ -780,6 +804,7 @@ pub mod CoreTokenComponent {
         impl ObjectivesOpt: OptionalObjectives<TContractState>,
         impl SettingsOpt: OptionalSettings<TContractState>,
         impl RendererOpt: OptionalRenderer<TContractState>,
+        impl SkillsOpt: OptionalSkills<TContractState>,
         +Drop<TContractState>,
         +ERC721Component::ERC721HooksTrait<TContractState>,
         +ERC2981Component::ImmutableConfig,
@@ -843,6 +868,7 @@ pub mod CoreTokenComponent {
             context: Option<GameContextDetails>,
             client_url: Option<ByteArray>,
             renderer_address: Option<ContractAddress>,
+            skills_address: Option<ContractAddress>,
             to: ContractAddress,
             soulbound: bool,
             paymaster: bool,
@@ -928,6 +954,14 @@ pub mod CoreTokenComponent {
             match renderer_address {
                 Option::Some(raddr) => {
                     RendererOpt::set_token_renderer(ref contract_self, final_token_id, raddr);
+                },
+                Option::None => {},
+            }
+
+            // Handle skills address if provided
+            match skills_address {
+                Option::Some(addr) => {
+                    SkillsOpt::set_token_skills(ref contract_self, final_token_id, addr);
                 },
                 Option::None => {},
             }

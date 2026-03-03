@@ -4,7 +4,7 @@
 // Import the optimal components - use actual package paths
 use game_components_embeddable_game_standard::token::extensions::minter::minter::MinterComponent;
 use game_components_embeddable_game_standard::token::noop_traits::{
-    NoOpContext, NoOpObjectives, NoOpRenderer, NoOpSettings, NoOpSoulbound,
+    NoOpContext, NoOpObjectives, NoOpRenderer, NoOpSettings, NoOpSkills, NoOpSoulbound,
 };
 use game_components_embeddable_game_standard::token::token_component::CoreTokenComponent;
 use openzeppelin_interfaces::erc2981::IERC2981;
@@ -100,6 +100,7 @@ pub mod MinimalOptimizedContract {
     impl ContextOptionalImpl = NoOpContext<ContractState>; // Zero-cost NoOp
     impl SoulboundOptionalImpl = NoOpSoulbound<ContractState>; // Zero-cost NoOp
     impl RendererOptionalImpl = NoOpRenderer<ContractState>; // Zero-cost NoOp
+    impl SkillsOptionalImpl = NoOpSkills<ContractState>; // Zero-cost NoOp
 
     // ERC721 hooks
     impl ERC721HooksImpl = ERC721HooksEmptyImpl<ContractState>;

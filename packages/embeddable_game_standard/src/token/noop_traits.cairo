@@ -2,7 +2,7 @@ use game_components_embeddable_game_standard::metagame::extensions::context::str
 use starknet::ContractAddress;
 use crate::token::traits::{
     OptionalContext, OptionalMinter, OptionalObjectives, OptionalRenderer, OptionalSettings,
-    OptionalSoulbound,
+    OptionalSkills, OptionalSoulbound,
 };
 
 // No-op implementations for disabled features
@@ -64,6 +64,17 @@ pub impl NoOpRenderer<TContractState> of OptionalRenderer<TContractState> {
 
     fn set_token_renderer(
         ref self: TContractState, token_id: felt252, renderer: ContractAddress,
+    ) { // No-op
+    }
+}
+
+pub impl NoOpSkills<TContractState> of OptionalSkills<TContractState> {
+    fn get_token_skills(self: @TContractState, token_id: felt252) -> Option<ContractAddress> {
+        Option::None
+    }
+
+    fn set_token_skills(
+        ref self: TContractState, token_id: felt252, skills_address: ContractAddress,
     ) { // No-op
     }
 }

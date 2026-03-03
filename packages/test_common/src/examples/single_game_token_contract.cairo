@@ -13,6 +13,7 @@ use game_components_embeddable_game_standard::token::extensions::minter::minter:
 use game_components_embeddable_game_standard::token::extensions::objectives::objectives::ObjectivesComponent;
 use game_components_embeddable_game_standard::token::extensions::renderer::renderer::RendererComponent;
 use game_components_embeddable_game_standard::token::extensions::settings::settings::SettingsComponent;
+use game_components_embeddable_game_standard::token::extensions::skills::skills::SkillsComponent;
 use game_components_embeddable_game_standard::token::structs::TokenMetadata;
 
 // Game components imports - use the actual package paths
@@ -50,6 +51,7 @@ pub mod SingleGameTokenContract {
     component!(path: SettingsComponent, storage: settings, event: SettingsEvent);
     component!(path: ContextComponent, storage: context, event: ContextEvent);
     component!(path: RendererComponent, storage: renderer, event: RendererEvent);
+    component!(path: SkillsComponent, storage: skills, event: SkillsEvent);
 
     // ================================================================================================
     // STORAGE
@@ -77,6 +79,8 @@ pub mod SingleGameTokenContract {
         context: ContextComponent::Storage,
         #[substorage(v0)]
         renderer: RendererComponent::Storage,
+        #[substorage(v0)]
+        skills: SkillsComponent::Storage,
     }
 
     // ================================================================================================
@@ -104,6 +108,8 @@ pub mod SingleGameTokenContract {
         ContextEvent: ContextComponent::Event,
         #[flat]
         RendererEvent: RendererComponent::Event,
+        #[flat]
+        SkillsEvent: SkillsComponent::Event,
     }
 
     // ================================================================================================
@@ -149,6 +155,8 @@ pub mod SingleGameTokenContract {
     impl SettingsImpl = SettingsComponent::SettingsImpl<ContractState>;
     #[abi(embed_v0)]
     impl RendererImpl = RendererComponent::RendererImpl<ContractState>;
+    #[abi(embed_v0)]
+    impl SkillsImpl = SkillsComponent::SkillsImpl<ContractState>;
 
     // Internal implementations
     impl ERC721InternalImpl = ERC721Component::InternalImpl<ContractState>;
@@ -160,6 +168,7 @@ pub mod SingleGameTokenContract {
     impl SettingsInternalImpl = SettingsComponent::InternalImpl<ContractState>;
     impl ContextInternalImpl = ContextComponent::InternalImpl<ContractState>;
     impl RendererInternalImpl = RendererComponent::InternalImpl<ContractState>;
+    impl SkillsInternalImpl = SkillsComponent::InternalImpl<ContractState>;
 
     // ================================================================================================
     // OPTIONAL TRAIT IMPLEMENTATIONS
@@ -170,6 +179,7 @@ pub mod SingleGameTokenContract {
     impl SettingsOptionalImpl = SettingsComponent::SettingsOptionalImpl<ContractState>;
     impl ContextOptionalImpl = ContextComponent::ContextOptionalImpl<ContractState>;
     impl RendererOptionalImpl = RendererComponent::RendererOptionalImpl<ContractState>;
+    impl SkillsOptionalImpl = SkillsComponent::SkillsOptionalImpl<ContractState>;
 
     #[abi(embed_v0)]
     impl ERC721Metadata of IERC721Metadata<ContractState> {
@@ -222,7 +232,7 @@ pub mod SingleGameTokenContract {
                     client_url: "https://example.com/game",
                     renderer_address: renderer_address,
                     royalty_fraction: royalty_frac,
-                    agent_skills: "",
+                    skills_address: 0.try_into().unwrap(),
                     created_at: 0,
                 };
 
@@ -398,5 +408,6 @@ pub mod SingleGameTokenContract {
         self.settings.initializer();
         self.context.initializer();
         self.renderer.initializer();
+        self.skills.initializer();
     }
 }

@@ -1047,7 +1047,7 @@ mod tests {
             client_url: "https://zkube.vercel.app",
             renderer_address: 0x9876543210987654321098765432109876543210.try_into().unwrap(),
             royalty_fraction: 500,
-            agent_skills: "",
+            skills_address: 0.try_into().unwrap(),
             created_at: 0,
         };
 
@@ -1081,7 +1081,7 @@ mod tests {
             client_url: "https://zkube.vercel.app",
             renderer_address: 0x9876543210987654321098765432109876543210.try_into().unwrap(),
             royalty_fraction: 500,
-            agent_skills: "",
+            skills_address: 0.try_into().unwrap(),
             created_at: 0,
         };
 
@@ -1161,7 +1161,7 @@ mod tests {
             client_url: "https://example.com/play",
             renderer_address: 0x9876543210987654321098765432109876543210.try_into().unwrap(),
             royalty_fraction: 250,
-            agent_skills: "",
+            skills_address: 0.try_into().unwrap(),
             created_at: 0,
         };
 
@@ -1223,7 +1223,7 @@ mod tests {
             client_url: "https://example.com/context",
             renderer_address: 0x2222222222222222222222222222222222222222.try_into().unwrap(),
             royalty_fraction: 750,
-            agent_skills: "",
+            skills_address: 0.try_into().unwrap(),
             created_at: 0,
         };
 
@@ -1289,7 +1289,7 @@ mod tests {
             client_url: "https://example.com/adventure",
             renderer_address: 0x4444444444444444444444444444444444444444.try_into().unwrap(),
             royalty_fraction: 1000,
-            agent_skills: "",
+            skills_address: 0.try_into().unwrap(),
             created_at: 0,
         };
 
@@ -1367,7 +1367,7 @@ mod tests {
             client_url: "https://example.com/test",
             renderer_address: 0x6666666666666666666666666666666666666666.try_into().unwrap(),
             royalty_fraction: 10000,
-            agent_skills: "",
+            skills_address: 0.try_into().unwrap(),
             created_at: 0,
         };
 

@@ -59,6 +59,7 @@ pub mod MinigameComponent {
             context: Option<GameContextDetails>,
             client_url: Option<ByteArray>,
             renderer_address: Option<ContractAddress>,
+            skills_address: Option<ContractAddress>,
             to: ContractAddress,
             soulbound: bool,
             paymaster: bool,
@@ -76,6 +77,7 @@ pub mod MinigameComponent {
                 context,
                 client_url,
                 renderer_address,
+                skills_address,
                 to,
                 soulbound,
                 paymaster,
@@ -114,7 +116,7 @@ pub mod MinigameComponent {
             objectives_address: Option<ContractAddress>,
             token_address: ContractAddress,
             royalty_fraction: Option<u128>,
-            agent_skills: Option<ByteArray>,
+            skills_address: Option<ContractAddress>,
         ) {
             // Register base SRC5 interface
             self.register_game_interface();
@@ -153,7 +155,7 @@ pub mod MinigameComponent {
                             client_url,
                             renderer_address,
                             royalty_fraction,
-                            agent_skills,
+                            skills_address,
                         );
                 }
             }

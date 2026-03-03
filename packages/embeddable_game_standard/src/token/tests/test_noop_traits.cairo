@@ -64,6 +64,7 @@ fn mint_test_token(
             Option::None, // objective_id
             Option::None, // context
             Option::None, // client_url
+            Option::None,
             Option::None, // renderer_address
             to,
             false, // soulbound
@@ -109,6 +110,7 @@ fn test_noop_soulbound_mint_with_soulbound_flag_still_transferable() {
             Option::None, // objective_id
             Option::None, // context
             Option::None, // client_url
+            Option::None,
             Option::None, // renderer_address
             ALICE(),
             true, // soulbound flag - ignored by NoOp
@@ -166,6 +168,7 @@ fn test_noop_objectives_mint_with_any_objective_id() {
             Option::Some(999_u32), // objective_id - not validated by NoOp
             Option::None, // context
             Option::None, // client_url
+            Option::None,
             Option::None, // renderer_address
             ALICE(),
             false,
@@ -206,6 +209,7 @@ fn test_noop_objectives_mint_with_max_objective_id() {
             Option::Some(max_30_bit), // max objective_id
             Option::None, // context
             Option::None, // client_url
+            Option::None,
             Option::None, // renderer_address
             ALICE(),
             false,
@@ -239,6 +243,7 @@ fn test_noop_settings_mint_with_any_settings_id() {
             Option::None, // objective_id
             Option::None, // context
             Option::None, // client_url
+            Option::None,
             Option::None, // renderer_address
             ALICE(),
             false,
@@ -268,6 +273,7 @@ fn test_noop_settings_mint_with_max_settings_id() {
             Option::None, // objective_id
             Option::None, // context
             Option::None, // client_url
+            Option::None,
             Option::None, // renderer_address
             ALICE(),
             false,
@@ -294,6 +300,7 @@ fn test_noop_settings_mint_with_zero_settings_id() {
             Option::None, // objective_id
             Option::None, // context
             Option::None, // client_url
+            Option::None,
             Option::None, // renderer_address
             ALICE(),
             false,
@@ -354,7 +361,8 @@ fn test_noop_all_features_mint_full_params() {
             Option::Some(67890_u32), // objective_id - not validated by NoOp
             Option::None, // context
             Option::None, // client_url
-            Option::Some(renderer_addr), // renderer_address - not validated by NoOp
+            Option::Some(renderer_addr),
+            Option::None, // renderer_address - not validated by NoOp
             ALICE(),
             true, // soulbound - not enforced by NoOp
             false,
@@ -394,6 +402,7 @@ fn test_noop_multiple_tokens_different_configs() {
             Option::None, // objective_id
             Option::None, // context
             Option::None, // client_url
+            Option::None,
             Option::None, // renderer_address
             ALICE(),
             false,
@@ -412,6 +421,7 @@ fn test_noop_multiple_tokens_different_configs() {
             Option::Some(100_u32), // objective_id
             Option::None, // context
             Option::None, // client_url
+            Option::None,
             Option::None, // renderer_address
             BOB(),
             true,
@@ -477,6 +487,7 @@ fn test_noop_mint_multiple() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -494,6 +505,7 @@ fn test_noop_mint_multiple() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             BOB(),
             false,
             false,
@@ -503,6 +515,7 @@ fn test_noop_mint_multiple() {
     let token_id3 = token
         .mint(
             game_addr,
+            Option::None,
             Option::None,
             Option::None,
             Option::None,

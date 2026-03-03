@@ -75,6 +75,7 @@ fn test_mint_default_token_minimal() {
         Option::None, // context
         Option::None, // client_url
         Option::None, // renderer_address
+        Option::None,
         ALICE(),
         false,
         false,
@@ -94,6 +95,7 @@ fn test_mint_default_token_with_player_name() {
         token_address,
         Option::None,
         Option::Some('Player1'),
+        Option::None,
         Option::None,
         Option::None,
         Option::None,
@@ -129,6 +131,7 @@ fn test_mint_default_token_with_settings() {
         Option::None,
         Option::None,
         Option::None,
+        Option::None,
         ALICE(),
         false,
         false,
@@ -151,6 +154,7 @@ fn test_mint_default_token_with_lifecycle() {
         Option::None,
         Option::Some(1000),
         Option::Some(2000),
+        Option::None,
         Option::None,
         Option::None,
         Option::None,
@@ -184,6 +188,7 @@ fn test_mint_default_token_with_objective() {
         Option::None,
         Option::None,
         Option::None,
+        Option::None,
         ALICE(),
         false,
         false,
@@ -209,6 +214,7 @@ fn test_mint_default_token_with_context() {
         Option::None,
         Option::None,
         Option::Some(context),
+        Option::None,
         Option::None,
         Option::None,
         ALICE(),
@@ -237,6 +243,7 @@ fn test_mint_default_token_with_client_url() {
         Option::None,
         Option::Some("https://game.example.com"),
         Option::None,
+        Option::None,
         ALICE(),
         false,
         false,
@@ -264,6 +271,7 @@ fn test_mint_default_token_with_renderer() {
         Option::None,
         Option::None,
         Option::Some(renderer),
+        Option::None,
         ALICE(),
         false,
         false,
@@ -281,6 +289,7 @@ fn test_mint_default_token_soulbound() {
 
     let token_id = libs::mint(
         token_address,
+        Option::None,
         Option::None,
         Option::None,
         Option::None,
@@ -318,6 +327,7 @@ fn test_mint_default_token_all_params() {
         Option::Some(context),
         Option::Some("https://full-game.com"),
         Option::Some(renderer),
+        Option::None,
         ALICE(),
         true,
         false,
@@ -346,6 +356,7 @@ fn test_mint_game_token_routes_through_game() {
         token_address, // default_token_address (not used when game_address is provided)
         Option::Some(game_address),
         Option::Some('GamePlayer'),
+        Option::None,
         Option::None,
         Option::None,
         Option::None,
@@ -385,6 +396,7 @@ fn test_mint_game_token_preserves_params() {
         Option::Some(context),
         Option::Some("https://game-route.com"),
         Option::None,
+        Option::None,
         BOB(),
         true,
         false,
@@ -416,6 +428,7 @@ fn test_mint_instant_game() {
         Option::None,
         Option::Some(100),
         Option::Some(100), // Same as start
+        Option::None,
         Option::None,
         Option::None,
         Option::None,
@@ -465,6 +478,7 @@ fn test_mint_batch_single_mint() {
             context: Option::None,
             client_url: Option::None,
             renderer_address: Option::None,
+            skills_address: Option::None,
             to: ALICE(),
             soulbound: false,
             paymaster: false,
@@ -495,6 +509,7 @@ fn test_mint_batch_multiple_mints() {
             context: Option::None,
             client_url: Option::None,
             renderer_address: Option::None,
+            skills_address: Option::None,
             to: ALICE(),
             soulbound: false,
             paymaster: false,
@@ -511,6 +526,7 @@ fn test_mint_batch_multiple_mints() {
             context: Option::None,
             client_url: Option::None,
             renderer_address: Option::None,
+            skills_address: Option::None,
             to: BOB(),
             soulbound: false,
             paymaster: false,
@@ -527,6 +543,7 @@ fn test_mint_batch_multiple_mints() {
             context: Option::None,
             client_url: Option::None,
             renderer_address: Option::None,
+            skills_address: Option::None,
             to: ALICE(),
             soulbound: true,
             paymaster: false,
@@ -559,6 +576,7 @@ fn test_mint_batch_preserves_order() {
             context: Option::None,
             client_url: Option::None,
             renderer_address: Option::None,
+            skills_address: Option::None,
             to: ALICE(),
             soulbound: false,
             paymaster: false,
@@ -575,6 +593,7 @@ fn test_mint_batch_preserves_order() {
             context: Option::None,
             client_url: Option::None,
             renderer_address: Option::None,
+            skills_address: Option::None,
             to: BOB(),
             soulbound: false,
             paymaster: false,
@@ -613,6 +632,7 @@ fn test_mint_batch_with_context() {
             context: Option::Some(context),
             client_url: Option::None,
             renderer_address: Option::None,
+            skills_address: Option::None,
             to: ALICE(),
             soulbound: false,
             paymaster: false,
@@ -642,6 +662,7 @@ fn test_mint_batch_with_client_url() {
             context: Option::None,
             client_url: Option::Some("https://batch-game.com"),
             renderer_address: Option::None,
+            skills_address: Option::None,
             to: ALICE(),
             soulbound: false,
             paymaster: false,
@@ -669,6 +690,7 @@ fn test_fuzz_mint_player_names(player_name: felt252) {
         token_address,
         Option::None,
         Option::Some(player_name),
+        Option::None,
         Option::None,
         Option::None,
         Option::None,
@@ -707,6 +729,7 @@ fn test_fuzz_mint_settings_ids(settings_id: u32) {
         Option::None,
         Option::None,
         Option::None,
+        Option::None,
         ALICE(),
         false,
         false,
@@ -731,6 +754,7 @@ fn test_fuzz_mint_objective_ids(objective_id: u32) {
         Option::None,
         Option::None,
         Option::Some(objective_id),
+        Option::None,
         Option::None,
         Option::None,
         Option::None,
@@ -850,8 +874,8 @@ mod MockMinigameTokenForLibs {
             ""
         }
 
-        fn agent_skills(self: @ContractState, token_id: felt252) -> ByteArray {
-            ""
+        fn skills_address(self: @ContractState, token_id: felt252) -> ContractAddress {
+            0.try_into().unwrap()
         }
 
         fn token_metadata_batch(
@@ -1009,6 +1033,7 @@ mod MockMinigameTokenForLibs {
             context: Option<GameContextDetails>,
             client_url: Option<ByteArray>,
             renderer_address: Option<ContractAddress>,
+            skills_address: Option<ContractAddress>,
             to: ContractAddress,
             soulbound: bool,
             paymaster: bool,
@@ -1060,6 +1085,7 @@ mod MockMinigameTokenForLibs {
                         context_clone,
                         client_url_clone,
                         *params.renderer_address,
+                        Option::None,
                         *params.to,
                         *params.soulbound,
                         *params.paymaster,
@@ -1083,6 +1109,7 @@ mod MockMinigameTokenForLibs {
             context: Option<GameContextDetails>,
             client_url: Option<ByteArray>,
             renderer_address: Option<ContractAddress>,
+            skills_address: Option<ContractAddress>,
             recipients: Array<ContractAddress>,
             soulbound: bool,
             paymaster: bool,
@@ -1153,6 +1180,7 @@ mod MockMinigameForLibs {
             context: Option<GameContextDetails>,
             client_url: Option<ByteArray>,
             renderer_address: Option<ContractAddress>,
+            skills_address: Option<ContractAddress>,
             to: ContractAddress,
             soulbound: bool,
             paymaster: bool,
@@ -1238,7 +1266,7 @@ mod MockRegistryForLibs {
                 client_url: "",
                 renderer_address: Zero::zero(),
                 royalty_fraction: 0,
-                agent_skills: "",
+                skills_address: Zero::zero(),
                 created_at: 0,
             }
         }
@@ -1262,14 +1290,14 @@ mod MockRegistryForLibs {
             client_url: Option<ByteArray>,
             renderer_address: Option<ContractAddress>,
             royalty_fraction: Option<u128>,
-            agent_skills: Option<ByteArray>,
+            skills_address: Option<ContractAddress>,
         ) -> u64 {
             1
         }
         fn set_game_royalty(ref self: ContractState, game_id: u64, royalty_fraction: u128) {}
 
-        fn agent_skills(self: @ContractState, game_id: u64) -> ByteArray {
-            ""
+        fn skills_address(self: @ContractState, game_id: u64) -> ContractAddress {
+            Zero::zero()
         }
 
         fn game_metadata_batch(self: @ContractState, game_ids: Span<u64>) -> Array<GameMetadata> {
@@ -1398,6 +1426,7 @@ fn test_mint_batch_mixed_game_addresses() {
             context: Option::None,
             client_url: Option::None,
             renderer_address: Option::None,
+            skills_address: Option::None,
             to: ALICE(),
             soulbound: false,
             paymaster: false,
@@ -1414,6 +1443,7 @@ fn test_mint_batch_mixed_game_addresses() {
             context: Option::None,
             client_url: Option::None,
             renderer_address: Option::None,
+            skills_address: Option::None,
             to: BOB(),
             soulbound: false,
             paymaster: false,
@@ -1451,6 +1481,7 @@ fn test_mint_batch_different_recipients() {
             context: Option::None,
             client_url: Option::None,
             renderer_address: Option::None,
+            skills_address: Option::None,
             to: ALICE(),
             soulbound: false,
             paymaster: false,
@@ -1467,6 +1498,7 @@ fn test_mint_batch_different_recipients() {
             context: Option::None,
             client_url: Option::None,
             renderer_address: Option::None,
+            skills_address: Option::None,
             to: BOB(),
             soulbound: false,
             paymaster: false,
@@ -1483,6 +1515,7 @@ fn test_mint_batch_different_recipients() {
             context: Option::None,
             client_url: Option::None,
             renderer_address: Option::None,
+            skills_address: Option::None,
             to: carol,
             soulbound: false,
             paymaster: false,
@@ -1515,6 +1548,7 @@ fn test_mint_batch_mixed_soulbound() {
             context: Option::None,
             client_url: Option::None,
             renderer_address: Option::None,
+            skills_address: Option::None,
             to: ALICE(),
             soulbound: false,
             paymaster: false,
@@ -1531,6 +1565,7 @@ fn test_mint_batch_mixed_soulbound() {
             context: Option::None,
             client_url: Option::None,
             renderer_address: Option::None,
+            skills_address: Option::None,
             to: BOB(),
             soulbound: true,
             paymaster: false,
@@ -1566,6 +1601,7 @@ fn test_mint_batch_large_batch() {
                     context: Option::None,
                     client_url: Option::None,
                     renderer_address: Option::None,
+                    skills_address: Option::None,
                     to: ALICE(),
                     soulbound: false,
                     paymaster: false,
@@ -1681,8 +1717,8 @@ mod MockMinigameTokenWithRegistry {
             ""
         }
 
-        fn agent_skills(self: @ContractState, token_id: felt252) -> ByteArray {
-            ""
+        fn skills_address(self: @ContractState, token_id: felt252) -> ContractAddress {
+            0.try_into().unwrap()
         }
 
         fn token_metadata_batch(
@@ -1831,6 +1867,7 @@ mod MockMinigameTokenWithRegistry {
             context: Option<GameContextDetails>,
             client_url: Option<ByteArray>,
             renderer_address: Option<ContractAddress>,
+            skills_address: Option<ContractAddress>,
             to: ContractAddress,
             soulbound: bool,
             paymaster: bool,
@@ -1880,6 +1917,7 @@ mod MockMinigameTokenWithRegistry {
                         context_clone,
                         client_url_clone,
                         *params.renderer_address,
+                        Option::None,
                         *params.to,
                         *params.soulbound,
                         *params.paymaster,
@@ -1903,6 +1941,7 @@ mod MockMinigameTokenWithRegistry {
             context: Option<GameContextDetails>,
             client_url: Option<ByteArray>,
             renderer_address: Option<ContractAddress>,
+            skills_address: Option<ContractAddress>,
             recipients: Array<ContractAddress>,
             soulbound: bool,
             paymaster: bool,

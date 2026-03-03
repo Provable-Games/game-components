@@ -43,6 +43,7 @@ pub fn assert_game_registered(game_address: ContractAddress) {
 /// * `context` - Optional context data
 /// * `client_url` - Optional client URL
 /// * `renderer_address` - Optional renderer contract address
+/// * `skills_address` - Optional skills contract address
 /// * `to` - Address to mint the token to
 /// * `soulbound` - Whether the token should be soulbound
 ///
@@ -59,6 +60,7 @@ pub fn mint(
     context: Option<GameContextDetails>,
     client_url: Option<ByteArray>,
     renderer_address: Option<ContractAddress>,
+    skills_address: Option<ContractAddress>,
     to: ContractAddress,
     soulbound: bool,
     paymaster: bool,
@@ -85,6 +87,7 @@ pub fn mint(
                     context,
                     client_url,
                     renderer_address,
+                    skills_address,
                     to,
                     soulbound,
                     paymaster,
@@ -109,6 +112,7 @@ pub fn mint(
                     context,
                     client_url,
                     renderer_address,
+                    skills_address,
                     to,
                     soulbound,
                     paymaster,
@@ -162,6 +166,7 @@ pub fn mint_batch(
             context_clone,
             client_url_clone,
             *mint_param.renderer_address,
+            *mint_param.skills_address,
             *mint_param.to,
             *mint_param.soulbound,
             *mint_param.paymaster,

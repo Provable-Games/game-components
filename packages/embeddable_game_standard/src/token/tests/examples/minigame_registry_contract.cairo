@@ -130,7 +130,7 @@ pub mod MinigameRegistryContract {
             client_url: Option<ByteArray>,
             renderer_address: Option<ContractAddress>,
             royalty_fraction: Option<u128>,
-            agent_skills: Option<ByteArray>,
+            skills_address: Option<ContractAddress>,
         ) -> u64 {
             let game_count = self.game_counter.read();
             let new_game_id = game_count + 1;
@@ -182,9 +182,9 @@ pub mod MinigameRegistryContract {
                 Option::None => 0,
             };
 
-            let final_agent_skills = match agent_skills {
-                Option::Some(skills) => skills,
-                Option::None => "",
+            let final_skills_address: ContractAddress = match skills_address {
+                Option::Some(addr) => addr,
+                Option::None => 0.try_into().unwrap(),
             };
 
             // Store game metadata
@@ -200,7 +200,7 @@ pub mod MinigameRegistryContract {
                 client_url: final_client_url.clone(),
                 renderer_address: final_renderer_address,
                 royalty_fraction: final_royalty_fraction,
-                agent_skills: final_agent_skills.clone(),
+                skills_address: final_skills_address.clone(),
                 created_at: starknet::get_block_timestamp(),
             };
 
@@ -222,7 +222,7 @@ pub mod MinigameRegistryContract {
                         final_color.clone(),
                         final_client_url.clone(),
                         final_renderer_address,
-                        final_agent_skills.clone(),
+                        final_skills_address,
                     ),
                 Option::None => self
                     .emit(
@@ -261,8 +261,8 @@ pub mod MinigameRegistryContract {
             self.game_metadata.entry(game_id).write(metadata);
         }
 
-        fn agent_skills(self: @ContractState, game_id: u64) -> ByteArray {
-            self.game_metadata.entry(game_id).read().agent_skills
+        fn skills_address(self: @ContractState, game_id: u64) -> ContractAddress {
+            self.game_metadata.entry(game_id).read().skills_address
         }
 
         fn game_metadata_batch(self: @ContractState, game_ids: Span<u64>) -> Array<GameMetadata> {

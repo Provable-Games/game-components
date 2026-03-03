@@ -100,6 +100,7 @@ fn test_settings_mint_with_valid_settings() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -122,6 +123,7 @@ fn test_settings_with_zero_settings_id() {
             test_contracts.minigame.contract_address,
             Option::Some('NoSettingsPlayer'),
             Option::None, // No settings_id means 0
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -187,6 +189,7 @@ fn test_objectives_completion_lifecycle() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -235,6 +238,7 @@ fn test_objectives_completion_exceeds_target() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -268,6 +272,7 @@ fn test_objectives_completion_exact_match() {
             Option::None,
             Option::None,
             Option::Some(1),
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -306,6 +311,7 @@ fn test_objectives_multiple_tokens_same_objective() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -325,6 +331,7 @@ fn test_objectives_multiple_tokens_same_objective() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             BOB(),
             false,
             false,
@@ -341,6 +348,7 @@ fn test_objectives_multiple_tokens_same_objective() {
             Option::None,
             Option::None,
             Option::Some(1),
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -402,6 +410,7 @@ fn test_core_token_client_url_with_mint() {
             Option::None,
             Option::Some(client_url.clone()),
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -430,6 +439,7 @@ fn test_core_token_renderer_address_with_mint() {
             Option::None,
             Option::None,
             Option::Some(RENDERER_ADDRESS()),
+            Option::None,
             ALICE(),
             false,
             false,
@@ -462,7 +472,8 @@ fn test_core_token_full_params_mint() {
             Option::Some(1), // objective_id
             Option::None, // context
             Option::Some("https://game.com"), // client_url
-            Option::Some(RENDERER_ADDRESS()), // renderer_address
+            Option::Some(RENDERER_ADDRESS()),
+            Option::None, // renderer_address
             ALICE(),
             true, // soulbound
             false,
@@ -500,6 +511,7 @@ fn test_core_token_batch_update_game() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -518,6 +530,7 @@ fn test_core_token_batch_update_game() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             BOB(),
             false,
             false,
@@ -528,6 +541,7 @@ fn test_core_token_batch_update_game() {
     let token_id3 = token_dispatcher
         .mint(
             minigame.contract_address,
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -578,6 +592,7 @@ fn test_core_token_playability_with_lifecycle() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -600,6 +615,7 @@ fn test_core_token_playability_with_lifecycle() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             BOB(),
             false,
             false,
@@ -616,6 +632,7 @@ fn test_core_token_playability_with_lifecycle() {
             Option::None,
             Option::Some(PAST_TIME),
             Option::Some(FAR_FUTURE_TIME),
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -667,6 +684,7 @@ fn test_core_token_soulbound_verification() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             true, // soulbound
             false,
@@ -680,6 +698,7 @@ fn test_core_token_soulbound_verification() {
         .mint(
             test_contracts.minigame.contract_address,
             Option::Some('NormalPlayer'),
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -729,6 +748,7 @@ fn test_core_token_minter_tracking() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -747,6 +767,7 @@ fn test_core_token_minter_tracking() {
         .test_token
         .mint(
             test_contracts.minigame.contract_address,
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -799,6 +820,7 @@ fn test_core_token_game_over_irreversible() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -839,6 +861,7 @@ fn test_core_token_metadata_batch_mixed() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -854,6 +877,7 @@ fn test_core_token_metadata_batch_mixed() {
             Option::None,
             Option::Some(1000),
             Option::Some(2000),
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -904,6 +928,7 @@ fn test_multi_game_mint_and_resolution() {
         .mint(
             test_contracts.minigame.contract_address,
             Option::Some('MultiGamePlayer'),
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -963,6 +988,7 @@ fn test_event_emission_on_mint() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -983,6 +1009,7 @@ fn test_event_emission_on_update_game() {
     let token_id = token_dispatcher
         .mint(
             minigame.contract_address,
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -1015,6 +1042,7 @@ fn test_event_emission_on_player_name_update() {
         .mint(
             test_contracts.minigame.contract_address,
             Option::Some('OldName'),
+            Option::None,
             Option::None,
             Option::None,
             Option::None,

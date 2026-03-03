@@ -6,9 +6,9 @@ use crate::structs::token::{
 };
 
 /// SNIP-5 interface ID derived via src5_rs: XOR of extended function selectors
-/// Includes agent_skills view function. Run `src5_rs parse` for full derivation.
+/// Includes skills_address view function. Run `src5_rs parse` for full derivation.
 pub const IMINIGAME_TOKEN_ID: felt252 =
-    0xe67e1d4ee0d7c0cd75c9082845e0641ca255f8fe509d2b121db0b2287c4e8d;
+    0x39b3cf4989f3d1493c059433fb1d41a763c166ef2f8f6bd801823f27414bdbc;
 
 #[starknet::interface]
 pub trait IMinigameToken<TState> {
@@ -26,7 +26,7 @@ pub trait IMinigameToken<TState> {
     fn token_game_address(self: @TState, token_id: felt252) -> ContractAddress;
     fn token_mutable_state(self: @TState, token_id: felt252) -> TokenMutableState;
     fn client_url(self: @TState, token_id: felt252) -> ByteArray;
-    fn agent_skills(self: @TState, token_id: felt252) -> ByteArray;
+    fn skills_address(self: @TState, token_id: felt252) -> ContractAddress;
 
     // Batch view functions
     fn token_metadata_batch(self: @TState, token_ids: Span<felt252>) -> Array<TokenMetadata>;
@@ -54,6 +54,7 @@ pub trait IMinigameToken<TState> {
         context: Option<GameContextDetails>,
         client_url: Option<ByteArray>,
         renderer_address: Option<ContractAddress>,
+        skills_address: Option<ContractAddress>,
         to: ContractAddress,
         soulbound: bool,
         paymaster: bool,
@@ -77,6 +78,7 @@ pub trait IMinigameToken<TState> {
         context: Option<GameContextDetails>,
         client_url: Option<ByteArray>,
         renderer_address: Option<ContractAddress>,
+        skills_address: Option<ContractAddress>,
         recipients: Array<ContractAddress>,
         soulbound: bool,
         paymaster: bool,

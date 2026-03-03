@@ -29,6 +29,7 @@ use crate::token::extensions::minter::minter::MinterComponent;
 use crate::token::extensions::objectives::objectives::ObjectivesComponent;
 use crate::token::extensions::renderer::renderer::RendererComponent;
 use crate::token::extensions::settings::settings::SettingsComponent;
+use crate::token::extensions::skills::skills::SkillsComponent;
 use crate::token::structs::TokenMetadata;
 use crate::token::token_component::CoreTokenComponent;
 
@@ -54,6 +55,7 @@ pub mod FullTokenContract {
     component!(path: SettingsComponent, storage: settings, event: SettingsEvent);
     component!(path: ContextComponent, storage: context, event: ContextEvent);
     component!(path: RendererComponent, storage: renderer, event: RendererEvent);
+    component!(path: SkillsComponent, storage: skills, event: SkillsEvent);
 
     // ================================================================================================
     // STORAGE
@@ -81,6 +83,8 @@ pub mod FullTokenContract {
         context: ContextComponent::Storage,
         #[substorage(v0)]
         renderer: RendererComponent::Storage,
+        #[substorage(v0)]
+        skills: SkillsComponent::Storage,
     }
 
     // ================================================================================================
@@ -108,6 +112,8 @@ pub mod FullTokenContract {
         ContextEvent: ContextComponent::Event,
         #[flat]
         RendererEvent: RendererComponent::Event,
+        #[flat]
+        SkillsEvent: SkillsComponent::Event,
     }
 
     // ================================================================================================
@@ -195,6 +201,8 @@ pub mod FullTokenContract {
     impl SettingsImpl = SettingsComponent::SettingsImpl<ContractState>;
     #[abi(embed_v0)]
     impl RendererImpl = RendererComponent::RendererImpl<ContractState>;
+    #[abi(embed_v0)]
+    impl SkillsImpl = SkillsComponent::SkillsImpl<ContractState>;
 
     // Internal implementations
     impl ERC721InternalImpl = ERC721Component::InternalImpl<ContractState>;
@@ -206,6 +214,7 @@ pub mod FullTokenContract {
     impl SettingsInternalImpl = SettingsComponent::InternalImpl<ContractState>;
     impl ContextInternalImpl = ContextComponent::InternalImpl<ContractState>;
     impl RendererInternalImpl = RendererComponent::InternalImpl<ContractState>;
+    impl SkillsInternalImpl = SkillsComponent::InternalImpl<ContractState>;
 
     // ================================================================================================
     // OPTIONAL TRAIT IMPLEMENTATIONS
@@ -216,6 +225,7 @@ pub mod FullTokenContract {
     impl SettingsOptionalImpl = SettingsComponent::SettingsOptionalImpl<ContractState>;
     impl ContextOptionalImpl = ContextComponent::ContextOptionalImpl<ContractState>;
     impl RendererOptionalImpl = RendererComponent::RendererOptionalImpl<ContractState>;
+    impl SkillsOptionalImpl = SkillsComponent::SkillsOptionalImpl<ContractState>;
 
     #[abi(embed_v0)]
     impl ERC721Metadata of IERC721Metadata<ContractState> {
@@ -499,5 +509,6 @@ pub mod FullTokenContract {
         self.settings.initializer();
         self.context.initializer();
         self.renderer.initializer();
+        self.skills.initializer();
     }
 }
