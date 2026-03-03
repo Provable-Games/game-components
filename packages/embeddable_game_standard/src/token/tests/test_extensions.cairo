@@ -79,6 +79,7 @@ fn test_transfer_regular_token() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false, // not soulbound
             false,
@@ -122,6 +123,7 @@ fn test_set_token_renderer() {
             Option::None,
             Option::None,
             Option::Some(renderer_address),
+            Option::None,
             ALICE(),
             false,
             false,
@@ -151,6 +153,7 @@ fn test_get_renderer_no_custom() {
     let token_id = token_dispatcher
         .mint(
             game_addr,
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -197,6 +200,7 @@ fn test_reset_token_renderer() {
             Option::None,
             Option::None,
             Option::Some(custom_renderer),
+            Option::None,
             ALICE(),
             false,
             false,
@@ -251,6 +255,7 @@ fn test_reset_token_renderer_unauthorized() {
             Option::None,
             Option::None,
             Option::Some(custom_renderer),
+            Option::None,
             ALICE(),
             false,
             false,
@@ -286,6 +291,7 @@ fn test_reset_token_renderer_event() {
             Option::None,
             Option::None,
             Option::Some(custom_renderer),
+            Option::None,
             ALICE(),
             false,
             false,
@@ -327,6 +333,7 @@ fn test_zero_address_renderer() {
             Option::None,
             Option::None,
             Option::Some(addr(0x0)),
+            Option::None,
             ALICE(),
             false,
             false,
@@ -380,6 +387,7 @@ fn test_mint_events() {
     let token_id = token_dispatcher
         .mint(
             game_addr,
+            Option::None,
             Option::None,
             Option::None,
             Option::None,

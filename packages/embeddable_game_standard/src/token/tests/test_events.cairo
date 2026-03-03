@@ -34,6 +34,7 @@ fn test_mint_event_emission() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -56,6 +57,7 @@ fn test_update_game_event_emissions() {
     let token_id = token_dispatcher
         .mint(
             minigame.contract_address,
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -121,6 +123,7 @@ fn test_update_game_with_metadata_change_events() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -157,6 +160,7 @@ fn test_mint_with_context_event() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -178,6 +182,7 @@ fn test_transfer_events() {
         .test_token
         .mint(
             test_contracts.minigame.contract_address,
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -219,6 +224,7 @@ fn test_batch_operations_event_count() {
             .test_token
             .mint(
                 test_contracts.minigame.contract_address,
+                Option::None,
                 Option::None,
                 Option::None,
                 Option::None,
@@ -273,6 +279,7 @@ fn test_multi_game_registry_events() {
         .test_token
         .mint(
             game.contract_address,
+            Option::None,
             Option::None,
             Option::None,
             Option::None,

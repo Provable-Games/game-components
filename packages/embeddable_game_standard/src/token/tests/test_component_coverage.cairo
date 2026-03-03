@@ -71,6 +71,7 @@ fn test_transfer_non_soulbound_token() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false, // NOT soulbound
             false,
@@ -102,6 +103,7 @@ fn test_transfer_soulbound_token_fails() {
         .mint(
             test_contracts.minigame.contract_address,
             Option::Some('SoulboundPlayer'),
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -149,6 +151,7 @@ fn test_playability_with_zero_start_time() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -178,6 +181,7 @@ fn test_playability_with_zero_end_time() {
             Option::None,
             Option::Some(PAST_TIME), // start
             Option::Some(0), // end = 0 (no expiry)
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -219,6 +223,7 @@ fn test_same_minter_multiple_tokens() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -238,6 +243,7 @@ fn test_same_minter_multiple_tokens() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -249,6 +255,7 @@ fn test_same_minter_multiple_tokens() {
         .test_token
         .mint(
             test_contracts.minigame.contract_address,
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -285,6 +292,7 @@ fn test_multi_game_token_game_id_resolution() {
         .test_token
         .mint(
             test_contracts.minigame.contract_address,
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -341,6 +349,7 @@ fn test_erc721_balance_of_after_mint() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -378,6 +387,7 @@ fn test_update_game_no_state_change() {
     let token_id = token_dispatcher
         .mint(
             minigame_dispatcher.contract_address,
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -426,6 +436,7 @@ fn test_update_game_with_score_change() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -466,7 +477,8 @@ fn test_renderer_address_custom() {
             Option::None,
             Option::None,
             Option::None,
-            Option::Some(RENDERER_ADDRESS()), // custom renderer
+            Option::Some(RENDERER_ADDRESS()),
+            Option::None, // custom renderer
             ALICE(),
             false,
             false,
@@ -495,6 +507,7 @@ fn test_get_renderer() {
             Option::None,
             Option::None,
             Option::Some(RENDERER_ADDRESS()),
+            Option::None,
             ALICE(),
             false,
             false,
@@ -526,6 +539,7 @@ fn test_get_renderer_batch() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -545,6 +559,7 @@ fn test_get_renderer_batch() {
             Option::None,
             Option::None,
             Option::Some(RENDERER_ADDRESS()),
+            Option::None,
             BOB(),
             false,
             false,
@@ -578,6 +593,7 @@ fn test_player_name_initial() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -598,6 +614,7 @@ fn test_player_name_no_name() {
         .mint(
             test_contracts.minigame.contract_address,
             Option::None, // No name
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -639,6 +656,7 @@ fn test_objective_id_initial() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -663,6 +681,7 @@ fn test_objective_id_zero() {
             Option::None,
             Option::None,
             Option::None, // No objective
+            Option::None,
             Option::None,
             Option::None,
             Option::None,

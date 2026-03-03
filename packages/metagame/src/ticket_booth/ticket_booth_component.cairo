@@ -367,6 +367,7 @@ pub mod TicketBoothComponent {
                     Option::None,
                     self.client_url.read(),
                     self.renderer_address.read(),
+                    Option::None,
                     to,
                     soulbound,
                     false,

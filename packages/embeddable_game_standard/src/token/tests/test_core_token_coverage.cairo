@@ -41,6 +41,7 @@ fn test_core_token_edge_case_minting() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -67,6 +68,7 @@ fn test_core_token_batch_operations() {
             .mint(
                 test_contracts.minigame.contract_address,
                 Option::Some('BatchPlayer'),
+                Option::None,
                 Option::None,
                 Option::None,
                 Option::None,
@@ -133,6 +135,7 @@ fn test_core_token_game_registry_operations() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -155,6 +158,7 @@ fn test_core_token_update_edge_cases() {
     let token_id = token_dispatcher
         .mint(
             mock_game.contract_address,
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -207,6 +211,7 @@ fn test_core_token_lifecycle_validation() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -227,6 +232,7 @@ fn test_core_token_lifecycle_validation() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             BOB(),
             false,
             false,
@@ -243,6 +249,7 @@ fn test_core_token_lifecycle_validation() {
             Option::None,
             Option::Some(0),
             Option::Some(0),
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -285,6 +292,7 @@ fn test_core_token_minter_edge_cases() {
             .test_token
             .mint(
                 test_contracts.minigame.contract_address,
+                Option::None,
                 Option::None,
                 Option::None,
                 Option::None,
@@ -338,6 +346,7 @@ fn test_mint_with_zero_game_address_should_panic() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -376,6 +385,7 @@ fn test_update_player_name_basic() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -405,6 +415,7 @@ fn test_update_player_name_multiple_updates() {
         .mint(
             test_contracts.minigame.contract_address,
             Option::Some('Player'),
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -476,6 +487,7 @@ fn test_update_player_name_non_owner() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -508,6 +520,7 @@ fn test_update_player_name_empty_name() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -533,6 +546,7 @@ fn test_update_player_name_special_characters() {
         .mint(
             test_contracts.minigame.contract_address,
             Option::Some('Player'),
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -588,6 +602,7 @@ fn test_renderer_address_single_game_no_custom_renderer() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             Option::None, // No renderer
             ALICE(),
             false,
@@ -623,6 +638,7 @@ fn test_renderer_address_batch_single_game() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -633,6 +649,7 @@ fn test_renderer_address_batch_single_game() {
     let token_id2 = token_dispatcher
         .mint(
             minigame_dispatcher.contract_address,
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -684,6 +701,7 @@ fn test_player_name_single_game_view() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -710,6 +728,7 @@ fn test_is_playable_batch_single_game() {
     let token_id = token_dispatcher
         .mint(
             minigame_dispatcher.contract_address,
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -750,6 +769,7 @@ fn test_settings_id_batch_single_game() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -782,6 +802,7 @@ fn test_player_name_batch_single_game() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -806,6 +827,7 @@ fn test_objective_id_batch_single_game() {
     let token_id = token_dispatcher
         .mint(
             minigame_dispatcher.contract_address,
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -846,6 +868,7 @@ fn test_minted_by_batch_single_game() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -870,6 +893,7 @@ fn test_is_soulbound_batch_single_game() {
     let token_id = token_dispatcher
         .mint(
             minigame_dispatcher.contract_address,
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -910,6 +934,7 @@ fn test_token_game_address_batch_single_game() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -937,6 +962,7 @@ fn test_update_game_multi_game_resolve_address() {
         .test_token
         .mint(
             test_contracts.minigame.contract_address,
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -982,6 +1008,7 @@ fn test_update_game_batch_multi_game() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -993,6 +1020,7 @@ fn test_update_game_batch_multi_game() {
         .test_token
         .mint(
             test_contracts.minigame.contract_address,
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -1047,6 +1075,7 @@ fn test_update_player_name_batch_single_game() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -1058,6 +1087,7 @@ fn test_update_player_name_batch_single_game() {
         .mint(
             minigame_dispatcher.contract_address,
             Option::Some('Old2'),
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -1150,6 +1180,7 @@ fn test_mint_with_future_start_time() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -1194,6 +1225,7 @@ fn test_validate_and_process_game_address_multi_game() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -1223,6 +1255,7 @@ fn test_resolve_game_address_multi_game() {
         .test_token
         .mint(
             test_contracts.minigame.contract_address,
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -1269,6 +1302,7 @@ fn test_emit_player_name_update_on_update() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -1300,6 +1334,7 @@ fn test_update_player_name_single_game_token() {
         .mint(
             minigame_dispatcher.contract_address,
             Option::Some('OrigName'),
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -1345,6 +1380,7 @@ fn test_mint_game_token_with_player_name_and_client_url() {
             Option::None,
             Option::Some("https://my.game.com/play"),
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -1372,6 +1408,7 @@ fn test_update_game_single_game_mode() {
     let token_id = token_dispatcher
         .mint(
             minigame_dispatcher.contract_address,
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -1420,6 +1457,7 @@ fn test_player_name_multi_game_view() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -1449,6 +1487,7 @@ fn test_renderer_address_multi_game_no_custom_renderer() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -1470,6 +1509,7 @@ fn test_is_playable_batch_multi_game() {
         .test_token
         .mint(
             test_contracts.minigame.contract_address,
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -1508,6 +1548,7 @@ fn test_settings_id_batch_multi_game() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -1530,6 +1571,7 @@ fn test_player_name_batch_multi_game() {
         .mint(
             test_contracts.minigame.contract_address,
             Option::Some('BatchMulti'),
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -1567,6 +1609,7 @@ fn test_objective_id_batch_multi_game() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -1588,6 +1631,7 @@ fn test_minted_by_batch_multi_game() {
         .test_token
         .mint(
             test_contracts.minigame.contract_address,
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -1626,6 +1670,7 @@ fn test_is_soulbound_batch_multi_game() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             true, // soulbound
             false,
@@ -1656,6 +1701,7 @@ fn test_renderer_address_batch_multi_game() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -1678,6 +1724,7 @@ fn test_token_game_address_batch_multi_game() {
         .test_token
         .mint(
             test_contracts.minigame.contract_address,
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -1719,6 +1766,7 @@ fn test_update_player_name_multi_game() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -1745,6 +1793,7 @@ fn test_update_game_batch_full_token() {
         .test_token
         .mint(
             test_contracts.minigame.contract_address,
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -1781,6 +1830,7 @@ fn test_update_player_name_batch_multi_game() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -1793,6 +1843,7 @@ fn test_update_player_name_batch_multi_game() {
         .mint(
             test_contracts.minigame.contract_address,
             Option::Some('Old2'),
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -1865,6 +1916,7 @@ fn test_mint_with_future_start_multi_game() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -1893,6 +1945,7 @@ fn test_emit_player_name_update_multi_game() {
         .mint(
             test_contracts.minigame.contract_address,
             Option::Some('InitMG'),
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -1932,6 +1985,7 @@ fn test_mint_game_token_with_player_name_multi_game() {
             Option::None,
             Option::None,
             Option::Some("https://multi.game.com/play"),
+            Option::None,
             Option::None,
             ALICE(),
             false,

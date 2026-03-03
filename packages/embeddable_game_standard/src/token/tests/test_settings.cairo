@@ -117,6 +117,7 @@ fn test_validate_settings_valid_settings_id() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -141,6 +142,7 @@ fn test_validate_settings_zero_settings_address() {
             test_contracts.minigame.contract_address,
             Option::None,
             Option::None, // No settings_id means no validation
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -179,6 +181,7 @@ fn test_validate_settings_id_zero() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -209,6 +212,7 @@ fn test_validate_settings_id_not_exist() {
             test_contracts.minigame.contract_address,
             Option::None,
             Option::Some(999), // Non-existent settings_id
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -278,6 +282,7 @@ fn test_mint_with_settings_validation() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -320,6 +325,7 @@ fn test_create_and_use_settings() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -342,6 +348,7 @@ fn test_settings_id_view_no_settings() {
         .test_token
         .mint(
             test_contracts.minigame.contract_address,
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -377,6 +384,7 @@ fn test_settings_id_batch_view() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -388,6 +396,7 @@ fn test_settings_id_batch_view() {
         .test_token
         .mint(
             test_contracts.minigame.contract_address,
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -446,6 +455,7 @@ fn test_fuzz_settings_id_validation(settings_id: u32) {
                 test_contracts.minigame.contract_address,
                 Option::None,
                 Option::None, // settings_id = 0
+                Option::None,
                 Option::None,
                 Option::None,
                 Option::None,

@@ -49,7 +49,7 @@ fn default_game_metadata() -> GameMetadata {
         client_url: "https://example.com/play",
         renderer_address: TEST_ADDRESS(),
         royalty_fraction: 500,
-        agent_skills: "",
+        skills_address: ZERO_ADDRESS(),
         created_at: 0,
     }
 }

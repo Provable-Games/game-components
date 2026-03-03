@@ -1,5 +1,5 @@
-// Tests for RendererComponent extension
-// Test Plan: renderer_test_plan.md
+// Tests for SkillsComponent extension
+// Mirrors test_renderer.cairo structure
 
 use core::num::traits::Zero;
 use openzeppelin_interfaces::introspection::ISRC5DispatcherTrait;
@@ -7,36 +7,40 @@ use snforge_std::{
     EventSpyAssertionsTrait, spy_events, start_cheat_caller_address, stop_cheat_caller_address,
 };
 use starknet::ContractAddress;
-use crate::token::extensions::renderer::interface::IMINIGAME_TOKEN_RENDERER_ID;
-use crate::token::extensions::renderer::renderer::RendererComponent;
+use crate::token::extensions::skills::interface::IMINIGAME_TOKEN_SKILLS_ID;
+use crate::token::extensions::skills::skills::SkillsComponent;
 use crate::token::interface::IMinigameTokenMixinDispatcherTrait;
 
 // Import setup helpers
-use super::setup::{ALICE, BOB, RENDERER_ADDRESS, ZERO_ADDRESS, setup_multi_game};
+use super::setup::{ALICE, BOB, setup_multi_game};
 
 // Helper function for creating contract addresses from felt252 values
 fn addr(value: felt252) -> ContractAddress {
     value.try_into().unwrap()
 }
 
-// Custom renderer addresses for testing
-fn CUSTOM_RENDERER() -> ContractAddress {
-    addr(0x123456)
+// Custom skills addresses for testing
+fn CUSTOM_SKILLS() -> ContractAddress {
+    addr(0x5C1115)
 }
 
-fn CUSTOM_RENDERER_2() -> ContractAddress {
-    addr(0x789abc)
+fn CUSTOM_SKILLS_2() -> ContractAddress {
+    addr(0x5C1152)
+}
+
+fn ZERO_ADDRESS() -> ContractAddress {
+    addr(0)
 }
 
 // ================================================================================================
-// GET_RENDERER TESTS
+// GET_SKILLS_ADDRESS TESTS
 // ================================================================================================
 
 #[test]
-fn test_get_renderer_with_custom_renderer() {
+fn test_get_skills_address_with_custom_skills() {
     let test_contracts = setup_multi_game();
 
-    // Mint with custom renderer
+    // Mint with custom skills
     let token_id = test_contracts
         .test_token
         .mint(
@@ -48,8 +52,8 @@ fn test_get_renderer_with_custom_renderer() {
             Option::None,
             Option::None,
             Option::None,
-            Option::Some(CUSTOM_RENDERER()),
-            Option::None,
+            Option::None, // renderer_address
+            Option::Some(CUSTOM_SKILLS()), // skills_address
             ALICE(),
             false,
             false,
@@ -58,16 +62,16 @@ fn test_get_renderer_with_custom_renderer() {
         );
 
     assert!(
-        test_contracts.test_token.get_renderer(token_id) == CUSTOM_RENDERER(),
-        "Should return custom renderer",
+        test_contracts.test_token.get_skills_address(token_id) == CUSTOM_SKILLS(),
+        "Should return custom skills address",
     );
 }
 
 #[test]
-fn test_get_renderer_no_custom_renderer() {
+fn test_get_skills_address_no_custom_skills() {
     let test_contracts = setup_multi_game();
 
-    // Mint without renderer
+    // Mint without skills
     let token_id = test_contracts
         .test_token
         .mint(
@@ -79,8 +83,8 @@ fn test_get_renderer_no_custom_renderer() {
             Option::None,
             Option::None,
             Option::None,
-            Option::None,
-            Option::None,
+            Option::None, // renderer_address
+            Option::None, // skills_address
             ALICE(),
             false,
             false,
@@ -89,15 +93,16 @@ fn test_get_renderer_no_custom_renderer() {
         );
 
     assert!(
-        test_contracts.test_token.get_renderer(token_id).is_zero(), "Should return zero address",
+        test_contracts.test_token.get_skills_address(token_id).is_zero(),
+        "Should return zero address",
     );
 }
 
 #[test]
-fn test_get_renderer_after_reset() {
+fn test_get_skills_address_after_reset() {
     let test_contracts = setup_multi_game();
 
-    // Mint with renderer
+    // Mint with skills
     let token_id = test_contracts
         .test_token
         .mint(
@@ -109,8 +114,8 @@ fn test_get_renderer_after_reset() {
             Option::None,
             Option::None,
             Option::None,
-            Option::Some(CUSTOM_RENDERER()),
-            Option::None,
+            Option::None, // renderer_address
+            Option::Some(CUSTOM_SKILLS()), // skills_address
             ALICE(),
             false,
             false,
@@ -120,21 +125,21 @@ fn test_get_renderer_after_reset() {
 
     // Reset as owner
     start_cheat_caller_address(test_contracts.test_token.contract_address, ALICE());
-    test_contracts.test_token.reset_token_renderer(token_id);
+    test_contracts.test_token.reset_token_skills(token_id);
     stop_cheat_caller_address(test_contracts.test_token.contract_address);
 
     assert!(
-        test_contracts.test_token.get_renderer(token_id).is_zero(),
+        test_contracts.test_token.get_skills_address(token_id).is_zero(),
         "Should return zero after reset",
     );
 }
 
 // ================================================================================================
-// HAS_CUSTOM_RENDERER TESTS
+// HAS_CUSTOM_SKILLS TESTS
 // ================================================================================================
 
 #[test]
-fn test_has_custom_renderer_true() {
+fn test_has_custom_skills_true() {
     let test_contracts = setup_multi_game();
 
     let token_id = test_contracts
@@ -148,8 +153,8 @@ fn test_has_custom_renderer_true() {
             Option::None,
             Option::None,
             Option::None,
-            Option::Some(RENDERER_ADDRESS()),
-            Option::None,
+            Option::None, // renderer_address
+            Option::Some(CUSTOM_SKILLS()), // skills_address
             ALICE(),
             false,
             false,
@@ -157,11 +162,11 @@ fn test_has_custom_renderer_true() {
             0,
         );
 
-    assert!(test_contracts.test_token.has_custom_renderer(token_id), "Should have custom renderer");
+    assert!(test_contracts.test_token.has_custom_skills(token_id), "Should have custom skills");
 }
 
 #[test]
-fn test_has_custom_renderer_false() {
+fn test_has_custom_skills_false() {
     let test_contracts = setup_multi_game();
 
     let token_id = test_contracts
@@ -175,38 +180,8 @@ fn test_has_custom_renderer_false() {
             Option::None,
             Option::None,
             Option::None,
-            Option::None,
-            Option::None,
-            ALICE(),
-            false,
-            false,
-            0,
-            0,
-        );
-
-    assert!(
-        !test_contracts.test_token.has_custom_renderer(token_id), "Should not have custom renderer",
-    );
-}
-
-#[test]
-fn test_has_custom_renderer_zero_address_renderer() {
-    let test_contracts = setup_multi_game();
-
-    // Mint with zero address explicitly as renderer
-    let token_id = test_contracts
-        .test_token
-        .mint(
-            test_contracts.minigame.contract_address,
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::Some(ZERO_ADDRESS()),
-            Option::None,
+            Option::None, // renderer_address
+            Option::None, // skills_address
             ALICE(),
             false,
             false,
@@ -215,13 +190,43 @@ fn test_has_custom_renderer_zero_address_renderer() {
         );
 
     assert!(
-        !test_contracts.test_token.has_custom_renderer(token_id),
-        "Zero address should not be custom renderer",
+        !test_contracts.test_token.has_custom_skills(token_id), "Should not have custom skills",
     );
 }
 
 #[test]
-fn test_has_custom_renderer_after_reset() {
+fn test_has_custom_skills_zero_address() {
+    let test_contracts = setup_multi_game();
+
+    // Mint with zero address explicitly as skills
+    let token_id = test_contracts
+        .test_token
+        .mint(
+            test_contracts.minigame.contract_address,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None, // renderer_address
+            Option::Some(ZERO_ADDRESS()), // skills_address
+            ALICE(),
+            false,
+            false,
+            0,
+            0,
+        );
+
+    assert!(
+        !test_contracts.test_token.has_custom_skills(token_id),
+        "Zero address should not be custom skills",
+    );
+}
+
+#[test]
+fn test_has_custom_skills_after_reset() {
     let test_contracts = setup_multi_game();
 
     let token_id = test_contracts
@@ -235,8 +240,8 @@ fn test_has_custom_renderer_after_reset() {
             Option::None,
             Option::None,
             Option::None,
-            Option::Some(CUSTOM_RENDERER()),
-            Option::None,
+            Option::None, // renderer_address
+            Option::Some(CUSTOM_SKILLS()), // skills_address
             ALICE(),
             false,
             false,
@@ -246,21 +251,21 @@ fn test_has_custom_renderer_after_reset() {
 
     // Reset
     start_cheat_caller_address(test_contracts.test_token.contract_address, ALICE());
-    test_contracts.test_token.reset_token_renderer(token_id);
+    test_contracts.test_token.reset_token_skills(token_id);
     stop_cheat_caller_address(test_contracts.test_token.contract_address);
 
     assert!(
-        !test_contracts.test_token.has_custom_renderer(token_id),
-        "Should not have custom renderer after reset",
+        !test_contracts.test_token.has_custom_skills(token_id),
+        "Should not have custom skills after reset",
     );
 }
 
 // ================================================================================================
-// RESET_TOKEN_RENDERER TESTS
+// RESET_TOKEN_SKILLS TESTS
 // ================================================================================================
 
 #[test]
-fn test_reset_token_renderer_as_owner() {
+fn test_reset_token_skills_as_owner() {
     let test_contracts = setup_multi_game();
 
     let token_id = test_contracts
@@ -274,8 +279,8 @@ fn test_reset_token_renderer_as_owner() {
             Option::None,
             Option::None,
             Option::None,
-            Option::Some(CUSTOM_RENDERER()),
-            Option::None,
+            Option::None, // renderer_address
+            Option::Some(CUSTOM_SKILLS()), // skills_address
             ALICE(),
             false,
             false,
@@ -283,28 +288,28 @@ fn test_reset_token_renderer_as_owner() {
             0,
         );
 
-    // Verify renderer is set
-    assert!(test_contracts.test_token.has_custom_renderer(token_id), "Should have custom renderer");
+    // Verify skills is set
+    assert!(test_contracts.test_token.has_custom_skills(token_id), "Should have custom skills");
 
     // Reset as owner
     start_cheat_caller_address(test_contracts.test_token.contract_address, ALICE());
-    test_contracts.test_token.reset_token_renderer(token_id);
+    test_contracts.test_token.reset_token_skills(token_id);
     stop_cheat_caller_address(test_contracts.test_token.contract_address);
 
     // Verify reset
     assert!(
-        !test_contracts.test_token.has_custom_renderer(token_id),
-        "Should not have custom renderer after reset",
+        !test_contracts.test_token.has_custom_skills(token_id),
+        "Should not have custom skills after reset",
     );
     assert!(
-        test_contracts.test_token.get_renderer(token_id).is_zero(),
-        "Renderer should be zero after reset",
+        test_contracts.test_token.get_skills_address(token_id).is_zero(),
+        "Skills should be zero after reset",
     );
 }
 
 #[test]
 #[should_panic(expected: "MinigameToken: Caller is not owner of token")]
-fn test_reset_token_renderer_unauthorized() {
+fn test_reset_token_skills_unauthorized() {
     let test_contracts = setup_multi_game();
 
     let token_id = test_contracts
@@ -318,8 +323,8 @@ fn test_reset_token_renderer_unauthorized() {
             Option::None,
             Option::None,
             Option::None,
-            Option::Some(CUSTOM_RENDERER()),
-            Option::None,
+            Option::None, // renderer_address
+            Option::Some(CUSTOM_SKILLS()), // skills_address
             ALICE(),
             false,
             false,
@@ -329,15 +334,15 @@ fn test_reset_token_renderer_unauthorized() {
 
     // Try to reset as BOB (not owner)
     start_cheat_caller_address(test_contracts.test_token.contract_address, BOB());
-    test_contracts.test_token.reset_token_renderer(token_id);
+    test_contracts.test_token.reset_token_skills(token_id);
     stop_cheat_caller_address(test_contracts.test_token.contract_address);
 }
 
 #[test]
-fn test_reset_token_renderer_already_zero() {
+fn test_reset_token_skills_already_zero() {
     let test_contracts = setup_multi_game();
 
-    // Mint without renderer
+    // Mint without skills
     let token_id = test_contracts
         .test_token
         .mint(
@@ -349,8 +354,8 @@ fn test_reset_token_renderer_already_zero() {
             Option::None,
             Option::None,
             Option::None,
-            Option::None,
-            Option::None,
+            Option::None, // renderer_address
+            Option::None, // skills_address
             ALICE(),
             false,
             false,
@@ -360,22 +365,22 @@ fn test_reset_token_renderer_already_zero() {
 
     // Reset even though already zero
     start_cheat_caller_address(test_contracts.test_token.contract_address, ALICE());
-    test_contracts.test_token.reset_token_renderer(token_id);
+    test_contracts.test_token.reset_token_skills(token_id);
     stop_cheat_caller_address(test_contracts.test_token.contract_address);
 
     // Should still be zero
     assert!(
-        test_contracts.test_token.get_renderer(token_id).is_zero(),
+        test_contracts.test_token.get_skills_address(token_id).is_zero(),
         "Should remain zero after reset",
     );
 }
 
 // ================================================================================================
-// RESET_TOKEN_RENDERER_BATCH TESTS
+// RESET_TOKEN_SKILLS_BATCH TESTS
 // ================================================================================================
 
 #[test]
-fn test_reset_token_renderer_batch_single() {
+fn test_reset_token_skills_batch_single() {
     let test_contracts = setup_multi_game();
 
     let token_id = test_contracts
@@ -389,8 +394,8 @@ fn test_reset_token_renderer_batch_single() {
             Option::None,
             Option::None,
             Option::None,
-            Option::Some(CUSTOM_RENDERER()),
-            Option::None,
+            Option::None, // renderer_address
+            Option::Some(CUSTOM_SKILLS()), // skills_address
             ALICE(),
             false,
             false,
@@ -400,20 +405,20 @@ fn test_reset_token_renderer_batch_single() {
 
     // Reset batch with single token
     start_cheat_caller_address(test_contracts.test_token.contract_address, ALICE());
-    test_contracts.test_token.reset_token_renderer_batch(array![token_id].span());
+    test_contracts.test_token.reset_token_skills_batch(array![token_id].span());
     stop_cheat_caller_address(test_contracts.test_token.contract_address);
 
     assert!(
-        test_contracts.test_token.get_renderer(token_id).is_zero(),
+        test_contracts.test_token.get_skills_address(token_id).is_zero(),
         "Should be reset after batch reset",
     );
 }
 
 #[test]
-fn test_reset_token_renderer_batch_multiple() {
+fn test_reset_token_skills_batch_multiple() {
     let test_contracts = setup_multi_game();
 
-    // Mint multiple tokens with renderers
+    // Mint multiple tokens with skills
     let token_id1 = test_contracts
         .test_token
         .mint(
@@ -425,8 +430,8 @@ fn test_reset_token_renderer_batch_multiple() {
             Option::None,
             Option::None,
             Option::None,
-            Option::Some(CUSTOM_RENDERER()),
-            Option::None,
+            Option::None, // renderer_address
+            Option::Some(CUSTOM_SKILLS()), // skills_address
             ALICE(),
             false,
             false,
@@ -445,8 +450,8 @@ fn test_reset_token_renderer_batch_multiple() {
             Option::None,
             Option::None,
             Option::None,
-            Option::Some(CUSTOM_RENDERER_2()),
-            Option::None,
+            Option::None, // renderer_address
+            Option::Some(CUSTOM_SKILLS_2()), // skills_address
             ALICE(),
             false,
             false,
@@ -465,8 +470,8 @@ fn test_reset_token_renderer_batch_multiple() {
             Option::None,
             Option::None,
             Option::None,
-            Option::Some(RENDERER_ADDRESS()),
-            Option::None,
+            Option::None, // renderer_address
+            Option::Some(CUSTOM_SKILLS()), // skills_address
             ALICE(),
             false,
             false,
@@ -478,17 +483,26 @@ fn test_reset_token_renderer_batch_multiple() {
     start_cheat_caller_address(test_contracts.test_token.contract_address, ALICE());
     test_contracts
         .test_token
-        .reset_token_renderer_batch(array![token_id1, token_id2, token_id3].span());
+        .reset_token_skills_batch(array![token_id1, token_id2, token_id3].span());
     stop_cheat_caller_address(test_contracts.test_token.contract_address);
 
     // Verify all reset
-    assert!(test_contracts.test_token.get_renderer(token_id1).is_zero(), "Token 1 should be reset");
-    assert!(test_contracts.test_token.get_renderer(token_id2).is_zero(), "Token 2 should be reset");
-    assert!(test_contracts.test_token.get_renderer(token_id3).is_zero(), "Token 3 should be reset");
+    assert!(
+        test_contracts.test_token.get_skills_address(token_id1).is_zero(),
+        "Token 1 should be reset",
+    );
+    assert!(
+        test_contracts.test_token.get_skills_address(token_id2).is_zero(),
+        "Token 2 should be reset",
+    );
+    assert!(
+        test_contracts.test_token.get_skills_address(token_id3).is_zero(),
+        "Token 3 should be reset",
+    );
 }
 
 #[test]
-fn test_reset_token_renderer_batch_empty() {
+fn test_reset_token_skills_batch_empty() {
     let test_contracts = setup_multi_game();
 
     // Mint a token
@@ -503,8 +517,8 @@ fn test_reset_token_renderer_batch_empty() {
             Option::None,
             Option::None,
             Option::None,
-            Option::Some(CUSTOM_RENDERER()),
-            Option::None,
+            Option::None, // renderer_address
+            Option::Some(CUSTOM_SKILLS()), // skills_address
             ALICE(),
             false,
             false,
@@ -514,21 +528,21 @@ fn test_reset_token_renderer_batch_empty() {
 
     // Reset with empty batch - should be no-op
     start_cheat_caller_address(test_contracts.test_token.contract_address, ALICE());
-    test_contracts.test_token.reset_token_renderer_batch(array![].span());
+    test_contracts.test_token.reset_token_skills_batch(array![].span());
     stop_cheat_caller_address(test_contracts.test_token.contract_address);
 
     // Token should be unchanged
     assert!(
-        test_contracts.test_token.get_renderer(token_id) == CUSTOM_RENDERER(),
-        "Renderer should be unchanged",
+        test_contracts.test_token.get_skills_address(token_id) == CUSTOM_SKILLS(),
+        "Skills should be unchanged",
     );
 }
 
 #[test]
-fn test_reset_token_renderer_batch_mixed_renderers() {
+fn test_reset_token_skills_batch_mixed() {
     let test_contracts = setup_multi_game();
 
-    // Token with renderer
+    // Token with skills
     let token_id1 = test_contracts
         .test_token
         .mint(
@@ -540,8 +554,8 @@ fn test_reset_token_renderer_batch_mixed_renderers() {
             Option::None,
             Option::None,
             Option::None,
-            Option::Some(CUSTOM_RENDERER()),
-            Option::None,
+            Option::None, // renderer_address
+            Option::Some(CUSTOM_SKILLS()), // skills_address
             ALICE(),
             false,
             false,
@@ -549,7 +563,7 @@ fn test_reset_token_renderer_batch_mixed_renderers() {
             0,
         );
 
-    // Token without renderer
+    // Token without skills
     let token_id2 = test_contracts
         .test_token
         .mint(
@@ -561,8 +575,8 @@ fn test_reset_token_renderer_batch_mixed_renderers() {
             Option::None,
             Option::None,
             Option::None,
-            Option::None,
-            Option::None,
+            Option::None, // renderer_address
+            Option::None, // skills_address
             ALICE(),
             false,
             false,
@@ -572,17 +586,21 @@ fn test_reset_token_renderer_batch_mixed_renderers() {
 
     // Reset both
     start_cheat_caller_address(test_contracts.test_token.contract_address, ALICE());
-    test_contracts.test_token.reset_token_renderer_batch(array![token_id1, token_id2].span());
+    test_contracts.test_token.reset_token_skills_batch(array![token_id1, token_id2].span());
     stop_cheat_caller_address(test_contracts.test_token.contract_address);
 
     // Both should be zero
-    assert!(test_contracts.test_token.get_renderer(token_id1).is_zero(), "Token 1 should be zero");
-    assert!(test_contracts.test_token.get_renderer(token_id2).is_zero(), "Token 2 should be zero");
+    assert!(
+        test_contracts.test_token.get_skills_address(token_id1).is_zero(), "Token 1 should be zero",
+    );
+    assert!(
+        test_contracts.test_token.get_skills_address(token_id2).is_zero(), "Token 2 should be zero",
+    );
 }
 
 #[test]
 #[should_panic(expected: "MinigameToken: Caller is not owner of token")]
-fn test_reset_token_renderer_batch_unauthorized_fails() {
+fn test_reset_token_skills_batch_unauthorized_fails() {
     let test_contracts = setup_multi_game();
 
     // Mint token to ALICE
@@ -597,8 +615,8 @@ fn test_reset_token_renderer_batch_unauthorized_fails() {
             Option::None,
             Option::None,
             Option::None,
-            Option::Some(CUSTOM_RENDERER()),
-            Option::None,
+            Option::None, // renderer_address
+            Option::Some(CUSTOM_SKILLS()), // skills_address
             ALICE(),
             false,
             false,
@@ -608,16 +626,16 @@ fn test_reset_token_renderer_batch_unauthorized_fails() {
 
     // Try batch reset as BOB
     start_cheat_caller_address(test_contracts.test_token.contract_address, BOB());
-    test_contracts.test_token.reset_token_renderer_batch(array![token_id].span());
+    test_contracts.test_token.reset_token_skills_batch(array![token_id].span());
     stop_cheat_caller_address(test_contracts.test_token.contract_address);
 }
 
 // ================================================================================================
-// GET_RENDERER_BATCH TESTS
+// GET_SKILLS_ADDRESS_BATCH TESTS
 // ================================================================================================
 
 #[test]
-fn test_get_renderer_batch_single() {
+fn test_get_skills_address_batch_single() {
     let test_contracts = setup_multi_game();
 
     let token_id = test_contracts
@@ -631,8 +649,8 @@ fn test_get_renderer_batch_single() {
             Option::None,
             Option::None,
             Option::None,
-            Option::Some(CUSTOM_RENDERER()),
-            Option::None,
+            Option::None, // renderer_address
+            Option::Some(CUSTOM_SKILLS()), // skills_address
             ALICE(),
             false,
             false,
@@ -640,13 +658,13 @@ fn test_get_renderer_batch_single() {
             0,
         );
 
-    let results = test_contracts.test_token.get_renderer_batch(array![token_id].span());
+    let results = test_contracts.test_token.get_skills_address_batch(array![token_id].span());
     assert!(results.len() == 1, "Should have 1 result");
-    assert!(*results.at(0) == CUSTOM_RENDERER(), "Should match renderer");
+    assert!(*results.at(0) == CUSTOM_SKILLS(), "Should match skills address");
 }
 
 #[test]
-fn test_get_renderer_batch_multiple() {
+fn test_get_skills_address_batch_multiple() {
     let test_contracts = setup_multi_game();
 
     let token_id1 = test_contracts
@@ -660,8 +678,8 @@ fn test_get_renderer_batch_multiple() {
             Option::None,
             Option::None,
             Option::None,
-            Option::Some(CUSTOM_RENDERER()),
-            Option::None,
+            Option::None, // renderer_address
+            Option::Some(CUSTOM_SKILLS()), // skills_address
             ALICE(),
             false,
             false,
@@ -680,8 +698,8 @@ fn test_get_renderer_batch_multiple() {
             Option::None,
             Option::None,
             Option::None,
-            Option::Some(CUSTOM_RENDERER_2()),
-            Option::None,
+            Option::None, // renderer_address
+            Option::Some(CUSTOM_SKILLS_2()), // skills_address
             ALICE(),
             false,
             false,
@@ -689,25 +707,27 @@ fn test_get_renderer_batch_multiple() {
             0,
         );
 
-    let results = test_contracts.test_token.get_renderer_batch(array![token_id1, token_id2].span());
+    let results = test_contracts
+        .test_token
+        .get_skills_address_batch(array![token_id1, token_id2].span());
     assert!(results.len() == 2, "Should have 2 results");
-    assert!(*results.at(0) == CUSTOM_RENDERER(), "First should match");
-    assert!(*results.at(1) == CUSTOM_RENDERER_2(), "Second should match");
+    assert!(*results.at(0) == CUSTOM_SKILLS(), "First should match");
+    assert!(*results.at(1) == CUSTOM_SKILLS_2(), "Second should match");
 }
 
 #[test]
-fn test_get_renderer_batch_empty() {
+fn test_get_skills_address_batch_empty() {
     let test_contracts = setup_multi_game();
 
-    let results = test_contracts.test_token.get_renderer_batch(array![].span());
+    let results = test_contracts.test_token.get_skills_address_batch(array![].span());
     assert!(results.len() == 0, "Should have empty results");
 }
 
 #[test]
-fn test_get_renderer_batch_mixed() {
+fn test_get_skills_address_batch_mixed() {
     let test_contracts = setup_multi_game();
 
-    // With renderer
+    // With skills
     let token_id1 = test_contracts
         .test_token
         .mint(
@@ -719,8 +739,8 @@ fn test_get_renderer_batch_mixed() {
             Option::None,
             Option::None,
             Option::None,
-            Option::Some(CUSTOM_RENDERER()),
-            Option::None,
+            Option::None, // renderer_address
+            Option::Some(CUSTOM_SKILLS()), // skills_address
             ALICE(),
             false,
             false,
@@ -728,7 +748,7 @@ fn test_get_renderer_batch_mixed() {
             0,
         );
 
-    // Without renderer
+    // Without skills
     let token_id2 = test_contracts
         .test_token
         .mint(
@@ -740,8 +760,8 @@ fn test_get_renderer_batch_mixed() {
             Option::None,
             Option::None,
             Option::None,
-            Option::None,
-            Option::None,
+            Option::None, // renderer_address
+            Option::None, // skills_address
             ALICE(),
             false,
             false,
@@ -749,13 +769,15 @@ fn test_get_renderer_batch_mixed() {
             0,
         );
 
-    let results = test_contracts.test_token.get_renderer_batch(array![token_id1, token_id2].span());
-    assert!(*results.at(0) == CUSTOM_RENDERER(), "First should have renderer");
+    let results = test_contracts
+        .test_token
+        .get_skills_address_batch(array![token_id1, token_id2].span());
+    assert!(*results.at(0) == CUSTOM_SKILLS(), "First should have skills");
     assert!((*results.at(1)).is_zero(), "Second should be zero");
 }
 
 #[test]
-fn test_get_renderer_batch_matches_individual() {
+fn test_get_skills_address_batch_matches_individual() {
     let test_contracts = setup_multi_game();
 
     let token_id1 = test_contracts
@@ -769,8 +791,8 @@ fn test_get_renderer_batch_matches_individual() {
             Option::None,
             Option::None,
             Option::None,
-            Option::Some(CUSTOM_RENDERER()),
-            Option::None,
+            Option::None, // renderer_address
+            Option::Some(CUSTOM_SKILLS()), // skills_address
             ALICE(),
             false,
             false,
@@ -789,8 +811,8 @@ fn test_get_renderer_batch_matches_individual() {
             Option::None,
             Option::None,
             Option::None,
-            Option::None,
-            Option::None,
+            Option::None, // renderer_address
+            Option::None, // skills_address
             ALICE(),
             false,
             false,
@@ -799,15 +821,15 @@ fn test_get_renderer_batch_matches_individual() {
         );
 
     let token_ids = array![token_id1, token_id2];
-    let batch_results = test_contracts.test_token.get_renderer_batch(token_ids.span());
+    let batch_results = test_contracts.test_token.get_skills_address_batch(token_ids.span());
 
     // Verify batch results match individual calls
     assert!(
-        *batch_results.at(0) == test_contracts.test_token.get_renderer(token_id1),
+        *batch_results.at(0) == test_contracts.test_token.get_skills_address(token_id1),
         "First should match individual",
     );
     assert!(
-        *batch_results.at(1) == test_contracts.test_token.get_renderer(token_id2),
+        *batch_results.at(1) == test_contracts.test_token.get_skills_address(token_id2),
         "Second should match individual",
     );
 }
@@ -817,7 +839,7 @@ fn test_get_renderer_batch_matches_individual() {
 // ================================================================================================
 
 #[test]
-fn test_reset_token_renderer_emits_event() {
+fn test_reset_token_skills_emits_event() {
     let test_contracts = setup_multi_game();
 
     let token_id = test_contracts
@@ -831,8 +853,8 @@ fn test_reset_token_renderer_emits_event() {
             Option::None,
             Option::None,
             Option::None,
-            Option::Some(CUSTOM_RENDERER()),
-            Option::None,
+            Option::None, // renderer_address
+            Option::Some(CUSTOM_SKILLS()), // skills_address
             ALICE(),
             false,
             false,
@@ -843,18 +865,18 @@ fn test_reset_token_renderer_emits_event() {
     let mut spy = spy_events();
 
     start_cheat_caller_address(test_contracts.test_token.contract_address, ALICE());
-    test_contracts.test_token.reset_token_renderer(token_id);
+    test_contracts.test_token.reset_token_skills(token_id);
     stop_cheat_caller_address(test_contracts.test_token.contract_address);
 
-    // Check for TokenRendererUpdate event
+    // Check for TokenSkillsUpdate event
     spy
         .assert_emitted(
             @array![
                 (
                     test_contracts.test_token.contract_address,
-                    RendererComponent::Event::TokenRendererUpdate(
-                        RendererComponent::TokenRendererUpdate {
-                            token_id: token_id, renderer: Zero::zero(),
+                    SkillsComponent::Event::TokenSkillsUpdate(
+                        SkillsComponent::TokenSkillsUpdate {
+                            token_id: token_id, skills_address: Zero::zero(),
                         },
                     ),
                 ),
@@ -877,8 +899,8 @@ fn test_batch_reset_emits_multiple_events() {
             Option::None,
             Option::None,
             Option::None,
-            Option::Some(CUSTOM_RENDERER()),
-            Option::None,
+            Option::None, // renderer_address
+            Option::Some(CUSTOM_SKILLS()), // skills_address
             ALICE(),
             false,
             false,
@@ -897,8 +919,8 @@ fn test_batch_reset_emits_multiple_events() {
             Option::None,
             Option::None,
             Option::None,
-            Option::Some(CUSTOM_RENDERER_2()),
-            Option::None,
+            Option::None, // renderer_address
+            Option::Some(CUSTOM_SKILLS_2()), // skills_address
             ALICE(),
             false,
             false,
@@ -909,7 +931,7 @@ fn test_batch_reset_emits_multiple_events() {
     let mut spy = spy_events();
 
     start_cheat_caller_address(test_contracts.test_token.contract_address, ALICE());
-    test_contracts.test_token.reset_token_renderer_batch(array![token_id1, token_id2].span());
+    test_contracts.test_token.reset_token_skills_batch(array![token_id1, token_id2].span());
     stop_cheat_caller_address(test_contracts.test_token.contract_address);
 
     // Both events should be emitted
@@ -918,17 +940,17 @@ fn test_batch_reset_emits_multiple_events() {
             @array![
                 (
                     test_contracts.test_token.contract_address,
-                    RendererComponent::Event::TokenRendererUpdate(
-                        RendererComponent::TokenRendererUpdate {
-                            token_id: token_id1, renderer: Zero::zero(),
+                    SkillsComponent::Event::TokenSkillsUpdate(
+                        SkillsComponent::TokenSkillsUpdate {
+                            token_id: token_id1, skills_address: Zero::zero(),
                         },
                     ),
                 ),
                 (
                     test_contracts.test_token.contract_address,
-                    RendererComponent::Event::TokenRendererUpdate(
-                        RendererComponent::TokenRendererUpdate {
-                            token_id: token_id2, renderer: Zero::zero(),
+                    SkillsComponent::Event::TokenSkillsUpdate(
+                        SkillsComponent::TokenSkillsUpdate {
+                            token_id: token_id2, skills_address: Zero::zero(),
                         },
                     ),
                 ),
@@ -937,7 +959,7 @@ fn test_batch_reset_emits_multiple_events() {
 }
 
 #[test]
-fn test_mint_with_renderer_emits_event() {
+fn test_mint_with_skills_emits_event() {
     let test_contracts = setup_multi_game();
     let mut spy = spy_events();
 
@@ -952,8 +974,8 @@ fn test_mint_with_renderer_emits_event() {
             Option::None,
             Option::None,
             Option::None,
-            Option::Some(CUSTOM_RENDERER()),
-            Option::None,
+            Option::None, // renderer_address
+            Option::Some(CUSTOM_SKILLS()), // skills_address
             ALICE(),
             false,
             false,
@@ -961,15 +983,15 @@ fn test_mint_with_renderer_emits_event() {
             0,
         );
 
-    // Check for TokenRendererUpdate event during mint
+    // Check for TokenSkillsUpdate event during mint
     spy
         .assert_emitted(
             @array![
                 (
                     test_contracts.test_token.contract_address,
-                    RendererComponent::Event::TokenRendererUpdate(
-                        RendererComponent::TokenRendererUpdate {
-                            token_id: token_id, renderer: CUSTOM_RENDERER(),
+                    SkillsComponent::Event::TokenSkillsUpdate(
+                        SkillsComponent::TokenSkillsUpdate {
+                            token_id: token_id, skills_address: CUSTOM_SKILLS(),
                         },
                     ),
                 ),
@@ -982,20 +1004,12 @@ fn test_mint_with_renderer_emits_event() {
 // ================================================================================================
 
 #[test]
-fn test_supports_renderer_interface() {
+fn test_supports_skills_interface() {
     let test_contracts = setup_multi_game();
 
     assert!(
-        test_contracts.src5.supports_interface(IMINIGAME_TOKEN_RENDERER_ID),
-        "Should support IMinigameTokenRenderer interface",
-    );
-}
-
-#[test]
-fn test_renderer_interface_id_value() {
-    assert!(
-        IMINIGAME_TOKEN_RENDERER_ID == 0x2899a752da88d6acf4ed54cc644238f3956b4db3c9885d3ad94f6149f0ec465,
-        "Interface ID should match expected value",
+        test_contracts.src5.supports_interface(IMINIGAME_TOKEN_SKILLS_ID),
+        "Should support IMinigameTokenSkills interface",
     );
 }
 
@@ -1004,7 +1018,7 @@ fn test_renderer_interface_id_value() {
 // ================================================================================================
 
 #[test]
-fn test_renderer_persists_after_game_updates() {
+fn test_skills_persists_after_game_updates() {
     let test_contracts = setup_multi_game();
 
     let token_id = test_contracts
@@ -1018,8 +1032,8 @@ fn test_renderer_persists_after_game_updates() {
             Option::None,
             Option::None,
             Option::None,
-            Option::Some(CUSTOM_RENDERER()),
-            Option::None,
+            Option::None, // renderer_address
+            Option::Some(CUSTOM_SKILLS()), // skills_address
             ALICE(),
             false,
             false,
@@ -1030,10 +1044,61 @@ fn test_renderer_persists_after_game_updates() {
     // Update game
     test_contracts.test_token.update_game(token_id);
 
-    // Renderer should still be set
+    // Skills should still be set
     assert!(
-        test_contracts.test_token.get_renderer(token_id) == CUSTOM_RENDERER(),
-        "Renderer should persist after update",
+        test_contracts.test_token.get_skills_address(token_id) == CUSTOM_SKILLS(),
+        "Skills should persist after update",
+    );
+}
+
+#[test]
+fn test_skills_and_renderer_independent() {
+    let test_contracts = setup_multi_game();
+
+    let renderer_addr: ContractAddress = 0xDE2E2.try_into().unwrap();
+
+    // Mint with both renderer and skills
+    let token_id = test_contracts
+        .test_token
+        .mint(
+            test_contracts.minigame.contract_address,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::Some(renderer_addr), // renderer_address
+            Option::Some(CUSTOM_SKILLS()), // skills_address
+            ALICE(),
+            false,
+            false,
+            0,
+            0,
+        );
+
+    // Verify both are set independently
+    assert!(
+        test_contracts.test_token.get_renderer(token_id) == renderer_addr, "Renderer should be set",
+    );
+    assert!(
+        test_contracts.test_token.get_skills_address(token_id) == CUSTOM_SKILLS(),
+        "Skills should be set",
+    );
+
+    // Reset only skills
+    start_cheat_caller_address(test_contracts.test_token.contract_address, ALICE());
+    test_contracts.test_token.reset_token_skills(token_id);
+    stop_cheat_caller_address(test_contracts.test_token.contract_address);
+
+    // Skills reset, renderer unchanged
+    assert!(
+        test_contracts.test_token.get_skills_address(token_id).is_zero(), "Skills should be reset",
+    );
+    assert!(
+        test_contracts.test_token.get_renderer(token_id) == renderer_addr,
+        "Renderer should be unchanged",
     );
 }
 
@@ -1043,9 +1108,9 @@ fn test_renderer_persists_after_game_updates() {
 
 #[test]
 #[fuzzer(runs: 50)]
-fn test_fuzz_renderer_storage_consistency(token_offset: u8, renderer_felt: felt252) {
+fn test_fuzz_skills_storage_consistency(token_offset: u8, skills_felt: felt252) {
     // Skip zero felt as it converts to zero address
-    if renderer_felt == 0 || token_offset > 5 {
+    if skills_felt == 0 || token_offset > 5 {
         return;
     }
 
@@ -1056,9 +1121,9 @@ fn test_fuzz_renderer_storage_consistency(token_offset: u8, renderer_felt: felt2
     let mut last_token_id: felt252 = 0;
 
     while i <= token_offset {
-        let renderer_opt = if i == token_offset {
-            let renderer: ContractAddress = renderer_felt.try_into().unwrap();
-            Option::Some(renderer)
+        let skills_opt = if i == token_offset {
+            let skills: ContractAddress = skills_felt.try_into().unwrap();
+            Option::Some(skills)
         } else {
             Option::None
         };
@@ -1074,8 +1139,8 @@ fn test_fuzz_renderer_storage_consistency(token_offset: u8, renderer_felt: felt2
                 Option::None,
                 Option::None,
                 Option::None,
-                renderer_opt,
-                Option::None,
+                Option::None, // renderer_address
+                skills_opt, // skills_address
                 ALICE(),
                 false,
                 false,
@@ -1086,10 +1151,10 @@ fn test_fuzz_renderer_storage_consistency(token_offset: u8, renderer_felt: felt2
     }
 
     // Verify consistency
-    let stored = test_contracts.test_token.get_renderer(last_token_id);
-    let expected: ContractAddress = renderer_felt.try_into().unwrap();
-    assert!(stored == expected, "Stored renderer should match set value");
+    let stored = test_contracts.test_token.get_skills_address(last_token_id);
+    let expected: ContractAddress = skills_felt.try_into().unwrap();
+    assert!(stored == expected, "Stored skills should match set value");
 
-    let has_custom = test_contracts.test_token.has_custom_renderer(last_token_id);
-    assert!(has_custom == !stored.is_zero(), "has_custom_renderer should match address check");
+    let has_custom = test_contracts.test_token.has_custom_skills(last_token_id);
+    assert!(has_custom == !stored.is_zero(), "has_custom_skills should match address check");
 }

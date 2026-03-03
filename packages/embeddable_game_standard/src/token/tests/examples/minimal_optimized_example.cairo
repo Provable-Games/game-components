@@ -9,7 +9,7 @@ use openzeppelin_token::erc721::ERC721Component;
 use starknet::ContractAddress;
 use crate::token::extensions::minter::minter::MinterComponent;
 use crate::token::noop_traits::{
-    NoOpContext, NoOpObjectives, NoOpRenderer, NoOpSettings, NoOpSoulbound,
+    NoOpContext, NoOpObjectives, NoOpRenderer, NoOpSettings, NoOpSkills, NoOpSoulbound,
 };
 use crate::token::token_component::CoreTokenComponent;
 
@@ -100,6 +100,7 @@ pub mod MinimalOptimizedContract {
     impl ContextOptionalImpl = NoOpContext<ContractState>; // Zero-cost NoOp
     impl SoulboundOptionalImpl = NoOpSoulbound<ContractState>; // Zero-cost NoOp
     impl RendererOptionalImpl = NoOpRenderer<ContractState>; // Zero-cost NoOp
+    impl SkillsOptionalImpl = NoOpSkills<ContractState>; // Zero-cost NoOp
 
     // ERC721 hooks
     impl ERC721HooksImpl = ERC721HooksEmptyImpl<ContractState>;

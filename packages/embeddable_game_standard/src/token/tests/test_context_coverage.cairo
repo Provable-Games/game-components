@@ -27,6 +27,7 @@ fn test_context_extension_operations() {
             Option::None, // No context
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -53,6 +54,7 @@ fn test_context_through_metagame() {
             Option::None, // No settings_id
             Option::Some(1000), // start
             Option::Some(2000), // end
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -90,6 +92,7 @@ fn test_multiple_context_mints() {
             .mint_game(
                 Option::Some(test_contracts.minigame.contract_address),
                 Option::Some(name.clone()),
+                Option::None,
                 Option::None,
                 Option::None,
                 Option::None,
@@ -136,6 +139,7 @@ fn test_context_with_game_lifecycle() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -160,6 +164,7 @@ fn test_context_with_soulbound() {
         .mint_game(
             Option::Some(test_contracts.minigame.contract_address),
             Option::Some('SoulboundPlayer'),
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -196,6 +201,7 @@ fn test_context_extension_edge_cases() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -214,7 +220,8 @@ fn test_context_extension_edge_cases() {
             Option::Some(2000), // end
             Option::None, // No objectives
             Option::Some("https://client.url"), // client URL
-            Option::Some(addr('RENDERER')), // renderer
+            Option::Some(addr('RENDERER')),
+            Option::None, // renderer
             BOB(),
             false,
             false,

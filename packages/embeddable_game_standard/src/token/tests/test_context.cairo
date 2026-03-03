@@ -39,6 +39,7 @@ fn test_context_through_metagame_mint() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -71,6 +72,7 @@ fn test_mint_without_context() {
             Option::None,
             Option::None,
             Option::None, // No context
+            Option::None,
             Option::None,
             Option::None,
             ALICE(),
@@ -109,6 +111,7 @@ fn test_context_with_lifecycle_combination() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -134,6 +137,7 @@ fn test_context_with_soulbound_combination() {
         .mint_game(
             Option::Some(test_contracts.minigame.contract_address),
             Option::Some('SoulboundContextPlayer'),
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -171,6 +175,7 @@ fn test_context_with_renderer_combination() {
             Option::None,
             Option::None,
             Option::Some(RENDERER_ADDRESS()),
+            Option::None,
             ALICE(),
             false,
             false,
@@ -208,6 +213,7 @@ fn test_batch_mint_with_context() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -220,6 +226,7 @@ fn test_batch_mint_with_context() {
         .mint_game(
             Option::Some(test_contracts.minigame.contract_address),
             Option::Some('Player2'),
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -286,6 +293,7 @@ fn test_context_with_empty_player_name() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -318,6 +326,7 @@ fn test_context_with_all_parameters() {
             Option::Some(1), // objective
             Option::Some("https://client.url"),
             Option::Some(RENDERER_ADDRESS()),
+            Option::None,
             BOB(),
             true, // soulbound
             false,
@@ -360,6 +369,7 @@ fn test_has_context_flag_in_metadata() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -372,6 +382,7 @@ fn test_has_context_flag_in_metadata() {
         .metagame_mock
         .mint_game(
             Option::Some(test_contracts.minigame.contract_address),
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -409,6 +420,7 @@ fn test_event_spy_captures_context_events() {
         .mint_game(
             Option::Some(test_contracts.minigame.contract_address),
             Option::Some('EventTestPlayer'),
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -455,6 +467,7 @@ fn test_fuzz_context_with_various_token_ids(mint_count: u8) {
                 Option::None,
                 Option::None,
                 Option::None,
+                Option::None,
                 ALICE(),
                 false,
                 false,
@@ -485,6 +498,7 @@ fn test_context_with_registry_game() {
         .mint_game(
             Option::Some(test_contracts.minigame.contract_address),
             Option::Some('RegistryPlayer'),
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -525,6 +539,7 @@ fn test_multiple_context_mints_unique_data() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -541,6 +556,7 @@ fn test_multiple_context_mints_unique_data() {
             Option::None,
             Option::Some(300),
             Option::Some(400),
+            Option::None,
             Option::None,
             Option::None,
             Option::None,

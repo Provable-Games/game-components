@@ -75,6 +75,7 @@ fn test_tournament_flow() {
             Option::Some(tournament_context.clone()),
             Option::None,
             Option::None,
+            Option::None,
             player1,
             false,
             false,
@@ -91,6 +92,7 @@ fn test_tournament_flow() {
             Option::Some(10000),
             Option::None,
             Option::Some(tournament_context.clone()),
+            Option::None,
             Option::None,
             Option::None,
             player1,
@@ -114,6 +116,7 @@ fn test_tournament_flow() {
             Option::Some(tournament_context.clone()),
             Option::None,
             Option::None,
+            Option::None,
             player2,
             false,
             false,
@@ -132,6 +135,7 @@ fn test_tournament_flow() {
             Option::Some(tournament_context.clone()),
             Option::None,
             Option::None,
+            Option::None,
             player2,
             false,
             false,
@@ -148,6 +152,7 @@ fn test_tournament_flow() {
             Option::Some(10000),
             Option::None,
             Option::Some(tournament_context.clone()),
+            Option::None,
             Option::None,
             Option::None,
             player2,
@@ -267,6 +272,7 @@ mod MockMetagameWithContext {
             context: Option<GameContextDetails>,
             client_url: Option<ByteArray>,
             renderer_address: Option<ContractAddress>,
+            skills_address: Option<ContractAddress>,
             to: ContractAddress,
             soulbound: bool,
             paymaster: bool,
@@ -285,6 +291,7 @@ mod MockMetagameWithContext {
                     context,
                     client_url,
                     renderer_address,
+                    Option::None,
                     to,
                     soulbound,
                     paymaster,
@@ -309,6 +316,7 @@ trait IMockMetagame<TContractState> {
         context: Option<GameContextDetails>,
         client_url: Option<ByteArray>,
         renderer_address: Option<ContractAddress>,
+        skills_address: Option<ContractAddress>,
         to: ContractAddress,
         soulbound: bool,
         paymaster: bool,
@@ -516,8 +524,8 @@ mod MockTokenContract {
             ""
         }
 
-        fn agent_skills(self: @ContractState, token_id: felt252) -> ByteArray {
-            ""
+        fn skills_address(self: @ContractState, token_id: felt252) -> ContractAddress {
+            0.try_into().unwrap()
         }
 
         fn token_metadata_batch(
@@ -675,6 +683,7 @@ mod MockTokenContract {
             context: Option<GameContextDetails>,
             client_url: Option<ByteArray>,
             renderer_address: Option<ContractAddress>,
+            skills_address: Option<ContractAddress>,
             to: ContractAddress,
             soulbound: bool,
             paymaster: bool,
@@ -729,6 +738,7 @@ mod MockTokenContract {
                         context_clone,
                         client_url_clone,
                         *params.renderer_address,
+                        Option::None,
                         *params.to,
                         *params.soulbound,
                         *params.paymaster,
@@ -752,6 +762,7 @@ mod MockTokenContract {
             context: Option<GameContextDetails>,
             client_url: Option<ByteArray>,
             renderer_address: Option<ContractAddress>,
+            skills_address: Option<ContractAddress>,
             recipients: Array<ContractAddress>,
             soulbound: bool,
             paymaster: bool,
@@ -856,6 +867,7 @@ mod MockMinigameForTournament {
             context: Option<GameContextDetails>,
             client_url: Option<ByteArray>,
             renderer_address: Option<ContractAddress>,
+            skills_address: Option<ContractAddress>,
             to: ContractAddress,
             soulbound: bool,
             paymaster: bool,

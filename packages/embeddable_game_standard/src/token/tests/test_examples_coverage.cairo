@@ -34,6 +34,7 @@ fn test_optimized_contract_with_renderer() {
             Option::None,
             Option::None,
             Option::Some(renderer_address),
+            Option::None,
             ALICE(),
             false,
             false,
@@ -66,6 +67,7 @@ fn test_optimized_contract_lifecycle_edge_cases() {
             Option::None,
             Option::Some(current_time),
             Option::Some(current_time + 1),
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -106,6 +108,7 @@ fn test_optimized_contract_context_operations() {
             Option::None, // objective_id
             Option::None, // client_url
             Option::None, // renderer_address
+            Option::None, // skills_address
             ALICE(),
             false,
             false,
@@ -137,6 +140,7 @@ fn test_optimized_contract_multi_minter_scenario() {
             .test_token
             .mint(
                 test_contracts.minigame.contract_address,
+                Option::None,
                 Option::None,
                 Option::None,
                 Option::None,
@@ -187,6 +191,7 @@ fn test_optimized_contract_game_integration() {
         .mint(
             mock_game.contract_address,
             Option::Some('GamePlayer'),
+            Option::None,
             Option::None,
             Option::None,
             Option::None,

@@ -9,7 +9,7 @@ use crate::structs::minigame::{GameDetail, MintGameParams};
 /// - objectives_address()->ContractAddress
 /// - mint_game(...)->felt252
 /// - mint_game_batch(Array<MintGameParams>)->Array<felt252>
-pub const IMINIGAME_ID: felt252 = 0x1050f9a792acfa175e26783e365e1b0b38ff3440b960d0ffdfc0ff9d7dc9f2a;
+pub const IMINIGAME_ID: felt252 = 0x3d1730c22937da340212dec5546ff5826895259966fa6a92d1191ab068cc2b4;
 
 #[starknet::interface]
 pub trait IMinigame<TState> {
@@ -26,6 +26,7 @@ pub trait IMinigame<TState> {
         context: Option<GameContextDetails>,
         client_url: Option<ByteArray>,
         renderer_address: Option<ContractAddress>,
+        skills_address: Option<ContractAddress>,
         to: ContractAddress,
         soulbound: bool,
         paymaster: bool,

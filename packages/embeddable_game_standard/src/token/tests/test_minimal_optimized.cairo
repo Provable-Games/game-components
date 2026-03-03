@@ -58,6 +58,7 @@ fn test_minimal_contract_minting() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -90,6 +91,7 @@ fn test_minimal_contract_minter_tracking() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -101,6 +103,7 @@ fn test_minimal_contract_minter_tracking() {
     let token_id2 = token_dispatcher
         .mint(
             game_addr,
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -143,6 +146,7 @@ fn test_minimal_contract_transfers() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -170,6 +174,7 @@ fn test_minimal_contract_token_metadata() {
         .mint(
             game_addr,
             Option::Some('MinimalPlayer'),
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -235,6 +240,7 @@ fn test_minimal_is_playable_batch() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -255,6 +261,7 @@ fn test_minimal_settings_id_batch() {
     let token_id = token_dispatcher
         .mint(
             game_addr,
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -290,6 +297,7 @@ fn test_minimal_player_name_batch() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -318,6 +326,7 @@ fn test_minimal_objective_id_batch() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -337,6 +346,7 @@ fn test_minimal_minted_by_batch() {
     let token_id = token_dispatcher
         .mint(
             game_addr,
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -373,6 +383,7 @@ fn test_minimal_is_soulbound_batch() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             true, // soulbound
             false,
@@ -393,6 +404,7 @@ fn test_minimal_renderer_address_batch() {
     let token_id = token_dispatcher
         .mint(
             game_addr,
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -428,6 +440,7 @@ fn test_minimal_token_game_address_batch() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -452,6 +465,7 @@ fn test_minimal_player_name_view() {
         .mint(
             game_addr,
             Option::Some('MinView'),
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -497,6 +511,7 @@ fn test_minimal_renderer_address_single_game() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -523,6 +538,7 @@ fn test_minimal_update_game() {
     let token_id = token_dispatcher
         .mint(
             game_addr,
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -562,6 +578,7 @@ fn test_minimal_update_game_batch() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -585,6 +602,7 @@ fn test_minimal_update_player_name() {
         .mint(
             game_addr,
             Option::Some('OrigMin'),
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -620,6 +638,7 @@ fn test_minimal_update_player_name_batch() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -631,6 +650,7 @@ fn test_minimal_update_player_name_batch() {
         .mint(
             game_addr,
             Option::Some('Old2'),
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -677,6 +697,7 @@ fn test_minimal_mint_with_future_start() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -710,6 +731,7 @@ fn test_minimal_mint_game_token_with_player_name_and_url() {
             Option::None,
             Option::None,
             Option::Some("https://min.game.com"),
+            Option::None,
             Option::None,
             ALICE(),
             false,
@@ -758,6 +780,7 @@ fn test_minimal_token_game_address() {
     let token_id = token_dispatcher
         .mint(
             game_addr,
+            Option::None,
             Option::None,
             Option::None,
             Option::None,

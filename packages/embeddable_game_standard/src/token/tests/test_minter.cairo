@@ -47,6 +47,7 @@ fn test_get_minter_address_valid_id() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -97,6 +98,7 @@ fn test_get_minter_address_first_minter() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             BOB(),
             false,
             false,
@@ -130,6 +132,7 @@ fn test_get_minter_address_multiple_minters() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -153,6 +156,7 @@ fn test_get_minter_address_multiple_minters() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             BOB(),
             false,
             false,
@@ -168,6 +172,7 @@ fn test_get_minter_address_multiple_minters() {
         .test_token
         .mint(
             test_contracts.minigame.contract_address,
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -215,6 +220,7 @@ fn test_get_minter_id_registered() {
         .test_token
         .mint(
             test_contracts.minigame.contract_address,
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -273,6 +279,7 @@ fn test_get_minter_id_sequential() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -288,6 +295,7 @@ fn test_get_minter_id_sequential() {
         .test_token
         .mint(
             test_contracts.minigame.contract_address,
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -339,6 +347,7 @@ fn test_minter_exists_after_mint() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -361,6 +370,7 @@ fn test_minter_exists_other_address() {
         .test_token
         .mint(
             test_contracts.minigame.contract_address,
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -421,6 +431,7 @@ fn test_total_minters_after_first() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -452,6 +463,7 @@ fn test_total_minters_duplicate_mint() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -469,6 +481,7 @@ fn test_total_minters_duplicate_mint() {
         .test_token
         .mint(
             test_contracts.minigame.contract_address,
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -508,6 +521,7 @@ fn test_total_minters_after_second() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -523,6 +537,7 @@ fn test_total_minters_after_second() {
         .test_token
         .mint(
             test_contracts.minigame.contract_address,
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -566,6 +581,7 @@ fn test_minter_sequential_ids() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -582,6 +598,7 @@ fn test_minter_sequential_ids() {
         .test_token
         .mint(
             test_contracts.minigame.contract_address,
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -614,6 +631,7 @@ fn test_minter_sequential_ids() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             CHARLIE(),
             false,
             false,
@@ -635,6 +653,7 @@ fn test_minter_bidirectional_mapping_consistency() {
         .test_token
         .mint(
             test_contracts.minigame.contract_address,
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -675,6 +694,7 @@ fn test_minter_registry_update_event() {
         .test_token
         .mint(
             test_contracts.minigame.contract_address,
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -727,6 +747,7 @@ fn test_minter_no_event_on_duplicate_registration() {
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -745,6 +766,7 @@ fn test_minter_no_event_on_duplicate_registration() {
         .test_token
         .mint(
             test_contracts.minigame.contract_address,
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -841,6 +863,7 @@ fn test_minter_multiple_contracts_isolation() {
     token1
         .mint(
             game_address,
+            Option::None,
             Option::None,
             Option::None,
             Option::None,

@@ -3,3 +3,4 @@ pub mod minter;
 pub mod objectives;
 pub mod renderer;
 pub mod settings;
+pub mod skills;

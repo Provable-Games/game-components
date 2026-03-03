@@ -96,7 +96,7 @@ pub fn register_game(
     client_url: Option<ByteArray>,
     renderer_address: Option<ContractAddress>,
     royalty_fraction: Option<u128>,
-    agent_skills: Option<ByteArray>,
+    skills_address: Option<ContractAddress>,
 ) {
     let minigame_token_dispatcher = IMinigameRegistryDispatcher {
         contract_address: minigame_token_address,
@@ -114,7 +114,7 @@ pub fn register_game(
             client_url,
             renderer_address,
             royalty_fraction,
-            agent_skills,
+            skills_address,
         );
 }
 
@@ -147,6 +147,7 @@ pub fn mint(
     context: Option<GameContextDetails>,
     client_url: Option<ByteArray>,
     renderer_address: Option<ContractAddress>,
+    skills_address: Option<ContractAddress>,
     to: ContractAddress,
     soulbound: bool,
     paymaster: bool,
@@ -167,6 +168,7 @@ pub fn mint(
             context,
             client_url,
             renderer_address,
+            skills_address,
             to,
             soulbound,
             paymaster,
@@ -225,6 +227,7 @@ pub fn mint_batch(
                     context: context_clone,
                     client_url: client_url_clone,
                     renderer_address: *mint_game_param.renderer_address,
+                    skills_address: *mint_game_param.skills_address,
                     to: *mint_game_param.to,
                     soulbound: *mint_game_param.soulbound,
                     paymaster: *mint_game_param.paymaster,

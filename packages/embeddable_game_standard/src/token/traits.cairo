@@ -38,3 +38,10 @@ pub trait OptionalRenderer<TContractState> {
     fn get_token_renderer(self: @TContractState, token_id: felt252) -> Option<ContractAddress>;
     fn set_token_renderer(ref self: TContractState, token_id: felt252, renderer: ContractAddress);
 }
+
+pub trait OptionalSkills<TContractState> {
+    fn get_token_skills(self: @TContractState, token_id: felt252) -> Option<ContractAddress>;
+    fn set_token_skills(
+        ref self: TContractState, token_id: felt252, skills_address: ContractAddress,
+    );
+}

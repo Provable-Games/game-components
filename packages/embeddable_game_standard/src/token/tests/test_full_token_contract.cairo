@@ -48,6 +48,7 @@ fn test_mint_minimal_parameters() { // UT-MINT-001
             Option::None, // context
             Option::None, // client_url
             Option::None, // renderer_address
+            Option::None, // skills_address
             ALICE(),
             false,
             false,
@@ -106,6 +107,7 @@ fn test_mint_with_all_parameters() { // UT-MINT-002
             Option::None,
             Option::Some("https://client.game.com"),
             Option::Some(RENDERER_ADDRESS()),
+            Option::None,
             ALICE(),
             true, // soulbound
             false,
@@ -154,6 +156,7 @@ fn test_mint_soulbound_token() { // UT-MINT-003
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             true, // soulbound
             false,
@@ -181,6 +184,7 @@ fn test_mint_with_lifecycle_constraints() { // UT-MINT-004
             Option::None,
             Option::Some(CURRENT_TIME - 100), // Past start time
             Option::Some(FUTURE_TIME),
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -226,6 +230,7 @@ fn test_mint_with_objective() { // UT-MINT-005
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -255,6 +260,7 @@ fn test_mint_with_custom_renderer() { // UT-MINT-006
             Option::None,
             Option::None,
             Option::Some(RENDERER_ADDRESS()),
+            Option::None,
             ALICE(),
             false,
             false,
@@ -291,6 +297,7 @@ fn test_mint_to_zero_address() { // UT-MINT-R001
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ZERO_ADDRESS(),
             false,
             false,
@@ -308,6 +315,7 @@ fn test_mint_with_invalid_game_address() { // UT-MINT-R002
         .test_token
         .mint(
             ZERO_ADDRESS(),
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -342,6 +350,7 @@ fn test_mint_with_non_minigame_contract() { // UT-MINT-R003
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -362,6 +371,7 @@ fn test_mint_with_invalid_settings_id() { // UT-MINT-R004
             test_contracts.minigame.contract_address,
             Option::None,
             Option::Some(999), // Non-existent settings_id
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -399,6 +409,7 @@ fn test_mint_with_invalid_objective_id() { // UT-MINT-R005
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -424,6 +435,7 @@ fn test_mint_with_start_greater_than_end() { // UT-MINT-R006
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -445,6 +457,7 @@ fn test_mint_when_game_registry_lookup_fails() { // UT-MINT-R007
         .test_token
         .mint(
             unregistered_game.contract_address,
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -486,6 +499,7 @@ fn test_mint_with_max_timestamps() { // UT-MINT-B001
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -514,6 +528,7 @@ fn test_mint_without_objective() { // UT-MINT-B002
             Option::None,
             Option::None,
             Option::None, // No objective
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -553,6 +568,7 @@ fn test_mint_with_high_objective_id() { // UT-MINT-B003
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -581,6 +597,7 @@ fn test_sequential_mints_increment_counter() { // UT-MINT-B004
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -600,6 +617,7 @@ fn test_sequential_mints_increment_counter() { // UT-MINT-B004
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             BOB(),
             false,
             false,
@@ -611,6 +629,7 @@ fn test_sequential_mints_increment_counter() { // UT-MINT-B004
         .test_token
         .mint(
             test_contracts.minigame.contract_address,
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -674,6 +693,7 @@ fn test_update_game_with_objective_completion() { // UT-UPDATE-003
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -723,6 +743,7 @@ fn test_objective_completion_progression() { // UT-UPDATE-S002
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -758,6 +779,7 @@ fn test_token_metadata_view() { // UT-VIEW-001
         .test_token
         .mint(
             test_contracts.minigame.contract_address,
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -805,6 +827,7 @@ fn test_settings_id_view() { // UT-VIEW-003
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -834,6 +857,7 @@ fn test_player_name_view() { // UT-VIEW-004
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -849,6 +873,7 @@ fn test_player_name_view() { // UT-VIEW-004
         .mint(
             test_contracts.minigame.contract_address,
             Option::Some('AliceWonderland'),
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -886,6 +911,7 @@ fn test_objective_id_view() { // UT-VIEW-005
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -909,6 +935,7 @@ fn test_objective_id_view() { // UT-VIEW-005
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -927,6 +954,7 @@ fn test_minted_by_view() { // UT-VIEW-006
         .test_token
         .mint(
             test_contracts.minigame.contract_address,
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -975,6 +1003,7 @@ fn test_is_soulbound_view() { // UT-VIEW-009
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -989,6 +1018,7 @@ fn test_is_soulbound_view() { // UT-VIEW-009
         .test_token
         .mint(
             test_contracts.minigame.contract_address,
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -1016,6 +1046,7 @@ fn test_renderer_address_view() { // UT-VIEW-010
         .test_token
         .mint(
             test_contracts.minigame.contract_address,
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -1056,6 +1087,7 @@ fn test_renderer_address_view() { // UT-VIEW-010
             Option::None,
             Option::None,
             Option::Some(RENDERER_ADDRESS()),
+            Option::None,
             ALICE(),
             false,
             false,
@@ -1087,6 +1119,7 @@ fn test_get_minter_address() { // UT-EXT-001
         .test_token
         .mint(
             test_contracts.minigame.contract_address,
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -1140,6 +1173,7 @@ fn test_minter_tracking() { // UT-EXT-002
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -1170,6 +1204,7 @@ fn test_minter_tracking() { // UT-EXT-002
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -1189,6 +1224,7 @@ fn test_minter_tracking() { // UT-EXT-002
         .test_token
         .mint(
             test_contracts.minigame.contract_address,
+            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -1227,6 +1263,7 @@ fn test_has_custom_renderer() { // UT-EXT-003
             Option::None,
             Option::None,
             Option::None,
+            Option::None,
             ALICE(),
             false,
             false,
@@ -1256,6 +1293,7 @@ fn test_has_custom_renderer() { // UT-EXT-003
             Option::None,
             Option::None,
             Option::Some(RENDERER_ADDRESS()),
+            Option::None,
             ALICE(),
             false,
             false,
