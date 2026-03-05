@@ -189,7 +189,7 @@ fn test_default_svg_basic() {
     stop_cheat_block_timestamp_global();
 
     // Should be a data URI
-    assert!(starts_with(@result, @"data:image/svg+xml;utf8,"), "Should be SVG data URI");
+    assert!(starts_with(@result, @"data:image/svg+xml;charset=utf-8,"), "Should be SVG data URI");
     assert!(result.len() > 30, "Should have content after prefix");
 }
 
@@ -209,7 +209,7 @@ fn test_default_svg_zero_score() {
     );
     stop_cheat_block_timestamp_global();
 
-    assert!(starts_with(@result, @"data:image/svg+xml;utf8,"), "Should be SVG data URI");
+    assert!(starts_with(@result, @"data:image/svg+xml;charset=utf-8,"), "Should be SVG data URI");
 }
 
 #[test]
@@ -228,7 +228,7 @@ fn test_default_svg_max_score() {
     );
     stop_cheat_block_timestamp_global();
 
-    assert!(starts_with(@result, @"data:image/svg+xml;utf8,"), "Should be SVG data URI");
+    assert!(starts_with(@result, @"data:image/svg+xml;charset=utf-8,"), "Should be SVG data URI");
 }
 
 #[test]
@@ -249,7 +249,7 @@ fn test_default_svg_game_over() {
     );
     stop_cheat_block_timestamp_global();
 
-    assert!(starts_with(@result, @"data:image/svg+xml;utf8,"), "Should be SVG data URI");
+    assert!(starts_with(@result, @"data:image/svg+xml;charset=utf-8,"), "Should be SVG data URI");
 }
 
 #[test]
@@ -272,7 +272,7 @@ fn test_default_svg_objective_failed() {
     );
     stop_cheat_block_timestamp_global();
 
-    assert!(starts_with(@result, @"data:image/svg+xml;utf8,"), "Should be SVG data URI");
+    assert!(starts_with(@result, @"data:image/svg+xml;charset=utf-8,"), "Should be SVG data URI");
 }
 
 #[test]
@@ -293,7 +293,7 @@ fn test_default_svg_soulbound() {
     );
     stop_cheat_block_timestamp_global();
 
-    assert!(starts_with(@result, @"data:image/svg+xml;utf8,"), "Should be SVG data URI");
+    assert!(starts_with(@result, @"data:image/svg+xml;charset=utf-8,"), "Should be SVG data URI");
 }
 
 #[test]
@@ -313,7 +313,7 @@ fn test_default_svg_empty_player_name() {
     );
     stop_cheat_block_timestamp_global();
 
-    assert!(starts_with(@result, @"data:image/svg+xml;utf8,"), "Should be SVG data URI");
+    assert!(starts_with(@result, @"data:image/svg+xml;charset=utf-8,"), "Should be SVG data URI");
 }
 
 #[test]
@@ -333,7 +333,7 @@ fn test_default_svg_long_player_name() {
     );
     stop_cheat_block_timestamp_global();
 
-    assert!(starts_with(@result, @"data:image/svg+xml;utf8,"), "Should be SVG data URI");
+    assert!(starts_with(@result, @"data:image/svg+xml;charset=utf-8,"), "Should be SVG data URI");
 }
 
 #[test]
@@ -355,7 +355,7 @@ fn test_default_svg_empty_game_name() {
     );
     stop_cheat_block_timestamp_global();
 
-    assert!(starts_with(@result, @"data:image/svg+xml;utf8,"), "Should handle empty strings");
+    assert!(starts_with(@result, @"data:image/svg+xml;charset=utf-8,"), "Should handle empty strings");
 }
 
 #[test]
@@ -376,7 +376,7 @@ fn test_default_svg_special_color() {
     );
     stop_cheat_block_timestamp_global();
 
-    assert!(starts_with(@result, @"data:image/svg+xml;utf8,"), "Should handle hex colors");
+    assert!(starts_with(@result, @"data:image/svg+xml;charset=utf-8,"), "Should handle hex colors");
 }
 
 #[test]
@@ -399,7 +399,7 @@ fn test_default_svg_fuzz(score: u64, game_id: u64) {
     stop_cheat_block_timestamp_global();
 
     // Should not panic and produce valid output
-    assert!(starts_with(@result, @"data:image/svg+xml;utf8,"), "Should produce valid URI");
+    assert!(starts_with(@result, @"data:image/svg+xml;charset=utf-8,"), "Should produce valid URI");
     assert!(result.len() > 30, "Should have content");
 }
 
@@ -423,7 +423,7 @@ fn test_default_svg_timeline_before_start() {
     );
     stop_cheat_block_timestamp_global();
 
-    assert!(starts_with(@result, @"data:image/svg+xml;utf8,"), "Should handle before-start");
+    assert!(starts_with(@result, @"data:image/svg+xml;charset=utf-8,"), "Should handle before-start");
 }
 
 #[test]
@@ -442,7 +442,7 @@ fn test_default_svg_timeline_after_end() {
     );
     stop_cheat_block_timestamp_global();
 
-    assert!(starts_with(@result, @"data:image/svg+xml;utf8,"), "Should handle after-end");
+    assert!(starts_with(@result, @"data:image/svg+xml;charset=utf-8,"), "Should handle after-end");
 }
 
 #[test]
@@ -462,7 +462,7 @@ fn test_default_svg_timeline_no_end() {
     );
     stop_cheat_block_timestamp_global();
 
-    assert!(starts_with(@result, @"data:image/svg+xml;utf8,"), "Should handle no end time");
+    assert!(starts_with(@result, @"data:image/svg+xml;charset=utf-8,"), "Should handle no end time");
 }
 
 // ==============================================================================
@@ -1369,7 +1369,7 @@ fn test_default_svg_data_uri_image() {
     );
     stop_cheat_block_timestamp_global();
 
-    assert!(starts_with(@result, @"data:image/svg+xml;utf8,"), "Should handle data URI images");
+    assert!(starts_with(@result, @"data:image/svg+xml;charset=utf-8,"), "Should handle data URI images");
 }
 
 #[test]
@@ -1533,7 +1533,7 @@ fn test_stress_default_svg_maxed_out() {
     stop_cheat_block_timestamp_global();
 
     assert!(
-        starts_with(@svg_result, @"data:image/svg+xml;utf8,"), "Should produce valid SVG output",
+        starts_with(@svg_result, @"data:image/svg+xml;charset=utf-8,"), "Should produce valid SVG output",
     );
     println!("Stress SVG output length: {} bytes", svg_result.len());
 }

@@ -853,7 +853,7 @@ pub fn create_default_svg(
     svg.append(@"</g>"); // close card group
     svg.append(@"</svg>");
 
-    "data:image/svg+xml;utf8," + svg
+    "data:image/svg+xml;charset=utf-8," + svg
 }
 
 #[cfg(test)]
