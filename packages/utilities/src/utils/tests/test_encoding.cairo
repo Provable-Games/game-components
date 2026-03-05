@@ -5,7 +5,7 @@
 // All functions are pure - no contract deployment needed.
 
 use core::num::traits::Bounded;
-use crate::utils::encoding::{U256BytesUsedTraitImpl, bytes_base64_encode};
+use crate::utils::encoding::{U256BytesUsedTraitImpl, bytes_base64_encode, u128_to_ascii_felt};
 
 // ==============================================================================
 // BASE64 ENCODING TESTS
@@ -587,4 +587,63 @@ fn test_u128_boundary_values() {
         U256BytesUsedTraitImpl::bytes_used(0x1000000000000000000_u256) == 10,
         "0x1000000000000000000 needs 10 bytes",
     );
+}
+
+// ==============================================================================
+// U128 TO ASCII FELT TESTS
+// ==============================================================================
+
+#[test]
+fn test_u128_to_ascii_felt_zero() {
+    assert!(u128_to_ascii_felt(0) == '0', "0 should be ASCII '0'");
+}
+
+#[test]
+fn test_u128_to_ascii_felt_single_digit() {
+    assert!(u128_to_ascii_felt(5) == '5', "5 should be ASCII '5'");
+    assert!(u128_to_ascii_felt(9) == '9', "9 should be ASCII '9'");
+}
+
+#[test]
+fn test_u128_to_ascii_felt_multi_digit() {
+    assert!(u128_to_ascii_felt(42) == '42', "42 should be ASCII '42'");
+    assert!(u128_to_ascii_felt(100) == '100', "100 should be ASCII '100'");
+    assert!(u128_to_ascii_felt(1000) == '1000', "1000 should be ASCII '1000'");
+    assert!(u128_to_ascii_felt(12345) == '12345', "12345 should be ASCII '12345'");
+}
+
+#[test]
+fn test_u128_to_ascii_felt_large_numbers() {
+    assert!(u128_to_ascii_felt(1000000) == '1000000', "1000000 should be ASCII '1000000'");
+    assert!(u128_to_ascii_felt(999999999) == '999999999', "999999999 should be ASCII '999999999'");
+}
+
+#[test]
+fn test_u128_to_ascii_felt_max_u64_value() {
+    // Max u64 = 18446744073709551615 (20 digits, fits in 31 bytes)
+    let result = u128_to_ascii_felt(18446744073709551615);
+    assert!(result == '18446744073709551615', "Max u64 value should convert correctly");
+}
+
+#[test]
+fn test_u128_to_ascii_felt_beyond_u64() {
+    // 31-digit number (max that fits in felt252)
+    let result = u128_to_ascii_felt(1000000000000000000000);
+    assert!(result == '1000000000000000000000', "21-digit u128 should convert correctly");
+}
+
+#[test]
+fn test_u128_to_ascii_felt_powers_of_10() {
+    assert!(u128_to_ascii_felt(1) == '1', "10^0");
+    assert!(u128_to_ascii_felt(10) == '10', "10^1");
+    assert!(u128_to_ascii_felt(100) == '100', "10^2");
+    assert!(u128_to_ascii_felt(1000) == '1000', "10^3");
+    assert!(u128_to_ascii_felt(10000) == '10000', "10^4");
+}
+
+#[test]
+#[should_panic(expected: "Number exceeds 31 digits, cannot fit in felt252")]
+fn test_u128_to_ascii_felt_panics_over_31_digits() {
+    // u128 max = 340282366920938463463374607431768211455 (39 digits)
+    u128_to_ascii_felt(340282366920938463463374607431768211455);
 }

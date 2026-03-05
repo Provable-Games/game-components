@@ -1313,7 +1313,7 @@ fn test_minigame_details_game_details() {
     assert!(details.len() == 1, "Should have 1 game detail");
 
     let detail = details.at(0);
-    assert!(detail.name == @"Test Game Detail", "Game detail name mismatch");
+    assert!(*detail.name == 'Test Game Detail', "Game detail name mismatch");
 }
 
 // Test MN-DET-04: token_name_batch returns correct values

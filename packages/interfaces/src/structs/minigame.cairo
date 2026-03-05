@@ -2,10 +2,10 @@
 use starknet::ContractAddress;
 use super::metagame::GameContextDetails;
 
-#[derive(Drop, Serde)]
+#[derive(Drop, Serde, Copy)]
 pub struct GameDetail {
-    pub name: ByteArray,
-    pub value: ByteArray,
+    pub name: felt252,
+    pub value: felt252,
 }
 
 /// Parameters for minting a game token in batch operations

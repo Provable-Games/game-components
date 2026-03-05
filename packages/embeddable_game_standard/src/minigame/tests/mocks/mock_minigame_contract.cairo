@@ -130,12 +130,7 @@ pub mod MockMinigameContract {
         }
 
         fn game_details(self: @ContractState, token_id: felt252) -> Span<GameDetail> {
-            array![
-                GameDetail {
-                    name: "Test Game Detail", value: format!("Test Value for token {}", token_id),
-                },
-            ]
-                .span()
+            array![GameDetail { name: 'Test Game Detail', value: 'Test Value' }].span()
         }
 
         fn token_name_batch(self: @ContractState, token_ids: Span<felt252>) -> Array<ByteArray> {
