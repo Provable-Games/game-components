@@ -97,26 +97,6 @@ fn calculate_timeline_progress(start: u64, end: u64, current: u64) -> u64 {
     (current - start) * 100 / (end - start)
 }
 
-/// Replace '#' (0x23) with '%23' for safe embedding in data:image/svg+xml, URIs.
-fn url_encode_hash(input: ByteArray) -> ByteArray {
-    let mut output: ByteArray = "";
-    let len = input.len();
-    let mut i: u32 = 0;
-    loop {
-        if i >= len {
-            break;
-        }
-        let byte = input.at(i).unwrap();
-        if byte == 0x23 {
-            output.append(@"%23");
-        } else {
-            output.append_byte(byte);
-        }
-        i += 1;
-    };
-    output
-}
-
 fn icon_check(
     x: ByteArray, y: ByteArray, w: ByteArray, h: ByteArray, color: @ByteArray,
 ) -> ByteArray {
@@ -804,7 +784,7 @@ pub fn create_default_svg(
     svg.append(@"</g>"); // close card group
     svg.append(@"</svg>");
 
-    "data:image/svg+xml," + url_encode_hash(svg)
+    "data:image/svg+xml;utf8," + svg
 }
 
 #[cfg(test)]
