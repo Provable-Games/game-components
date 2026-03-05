@@ -18,7 +18,8 @@ use game_components_embeddable_game_standard::registry::interface::GameMetadata;
 use game_components_embeddable_game_standard::token::structs::{Lifecycle, TokenMetadata};
 use snforge_std::{start_cheat_block_timestamp_global, stop_cheat_block_timestamp_global};
 use starknet::ContractAddress;
-use crate::renderer::svg::{create_custom_metadata, create_default_svg};
+use crate::renderer::metadata::create_custom_metadata;
+use crate::renderer::svg::create_default_svg;
 
 // ==============================================================================
 // TEST FIXTURES
@@ -51,6 +52,7 @@ fn default_game_metadata() -> GameMetadata {
         royalty_fraction: 500,
         skills_address: ZERO_ADDRESS(),
         created_at: 0,
+        version: 0,
     }
 }
 
@@ -235,6 +237,29 @@ fn test_default_svg_game_over() {
     let game_metadata = default_game_metadata();
     let mut token_metadata = default_token_metadata();
     token_metadata.game_over = true;
+    let result = create_default_svg(
+        game_metadata,
+        token_metadata,
+        100,
+        'Player',
+        default_settings_details(),
+        default_objective_details(),
+        default_context_details(),
+        "https://test.game.com",
+    );
+    stop_cheat_block_timestamp_global();
+
+    assert!(starts_with(@result, @"data:image/svg+xml;base64,"), "Should be SVG data URI");
+}
+
+#[test]
+fn test_default_svg_objective_failed() {
+    start_cheat_block_timestamp_global(1656763200);
+    let game_metadata = default_game_metadata();
+    let mut token_metadata = default_token_metadata();
+    token_metadata.game_over = true;
+    token_metadata.objective_id = 1;
+    token_metadata.completed_objective = false;
     let result = create_default_svg(
         game_metadata,
         token_metadata,
@@ -1406,4 +1431,156 @@ fn test_custom_metadata_all_features_combined() {
         "Should handle all features combined",
     );
     assert!(result.len() > 100, "Should have substantial content");
+}
+
+// ==============================================================================
+// STRESS TESTS - MAXED OUT SVG + METADATA
+// ==============================================================================
+
+fn stress_token_metadata() -> TokenMetadata {
+    let mut token_metadata = default_token_metadata();
+    token_metadata.game_id = 18446744073709551615; // max u64
+    token_metadata.settings_id = 4294967295; // max u32
+    token_metadata.minted_at = 18446744073709551615;
+    token_metadata.minted_by = 18446744073709551615;
+    token_metadata.lifecycle = Lifecycle { start: 0, end: 18446744073709551615 };
+    token_metadata.game_over = true;
+    token_metadata.soulbound = true;
+    token_metadata.completed_objective = true;
+    token_metadata.has_context = true;
+    token_metadata.objective_id = 4294967295;
+    token_metadata.paymaster = true;
+    token_metadata.metadata = 65535; // max u16
+    token_metadata
+}
+
+fn stress_game_metadata() -> GameMetadata {
+    let mut game_metadata = default_game_metadata();
+    game_metadata
+        .name = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"; // 64 chars
+    game_metadata
+        .description =
+            "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB"; // 256 chars
+    game_metadata.developer = "CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC"; // 32 chars
+    game_metadata.publisher = "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"; // 34 chars
+    game_metadata.genre = "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE"; // 32 chars
+    game_metadata
+}
+
+fn stress_settings_details() -> GameSettingDetails {
+    GameSettingDetails {
+        name: "Maximum Settings Configuration Name That Is Very Long",
+        description: "A very long settings description to stress test the metadata generation",
+        settings: array![
+            GameSetting { name: 'Setting_A', value: 'ValueAAAAAAAAAAAAAAAAAAAAAAAAA' },
+            GameSetting { name: 'Setting_B', value: 'ValueBBBBBBBBBBBBBBBBBBBBBBBBB' },
+            GameSetting { name: 'Setting_C', value: 'ValueCCCCCCCCCCCCCCCCCCCCCCCCC' },
+            GameSetting { name: 'Setting_D', value: 'ValueDDDDDDDDDDDDDDDDDDDDDDDDD' },
+            GameSetting { name: 'Setting_E', value: 'ValueEEEEEEEEEEEEEEEEEEEEEEEEE' },
+        ]
+            .span(),
+    }
+}
+
+fn stress_context_details() -> GameContextDetails {
+    GameContextDetails {
+        name: "Maximum Context Configuration Name That Is Very Long Indeed",
+        description: "A very long context description to stress test the metadata generation flow",
+        id: Option::Some(4294967295), // max u32
+        context: array![
+            GameContext {
+                name: 'ContextKeyAAAAAAAAAAAAAAAAAAAAA', value: 'ContextValAAAAAAAAAAAAAAAAAAAA',
+            },
+            GameContext {
+                name: 'ContextKeyBBBBBBBBBBBBBBBBBBBBB', value: 'ContextValBBBBBBBBBBBBBBBBBBBB',
+            },
+            GameContext {
+                name: 'ContextKeyCCCCCCCCCCCCCCCCCCCCC', value: 'ContextValCCCCCCCCCCCCCCCCCCCC',
+            },
+        ]
+            .span(),
+    }
+}
+
+fn stress_objective_details() -> GameObjectiveDetails {
+    GameObjectiveDetails {
+        name: "Complete All Objectives And Win The Championship Tournament Final Round",
+        description: "A very long objective description to stress test rendering with maximum content",
+        objectives: array![
+            GameObjective { name: 'ObjectiveAAAAAAAAAAAAAAAAAAAA', value: '999999999' },
+            GameObjective { name: 'ObjectiveBBBBBBBBBBBBBBBBBBBB', value: '888888888' },
+            GameObjective { name: 'ObjectiveCCCCCCCCCCCCCCCCCCCC', value: '777777777' },
+        ]
+            .span(),
+    }
+}
+
+#[test]
+fn test_stress_default_svg_maxed_out() {
+    start_cheat_block_timestamp_global(2000000000);
+
+    let svg_result = create_default_svg(
+        stress_game_metadata(),
+        stress_token_metadata(),
+        18446744073709551615, // max u64 score
+        'MaxLengthPlayerNameTest1234', // 27 chars
+        stress_settings_details(),
+        stress_objective_details(),
+        stress_context_details(),
+        "https://example.com/very/long/path/to/client/that/tests/url/length/limits/stress/test/play",
+    );
+
+    stop_cheat_block_timestamp_global();
+
+    assert!(
+        starts_with(@svg_result, @"data:image/svg+xml;base64,"), "Should produce valid SVG output",
+    );
+    println!("Stress SVG output length: {} bytes", svg_result.len());
+}
+
+#[test]
+fn test_stress_custom_metadata_maxed_out() {
+    start_cheat_block_timestamp_global(2000000000);
+
+    // 20 game details
+    let mut game_details_arr: Array<GameDetail> = array![];
+    let mut i: u8 = 0;
+    loop {
+        if i >= 20 {
+            break;
+        }
+        game_details_arr
+            .append(
+                GameDetail {
+                    name: format!("GameDetailName_{}", i),
+                    value: format!("GameDetailValueThatIsQuiteLong_{}", i),
+                },
+            );
+        i += 1;
+    }
+
+    let metadata_result = create_custom_metadata(
+        3618502788666131213697322783095070105623107215331596699973092056135872020480, // large felt252
+        "A Very Long Token Name That Tests The Limits Of Metadata Generation",
+        "An extremely long token description that is designed to stress test the JSON metadata generation function with a large amount of text content to ensure it handles long strings properly without any issues or errors occurring during the base64 encoding process",
+        stress_game_metadata(),
+        "https://example.com/very/long/path/to/image/that/tests/url/length/limits/stress/test/image.png",
+        game_details_arr.span(),
+        stress_settings_details(),
+        stress_context_details(),
+        stress_token_metadata(),
+        18446744073709551615, // max u64 score
+        0x049D36570D4e46f48e99674bd3fcc84644DdD6b96F7C741B1562B82f9e004dC7.try_into().unwrap(),
+        'MaxLengthPlayerNameTest1234', // 27 chars
+        "Complete All Objectives And Win The Championship Tournament Final Round",
+    );
+
+    stop_cheat_block_timestamp_global();
+
+    assert!(
+        starts_with(@metadata_result, @"data:application/json;base64,"),
+        "Should produce valid metadata output",
+    );
+    assert!(metadata_result.len() > 500, "Should have very substantial content");
+    println!("Stress metadata output length: {} bytes", metadata_result.len());
 }

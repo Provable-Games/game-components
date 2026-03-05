@@ -1,4 +1,4 @@
-pub mod font;
+pub mod metadata;
 pub mod svg;
 
 #[cfg(test)]

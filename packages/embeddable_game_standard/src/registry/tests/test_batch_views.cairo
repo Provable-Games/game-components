@@ -54,6 +54,7 @@ fn register_game_with_name(
             Option::None,
             Option::None,
             Option::None,
+            1,
         );
     stop_cheat_caller_address(registry.contract_address);
     game_id
@@ -454,6 +455,7 @@ fn register_game_with_metadata(
             Option::None,
             Option::None,
             Option::None,
+            1,
         );
     stop_cheat_caller_address(registry.contract_address);
     game_id

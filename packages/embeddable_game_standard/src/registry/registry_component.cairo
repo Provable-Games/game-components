@@ -66,6 +66,7 @@ pub mod MinigameRegistryComponent {
         pub renderer_address: ContractAddress,
         pub royalty_fraction: u128,
         pub skills_address: ContractAddress,
+        pub version: u64,
     }
 
     #[derive(Drop, starknet::Event)]
@@ -195,6 +196,7 @@ pub mod MinigameRegistryComponent {
             renderer_address: Option<ContractAddress>,
             royalty_fraction: Option<u128>,
             skills_address: Option<ContractAddress>,
+            version: u64,
         ) -> u64 {
             let game_count = self.game_counter.read();
             let new_game_id = game_count + 1;
@@ -249,6 +251,7 @@ pub mod MinigameRegistryComponent {
                 royalty_fraction: final_royalty_fraction,
                 skills_address: final_skills_address,
                 created_at: get_block_timestamp(),
+                version,
             };
 
             self.game_metadata.entry(new_game_id).write(metadata);
@@ -271,6 +274,7 @@ pub mod MinigameRegistryComponent {
                         renderer_address: final_renderer_address,
                         royalty_fraction: final_royalty_fraction,
                         skills_address: final_skills_address,
+                        version,
                     },
                 );
 

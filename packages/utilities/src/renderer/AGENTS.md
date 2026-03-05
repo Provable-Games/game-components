@@ -6,22 +6,46 @@ SVG/HTML rendering and font embedding for token metadata and token_uri. All func
 
 | Submodule | Purpose |
 |-----------|---------|
-| `svg` | SVG card rendering and JSON metadata generation |
+| `svg` | SVG card rendering |
+| `metadata` | JSON metadata generation for token URIs |
 | `font` | VT323 pixel font embedded as WOFF2 base64 |
 
 ## svg.cairo
 
-Generates data URIs for token metadata and SVG images.
+Generates SVG data URIs for token card images.
 
 ```cairo
-use game_components_utilities::renderer::svg::{create_default_svg, create_custom_metadata};
+use game_components_utilities::renderer::svg::create_default_svg;
 
 // Default SVG with animated game card design
 let svg_uri = create_default_svg(
     game_metadata, token_metadata, score, player_name,
-    settings_details, objective_details, context_details,
+    settings_details, objective_details, context_details, client_url,
 );
 // Result: "data:image/svg+xml;base64,..."
+```
+
+**SVG Features:**
+- 470x600 pixel animated game card with cyberpunk/dark-tech aesthetic and gold cartridge connector pins at bottom
+- 590x680 viewport with extra padding for dramatic 3D tilt effect
+- Pinstripe pattern background with animated gradient border and shimmer
+- Header with EGS logo placeholder, game name, developer, genre, game ID badge
+- Reduced-height game image area (110px)
+- Status badge pills: ACTIVE/FINISHED (green/red), SOULBOUND (accent/grey), OBJ DONE/PENDING
+- Two-column panels with accent left-border strips (player, score, settings, objective)
+- Timeline progress bar with start/end datetimes and animated marker
+- Context section with name and up to 3 key:value pairs
+- SVG icon symbols (star, user, check, x-mark, lock, clock)
+- 3D card edges (16px outer, 8px inner) for depth effect
+- Datetime format: "YYYY-MM-DD HH:MM"
+- Game color accent used for border, separators, badges, and highlights
+
+## metadata.cairo
+
+Generates JSON metadata data URIs for token metadata.
+
+```cairo
+use game_components_utilities::renderer::metadata::create_custom_metadata;
 
 // Full custom metadata with all extensions
 let metadata_uri = create_custom_metadata(
@@ -41,21 +65,6 @@ let metadata_uri = create_custom_metadata(
 );
 // Result: "data:application/json;base64,..."
 ```
-
-**SVG Features:**
-- 470x600 pixel animated game card with cyberpunk/dark-tech aesthetic and gold cartridge connector pins at bottom
-- 590x680 viewport with extra padding for dramatic 3D tilt effect
-- Pinstripe pattern background with animated gradient border and shimmer
-- Header with EGS logo placeholder, game name, developer, genre, game ID badge
-- Reduced-height game image area (110px)
-- Status badge pills: ACTIVE/FINISHED (green/red), SOULBOUND (accent/grey), OBJ DONE/PENDING
-- Two-column panels with accent left-border strips (player, score, settings, objective)
-- Timeline progress bar with start/end datetimes and animated marker
-- Context section with name and up to 3 key:value pairs
-- SVG icon symbols (star, user, check, x-mark, lock, clock)
-- 3D card edges (16px outer, 8px inner) for depth effect
-- Datetime format: "YYYY-MM-DD HH:MM"
-- Game color accent used for border, separators, badges, and highlights
 
 **Metadata JSON includes:**
 - Standard NFT fields: name, description, image

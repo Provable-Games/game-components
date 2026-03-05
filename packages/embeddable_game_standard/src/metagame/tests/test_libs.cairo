@@ -1268,6 +1268,7 @@ mod MockRegistryForLibs {
                 royalty_fraction: 0,
                 skills_address: Zero::zero(),
                 created_at: 0,
+                version: 0,
             }
         }
         fn is_game_registered(self: @ContractState, contract_address: ContractAddress) -> bool {
@@ -1291,6 +1292,7 @@ mod MockRegistryForLibs {
             renderer_address: Option<ContractAddress>,
             royalty_fraction: Option<u128>,
             skills_address: Option<ContractAddress>,
+            version: u64,
         ) -> u64 {
             1
         }

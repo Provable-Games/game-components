@@ -20,4 +20,6 @@ pub struct GameMetadata {
     pub skills_address: ContractAddress,
     /// Timestamp when the game was registered
     pub created_at: u64,
+    /// Version number for game contract versioning
+    pub version: u64,
 }

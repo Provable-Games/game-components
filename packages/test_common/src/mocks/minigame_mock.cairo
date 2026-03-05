@@ -499,6 +499,7 @@ pub mod minigame_mock {
                     minigame_token_address,
                     royalty_fraction,
                     Option::None,
+                    1,
                 );
         }
     }
