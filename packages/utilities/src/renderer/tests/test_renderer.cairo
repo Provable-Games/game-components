@@ -1532,7 +1532,9 @@ fn test_stress_default_svg_maxed_out() {
 
     stop_cheat_block_timestamp_global();
 
-    assert!(starts_with(@svg_result, @"data:image/svg+xml;utf8,"), "Should produce valid SVG output");
+    assert!(
+        starts_with(@svg_result, @"data:image/svg+xml;utf8,"), "Should produce valid SVG output",
+    );
     println!("Stress SVG output length: {} bytes", svg_result.len());
 }
 
@@ -1582,3 +1584,4 @@ fn test_stress_custom_metadata_maxed_out() {
     assert!(metadata_result.len() > 500, "Should have very substantial content");
     println!("Stress metadata output length: {} bytes", metadata_result.len());
 }
+

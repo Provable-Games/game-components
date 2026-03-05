@@ -399,8 +399,12 @@ pub fn create_default_svg(
             @"<svg x='23' y='33' width='34' height='22' viewBox='0 0 415 287'><path fill='%23fff' d='M134 0q21 0 40 8a104 104 0 0 1 56 53 91 91 0 0 1 0 77q-8 19-23 32-14 14-33 21-19 8-40 8h-33l-33-57h66q9 0 17-3t14-9l10-15q3-9 3-20 0-8-3-17l-10-15-14-10q-9-4-17-4H59v234H0V0z'/><path fill='%23fff' fill-rule='evenodd' d='m415 131-2-12H306l-34 52h79q-3 15-11 27l-18 20q-10 9-24 14-14 4-29 4a86 86 0 0 1-56-20v60a155 155 0 0 0 160-31 140 140 0 0 0 42-102zM210 11q-22 10-40 25l42 27v8a88 88 0 0 1 103-8l28-44Q310 0 269 0q-31 0-59 11' clip-rule='evenodd' opacity='.4'/></svg>",
         );
 
-    // Game name
-    svg.append(@"<text x='72' y='38' style='fill:%23fff;font-size:22px;letter-spacing:1px'>");
+    // Game name (clipped to avoid overlap with player name)
+    svg.append(@"<clipPath id='gn-clip'><rect x='72' y='16' width='230' height='28'/></clipPath>");
+    svg
+        .append(
+            @"<text x='72' y='38' clip-path='url(%23gn-clip)' style='fill:%23fff;font-size:22px;letter-spacing:1px'>",
+        );
     svg += _game_name;
     svg.append(@"</text>");
     // Developer + Genre
@@ -982,5 +986,79 @@ mod tests {
         stop_cheat_block_timestamp_global();
 
         println!("Default SVG: {}", svg_result);
+    }
+
+    #[test]
+    fn test_loot_survivor_svg() {
+        start_cheat_block_timestamp_global(1709654400); // 2024-03-05
+
+        let game_metadata = GameMetadata {
+            contract_address: 0x1234567890123456789012345678901234567890.try_into().unwrap(),
+            name: "Loot Survivor",
+            description: "Fully onchain arcade dungeon crawler",
+            developer: "Provable Games",
+            publisher: "Provable Games",
+            genre: "Roguelike RPG",
+            image: "https://lootsurvivor.io/favicon.png",
+            color: "#33FF33",
+            client_url: "https://lootsurvivor.io",
+            renderer_address: 0x9876543210987654321098765432109876543210.try_into().unwrap(),
+            royalty_fraction: 500,
+            skills_address: 0.try_into().unwrap(),
+            created_at: 0,
+            version: 0,
+        };
+
+        let mut token_metadata = default_token_metadata();
+        token_metadata.game_over = true;
+        token_metadata.soulbound = true;
+        token_metadata.completed_objective = true;
+        token_metadata.objective_id = 1;
+
+        let settings = GameSettingDetails {
+            name: "Hard Mode",
+            description: "No mercy",
+            settings: array![
+                GameSetting { name: 'Difficulty', value: 'Hard' },
+                GameSetting { name: 'Lives', value: '1' },
+            ]
+                .span(),
+        };
+
+        let objectives = GameObjectiveDetails {
+            name: "Slay the Dragon",
+            description: "Defeat the final boss",
+            objectives: array![
+                GameObjective { name: 'Boss', value: 'Dragon' },
+                GameObjective { name: 'Level', value: '25' },
+            ]
+                .span(),
+        };
+
+        let context = GameContextDetails {
+            name: "Season 1",
+            description: "The first season",
+            id: Option::Some(1),
+            context: array![
+                GameContext { name: 'Season', value: '1' },
+                GameContext { name: 'Realm', value: 'Realms Eternal' },
+            ]
+                .span(),
+        };
+
+        let svg_result = create_default_svg(
+            game_metadata,
+            token_metadata,
+            84271,
+            'Distracteddev',
+            settings,
+            objectives,
+            context,
+            "https://lootsurvivor.io",
+        );
+
+        stop_cheat_block_timestamp_global();
+
+        println!("Loot Survivor SVG: {}", svg_result);
     }
 }
