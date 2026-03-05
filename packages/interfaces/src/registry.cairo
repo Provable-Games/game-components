@@ -8,7 +8,7 @@ pub use crate::structs::registry::GameMetadata;
 ///   game_metadata_batch, games_registered_batch, get_games,
 ///   get_games_by_developer, get_games_by_publisher, get_games_by_genre
 pub const IMINIGAME_REGISTRY_ID: felt252 =
-    0x1c12eed2dacd6f7cc81a6f01d1f65248ab5baae392d7baa5f9ffc3593d25803;
+    0x2ff8aa8dda405faf0eb17c5f806d7482b7352cf91fa9668e9ddf030f14b2ee9;
 
 #[starknet::interface]
 pub trait IMinigameRegistry<TState> {
@@ -31,6 +31,7 @@ pub trait IMinigameRegistry<TState> {
         renderer_address: Option<ContractAddress>,
         royalty_fraction: Option<u128>,
         skills_address: Option<ContractAddress>,
+        version: u64,
     ) -> u64;
     /// Set the royalty fraction for a game.
     /// Only the owner of the game creator token (game_id) can call this.

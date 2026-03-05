@@ -1,4 +1,3 @@
-use alexandria_encoding::base64::Base64Encoder;
 use core::array::SpanTrait;
 use core::clone::Clone;
 use core::num::traits::Zero;
@@ -6,12 +5,10 @@ use core::traits::Into;
 use game_components_embeddable_game_standard::metagame::extensions::context::structs::GameContextDetails;
 use game_components_embeddable_game_standard::minigame::extensions::objectives::structs::GameObjectiveDetails;
 use game_components_embeddable_game_standard::minigame::extensions::settings::structs::GameSettingDetails;
-use game_components_embeddable_game_standard::minigame::structs::GameDetail;
 use game_components_embeddable_game_standard::registry::interface::GameMetadata;
 use game_components_embeddable_game_standard::token::structs::TokenMetadata;
-use graffiti::json::JsonImpl;
-use starknet::{ContractAddress, get_block_timestamp};
-use crate::utils::encoding::{U256BytesUsedTraitImpl, bytes_base64_encode, felt252_to_byte_array};
+use starknet::get_block_timestamp;
+use crate::utils::encoding::{U256BytesUsedTraitImpl, felt252_to_byte_array};
 
 fn create_text(
     text: ByteArray,
@@ -34,18 +31,6 @@ fn create_text(
         + "'>"
         + text
         + "</text>"
-}
-
-fn create_trait(name: ByteArray, value: ByteArray) -> ByteArray {
-    JsonImpl::new().add("trait", name).add("value", value).build()
-}
-
-fn bool_to_str(val: bool) -> ByteArray {
-    if val {
-        "True"
-    } else {
-        "False"
-    }
 }
 
 /// Converts a unix timestamp to a "YYYY-MM-DD HH:MM" datetime string.
@@ -112,6 +97,122 @@ fn calculate_timeline_progress(start: u64, end: u64, current: u64) -> u64 {
     (current - start) * 100 / (end - start)
 }
 
+/// URL-encode characters unsafe in data URIs: " # % < > { }
+fn uri_encode(input: ByteArray) -> ByteArray {
+    let len = input.len();
+    let mut needs_encode = false;
+    let mut i: u32 = 0;
+    loop {
+        if i >= len {
+            break;
+        }
+        let b = input.at(i).unwrap();
+        if b == 0x22 || b == 0x23 || b == 0x25 || b == 0x3C || b == 0x3E || b == 0x7B || b == 0x7D {
+            needs_encode = true;
+            break;
+        }
+        i += 1;
+    }
+    if !needs_encode {
+        return input;
+    }
+    let mut output: ByteArray = "";
+    let mut i: u32 = 0;
+    loop {
+        if i >= len {
+            break;
+        }
+        let b = input.at(i).unwrap();
+        if b == 0x22 {
+            output.append(@"%22");
+        } else if b == 0x23 {
+            output.append(@"%23");
+        } else if b == 0x25 {
+            output.append(@"%25");
+        } else if b == 0x3C {
+            output.append(@"%3C");
+        } else if b == 0x3E {
+            output.append(@"%3E");
+        } else if b == 0x7B {
+            output.append(@"%7B");
+        } else if b == 0x7D {
+            output.append(@"%7D");
+        } else {
+            output.append_byte(b);
+        }
+        i += 1;
+    }
+    output
+}
+
+fn icon_check(
+    x: ByteArray, y: ByteArray, w: ByteArray, h: ByteArray, color: @ByteArray,
+) -> ByteArray {
+    "<svg x='"
+        + x
+        + "' y='"
+        + y
+        + "' width='"
+        + w
+        + "' height='"
+        + h
+        + "' viewBox='0 0 16 16'><path fill='none' stroke='"
+        + color.clone()
+        + "' stroke-width='2' stroke-linecap='round' d='M3 8l3.5 3.5L13 5'/></svg>"
+}
+
+fn icon_x(x: ByteArray, y: ByteArray, w: ByteArray, h: ByteArray, color: @ByteArray) -> ByteArray {
+    "<svg x='"
+        + x
+        + "' y='"
+        + y
+        + "' width='"
+        + w
+        + "' height='"
+        + h
+        + "' viewBox='0 0 16 16'><path fill='none' stroke='"
+        + color.clone()
+        + "' stroke-width='2' stroke-linecap='round' d='M4 4l8 8M12 4l-8 8'/></svg>"
+}
+
+fn icon_target(
+    x: ByteArray, y: ByteArray, w: ByteArray, h: ByteArray, color: @ByteArray,
+) -> ByteArray {
+    "<svg x='"
+        + x
+        + "' y='"
+        + y
+        + "' width='"
+        + w
+        + "' height='"
+        + h
+        + "' viewBox='0 0 16 16'><circle fill='none' stroke='"
+        + color.clone()
+        + "' stroke-width='1.5' cx='8' cy='8' r='6'/><circle fill='none' stroke='"
+        + color.clone()
+        + "' stroke-width='1.5' cx='8' cy='8' r='3'/><circle fill='"
+        + color.clone()
+        + "' cx='8' cy='8' r='1.5'/></svg>"
+}
+
+fn icon_flag(
+    x: ByteArray, y: ByteArray, w: ByteArray, h: ByteArray, color: @ByteArray,
+) -> ByteArray {
+    "<svg x='"
+        + x
+        + "' y='"
+        + y
+        + "' width='"
+        + w
+        + "' height='"
+        + h
+        + "' viewBox='0 0 16 16'><path fill='none' stroke='"
+        + color.clone()
+        + "' stroke-width='1.5' stroke-linecap='round' d='M4 14V2'/><path fill='"
+        + color.clone()
+        + "' d='M4 2l8 3-8 3z'/></svg>"
+}
+
 pub fn create_default_svg(
     game_metadata: GameMetadata,
     token_metadata: TokenMetadata,
@@ -123,23 +224,23 @@ pub fn create_default_svg(
     client_url: ByteArray,
 ) -> ByteArray {
     let accent = if game_metadata.color.len() == 0 {
-        "#ffffff"
+        "%23ffffff"
     } else {
-        game_metadata.color.clone()
+        uri_encode(game_metadata.color.clone())
     };
     let _game_id = format!("{}", token_metadata.game_id);
     let _score = format!("{}", score);
-    let _game_name = format!("{}", game_metadata.name);
-    let _developer = format!("{}", game_metadata.developer);
-    let _genre = format!("{}", game_metadata.genre);
+    let _game_name = uri_encode(format!("{}", game_metadata.name));
+    let _developer = uri_encode(format!("{}", game_metadata.developer));
+    let _genre = uri_encode(format!("{}", game_metadata.genre));
     let desc_raw = game_metadata.description;
     let _settings_name: ByteArray = if settings_details.name.len() > 0 {
-        settings_details.name
+        uri_encode(settings_details.name)
     } else {
         "---"
     };
     let _objective_name: ByteArray = if objective_details.name.len() > 0 {
-        objective_details.name
+        uri_encode(objective_details.name)
     } else {
         "---"
     };
@@ -153,6 +254,7 @@ pub fn create_default_svg(
             .append_word(
                 player_name, U256BytesUsedTraitImpl::bytes_used(player_name.into()).into(),
             );
+        _player_name = uri_encode(_player_name);
     } else {
         _player_name = "---";
     }
@@ -168,7 +270,7 @@ pub fn create_default_svg(
 
     // Context details
     let _context_name: ByteArray = if context_details.name.len() > 0 {
-        context_details.name.clone()
+        uri_encode(context_details.name.clone())
     } else {
         "---"
     };
@@ -195,11 +297,11 @@ pub fn create_default_svg(
             @"<svg xmlns='http://www.w3.org/2000/svg' width='590' height='680' viewBox='-60 -40 590 680'>",
         );
 
-    // Defs: gradients, patterns, filters, icons
+    // Defs: gradients, patterns, filters
     svg.append(@"<defs>");
     svg.append(@"<linearGradient id='panel' x1='0%' y1='0%' x2='0%' y2='100%'>");
-    svg.append(@"<stop offset='0%' stop-color='#2d2d32'/>");
-    svg.append(@"<stop offset='100%' stop-color='#1e1e22'/>");
+    svg.append(@"<stop offset='0%' stop-color='%232d2d32'/>");
+    svg.append(@"<stop offset='100%' stop-color='%231e1e22'/>");
     svg.append(@"</linearGradient>");
     svg
         .append(
@@ -221,25 +323,24 @@ pub fn create_default_svg(
         .append(
             @"<pattern id='pin' width='12' height='12' patternUnits='userSpaceOnUse' patternTransform='rotate(12)'>",
         );
-    svg.append(@"<path fill='#1b1b1f' d='M0 0h12v12H0z'/>");
-    svg.append(@"<path fill='#242428' opacity='.3' d='M0 0h12v6H0z'/>");
+    svg.append(@"<path fill='%231b1b1f' d='M0 0h12v12H0z'/>");
+    svg.append(@"<path fill='%23242428' opacity='.3' d='M0 0h12v6H0z'/>");
     svg.append(@"</pattern>");
-    // Glow filter
     // Scanline pattern
     svg.append(@"<pattern id='scan' width='470' height='4' patternUnits='userSpaceOnUse'>");
-    svg.append(@"<rect width='470' height='2' fill='#000' opacity='0.06'/>");
+    svg.append(@"<rect width='470' height='2' fill='%23000' opacity='0.06'/>");
     svg.append(@"</pattern>");
     // Shimmer gradient
     svg.append(@"<linearGradient id='shimmer' x1='0' y1='0' x2='1' y2='1'>");
     svg
         .append(
-            @"<stop offset='0%' stop-color='#fff' stop-opacity='0'/><stop offset='45%' stop-color='#fff' stop-opacity='0'/>",
+            @"<stop offset='0%' stop-color='%23fff' stop-opacity='0'/><stop offset='45%' stop-color='%23fff' stop-opacity='0'/>",
         );
     svg
         .append(
-            @"<stop offset='50%' stop-color='#fff' stop-opacity='0.08'/><stop offset='55%' stop-color='#fff' stop-opacity='0'/>",
+            @"<stop offset='50%' stop-color='%23fff' stop-opacity='0.08'/><stop offset='55%' stop-color='%23fff' stop-opacity='0'/>",
         );
-    svg.append(@"<stop offset='100%' stop-color='#fff' stop-opacity='0'/>");
+    svg.append(@"<stop offset='100%' stop-color='%23fff' stop-opacity='0'/>");
     svg
         .append(
             @"<animateTransform attributeName='gradientTransform' type='translate' from='-1 -1' to='1 1' dur='3s' repeatCount='indefinite'/>",
@@ -247,105 +348,27 @@ pub fn create_default_svg(
     svg.append(@"</linearGradient>");
     // Vignette
     svg.append(@"<radialGradient id='vignette' cx='50%' cy='50%' r='70%'>");
-    svg.append(@"<stop offset='0%' stop-color='#000' stop-opacity='0'/>");
-    svg.append(@"<stop offset='100%' stop-color='#000' stop-opacity='0.3'/>");
+    svg.append(@"<stop offset='0%' stop-color='%23000' stop-opacity='0'/>");
+    svg.append(@"<stop offset='100%' stop-color='%23000' stop-opacity='0.3'/>");
     svg.append(@"</radialGradient>");
 
     // Connector pin gradient and pattern
     svg
         .append(
-            @"<linearGradient id='pinGold' x1='0' y1='0' x2='0' y2='1'><stop offset='0%' stop-color='#d4a843'/><stop offset='50%' stop-color='#f0d060'/><stop offset='100%' stop-color='#b8922e'/></linearGradient>",
+            @"<linearGradient id='pinGold' x1='0' y1='0' x2='0' y2='1'><stop offset='0%' stop-color='%23d4a843'/><stop offset='50%' stop-color='%23f0d060'/><stop offset='100%' stop-color='%23b8922e'/></linearGradient>",
         );
     svg
         .append(
-            @"<pattern id='cpins' width='10' height='8' patternUnits='userSpaceOnUse'><rect x='2' y='0' width='6' height='8' rx='1' fill='url(#pinGold)'/></pattern>",
+            @"<pattern id='cpins' width='20' height='32' patternUnits='userSpaceOnUse'><rect x='4' y='0' width='12' height='32' rx='2' fill='url(%23pinGold)'/></pattern>",
         );
 
     // Clip path for inward-only border stroke
     svg.append(@"<clipPath id='card-clip'><rect width='470' height='600' rx='16'/></clipPath>");
 
-    // Icon symbols (16x16 viewBox)
-    // Star icon (score)
-    svg
-        .append(
-            @"<symbol id='ico-star' viewBox='0 0 16 16'><path fill='currentColor' d='M8 1l2.2 4.5 5 .7-3.6 3.5.8 5L8 12.4 3.6 14.7l.8-5L.8 6.2l5-.7z'/></symbol>",
-        );
-    // User icon (player)
-    svg
-        .append(
-            @"<symbol id='ico-user' viewBox='0 0 16 16'><circle fill='currentColor' cx='8' cy='5' r='3'/><path fill='currentColor' d='M2 14c0-3.3 2.7-6 6-6s6 2.7 6 6z'/></symbol>",
-        );
-    // Check icon (objective complete)
-    svg
-        .append(
-            @"<symbol id='ico-check' viewBox='0 0 16 16'><path fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' d='M3 8l3.5 3.5L13 5'/></symbol>",
-        );
-    // X-mark icon (game over)
-    svg
-        .append(
-            @"<symbol id='ico-x' viewBox='0 0 16 16'><path fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' d='M4 4l8 8M12 4l-8 8'/></symbol>",
-        );
-    // Lock icon (soulbound)
-    svg
-        .append(
-            @"<symbol id='ico-lock' viewBox='0 0 16 16'><rect fill='currentColor' x='3' y='7' width='10' height='7' rx='1'/><path fill='none' stroke='currentColor' stroke-width='1.5' d='M5 7V5a3 3 0 016 0v2'/></symbol>",
-        );
-    // Clock icon (timeline)
-    svg
-        .append(
-            @"<symbol id='ico-clock' viewBox='0 0 16 16'><circle fill='none' stroke='currentColor' stroke-width='1.5' cx='8' cy='8' r='6'/><path fill='none' stroke='currentColor' stroke-width='1.5' stroke-linecap='round' d='M8 4v4l2.5 2.5'/></symbol>",
-        );
-    // Gear icon (settings)
-    svg
-        .append(
-            @"<symbol id='ico-gear' viewBox='0 0 16 16'><path fill='currentColor' d='M6.8 1h2.4l.4 2 .7.3 1.7-1.1 1.7 1.7-1.1 1.7.3.7 2 .4v2.4l-2 .4-.3.7 1.1 1.7-1.7 1.7-1.7-1.1-.7.3-.4 2H6.8l-.4-2-.7-.3-1.7 1.1-1.7-1.7 1.1-1.7-.3-.7-2-.4V6.8l2-.4.3-.7L3.2 4l1.7-1.7 1.7 1.1.7-.3z'/><circle fill='#1e1e22' cx='8' cy='8' r='2.5'/></symbol>",
-        );
-    // Target icon (objective)
-    svg
-        .append(
-            @"<symbol id='ico-target' viewBox='0 0 16 16'><circle fill='none' stroke='currentColor' stroke-width='1.5' cx='8' cy='8' r='6'/><circle fill='none' stroke='currentColor' stroke-width='1.5' cx='8' cy='8' r='3'/><circle fill='currentColor' cx='8' cy='8' r='1.5'/></symbol>",
-        );
-    // Flag icon (timeline start/end)
-    svg
-        .append(
-            @"<symbol id='ico-flag' viewBox='0 0 16 16'><path fill='none' stroke='currentColor' stroke-width='1.5' stroke-linecap='round' d='M4 14V2'/><path fill='currentColor' d='M4 2l8 3-8 3z'/></symbol>",
-        );
-    // Play icon (active status)
-    svg
-        .append(
-            @"<symbol id='ico-play' viewBox='0 0 16 16'><path fill='currentColor' d='M4 2l10 6-10 6z'/></symbol>",
-        );
-    // Skull icon (game over status)
-    svg
-        .append(
-            @"<symbol id='ico-skull' viewBox='0 0 16 16'><circle fill='currentColor' cx='8' cy='6.5' r='5.5'/><rect fill='currentColor' x='5' y='11' width='6' height='4' rx='1'/><circle fill='#1e1e22' cx='6' cy='6' r='1.5'/><circle fill='#1e1e22' cx='10' cy='6' r='1.5'/><ellipse fill='#1e1e22' cx='8' cy='9' rx='1' ry='0.7'/></symbol>",
-        );
-    // Hourglass icon (expired status)
-    svg
-        .append(
-            @"<symbol id='ico-hourglass' viewBox='0 0 16 16'><path fill='currentColor' d='M4 1h8v4L9 8l3 3v4H4v-4l3-3-3-3z'/><rect fill='#1e1e22' x='5' y='2' width='6' height='2'/><rect fill='#1e1e22' x='5' y='12' width='6' height='2'/></symbol>",
-        );
-    // Pause icon (not started status)
-    svg
-        .append(
-            @"<symbol id='ico-pause' viewBox='0 0 16 16'><rect fill='currentColor' x='3' y='2' width='4' height='12' rx='1'/><rect fill='currentColor' x='9' y='2' width='4' height='12' rx='1'/></symbol>",
-        );
-    // Transfer icon (dual arrows for transferable)
-    svg
-        .append(
-            @"<symbol id='ico-transfer' viewBox='0 0 16 16'><path fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' d='M2 5h12M10 1l4 4-4 4'/><path fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' d='M14 11H2M6 7l-4 4 4 4'/></symbol>",
-        );
-
-    // Link icon (client URL)
-    svg
-        .append(
-            @"<symbol id='ico-link' viewBox='0 0 16 16'><path fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' d='M6.5 9.5a3.5 3.5 0 005 0l2-2a3.5 3.5 0 00-5-5l-1 1'/><path fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' d='M9.5 6.5a3.5 3.5 0 00-5 0l-2 2a3.5 3.5 0 005 5l1-1'/></symbol>",
-        );
-
     // Styles with card rotation and edge depth
     svg
         .append(
-            @"<style>.l{fill:#c9c9d1;font-size:13px;letter-spacing:0.5px}.v{fill:#fff;font-size:16px}.vs{fill:#fff;font-size:13px}text{font-family:'Courier New',Courier,monospace;text-transform:uppercase}@keyframes tilt{0%,100%{transform:rotateY(-20deg)}50%{transform:rotateY(20deg)}}@keyframes sl{0%,100%{opacity:1}20%{opacity:0.15}25%,75%{opacity:0}80%{opacity:0.15}}@keyframes sr{0%,25%,75%,100%{opacity:0}30%{opacity:0.15}50%{opacity:1}70%{opacity:0.15}}.card{animation:tilt 6s ease-in-out infinite;transform-origin:235px 300px}.el{fill:#3a3a42;animation:sl 6s ease-in-out infinite}.er{fill:#3a3a42;animation:sr 6s ease-in-out infinite}</style>",
+            @"<style>.l{fill:%23c9c9d1;font-size:13px;letter-spacing:0.5px}.v{fill:%23fff;font-size:16px}.vs{fill:%23fff;font-size:13px}text{font-family:'Courier New',Courier,monospace;text-transform:uppercase}@keyframes tilt{0%,100%{transform:rotateY(-20deg)}50%{transform:rotateY(20deg)}}@keyframes sl{0%,100%{opacity:1}20%{opacity:0.15}25%,75%{opacity:0}80%{opacity:0.15}}@keyframes sr{0%,25%,75%,100%{opacity:0}30%{opacity:0.15}50%{opacity:1}70%{opacity:0.15}}.card{animation:tilt 6s ease-in-out infinite;transform-origin:235px 300px}.el{fill:%233a3a42;animation:sl 6s ease-in-out infinite}.er{fill:%233a3a42;animation:sr 6s ease-in-out infinite}</style>",
         );
     svg.append(@"</defs>");
 
@@ -358,41 +381,43 @@ pub fn create_default_svg(
     svg.append(@"<path class='er' d='M482 17 Q482 1 454 1 L454 599 Q482 599 482 583 Z'/>");
 
     // Background layers
-    svg.append(@"<rect width='470' height='600' rx='16' fill='url(#pin)'/>");
-    svg.append(@"<rect width='470' height='600' rx='16' fill='url(#vignette)'/>");
-    svg.append(@"<rect width='470' height='600' rx='16' fill='url(#scan)'/>");
+    svg.append(@"<rect width='470' height='600' rx='16' fill='url(%23pin)'/>");
+    svg.append(@"<rect width='470' height='600' rx='16' fill='url(%23vignette)'/>");
+    svg.append(@"<rect width='470' height='600' rx='16' fill='url(%23scan)'/>");
     // Shimmer sweep
-    svg.append(@"<rect width='470' height='600' rx='16' fill='url(#shimmer)'/>");
+    svg.append(@"<rect width='470' height='600' rx='16' fill='url(%23shimmer)'/>");
     // Animated gradient border (on top of all fills)
     svg
         .append(
-            @"<rect width='470' height='600' rx='16' fill='none' stroke='url(#accentGrad)' stroke-width='20' clip-path='url(#card-clip)'/>",
+            @"<rect width='470' height='600' rx='16' fill='none' stroke='url(%23accentGrad)' stroke-width='20' clip-path='url(%23card-clip)'/>",
         );
 
     // ── Header: EGS logo placeholder + game name + game ID ──
-    svg.append(@"<rect x='18' y='24' width='44' height='44' rx='8' fill='url(#panel)' stroke='");
-    svg.append(@accent);
-    svg.append(@"' stroke-width='1.5'/>");
+    svg.append(@"<rect x='18' y='24' width='44' height='44' rx='8' fill='%23000'/>");
     svg
         .append(
-            @"<text x='40' y='51' text-anchor='middle' style='fill:#c9c9d1;font-size:11px'>EGS</text>",
+            @"<svg x='23' y='33' width='34' height='22' viewBox='0 0 415 287'><path fill='%23fff' d='M134 0q21 0 40 8a104 104 0 0 1 56 53 91 91 0 0 1 0 77q-8 19-23 32-14 14-33 21-19 8-40 8h-33l-33-57h66q9 0 17-3t14-9l10-15q3-9 3-20 0-8-3-17l-10-15-14-10q-9-4-17-4H59v234H0V0z'/><path fill='%23fff' fill-rule='evenodd' d='m415 131-2-12H306l-34 52h79q-3 15-11 27l-18 20q-10 9-24 14-14 4-29 4a86 86 0 0 1-56-20v60a155 155 0 0 0 160-31 140 140 0 0 0 42-102zM210 11q-22 10-40 25l42 27v8a88 88 0 0 1 103-8l28-44Q310 0 269 0q-31 0-59 11' clip-rule='evenodd' opacity='.4'/></svg>",
         );
 
-    // Game name
-    svg.append(@"<text x='72' y='38' style='fill:#fff;font-size:22px;letter-spacing:1px'>");
+    // Game name (clipped to avoid overlap with player name)
+    svg.append(@"<clipPath id='gn-clip'><rect x='72' y='16' width='230' height='28'/></clipPath>");
+    svg
+        .append(
+            @"<text x='72' y='38' clip-path='url(%23gn-clip)' style='fill:%23fff;font-size:22px;letter-spacing:1px'>",
+        );
     svg += _game_name;
     svg.append(@"</text>");
     // Developer + Genre
     svg
         .append(
-            @"<text x='72' y='56' style='fill:#888;font-size:9px;letter-spacing:1px'>DEVELOPER </text>",
+            @"<text x='72' y='56' style='fill:%23888;font-size:9px;letter-spacing:1px'>DEVELOPER </text>",
         );
     svg.append(@"<text x='138' y='56' class='l'>");
     svg += _developer;
     svg.append(@"</text>");
     svg
         .append(
-            @"<text x='72' y='70' style='fill:#888;font-size:9px;letter-spacing:1px'>GENRE </text>",
+            @"<text x='72' y='70' style='fill:%23888;font-size:9px;letter-spacing:1px'>GENRE </text>",
         );
     svg.append(@"<text x='112' y='70' class='l' style='font-size:11px'>");
     svg += _genre;
@@ -401,7 +426,7 @@ pub fn create_default_svg(
     // Player name (top right)
     svg
         .append(
-            @"<text x='440' y='41' text-anchor='end' style='fill:#fff;font-size:18px;letter-spacing:1px'>",
+            @"<text x='440' y='41' text-anchor='end' style='fill:%23fff;font-size:18px;letter-spacing:1px'>",
         );
     svg += _player_name.clone();
     svg.append(@"</text>");
@@ -414,170 +439,164 @@ pub fn create_default_svg(
     // ── Game image area (centered square) ──
     svg
         .append(
-            @"<rect x='175' y='88' width='120' height='120' rx='10' fill='url(#panel)' stroke='#3a3a40' stroke-width='1'/>",
+            @"<rect x='175' y='88' width='120' height='120' rx='10' fill='url(%23panel)' stroke='%233a3a40' stroke-width='1'/>",
         );
     svg
         .append(
             @"<foreignObject x='180' y='93' width='110' height='110'><xhtml:img xmlns:xhtml='http://www.w3.org/1999/xhtml' src='",
         );
-    svg += game_metadata.image;
+    svg += uri_encode(game_metadata.image);
     svg.append(@"' style='width:100%;height:100%'/></foreignObject>");
 
     // ── Status Badge Panels flanking game image (2 left, 2 right) ──
     // Badge 1: STATUS (top-left, y:88-144)
     svg
         .append(
-            @"<rect x='25' y='88' width='142' height='56' rx='8' fill='url(#panel)' stroke='#3a3a40' stroke-width='1'/>",
+            @"<rect x='25' y='88' width='142' height='56' rx='8' fill='url(%23panel)' stroke='%233a3a40' stroke-width='1'/>",
         );
     if token_metadata.game_over {
         // Game Over: amber skull
-        svg.append(@"<rect x='25' y='88' width='4' height='56' rx='2' fill='#f59e0b'/>");
+        svg.append(@"<rect x='25' y='88' width='4' height='56' rx='2' fill='%23f59e0b'/>");
         svg
             .append(
-                @"<use href='#ico-skull' x='39' y='102' width='14' height='14' style='color:#f59e0b'/>",
+                @"<svg x='39' y='102' width='14' height='14' viewBox='0 0 16 16'><circle fill='%23f59e0b' cx='8' cy='6.5' r='5.5'/><rect fill='%23f59e0b' x='5' y='11' width='6' height='4' rx='1'/><circle fill='%231e1e22' cx='6' cy='6' r='1.5'/><circle fill='%231e1e22' cx='10' cy='6' r='1.5'/><ellipse fill='%231e1e22' cx='8' cy='9' rx='1' ry='0.7'/></svg>",
             );
         svg
             .append(
-                @"<text x='58' y='111' style='fill:#888;font-size:9px;letter-spacing:1px'>STATUS</text>",
+                @"<text x='58' y='111' style='fill:%23888;font-size:9px;letter-spacing:1px'>STATUS</text>",
             );
-        svg.append(@"<text x='39' y='132' style='fill:#fff;font-size:13px'>GAME OVER</text>");
+        svg.append(@"<text x='39' y='132' style='fill:%23fff;font-size:13px'>GAME OVER</text>");
     } else if token_metadata.lifecycle.end > 0 && current_ts >= token_metadata.lifecycle.end {
         // Expired: red hourglass
-        svg.append(@"<rect x='25' y='88' width='4' height='56' rx='2' fill='#ef4444'/>");
+        svg.append(@"<rect x='25' y='88' width='4' height='56' rx='2' fill='%23ef4444'/>");
         svg
             .append(
-                @"<use href='#ico-hourglass' x='39' y='102' width='14' height='14' style='color:#ef4444'/>",
+                @"<svg x='39' y='102' width='14' height='14' viewBox='0 0 16 16'><path fill='%23ef4444' d='M4 1h8v4L9 8l3 3v4H4v-4l3-3-3-3z'/><rect fill='%231e1e22' x='5' y='2' width='6' height='2'/><rect fill='%231e1e22' x='5' y='12' width='6' height='2'/></svg>",
             );
         svg
             .append(
-                @"<text x='58' y='111' style='fill:#888;font-size:9px;letter-spacing:1px'>STATUS</text>",
+                @"<text x='58' y='111' style='fill:%23888;font-size:9px;letter-spacing:1px'>STATUS</text>",
             );
-        svg.append(@"<text x='39' y='132' style='fill:#fff;font-size:13px'>EXPIRED</text>");
+        svg.append(@"<text x='39' y='132' style='fill:%23fff;font-size:13px'>EXPIRED</text>");
     } else if token_metadata.lifecycle.start > 0 && current_ts < token_metadata.lifecycle.start {
         // Not Started: blue pause
-        svg.append(@"<rect x='25' y='88' width='4' height='56' rx='2' fill='#3b82f6'/>");
+        svg.append(@"<rect x='25' y='88' width='4' height='56' rx='2' fill='%233b82f6'/>");
         svg
             .append(
-                @"<use href='#ico-pause' x='39' y='102' width='14' height='14' style='color:#3b82f6'/>",
+                @"<svg x='39' y='102' width='14' height='14' viewBox='0 0 16 16'><rect fill='%233b82f6' x='3' y='2' width='4' height='12' rx='1'/><rect fill='%233b82f6' x='9' y='2' width='4' height='12' rx='1'/></svg>",
             );
         svg
             .append(
-                @"<text x='58' y='111' style='fill:#888;font-size:9px;letter-spacing:1px'>STATUS</text>",
+                @"<text x='58' y='111' style='fill:%23888;font-size:9px;letter-spacing:1px'>STATUS</text>",
             );
-        svg.append(@"<text x='39' y='132' style='fill:#fff;font-size:13px'>NOT STARTED</text>");
+        svg.append(@"<text x='39' y='132' style='fill:%23fff;font-size:13px'>NOT STARTED</text>");
     } else {
         // Active: green play
-        svg.append(@"<rect x='25' y='88' width='4' height='56' rx='2' fill='#10b981'/>");
+        svg.append(@"<rect x='25' y='88' width='4' height='56' rx='2' fill='%2310b981'/>");
         svg
             .append(
-                @"<use href='#ico-play' x='39' y='102' width='14' height='14' style='color:#10b981'/>",
+                @"<svg x='39' y='102' width='14' height='14' viewBox='0 0 16 16'><path fill='%2310b981' d='M4 2l10 6-10 6z'/></svg>",
             );
         svg
             .append(
-                @"<text x='58' y='111' style='fill:#888;font-size:9px;letter-spacing:1px'>STATUS</text>",
+                @"<text x='58' y='111' style='fill:%23888;font-size:9px;letter-spacing:1px'>STATUS</text>",
             );
-        svg.append(@"<text x='39' y='132' style='fill:#fff;font-size:13px'>ACTIVE</text>");
+        svg.append(@"<text x='39' y='132' style='fill:%23fff;font-size:13px'>ACTIVE</text>");
     }
 
     // Badge 2: SOULBOUND (bottom-left, y:152-208)
     svg
         .append(
-            @"<rect x='25' y='152' width='142' height='56' rx='8' fill='url(#panel)' stroke='#3a3a40' stroke-width='1'/>",
+            @"<rect x='25' y='152' width='142' height='56' rx='8' fill='url(%23panel)' stroke='%233a3a40' stroke-width='1'/>",
         );
     if token_metadata.soulbound {
-        svg.append(@"<rect x='25' y='152' width='4' height='56' rx='2' fill='#a855f7'/>");
+        svg.append(@"<rect x='25' y='152' width='4' height='56' rx='2' fill='%23a855f7'/>");
         svg
             .append(
-                @"<use href='#ico-lock' x='39' y='166' width='14' height='14' style='color:#a855f7'/>",
+                @"<svg x='39' y='166' width='14' height='14' viewBox='0 0 16 16'><rect fill='%23a855f7' x='3' y='7' width='10' height='7' rx='1'/><path fill='none' stroke='%23a855f7' stroke-width='1.5' d='M5 7V5a3 3 0 016 0v2'/></svg>",
             );
         svg
             .append(
-                @"<text x='58' y='175' style='fill:#888;font-size:9px;letter-spacing:1px'>OWNERSHIP</text>",
+                @"<text x='58' y='175' style='fill:%23888;font-size:9px;letter-spacing:1px'>OWNERSHIP</text>",
             );
-        svg.append(@"<text x='39' y='196' style='fill:#fff;font-size:13px'>SOULBOUND</text>");
+        svg.append(@"<text x='39' y='196' style='fill:%23fff;font-size:13px'>SOULBOUND</text>");
     } else {
-        svg.append(@"<rect x='25' y='152' width='4' height='56' rx='2' fill='#10b981'/>");
+        svg.append(@"<rect x='25' y='152' width='4' height='56' rx='2' fill='%2310b981'/>");
         svg
             .append(
-                @"<use href='#ico-transfer' x='39' y='166' width='14' height='14' style='color:#10b981'/>",
+                @"<svg x='39' y='166' width='14' height='14' viewBox='0 0 16 16'><path fill='none' stroke='%2310b981' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' d='M2 5h12M10 1l4 4-4 4'/><path fill='none' stroke='%2310b981' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' d='M14 11H2M6 7l-4 4 4 4'/></svg>",
             );
         svg
             .append(
-                @"<text x='58' y='175' style='fill:#888;font-size:9px;letter-spacing:1px'>OWNERSHIP</text>",
+                @"<text x='58' y='175' style='fill:%23888;font-size:9px;letter-spacing:1px'>OWNERSHIP</text>",
             );
-        svg.append(@"<text x='39' y='196' style='fill:#fff;font-size:13px'>TRANSFERABLE</text>");
+        svg.append(@"<text x='39' y='196' style='fill:%23fff;font-size:13px'>TRANSFERABLE</text>");
     }
 
     // Badge 3: PAYMASTER (top-right, y:88-144)
     svg
         .append(
-            @"<rect x='303' y='88' width='142' height='56' rx='8' fill='url(#panel)' stroke='#3a3a40' stroke-width='1'/>",
+            @"<rect x='303' y='88' width='142' height='56' rx='8' fill='url(%23panel)' stroke='%233a3a40' stroke-width='1'/>",
         );
     if token_metadata.paymaster {
-        svg.append(@"<rect x='303' y='88' width='4' height='56' rx='2' fill='#10b981'/>");
+        svg.append(@"<rect x='303' y='88' width='4' height='56' rx='2' fill='%2310b981'/>");
+        svg += icon_check("317", "102", "14", "14", @"%2310b981");
         svg
             .append(
-                @"<use href='#ico-check' x='317' y='102' width='14' height='14' style='color:#10b981'/>",
+                @"<text x='336' y='111' style='fill:%23888;font-size:9px;letter-spacing:1px'>PAYMASTER</text>",
             );
-        svg
-            .append(
-                @"<text x='336' y='111' style='fill:#888;font-size:9px;letter-spacing:1px'>PAYMASTER</text>",
-            );
-        svg.append(@"<text x='317' y='132' style='fill:#fff;font-size:13px'>FREE GAS</text>");
+        svg.append(@"<text x='317' y='132' style='fill:%23fff;font-size:13px'>FREE GAS</text>");
     } else {
-        svg.append(@"<rect x='303' y='88' width='4' height='56' rx='2' fill='#555'/>");
+        svg.append(@"<rect x='303' y='88' width='4' height='56' rx='2' fill='%23555'/>");
+        svg += icon_x("317", "102", "14", "14", @"%23555");
         svg
             .append(
-                @"<use href='#ico-x' x='317' y='102' width='14' height='14' style='color:#555'/>",
+                @"<text x='336' y='111' style='fill:%23888;font-size:9px;letter-spacing:1px'>PAYMASTER</text>",
             );
-        svg
-            .append(
-                @"<text x='336' y='111' style='fill:#888;font-size:9px;letter-spacing:1px'>PAYMASTER</text>",
-            );
-        svg.append(@"<text x='317' y='132' style='fill:#888;font-size:13px'>PAID GAS</text>");
+        svg.append(@"<text x='317' y='132' style='fill:%23888;font-size:13px'>PAID GAS</text>");
     }
 
     // Badge 4: OBJECTIVE (bottom-right, y:152-208)
     svg
         .append(
-            @"<rect x='303' y='152' width='142' height='56' rx='8' fill='url(#panel)' stroke='#3a3a40' stroke-width='1'/>",
+            @"<rect x='303' y='152' width='142' height='56' rx='8' fill='url(%23panel)' stroke='%233a3a40' stroke-width='1'/>",
         );
     if token_metadata.completed_objective {
         // Objective complete: green check
-        svg.append(@"<rect x='303' y='152' width='4' height='56' rx='2' fill='#10b981'/>");
+        svg.append(@"<rect x='303' y='152' width='4' height='56' rx='2' fill='%2310b981'/>");
+        svg += icon_check("317", "166", "14", "14", @"%2310b981");
         svg
             .append(
-                @"<use href='#ico-check' x='317' y='166' width='14' height='14' style='color:#10b981'/>",
+                @"<text x='336' y='175' style='fill:%23888;font-size:9px;letter-spacing:1px'>OBJECTIVE</text>",
             );
+        svg.append(@"<text x='317' y='196' style='fill:%23fff;font-size:13px'>COMPLETE</text>");
+    } else if token_metadata.objective_id > 0 && token_metadata.game_over {
+        // Objective not complete and game over: red x-mark (failed)
+        svg.append(@"<rect x='303' y='152' width='4' height='56' rx='2' fill='%23ef4444'/>");
+        svg += icon_x("317", "166", "14", "14", @"%23ef4444");
         svg
             .append(
-                @"<text x='336' y='175' style='fill:#888;font-size:9px;letter-spacing:1px'>OBJECTIVE</text>",
+                @"<text x='336' y='175' style='fill:%23888;font-size:9px;letter-spacing:1px'>OBJECTIVE</text>",
             );
-        svg.append(@"<text x='317' y='196' style='fill:#fff;font-size:13px'>COMPLETE</text>");
+        svg.append(@"<text x='317' y='196' style='fill:%23fff;font-size:13px'>FAILED</text>");
     } else if token_metadata.objective_id > 0 {
         // Objective assigned but not complete: amber target
-        svg.append(@"<rect x='303' y='152' width='4' height='56' rx='2' fill='#f59e0b'/>");
+        svg.append(@"<rect x='303' y='152' width='4' height='56' rx='2' fill='%23f59e0b'/>");
+        svg += icon_target("317", "166", "14", "14", @"%23f59e0b");
         svg
             .append(
-                @"<use href='#ico-target' x='317' y='166' width='14' height='14' style='color:#f59e0b'/>",
+                @"<text x='336' y='175' style='fill:%23888;font-size:9px;letter-spacing:1px'>OBJECTIVE</text>",
             );
-        svg
-            .append(
-                @"<text x='336' y='175' style='fill:#888;font-size:9px;letter-spacing:1px'>OBJECTIVE</text>",
-            );
-        svg.append(@"<text x='317' y='196' style='fill:#fff;font-size:13px'>PENDING</text>");
+        svg.append(@"<text x='317' y='196' style='fill:%23fff;font-size:13px'>PENDING</text>");
     } else {
         // No objective: greyed out
-        svg.append(@"<rect x='303' y='152' width='4' height='56' rx='2' fill='#555'/>");
+        svg.append(@"<rect x='303' y='152' width='4' height='56' rx='2' fill='%23555'/>");
+        svg += icon_target("317", "166", "14", "14", @"%23555");
         svg
             .append(
-                @"<use href='#ico-target' x='317' y='166' width='14' height='14' style='color:#555'/>",
+                @"<text x='336' y='175' style='fill:%23888;font-size:9px;letter-spacing:1px'>OBJECTIVE</text>",
             );
-        svg
-            .append(
-                @"<text x='336' y='175' style='fill:#888;font-size:9px;letter-spacing:1px'>OBJECTIVE</text>",
-            );
-        svg.append(@"<text x='317' y='196' style='fill:#888;font-size:13px'>NONE</text>");
+        svg.append(@"<text x='317' y='196' style='fill:%23888;font-size:13px'>NONE</text>");
     }
 
     // ── Game Description (y:220-248, up to 3 word-wrapped lines) ──
@@ -616,13 +635,30 @@ pub fn create_default_svg(
             let y_pos: u32 = 232 + line_num * 14;
             svg.append(@"<text x='235' y='");
             svg += format!("{}", y_pos);
-            svg.append(@"' text-anchor='middle' style='fill:#888;font-size:10px'>");
+            svg.append(@"' text-anchor='middle' style='fill:%23888;font-size:10px'>");
             let mut ci = pos;
             loop {
                 if ci >= line_end {
                     break;
                 }
-                svg.append_byte(desc_raw.at(ci).unwrap());
+                let b = desc_raw.at(ci).unwrap();
+                if b == 0x22 {
+                    svg.append(@"%22");
+                } else if b == 0x23 {
+                    svg.append(@"%23");
+                } else if b == 0x25 {
+                    svg.append(@"%25");
+                } else if b == 0x3C {
+                    svg.append(@"%3C");
+                } else if b == 0x3E {
+                    svg.append(@"%3E");
+                } else if b == 0x7B {
+                    svg.append(@"%7B");
+                } else if b == 0x7D {
+                    svg.append(@"%7D");
+                } else {
+                    svg.append_byte(b);
+                }
                 ci += 1;
             }
             if is_last_line && desc_len > line_end {
@@ -647,14 +683,14 @@ pub fn create_default_svg(
     // Score panel with accent left-border
     svg
         .append(
-            @"<rect x='25' y='276' width='205' height='50' rx='8' fill='url(#panel)' stroke='#3a3a40' stroke-width='1'/>",
+            @"<rect x='25' y='276' width='205' height='50' rx='8' fill='url(%23panel)' stroke='%233a3a40' stroke-width='1'/>",
         );
     svg.append(@"<rect x='25' y='276' width='4' height='50' rx='2' fill='");
     svg.append(@accent);
     svg.append(@"'/>");
     svg
         .append(
-            @"<use href='#ico-star' x='37' y='285' width='14' height='14' style='color:#c9c9d1'/>",
+            @"<svg x='37' y='285' width='14' height='14' viewBox='0 0 16 16'><path fill='%23c9c9d1' d='M8 1l2.2 4.5 5 .7-3.6 3.5.8 5L8 12.4 3.6 14.7l.8-5L.8 6.2l5-.7z'/></svg>",
         );
     svg.append(@"<text x='56' y='297' class='l'>SCORE</text>");
     svg.append(@"<text x='37' y='316' class='v'>");
@@ -664,19 +700,19 @@ pub fn create_default_svg(
     // Client URL panel with link icon
     svg
         .append(
-            @"<rect x='240' y='276' width='205' height='50' rx='8' fill='url(#panel)' stroke='#3a3a40' stroke-width='1'/>",
+            @"<rect x='240' y='276' width='205' height='50' rx='8' fill='url(%23panel)' stroke='%233a3a40' stroke-width='1'/>",
         );
     svg.append(@"<rect x='240' y='276' width='4' height='50' rx='2' fill='");
     svg.append(@accent);
     svg.append(@"'/>");
     svg
         .append(
-            @"<use href='#ico-link' x='252' y='285' width='14' height='14' style='color:#c9c9d1'/>",
+            @"<svg x='252' y='285' width='14' height='14' viewBox='0 0 16 16'><path fill='none' stroke='%23c9c9d1' stroke-width='2' stroke-linecap='round' d='M6.5 9.5a3.5 3.5 0 005 0l2-2a3.5 3.5 0 00-5-5l-1 1'/><path fill='none' stroke='%23c9c9d1' stroke-width='2' stroke-linecap='round' d='M9.5 6.5a3.5 3.5 0 00-5 0l-2 2a3.5 3.5 0 005 5l1-1'/></svg>",
         );
     svg.append(@"<text x='271' y='297' class='l'>CLIENT URL</text>");
     svg.append(@"<text x='252' y='316' class='vs' style='font-size:9px'>");
     if client_url.len() > 0 {
-        svg += client_url;
+        svg += uri_encode(client_url);
     } else {
         svg.append(@"---");
     }
@@ -686,14 +722,14 @@ pub fn create_default_svg(
     // Settings panel with gear icon
     svg
         .append(
-            @"<rect x='25' y='334' width='205' height='50' rx='8' fill='url(#panel)' stroke='#3a3a40' stroke-width='1'/>",
+            @"<rect x='25' y='334' width='205' height='50' rx='8' fill='url(%23panel)' stroke='%233a3a40' stroke-width='1'/>",
         );
     svg.append(@"<rect x='25' y='334' width='4' height='50' rx='2' fill='");
     svg.append(@accent);
     svg.append(@"'/>");
     svg
         .append(
-            @"<use href='#ico-gear' x='37' y='343' width='14' height='14' style='color:#c9c9d1'/>",
+            @"<svg x='37' y='343' width='14' height='14' viewBox='0 0 16 16'><path fill='%23c9c9d1' d='M6.8 1h2.4l.4 2 .7.3 1.7-1.1 1.7 1.7-1.1 1.7.3.7 2 .4v2.4l-2 .4-.3.7 1.1 1.7-1.7 1.7-1.7-1.1-.7.3-.4 2H6.8l-.4-2-.7-.3-1.7 1.1-1.7-1.7 1.1-1.7-.3-.7-2-.4V6.8l2-.4.3-.7L3.2 4l1.7-1.7 1.7 1.1.7-.3z'/><circle fill='%231e1e22' cx='8' cy='8' r='2.5'/></svg>",
         );
     svg.append(@"<text x='56' y='355' class='l'>SETTINGS</text>");
     svg.append(@"<text x='37' y='374' class='vs'>");
@@ -703,15 +739,12 @@ pub fn create_default_svg(
     // Objective panel with target icon
     svg
         .append(
-            @"<rect x='240' y='334' width='205' height='50' rx='8' fill='url(#panel)' stroke='#3a3a40' stroke-width='1'/>",
+            @"<rect x='240' y='334' width='205' height='50' rx='8' fill='url(%23panel)' stroke='%233a3a40' stroke-width='1'/>",
         );
     svg.append(@"<rect x='240' y='334' width='4' height='50' rx='2' fill='");
     svg.append(@accent);
     svg.append(@"'/>");
-    svg
-        .append(
-            @"<use href='#ico-target' x='252' y='343' width='14' height='14' style='color:#c9c9d1'/>",
-        );
+    svg += icon_target("252", "343", "14", "14", @"%23c9c9d1");
     svg.append(@"<text x='271' y='355' class='l'>OBJECTIVE</text>");
     svg.append(@"<text x='252' y='374' class='vs'>");
     svg += _objective_name;
@@ -720,34 +753,28 @@ pub fn create_default_svg(
     // ── Timeline Bordered Section (y:392-450) ──
     svg
         .append(
-            @"<rect x='25' y='392' width='420' height='58' rx='8' fill='url(#panel)' stroke='#3a3a40' stroke-width='1'/>",
+            @"<rect x='25' y='392' width='420' height='58' rx='8' fill='url(%23panel)' stroke='%233a3a40' stroke-width='1'/>",
         );
     svg.append(@"<rect x='25' y='392' width='4' height='58' rx='2' fill='");
     svg.append(@accent);
     svg.append(@"'/>");
     svg
         .append(
-            @"<use href='#ico-clock' x='37' y='400' width='14' height='14' style='color:#c9c9d1'/>",
+            @"<svg x='37' y='400' width='14' height='14' viewBox='0 0 16 16'><circle fill='none' stroke='%23c9c9d1' stroke-width='1.5' cx='8' cy='8' r='6'/><path fill='none' stroke='%23c9c9d1' stroke-width='1.5' stroke-linecap='round' d='M8 4v4l2.5 2.5'/></svg>",
         );
     svg.append(@"<text x='56' y='412' class='l'>TIMELINE</text>");
     // Start flag + datetime
-    svg
-        .append(
-            @"<use href='#ico-flag' x='37' y='418' width='12' height='12' style='color:#10b981'/>",
-        );
-    svg.append(@"<text x='52' y='428' style='fill:#888;font-size:10px'>");
+    svg += icon_flag("37", "418", "12", "12", @"%2310b981");
+    svg.append(@"<text x='52' y='428' style='fill:%23888;font-size:10px'>");
     svg += _start;
     svg.append(@"</text>");
     // End flag + datetime (right-aligned)
-    svg.append(@"<text x='419' y='428' text-anchor='end' style='fill:#888;font-size:10px'>");
+    svg.append(@"<text x='419' y='428' text-anchor='end' style='fill:%23888;font-size:10px'>");
     svg += _end;
     svg.append(@"</text>");
-    svg
-        .append(
-            @"<use href='#ico-flag' x='421' y='418' width='12' height='12' style='color:#ef4444'/>",
-        );
+    svg += icon_flag("421", "418", "12", "12", @"%23ef4444");
     // Track background
-    svg.append(@"<rect x='37' y='438' width='396' height='6' rx='3' fill='#3a3a40'/>");
+    svg.append(@"<rect x='37' y='438' width='396' height='6' rx='3' fill='%233a3a40'/>");
     // Filled portion
     svg.append(@"<rect x='37' y='438' width='");
     svg += format!("{}", fill_width);
@@ -759,12 +786,12 @@ pub fn create_default_svg(
     svg += format!("{}", marker_x);
     svg.append(@"' cy='441' r='5' fill='");
     svg.append(@accent);
-    svg.append(@"' stroke='#fff' stroke-width='1.5'/>");
+    svg.append(@"' stroke='%23fff' stroke-width='1.5'/>");
 
     // ── Context Bordered Section (y:458-526) ──
     svg
         .append(
-            @"<rect x='25' y='458' width='420' height='68' rx='8' fill='url(#panel)' stroke='#3a3a40' stroke-width='1'/>",
+            @"<rect x='25' y='458' width='420' height='68' rx='8' fill='url(%23panel)' stroke='%233a3a40' stroke-width='1'/>",
         );
     svg.append(@"<rect x='25' y='458' width='4' height='68' rx='2' fill='");
     svg.append(@accent);
@@ -793,10 +820,10 @@ pub fn create_default_svg(
             let y_pos = y_base + ctx_i * 15;
             svg.append(@"<text x='37' y='");
             svg += format!("{}", y_pos);
-            svg.append(@"' style='fill:#888;font-size:10px'>");
-            svg += felt252_to_byte_array(*entry.name);
+            svg.append(@"' style='fill:%23888;font-size:10px'>");
+            svg += uri_encode(felt252_to_byte_array(*entry.name));
             svg.append(@": ");
-            svg += felt252_to_byte_array(*entry.value);
+            svg += uri_encode(felt252_to_byte_array(*entry.value));
             svg.append(@"</text>");
             ctx_i += 1;
         };
@@ -809,140 +836,24 @@ pub fn create_default_svg(
     // Royalty (left) + Minted (right)
     svg
         .append(
-            @"<text x='25' y='554' style='fill:#888;font-size:10px;letter-spacing:1px'>ROYALTY: ",
+            @"<text x='25' y='554' style='fill:%23888;font-size:10px;letter-spacing:1px'>ROYALTY: ",
         );
     svg += _royalty;
     svg.append(@"</text>");
     svg
         .append(
-            @"<text x='445' y='554' text-anchor='end' style='fill:#888;font-size:10px;letter-spacing:1px'>MINTED ",
+            @"<text x='445' y='554' text-anchor='end' style='fill:%23888;font-size:10px;letter-spacing:1px'>MINTED ",
         );
     svg += _minted_at;
     svg.append(@"</text>");
-    // EGS footer
-    svg
-        .append(
-            @"<text x='235' y='578' text-anchor='middle' class='l' style='font-size:13px;letter-spacing:2px'>EMBEDDABLE GAME STANDARD</text>",
-        );
-
     // Connector pins (cartridge bottom, inside card)
-    svg.append(@"<rect x='30' y='588' width='410' height='12' rx='2' fill='#111114'/>");
-    svg.append(@"<rect x='38' y='590' width='394' height='8' fill='url(#cpins)'/>");
+    svg.append(@"<rect x='30' y='564' width='410' height='36' fill='%23111114'/>");
+    svg.append(@"<rect x='38' y='568' width='394' height='32' fill='url(%23cpins)'/>");
 
     svg.append(@"</g>"); // close card group
     svg.append(@"</svg>");
 
-    format!("data:image/svg+xml;base64,{}", bytes_base64_encode(svg))
-}
-
-pub fn create_custom_metadata(
-    token_id: felt252,
-    token_name: ByteArray,
-    token_description: ByteArray,
-    game_metadata: GameMetadata,
-    game_details_image: ByteArray,
-    game_details: Span<GameDetail>,
-    settings_details: GameSettingDetails,
-    context_details: GameContextDetails,
-    token_metadata: TokenMetadata,
-    score: u64,
-    minted_by: ContractAddress,
-    player_name: felt252,
-    objective_name: ByteArray,
-) -> ByteArray {
-    let _token_id = format!("{}", token_id);
-    let _game_id = format!("{}", token_metadata.game_id);
-    let _score = format!("{}", score);
-    let _minted_at = format!("{}", token_metadata.minted_at);
-    let _start = format!("{}", token_metadata.lifecycle.start);
-    let _end = format!("{}", token_metadata.lifecycle.end);
-    let _expired = if token_metadata.lifecycle.end > 0 {
-        get_block_timestamp() >= token_metadata.lifecycle.end
-    } else {
-        false
-    };
-    let _settings_id = format!("{}", token_metadata.settings_id);
-    let address_as_felt: felt252 = minted_by.into();
-    let _minted_by = format!("0x{:x}", address_as_felt);
-
-    let mut metadata = JsonImpl::new()
-        .add("name", token_name + " #" + _token_id)
-        .add("description", token_description)
-        .add("image", game_details_image);
-
-    // Core game metadata traits
-    let mut attributes = array![
-        create_trait("Game ID", _game_id), create_trait("Game Name", game_metadata.name),
-        create_trait("Game Developer", game_metadata.developer),
-        create_trait("Publisher", game_metadata.publisher),
-        create_trait("Genre", game_metadata.genre), create_trait("Minted By", _minted_by),
-        create_trait("Score", _score), create_trait("Minted Time", _minted_at),
-        create_trait("Start Time", _start), create_trait("End Time", _end),
-        create_trait("Expired", bool_to_str(_expired)),
-        create_trait("Game Over", bool_to_str(token_metadata.game_over)),
-        create_trait("Soulbound", bool_to_str(token_metadata.soulbound)),
-        create_trait("Paymaster", bool_to_str(token_metadata.paymaster)),
-        create_trait("Metadata", format!("{}", Into::<u16, u32>::into(token_metadata.metadata))),
-        create_trait("Settings ID", _settings_id),
-    ];
-
-    // Optional settings traits
-    if settings_details.name.clone().len() > 0 {
-        attributes.append(create_trait("Settings Name", settings_details.name));
-    }
-
-    // Optional context traits
-    if context_details.name.clone().len() > 0 {
-        attributes.append(create_trait("Context Name", context_details.name));
-        match context_details.id {
-            Option::Some(id) => {
-                let _context_id = format!("{}", id);
-                attributes.append(create_trait("Context ID", _context_id));
-            },
-            Option::None => {},
-        }
-    }
-
-    // Optional objectives traits
-    if token_metadata.objective_id != 0 {
-        attributes.append(create_trait("Objective ID", format!("{}", token_metadata.objective_id)));
-        attributes
-            .append(
-                create_trait(
-                    "Objectives Completed", bool_to_str(token_metadata.completed_objective),
-                ),
-            );
-        if objective_name.len() > 0 {
-            attributes.append(create_trait("Objective Name", objective_name));
-        }
-    }
-
-    // Optional player name trait
-    if !player_name.is_zero() {
-        let mut _player_name = Default::default();
-        _player_name
-            .append_word(
-                player_name, U256BytesUsedTraitImpl::bytes_used(player_name.into()).into(),
-            );
-        attributes.append(create_trait("Player Name", _player_name));
-    }
-
-    // Add dynamic game details as traits
-    let mut game_details_index = 0;
-    loop {
-        if game_details_index == game_details.len() {
-            break;
-        }
-
-        let game_detail = game_details.at(game_details_index);
-        attributes.append(create_trait(game_detail.name.clone(), game_detail.value.clone()));
-
-        game_details_index += 1;
-    }
-
-    let metadata = metadata.add_array("attributes", attributes.span()).build();
-
-    format!("data:application/json;base64,{}", bytes_base64_encode(metadata))
+    "data:image/svg+xml;charset=utf-8," + svg
 }
 
 #[cfg(test)]
@@ -956,14 +867,10 @@ mod tests {
     use game_components_embeddable_game_standard::minigame::extensions::settings::structs::{
         GameSetting, GameSettingDetails,
     };
-    use game_components_embeddable_game_standard::minigame::structs::GameDetail;
     use game_components_embeddable_game_standard::registry::interface::GameMetadata;
     use game_components_embeddable_game_standard::token::structs::{Lifecycle, TokenMetadata};
     use snforge_std::{start_cheat_block_timestamp_global, stop_cheat_block_timestamp_global};
-    use super::{
-        calculate_timeline_progress, create_custom_metadata, create_default_svg,
-        timestamp_to_datetime,
-    };
+    use super::{calculate_timeline_progress, create_default_svg, timestamp_to_datetime};
 
     fn default_token_metadata() -> TokenMetadata {
         TokenMetadata {
@@ -1062,6 +969,7 @@ mod tests {
             royalty_fraction: 500,
             skills_address: 0.try_into().unwrap(),
             created_at: 0,
+            version: 0,
         };
 
         let svg_result = create_default_svg(
@@ -1081,371 +989,76 @@ mod tests {
     }
 
     #[test]
-    fn test_custom_metadata_full() {
+    fn test_loot_survivor_svg() {
+        start_cheat_block_timestamp_global(1709654400); // 2024-03-05
+
         let game_metadata = GameMetadata {
             contract_address: 0x1234567890123456789012345678901234567890.try_into().unwrap(),
-            name: "zKube",
-            description: "A puzzle game on Starknet",
-            developer: "zKorp",
-            publisher: "Starknet Games",
-            genre: "Puzzle",
-            image: "https://zkube.vercel.app/assets/pwa-512x512.png",
-            color: "#4f46e5",
-            client_url: "https://zkube.vercel.app",
+            name: "Loot Survivor",
+            description: "Fully onchain arcade dungeon crawler",
+            developer: "Provable Games",
+            publisher: "Provable Games",
+            genre: "Roguelike RPG",
+            image: "https://lootsurvivor.io/favicon.png",
+            color: "#33FF33",
+            client_url: "https://lootsurvivor.io",
             renderer_address: 0x9876543210987654321098765432109876543210.try_into().unwrap(),
             royalty_fraction: 500,
             skills_address: 0.try_into().unwrap(),
             created_at: 0,
+            version: 0,
         };
 
-        let settings_details = GameSettingDetails {
-            name: "Difficulty Settings",
-            description: "Game difficulty configuration",
+        let mut token_metadata = default_token_metadata();
+        token_metadata.game_over = true;
+        token_metadata.soulbound = true;
+        token_metadata.completed_objective = true;
+        token_metadata.objective_id = 1;
+
+        let settings = GameSettingDetails {
+            name: "Hard Mode",
+            description: "No mercy",
             settings: array![
                 GameSetting { name: 'Difficulty', value: 'Hard' },
-                GameSetting { name: 'Time Limit', value: '300' },
-                GameSetting { name: 'Lives', value: '3' },
+                GameSetting { name: 'Lives', value: '1' },
             ]
                 .span(),
         };
 
-        let context_details = GameContextDetails {
-            name: "Tournament Context",
-            description: "Weekly tournament settings",
-            id: Option::Some(42),
-            context: array![
-                GameContext { name: 'Tournament', value: 'Weekly Challenge #5' },
-                GameContext { name: 'Prize Pool', value: '1000 STRK' },
-                GameContext { name: 'Participants', value: '156' },
+        let objectives = GameObjectiveDetails {
+            name: "Slay the Dragon",
+            description: "Defeat the final boss",
+            objectives: array![
+                GameObjective { name: 'Boss', value: 'Dragon' },
+                GameObjective { name: 'Level', value: '25' },
             ]
                 .span(),
         };
 
-        let token_metadata = TokenMetadata {
-            game_id: 1,
-            settings_id: 1,
-            minted_at: 1640995200, // 2022-01-01 00:00:00 UTC
-            minted_by: 123,
-            lifecycle: Lifecycle { start: 1640995200, end: 1672531200 }, // 2022-2023
-            game_over: false,
-            soulbound: false,
-            completed_objective: true,
-            has_context: true,
-            objective_id: 5,
-            paymaster: false,
-            metadata: 0,
-        };
-
-        let metadata = create_custom_metadata(
-            1000000,
-            game_metadata.name.clone(),
-            "This is a comprehensive test game token with all features",
-            game_metadata,
-            "https://zkube.vercel.app/assets/token-image.png",
-            array![
-                GameDetail { name: "Level", value: "Advanced" },
-                GameDetail { name: "Combo Streak", value: "15" },
-                GameDetail { name: "Special Power", value: "Lightning Bolt" },
-            ]
-                .span(),
-            settings_details,
-            context_details,
-            token_metadata,
-            95000,
-            0x065d2AB17338b5AffdEbAF95E2D79834B5f30Bac596fF55563c62C3c98700150.try_into().unwrap(),
-            'ProGamer2024',
-            "Clear All Blocks",
-        );
-
-        println!("Full metadata: {}", metadata);
-    }
-
-    #[test]
-    fn test_custom_metadata_empty_settings() {
-        let game_metadata = GameMetadata {
-            contract_address: 0x1234567890123456789012345678901234567890.try_into().unwrap(),
-            name: "Simple Game",
-            description: "A basic game",
-            developer: "Indie Dev",
-            publisher: "Self Published",
-            genre: "Arcade",
-            image: "https://example.com/game.png",
-            color: "#ffffff",
-            client_url: "https://example.com/play",
-            renderer_address: 0x9876543210987654321098765432109876543210.try_into().unwrap(),
-            royalty_fraction: 250,
-            skills_address: 0.try_into().unwrap(),
-            created_at: 0,
-        };
-
-        // Empty settings
-        let settings_details = GameSettingDetails {
-            name: "", description: "", settings: [].span(),
-        };
-
-        // Empty context
-        let context_details = GameContextDetails {
-            name: "", description: "", id: Option::None, context: [].span(),
-        };
-
-        let token_metadata = TokenMetadata {
-            game_id: 1,
-            settings_id: 0,
-            minted_at: 1640995200,
-            minted_by: 456,
-            lifecycle: Lifecycle { start: 1640995200, end: 1672531200 },
-            game_over: true,
-            soulbound: true,
-            completed_objective: false,
-            has_context: false,
-            objective_id: 0,
-            paymaster: false,
-            metadata: 0,
-        };
-
-        let metadata = create_custom_metadata(
-            2000000,
-            game_metadata.name.clone(),
-            "Basic game token with minimal features",
-            game_metadata,
-            "https://example.com/basic-token.png",
-            [].span(), // No game details
-            settings_details,
-            context_details,
-            token_metadata,
-            1200,
-            0x065d2AB17338b5AffdEbAF95E2D79834B5f30Bac596fF55563c62C3c98700150.try_into().unwrap(),
-            0, // No player name
-            "" // No objective
-        );
-
-        println!("Empty settings metadata: {}", metadata);
-    }
-
-    #[test]
-    fn test_custom_metadata_partial_context() {
-        let game_metadata = GameMetadata {
-            contract_address: 0x1111111111111111111111111111111111111111.try_into().unwrap(),
-            name: "Context Game",
-            description: "Game with partial context",
-            developer: "Context Dev",
-            publisher: "Context Publisher",
-            genre: "Strategy",
-            image: "https://example.com/context-game.png",
-            color: "#00ff00",
-            client_url: "https://example.com/context",
-            renderer_address: 0x2222222222222222222222222222222222222222.try_into().unwrap(),
-            royalty_fraction: 750,
-            skills_address: 0.try_into().unwrap(),
-            created_at: 0,
-        };
-
-        let settings_details = GameSettingDetails {
-            name: "Basic Settings",
-            description: "Simple game settings",
-            settings: array![GameSetting { name: 'Mode', value: 'Single Player' }].span(),
-        };
-
-        // Context with name but no ID
-        let context_details = GameContextDetails {
-            name: "Casual Mode",
-            description: "Relaxed gameplay mode",
-            id: Option::None,
-            context: array![GameContext { name: 'Mode Type', value: 'Casual' }].span(),
-        };
-
-        let token_metadata = TokenMetadata {
-            game_id: 3,
-            settings_id: 2,
-            minted_at: 1650000000,
-            minted_by: 789,
-            lifecycle: Lifecycle { start: 1650000000, end: 1680000000 },
-            game_over: false,
-            soulbound: false,
-            completed_objective: false,
-            has_context: true,
-            objective_id: 10,
-            paymaster: false,
-            metadata: 0,
-        };
-
-        let metadata = create_custom_metadata(
-            3000000,
-            game_metadata.name.clone(),
-            "Game token with partial context information",
-            game_metadata,
-            "https://example.com/partial-context.png",
-            array![GameDetail { name: "Progress", value: "50%" }].span(),
-            settings_details,
-            context_details,
-            token_metadata,
-            7500,
-            0x065d2AB17338b5AffdEbAF95E2D79834B5f30Bac596fF55563c62C3c98700150.try_into().unwrap(),
-            'CasualPlayer',
-            "Win 10 Matches",
-        );
-
-        println!("Partial context metadata: {}", metadata);
-    }
-
-    #[test]
-    fn test_custom_metadata_single_objective() {
-        let game_metadata = GameMetadata {
-            contract_address: 0x3333333333333333333333333333333333333333.try_into().unwrap(),
-            name: "Single Objective Game",
-            description: "Game with one objective",
-            developer: "Solo Dev",
-            publisher: "Indie Games",
-            genre: "Adventure",
-            image: "https://example.com/adventure.png",
-            color: "#ff6600",
-            client_url: "https://example.com/adventure",
-            renderer_address: 0x4444444444444444444444444444444444444444.try_into().unwrap(),
-            royalty_fraction: 1000,
-            skills_address: 0.try_into().unwrap(),
-            created_at: 0,
-        };
-
-        let settings_details = GameSettingDetails {
-            name: "Adventure Settings",
-            description: "Configuration for adventure mode",
-            settings: array![
-                GameSetting { name: 'Difficulty', value: 'Medium' },
-                GameSetting { name: 'Hints', value: 'Enabled' },
-            ]
-                .span(),
-        };
-
-        let context_details = GameContextDetails {
-            name: "Adventure Quest",
-            description: "Epic adventure questline",
+        let context = GameContextDetails {
+            name: "Season 1",
+            description: "The first season",
             id: Option::Some(1),
             context: array![
-                GameContext { name: 'Chapter', value: 'The Beginning' },
-                GameContext { name: 'Location', value: 'Mystical Forest' },
+                GameContext { name: 'Season', value: '1' },
+                GameContext { name: 'Realm', value: 'Realms Eternal' },
             ]
                 .span(),
         };
 
-        let token_metadata = TokenMetadata {
-            game_id: 4,
-            settings_id: 3,
-            minted_at: 1660000000,
-            minted_by: 101,
-            lifecycle: Lifecycle { start: 1660000000, end: 1690000000 },
-            game_over: false,
-            soulbound: true,
-            completed_objective: true,
-            has_context: true,
-            objective_id: 100,
-            paymaster: false,
-            metadata: 0,
-        };
-
-        let metadata = create_custom_metadata(
-            4000000,
-            game_metadata.name.clone(),
-            "Adventure game token with single objective",
+        let svg_result = create_default_svg(
             game_metadata,
-            "https://example.com/quest-token.png",
-            array![
-                GameDetail { name: "Quest Status", value: "In Progress" },
-                GameDetail { name: "Items Collected", value: "5/10" },
-                GameDetail { name: "Experience", value: "2500 XP" },
-            ]
-                .span(),
-            settings_details,
-            context_details,
             token_metadata,
-            85000,
-            0x065d2AB17338b5AffdEbAF95E2D79834B5f30Bac596fF55563c62C3c98700150.try_into().unwrap(),
-            'AdventureSeeker',
-            "Complete the Quest",
+            84271,
+            'Distracteddev',
+            settings,
+            objectives,
+            context,
+            "https://lootsurvivor.io",
         );
 
-        println!("Single objective metadata: {}", metadata);
-    }
+        stop_cheat_block_timestamp_global();
 
-    #[test]
-    fn test_custom_metadata_edge_cases() {
-        let game_metadata = GameMetadata {
-            contract_address: 0x5555555555555555555555555555555555555555.try_into().unwrap(),
-            name: "Edge Case Game",
-            description: "Testing edge cases",
-            developer: "Test Dev",
-            publisher: "Test Publisher",
-            genre: "Test",
-            image: "https://example.com/test.png",
-            color: "#000000",
-            client_url: "https://example.com/test",
-            renderer_address: 0x6666666666666666666666666666666666666666.try_into().unwrap(),
-            royalty_fraction: 10000,
-            skills_address: 0.try_into().unwrap(),
-            created_at: 0,
-        };
-
-        let settings_details = GameSettingDetails {
-            name: "Test Settings",
-            description: "Edge case testing",
-            settings: array![
-                GameSetting { name: 'Edge Case 1', value: 0 }, // Empty value
-                GameSetting { name: 0, value: 'Edge Case 2' }, // Empty name
-                GameSetting { name: 'Normal', value: 'Value' },
-            ]
-                .span(),
-        };
-
-        let context_details = GameContextDetails {
-            name: "Test Context",
-            description: "Edge case context",
-            id: Option::Some(999999), // Large ID
-            context: array![
-                GameContext { name: 'Max Value', value: '999999999' },
-                GameContext { name: 'Special Chars', value: '!@#$%^&*()' },
-                GameContext { name: 'ASCII Only', value: 'Game Trophy Winner' },
-            ]
-                .span(),
-        };
-
-        let token_metadata = TokenMetadata {
-            game_id: 999,
-            settings_id: 999,
-            minted_at: 0, // Minimum timestamp
-            minted_by: 0, // Minimum minter ID
-            lifecycle: Lifecycle { start: 0, end: 4294967295 }, // Max u32
-            game_over: true,
-            soulbound: true,
-            completed_objective: true,
-            has_context: true,
-            objective_id: 1,
-            paymaster: false,
-            metadata: 0,
-        };
-
-        let metadata = create_custom_metadata(
-            18446744073709551615, // Max u64
-            game_metadata.name.clone(),
-            "Edge case testing with extreme values and special characters !@#$%^&*()",
-            game_metadata,
-            "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==",
-            array![
-                GameDetail { name: "Zero Score", value: "0" },
-                GameDetail { name: "Max Score", value: "4294967295" },
-                GameDetail { name: "Negative-like", value: "-1" },
-                GameDetail { name: "Float-like", value: "3.14159" },
-                GameDetail { name: "Boolean-like", value: "true" },
-                GameDetail { name: "Special Chars", value: "!@#$%^&*()" },
-            ]
-                .span(),
-            settings_details,
-            context_details,
-            token_metadata,
-            18446744073709551615, // Max u64 score
-            0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF.try_into().unwrap(), // Max address
-            'MAX_FELT_VALUE_TEST',
-            "Edge Case Objective",
-        );
-
-        println!("Edge cases metadata: {}", metadata);
+        println!("Loot Survivor SVG: {}", svg_result);
     }
 }

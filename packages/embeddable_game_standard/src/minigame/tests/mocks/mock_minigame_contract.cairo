@@ -352,6 +352,7 @@ pub mod MockMinigameContract {
                     minigame_token_address,
                     royalty_fraction,
                     skills_address,
+                    1,
                 );
         }
     }

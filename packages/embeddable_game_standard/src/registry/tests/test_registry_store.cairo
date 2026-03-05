@@ -74,6 +74,7 @@ fn register_game_full(
             renderer_address,
             royalty_fraction,
             skills_address,
+            1,
         );
     stop_cheat_caller_address(registry.contract_address);
     game_id
