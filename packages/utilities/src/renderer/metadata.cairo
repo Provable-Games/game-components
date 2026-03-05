@@ -6,7 +6,7 @@ use game_components_embeddable_game_standard::registry::interface::GameMetadata;
 use game_components_embeddable_game_standard::token::structs::TokenMetadata;
 use graffiti::json::JsonImpl;
 use starknet::{ContractAddress, get_block_timestamp};
-use crate::utils::encoding::{U256BytesUsedTraitImpl, bytes_base64_encode};
+use crate::utils::encoding::{U256BytesUsedTraitImpl, bytes_base64_encode, felt252_to_byte_array};
 
 fn create_trait(name: ByteArray, value: ByteArray) -> ByteArray {
     JsonImpl::new().add("trait", name).add("value", value).build()
@@ -120,7 +120,13 @@ pub fn create_custom_metadata(
         }
 
         let game_detail = game_details.at(game_details_index);
-        attributes.append(create_trait(game_detail.name.clone(), game_detail.value.clone()));
+        attributes
+            .append(
+                create_trait(
+                    felt252_to_byte_array(*game_detail.name),
+                    felt252_to_byte_array(*game_detail.value),
+                ),
+            );
 
         game_details_index += 1;
     }

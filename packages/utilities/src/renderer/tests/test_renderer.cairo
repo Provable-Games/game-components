@@ -355,7 +355,9 @@ fn test_default_svg_empty_game_name() {
     );
     stop_cheat_block_timestamp_global();
 
-    assert!(starts_with(@result, @"data:image/svg+xml;charset=utf-8,"), "Should handle empty strings");
+    assert!(
+        starts_with(@result, @"data:image/svg+xml;charset=utf-8,"), "Should handle empty strings",
+    );
 }
 
 #[test]
@@ -423,7 +425,9 @@ fn test_default_svg_timeline_before_start() {
     );
     stop_cheat_block_timestamp_global();
 
-    assert!(starts_with(@result, @"data:image/svg+xml;charset=utf-8,"), "Should handle before-start");
+    assert!(
+        starts_with(@result, @"data:image/svg+xml;charset=utf-8,"), "Should handle before-start",
+    );
 }
 
 #[test]
@@ -462,7 +466,9 @@ fn test_default_svg_timeline_no_end() {
     );
     stop_cheat_block_timestamp_global();
 
-    assert!(starts_with(@result, @"data:image/svg+xml;charset=utf-8,"), "Should handle no end time");
+    assert!(
+        starts_with(@result, @"data:image/svg+xml;charset=utf-8,"), "Should handle no end time",
+    );
 }
 
 // ==============================================================================
@@ -500,7 +506,7 @@ fn test_custom_metadata_full() {
     start_cheat_block_timestamp_global(2000000000);
 
     let game_details = array![
-        GameDetail { name: "Level", value: "Advanced" }, GameDetail { name: "Combo", value: "15" },
+        GameDetail { name: 'Level', value: 'Advanced' }, GameDetail { name: 'Combo', value: '15' },
     ]
         .span();
 
@@ -1161,7 +1167,7 @@ fn test_custom_metadata_many_objectives() {
 fn test_custom_metadata_single_game_detail() {
     start_cheat_block_timestamp_global(2000000000);
 
-    let game_details = array![GameDetail { name: "Level", value: "Expert" }].span();
+    let game_details = array![GameDetail { name: 'Level', value: 'Expert' }].span();
 
     let result = create_custom_metadata(
         1,
@@ -1196,8 +1202,7 @@ fn test_custom_metadata_many_game_details() {
         if i >= 10 {
             break;
         }
-        game_details_arr
-            .append(GameDetail { name: format!("Detail{}", i), value: format!("Value{}", i) });
+        game_details_arr.append(GameDetail { name: 'Detail', value: 'Value' });
         i += 1;
     }
 
@@ -1369,7 +1374,9 @@ fn test_default_svg_data_uri_image() {
     );
     stop_cheat_block_timestamp_global();
 
-    assert!(starts_with(@result, @"data:image/svg+xml;charset=utf-8,"), "Should handle data URI images");
+    assert!(
+        starts_with(@result, @"data:image/svg+xml;charset=utf-8,"), "Should handle data URI images",
+    );
 }
 
 #[test]
@@ -1382,8 +1389,8 @@ fn test_custom_metadata_all_features_combined() {
     token_metadata.completed_objective = true;
 
     let game_details = array![
-        GameDetail { name: "Achievement", value: "Gold" },
-        GameDetail { name: "Time", value: "120s" },
+        GameDetail { name: 'Achievement', value: 'Gold' },
+        GameDetail { name: 'Time', value: '120s' },
     ]
         .span();
 
@@ -1533,7 +1540,8 @@ fn test_stress_default_svg_maxed_out() {
     stop_cheat_block_timestamp_global();
 
     assert!(
-        starts_with(@svg_result, @"data:image/svg+xml;charset=utf-8,"), "Should produce valid SVG output",
+        starts_with(@svg_result, @"data:image/svg+xml;charset=utf-8,"),
+        "Should produce valid SVG output",
     );
     println!("Stress SVG output length: {} bytes", svg_result.len());
 }
@@ -1549,13 +1557,7 @@ fn test_stress_custom_metadata_maxed_out() {
         if i >= 20 {
             break;
         }
-        game_details_arr
-            .append(
-                GameDetail {
-                    name: format!("GameDetailName_{}", i),
-                    value: format!("GameDetailValueThatIsQuiteLong_{}", i),
-                },
-            );
+        game_details_arr.append(GameDetail { name: 'GameDetail', value: 'GameDetailValue' });
         i += 1;
     }
 

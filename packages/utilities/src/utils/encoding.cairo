@@ -190,3 +190,39 @@ pub fn felt252_to_byte_array(value: felt252) -> ByteArray {
     }
     result
 }
+
+/// Converts a u128 number to its ASCII decimal representation packed into a felt252.
+/// For example: 42 -> 0x3432 ('42'), 1000 -> 0x31303030 ('1000').
+/// Maximum felt252 can hold 31 bytes, so numbers up to 31 digits are supported.
+/// Panics if the number exceeds 31 digits.
+pub fn u128_to_ascii_felt(mut value: u128) -> felt252 {
+    if value == 0 {
+        return '0';
+    }
+
+    // Build digits in reverse order
+    let mut digits: Array<u8> = array![];
+    loop {
+        if value == 0 {
+            break;
+        }
+        let digit: u8 = (value % 10).try_into().unwrap();
+        digits.append(digit + '0');
+        value /= 10;
+    }
+
+    assert!(digits.len() <= 31, "Number exceeds 31 digits, cannot fit in felt252");
+
+    // Pack digits into felt252 in correct order (reverse of how we collected them)
+    let len = digits.len();
+    let mut result: felt252 = 0;
+    let mut i = len;
+    loop {
+        if i == 0 {
+            break;
+        }
+        i -= 1;
+        result = result * 256 + (*digits.at(i)).into();
+    }
+    result
+}
