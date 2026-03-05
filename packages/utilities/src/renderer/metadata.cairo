@@ -127,5 +127,5 @@ pub fn create_custom_metadata(
 
     let metadata = metadata.add_array("attributes", attributes.span()).build();
 
-    metadata
+    format!("data:application/json;base64,{}", bytes_base64_encode(metadata))
 }

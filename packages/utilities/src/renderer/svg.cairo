@@ -97,6 +97,54 @@ fn calculate_timeline_progress(start: u64, end: u64, current: u64) -> u64 {
     (current - start) * 100 / (end - start)
 }
 
+/// URL-encode characters unsafe in data URIs: " # % < > { }
+fn uri_encode(input: ByteArray) -> ByteArray {
+    let len = input.len();
+    let mut needs_encode = false;
+    let mut i: u32 = 0;
+    loop {
+        if i >= len {
+            break;
+        }
+        let b = input.at(i).unwrap();
+        if b == 0x22 || b == 0x23 || b == 0x25 || b == 0x3C || b == 0x3E || b == 0x7B || b == 0x7D {
+            needs_encode = true;
+            break;
+        }
+        i += 1;
+    }
+    if !needs_encode {
+        return input;
+    }
+    let mut output: ByteArray = "";
+    let mut i: u32 = 0;
+    loop {
+        if i >= len {
+            break;
+        }
+        let b = input.at(i).unwrap();
+        if b == 0x22 {
+            output.append(@"%22");
+        } else if b == 0x23 {
+            output.append(@"%23");
+        } else if b == 0x25 {
+            output.append(@"%25");
+        } else if b == 0x3C {
+            output.append(@"%3C");
+        } else if b == 0x3E {
+            output.append(@"%3E");
+        } else if b == 0x7B {
+            output.append(@"%7B");
+        } else if b == 0x7D {
+            output.append(@"%7D");
+        } else {
+            output.append_byte(b);
+        }
+        i += 1;
+    }
+    output
+}
+
 fn icon_check(
     x: ByteArray, y: ByteArray, w: ByteArray, h: ByteArray, color: @ByteArray,
 ) -> ByteArray {
@@ -176,23 +224,23 @@ pub fn create_default_svg(
     client_url: ByteArray,
 ) -> ByteArray {
     let accent = if game_metadata.color.len() == 0 {
-        "#ffffff"
+        "%23ffffff"
     } else {
-        game_metadata.color.clone()
+        uri_encode(game_metadata.color.clone())
     };
     let _game_id = format!("{}", token_metadata.game_id);
     let _score = format!("{}", score);
-    let _game_name = format!("{}", game_metadata.name);
-    let _developer = format!("{}", game_metadata.developer);
-    let _genre = format!("{}", game_metadata.genre);
+    let _game_name = uri_encode(format!("{}", game_metadata.name));
+    let _developer = uri_encode(format!("{}", game_metadata.developer));
+    let _genre = uri_encode(format!("{}", game_metadata.genre));
     let desc_raw = game_metadata.description;
     let _settings_name: ByteArray = if settings_details.name.len() > 0 {
-        settings_details.name
+        uri_encode(settings_details.name)
     } else {
         "---"
     };
     let _objective_name: ByteArray = if objective_details.name.len() > 0 {
-        objective_details.name
+        uri_encode(objective_details.name)
     } else {
         "---"
     };
@@ -206,6 +254,7 @@ pub fn create_default_svg(
             .append_word(
                 player_name, U256BytesUsedTraitImpl::bytes_used(player_name.into()).into(),
             );
+        _player_name = uri_encode(_player_name);
     } else {
         _player_name = "---";
     }
@@ -221,7 +270,7 @@ pub fn create_default_svg(
 
     // Context details
     let _context_name: ByteArray = if context_details.name.len() > 0 {
-        context_details.name.clone()
+        uri_encode(context_details.name.clone())
     } else {
         "---"
     };
@@ -248,11 +297,11 @@ pub fn create_default_svg(
             @"<svg xmlns='http://www.w3.org/2000/svg' width='590' height='680' viewBox='-60 -40 590 680'>",
         );
 
-    // Defs: gradients, patterns, filters, icons
+    // Defs: gradients, patterns, filters
     svg.append(@"<defs>");
     svg.append(@"<linearGradient id='panel' x1='0%' y1='0%' x2='0%' y2='100%'>");
-    svg.append(@"<stop offset='0%' stop-color='#2d2d32'/>");
-    svg.append(@"<stop offset='100%' stop-color='#1e1e22'/>");
+    svg.append(@"<stop offset='0%' stop-color='%232d2d32'/>");
+    svg.append(@"<stop offset='100%' stop-color='%231e1e22'/>");
     svg.append(@"</linearGradient>");
     svg
         .append(
@@ -274,25 +323,24 @@ pub fn create_default_svg(
         .append(
             @"<pattern id='pin' width='12' height='12' patternUnits='userSpaceOnUse' patternTransform='rotate(12)'>",
         );
-    svg.append(@"<path fill='#1b1b1f' d='M0 0h12v12H0z'/>");
-    svg.append(@"<path fill='#242428' opacity='.3' d='M0 0h12v6H0z'/>");
+    svg.append(@"<path fill='%231b1b1f' d='M0 0h12v12H0z'/>");
+    svg.append(@"<path fill='%23242428' opacity='.3' d='M0 0h12v6H0z'/>");
     svg.append(@"</pattern>");
-    // Glow filter
     // Scanline pattern
     svg.append(@"<pattern id='scan' width='470' height='4' patternUnits='userSpaceOnUse'>");
-    svg.append(@"<rect width='470' height='2' fill='#000' opacity='0.06'/>");
+    svg.append(@"<rect width='470' height='2' fill='%23000' opacity='0.06'/>");
     svg.append(@"</pattern>");
     // Shimmer gradient
     svg.append(@"<linearGradient id='shimmer' x1='0' y1='0' x2='1' y2='1'>");
     svg
         .append(
-            @"<stop offset='0%' stop-color='#fff' stop-opacity='0'/><stop offset='45%' stop-color='#fff' stop-opacity='0'/>",
+            @"<stop offset='0%' stop-color='%23fff' stop-opacity='0'/><stop offset='45%' stop-color='%23fff' stop-opacity='0'/>",
         );
     svg
         .append(
-            @"<stop offset='50%' stop-color='#fff' stop-opacity='0.08'/><stop offset='55%' stop-color='#fff' stop-opacity='0'/>",
+            @"<stop offset='50%' stop-color='%23fff' stop-opacity='0.08'/><stop offset='55%' stop-color='%23fff' stop-opacity='0'/>",
         );
-    svg.append(@"<stop offset='100%' stop-color='#fff' stop-opacity='0'/>");
+    svg.append(@"<stop offset='100%' stop-color='%23fff' stop-opacity='0'/>");
     svg
         .append(
             @"<animateTransform attributeName='gradientTransform' type='translate' from='-1 -1' to='1 1' dur='3s' repeatCount='indefinite'/>",
@@ -300,18 +348,18 @@ pub fn create_default_svg(
     svg.append(@"</linearGradient>");
     // Vignette
     svg.append(@"<radialGradient id='vignette' cx='50%' cy='50%' r='70%'>");
-    svg.append(@"<stop offset='0%' stop-color='#000' stop-opacity='0'/>");
-    svg.append(@"<stop offset='100%' stop-color='#000' stop-opacity='0.3'/>");
+    svg.append(@"<stop offset='0%' stop-color='%23000' stop-opacity='0'/>");
+    svg.append(@"<stop offset='100%' stop-color='%23000' stop-opacity='0.3'/>");
     svg.append(@"</radialGradient>");
 
     // Connector pin gradient and pattern
     svg
         .append(
-            @"<linearGradient id='pinGold' x1='0' y1='0' x2='0' y2='1'><stop offset='0%' stop-color='#d4a843'/><stop offset='50%' stop-color='#f0d060'/><stop offset='100%' stop-color='#b8922e'/></linearGradient>",
+            @"<linearGradient id='pinGold' x1='0' y1='0' x2='0' y2='1'><stop offset='0%' stop-color='%23d4a843'/><stop offset='50%' stop-color='%23f0d060'/><stop offset='100%' stop-color='%23b8922e'/></linearGradient>",
         );
     svg
         .append(
-            @"<pattern id='cpins' width='20' height='32' patternUnits='userSpaceOnUse'><rect x='4' y='0' width='12' height='32' rx='2' fill='url(#pinGold)'/></pattern>",
+            @"<pattern id='cpins' width='20' height='32' patternUnits='userSpaceOnUse'><rect x='4' y='0' width='12' height='32' rx='2' fill='url(%23pinGold)'/></pattern>",
         );
 
     // Clip path for inward-only border stroke
@@ -320,7 +368,7 @@ pub fn create_default_svg(
     // Styles with card rotation and edge depth
     svg
         .append(
-            @"<style>.l{fill:#c9c9d1;font-size:13px;letter-spacing:0.5px}.v{fill:#fff;font-size:16px}.vs{fill:#fff;font-size:13px}text{font-family:'Courier New',Courier,monospace;text-transform:uppercase}@keyframes tilt{0%,100%{transform:rotateY(-20deg)}50%{transform:rotateY(20deg)}}@keyframes sl{0%,100%{opacity:1}20%{opacity:0.15}25%,75%{opacity:0}80%{opacity:0.15}}@keyframes sr{0%,25%,75%,100%{opacity:0}30%{opacity:0.15}50%{opacity:1}70%{opacity:0.15}}.card{animation:tilt 6s ease-in-out infinite;transform-origin:235px 300px}.el{fill:#3a3a42;animation:sl 6s ease-in-out infinite}.er{fill:#3a3a42;animation:sr 6s ease-in-out infinite}</style>",
+            @"<style>.l{fill:%23c9c9d1;font-size:13px;letter-spacing:0.5px}.v{fill:%23fff;font-size:16px}.vs{fill:%23fff;font-size:13px}text{font-family:'Courier New',Courier,monospace;text-transform:uppercase}@keyframes tilt{0%,100%{transform:rotateY(-20deg)}50%{transform:rotateY(20deg)}}@keyframes sl{0%,100%{opacity:1}20%{opacity:0.15}25%,75%{opacity:0}80%{opacity:0.15}}@keyframes sr{0%,25%,75%,100%{opacity:0}30%{opacity:0.15}50%{opacity:1}70%{opacity:0.15}}.card{animation:tilt 6s ease-in-out infinite;transform-origin:235px 300px}.el{fill:%233a3a42;animation:sl 6s ease-in-out infinite}.er{fill:%233a3a42;animation:sr 6s ease-in-out infinite}</style>",
         );
     svg.append(@"</defs>");
 
@@ -333,39 +381,39 @@ pub fn create_default_svg(
     svg.append(@"<path class='er' d='M482 17 Q482 1 454 1 L454 599 Q482 599 482 583 Z'/>");
 
     // Background layers
-    svg.append(@"<rect width='470' height='600' rx='16' fill='url(#pin)'/>");
-    svg.append(@"<rect width='470' height='600' rx='16' fill='url(#vignette)'/>");
-    svg.append(@"<rect width='470' height='600' rx='16' fill='url(#scan)'/>");
+    svg.append(@"<rect width='470' height='600' rx='16' fill='url(%23pin)'/>");
+    svg.append(@"<rect width='470' height='600' rx='16' fill='url(%23vignette)'/>");
+    svg.append(@"<rect width='470' height='600' rx='16' fill='url(%23scan)'/>");
     // Shimmer sweep
-    svg.append(@"<rect width='470' height='600' rx='16' fill='url(#shimmer)'/>");
+    svg.append(@"<rect width='470' height='600' rx='16' fill='url(%23shimmer)'/>");
     // Animated gradient border (on top of all fills)
     svg
         .append(
-            @"<rect width='470' height='600' rx='16' fill='none' stroke='url(#accentGrad)' stroke-width='20' clip-path='url(#card-clip)'/>",
+            @"<rect width='470' height='600' rx='16' fill='none' stroke='url(%23accentGrad)' stroke-width='20' clip-path='url(%23card-clip)'/>",
         );
 
     // ── Header: EGS logo placeholder + game name + game ID ──
-    svg.append(@"<rect x='18' y='24' width='44' height='44' rx='8' fill='#000'/>");
+    svg.append(@"<rect x='18' y='24' width='44' height='44' rx='8' fill='%23000'/>");
     svg
         .append(
-            @"<svg x='23' y='33' width='34' height='22' viewBox='0 0 415 287'><path fill='#fff' d='M134 0q21 0 40 8a104 104 0 0 1 56 53 91 91 0 0 1 0 77q-8 19-23 32-14 14-33 21-19 8-40 8h-33l-33-57h66q9 0 17-3t14-9l10-15q3-9 3-20 0-8-3-17l-10-15-14-10q-9-4-17-4H59v234H0V0z'/><path fill='#fff' fill-rule='evenodd' d='m415 131-2-12H306l-34 52h79q-3 15-11 27l-18 20q-10 9-24 14-14 4-29 4a86 86 0 0 1-56-20v60a155 155 0 0 0 160-31 140 140 0 0 0 42-102zM210 11q-22 10-40 25l42 27v8a88 88 0 0 1 103-8l28-44Q310 0 269 0q-31 0-59 11' clip-rule='evenodd' opacity='.4'/></svg>",
+            @"<svg x='23' y='33' width='34' height='22' viewBox='0 0 415 287'><path fill='%23fff' d='M134 0q21 0 40 8a104 104 0 0 1 56 53 91 91 0 0 1 0 77q-8 19-23 32-14 14-33 21-19 8-40 8h-33l-33-57h66q9 0 17-3t14-9l10-15q3-9 3-20 0-8-3-17l-10-15-14-10q-9-4-17-4H59v234H0V0z'/><path fill='%23fff' fill-rule='evenodd' d='m415 131-2-12H306l-34 52h79q-3 15-11 27l-18 20q-10 9-24 14-14 4-29 4a86 86 0 0 1-56-20v60a155 155 0 0 0 160-31 140 140 0 0 0 42-102zM210 11q-22 10-40 25l42 27v8a88 88 0 0 1 103-8l28-44Q310 0 269 0q-31 0-59 11' clip-rule='evenodd' opacity='.4'/></svg>",
         );
 
     // Game name
-    svg.append(@"<text x='72' y='38' style='fill:#fff;font-size:22px;letter-spacing:1px'>");
+    svg.append(@"<text x='72' y='38' style='fill:%23fff;font-size:22px;letter-spacing:1px'>");
     svg += _game_name;
     svg.append(@"</text>");
     // Developer + Genre
     svg
         .append(
-            @"<text x='72' y='56' style='fill:#888;font-size:9px;letter-spacing:1px'>DEVELOPER </text>",
+            @"<text x='72' y='56' style='fill:%23888;font-size:9px;letter-spacing:1px'>DEVELOPER </text>",
         );
     svg.append(@"<text x='138' y='56' class='l'>");
     svg += _developer;
     svg.append(@"</text>");
     svg
         .append(
-            @"<text x='72' y='70' style='fill:#888;font-size:9px;letter-spacing:1px'>GENRE </text>",
+            @"<text x='72' y='70' style='fill:%23888;font-size:9px;letter-spacing:1px'>GENRE </text>",
         );
     svg.append(@"<text x='112' y='70' class='l' style='font-size:11px'>");
     svg += _genre;
@@ -374,7 +422,7 @@ pub fn create_default_svg(
     // Player name (top right)
     svg
         .append(
-            @"<text x='440' y='41' text-anchor='end' style='fill:#fff;font-size:18px;letter-spacing:1px'>",
+            @"<text x='440' y='41' text-anchor='end' style='fill:%23fff;font-size:18px;letter-spacing:1px'>",
         );
     svg += _player_name.clone();
     svg.append(@"</text>");
@@ -387,164 +435,164 @@ pub fn create_default_svg(
     // ── Game image area (centered square) ──
     svg
         .append(
-            @"<rect x='175' y='88' width='120' height='120' rx='10' fill='url(#panel)' stroke='#3a3a40' stroke-width='1'/>",
+            @"<rect x='175' y='88' width='120' height='120' rx='10' fill='url(%23panel)' stroke='%233a3a40' stroke-width='1'/>",
         );
     svg
         .append(
             @"<foreignObject x='180' y='93' width='110' height='110'><xhtml:img xmlns:xhtml='http://www.w3.org/1999/xhtml' src='",
         );
-    svg += game_metadata.image;
+    svg += uri_encode(game_metadata.image);
     svg.append(@"' style='width:100%;height:100%'/></foreignObject>");
 
     // ── Status Badge Panels flanking game image (2 left, 2 right) ──
     // Badge 1: STATUS (top-left, y:88-144)
     svg
         .append(
-            @"<rect x='25' y='88' width='142' height='56' rx='8' fill='url(#panel)' stroke='#3a3a40' stroke-width='1'/>",
+            @"<rect x='25' y='88' width='142' height='56' rx='8' fill='url(%23panel)' stroke='%233a3a40' stroke-width='1'/>",
         );
     if token_metadata.game_over {
         // Game Over: amber skull
-        svg.append(@"<rect x='25' y='88' width='4' height='56' rx='2' fill='#f59e0b'/>");
+        svg.append(@"<rect x='25' y='88' width='4' height='56' rx='2' fill='%23f59e0b'/>");
         svg
             .append(
-                @"<svg x='39' y='102' width='14' height='14' viewBox='0 0 16 16'><circle fill='#f59e0b' cx='8' cy='6.5' r='5.5'/><rect fill='#f59e0b' x='5' y='11' width='6' height='4' rx='1'/><circle fill='#1e1e22' cx='6' cy='6' r='1.5'/><circle fill='#1e1e22' cx='10' cy='6' r='1.5'/><ellipse fill='#1e1e22' cx='8' cy='9' rx='1' ry='0.7'/></svg>",
+                @"<svg x='39' y='102' width='14' height='14' viewBox='0 0 16 16'><circle fill='%23f59e0b' cx='8' cy='6.5' r='5.5'/><rect fill='%23f59e0b' x='5' y='11' width='6' height='4' rx='1'/><circle fill='%231e1e22' cx='6' cy='6' r='1.5'/><circle fill='%231e1e22' cx='10' cy='6' r='1.5'/><ellipse fill='%231e1e22' cx='8' cy='9' rx='1' ry='0.7'/></svg>",
             );
         svg
             .append(
-                @"<text x='58' y='111' style='fill:#888;font-size:9px;letter-spacing:1px'>STATUS</text>",
+                @"<text x='58' y='111' style='fill:%23888;font-size:9px;letter-spacing:1px'>STATUS</text>",
             );
-        svg.append(@"<text x='39' y='132' style='fill:#fff;font-size:13px'>GAME OVER</text>");
+        svg.append(@"<text x='39' y='132' style='fill:%23fff;font-size:13px'>GAME OVER</text>");
     } else if token_metadata.lifecycle.end > 0 && current_ts >= token_metadata.lifecycle.end {
         // Expired: red hourglass
-        svg.append(@"<rect x='25' y='88' width='4' height='56' rx='2' fill='#ef4444'/>");
+        svg.append(@"<rect x='25' y='88' width='4' height='56' rx='2' fill='%23ef4444'/>");
         svg
             .append(
-                @"<svg x='39' y='102' width='14' height='14' viewBox='0 0 16 16'><path fill='#ef4444' d='M4 1h8v4L9 8l3 3v4H4v-4l3-3-3-3z'/><rect fill='#1e1e22' x='5' y='2' width='6' height='2'/><rect fill='#1e1e22' x='5' y='12' width='6' height='2'/></svg>",
+                @"<svg x='39' y='102' width='14' height='14' viewBox='0 0 16 16'><path fill='%23ef4444' d='M4 1h8v4L9 8l3 3v4H4v-4l3-3-3-3z'/><rect fill='%231e1e22' x='5' y='2' width='6' height='2'/><rect fill='%231e1e22' x='5' y='12' width='6' height='2'/></svg>",
             );
         svg
             .append(
-                @"<text x='58' y='111' style='fill:#888;font-size:9px;letter-spacing:1px'>STATUS</text>",
+                @"<text x='58' y='111' style='fill:%23888;font-size:9px;letter-spacing:1px'>STATUS</text>",
             );
-        svg.append(@"<text x='39' y='132' style='fill:#fff;font-size:13px'>EXPIRED</text>");
+        svg.append(@"<text x='39' y='132' style='fill:%23fff;font-size:13px'>EXPIRED</text>");
     } else if token_metadata.lifecycle.start > 0 && current_ts < token_metadata.lifecycle.start {
         // Not Started: blue pause
-        svg.append(@"<rect x='25' y='88' width='4' height='56' rx='2' fill='#3b82f6'/>");
+        svg.append(@"<rect x='25' y='88' width='4' height='56' rx='2' fill='%233b82f6'/>");
         svg
             .append(
-                @"<svg x='39' y='102' width='14' height='14' viewBox='0 0 16 16'><rect fill='#3b82f6' x='3' y='2' width='4' height='12' rx='1'/><rect fill='#3b82f6' x='9' y='2' width='4' height='12' rx='1'/></svg>",
+                @"<svg x='39' y='102' width='14' height='14' viewBox='0 0 16 16'><rect fill='%233b82f6' x='3' y='2' width='4' height='12' rx='1'/><rect fill='%233b82f6' x='9' y='2' width='4' height='12' rx='1'/></svg>",
             );
         svg
             .append(
-                @"<text x='58' y='111' style='fill:#888;font-size:9px;letter-spacing:1px'>STATUS</text>",
+                @"<text x='58' y='111' style='fill:%23888;font-size:9px;letter-spacing:1px'>STATUS</text>",
             );
-        svg.append(@"<text x='39' y='132' style='fill:#fff;font-size:13px'>NOT STARTED</text>");
+        svg.append(@"<text x='39' y='132' style='fill:%23fff;font-size:13px'>NOT STARTED</text>");
     } else {
         // Active: green play
-        svg.append(@"<rect x='25' y='88' width='4' height='56' rx='2' fill='#10b981'/>");
+        svg.append(@"<rect x='25' y='88' width='4' height='56' rx='2' fill='%2310b981'/>");
         svg
             .append(
-                @"<svg x='39' y='102' width='14' height='14' viewBox='0 0 16 16'><path fill='#10b981' d='M4 2l10 6-10 6z'/></svg>",
+                @"<svg x='39' y='102' width='14' height='14' viewBox='0 0 16 16'><path fill='%2310b981' d='M4 2l10 6-10 6z'/></svg>",
             );
         svg
             .append(
-                @"<text x='58' y='111' style='fill:#888;font-size:9px;letter-spacing:1px'>STATUS</text>",
+                @"<text x='58' y='111' style='fill:%23888;font-size:9px;letter-spacing:1px'>STATUS</text>",
             );
-        svg.append(@"<text x='39' y='132' style='fill:#fff;font-size:13px'>ACTIVE</text>");
+        svg.append(@"<text x='39' y='132' style='fill:%23fff;font-size:13px'>ACTIVE</text>");
     }
 
     // Badge 2: SOULBOUND (bottom-left, y:152-208)
     svg
         .append(
-            @"<rect x='25' y='152' width='142' height='56' rx='8' fill='url(#panel)' stroke='#3a3a40' stroke-width='1'/>",
+            @"<rect x='25' y='152' width='142' height='56' rx='8' fill='url(%23panel)' stroke='%233a3a40' stroke-width='1'/>",
         );
     if token_metadata.soulbound {
-        svg.append(@"<rect x='25' y='152' width='4' height='56' rx='2' fill='#a855f7'/>");
+        svg.append(@"<rect x='25' y='152' width='4' height='56' rx='2' fill='%23a855f7'/>");
         svg
             .append(
-                @"<svg x='39' y='166' width='14' height='14' viewBox='0 0 16 16'><rect fill='#a855f7' x='3' y='7' width='10' height='7' rx='1'/><path fill='none' stroke='#a855f7' stroke-width='1.5' d='M5 7V5a3 3 0 016 0v2'/></svg>",
+                @"<svg x='39' y='166' width='14' height='14' viewBox='0 0 16 16'><rect fill='%23a855f7' x='3' y='7' width='10' height='7' rx='1'/><path fill='none' stroke='%23a855f7' stroke-width='1.5' d='M5 7V5a3 3 0 016 0v2'/></svg>",
             );
         svg
             .append(
-                @"<text x='58' y='175' style='fill:#888;font-size:9px;letter-spacing:1px'>OWNERSHIP</text>",
+                @"<text x='58' y='175' style='fill:%23888;font-size:9px;letter-spacing:1px'>OWNERSHIP</text>",
             );
-        svg.append(@"<text x='39' y='196' style='fill:#fff;font-size:13px'>SOULBOUND</text>");
+        svg.append(@"<text x='39' y='196' style='fill:%23fff;font-size:13px'>SOULBOUND</text>");
     } else {
-        svg.append(@"<rect x='25' y='152' width='4' height='56' rx='2' fill='#10b981'/>");
+        svg.append(@"<rect x='25' y='152' width='4' height='56' rx='2' fill='%2310b981'/>");
         svg
             .append(
-                @"<svg x='39' y='166' width='14' height='14' viewBox='0 0 16 16'><path fill='none' stroke='#10b981' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' d='M2 5h12M10 1l4 4-4 4'/><path fill='none' stroke='#10b981' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' d='M14 11H2M6 7l-4 4 4 4'/></svg>",
+                @"<svg x='39' y='166' width='14' height='14' viewBox='0 0 16 16'><path fill='none' stroke='%2310b981' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' d='M2 5h12M10 1l4 4-4 4'/><path fill='none' stroke='%2310b981' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' d='M14 11H2M6 7l-4 4 4 4'/></svg>",
             );
         svg
             .append(
-                @"<text x='58' y='175' style='fill:#888;font-size:9px;letter-spacing:1px'>OWNERSHIP</text>",
+                @"<text x='58' y='175' style='fill:%23888;font-size:9px;letter-spacing:1px'>OWNERSHIP</text>",
             );
-        svg.append(@"<text x='39' y='196' style='fill:#fff;font-size:13px'>TRANSFERABLE</text>");
+        svg.append(@"<text x='39' y='196' style='fill:%23fff;font-size:13px'>TRANSFERABLE</text>");
     }
 
     // Badge 3: PAYMASTER (top-right, y:88-144)
     svg
         .append(
-            @"<rect x='303' y='88' width='142' height='56' rx='8' fill='url(#panel)' stroke='#3a3a40' stroke-width='1'/>",
+            @"<rect x='303' y='88' width='142' height='56' rx='8' fill='url(%23panel)' stroke='%233a3a40' stroke-width='1'/>",
         );
     if token_metadata.paymaster {
-        svg.append(@"<rect x='303' y='88' width='4' height='56' rx='2' fill='#10b981'/>");
-        svg += icon_check("317", "102", "14", "14", @"#10b981");
+        svg.append(@"<rect x='303' y='88' width='4' height='56' rx='2' fill='%2310b981'/>");
+        svg += icon_check("317", "102", "14", "14", @"%2310b981");
         svg
             .append(
-                @"<text x='336' y='111' style='fill:#888;font-size:9px;letter-spacing:1px'>PAYMASTER</text>",
+                @"<text x='336' y='111' style='fill:%23888;font-size:9px;letter-spacing:1px'>PAYMASTER</text>",
             );
-        svg.append(@"<text x='317' y='132' style='fill:#fff;font-size:13px'>FREE GAS</text>");
+        svg.append(@"<text x='317' y='132' style='fill:%23fff;font-size:13px'>FREE GAS</text>");
     } else {
-        svg.append(@"<rect x='303' y='88' width='4' height='56' rx='2' fill='#555'/>");
-        svg += icon_x("317", "102", "14", "14", @"#555");
+        svg.append(@"<rect x='303' y='88' width='4' height='56' rx='2' fill='%23555'/>");
+        svg += icon_x("317", "102", "14", "14", @"%23555");
         svg
             .append(
-                @"<text x='336' y='111' style='fill:#888;font-size:9px;letter-spacing:1px'>PAYMASTER</text>",
+                @"<text x='336' y='111' style='fill:%23888;font-size:9px;letter-spacing:1px'>PAYMASTER</text>",
             );
-        svg.append(@"<text x='317' y='132' style='fill:#888;font-size:13px'>PAID GAS</text>");
+        svg.append(@"<text x='317' y='132' style='fill:%23888;font-size:13px'>PAID GAS</text>");
     }
 
     // Badge 4: OBJECTIVE (bottom-right, y:152-208)
     svg
         .append(
-            @"<rect x='303' y='152' width='142' height='56' rx='8' fill='url(#panel)' stroke='#3a3a40' stroke-width='1'/>",
+            @"<rect x='303' y='152' width='142' height='56' rx='8' fill='url(%23panel)' stroke='%233a3a40' stroke-width='1'/>",
         );
     if token_metadata.completed_objective {
         // Objective complete: green check
-        svg.append(@"<rect x='303' y='152' width='4' height='56' rx='2' fill='#10b981'/>");
-        svg += icon_check("317", "166", "14", "14", @"#10b981");
+        svg.append(@"<rect x='303' y='152' width='4' height='56' rx='2' fill='%2310b981'/>");
+        svg += icon_check("317", "166", "14", "14", @"%2310b981");
         svg
             .append(
-                @"<text x='336' y='175' style='fill:#888;font-size:9px;letter-spacing:1px'>OBJECTIVE</text>",
+                @"<text x='336' y='175' style='fill:%23888;font-size:9px;letter-spacing:1px'>OBJECTIVE</text>",
             );
-        svg.append(@"<text x='317' y='196' style='fill:#fff;font-size:13px'>COMPLETE</text>");
+        svg.append(@"<text x='317' y='196' style='fill:%23fff;font-size:13px'>COMPLETE</text>");
     } else if token_metadata.objective_id > 0 && token_metadata.game_over {
         // Objective not complete and game over: red x-mark (failed)
-        svg.append(@"<rect x='303' y='152' width='4' height='56' rx='2' fill='#ef4444'/>");
-        svg += icon_x("317", "166", "14", "14", @"#ef4444");
+        svg.append(@"<rect x='303' y='152' width='4' height='56' rx='2' fill='%23ef4444'/>");
+        svg += icon_x("317", "166", "14", "14", @"%23ef4444");
         svg
             .append(
-                @"<text x='336' y='175' style='fill:#888;font-size:9px;letter-spacing:1px'>OBJECTIVE</text>",
+                @"<text x='336' y='175' style='fill:%23888;font-size:9px;letter-spacing:1px'>OBJECTIVE</text>",
             );
-        svg.append(@"<text x='317' y='196' style='fill:#fff;font-size:13px'>FAILED</text>");
+        svg.append(@"<text x='317' y='196' style='fill:%23fff;font-size:13px'>FAILED</text>");
     } else if token_metadata.objective_id > 0 {
         // Objective assigned but not complete: amber target
-        svg.append(@"<rect x='303' y='152' width='4' height='56' rx='2' fill='#f59e0b'/>");
-        svg += icon_target("317", "166", "14", "14", @"#f59e0b");
+        svg.append(@"<rect x='303' y='152' width='4' height='56' rx='2' fill='%23f59e0b'/>");
+        svg += icon_target("317", "166", "14", "14", @"%23f59e0b");
         svg
             .append(
-                @"<text x='336' y='175' style='fill:#888;font-size:9px;letter-spacing:1px'>OBJECTIVE</text>",
+                @"<text x='336' y='175' style='fill:%23888;font-size:9px;letter-spacing:1px'>OBJECTIVE</text>",
             );
-        svg.append(@"<text x='317' y='196' style='fill:#fff;font-size:13px'>PENDING</text>");
+        svg.append(@"<text x='317' y='196' style='fill:%23fff;font-size:13px'>PENDING</text>");
     } else {
         // No objective: greyed out
-        svg.append(@"<rect x='303' y='152' width='4' height='56' rx='2' fill='#555'/>");
-        svg += icon_target("317", "166", "14", "14", @"#555");
+        svg.append(@"<rect x='303' y='152' width='4' height='56' rx='2' fill='%23555'/>");
+        svg += icon_target("317", "166", "14", "14", @"%23555");
         svg
             .append(
-                @"<text x='336' y='175' style='fill:#888;font-size:9px;letter-spacing:1px'>OBJECTIVE</text>",
+                @"<text x='336' y='175' style='fill:%23888;font-size:9px;letter-spacing:1px'>OBJECTIVE</text>",
             );
-        svg.append(@"<text x='317' y='196' style='fill:#888;font-size:13px'>NONE</text>");
+        svg.append(@"<text x='317' y='196' style='fill:%23888;font-size:13px'>NONE</text>");
     }
 
     // ── Game Description (y:220-248, up to 3 word-wrapped lines) ──
@@ -583,13 +631,30 @@ pub fn create_default_svg(
             let y_pos: u32 = 232 + line_num * 14;
             svg.append(@"<text x='235' y='");
             svg += format!("{}", y_pos);
-            svg.append(@"' text-anchor='middle' style='fill:#888;font-size:10px'>");
+            svg.append(@"' text-anchor='middle' style='fill:%23888;font-size:10px'>");
             let mut ci = pos;
             loop {
                 if ci >= line_end {
                     break;
                 }
-                svg.append_byte(desc_raw.at(ci).unwrap());
+                let b = desc_raw.at(ci).unwrap();
+                if b == 0x22 {
+                    svg.append(@"%22");
+                } else if b == 0x23 {
+                    svg.append(@"%23");
+                } else if b == 0x25 {
+                    svg.append(@"%25");
+                } else if b == 0x3C {
+                    svg.append(@"%3C");
+                } else if b == 0x3E {
+                    svg.append(@"%3E");
+                } else if b == 0x7B {
+                    svg.append(@"%7B");
+                } else if b == 0x7D {
+                    svg.append(@"%7D");
+                } else {
+                    svg.append_byte(b);
+                }
                 ci += 1;
             }
             if is_last_line && desc_len > line_end {
@@ -614,14 +679,14 @@ pub fn create_default_svg(
     // Score panel with accent left-border
     svg
         .append(
-            @"<rect x='25' y='276' width='205' height='50' rx='8' fill='url(#panel)' stroke='#3a3a40' stroke-width='1'/>",
+            @"<rect x='25' y='276' width='205' height='50' rx='8' fill='url(%23panel)' stroke='%233a3a40' stroke-width='1'/>",
         );
     svg.append(@"<rect x='25' y='276' width='4' height='50' rx='2' fill='");
     svg.append(@accent);
     svg.append(@"'/>");
     svg
         .append(
-            @"<svg x='37' y='285' width='14' height='14' viewBox='0 0 16 16'><path fill='#c9c9d1' d='M8 1l2.2 4.5 5 .7-3.6 3.5.8 5L8 12.4 3.6 14.7l.8-5L.8 6.2l5-.7z'/></svg>",
+            @"<svg x='37' y='285' width='14' height='14' viewBox='0 0 16 16'><path fill='%23c9c9d1' d='M8 1l2.2 4.5 5 .7-3.6 3.5.8 5L8 12.4 3.6 14.7l.8-5L.8 6.2l5-.7z'/></svg>",
         );
     svg.append(@"<text x='56' y='297' class='l'>SCORE</text>");
     svg.append(@"<text x='37' y='316' class='v'>");
@@ -631,19 +696,19 @@ pub fn create_default_svg(
     // Client URL panel with link icon
     svg
         .append(
-            @"<rect x='240' y='276' width='205' height='50' rx='8' fill='url(#panel)' stroke='#3a3a40' stroke-width='1'/>",
+            @"<rect x='240' y='276' width='205' height='50' rx='8' fill='url(%23panel)' stroke='%233a3a40' stroke-width='1'/>",
         );
     svg.append(@"<rect x='240' y='276' width='4' height='50' rx='2' fill='");
     svg.append(@accent);
     svg.append(@"'/>");
     svg
         .append(
-            @"<svg x='252' y='285' width='14' height='14' viewBox='0 0 16 16'><path fill='none' stroke='#c9c9d1' stroke-width='2' stroke-linecap='round' d='M6.5 9.5a3.5 3.5 0 005 0l2-2a3.5 3.5 0 00-5-5l-1 1'/><path fill='none' stroke='#c9c9d1' stroke-width='2' stroke-linecap='round' d='M9.5 6.5a3.5 3.5 0 00-5 0l-2 2a3.5 3.5 0 005 5l1-1'/></svg>",
+            @"<svg x='252' y='285' width='14' height='14' viewBox='0 0 16 16'><path fill='none' stroke='%23c9c9d1' stroke-width='2' stroke-linecap='round' d='M6.5 9.5a3.5 3.5 0 005 0l2-2a3.5 3.5 0 00-5-5l-1 1'/><path fill='none' stroke='%23c9c9d1' stroke-width='2' stroke-linecap='round' d='M9.5 6.5a3.5 3.5 0 00-5 0l-2 2a3.5 3.5 0 005 5l1-1'/></svg>",
         );
     svg.append(@"<text x='271' y='297' class='l'>CLIENT URL</text>");
     svg.append(@"<text x='252' y='316' class='vs' style='font-size:9px'>");
     if client_url.len() > 0 {
-        svg += client_url;
+        svg += uri_encode(client_url);
     } else {
         svg.append(@"---");
     }
@@ -653,14 +718,14 @@ pub fn create_default_svg(
     // Settings panel with gear icon
     svg
         .append(
-            @"<rect x='25' y='334' width='205' height='50' rx='8' fill='url(#panel)' stroke='#3a3a40' stroke-width='1'/>",
+            @"<rect x='25' y='334' width='205' height='50' rx='8' fill='url(%23panel)' stroke='%233a3a40' stroke-width='1'/>",
         );
     svg.append(@"<rect x='25' y='334' width='4' height='50' rx='2' fill='");
     svg.append(@accent);
     svg.append(@"'/>");
     svg
         .append(
-            @"<svg x='37' y='343' width='14' height='14' viewBox='0 0 16 16'><path fill='#c9c9d1' d='M6.8 1h2.4l.4 2 .7.3 1.7-1.1 1.7 1.7-1.1 1.7.3.7 2 .4v2.4l-2 .4-.3.7 1.1 1.7-1.7 1.7-1.7-1.1-.7.3-.4 2H6.8l-.4-2-.7-.3-1.7 1.1-1.7-1.7 1.1-1.7-.3-.7-2-.4V6.8l2-.4.3-.7L3.2 4l1.7-1.7 1.7 1.1.7-.3z'/><circle fill='#1e1e22' cx='8' cy='8' r='2.5'/></svg>",
+            @"<svg x='37' y='343' width='14' height='14' viewBox='0 0 16 16'><path fill='%23c9c9d1' d='M6.8 1h2.4l.4 2 .7.3 1.7-1.1 1.7 1.7-1.1 1.7.3.7 2 .4v2.4l-2 .4-.3.7 1.1 1.7-1.7 1.7-1.7-1.1-.7.3-.4 2H6.8l-.4-2-.7-.3-1.7 1.1-1.7-1.7 1.1-1.7-.3-.7-2-.4V6.8l2-.4.3-.7L3.2 4l1.7-1.7 1.7 1.1.7-.3z'/><circle fill='%231e1e22' cx='8' cy='8' r='2.5'/></svg>",
         );
     svg.append(@"<text x='56' y='355' class='l'>SETTINGS</text>");
     svg.append(@"<text x='37' y='374' class='vs'>");
@@ -670,12 +735,12 @@ pub fn create_default_svg(
     // Objective panel with target icon
     svg
         .append(
-            @"<rect x='240' y='334' width='205' height='50' rx='8' fill='url(#panel)' stroke='#3a3a40' stroke-width='1'/>",
+            @"<rect x='240' y='334' width='205' height='50' rx='8' fill='url(%23panel)' stroke='%233a3a40' stroke-width='1'/>",
         );
     svg.append(@"<rect x='240' y='334' width='4' height='50' rx='2' fill='");
     svg.append(@accent);
     svg.append(@"'/>");
-    svg += icon_target("252", "343", "14", "14", @"#c9c9d1");
+    svg += icon_target("252", "343", "14", "14", @"%23c9c9d1");
     svg.append(@"<text x='271' y='355' class='l'>OBJECTIVE</text>");
     svg.append(@"<text x='252' y='374' class='vs'>");
     svg += _objective_name;
@@ -684,28 +749,28 @@ pub fn create_default_svg(
     // ── Timeline Bordered Section (y:392-450) ──
     svg
         .append(
-            @"<rect x='25' y='392' width='420' height='58' rx='8' fill='url(#panel)' stroke='#3a3a40' stroke-width='1'/>",
+            @"<rect x='25' y='392' width='420' height='58' rx='8' fill='url(%23panel)' stroke='%233a3a40' stroke-width='1'/>",
         );
     svg.append(@"<rect x='25' y='392' width='4' height='58' rx='2' fill='");
     svg.append(@accent);
     svg.append(@"'/>");
     svg
         .append(
-            @"<svg x='37' y='400' width='14' height='14' viewBox='0 0 16 16'><circle fill='none' stroke='#c9c9d1' stroke-width='1.5' cx='8' cy='8' r='6'/><path fill='none' stroke='#c9c9d1' stroke-width='1.5' stroke-linecap='round' d='M8 4v4l2.5 2.5'/></svg>",
+            @"<svg x='37' y='400' width='14' height='14' viewBox='0 0 16 16'><circle fill='none' stroke='%23c9c9d1' stroke-width='1.5' cx='8' cy='8' r='6'/><path fill='none' stroke='%23c9c9d1' stroke-width='1.5' stroke-linecap='round' d='M8 4v4l2.5 2.5'/></svg>",
         );
     svg.append(@"<text x='56' y='412' class='l'>TIMELINE</text>");
     // Start flag + datetime
-    svg += icon_flag("37", "418", "12", "12", @"#10b981");
-    svg.append(@"<text x='52' y='428' style='fill:#888;font-size:10px'>");
+    svg += icon_flag("37", "418", "12", "12", @"%2310b981");
+    svg.append(@"<text x='52' y='428' style='fill:%23888;font-size:10px'>");
     svg += _start;
     svg.append(@"</text>");
     // End flag + datetime (right-aligned)
-    svg.append(@"<text x='419' y='428' text-anchor='end' style='fill:#888;font-size:10px'>");
+    svg.append(@"<text x='419' y='428' text-anchor='end' style='fill:%23888;font-size:10px'>");
     svg += _end;
     svg.append(@"</text>");
-    svg += icon_flag("421", "418", "12", "12", @"#ef4444");
+    svg += icon_flag("421", "418", "12", "12", @"%23ef4444");
     // Track background
-    svg.append(@"<rect x='37' y='438' width='396' height='6' rx='3' fill='#3a3a40'/>");
+    svg.append(@"<rect x='37' y='438' width='396' height='6' rx='3' fill='%233a3a40'/>");
     // Filled portion
     svg.append(@"<rect x='37' y='438' width='");
     svg += format!("{}", fill_width);
@@ -717,12 +782,12 @@ pub fn create_default_svg(
     svg += format!("{}", marker_x);
     svg.append(@"' cy='441' r='5' fill='");
     svg.append(@accent);
-    svg.append(@"' stroke='#fff' stroke-width='1.5'/>");
+    svg.append(@"' stroke='%23fff' stroke-width='1.5'/>");
 
     // ── Context Bordered Section (y:458-526) ──
     svg
         .append(
-            @"<rect x='25' y='458' width='420' height='68' rx='8' fill='url(#panel)' stroke='#3a3a40' stroke-width='1'/>",
+            @"<rect x='25' y='458' width='420' height='68' rx='8' fill='url(%23panel)' stroke='%233a3a40' stroke-width='1'/>",
         );
     svg.append(@"<rect x='25' y='458' width='4' height='68' rx='2' fill='");
     svg.append(@accent);
@@ -751,10 +816,10 @@ pub fn create_default_svg(
             let y_pos = y_base + ctx_i * 15;
             svg.append(@"<text x='37' y='");
             svg += format!("{}", y_pos);
-            svg.append(@"' style='fill:#888;font-size:10px'>");
-            svg += felt252_to_byte_array(*entry.name);
+            svg.append(@"' style='fill:%23888;font-size:10px'>");
+            svg += uri_encode(felt252_to_byte_array(*entry.name));
             svg.append(@": ");
-            svg += felt252_to_byte_array(*entry.value);
+            svg += uri_encode(felt252_to_byte_array(*entry.value));
             svg.append(@"</text>");
             ctx_i += 1;
         };
@@ -767,19 +832,19 @@ pub fn create_default_svg(
     // Royalty (left) + Minted (right)
     svg
         .append(
-            @"<text x='25' y='554' style='fill:#888;font-size:10px;letter-spacing:1px'>ROYALTY: ",
+            @"<text x='25' y='554' style='fill:%23888;font-size:10px;letter-spacing:1px'>ROYALTY: ",
         );
     svg += _royalty;
     svg.append(@"</text>");
     svg
         .append(
-            @"<text x='445' y='554' text-anchor='end' style='fill:#888;font-size:10px;letter-spacing:1px'>MINTED ",
+            @"<text x='445' y='554' text-anchor='end' style='fill:%23888;font-size:10px;letter-spacing:1px'>MINTED ",
         );
     svg += _minted_at;
     svg.append(@"</text>");
     // Connector pins (cartridge bottom, inside card)
-    svg.append(@"<rect x='30' y='564' width='410' height='36' fill='#111114'/>");
-    svg.append(@"<rect x='38' y='568' width='394' height='32' fill='url(#cpins)'/>");
+    svg.append(@"<rect x='30' y='564' width='410' height='36' fill='%23111114'/>");
+    svg.append(@"<rect x='38' y='568' width='394' height='32' fill='url(%23cpins)'/>");
 
     svg.append(@"</g>"); // close card group
     svg.append(@"</svg>");
