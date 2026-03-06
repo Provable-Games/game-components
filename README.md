@@ -65,7 +65,7 @@ Components for applications that coordinate and interact with games.
 | [**entry_requirement**](packages/metagame/src/entry_requirement/) | Entry gating via token ownership, allowlists, or external validators | [README](packages/metagame/src/entry_requirement/README.md) |
 | [**entry_fee**](packages/metagame/src/entry_fee/) | Entry fee management with ERC20 deposits and share distribution | [README](packages/metagame/src/entry_fee/README.md) |
 | [**prize**](packages/metagame/src/prize/) | Prize management for ERC20/ERC721 rewards with claim tracking | [README](packages/metagame/src/prize/README.md) |
-| [**presets**](packages/presets/) | Ready-to-deploy contracts (LeaderboardPreset, AutonomousBuyback, StreamToken) | [README](packages/presets/src/README.md) |
+| [**ticket_booth**](packages/metagame/src/ticket_booth/) | Payment-enabled game access with tickets and golden passes | — |
 
 ### Game Economy
 
@@ -80,6 +80,13 @@ Components for applications that coordinate and interact with games.
 | [**math**](packages/utilities/src/math/) | Fixed-point math library (32.32 bit) based on Cubit | [README](packages/utilities/src/math/README.md) |
 | [**distribution**](packages/utilities/src/distribution/) | Share computation with Linear, Exponential, Uniform, and Custom distributions | [README](packages/utilities/src/distribution/README.md) |
 | [**utils**](packages/utilities/src/utils/) | Encoding, JSON generation, and token metadata rendering | [README](packages/utilities/src/utils/README.md) |
+| [**renderer**](packages/utilities/src/renderer/) | SVG/HTML rendering and font embedding for token metadata | — |
+
+### Presets
+
+| Package | Description | Docs |
+|---------|-------------|------|
+| [**presets**](packages/presets/) | Ready-to-deploy contracts (LeaderboardPreset, AutonomousBuyback, StreamToken) | [README](packages/presets/src/README.md) |
 
 ### Cross-Cutting
 
@@ -151,6 +158,7 @@ Game Components uses interface-based extensions for modularity:
 | **Minter** | Custom minting logic and access control |
 | **Renderer** | Dynamic UI/metadata generation for tokens |
 | **Soulbound** | Non-transferable tokens for achievements |
+| **Skills** | Per-token skills address overrides with batch operations |
 | **Multi-game** | Support multiple games in one token collection |
 
 ### Implementation Pattern
@@ -205,6 +213,12 @@ snforge test --filter token --fuzzer-runs 256
 
 # Create game settings
 ./scripts/create_settings.sh
+
+# Create game objectives
+./scripts/create_objectives.sh
+
+# Create stream token
+./scripts/create_stream_token.sh
 
 # Mint game tokens
 ./scripts/mint_games.sh
