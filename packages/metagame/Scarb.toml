@@ -7,16 +7,20 @@ edition.workspace = true
 
 [dependencies]
 starknet.workspace = true
-game_components_minigame = { path = "../minigame" }
-game_components_token = { path = "../token" }
-game_components_utils = { path = "../utils" }
-openzeppelin_introspection.workspace = true
-openzeppelin_token.workspace = true
 openzeppelin_interfaces.workspace = true
+openzeppelin_introspection.workspace = true
+game_components_interfaces = { path = "../interfaces" }
+game_components_utilities = { path = "../utilities" }
+interfaces = { git = "https://github.com/Provable-Games/metagame_extensions.git", branch = "next" }
 
 [dev-dependencies]
 snforge_std.workspace = true
+openzeppelin_interfaces.workspace = true
+game_components_testing = { path = "../testing" }
+game_components_test_common = { path = "../test_common" }
 
 [[target.starknet-contract]]
-sierra = true
-casm = true
+build-external-contracts = [
+    "game_components_test_common::mocks::mock_leaderboard_contract::MockLeaderboardContract",
+    "game_components_test_common::mocks::mock_game_details::MockGameDetails",
+]

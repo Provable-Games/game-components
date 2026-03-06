@@ -1,13 +1,6 @@
 ## Role & Context
 
-You are a **senior Starknet smart contract engineer** specializing in Cairo development. You have deep expertise in:
-
-- Cairo language syntax, patterns, and idioms
-- Starknet protocol mechanics (storage, events, syscalls, account abstraction)
-- Smart contract security (reentrancy, access control, integer overflow, Cairo-specific vulnerabilities)
-- DeFi primitives (AMMs, lending, NFT marketplaces, bonding curves)
-- Testing methodologies (unit, integration, fuzz, fork testing)
-- Gas optimization and storage packing
+You are a **senior Starknet smart contract engineer** specializing in Cairo development for on-chain games.
 
 ### Success Criteria
 
@@ -22,146 +15,135 @@ You are a **senior Starknet smart contract engineer** specializing in Cairo deve
 
 ### Behavioral Expectations
 
-1. **Verify before coding**: Always read existing code before modifying. Never assume patterns.
+1. **Verify before coding**: Always read existing code before modifying.
 2. **Use latest syntax**: Query Context7 for Cairo/Starknet docs before writing code.
 3. **Leverage audited code**: Import OpenZeppelin; never reinvent IERC20, IERC721, etc.
-4. **Prefer fork testing**: Use mainnet forks over mocks when testing external integrations.
-5. **Run checks**: Execute `scarb fmt -w` and `snforge test` before declaring work complete.
-6. **Track coverage**: Compare coverage before/after changes; it must not decrease.
-
-### When Uncertain
-
-If requirements are ambiguous:
-
-- Ask clarifying questions before implementing
-- Propose multiple approaches with tradeoffs
-- Default to simpler, more secure options
-
-## Project Overview
-
-Game Components is a Cairo/StarkNet library providing modular smart contract components for building on-chain games. The library uses a component-based architecture with three core components that work together to enable NFT-based game instances.
+4. **Run checks**: Execute `scarb fmt -w` and `snforge test` before declaring work complete.
+5. **Track coverage**: Coverage must not decrease after changes.
 
 ## Technology Stack
 
-- **Language**: Cairo 2.13.1 (not Solidity)
-- **Platform**: StarkNet 2.13.1
-- **Build Tool**: Scarb (not Foundry/Hardhat)
-- **Testing**: StarkNet Foundry (snforge) v0.53.0
-- **Token Standards**: OpenZeppelin Cairo Contracts v3.0.0-alpha.3
+- **Cairo**: 2.15.1 | **Starknet**: 2.15.1 | **snforge**: v0.55.0 | **OpenZeppelin**: v3.0.0
 
-## Build and Test Commands
+## Build Commands
 
 ```bash
-# Build entire workspace
-scarb build
-
-# Run all tests
-cd packages/test_starknet && snforge test
-
-# Run specific test
-cd packages/test_starknet && snforge test test_mint_basic
-
-# Run tests with coverage
-cd packages/test_starknet && snforge test --coverage
-
-# Generate coverage report
-cairo-coverage
-
-# Format code
-scarb fmt -w
+scarb build                                              # Build workspace
+snforge test <module>                                    # Run tests for a module (e.g. token, leaderboard)
+snforge test <module> --coverage                         # Coverage for a module
+snforge test <module> --fuzzer-runs 256                  # Run with custom fuzzer iterations
+scarb fmt -w                                             # Format code
 ```
 
-## Architecture
+**Important**: Tests are run by module filter, not by package. Each group package contains multiple modules. Use `snforge test <module_name>` to run tests for a specific module (e.g., `snforge test token`, `snforge test leaderboard`).
 
-### Core Components
+## Project Structure
 
-**Metagame** (`packages/metagame/`) - High-level game management:
-
-- Token delegation and minting coordination
-- Optional tournament/event context management via `IMetagameContext`
-
-**Minigame** (`packages/minigame/`) - Individual game logic:
-
-- Requires implementation of `IMinigameTokenData` trait with `score()` and `game_over()` methods
-- Supports optional extensions: settings (`IMinigameSettings`), objectives (`IMinigameObjectives`)
-
-**MinigameToken** (`packages/token/`) - ERC721 NFT representing playable game instances:
-
-- Uses compile-time feature flags in `src/config.cairo` to optimize contract size (<4MB limit)
-- Features: minter, multi-game, objectives, context, soulbound, renderer
-
-**Leaderboard** (`packages/leaderboard/`) - Tournament leaderboard with score submission and ranking
-
-**Presets** (`packages/presets/`) - Ready-to-deploy contracts for common use cases
-
-### Component Relationships
+The workspace is organized into **group packages**, each containing multiple modules:
 
 ```
-Metagame
-  ├── minigame_token_address ──→ MinigameToken (ERC721)
-  └── context_address ──→ IMetagameContext (optional)
-
-MinigameToken
-  ├── game_address ──→ Minigame
-  └── token_metadata
-      ├── settings_id ──→ IMinigameSettings
-      └── objectives ──→ IMinigameObjectives
-
-Minigame
-  ├── token_address ──→ MinigameToken
-  ├── settings_address ──→ IMinigameSettings (optional)
-  └── objectives_address ──→ IMinigameObjectives (optional)
+packages/
+├── embeddable_game_standard/    # Core game standard components
+│   ├── src/
+│   │   ├── token/               # ERC721 game token with compile-time feature flags
+│   │   ├── minigame/            # Individual game logic foundation
+│   │   ├── metagame/            # High-level game coordination & context
+│   │   └── registry/            # Game registration and discovery
+│   └── Scarb.toml
+├── metagame/                    # Metagame extension components
+│   ├── src/
+│   │   ├── leaderboard/         # Tournament scoring and ranking
+│   │   ├── registration/        # Player registration tracking
+│   │   ├── entry_requirement/   # Entry gating (token ownership, allowlists, validators)
+│   │   ├── entry_fee/           # ERC20 entry fees with share distribution
+│   │   ├── prize/               # Prize management (ERC20/ERC721 rewards)
+│   │   └── ticket_booth/        # Payment-enabled game access (tickets & golden passes)
+│   └── Scarb.toml
+├── economy/                     # Game economy components
+│   ├── src/
+│   │   └── tokenomics/          # Ekubo TWAMM buyback and stream token distribution
+│   └── Scarb.toml
+├── utilities/                   # Shared utility libraries
+│   ├── src/
+│   │   ├── math/                # Fixed-point math (32.32 bit) based on Cubit
+│   │   ├── distribution/        # Share computation (Linear, Exponential, Uniform, Custom)
+│   │   └── utils/               # Encoding, JSON generation, metadata rendering
+│   └── Scarb.toml
+├── interfaces/                  # Centralized interface/struct definitions
+├── presets/                     # Ready-to-deploy contracts
+├── testing/                     # Shared test constants and addresses
+└── test_common/                 # Shared mock contracts and examples
 ```
 
-### Game Lifecycle
+Each module has its own `AGENTS.md` with detailed documentation inside its `src/` directory.
 
-1. **Setup**: Deploy contracts with extension addresses configured
-2. **Mint**: Create tokens with game configuration and metadata
-3. **Play**: Validate `is_playable()` and update game state through minigame logic
-4. **Sync**: Call `update_game()` to synchronize token state with game results
-5. **Complete**: Game ends when `game_over()` returns true or all objectives achieved
+## Architecture Overview
 
-## Testing
-
-All tests are in `packages/test_starknet/`:
-
-- Unit tests: `src/*/unit/`
-- Integration tests: `src/*/integration/`
-- Fuzz tests: `src/*/fuzz/`
-- Mock contracts: `src/*/mocks/`
-
-**Test naming convention**: `test_function_name_scenario_expected_result`
-
-**90% minimum coverage enforced** - run `cairo-coverage` before pushing.
-
-## Cairo-Specific Patterns
-
-- Use `#[starknet::component]` for reusable component architecture
-- Use SRC5 interface discovery (`supports_interface`) for capability detection
-- Use `#[substorage(v0)]` for proper storage isolation
-- Use dispatcher pattern for cross-contract calls
-- Interface IDs defined as constants (e.g., `IMINIGAME_ID`)
-- Extensive use of Option types for optional parameters
-
-## Token Contract Size Optimization
-
-The token package uses compile-time feature flags (`packages/token/src/config.cairo`) to stay under StarkNet's 4MB contract limit:
-
-```cairo
-pub const MINTER_ENABLED: bool = true;
-pub const MULTI_GAME_ENABLED: bool = false;
-pub const OBJECTIVES_ENABLED: bool = true;
-// ... etc
+```
+Metagame ──→ MinigameToken (ERC721) ──→ Minigame
+  │  ▲               │                      │
+  │  │               └── Registry            ├── Settings (optional)
+  │  │                                       └── Objectives (optional)
+  │  └── IMetagameCallback (on_game_action, on_game_over, on_objective_complete)
+  └── Context (optional)
 ```
 
-Disabled features are completely eliminated at compile time.
+**Game Lifecycle**: Setup → Mint → Play → Sync (`update_game()`) → Complete (`game_over()`)
 
-## Critical Infrastructure
+When `update_game()` is called, the token checks if the minter implements `IMetagameCallback` (via SRC5) and dispatches score/game_over/objective callbacks automatically.
 
-**Do not modify without understanding dependencies:**
+## Key Patterns
 
-- Mock contracts in `packages/*/src/tests/mocks/`
-- Test utilities in `packages/utils/`
-- Any shared test infrastructure
+- `#[starknet::component]` for reusable architecture
+- SRC5 interface discovery (`supports_interface`)
+- `#[substorage(v0)]` for storage isolation
+- Dispatcher pattern for cross-contract calls
+- Interface IDs as constants (e.g., `IMINIGAME_ID`) — computed via `src5_rs parse` (see `packages/interfaces/src/AGENTS.md` for the full procedure; the tool requires a stripped-down file without `<TState>` generics or `self` params)
 
-Before modifying test infrastructure, run `grep -r "filename" tests/` to find all usages. Create NEW mocks instead of modifying existing ones.
+## CI Configuration
+
+The `validate-config` job in CI automatically verifies that the module count matches `codecov.yml`. If they diverge, CI will fail with an actionable error message.
+
+### Adding a New Module
+
+When adding a new module to a group package, update **both** files:
+
+1. **`.github/workflows/main-ci.yml`** and **`.github/workflows/pr-ci.yml`** - Add the module to both matrices:
+
+   ```yaml
+   matrix:
+     include:
+       - package: game_components_GROUP_PACKAGE
+         module: NEW_MODULE
+         runner: ubuntu-latest
+         fuzzer_runs: 256
+   ```
+
+   For memory-intensive modules (like `token` or `minigame`), assign a larger runner (e.g., `ubuntu-latest-4` or `ubuntu-latest-32`).
+
+2. **`codecov.yml`** - Update the build count:
+   ```yaml
+   notify:
+     after_n_builds: 15 # ← Must equal total module count in matrix
+   ```
+
+### Current Matrix (16 modules)
+
+| Group Package | Module | Runner | Fuzzer Runs |
+|---------------|--------|--------|-------------|
+| `embeddable_game_standard` | `token` | `ubuntu-latest-32` | 32 |
+| `embeddable_game_standard` | `minigame` | `ubuntu-latest-32` | 32 |
+| `embeddable_game_standard` | `metagame` | `ubuntu-latest-32` | 256 |
+| `embeddable_game_standard` | `registry` | `ubuntu-latest-32` | 256 |
+| `metagame` | `leaderboard` | `ubuntu-latest-4` | 256 |
+| `metagame` | `registration` | `ubuntu-latest-4` | 256 |
+| `metagame` | `entry_requirement` | `ubuntu-latest-4` | 256 |
+| `metagame` | `entry_fee` | `ubuntu-latest-4` | 256 |
+| `metagame` | `prize` | `ubuntu-latest-4` | 256 |
+| `metagame` | `ticket_booth` | `ubuntu-latest-4` | 256 |
+| `economy` | `tokenomics` | `ubuntu-latest-4` | 256 |
+| `utilities` | `math` | `ubuntu-latest-4` | 256 |
+| `utilities` | `distribution` | `ubuntu-latest-4` | 256 |
+| `utilities` | `utils` | `ubuntu-latest-4` | 256 |
+| `utilities` | `renderer` | `ubuntu-latest-4` | 256 |
+| `presets` | `presets` | `ubuntu-latest-4` | 256 |

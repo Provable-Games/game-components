@@ -1,0 +1,23 @@
+[package]
+name = "game_components_test_common"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+starknet.workspace = true
+snforge_std.workspace = true
+openzeppelin_introspection.workspace = true
+openzeppelin_interfaces.workspace = true
+openzeppelin_token.workspace = true
+openzeppelin_access.workspace = true
+game_components_interfaces = { path = "../interfaces" }
+game_components_embeddable_game_standard = { path = "../embeddable_game_standard" }
+game_components_metagame = { path = "../metagame" }
+game_components_utilities = { path = "../utilities" }
+interfaces = { git = "https://github.com/Provable-Games/metagame_extensions.git", branch = "next" }
+
+[lib]
+
+[[target.starknet-contract]]
+sierra = true
+casm = true
