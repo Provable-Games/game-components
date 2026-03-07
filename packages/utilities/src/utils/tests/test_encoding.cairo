@@ -5,7 +5,9 @@
 // All functions are pure - no contract deployment needed.
 
 use core::num::traits::Bounded;
-use crate::utils::encoding::{U256BytesUsedTraitImpl, bytes_base64_encode, u128_to_ascii_felt};
+use crate::utils::encoding::{
+    U256BytesUsedTraitImpl, bytes_base64_encode, felt252_to_byte_array, u128_to_ascii_felt,
+};
 
 // ==============================================================================
 // BASE64 ENCODING TESTS
@@ -646,4 +648,52 @@ fn test_u128_to_ascii_felt_powers_of_10() {
 fn test_u128_to_ascii_felt_panics_over_31_digits() {
     // u128 max = 340282366920938463463374607431768211455 (39 digits)
     u128_to_ascii_felt(340282366920938463463374607431768211455);
+}
+
+// ==============================================================================
+// FELT252 TO BYTE ARRAY TESTS
+// ==============================================================================
+
+#[test]
+fn test_felt252_to_byte_array_zero() {
+    let result = felt252_to_byte_array(0);
+    assert!(result.len() == 0, "Zero should produce empty ByteArray");
+}
+
+#[test]
+fn test_felt252_to_byte_array_short_string() {
+    let result = felt252_to_byte_array('hello');
+    assert!(result == "hello", "Should convert short string correctly");
+}
+
+#[test]
+fn test_felt252_to_byte_array_max_short_string() {
+    // 31-byte short string (max that fits in a single felt252 word)
+    let result = felt252_to_byte_array('1234567890123456789012345678901');
+    assert!(result.len() == 31, "31-byte string should produce 31-byte ByteArray");
+}
+
+#[test]
+fn test_felt252_to_byte_array_large_value_no_panic() {
+    // A felt252 value large enough that U256BytesUsedTraitImpl::bytes_used
+    // returns 32, which previously caused 'bad append len' panic.
+    // The Starknet prime P ≈ 2^251, so any felt252 where the u256
+    // representation has a non-zero high limb AND bytes_used(high) >= 16
+    // would return 32 bytes. We use P-1 (max valid felt252).
+    let large: felt252 = (-1); // P - 1, the largest valid felt252
+    let result = felt252_to_byte_array(large);
+    // Should not panic — length is capped at 31
+    assert!(result.len() == 31, "Large felt252 should produce 31-byte ByteArray");
+}
+
+#[test]
+#[fuzzer(runs: 256)]
+fn test_fuzz_felt252_to_byte_array_no_panic(value: felt252) {
+    // Should never panic regardless of input
+    let result = felt252_to_byte_array(value);
+    if value == 0 {
+        assert!(result.len() == 0, "Zero should produce empty ByteArray");
+    } else {
+        assert!(result.len() > 0 && result.len() <= 31, "Non-zero should produce 1-31 bytes");
+    }
 }

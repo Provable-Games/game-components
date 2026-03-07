@@ -6,7 +6,7 @@ use game_components_embeddable_game_standard::registry::interface::GameMetadata;
 use game_components_embeddable_game_standard::token::structs::TokenMetadata;
 use graffiti::json::JsonImpl;
 use starknet::{ContractAddress, get_block_timestamp};
-use crate::utils::encoding::{U256BytesUsedTraitImpl, bytes_base64_encode, felt252_to_byte_array};
+use crate::utils::encoding::{bytes_base64_encode, felt252_to_byte_array};
 
 fn create_trait(name: ByteArray, value: ByteArray) -> ByteArray {
     JsonImpl::new().add("trait", name).add("value", value).build()
@@ -104,12 +104,7 @@ pub fn create_custom_metadata(
 
     // Optional player name trait
     if !player_name.is_zero() {
-        let mut _player_name = Default::default();
-        _player_name
-            .append_word(
-                player_name, U256BytesUsedTraitImpl::bytes_used(player_name.into()).into(),
-            );
-        attributes.append(create_trait("Player Name", _player_name));
+        attributes.append(create_trait("Player Name", felt252_to_byte_array(player_name)));
     }
 
     // Add dynamic game details as traits

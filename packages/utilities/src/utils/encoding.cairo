@@ -186,7 +186,16 @@ pub impl U256BytesUsedTraitImpl of BytesUsedTrait<u256> {
 pub fn felt252_to_byte_array(value: felt252) -> ByteArray {
     let mut result: ByteArray = Default::default();
     if value.is_non_zero() {
-        result.append_word(value, U256BytesUsedTraitImpl::bytes_used(value.into()).into());
+        let len: u8 = U256BytesUsedTraitImpl::bytes_used(value.into());
+        // ByteArray.append_word requires len <= 31. A felt252 encodes at most
+        // 31 bytes of short-string data, but bytes_used(u256) can return 32 for
+        // large values (high limb non-zero). Cap at 31 to prevent 'bad append len'.
+        let len: usize = if len > 31 {
+            31
+        } else {
+            len.into()
+        };
+        result.append_word(value, len);
     }
     result
 }
