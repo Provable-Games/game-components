@@ -280,7 +280,6 @@ pub impl CustomSharesImpl of CustomSharesTrait {
 
 #[cfg(test)]
 mod packed_erc20_data_tests {
-    use starknet::storage_access::StorePacking;
     use super::{PackedERC20Data, PackedERC20DataPacking};
 
     // -------------------------------------------------------------------------

@@ -25,7 +25,7 @@ pub mod TicketBoothComponent {
         StoragePointerWriteAccess,
     };
     use starknet::{get_block_timestamp, get_caller_address};
-    use crate::ticket_booth::structs::{GameExpiration, GoldenPass, GoldenPassInfo, PaymentType};
+    use crate::ticket_booth::structs::{GoldenPass, PaymentType};
     use crate::ticket_booth::ticket_booth;
 
     #[starknet::interface]

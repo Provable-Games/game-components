@@ -10,9 +10,7 @@
 pub mod EntryRequirementComponent {
     use core::num::traits::Zero;
     use game_components_interfaces::entry_requirement::{IENTRY_REQUIREMENT_ID, IEntryRequirement};
-    use interfaces::entry_requirement_extension::{
-        IENTRY_REQUIREMENT_EXTENSION_ID, IEntryValidatorDispatcher, IEntryValidatorDispatcherTrait,
-    };
+    use interfaces::entry_requirement_extension::IENTRY_REQUIREMENT_EXTENSION_ID;
     use openzeppelin_interfaces::erc721::IERC721_ID;
     use openzeppelin_interfaces::introspection::{ISRC5Dispatcher, ISRC5DispatcherTrait};
     use openzeppelin_introspection::src5::SRC5Component;
@@ -29,7 +27,7 @@ pub mod EntryRequirementComponent {
     use crate::entry_requirement::store::Store;
     use crate::entry_requirement::structs::{
         EntryRequirement, EntryRequirementMeta, EntryRequirementMetaStorePacking,
-        EntryRequirementType, ExtensionConfig, QualificationEntries, QualificationProof,
+        EntryRequirementType, QualificationEntries, QualificationProof,
     };
 
     #[storage]

@@ -140,8 +140,14 @@ jobs:
       - name: Warm snforge plugin cache
         run: snforge --version
 
-      - name: Verify workspace compiles
-        run: scarb build --workspace
+      - name: Verify workspace compiles (no warnings)
+        run: |
+          scarb build --workspace 2>&1 | tee /tmp/build.log
+          if grep -qE '^ --> .*\.cairo:[0-9]+:[0-9]+' /tmp/build.log; then
+            echo "::error::Build produced compiler warnings. Fix all warnings before merging."
+            grep -B1 -E '^ --> .*\.cairo:[0-9]+:[0-9]+' /tmp/build.log
+            exit 1
+          fi
 
   test:
     name: test (${{ matrix.module }})
@@ -284,9 +290,18 @@ jobs:
       - name: Run tests with coverage
         run: |
           if [ "${{ matrix.package }}" = "game_components_${{ matrix.module }}" ]; then
-            snforge test -p ${{ matrix.package }} --fuzzer-runs ${{ matrix.fuzzer_runs }} --coverage
+            snforge test -p ${{ matrix.package }} --fuzzer-runs ${{ matrix.fuzzer_runs }} --coverage 2>&1 | tee /tmp/test.log
           else
-            snforge test -p ${{ matrix.package }} "::${{ matrix.module }}::" --fuzzer-runs ${{ matrix.fuzzer_runs }} --coverage
+            snforge test -p ${{ matrix.package }} "::${{ matrix.module }}::" --fuzzer-runs ${{ matrix.fuzzer_runs }} --coverage 2>&1 | tee /tmp/test.log
+          fi
+
+      - name: Check for compiler warnings
+        if: always() && steps.cache-tools.outcome != 'failure'
+        run: |
+          if [ -f /tmp/test.log ] && grep -qE '^ --> .*\.cairo:[0-9]+:[0-9]+' /tmp/test.log; then
+            echo "::error::Test compilation produced warnings. Fix all warnings before merging."
+            grep -B1 -E '^ --> .*\.cairo:[0-9]+:[0-9]+' /tmp/test.log
+            exit 1
           fi
 
       - name: Upload coverage to Codecov
