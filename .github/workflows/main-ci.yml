@@ -32,6 +32,8 @@ jobs:
           filters: |
             packages:
               - "packages/**"
+              - "Scarb.toml"
+              - "Scarb.lock"
               - ".tool-versions"
             infra_ci:
               - ".github/workflows/**"
