@@ -41,7 +41,7 @@ pub fn CREATOR() -> ContractAddress {
     'CREATOR'.try_into().unwrap()
 }
 
-// Edge case values
+// Edge-case values
 pub const MAX_U64: u64 = 18446744073709551615;
 pub const MAX_U32: u32 = 4294967295;
 // Max 35-bit timestamp - maximum value that fits in TokenMetadata lifecycle packing
