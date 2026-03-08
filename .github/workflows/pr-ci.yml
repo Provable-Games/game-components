@@ -39,6 +39,8 @@ jobs:
           filters: |
             packages:
               - "packages/**"
+              - "Scarb.toml"
+              - "Scarb.lock"
               - ".tool-versions"
             packages_review:
               - "packages/**"
@@ -73,6 +75,9 @@ jobs:
               - "packages/test_common/**"
             tool_versions:
               - ".tool-versions"
+            workspace_manifests:
+              - "Scarb.toml"
+              - "Scarb.lock"
 
       - name: Compute test matrix from changed packages
         id: compute-matrix
@@ -86,6 +91,7 @@ jobs:
           FILTER_TEST_COMMON: ${{ steps.filter.outputs.test_common }}
           FILTER_PRESETS: ${{ steps.filter.outputs.presets }}
           FILTER_TOOL_VERSIONS: ${{ steps.filter.outputs.tool_versions }}
+          FILTER_WORKSPACE_MANIFESTS: ${{ steps.filter.outputs.workspace_manifests }}
         run: |
           # Determine which group packages need testing based on transitive deps
           # interfaces & testing & .tool-versions → ALL
@@ -103,7 +109,7 @@ jobs:
           NEED_UTILITIES="false"
           NEED_PRESETS="false"
 
-          if [ "$FILTER_INTERFACES" = "true" ] || [ "$FILTER_TESTING" = "true" ] || [ "$FILTER_TOOL_VERSIONS" = "true" ]; then
+          if [ "$FILTER_INTERFACES" = "true" ] || [ "$FILTER_TESTING" = "true" ] || [ "$FILTER_TOOL_VERSIONS" = "true" ] || [ "$FILTER_WORKSPACE_MANIFESTS" = "true" ]; then
             RUN_ALL="true"
           fi
 
@@ -355,6 +361,9 @@ jobs:
 
       - name: Warm snforge plugin cache
         run: snforge --version
+
+      - name: Verify workspace compiles
+        run: scarb build --workspace
 
   test:
     name: test (${{ matrix.module }})

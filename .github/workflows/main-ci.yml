@@ -32,6 +32,8 @@ jobs:
           filters: |
             packages:
               - "packages/**"
+              - "Scarb.toml"
+              - "Scarb.lock"
               - ".tool-versions"
             infra_ci:
               - ".github/workflows/**"
@@ -137,6 +139,9 @@ jobs:
 
       - name: Warm snforge plugin cache
         run: snforge --version
+
+      - name: Verify workspace compiles
+        run: scarb build --workspace
 
   test:
     name: test (${{ matrix.module }})

@@ -104,6 +104,10 @@ When `update_game()` is called, the token checks if the minter implements `IMeta
 
 The `validate-config` job in CI automatically verifies that the module count matches `codecov.yml`. If they diverge, CI will fail with an actionable error message.
 
+### Adding a New Package or Workspace Dependency
+
+When adding a new group package or changing a workspace-level dependency in the root `Scarb.toml`, update the `packages` path filter in both CI workflows so the change triggers builds and tests. In `pr-ci.yml`, also add the package to the `compute-matrix` dependency graph so transitive consumers are tested.
+
 ### Adding a New Module
 
 When adding a new module to a group package, update **both** files:
