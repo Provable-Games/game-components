@@ -1,5 +1,5 @@
 use crate::math::lut;
-use crate::math::types::{Fixed, FixedTrait, ONE};
+use crate::math::types::{FixedTrait, ONE};
 
 // ============================================================================
 // LUT exp2 tests - cover all 33 branches (x=0..32)

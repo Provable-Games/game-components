@@ -1,5 +1,5 @@
 // Minigame objectives extension interface
-use crate::structs::minigame::{GameObjective, GameObjectiveDetails};
+use crate::structs::minigame::GameObjectiveDetails;
 
 /// SNIP-5 interface ID derived via src5_rs: XOR of extended function selectors
 /// - objective_exists(u32)->E((),())
