@@ -123,30 +123,30 @@ When adding a new module to a group package, update **three** files:
 2. **`codecov.yml`** — Update the build count:
    ```yaml
    notify:
-     after_n_builds: 148 # ← Must equal total matrix entry count (including partitions)
+     after_n_builds: 80 # ← Must equal total matrix entry count (including partitions)
    ```
 
 3. **`.github/workflows/pr-ci.yml`** — If adding a new group package, add it to the `compute-matrix` dependency graph and the `NEED_*` flags in the `build-matrix` step.
 
-### Current Matrix (148 jobs across 16 modules)
+### Current Matrix (80 jobs across 16 modules)
 
 All modules use `ubuntu-latest` (standard 2-core) runners with partitioning for parallelism. The shared module catalog is defined in `.github/workflows/module-catalog.sh`.
 
 | Group Package | Module | Fuzzer Runs | Partitions |
 |---------------|--------|-------------|------------|
-| `embeddable_game_standard` | `token` | 64 | 32 |
+| `embeddable_game_standard` | `token` | 64 | 8 |
 | `embeddable_game_standard` | `minigame` | 64 | 8 |
 | `embeddable_game_standard` | `metagame` | 64 | 8 |
 | `embeddable_game_standard` | `registry` | 64 | 8 |
-| `metagame` | `leaderboard` | 256 | 8 |
-| `metagame` | `registration` | 256 | 8 |
-| `metagame` | `entry_requirement` | 256 | 8 |
-| `metagame` | `entry_fee` | 256 | 8 |
-| `metagame` | `prize` | 256 | 8 |
-| `metagame` | `ticket_booth` | 256 | 8 |
-| `economy` | `tokenomics` | 256 | 8 |
-| `utilities` | `math` | 256 | 8 |
+| `metagame` | `leaderboard` | 256 | 4 |
+| `metagame` | `registration` | 256 | 4 |
+| `metagame` | `entry_requirement` | 256 | 4 |
+| `metagame` | `entry_fee` | 256 | 4 |
+| `metagame` | `prize` | 256 | 4 |
+| `metagame` | `ticket_booth` | 256 | 4 |
+| `economy` | `tokenomics` | 256 | 4 |
+| `utilities` | `math` | 256 | 4 |
 | `utilities` | `distribution` | 256 | 4 |
-| `utilities` | `utils` | 256 | 8 |
-| `utilities` | `renderer` | 256 | 8 |
-| `presets` | `presets` | 256 | 8 |
+| `utilities` | `utils` | 256 | 4 |
+| `utilities` | `renderer` | 256 | 4 |
+| `presets` | `presets` | 256 | 4 |
