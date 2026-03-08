@@ -2,8 +2,7 @@
 
 use core::num::traits::Zero;
 use interfaces::entry_requirement_extension::{
-    IENTRY_REQUIREMENT_EXTENSION_ID, IEntryRequirementExtensionDispatcher,
-    IEntryRequirementExtensionDispatcherTrait,
+    IENTRY_REQUIREMENT_EXTENSION_ID, IEntryValidatorDispatcher, IEntryValidatorDispatcherTrait,
 };
 use openzeppelin_interfaces::erc721::{IERC721Dispatcher, IERC721DispatcherTrait, IERC721_ID};
 use openzeppelin_interfaces::introspection::{ISRC5Dispatcher, ISRC5DispatcherTrait};
@@ -159,7 +158,7 @@ pub impl EntryRequirementStoreImpl<T, +Store<T>, +Drop<T>> of EntryRequirementSt
                         "EntryRequirement: Provided qualification proof is not of type 'Extension'",
                     ),
                 };
-                let entry_validator_dispatcher = IEntryRequirementExtensionDispatcher {
+                let entry_validator_dispatcher = IEntryValidatorDispatcher {
                     contract_address: extension_config.address,
                 };
                 let caller_address = get_caller_address();
@@ -197,7 +196,7 @@ pub impl EntryRequirementStoreImpl<T, +Store<T>, +Drop<T>> of EntryRequirementSt
                 let display_address: felt252 = extension_address.into();
                 assert!(
                     src5_dispatcher.supports_interface(IENTRY_REQUIREMENT_EXTENSION_ID),
-                    "EntryRequirement: Extension address {} does not support IEntryRequirementExtension interface",
+                    "EntryRequirement: Extension address {} does not support IEntryValidator interface",
                     display_address,
                 );
             },
@@ -213,7 +212,7 @@ pub impl EntryRequirementStoreImpl<T, +Store<T>, +Drop<T>> of EntryRequirementSt
         match entry_requirement.entry_requirement_type {
             EntryRequirementType::extension(extension_config) => {
                 let extension_address = extension_config.address;
-                let entry_validator_dispatcher = IEntryRequirementExtensionDispatcher {
+                let entry_validator_dispatcher = IEntryValidatorDispatcher {
                     contract_address: extension_address,
                 };
                 let display_extension_address: felt252 = extension_address.into();

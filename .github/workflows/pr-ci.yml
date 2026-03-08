@@ -356,6 +356,9 @@ jobs:
       - name: Warm snforge plugin cache
         run: snforge --version
 
+      - name: Verify workspace compiles
+        run: scarb build --workspace
+
   test:
     name: test (${{ matrix.module }})
     needs: [changes, setup]

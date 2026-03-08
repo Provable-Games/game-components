@@ -1,10 +1,8 @@
-/// Mock that implements IEntryRequirementExtension with limited entries remaining.
+/// Mock that implements IEntryValidator with limited entries remaining.
 /// Always accepts entries (valid_entry returns true), entries_left returns Option::Some(5).
 #[starknet::contract]
 pub mod AcceptingLimitedEntryValidatorMock {
-    use interfaces::entry_requirement_extension::{
-        IENTRY_REQUIREMENT_EXTENSION_ID, IEntryRequirementExtension,
-    };
+    use interfaces::entry_requirement_extension::{IENTRY_REQUIREMENT_EXTENSION_ID, IEntryValidator};
     use openzeppelin_introspection::src5::SRC5Component;
     use openzeppelin_introspection::src5::SRC5Component::InternalTrait as SRC5InternalTrait;
     use starknet::ContractAddress;
@@ -38,7 +36,7 @@ pub mod AcceptingLimitedEntryValidatorMock {
     }
 
     #[abi(embed_v0)]
-    impl EntryRequirementExtensionImpl of IEntryRequirementExtension<ContractState> {
+    impl EntryValidatorImpl of IEntryValidator<ContractState> {
         fn owner_address(self: @ContractState) -> ContractAddress {
             self.owner_address.read()
         }
