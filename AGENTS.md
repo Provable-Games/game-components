@@ -128,12 +128,12 @@ When adding a new module to a group package, update **both** files:
 2. **`codecov.yml`** - Update the build count:
    ```yaml
    notify:
-     after_n_builds: 22 # ← Must equal total matrix entry count (including partitions)
+     after_n_builds: 33 # ← Must equal total matrix entry count (including partitions)
    ```
 
-### Current Matrix (22 jobs across 16 modules)
+### Current Matrix (33 jobs across 16 modules)
 
-Heavy EGS modules are partitioned via `snforge --partition` for parallelism on cheaper runners.
+All modules >60s are partitioned via `snforge --partition` for parallelism.
 
 | Group Package | Module | Runner | Fuzzer Runs | Partitions |
 |---------------|--------|--------|-------------|------------|
@@ -141,15 +141,15 @@ Heavy EGS modules are partitioned via `snforge --partition` for parallelism on c
 | `embeddable_game_standard` | `minigame` | `ubuntu-latest-4` | 64 | 2 |
 | `embeddable_game_standard` | `metagame` | `ubuntu-latest-4` | 64 | 2 |
 | `embeddable_game_standard` | `registry` | `ubuntu-latest-4` | 64 | 2 |
-| `metagame` | `leaderboard` | `ubuntu-latest-4` | 256 | 1 |
-| `metagame` | `registration` | `ubuntu-latest-4` | 256 | 1 |
-| `metagame` | `entry_requirement` | `ubuntu-latest-4` | 256 | 1 |
-| `metagame` | `entry_fee` | `ubuntu-latest-4` | 256 | 1 |
-| `metagame` | `prize` | `ubuntu-latest-4` | 256 | 1 |
-| `metagame` | `ticket_booth` | `ubuntu-latest-4` | 256 | 1 |
-| `economy` | `tokenomics` | `ubuntu-latest-4` | 256 | 1 |
-| `utilities` | `math` | `ubuntu-latest-4` | 256 | 1 |
+| `metagame` | `leaderboard` | `ubuntu-latest-4` | 256 | 2 |
+| `metagame` | `registration` | `ubuntu-latest-4` | 256 | 2 |
+| `metagame` | `entry_requirement` | `ubuntu-latest-4` | 256 | 2 |
+| `metagame` | `entry_fee` | `ubuntu-latest-4` | 256 | 2 |
+| `metagame` | `prize` | `ubuntu-latest-4` | 256 | 2 |
+| `metagame` | `ticket_booth` | `ubuntu-latest-4` | 256 | 2 |
+| `economy` | `tokenomics` | `ubuntu-latest-4` | 256 | 2 |
+| `utilities` | `math` | `ubuntu-latest-4` | 256 | 2 |
 | `utilities` | `distribution` | `ubuntu-latest-4` | 256 | 1 |
-| `utilities` | `utils` | `ubuntu-latest-4` | 256 | 1 |
-| `utilities` | `renderer` | `ubuntu-latest-4` | 256 | 1 |
-| `presets` | `presets` | `ubuntu-latest-4` | 256 | 1 |
+| `utilities` | `utils` | `ubuntu-latest-4` | 256 | 2 |
+| `utilities` | `renderer` | `ubuntu-latest-4` | 256 | 2 |
+| `presets` | `presets` | `ubuntu-latest-4` | 256 | 2 |

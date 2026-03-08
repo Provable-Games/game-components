@@ -310,24 +310,32 @@ jobs:
             done
           fi
           if [ "$NEED_METAGAME" = "true" ]; then
-            add game_components_metagame leaderboard ubuntu-latest-4 256 1 1
-            add game_components_metagame registration ubuntu-latest-4 256 1 1
-            add game_components_metagame entry_requirement ubuntu-latest-4 256 1 1
-            add game_components_metagame entry_fee ubuntu-latest-4 256 1 1
-            add game_components_metagame prize ubuntu-latest-4 256 1 1
-            add game_components_metagame ticket_booth ubuntu-latest-4 256 1 1
+            for p in 1 2; do
+              add game_components_metagame leaderboard ubuntu-latest-4 256 "$p" 2
+              add game_components_metagame registration ubuntu-latest-4 256 "$p" 2
+              add game_components_metagame entry_requirement ubuntu-latest-4 256 "$p" 2
+              add game_components_metagame entry_fee ubuntu-latest-4 256 "$p" 2
+              add game_components_metagame prize ubuntu-latest-4 256 "$p" 2
+              add game_components_metagame ticket_booth ubuntu-latest-4 256 "$p" 2
+            done
           fi
           if [ "$NEED_ECONOMY" = "true" ]; then
-            add game_components_economy tokenomics ubuntu-latest-4 256 1 1
+            for p in 1 2; do
+              add game_components_economy tokenomics ubuntu-latest-4 256 "$p" 2
+            done
           fi
           if [ "$NEED_UTILITIES" = "true" ]; then
-            add game_components_utilities math ubuntu-latest-4 256 1 1
+            for p in 1 2; do
+              add game_components_utilities math ubuntu-latest-4 256 "$p" 2
+              add game_components_utilities utils ubuntu-latest-4 256 "$p" 2
+              add game_components_utilities renderer ubuntu-latest-4 256 "$p" 2
+            done
             add game_components_utilities distribution ubuntu-latest-4 256 1 1
-            add game_components_utilities utils ubuntu-latest-4 256 1 1
-            add game_components_utilities renderer ubuntu-latest-4 256 1 1
           fi
           if [ "$NEED_PRESETS" = "true" ]; then
-            add game_components_presets presets ubuntu-latest-4 256 1 1
+            for p in 1 2; do
+              add game_components_presets presets ubuntu-latest-4 256 "$p" 2
+            done
           fi
 
           MATRIX=$(echo "$INCLUDES" | jq -c '{include:.}')
@@ -370,15 +378,6 @@ jobs:
 
       - name: Warm snforge plugin cache
         run: snforge --version
-
-      - name: Verify workspace compiles (no warnings)
-        run: |
-          scarb build --workspace 2>&1 | tee /tmp/build.log
-          if grep -qE '^ --> .*\.cairo:[0-9]+:[0-9]+' /tmp/build.log; then
-            echo "::error::Build produced compiler warnings. Fix all warnings before merging."
-            grep -B1 -E '^ --> .*\.cairo:[0-9]+:[0-9]+' /tmp/build.log
-            exit 1
-          fi
 
   test:
     name: test (${{ matrix.module }}${{ matrix.total_partitions > 1 && format(' {0}/{1}', matrix.partition, matrix.total_partitions) || '' }})

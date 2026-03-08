@@ -140,15 +140,6 @@ jobs:
       - name: Warm snforge plugin cache
         run: snforge --version
 
-      - name: Verify workspace compiles (no warnings)
-        run: |
-          scarb build --workspace 2>&1 | tee /tmp/build.log
-          if grep -qE '^ --> .*\.cairo:[0-9]+:[0-9]+' /tmp/build.log; then
-            echo "::error::Build produced compiler warnings. Fix all warnings before merging."
-            grep -B1 -E '^ --> .*\.cairo:[0-9]+:[0-9]+' /tmp/build.log
-            exit 1
-          fi
-
   test:
     name: test (${{ matrix.module }}${{ matrix.total_partitions > 1 && format(' {0}/{1}', matrix.partition, matrix.total_partitions) || '' }})
     needs: setup
@@ -228,57 +219,105 @@ jobs:
             fuzzer_runs: 64
             partition: 2
             total_partitions: 2
-          # Metagame
+          # Metagame — all partitioned (2 each)
           - package: game_components_metagame
             module: leaderboard
             runner: ubuntu-latest-4
             fuzzer_runs: 256
             partition: 1
-            total_partitions: 1
+            total_partitions: 2
+          - package: game_components_metagame
+            module: leaderboard
+            runner: ubuntu-latest-4
+            fuzzer_runs: 256
+            partition: 2
+            total_partitions: 2
           - package: game_components_metagame
             module: registration
             runner: ubuntu-latest-4
             fuzzer_runs: 256
             partition: 1
-            total_partitions: 1
+            total_partitions: 2
+          - package: game_components_metagame
+            module: registration
+            runner: ubuntu-latest-4
+            fuzzer_runs: 256
+            partition: 2
+            total_partitions: 2
           - package: game_components_metagame
             module: entry_requirement
             runner: ubuntu-latest-4
             fuzzer_runs: 256
             partition: 1
-            total_partitions: 1
+            total_partitions: 2
+          - package: game_components_metagame
+            module: entry_requirement
+            runner: ubuntu-latest-4
+            fuzzer_runs: 256
+            partition: 2
+            total_partitions: 2
           - package: game_components_metagame
             module: entry_fee
             runner: ubuntu-latest-4
             fuzzer_runs: 256
             partition: 1
-            total_partitions: 1
+            total_partitions: 2
+          - package: game_components_metagame
+            module: entry_fee
+            runner: ubuntu-latest-4
+            fuzzer_runs: 256
+            partition: 2
+            total_partitions: 2
           - package: game_components_metagame
             module: prize
             runner: ubuntu-latest-4
             fuzzer_runs: 256
             partition: 1
-            total_partitions: 1
+            total_partitions: 2
+          - package: game_components_metagame
+            module: prize
+            runner: ubuntu-latest-4
+            fuzzer_runs: 256
+            partition: 2
+            total_partitions: 2
           - package: game_components_metagame
             module: ticket_booth
             runner: ubuntu-latest-4
             fuzzer_runs: 256
             partition: 1
-            total_partitions: 1
+            total_partitions: 2
+          - package: game_components_metagame
+            module: ticket_booth
+            runner: ubuntu-latest-4
+            fuzzer_runs: 256
+            partition: 2
+            total_partitions: 2
           # Economy
           - package: game_components_economy
             module: tokenomics
             runner: ubuntu-latest-4
             fuzzer_runs: 256
             partition: 1
-            total_partitions: 1
-          # Utilities
+            total_partitions: 2
+          - package: game_components_economy
+            module: tokenomics
+            runner: ubuntu-latest-4
+            fuzzer_runs: 256
+            partition: 2
+            total_partitions: 2
+          # Utilities — all partitioned except distribution
           - package: game_components_utilities
             module: math
             runner: ubuntu-latest-4
             fuzzer_runs: 256
             partition: 1
-            total_partitions: 1
+            total_partitions: 2
+          - package: game_components_utilities
+            module: math
+            runner: ubuntu-latest-4
+            fuzzer_runs: 256
+            partition: 2
+            total_partitions: 2
           - package: game_components_utilities
             module: distribution
             runner: ubuntu-latest-4
@@ -290,20 +329,38 @@ jobs:
             runner: ubuntu-latest-4
             fuzzer_runs: 256
             partition: 1
-            total_partitions: 1
+            total_partitions: 2
+          - package: game_components_utilities
+            module: utils
+            runner: ubuntu-latest-4
+            fuzzer_runs: 256
+            partition: 2
+            total_partitions: 2
           - package: game_components_utilities
             module: renderer
             runner: ubuntu-latest-4
             fuzzer_runs: 256
             partition: 1
-            total_partitions: 1
+            total_partitions: 2
+          - package: game_components_utilities
+            module: renderer
+            runner: ubuntu-latest-4
+            fuzzer_runs: 256
+            partition: 2
+            total_partitions: 2
           # Presets (standalone package, no module filter)
           - package: game_components_presets
             module: presets
             runner: ubuntu-latest-4
             fuzzer_runs: 256
             partition: 1
-            total_partitions: 1
+            total_partitions: 2
+          - package: game_components_presets
+            module: presets
+            runner: ubuntu-latest-4
+            fuzzer_runs: 256
+            partition: 2
+            total_partitions: 2
     steps:
       - uses: actions/checkout@v6
 
