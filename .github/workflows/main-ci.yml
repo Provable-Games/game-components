@@ -63,9 +63,13 @@ jobs:
             npx -y "$YAML_CLI" valid < codecov.yml
           fi
 
-      - name: Validate package count matches codecov config
+      - name: Validate matrix entry count matches codecov config
         run: |
-          matrix_count=$(grep -cE '^\s+module:' .github/workflows/main-ci.yml)
+          # Source the module catalog and count generated entries
+          source .github/workflows/module-catalog.sh
+          INCLUDES="[]"
+          add_all_modules
+          matrix_count=$(echo "$INCLUDES" | jq 'length')
           codecov_count=$(grep 'after_n_builds:' codecov.yml | grep -oE '[0-9]+')
 
           echo "Matrix entries: $matrix_count"
@@ -101,8 +105,21 @@ jobs:
     if: needs.changes.outputs.packages == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    outputs:
+      test_matrix: ${{ steps.build-matrix.outputs.test_matrix }}
     steps:
       - uses: actions/checkout@v6
+
+      - name: Build test matrix
+        id: build-matrix
+        run: |
+          source .github/workflows/module-catalog.sh
+          INCLUDES="[]"
+          add_all_modules
+
+          MATRIX=$(echo "$INCLUDES" | jq -c '{include:.}')
+          echo "test_matrix=$MATRIX" >> "$GITHUB_OUTPUT"
+          echo "Matrix: $(echo "$INCLUDES" | jq 'length') entries"
 
       - name: Extract tool versions
         run: |
@@ -143,224 +160,11 @@ jobs:
   test:
     name: test (${{ matrix.module }}${{ matrix.total_partitions > 1 && format(' {0}/{1}', matrix.partition, matrix.total_partitions) || '' }})
     needs: setup
-    runs-on: ${{ matrix.runner }}
+    runs-on: ubuntu-latest
     timeout-minutes: 10
     strategy:
       fail-fast: true
-      matrix:
-        # NOTE: When adding/removing modules, also update:
-        #   - codecov.yml: after_n_builds must equal matrix entry count
-        #   - AGENTS.md: CI Configuration section
-        # Partitioned modules use snforge --partition INDEX/TOTAL to split
-        # tests across multiple cheaper runners for parallelism.
-        include:
-          # Embeddable Game Standard — partitioned for parallelism
-          # token: 4 partitions (~159 tests each)
-          - package: game_components_embeddable_game_standard
-            module: token
-            runner: ubuntu-latest-8
-            fuzzer_runs: 64
-            partition: 1
-            total_partitions: 4
-          - package: game_components_embeddable_game_standard
-            module: token
-            runner: ubuntu-latest-8
-            fuzzer_runs: 64
-            partition: 2
-            total_partitions: 4
-          - package: game_components_embeddable_game_standard
-            module: token
-            runner: ubuntu-latest-8
-            fuzzer_runs: 64
-            partition: 3
-            total_partitions: 4
-          - package: game_components_embeddable_game_standard
-            module: token
-            runner: ubuntu-latest-8
-            fuzzer_runs: 64
-            partition: 4
-            total_partitions: 4
-          # minigame: 2 partitions (~107 tests each)
-          - package: game_components_embeddable_game_standard
-            module: minigame
-            runner: ubuntu-latest-4
-            fuzzer_runs: 64
-            partition: 1
-            total_partitions: 2
-          - package: game_components_embeddable_game_standard
-            module: minigame
-            runner: ubuntu-latest-4
-            fuzzer_runs: 64
-            partition: 2
-            total_partitions: 2
-          # metagame: 2 partitions (~40 tests each)
-          - package: game_components_embeddable_game_standard
-            module: metagame
-            runner: ubuntu-latest-4
-            fuzzer_runs: 64
-            partition: 1
-            total_partitions: 2
-          - package: game_components_embeddable_game_standard
-            module: metagame
-            runner: ubuntu-latest-4
-            fuzzer_runs: 64
-            partition: 2
-            total_partitions: 2
-          # registry: 2 partitions (~69 tests each)
-          - package: game_components_embeddable_game_standard
-            module: registry
-            runner: ubuntu-latest-4
-            fuzzer_runs: 64
-            partition: 1
-            total_partitions: 2
-          - package: game_components_embeddable_game_standard
-            module: registry
-            runner: ubuntu-latest-4
-            fuzzer_runs: 64
-            partition: 2
-            total_partitions: 2
-          # Metagame — all partitioned (2 each)
-          - package: game_components_metagame
-            module: leaderboard
-            runner: ubuntu-latest-4
-            fuzzer_runs: 256
-            partition: 1
-            total_partitions: 2
-          - package: game_components_metagame
-            module: leaderboard
-            runner: ubuntu-latest-4
-            fuzzer_runs: 256
-            partition: 2
-            total_partitions: 2
-          - package: game_components_metagame
-            module: registration
-            runner: ubuntu-latest-4
-            fuzzer_runs: 256
-            partition: 1
-            total_partitions: 2
-          - package: game_components_metagame
-            module: registration
-            runner: ubuntu-latest-4
-            fuzzer_runs: 256
-            partition: 2
-            total_partitions: 2
-          - package: game_components_metagame
-            module: entry_requirement
-            runner: ubuntu-latest-4
-            fuzzer_runs: 256
-            partition: 1
-            total_partitions: 2
-          - package: game_components_metagame
-            module: entry_requirement
-            runner: ubuntu-latest-4
-            fuzzer_runs: 256
-            partition: 2
-            total_partitions: 2
-          - package: game_components_metagame
-            module: entry_fee
-            runner: ubuntu-latest-4
-            fuzzer_runs: 256
-            partition: 1
-            total_partitions: 2
-          - package: game_components_metagame
-            module: entry_fee
-            runner: ubuntu-latest-4
-            fuzzer_runs: 256
-            partition: 2
-            total_partitions: 2
-          - package: game_components_metagame
-            module: prize
-            runner: ubuntu-latest-4
-            fuzzer_runs: 256
-            partition: 1
-            total_partitions: 2
-          - package: game_components_metagame
-            module: prize
-            runner: ubuntu-latest-4
-            fuzzer_runs: 256
-            partition: 2
-            total_partitions: 2
-          - package: game_components_metagame
-            module: ticket_booth
-            runner: ubuntu-latest-4
-            fuzzer_runs: 256
-            partition: 1
-            total_partitions: 2
-          - package: game_components_metagame
-            module: ticket_booth
-            runner: ubuntu-latest-4
-            fuzzer_runs: 256
-            partition: 2
-            total_partitions: 2
-          # Economy
-          - package: game_components_economy
-            module: tokenomics
-            runner: ubuntu-latest-4
-            fuzzer_runs: 256
-            partition: 1
-            total_partitions: 2
-          - package: game_components_economy
-            module: tokenomics
-            runner: ubuntu-latest-4
-            fuzzer_runs: 256
-            partition: 2
-            total_partitions: 2
-          # Utilities — all partitioned except distribution
-          - package: game_components_utilities
-            module: math
-            runner: ubuntu-latest-4
-            fuzzer_runs: 256
-            partition: 1
-            total_partitions: 2
-          - package: game_components_utilities
-            module: math
-            runner: ubuntu-latest-4
-            fuzzer_runs: 256
-            partition: 2
-            total_partitions: 2
-          - package: game_components_utilities
-            module: distribution
-            runner: ubuntu-latest-4
-            fuzzer_runs: 256
-            partition: 1
-            total_partitions: 1
-          - package: game_components_utilities
-            module: utils
-            runner: ubuntu-latest-4
-            fuzzer_runs: 256
-            partition: 1
-            total_partitions: 2
-          - package: game_components_utilities
-            module: utils
-            runner: ubuntu-latest-4
-            fuzzer_runs: 256
-            partition: 2
-            total_partitions: 2
-          - package: game_components_utilities
-            module: renderer
-            runner: ubuntu-latest-4
-            fuzzer_runs: 256
-            partition: 1
-            total_partitions: 2
-          - package: game_components_utilities
-            module: renderer
-            runner: ubuntu-latest-4
-            fuzzer_runs: 256
-            partition: 2
-            total_partitions: 2
-          # Presets (standalone package, no module filter)
-          - package: game_components_presets
-            module: presets
-            runner: ubuntu-latest-4
-            fuzzer_runs: 256
-            partition: 1
-            total_partitions: 2
-          - package: game_components_presets
-            module: presets
-            runner: ubuntu-latest-4
-            fuzzer_runs: 256
-            partition: 2
-            total_partitions: 2
+      matrix: ${{ fromJson(needs.setup.outputs.test_matrix) }}
     steps:
       - uses: actions/checkout@v6
 
@@ -425,11 +229,12 @@ jobs:
             PARTITION_FLAG="--partition ${{ matrix.partition }}/${{ matrix.total_partitions }}"
           fi
 
-          if [ "${{ matrix.package }}" = "game_components_${{ matrix.module }}" ]; then
-            snforge test -p ${{ matrix.package }} --fuzzer-runs ${{ matrix.fuzzer_runs }} $PARTITION_FLAG --coverage 2>&1 | tee /tmp/test.log
-          else
-            snforge test -p ${{ matrix.package }} "::${{ matrix.module }}::" --fuzzer-runs ${{ matrix.fuzzer_runs }} $PARTITION_FLAG --coverage 2>&1 | tee /tmp/test.log
+          TEST_FILTER=""
+          if [ "${{ matrix.package }}" != "game_components_${{ matrix.module }}" ]; then
+            TEST_FILTER="::${{ matrix.module }}::"
           fi
+
+          snforge test -p ${{ matrix.package }} $TEST_FILTER --fuzzer-runs ${{ matrix.fuzzer_runs }} $PARTITION_FLAG --coverage 2>&1 | tee /tmp/test.log
 
       - name: Check for compiler warnings
         if: always() && steps.cache-tools.outcome != 'failure'

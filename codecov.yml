@@ -4,7 +4,7 @@ codecov:
     # Must equal matrix entry count in .github/workflows/main-ci.yml
     # (partitioned modules count once per partition)
     # See AGENTS.md "CI Configuration" section when adding packages
-    after_n_builds: 33
+    after_n_builds: 148
 
 comment:
   layout: "diff, files, header, footer"

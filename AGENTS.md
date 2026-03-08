@@ -23,7 +23,7 @@ You are a **senior Starknet smart contract engineer** specializing in Cairo deve
 
 ## Technology Stack
 
-- **Cairo**: 2.15.1 | **Starknet**: 2.15.1 | **snforge**: v0.55.0 | **OpenZeppelin**: v3.0.0
+- **Cairo**: 2.15.1 | **Starknet**: 2.15.1 | **snforge**: v0.57.0 | **OpenZeppelin**: v3.0.0
 
 ## Build Commands
 
@@ -110,46 +110,43 @@ When adding a new group package or changing a workspace-level dependency in the 
 
 ### Adding a New Module
 
-When adding a new module to a group package, update **both** files:
+When adding a new module to a group package, update **three** files:
 
-1. **`.github/workflows/main-ci.yml`** and **`.github/workflows/pr-ci.yml`** - Add the module to both matrices:
+1. **`.github/workflows/module-catalog.sh`** — Add the module to the appropriate `add_*` function:
 
-   ```yaml
-   matrix:
-     include:
-       - package: game_components_GROUP_PACKAGE
-         module: NEW_MODULE
-         runner: ubuntu-latest
-         fuzzer_runs: 256
+   ```bash
+   add game_components_GROUP_PACKAGE NEW_MODULE 256 8  # fuzzer_runs partitions
    ```
 
-   For memory-intensive modules (like `token` or `minigame`), assign a larger runner (e.g., `ubuntu-latest-4` or `ubuntu-latest-8`) and consider partitioning with `--partition INDEX/TOTAL`.
+   All modules run on `ubuntu-latest` (standard 2-core runners). Compensate by increasing partition count: modules that previously needed 4-core runners get 4 partitions, 8-core get 8, etc.
 
-2. **`codecov.yml`** - Update the build count:
+2. **`codecov.yml`** — Update the build count:
    ```yaml
    notify:
-     after_n_builds: 33 # ← Must equal total matrix entry count (including partitions)
+     after_n_builds: 148 # ← Must equal total matrix entry count (including partitions)
    ```
 
-### Current Matrix (33 jobs across 16 modules)
+3. **`.github/workflows/pr-ci.yml`** — If adding a new group package, add it to the `compute-matrix` dependency graph and the `NEED_*` flags in the `build-matrix` step.
 
-All modules >60s are partitioned via `snforge --partition` for parallelism.
+### Current Matrix (148 jobs across 16 modules)
 
-| Group Package | Module | Runner | Fuzzer Runs | Partitions |
-|---------------|--------|--------|-------------|------------|
-| `embeddable_game_standard` | `token` | `ubuntu-latest-8` | 64 | 4 |
-| `embeddable_game_standard` | `minigame` | `ubuntu-latest-4` | 64 | 2 |
-| `embeddable_game_standard` | `metagame` | `ubuntu-latest-4` | 64 | 2 |
-| `embeddable_game_standard` | `registry` | `ubuntu-latest-4` | 64 | 2 |
-| `metagame` | `leaderboard` | `ubuntu-latest-4` | 256 | 2 |
-| `metagame` | `registration` | `ubuntu-latest-4` | 256 | 2 |
-| `metagame` | `entry_requirement` | `ubuntu-latest-4` | 256 | 2 |
-| `metagame` | `entry_fee` | `ubuntu-latest-4` | 256 | 2 |
-| `metagame` | `prize` | `ubuntu-latest-4` | 256 | 2 |
-| `metagame` | `ticket_booth` | `ubuntu-latest-4` | 256 | 2 |
-| `economy` | `tokenomics` | `ubuntu-latest-4` | 256 | 2 |
-| `utilities` | `math` | `ubuntu-latest-4` | 256 | 2 |
-| `utilities` | `distribution` | `ubuntu-latest-4` | 256 | 1 |
-| `utilities` | `utils` | `ubuntu-latest-4` | 256 | 2 |
-| `utilities` | `renderer` | `ubuntu-latest-4` | 256 | 2 |
-| `presets` | `presets` | `ubuntu-latest-4` | 256 | 2 |
+All modules use `ubuntu-latest` (standard 2-core) runners with partitioning for parallelism. The shared module catalog is defined in `.github/workflows/module-catalog.sh`.
+
+| Group Package | Module | Fuzzer Runs | Partitions |
+|---------------|--------|-------------|------------|
+| `embeddable_game_standard` | `token` | 64 | 32 |
+| `embeddable_game_standard` | `minigame` | 64 | 8 |
+| `embeddable_game_standard` | `metagame` | 64 | 8 |
+| `embeddable_game_standard` | `registry` | 64 | 8 |
+| `metagame` | `leaderboard` | 256 | 8 |
+| `metagame` | `registration` | 256 | 8 |
+| `metagame` | `entry_requirement` | 256 | 8 |
+| `metagame` | `entry_fee` | 256 | 8 |
+| `metagame` | `prize` | 256 | 8 |
+| `metagame` | `ticket_booth` | 256 | 8 |
+| `economy` | `tokenomics` | 256 | 8 |
+| `utilities` | `math` | 256 | 8 |
+| `utilities` | `distribution` | 256 | 4 |
+| `utilities` | `utils` | 256 | 8 |
+| `utilities` | `renderer` | 256 | 8 |
+| `presets` | `presets` | 256 | 8 |
