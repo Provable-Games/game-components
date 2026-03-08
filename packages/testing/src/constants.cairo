@@ -1,6 +1,6 @@
 use starknet::ContractAddress;
 
-// Test addresses - using try_into().unwrap() pattern
+// Test addresses — using try_into().unwrap() pattern
 pub fn ALICE() -> ContractAddress {
     'ALICE'.try_into().unwrap()
 }
