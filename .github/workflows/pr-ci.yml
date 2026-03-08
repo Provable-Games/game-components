@@ -296,11 +296,11 @@ jobs:
           source .github/workflows/module-catalog.sh
           INCLUDES="[]"
 
-          [ "$NEED_EGS" = "true" ]       && add_egs
-          [ "$NEED_METAGAME" = "true" ]   && add_metagame
-          [ "$NEED_ECONOMY" = "true" ]    && add_economy
-          [ "$NEED_UTILITIES" = "true" ]  && add_utilities
-          [ "$NEED_PRESETS" = "true" ]    && add_presets
+          if [ "$NEED_EGS" = "true" ]; then add_egs; fi
+          if [ "$NEED_METAGAME" = "true" ]; then add_metagame; fi
+          if [ "$NEED_ECONOMY" = "true" ]; then add_economy; fi
+          if [ "$NEED_UTILITIES" = "true" ]; then add_utilities; fi
+          if [ "$NEED_PRESETS" = "true" ]; then add_presets; fi
 
           MATRIX=$(echo "$INCLUDES" | jq -c '{include:.}')
           echo "test_matrix=$MATRIX" >> "$GITHUB_OUTPUT"
