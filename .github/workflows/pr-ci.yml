@@ -242,16 +242,16 @@ jobs:
           matrix_count=$(grep -cE '^\s+module:' .github/workflows/main-ci.yml)
           codecov_count=$(grep 'after_n_builds:' codecov.yml | grep -oE '[0-9]+')
 
-          echo "Matrix modules: $matrix_count"
+          echo "Matrix entries: $matrix_count"
           echo "Codecov after_n_builds: $codecov_count"
 
           if [ "$matrix_count" != "$codecov_count" ]; then
-            echo "::error::Matrix has $matrix_count modules but codecov.yml expects $codecov_count builds"
-            echo "::error::Update codecov.yml after_n_builds to match module count"
+            echo "::error::Matrix has $matrix_count entries but codecov.yml expects $codecov_count builds"
+            echo "::error::Update codecov.yml after_n_builds to match matrix entry count"
             exit 1
           fi
 
-          echo "Configuration validated: $matrix_count modules"
+          echo "Configuration validated: $matrix_count matrix entries"
 
   lint:
     needs: changes
@@ -290,35 +290,44 @@ jobs:
           NEED_PRESETS: ${{ needs.changes.outputs.need_presets }}
         run: |
           # Build JSON matrix from per-package boolean flags
-          # Module catalog must match main-ci.yml
+          # Module catalog must match main-ci.yml (including partitions)
           INCLUDES="[]"
-          add() { INCLUDES=$(echo "$INCLUDES" | jq -c --arg p "$1" --arg m "$2" --arg r "$3" --argjson f "$4" '. + [{package:$p,module:$m,runner:$r,fuzzer_runs:$f}]'); }
+          add() {
+            INCLUDES=$(echo "$INCLUDES" | jq -c \
+              --arg p "$1" --arg m "$2" --arg r "$3" \
+              --argjson f "$4" --argjson part "$5" --argjson total "$6" \
+              '. + [{package:$p,module:$m,runner:$r,fuzzer_runs:$f,partition:$part,total_partitions:$total}]')
+          }
 
           if [ "$NEED_EGS" = "true" ]; then
-            add game_components_embeddable_game_standard token ubuntu-latest-32 32
-            add game_components_embeddable_game_standard minigame ubuntu-latest-8 32
-            add game_components_embeddable_game_standard metagame ubuntu-latest-8 32
-            add game_components_embeddable_game_standard registry ubuntu-latest-8 32
+            for p in 1 2 3 4; do
+              add game_components_embeddable_game_standard token ubuntu-latest-8 64 "$p" 4
+            done
+            for p in 1 2; do
+              add game_components_embeddable_game_standard minigame ubuntu-latest-4 64 "$p" 2
+              add game_components_embeddable_game_standard metagame ubuntu-latest-4 64 "$p" 2
+              add game_components_embeddable_game_standard registry ubuntu-latest-4 64 "$p" 2
+            done
           fi
           if [ "$NEED_METAGAME" = "true" ]; then
-            add game_components_metagame leaderboard ubuntu-latest-4 256
-            add game_components_metagame registration ubuntu-latest-4 256
-            add game_components_metagame entry_requirement ubuntu-latest-4 256
-            add game_components_metagame entry_fee ubuntu-latest-4 256
-            add game_components_metagame prize ubuntu-latest-4 256
-            add game_components_metagame ticket_booth ubuntu-latest-4 256
+            add game_components_metagame leaderboard ubuntu-latest-4 256 1 1
+            add game_components_metagame registration ubuntu-latest-4 256 1 1
+            add game_components_metagame entry_requirement ubuntu-latest-4 256 1 1
+            add game_components_metagame entry_fee ubuntu-latest-4 256 1 1
+            add game_components_metagame prize ubuntu-latest-4 256 1 1
+            add game_components_metagame ticket_booth ubuntu-latest-4 256 1 1
           fi
           if [ "$NEED_ECONOMY" = "true" ]; then
-            add game_components_economy tokenomics ubuntu-latest-4 256
+            add game_components_economy tokenomics ubuntu-latest-4 256 1 1
           fi
           if [ "$NEED_UTILITIES" = "true" ]; then
-            add game_components_utilities math ubuntu-latest-4 256
-            add game_components_utilities distribution ubuntu-latest-4 256
-            add game_components_utilities utils ubuntu-latest-4 256
-            add game_components_utilities renderer ubuntu-latest-4 256
+            add game_components_utilities math ubuntu-latest-4 256 1 1
+            add game_components_utilities distribution ubuntu-latest-4 256 1 1
+            add game_components_utilities utils ubuntu-latest-4 256 1 1
+            add game_components_utilities renderer ubuntu-latest-4 256 1 1
           fi
           if [ "$NEED_PRESETS" = "true" ]; then
-            add game_components_presets presets ubuntu-latest-4 256
+            add game_components_presets presets ubuntu-latest-4 256 1 1
           fi
 
           MATRIX=$(echo "$INCLUDES" | jq -c '{include:.}')
@@ -372,7 +381,7 @@ jobs:
           fi
 
   test:
-    name: test (${{ matrix.module }})
+    name: test (${{ matrix.module }}${{ matrix.total_partitions > 1 && format(' {0}/{1}', matrix.partition, matrix.total_partitions) || '' }})
     needs: [changes, setup]
     if: needs.changes.outputs.has_tests == 'true'
     runs-on: ${{ matrix.runner }}
@@ -439,10 +448,15 @@ jobs:
 
       - name: Run tests with coverage
         run: |
+          PARTITION_FLAG=""
+          if [ "${{ matrix.total_partitions }}" != "1" ]; then
+            PARTITION_FLAG="--partition ${{ matrix.partition }}/${{ matrix.total_partitions }}"
+          fi
+
           if [ "${{ matrix.package }}" = "game_components_${{ matrix.module }}" ]; then
-            snforge test -p ${{ matrix.package }} --fuzzer-runs ${{ matrix.fuzzer_runs }} --coverage 2>&1 | tee /tmp/test.log
+            snforge test -p ${{ matrix.package }} --fuzzer-runs ${{ matrix.fuzzer_runs }} $PARTITION_FLAG --coverage 2>&1 | tee /tmp/test.log
           else
-            snforge test -p ${{ matrix.package }} "::${{ matrix.module }}::" --fuzzer-runs ${{ matrix.fuzzer_runs }} --coverage 2>&1 | tee /tmp/test.log
+            snforge test -p ${{ matrix.package }} "::${{ matrix.module }}::" --fuzzer-runs ${{ matrix.fuzzer_runs }} $PARTITION_FLAG --coverage 2>&1 | tee /tmp/test.log
           fi
 
       - name: Check for compiler warnings

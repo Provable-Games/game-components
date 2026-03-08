@@ -68,16 +68,16 @@ jobs:
           matrix_count=$(grep -cE '^\s+module:' .github/workflows/main-ci.yml)
           codecov_count=$(grep 'after_n_builds:' codecov.yml | grep -oE '[0-9]+')
 
-          echo "Matrix modules: $matrix_count"
+          echo "Matrix entries: $matrix_count"
           echo "Codecov after_n_builds: $codecov_count"
 
           if [ "$matrix_count" != "$codecov_count" ]; then
-            echo "::error::Matrix has $matrix_count modules but codecov.yml expects $codecov_count builds"
-            echo "::error::Update codecov.yml after_n_builds to match module count"
+            echo "::error::Matrix has $matrix_count entries but codecov.yml expects $codecov_count builds"
+            echo "::error::Update codecov.yml after_n_builds to match matrix entry count"
             exit 1
           fi
 
-          echo "Configuration validated: $matrix_count modules"
+          echo "Configuration validated: $matrix_count matrix entries"
 
   lint:
     needs: changes
@@ -150,7 +150,7 @@ jobs:
           fi
 
   test:
-    name: test (${{ matrix.module }})
+    name: test (${{ matrix.module }}${{ matrix.total_partitions > 1 && format(' {0}/{1}', matrix.partition, matrix.total_partitions) || '' }})
     needs: setup
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 10
@@ -158,78 +158,152 @@ jobs:
       fail-fast: true
       matrix:
         # NOTE: When adding/removing modules, also update:
-        #   - codecov.yml: after_n_builds must equal module count
+        #   - codecov.yml: after_n_builds must equal matrix entry count
         #   - AGENTS.md: CI Configuration section
+        # Partitioned modules use snforge --partition INDEX/TOTAL to split
+        # tests across multiple cheaper runners for parallelism.
         include:
-          # Embeddable Game Standard
+          # Embeddable Game Standard — partitioned for parallelism
+          # token: 4 partitions (~159 tests each)
           - package: game_components_embeddable_game_standard
             module: token
-            runner: ubuntu-latest-32
-            fuzzer_runs: 32
+            runner: ubuntu-latest-8
+            fuzzer_runs: 64
+            partition: 1
+            total_partitions: 4
+          - package: game_components_embeddable_game_standard
+            module: token
+            runner: ubuntu-latest-8
+            fuzzer_runs: 64
+            partition: 2
+            total_partitions: 4
+          - package: game_components_embeddable_game_standard
+            module: token
+            runner: ubuntu-latest-8
+            fuzzer_runs: 64
+            partition: 3
+            total_partitions: 4
+          - package: game_components_embeddable_game_standard
+            module: token
+            runner: ubuntu-latest-8
+            fuzzer_runs: 64
+            partition: 4
+            total_partitions: 4
+          # minigame: 2 partitions (~107 tests each)
           - package: game_components_embeddable_game_standard
             module: minigame
-            runner: ubuntu-latest-8
-            fuzzer_runs: 32
+            runner: ubuntu-latest-4
+            fuzzer_runs: 64
+            partition: 1
+            total_partitions: 2
+          - package: game_components_embeddable_game_standard
+            module: minigame
+            runner: ubuntu-latest-4
+            fuzzer_runs: 64
+            partition: 2
+            total_partitions: 2
+          # metagame: 2 partitions (~40 tests each)
           - package: game_components_embeddable_game_standard
             module: metagame
-            runner: ubuntu-latest-8
-            fuzzer_runs: 32
+            runner: ubuntu-latest-4
+            fuzzer_runs: 64
+            partition: 1
+            total_partitions: 2
+          - package: game_components_embeddable_game_standard
+            module: metagame
+            runner: ubuntu-latest-4
+            fuzzer_runs: 64
+            partition: 2
+            total_partitions: 2
+          # registry: 2 partitions (~69 tests each)
           - package: game_components_embeddable_game_standard
             module: registry
-            runner: ubuntu-latest-8
-            fuzzer_runs: 32
+            runner: ubuntu-latest-4
+            fuzzer_runs: 64
+            partition: 1
+            total_partitions: 2
+          - package: game_components_embeddable_game_standard
+            module: registry
+            runner: ubuntu-latest-4
+            fuzzer_runs: 64
+            partition: 2
+            total_partitions: 2
           # Metagame
           - package: game_components_metagame
             module: leaderboard
             runner: ubuntu-latest-4
             fuzzer_runs: 256
+            partition: 1
+            total_partitions: 1
           - package: game_components_metagame
             module: registration
             runner: ubuntu-latest-4
             fuzzer_runs: 256
+            partition: 1
+            total_partitions: 1
           - package: game_components_metagame
             module: entry_requirement
             runner: ubuntu-latest-4
             fuzzer_runs: 256
+            partition: 1
+            total_partitions: 1
           - package: game_components_metagame
             module: entry_fee
             runner: ubuntu-latest-4
             fuzzer_runs: 256
+            partition: 1
+            total_partitions: 1
           - package: game_components_metagame
             module: prize
             runner: ubuntu-latest-4
             fuzzer_runs: 256
+            partition: 1
+            total_partitions: 1
           - package: game_components_metagame
             module: ticket_booth
             runner: ubuntu-latest-4
             fuzzer_runs: 256
+            partition: 1
+            total_partitions: 1
           # Economy
           - package: game_components_economy
             module: tokenomics
             runner: ubuntu-latest-4
             fuzzer_runs: 256
+            partition: 1
+            total_partitions: 1
           # Utilities
           - package: game_components_utilities
             module: math
             runner: ubuntu-latest-4
             fuzzer_runs: 256
+            partition: 1
+            total_partitions: 1
           - package: game_components_utilities
             module: distribution
             runner: ubuntu-latest-4
             fuzzer_runs: 256
+            partition: 1
+            total_partitions: 1
           - package: game_components_utilities
             module: utils
             runner: ubuntu-latest-4
             fuzzer_runs: 256
+            partition: 1
+            total_partitions: 1
           - package: game_components_utilities
             module: renderer
             runner: ubuntu-latest-4
             fuzzer_runs: 256
+            partition: 1
+            total_partitions: 1
           # Presets (standalone package, no module filter)
           - package: game_components_presets
             module: presets
             runner: ubuntu-latest-4
             fuzzer_runs: 256
+            partition: 1
+            total_partitions: 1
     steps:
       - uses: actions/checkout@v6
 
@@ -289,10 +363,15 @@ jobs:
 
       - name: Run tests with coverage
         run: |
+          PARTITION_FLAG=""
+          if [ "${{ matrix.total_partitions }}" != "1" ]; then
+            PARTITION_FLAG="--partition ${{ matrix.partition }}/${{ matrix.total_partitions }}"
+          fi
+
           if [ "${{ matrix.package }}" = "game_components_${{ matrix.module }}" ]; then
-            snforge test -p ${{ matrix.package }} --fuzzer-runs ${{ matrix.fuzzer_runs }} --coverage 2>&1 | tee /tmp/test.log
+            snforge test -p ${{ matrix.package }} --fuzzer-runs ${{ matrix.fuzzer_runs }} $PARTITION_FLAG --coverage 2>&1 | tee /tmp/test.log
           else
-            snforge test -p ${{ matrix.package }} "::${{ matrix.module }}::" --fuzzer-runs ${{ matrix.fuzzer_runs }} --coverage 2>&1 | tee /tmp/test.log
+            snforge test -p ${{ matrix.package }} "::${{ matrix.module }}::" --fuzzer-runs ${{ matrix.fuzzer_runs }} $PARTITION_FLAG --coverage 2>&1 | tee /tmp/test.log
           fi
 
       - name: Check for compiler warnings

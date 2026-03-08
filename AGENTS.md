@@ -123,31 +123,33 @@ When adding a new module to a group package, update **both** files:
          fuzzer_runs: 256
    ```
 
-   For memory-intensive modules (like `token` or `minigame`), assign a larger runner (e.g., `ubuntu-latest-4` or `ubuntu-latest-32`).
+   For memory-intensive modules (like `token` or `minigame`), assign a larger runner (e.g., `ubuntu-latest-4` or `ubuntu-latest-8`) and consider partitioning with `--partition INDEX/TOTAL`.
 
 2. **`codecov.yml`** - Update the build count:
    ```yaml
    notify:
-     after_n_builds: 15 # ← Must equal total module count in matrix
+     after_n_builds: 22 # ← Must equal total matrix entry count (including partitions)
    ```
 
-### Current Matrix (16 modules)
+### Current Matrix (22 jobs across 16 modules)
 
-| Group Package | Module | Runner | Fuzzer Runs |
-|---------------|--------|--------|-------------|
-| `embeddable_game_standard` | `token` | `ubuntu-latest-32` | 32 |
-| `embeddable_game_standard` | `minigame` | `ubuntu-latest-32` | 32 |
-| `embeddable_game_standard` | `metagame` | `ubuntu-latest-32` | 256 |
-| `embeddable_game_standard` | `registry` | `ubuntu-latest-32` | 256 |
-| `metagame` | `leaderboard` | `ubuntu-latest-4` | 256 |
-| `metagame` | `registration` | `ubuntu-latest-4` | 256 |
-| `metagame` | `entry_requirement` | `ubuntu-latest-4` | 256 |
-| `metagame` | `entry_fee` | `ubuntu-latest-4` | 256 |
-| `metagame` | `prize` | `ubuntu-latest-4` | 256 |
-| `metagame` | `ticket_booth` | `ubuntu-latest-4` | 256 |
-| `economy` | `tokenomics` | `ubuntu-latest-4` | 256 |
-| `utilities` | `math` | `ubuntu-latest-4` | 256 |
-| `utilities` | `distribution` | `ubuntu-latest-4` | 256 |
-| `utilities` | `utils` | `ubuntu-latest-4` | 256 |
-| `utilities` | `renderer` | `ubuntu-latest-4` | 256 |
-| `presets` | `presets` | `ubuntu-latest-4` | 256 |
+Heavy EGS modules are partitioned via `snforge --partition` for parallelism on cheaper runners.
+
+| Group Package | Module | Runner | Fuzzer Runs | Partitions |
+|---------------|--------|--------|-------------|------------|
+| `embeddable_game_standard` | `token` | `ubuntu-latest-8` | 64 | 4 |
+| `embeddable_game_standard` | `minigame` | `ubuntu-latest-4` | 64 | 2 |
+| `embeddable_game_standard` | `metagame` | `ubuntu-latest-4` | 64 | 2 |
+| `embeddable_game_standard` | `registry` | `ubuntu-latest-4` | 64 | 2 |
+| `metagame` | `leaderboard` | `ubuntu-latest-4` | 256 | 1 |
+| `metagame` | `registration` | `ubuntu-latest-4` | 256 | 1 |
+| `metagame` | `entry_requirement` | `ubuntu-latest-4` | 256 | 1 |
+| `metagame` | `entry_fee` | `ubuntu-latest-4` | 256 | 1 |
+| `metagame` | `prize` | `ubuntu-latest-4` | 256 | 1 |
+| `metagame` | `ticket_booth` | `ubuntu-latest-4` | 256 | 1 |
+| `economy` | `tokenomics` | `ubuntu-latest-4` | 256 | 1 |
+| `utilities` | `math` | `ubuntu-latest-4` | 256 | 1 |
+| `utilities` | `distribution` | `ubuntu-latest-4` | 256 | 1 |
+| `utilities` | `utils` | `ubuntu-latest-4` | 256 | 1 |
+| `utilities` | `renderer` | `ubuntu-latest-4` | 256 | 1 |
+| `presets` | `presets` | `ubuntu-latest-4` | 256 | 1 |
