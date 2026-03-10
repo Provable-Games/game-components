@@ -1,4 +1,4 @@
-use interfaces::extension::ExtensionConfig;
+use metagame_extensions_interfaces::extension::ExtensionConfig;
 use starknet::ContractAddress;
 
 /// SNIP-5 interface ID derived via src5_rs: XOR of extended function selectors

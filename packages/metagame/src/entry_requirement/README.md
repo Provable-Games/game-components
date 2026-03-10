@@ -7,7 +7,7 @@ Entry gating component for controlling access to contexts (tournaments, quests, 
 - Three requirement types: Token, Allowlist, and Extension
 - Token ownership requirement for NFT gating
 - Allowlist-based access control
-- External validator extension via `IEntryValidator` for custom logic
+- External validator extension via `IEntryRequirementExtension` for custom logic
 - Built-in `EntryValidatorComponent` for building custom validators
 - SRC5 interface registration
 
@@ -17,7 +17,7 @@ Entry gating component for controlling access to contexts (tournaments, quests, 
 |------|-------------|
 | `Token` | Requires caller to own a specific NFT (ERC721 balance check) |
 | `Allowlist` | Requires caller's address to be on an approved list |
-| `Extension` | Delegates validation to an external `IEntryValidator` contract |
+| `Extension` | Delegates validation to an external `IEntryRequirementExtension` contract |
 
 ## Interface
 
@@ -28,12 +28,12 @@ Entry gating component for controlling access to contexts (tournaments, quests, 
 | `get_entry_requirement(context_id)` | Get the requirement config for a context |
 | `meets_entry_requirement(context_id, player)` | Check if player meets the requirement |
 
-### IEntryValidator (Extension Interface)
+### IEntryRequirementExtension (Extension Interface)
 
 Custom validator contracts implement this:
 
 ```cairo
-trait IEntryValidator<TState> {
+trait IEntryRequirementExtension<TState> {
     fn validate_entry(self: @TState, context_id: u64, player: ContractAddress) -> bool;
 }
 ```
@@ -81,6 +81,6 @@ let allowed = self.entry_req.meets_entry_requirement(context_id, player);
 
 ## Dependencies
 
-- `game_components_interfaces` - EntryRequirement types and IEntryValidator interface
+- `game_components_interfaces` - EntryRequirement types and IEntryRequirementExtension interface
 - `openzeppelin_interfaces` - ERC20/ERC721 interfaces
 - `openzeppelin_introspection` - SRC5 interface registration

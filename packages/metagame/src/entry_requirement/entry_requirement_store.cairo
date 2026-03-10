@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
 
 use core::num::traits::Zero;
-use interfaces::entry_requirement_extension::{
-    IENTRY_REQUIREMENT_EXTENSION_ID, IEntryValidatorDispatcher, IEntryValidatorDispatcherTrait,
+use metagame_extensions_interfaces::entry_requirement_extension::{
+    IENTRY_REQUIREMENT_EXTENSION_ID, IEntryRequirementExtensionDispatcher,
+    IEntryRequirementExtensionDispatcherTrait,
 };
 use openzeppelin_interfaces::erc721::{IERC721Dispatcher, IERC721DispatcherTrait, IERC721_ID};
 use openzeppelin_interfaces::introspection::{ISRC5Dispatcher, ISRC5DispatcherTrait};
@@ -158,14 +159,13 @@ pub impl EntryRequirementStoreImpl<T, +Store<T>, +Drop<T>> of EntryRequirementSt
                         "EntryRequirement: Provided qualification proof is not of type 'Extension'",
                     ),
                 };
-                let entry_validator_dispatcher = IEntryValidatorDispatcher {
+                let extension_dispatcher = IEntryRequirementExtensionDispatcher {
                     contract_address: extension_config.address,
                 };
                 let caller_address = get_caller_address();
                 let display_extension_address: felt252 = extension_config.address.into();
                 assert!(
-                    entry_validator_dispatcher
-                        .valid_entry(context_id, caller_address, qualification),
+                    extension_dispatcher.valid_entry(context_id, caller_address, qualification),
                     "EntryRequirement: Invalid entry according to extension {}",
                     display_extension_address,
                 );
@@ -196,7 +196,7 @@ pub impl EntryRequirementStoreImpl<T, +Store<T>, +Drop<T>> of EntryRequirementSt
                 let display_address: felt252 = extension_address.into();
                 assert!(
                     src5_dispatcher.supports_interface(IENTRY_REQUIREMENT_EXTENSION_ID),
-                    "EntryRequirement: Extension address {} does not support IEntryValidator interface",
+                    "EntryRequirement: Extension address {} does not support IEntryRequirementExtension interface",
                     display_address,
                 );
             },
@@ -212,7 +212,7 @@ pub impl EntryRequirementStoreImpl<T, +Store<T>, +Drop<T>> of EntryRequirementSt
         match entry_requirement.entry_requirement_type {
             EntryRequirementType::extension(extension_config) => {
                 let extension_address = extension_config.address;
-                let entry_validator_dispatcher = IEntryValidatorDispatcher {
+                let extension_dispatcher = IEntryRequirementExtensionDispatcher {
                     contract_address: extension_address,
                 };
                 let display_extension_address: felt252 = extension_address.into();
@@ -225,7 +225,7 @@ pub impl EntryRequirementStoreImpl<T, +Store<T>, +Drop<T>> of EntryRequirementSt
                     ),
                 };
 
-                let entries_left = entry_validator_dispatcher
+                let entries_left = extension_dispatcher
                     .entries_left(context_id, caller_address, qualification);
 
                 match entries_left {
