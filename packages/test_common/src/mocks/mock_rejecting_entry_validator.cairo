@@ -1,7 +1,9 @@
-/// Simple mock that implements IEntryValidator but always rejects entries.
+/// Simple mock that implements IEntryRequirementExtension but always rejects entries.
 #[starknet::contract]
 pub mod RejectingEntryValidatorMock {
-    use interfaces::entry_requirement_extension::{IENTRY_REQUIREMENT_EXTENSION_ID, IEntryValidator};
+    use metagame_extensions_interfaces::entry_requirement_extension::{
+        IENTRY_REQUIREMENT_EXTENSION_ID, IEntryRequirementExtension,
+    };
     use openzeppelin_introspection::src5::SRC5Component;
     use openzeppelin_introspection::src5::SRC5Component::InternalTrait as SRC5InternalTrait;
     use starknet::ContractAddress;
@@ -35,7 +37,7 @@ pub mod RejectingEntryValidatorMock {
     }
 
     #[abi(embed_v0)]
-    impl EntryValidatorImpl of IEntryValidator<ContractState> {
+    impl EntryValidatorImpl of IEntryRequirementExtension<ContractState> {
         fn owner_address(self: @ContractState) -> ContractAddress {
             self.owner_address.read()
         }

@@ -13,8 +13,8 @@
 pub mod PrizeComponent {
     use core::num::traits::Zero;
     use game_components_interfaces::prize::{IPRIZE_ID, IPrize};
-    use interfaces::extension::ExtensionConfig;
-    use interfaces::prize_extension::{
+    use metagame_extensions_interfaces::extension::ExtensionConfig;
+    use metagame_extensions_interfaces::prize_extension::{
         IPRIZE_EXTENSION_ID, IPrizeExtensionDispatcher, IPrizeExtensionDispatcherTrait,
     };
     use openzeppelin_interfaces::erc20::{IERC20Dispatcher, IERC20DispatcherTrait};
