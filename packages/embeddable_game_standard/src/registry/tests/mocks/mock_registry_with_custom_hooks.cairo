@@ -72,7 +72,7 @@ pub mod MockRegistryWithCustomHooks {
             self.hook_creator.write(creator_address);
         }
 
-        fn assert_registry_owner(self: @ContractState) {// No-op for testing
+        fn assert_registry_owner(self: @ContractState) { // No-op for testing
         }
     }
 

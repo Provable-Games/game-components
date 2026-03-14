@@ -62,7 +62,9 @@ pub mod MockRegistryWithERC721 {
             self.erc721.mint(creator_address, game_id.into());
         }
 
-        fn assert_registry_owner(self: @ContractState) {// No-op for testing - any caller can set defaults
+        fn assert_registry_owner(
+            self: @ContractState,
+        ) { // No-op for testing - any caller can set defaults
         }
     }
 

@@ -52,7 +52,7 @@ pub mod MockRegistryWithRejectingHook {
         ) { // Never reached because before_register_game panics
         }
 
-        fn assert_registry_owner(self: @ContractState) {// No-op
+        fn assert_registry_owner(self: @ContractState) { // No-op
         }
     }
 

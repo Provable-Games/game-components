@@ -549,6 +549,8 @@ pub impl MinigameRegistryHooksEmptyImpl<
     ) { // No-op: contracts can override to mint creator tokens
     }
 
-    fn assert_registry_owner(self: @TContractState) {// No-op: contracts should override to implement ownership checks
+    fn assert_registry_owner(
+        self: @TContractState,
+    ) { // No-op: contracts should override to implement ownership checks
     }
 }
