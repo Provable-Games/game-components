@@ -1293,6 +1293,8 @@ mod MockRegistryForLibs {
             royalty_fraction: Option<u128>,
             skills_address: Option<ContractAddress>,
             version: u64,
+            license: Option<ByteArray>,
+            fee_numerator: Option<u16>,
         ) -> u64 {
             1
         }

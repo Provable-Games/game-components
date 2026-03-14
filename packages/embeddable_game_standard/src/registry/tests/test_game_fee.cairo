@@ -49,6 +49,8 @@ fn register_game(registry: IMinigameRegistryDispatcher, game_address: ContractAd
             Option::None,
             Option::None,
             1,
+            Option::None,
+            Option::None,
         );
     stop_cheat_caller_address(registry.contract_address);
     game_id

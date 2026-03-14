@@ -244,6 +244,8 @@ pub mod MinigameRegistryComponent {
             royalty_fraction: Option<u128>,
             skills_address: Option<ContractAddress>,
             version: u64,
+            license: Option<ByteArray>,
+            fee_numerator: Option<u16>,
         ) -> u64 {
             let game_count = self.game_counter.read();
             let new_game_id = game_count + 1;
@@ -330,6 +332,16 @@ pub mod MinigameRegistryComponent {
             MinigameRegistryHooksTrait::after_register_game(
                 ref contract, new_game_id, creator_address,
             );
+
+            // Set per-game fee override if provided
+            if let (Option::Some(lic), Option::Some(fee)) = (license, fee_numerator) {
+                assert_valid_fee_numerator(fee);
+                self
+                    .game_fee_info
+                    .entry(new_game_id)
+                    .write(GameFeeInfo { license: lic.clone(), fee_numerator: fee });
+                self.emit(GameFeeUpdate { game_id: new_game_id, license: lic, fee_numerator: fee });
+            }
 
             new_game_id
         }

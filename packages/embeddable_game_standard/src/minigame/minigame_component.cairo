@@ -145,7 +145,7 @@ pub mod MinigameComponent {
                     let minigame_registry_dispatcher = IMinigameRegistryDispatcher {
                         contract_address: minigame_registry_address,
                     };
-                    let game_id = minigame_registry_dispatcher
+                    minigame_registry_dispatcher
                         .register_game(
                             creator_address,
                             name,
@@ -160,13 +160,9 @@ pub mod MinigameComponent {
                             royalty_fraction,
                             skills_address,
                             version,
+                            license,
+                            game_fee_bps,
                         );
-
-                    // Set per-game fee override if both license and fee_bps are provided
-                    if let (Option::Some(license), Option::Some(fee_bps)) =
-                        (license, game_fee_bps) {
-                        minigame_registry_dispatcher.set_game_fee(game_id, license, fee_bps);
-                    }
                 }
             }
 
