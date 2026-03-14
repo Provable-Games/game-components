@@ -86,15 +86,16 @@ pub use registration::{
 
 // Registry
 pub use registry::{
-    IMINIGAME_REGISTRY_ID, IMinigameRegistry, IMinigameRegistryDispatcher,
-    IMinigameRegistryDispatcherTrait,
+    DEFAULT_GAME_FEE_BPS, FEE_DENOMINATOR, IMINIGAME_REGISTRY_ID, IMinigameRegistry,
+    IMinigameRegistryDispatcher, IMinigameRegistryDispatcherTrait, default_license,
 };
 
 // Structs
 pub use structs::{
-    GameContext, GameContextDetails, GameDetail, GameMetadata, GameObjective, GameObjectiveDetails,
-    GameSetting, GameSettingDetails, LeaderboardConfig, LeaderboardEntry, LeaderboardResult,
-    LeaderboardStoreConfig, Lifecycle, MintGameParams, MintParams, PlayerNameUpdate, TokenMetadata,
+    GameContext, GameContextDetails, GameDetail, GameFeeInfo, GameMetadata, GameObjective,
+    GameObjectiveDetails, GameSetting, GameSettingDetails, LeaderboardConfig, LeaderboardEntry,
+    LeaderboardResult, LeaderboardStoreConfig, Lifecycle, MintGameParams, MintParams,
+    PlayerNameUpdate, TokenMetadata,
 };
 
 // Token

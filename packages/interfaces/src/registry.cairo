@@ -1,12 +1,25 @@
 // Minigame registry interface
 use starknet::ContractAddress;
-pub use crate::structs::registry::GameMetadata;
+pub use crate::structs::registry::{GameFeeInfo, GameMetadata};
+
+/// Default game fee in basis points (500 = 5%)
+pub const DEFAULT_GAME_FEE_BPS: u16 = 500;
+
+/// Fee denominator for basis points (10_000 = 100%)
+pub const FEE_DENOMINATOR: u16 = 10_000;
+
+/// Returns the default license text for the Embeddable Game Standard
+pub fn default_license() -> ByteArray {
+    "This game is licensed under the Embeddable Game Standard License v1.0. Monetization platforms must pay the declared game fee (default 5%) on revenue generated from this game."
+}
 
 /// SNIP-5 interface ID derived via src5_rs: XOR of extended function selectors
 /// - game_count, game_id_from_address, game_address_from_id, game_metadata,
 ///   is_game_registered, register_game, set_game_royalty, skills_address,
 ///   game_metadata_batch, games_registered_batch, get_games,
-///   get_games_by_developer, get_games_by_publisher, get_games_by_genre
+///   get_games_by_developer, get_games_by_publisher, get_games_by_genre,
+///   game_fee_info, default_game_fee_info, set_default_game_fee,
+///   set_game_fee, reset_game_fee
 pub const IMINIGAME_REGISTRY_ID: felt252 =
     0x2ff8aa8dda405faf0eb17c5f806d7482b7352cf91fa9668e9ddf030f14b2ee9;
 
@@ -56,4 +69,21 @@ pub trait IMinigameRegistry<TState> {
     fn get_games_by_genre(
         self: @TState, genre: ByteArray, start: u64, count: u64,
     ) -> Array<GameMetadata>;
+
+    // Game fee functions (ERC2981-inspired)
+
+    /// Returns game fee info for a specific game (override if set, else default).
+    fn game_fee_info(self: @TState, game_id: u64) -> GameFeeInfo;
+
+    /// Returns the default game fee info.
+    fn default_game_fee_info(self: @TState) -> GameFeeInfo;
+
+    /// Set the default license + fee for all games. Admin only.
+    fn set_default_game_fee(ref self: TState, license: ByteArray, fee_numerator: u16);
+
+    /// Override license + fee for a specific game. Creator token owner only.
+    fn set_game_fee(ref self: TState, game_id: u64, license: ByteArray, fee_numerator: u16);
+
+    /// Reset game fee back to default. Creator token owner only.
+    fn reset_game_fee(ref self: TState, game_id: u64);
 }

@@ -51,6 +51,9 @@ pub mod MockRegistryWithRejectingHook {
             ref self: ContractState, game_id: u64, creator_address: ContractAddress,
         ) { // Never reached because before_register_game panics
         }
+
+        fn assert_registry_owner(self: @ContractState) {// No-op
+        }
     }
 
     #[constructor]

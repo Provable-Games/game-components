@@ -118,6 +118,8 @@ pub mod MinigameComponent {
             royalty_fraction: Option<u128>,
             skills_address: Option<ContractAddress>,
             version: u64,
+            license: Option<ByteArray>,
+            game_fee_bps: Option<u16>,
         ) {
             // Register base SRC5 interface
             self.register_game_interface();
@@ -143,7 +145,7 @@ pub mod MinigameComponent {
                     let minigame_registry_dispatcher = IMinigameRegistryDispatcher {
                         contract_address: minigame_registry_address,
                     };
-                    minigame_registry_dispatcher
+                    let game_id = minigame_registry_dispatcher
                         .register_game(
                             creator_address,
                             name,
@@ -159,6 +161,12 @@ pub mod MinigameComponent {
                             skills_address,
                             version,
                         );
+
+                    // Set per-game fee override if both license and fee_bps are provided
+                    if let (Option::Some(license), Option::Some(fee_bps)) =
+                        (license, game_fee_bps) {
+                        minigame_registry_dispatcher.set_game_fee(game_id, license, fee_bps);
+                    }
                 }
             }
 

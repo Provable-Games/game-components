@@ -1,6 +1,6 @@
 // Re-export from the registry package
 pub use game_components_embeddable_game_standard::registry::interface::{
-    GameMetadata, IMINIGAME_REGISTRY_ID, IMinigameRegistry,
+    GameFeeInfo, GameMetadata, IMINIGAME_REGISTRY_ID, IMinigameRegistry,
 };
 
 #[starknet::contract]
@@ -16,7 +16,7 @@ pub mod MinigameRegistryContract {
     use starknet::{ContractAddress, get_caller_address};
     use crate::token::interface::{ITokenEventRelayerDispatcher, ITokenEventRelayerDispatcherTrait};
     // use crate::token::extensions::multi_game::interface::{IMinigameTokenMultiGame};
-    use super::GameMetadata;
+    use super::{GameFeeInfo, GameMetadata};
     use super::{IMINIGAME_REGISTRY_ID, IMinigameRegistry};
 
     component!(path: ERC721Component, storage: erc721, event: ERC721Event);
@@ -42,6 +42,9 @@ pub mod MinigameRegistryContract {
         game_metadata: Map<u64, GameMetadata>,
         // Event relayer storage
         event_relayer_address: ContractAddress,
+        // Game fee storage
+        default_game_fee_info: GameFeeInfo,
+        game_fee_info: Map<u64, GameFeeInfo>,
     }
 
     #[event]
@@ -407,6 +410,33 @@ pub mod MinigameRegistryContract {
                 game_id += 1;
             }
             results
+        }
+
+        fn game_fee_info(self: @ContractState, game_id: u64) -> GameFeeInfo {
+            let info = self.game_fee_info.entry(game_id).read();
+            if info.fee_numerator == 0 && info.license.len() == 0 {
+                self.default_game_fee_info.read()
+            } else {
+                info
+            }
+        }
+
+        fn default_game_fee_info(self: @ContractState) -> GameFeeInfo {
+            self.default_game_fee_info.read()
+        }
+
+        fn set_default_game_fee(ref self: ContractState, license: ByteArray, fee_numerator: u16) {
+            self.default_game_fee_info.write(GameFeeInfo { license, fee_numerator });
+        }
+
+        fn set_game_fee(
+            ref self: ContractState, game_id: u64, license: ByteArray, fee_numerator: u16,
+        ) {
+            self.game_fee_info.entry(game_id).write(GameFeeInfo { license, fee_numerator });
+        }
+
+        fn reset_game_fee(ref self: ContractState, game_id: u64) {
+            self.game_fee_info.entry(game_id).write(GameFeeInfo { license: "", fee_numerator: 0 });
         }
     }
 
