@@ -1,5 +1,5 @@
-use interfaces::extension::ExtensionConfig;
 use starknet::ContractAddress;
+use super::extension::ExtensionConfig;
 
 /// SNIP-5 interface ID derived via src5_rs: XOR of extended function selectors
 /// - get_entry_fee(u64)->Option<EntryFeeConfig>

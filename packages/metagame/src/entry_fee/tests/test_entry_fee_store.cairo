@@ -522,7 +522,9 @@ fn test_set_entry_fee_extension_stores_address_and_config() {
 
     let config_data = array![0x111, 0x222, 0x333];
     let entry_fee = EntryFee::Extension(
-        interfaces::extension::ExtensionConfig { address: ext_addr, config: config_data.span() },
+        game_components_interfaces::extension::ExtensionConfig {
+            address: ext_addr, config: config_data.span(),
+        },
     );
     mock.set_entry_fee(1, entry_fee);
 
@@ -547,7 +549,9 @@ fn test_set_entry_fee_extension_blocks_second_set() {
     mock_extension_calls(ext_addr);
 
     let entry_fee = EntryFee::Extension(
-        interfaces::extension::ExtensionConfig { address: ext_addr, config: array![0x1].span() },
+        game_components_interfaces::extension::ExtensionConfig {
+            address: ext_addr, config: array![0x1].span(),
+        },
     );
     mock.set_entry_fee(1, entry_fee);
 
@@ -556,7 +560,9 @@ fn test_set_entry_fee_extension_blocks_second_set() {
     mock_extension_calls(ext_addr2);
 
     let entry_fee2 = EntryFee::Extension(
-        interfaces::extension::ExtensionConfig { address: ext_addr2, config: array![0x2].span() },
+        game_components_interfaces::extension::ExtensionConfig {
+            address: ext_addr2, config: array![0x2].span(),
+        },
     );
     mock.set_entry_fee(1, entry_fee2);
 }
@@ -569,7 +575,9 @@ fn test_set_entry_fee_extension_with_empty_config() {
     mock_extension_calls(ext_addr);
 
     let entry_fee = EntryFee::Extension(
-        interfaces::extension::ExtensionConfig { address: ext_addr, config: array![].span() },
+        game_components_interfaces::extension::ExtensionConfig {
+            address: ext_addr, config: array![].span(),
+        },
     );
     mock.set_entry_fee(1, entry_fee);
 
@@ -588,7 +596,9 @@ fn test_get_entry_fee_returns_none_for_extension_only() {
     mock_extension_calls(ext_addr);
 
     let entry_fee = EntryFee::Extension(
-        interfaces::extension::ExtensionConfig { address: ext_addr, config: array![0x1].span() },
+        game_components_interfaces::extension::ExtensionConfig {
+            address: ext_addr, config: array![0x1].span(),
+        },
     );
     mock.set_entry_fee(1, entry_fee);
 
@@ -689,13 +699,17 @@ fn test_extension_address_isolation_by_context() {
     // Set extensions on two different contexts
     mock_extension_calls(ext_addr1);
     let entry_fee1 = EntryFee::Extension(
-        interfaces::extension::ExtensionConfig { address: ext_addr1, config: array![].span() },
+        game_components_interfaces::extension::ExtensionConfig {
+            address: ext_addr1, config: array![].span(),
+        },
     );
     mock.set_entry_fee(1, entry_fee1);
 
     mock_extension_calls(ext_addr2);
     let entry_fee2 = EntryFee::Extension(
-        interfaces::extension::ExtensionConfig { address: ext_addr2, config: array![].span() },
+        game_components_interfaces::extension::ExtensionConfig {
+            address: ext_addr2, config: array![].span(),
+        },
     );
     mock.set_entry_fee(2, entry_fee2);
 
@@ -821,7 +835,9 @@ fn test_extension_address_and_config_together() {
 
     let config_data = array![0x42, 0x84, 0xFF];
     let entry_fee = EntryFee::Extension(
-        interfaces::extension::ExtensionConfig { address: ext_addr, config: config_data.span() },
+        game_components_interfaces::extension::ExtensionConfig {
+            address: ext_addr, config: config_data.span(),
+        },
     );
     mock.set_entry_fee(1, entry_fee);
 

@@ -7,13 +7,10 @@ edition.workspace = true
 
 [dependencies]
 game_components_metagame = { path = "../metagame" }
-game_components_economy = { path = "../economy" }
 game_components_interfaces = { path = "../interfaces" }
 starknet.workspace = true
 openzeppelin_token.workspace = true
 openzeppelin_introspection.workspace = true
-openzeppelin_access.workspace = true
-ekubo.workspace = true
 
 [[target.starknet-contract]]
 build-external-contracts = [

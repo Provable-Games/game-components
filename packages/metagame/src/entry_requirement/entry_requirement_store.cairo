@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 
 use core::num::traits::Zero;
-use interfaces::entry_requirement_extension::{
+use game_components_interfaces::entry_requirement_extension::{
     IENTRY_REQUIREMENT_EXTENSION_ID, IEntryRequirementExtensionDispatcher,
     IEntryRequirementExtensionDispatcherTrait,
 };

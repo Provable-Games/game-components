@@ -11,17 +11,22 @@ pub use structs::{
 // Budokan-extracted interfaces
 pub mod distribution;
 pub mod entry_fee;
+pub mod entry_fee_extension;
 pub mod entry_requirement;
+pub mod entry_requirement_extension;
+
+// Extension interfaces (inlined from metagame_extensions)
+pub mod extension;
 pub mod leaderboard;
 
 // Interface modules
 pub mod metagame;
 pub mod minigame;
 pub mod prize;
+pub mod prize_extension;
 pub mod registration;
 pub mod registry;
 pub mod token;
-pub mod tokenomics;
 
 // Distribution
 pub use distribution::Distribution;
@@ -37,6 +42,9 @@ pub use entry_requirement::{
     EntryRequirement, EntryRequirementType, IEntryRequirement, IEntryRequirementDispatcher,
     IEntryRequirementDispatcherTrait, NFTQualification, QualificationEntries, QualificationProof,
 };
+
+// Extension
+pub use extension::ExtensionConfig;
 
 // Leaderboard
 pub use leaderboard::{
@@ -107,6 +115,3 @@ pub use token::{
     IMinigameTokenRenderer, IMinigameTokenRendererDispatcher, IMinigameTokenRendererDispatcherTrait,
     IMinigameTokenSettings, IMinigameTokenSettingsDispatcher, IMinigameTokenSettingsDispatcherTrait,
 };
-
-// Tokenomics (existing)
-pub use tokenomics::{buyback, stream};

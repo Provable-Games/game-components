@@ -2,7 +2,7 @@
 /// Always accepts entries (valid_entry returns true), entries_left returns Option::Some(5).
 #[starknet::contract]
 pub mod AcceptingLimitedEntryValidatorMock {
-    use interfaces::entry_requirement_extension::{
+    use game_components_interfaces::entry_requirement_extension::{
         IENTRY_REQUIREMENT_EXTENSION_ID, IEntryRequirementExtension,
     };
     use openzeppelin_introspection::src5::SRC5Component;

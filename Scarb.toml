@@ -3,7 +3,6 @@ members = [
     "packages/interfaces",
     "packages/embeddable_game_standard",
     "packages/metagame",
-    "packages/economy",
     "packages/utilities",
     "packages/presets",
     "packages/testing",
@@ -19,7 +18,7 @@ edition.workspace = true
 [workspace.package]
 version = "1.5.1"
 edition = "2024_07"
-cairo-version = "2.15.1"
+cairo-version = "2.13.1"
 authors = ["Provable Games <maintainers@provable.games>"]
 keywords = [
     "openzeppelin",
@@ -30,22 +29,19 @@ keywords = [
 ]
 
 [workspace.dependencies]
-starknet = "2.15.1"
-snforge_std = { git = "https://github.com/foundry-rs/starknet-foundry", tag = "v0.55.0" }
-openzeppelin_access = { git = "https://github.com/OpenZeppelin/cairo-contracts.git", tag = "v3.0.0" }
-openzeppelin_introspection = { git = "https://github.com/OpenZeppelin/cairo-contracts.git", tag = "v3.0.0" }
-openzeppelin_token = { git = "https://github.com/OpenZeppelin/cairo-contracts.git", tag = "v3.0.0" }
-openzeppelin_interfaces = { git = "https://github.com/OpenZeppelin/cairo-contracts.git", tag = "v3.0.0" }
-ekubo = { git = "https://github.com/EkuboProtocol/starknet-contracts.git", tag = "v4.0.1" }
+starknet = "2.13.1"
+snforge_std = { git = "https://github.com/foundry-rs/starknet-foundry", tag = "v0.53.0" }
+openzeppelin_access = { git = "https://github.com/OpenZeppelin/cairo-contracts.git", tag = "v3.0.0-alpha.3" }
+openzeppelin_introspection = { git = "https://github.com/OpenZeppelin/cairo-contracts.git", tag = "v3.0.0-alpha.3" }
+openzeppelin_token = { git = "https://github.com/OpenZeppelin/cairo-contracts.git", tag = "v3.0.0-alpha.3" }
+openzeppelin_interfaces = { git = "https://github.com/OpenZeppelin/cairo-contracts.git", tag = "v3.0.0-alpha.3" }
 
 [dependencies]
 starknet.workspace = true
 # Group packages
 game_components_interfaces = { path = "packages/interfaces" }
-interfaces = { git = "https://github.com/Provable-Games/metagame_extensions.git", branch = "next" }
 game_components_embeddable_game_standard = { path = "packages/embeddable_game_standard" }
 game_components_metagame = { path = "packages/metagame" }
-game_components_economy = { path = "packages/economy" }
 game_components_utilities = { path = "packages/utilities" }
 game_components_presets = { path = "packages/presets" }
 # Shared testing infrastructure

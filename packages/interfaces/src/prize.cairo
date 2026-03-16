@@ -1,6 +1,6 @@
 use game_components_interfaces::distribution::Distribution;
-use interfaces::extension::ExtensionConfig;
 use starknet::ContractAddress;
+use super::extension::ExtensionConfig;
 
 /// SNIP-5 interface ID derived via src5_rs: XOR of extended function selectors
 /// - get_prize(u64)->PrizeData

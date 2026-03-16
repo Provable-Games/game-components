@@ -1,5 +1,5 @@
-pub use interfaces::extension::ExtensionConfig;
 use starknet::ContractAddress;
+pub use super::extension::ExtensionConfig;
 
 /// SNIP-5 interface ID derived via src5_rs: XOR of extended function selectors
 /// - get_entry_requirement(u64)->Option<EntryRequirement>

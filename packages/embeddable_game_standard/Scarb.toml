@@ -10,7 +10,6 @@ starknet.workspace = true
 openzeppelin_token.workspace = true
 openzeppelin_introspection.workspace = true
 openzeppelin_interfaces.workspace = true
-openzeppelin_access.workspace = true
 # Game components dependencies
 game_components_interfaces = { path = "../interfaces" }
 game_components_utilities = { path = "../utilities" }

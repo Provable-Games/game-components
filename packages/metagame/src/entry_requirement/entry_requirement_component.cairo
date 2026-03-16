@@ -10,7 +10,7 @@
 pub mod EntryRequirementComponent {
     use core::num::traits::Zero;
     use game_components_interfaces::entry_requirement::{IENTRY_REQUIREMENT_ID, IEntryRequirement};
-    use interfaces::entry_requirement_extension::{
+    use game_components_interfaces::entry_requirement_extension::{
         IENTRY_REQUIREMENT_EXTENSION_ID, IEntryRequirementExtensionDispatcher,
         IEntryRequirementExtensionDispatcherTrait,
     };
