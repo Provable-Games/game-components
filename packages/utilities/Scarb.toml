@@ -9,8 +9,7 @@ edition.workspace = true
 starknet.workspace = true
 game_components_interfaces = { path = "../interfaces" }
 game_components_embeddable_game_standard = { path = "../embeddable_game_standard" }
-alexandria_encoding = { git = "https://github.com/keep-starknet-strange/alexandria.git", tag = "v0.9.0" }
-graffiti = { git = "https://github.com/provable-games/graffiti" }
+graffiti = { path = "../graffiti" }
 
 [dev-dependencies]
 snforge_std.workspace = true

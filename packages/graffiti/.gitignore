@@ -1,0 +1,6 @@
+.target
+target
+*.code-workspace
+.snfoundry_cache/
+snfoundry_trace/
+coverage/

@@ -1,0 +1,29 @@
+[package]
+name = "graffiti"
+version = "0.1.0"
+edition = "2024_07"
+authors = ["Milan Cermak"]
+description = "A Cairo library for building XML-based markup documents."
+keywords = ["cairo", "svg", "html", "xml", "markup"]
+repository = "https://github.com/Provable-Games/graffiti"
+license-file = "LICENSE"
+
+[dependencies]
+starknet = "2.13.1"
+
+[profile.dev.cairo]
+unstable-add-statements-functions-debug-info = true
+unstable-add-statements-code-locations-debug-info = true
+inlining-strategy = "avoid"
+
+[tool.fmt]
+sort-module-level-items = true
+
+[tool.scarb]
+allow-prebuilt-plugins = ["snforge_std"]
+
+[tool.snforge]
+fuzzer_runs = 500
+
+
+[lib]
