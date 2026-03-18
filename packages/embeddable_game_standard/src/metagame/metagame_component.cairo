@@ -7,6 +7,8 @@ pub mod MetagameComponent {
     use game_components_embeddable_game_standard::metagame::extensions::context::interface::IMETAGAME_CONTEXT_ID;
     use game_components_embeddable_game_standard::metagame::extensions::context::structs::GameContextDetails;
     use game_components_embeddable_game_standard::token::interface::IMINIGAME_TOKEN_ID;
+    use openzeppelin_interfaces::erc20::{IERC20Dispatcher, IERC20DispatcherTrait};
+    use openzeppelin_interfaces::erc721::{IERC721Dispatcher, IERC721DispatcherTrait};
     use openzeppelin_interfaces::introspection::{ISRC5Dispatcher, ISRC5DispatcherTrait};
     use openzeppelin_introspection::src5::SRC5Component;
     use openzeppelin_introspection::src5::SRC5Component::{
@@ -17,6 +19,9 @@ pub mod MetagameComponent {
     use crate::metagame::interface::{IMETAGAME_ID, IMetagame};
     use crate::metagame::metagame as libs;
     use crate::metagame::structs::MintMetagameParams;
+    use crate::minigame::interface::{IMinigameDispatcher, IMinigameDispatcherTrait};
+    use crate::registry::interface::{IMinigameRegistryDispatcher, IMinigameRegistryDispatcherTrait};
+    use crate::token::interface::{IMinigameTokenDispatcher, IMinigameTokenDispatcherTrait};
 
     #[storage]
     pub struct Storage {
@@ -129,6 +134,41 @@ pub mod MetagameComponent {
             ref self: ComponentState<TContractState>, mints: Array<MintMetagameParams>,
         ) -> Array<felt252> {
             libs::mint_batch(self.default_token_address.read(), mints)
+        }
+
+        /// Reads fee from registry, calculates amount, transfers via ERC20
+        /// to the game's creator token owner. Returns fee amount (0 if no fee).
+        fn pay_game_fee(
+            ref self: ComponentState<TContractState>,
+            game_address: ContractAddress,
+            payment_token: ContractAddress,
+            revenue: u128,
+        ) -> u128 {
+            let fee_info = libs::get_game_fee_info(game_address);
+            let fee_amount = libs::calculate_game_fee(revenue, fee_info.fee_numerator);
+            if fee_amount == 0 {
+                return 0;
+            }
+
+            // Get the creator token owner (fee recipient)
+            let minigame_dispatcher = IMinigameDispatcher { contract_address: game_address };
+            let token_address = minigame_dispatcher.token_address();
+            let token_dispatcher = IMinigameTokenDispatcher { contract_address: token_address };
+            let registry_address = token_dispatcher.game_registry_address();
+            let registry_dispatcher = IMinigameRegistryDispatcher {
+                contract_address: registry_address,
+            };
+            let game_id = registry_dispatcher.game_id_from_address(game_address);
+
+            // Get creator token owner via ERC721 owner_of
+            let erc721 = IERC721Dispatcher { contract_address: registry_address };
+            let recipient = erc721.owner_of(game_id.into());
+
+            // Transfer fee
+            let erc20 = IERC20Dispatcher { contract_address: payment_token };
+            erc20.transfer(recipient, fee_amount.into());
+
+            fee_amount
         }
     }
 }

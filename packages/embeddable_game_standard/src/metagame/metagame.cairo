@@ -3,7 +3,7 @@ use game_components_embeddable_game_standard::minigame::interface::{
     IMinigameDispatcher, IMinigameDispatcherTrait,
 };
 use game_components_embeddable_game_standard::registry::interface::{
-    IMinigameRegistryDispatcher, IMinigameRegistryDispatcherTrait,
+    FEE_DENOMINATOR, GameFeeInfo, IMinigameRegistryDispatcher, IMinigameRegistryDispatcherTrait,
 };
 use game_components_embeddable_game_standard::token::interface::{
     IMinigameTokenDispatcher, IMinigameTokenDispatcherTrait,
@@ -179,4 +179,29 @@ pub fn mint_batch(
     }
 
     token_ids
+}
+
+/// Pure calculation: revenue * fee_numerator / FEE_DENOMINATOR
+/// Uses u256 intermediate to avoid overflow on large revenue values.
+pub fn calculate_game_fee(revenue: u128, fee_numerator: u16) -> u128 {
+    if fee_numerator == 0 || revenue == 0 {
+        return 0;
+    }
+    let result: u256 = (revenue.into() * fee_numerator.into()) / FEE_DENOMINATOR.into();
+    result.try_into().unwrap()
+}
+
+/// Resolves game fee info by navigating: game_address → token → registry → game_fee_info
+pub fn get_game_fee_info(game_address: ContractAddress) -> GameFeeInfo {
+    let minigame_dispatcher = IMinigameDispatcher { contract_address: game_address };
+    let minigame_token_address = minigame_dispatcher.token_address();
+    let minigame_token_dispatcher = IMinigameTokenDispatcher {
+        contract_address: minigame_token_address,
+    };
+    let minigame_registry_address = minigame_token_dispatcher.game_registry_address();
+    let minigame_registry_dispatcher = IMinigameRegistryDispatcher {
+        contract_address: minigame_registry_address,
+    };
+    let game_id = minigame_registry_dispatcher.game_id_from_address(game_address);
+    minigame_registry_dispatcher.game_fee_info(game_id)
 }

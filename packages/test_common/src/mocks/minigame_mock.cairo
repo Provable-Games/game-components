@@ -495,6 +495,8 @@ pub mod minigame_mock {
                     royalty_fraction,
                     Option::None,
                     1,
+                    Option::None,
+                    Option::None,
                 );
         }
     }

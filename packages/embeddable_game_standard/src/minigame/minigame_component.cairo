@@ -118,6 +118,8 @@ pub mod MinigameComponent {
             royalty_fraction: Option<u128>,
             skills_address: Option<ContractAddress>,
             version: u64,
+            license: Option<ByteArray>,
+            game_fee_bps: Option<u16>,
         ) {
             // Register base SRC5 interface
             self.register_game_interface();
@@ -158,6 +160,8 @@ pub mod MinigameComponent {
                             royalty_fraction,
                             skills_address,
                             version,
+                            license,
+                            game_fee_bps,
                         );
                 }
             }

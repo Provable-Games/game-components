@@ -9,9 +9,17 @@ pub mod registry {
         pub const CALLER_NOT_MINIGAME: felt252 = 'Registry: not IMinigame';
         pub const GAME_ALREADY_REGISTERED: felt252 = 'Registry: already registered';
         pub const NOT_GAME_OWNER: felt252 = 'Registry: not game owner';
+        pub const NOT_REGISTRY_OWNER: felt252 = 'Registry: not registry owner';
         pub const INVALID_GAME_ID: felt252 = 'Registry: invalid game id';
         pub const GAME_IDS_EMPTY: felt252 = 'Registry: game_ids empty';
         pub const ADDRESSES_EMPTY: felt252 = 'Registry: addresses empty';
+        pub const FEE_EXCEEDS_DENOMINATOR: felt252 = 'Registry: fee > denominator';
+    }
+    use crate::registry::interface::FEE_DENOMINATOR;
+
+    /// Validates that a fee numerator does not exceed the denominator (10_000 basis points)
+    pub fn assert_valid_fee_numerator(fee_numerator: u16) {
+        assert!(fee_numerator <= FEE_DENOMINATOR, "{}", Errors::FEE_EXCEEDS_DENOMINATOR);
     }
 
     /// Apply defaults for optional metadata fields.

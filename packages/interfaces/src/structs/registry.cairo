@@ -2,6 +2,12 @@
 use starknet::ContractAddress;
 
 #[derive(Drop, Serde, Clone, starknet::Store)]
+pub struct GameFeeInfo {
+    pub license: ByteArray,
+    pub fee_numerator: u16,
+}
+
+#[derive(Drop, Serde, Clone, starknet::Store)]
 pub struct GameMetadata {
     pub contract_address: ContractAddress,
     pub name: ByteArray,

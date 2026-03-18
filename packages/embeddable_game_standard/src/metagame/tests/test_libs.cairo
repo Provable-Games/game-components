@@ -1225,7 +1225,7 @@ mod MockMinigameForLibs {
 mod MockRegistryForLibs {
     use core::num::traits::Zero;
     use game_components_embeddable_game_standard::registry::interface::{
-        GameMetadata, IMinigameRegistry,
+        GameFeeInfo, GameMetadata, IMinigameRegistry,
     };
     use starknet::ContractAddress;
     use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
@@ -1293,6 +1293,8 @@ mod MockRegistryForLibs {
             royalty_fraction: Option<u128>,
             skills_address: Option<ContractAddress>,
             version: u64,
+            license: Option<ByteArray>,
+            fee_numerator: Option<u16>,
         ) -> u64 {
             1
         }
@@ -1359,6 +1361,23 @@ mod MockRegistryForLibs {
             let _ = (genre, start, count);
             array![]
         }
+
+        fn game_fee_info(self: @ContractState, game_id: u64) -> GameFeeInfo {
+            let _ = game_id;
+            GameFeeInfo { license: "", fee_numerator: 500 }
+        }
+
+        fn default_game_fee_info(self: @ContractState) -> GameFeeInfo {
+            GameFeeInfo { license: "", fee_numerator: 500 }
+        }
+
+        fn set_default_game_fee(ref self: ContractState, license: ByteArray, fee_numerator: u16) {}
+
+        fn set_game_fee(
+            ref self: ContractState, game_id: u64, license: ByteArray, fee_numerator: u16,
+        ) {}
+
+        fn reset_game_fee(ref self: ContractState, game_id: u64) {}
     }
 }
 

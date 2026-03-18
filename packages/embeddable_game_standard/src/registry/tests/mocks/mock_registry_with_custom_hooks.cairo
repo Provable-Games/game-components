@@ -71,6 +71,9 @@ pub mod MockRegistryWithCustomHooks {
             self.hook_game_id.write(game_id);
             self.hook_creator.write(creator_address);
         }
+
+        fn assert_registry_owner(self: @ContractState) { // No-op for testing
+        }
     }
 
     #[constructor]

@@ -75,6 +75,8 @@ fn register_game_full(
             royalty_fraction,
             skills_address,
             1,
+            Option::None,
+            Option::None,
         );
     stop_cheat_caller_address(registry.contract_address);
     game_id

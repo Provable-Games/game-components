@@ -19,8 +19,13 @@ pub mod MinigameRegistryComponent {
     };
     use starknet::syscalls::call_contract_syscall;
     use starknet::{ContractAddress, get_block_timestamp, get_caller_address, get_contract_address};
-    use crate::registry::interface::{GameMetadata, IMINIGAME_REGISTRY_ID, IMinigameRegistry};
-    use crate::registry::registry::registry::{Errors, apply_metadata_defaults};
+    use crate::registry::interface::{
+        DEFAULT_GAME_FEE_BPS, GameFeeInfo, GameMetadata, IMINIGAME_REGISTRY_ID, IMinigameRegistry,
+        default_license,
+    };
+    use crate::registry::registry::registry::{
+        Errors, apply_metadata_defaults, assert_valid_fee_numerator,
+    };
     use crate::registry::registry_store::{RegistryStoreImpl, RegistryStoreTrait};
     use crate::registry::store::Store;
 
@@ -36,6 +41,10 @@ pub mod MinigameRegistryComponent {
         game_id_by_address: Map<ContractAddress, u64>,
         /// Mapping from game ID to game metadata
         game_metadata: Map<u64, GameMetadata>,
+        /// Default game fee info (license + fee) for all games
+        default_game_fee_info: GameFeeInfo,
+        /// Per-game fee info overrides (set by game creator)
+        game_fee_info: Map<u64, GameFeeInfo>,
     }
 
     // ==========================================================================
@@ -48,6 +57,8 @@ pub mod MinigameRegistryComponent {
         GameMetadataUpdate: GameMetadataUpdate,
         GameRegistryUpdate: GameRegistryUpdate,
         GameRoyaltyUpdate: GameRoyaltyUpdate,
+        GameFeeUpdate: GameFeeUpdate,
+        DefaultGameFeeUpdate: DefaultGameFeeUpdate,
     }
 
     #[derive(Drop, starknet::Event)]
@@ -81,6 +92,20 @@ pub mod MinigameRegistryComponent {
         #[key]
         pub game_id: u64,
         pub royalty_fraction: u128,
+    }
+
+    #[derive(Drop, starknet::Event)]
+    pub struct GameFeeUpdate {
+        #[key]
+        pub game_id: u64,
+        pub license: ByteArray,
+        pub fee_numerator: u16,
+    }
+
+    #[derive(Drop, starknet::Event)]
+    pub struct DefaultGameFeeUpdate {
+        pub license: ByteArray,
+        pub fee_numerator: u16,
     }
 
     // ==========================================================================
@@ -120,6 +145,24 @@ pub mod MinigameRegistryComponent {
         ) {
             self.game_metadata.entry(game_id).write(metadata);
         }
+
+        fn get_default_game_fee_info(self: @ComponentState<TContractState>) -> GameFeeInfo {
+            self.default_game_fee_info.read()
+        }
+
+        fn set_default_game_fee_info(ref self: ComponentState<TContractState>, info: GameFeeInfo) {
+            self.default_game_fee_info.write(info);
+        }
+
+        fn get_game_fee_info(self: @ComponentState<TContractState>, game_id: u64) -> GameFeeInfo {
+            self.game_fee_info.entry(game_id).read()
+        }
+
+        fn set_game_fee_info(
+            ref self: ComponentState<TContractState>, game_id: u64, info: GameFeeInfo,
+        ) {
+            self.game_fee_info.entry(game_id).write(info);
+        }
     }
 
     // ==========================================================================
@@ -143,6 +186,10 @@ pub mod MinigameRegistryComponent {
         fn after_register_game(
             ref self: TContractState, game_id: u64, creator_address: ContractAddress,
         );
+
+        /// Called to check if the caller is the registry owner/admin.
+        /// Used for admin-only operations like set_default_game_fee.
+        fn assert_registry_owner(self: @TContractState);
     }
 
     // ==========================================================================
@@ -197,6 +244,8 @@ pub mod MinigameRegistryComponent {
             royalty_fraction: Option<u128>,
             skills_address: Option<ContractAddress>,
             version: u64,
+            license: Option<ByteArray>,
+            fee_numerator: Option<u16>,
         ) -> u64 {
             let game_count = self.game_counter.read();
             let new_game_id = game_count + 1;
@@ -284,6 +333,16 @@ pub mod MinigameRegistryComponent {
                 ref contract, new_game_id, creator_address,
             );
 
+            // Set per-game fee override if provided
+            if let (Option::Some(lic), Option::Some(fee)) = (license, fee_numerator) {
+                assert_valid_fee_numerator(fee);
+                self
+                    .game_fee_info
+                    .entry(new_game_id)
+                    .write(GameFeeInfo { license: lic.clone(), fee_numerator: fee });
+                self.emit(GameFeeUpdate { game_id: new_game_id, license: lic, fee_numerator: fee });
+            }
+
             new_game_id
         }
 
@@ -295,28 +354,7 @@ pub mod MinigameRegistryComponent {
             assert!(game_id > 0 && game_id <= game_count, "{}", Errors::INVALID_GAME_ID);
 
             // Check caller owns the game creator token (game_id)
-            // Call owner_of on this contract to check token ownership
-            let caller = get_caller_address();
-            let contract_address = get_contract_address();
-            let owner_of_selector = selector!("owner_of");
-            let mut calldata = array![];
-            let game_id_u256: u256 = game_id.into();
-            calldata.append(game_id_u256.low.into());
-            calldata.append(game_id_u256.high.into());
-
-            let owner =
-                match call_contract_syscall(contract_address, owner_of_selector, calldata.span()) {
-                Result::Ok(result) => {
-                    let mut result_span = result;
-                    match Serde::<ContractAddress>::deserialize(ref result_span) {
-                        Option::Some(addr) => addr,
-                        Option::None => panic!("{}", Errors::NOT_GAME_OWNER),
-                    }
-                },
-                Result::Err(_) => panic!("{}", Errors::NOT_GAME_OWNER),
-            };
-
-            assert!(caller == owner, "{}", Errors::NOT_GAME_OWNER);
+            self._assert_game_creator_token_owner(game_id);
 
             // Update the royalty_fraction in game metadata
             let mut metadata = self.game_metadata.entry(game_id).read();
@@ -366,6 +404,81 @@ pub mod MinigameRegistryComponent {
         ) -> Array<GameMetadata> {
             RegistryStoreTrait::get_games_by_genre(self, genre, start, count)
         }
+
+        fn game_fee_info(self: @ComponentState<TContractState>, game_id: u64) -> GameFeeInfo {
+            let info = self.game_fee_info.entry(game_id).read();
+            if info.fee_numerator == 0 && info.license.len() == 0 {
+                self.default_game_fee_info.read()
+            } else {
+                info
+            }
+        }
+
+        fn default_game_fee_info(self: @ComponentState<TContractState>) -> GameFeeInfo {
+            self.default_game_fee_info.read()
+        }
+
+        fn set_default_game_fee(
+            ref self: ComponentState<TContractState>, license: ByteArray, fee_numerator: u16,
+        ) {
+            // Admin-only via hook
+            let contract = self.get_contract();
+            MinigameRegistryHooksTrait::assert_registry_owner(contract);
+
+            assert_valid_fee_numerator(fee_numerator);
+
+            self
+                .default_game_fee_info
+                .write(GameFeeInfo { license: license.clone(), fee_numerator });
+
+            self.emit(DefaultGameFeeUpdate { license, fee_numerator });
+        }
+
+        fn set_game_fee(
+            ref self: ComponentState<TContractState>,
+            game_id: u64,
+            license: ByteArray,
+            fee_numerator: u16,
+        ) {
+            // Validate game_id exists
+            let game_count = self.game_counter.read();
+            assert!(game_id > 0 && game_id <= game_count, "{}", Errors::INVALID_GAME_ID);
+
+            // Check caller owns the game creator token
+            self._assert_game_creator_token_owner(game_id);
+
+            assert_valid_fee_numerator(fee_numerator);
+
+            self
+                .game_fee_info
+                .entry(game_id)
+                .write(GameFeeInfo { license: license.clone(), fee_numerator });
+
+            self.emit(GameFeeUpdate { game_id, license, fee_numerator });
+        }
+
+        fn reset_game_fee(ref self: ComponentState<TContractState>, game_id: u64) {
+            // Validate game_id exists
+            let game_count = self.game_counter.read();
+            assert!(game_id > 0 && game_id <= game_count, "{}", Errors::INVALID_GAME_ID);
+
+            // Check caller owns the game creator token
+            self._assert_game_creator_token_owner(game_id);
+
+            // Write zero/empty to clear the override
+            self.game_fee_info.entry(game_id).write(GameFeeInfo { license: "", fee_numerator: 0 });
+
+            // Emit with default values to indicate reset
+            let default_info = self.default_game_fee_info.read();
+            self
+                .emit(
+                    GameFeeUpdate {
+                        game_id,
+                        license: default_info.license,
+                        fee_numerator: default_info.fee_numerator,
+                    },
+                );
+        }
     }
 
     // ==========================================================================
@@ -379,11 +492,53 @@ pub mod MinigameRegistryComponent {
         impl SRC5: SRC5Component::HasComponent<TContractState>,
         +Drop<TContractState>,
     > of InternalTrait<TContractState> {
-        /// Initializes the component by registering the SRC5 interface.
+        /// Initializes the component by registering the SRC5 interface
+        /// and setting the default game fee.
         /// Should be called in the contract's constructor.
         fn initializer(ref self: ComponentState<TContractState>) {
             let mut src5_component = get_dep_component_mut!(ref self, SRC5);
             src5_component.register_interface(IMINIGAME_REGISTRY_ID);
+
+            // Initialize default game fee
+            self
+                .default_game_fee_info
+                .write(
+                    GameFeeInfo { license: default_license(), fee_numerator: DEFAULT_GAME_FEE_BPS },
+                );
+        }
+    }
+
+    // ==========================================================================
+    // PRIVATE HELPERS
+    // ==========================================================================
+
+    #[generate_trait]
+    impl PrivateImpl<
+        TContractState, +HasComponent<TContractState>, +Drop<TContractState>,
+    > of PrivateTrait<TContractState> {
+        /// Asserts that the caller owns the game creator token (ERC721 token with id = game_id)
+        fn _assert_game_creator_token_owner(self: @ComponentState<TContractState>, game_id: u64) {
+            let caller = get_caller_address();
+            let contract_address = get_contract_address();
+            let owner_of_selector = selector!("owner_of");
+            let mut calldata = array![];
+            let game_id_u256: u256 = game_id.into();
+            calldata.append(game_id_u256.low.into());
+            calldata.append(game_id_u256.high.into());
+
+            let owner =
+                match call_contract_syscall(contract_address, owner_of_selector, calldata.span()) {
+                Result::Ok(result) => {
+                    let mut result_span = result;
+                    match Serde::<ContractAddress>::deserialize(ref result_span) {
+                        Option::Some(addr) => addr,
+                        Option::None => panic!("{}", Errors::NOT_GAME_OWNER),
+                    }
+                },
+                Result::Err(_) => panic!("{}", Errors::NOT_GAME_OWNER),
+            };
+
+            assert!(caller == owner, "{}", Errors::NOT_GAME_OWNER);
         }
     }
 }
@@ -404,5 +559,10 @@ pub impl MinigameRegistryHooksEmptyImpl<
     fn after_register_game(
         ref self: TContractState, game_id: u64, creator_address: ContractAddress,
     ) { // No-op: contracts can override to mint creator tokens
+    }
+
+    fn assert_registry_owner(
+        self: @TContractState,
+    ) { // No-op: contracts should override to implement ownership checks
     }
 }

@@ -348,6 +348,8 @@ pub mod MockMinigameContract {
                     royalty_fraction,
                     skills_address,
                     1,
+                    Option::None,
+                    Option::None,
                 );
         }
     }

@@ -258,6 +258,8 @@ fn test_register_game_required_params() {
         Option::None, // royalty_fraction
         Option::None,
         1,
+        Option::None,
+        Option::None,
     );
 }
 
@@ -286,6 +288,8 @@ fn test_register_game_all_params() {
         Option::Some(500_u128), // 5% royalty
         Option::None,
         1,
+        Option::None,
+        Option::None,
     );
 }
 
@@ -313,6 +317,8 @@ fn test_register_game_partial_optional() {
         Option::Some(250_u128),
         Option::None,
         1,
+        Option::None,
+        Option::None,
     );
 }
 
@@ -340,6 +346,8 @@ fn test_register_game_empty_strings() {
         Option::None,
         Option::None,
         1,
+        Option::None,
+        Option::None,
     );
 }
 
@@ -1097,6 +1105,8 @@ fn test_register_game_max_royalty() {
         Option::Some(10000_u128), // 100% royalty
         Option::None,
         1,
+        Option::None,
+        Option::None,
     );
 }
 
