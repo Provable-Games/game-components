@@ -8,7 +8,7 @@ use game_components_embeddable_game_standard::minigame::extensions::settings::st
 use game_components_embeddable_game_standard::registry::interface::GameMetadata;
 use game_components_embeddable_game_standard::token::structs::TokenMetadata;
 use starknet::get_block_timestamp;
-use crate::utils::encoding::{U256BytesUsedTraitImpl, felt252_to_byte_array};
+use crate::utils::encoding::felt252_to_byte_array;
 
 fn create_text(
     text: ByteArray,
@@ -250,11 +250,7 @@ pub fn create_default_svg(
 
     let mut _player_name: ByteArray = Default::default();
     if player_name.is_non_zero() {
-        _player_name
-            .append_word(
-                player_name, U256BytesUsedTraitImpl::bytes_used(player_name.into()).into(),
-            );
-        _player_name = uri_encode(_player_name);
+        _player_name = uri_encode(felt252_to_byte_array(player_name));
     } else {
         _player_name = "---";
     }
