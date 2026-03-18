@@ -21,7 +21,7 @@ pub fn default_license() -> ByteArray {
 ///   game_fee_info, default_game_fee_info, set_default_game_fee,
 ///   set_game_fee, reset_game_fee
 pub const IMINIGAME_REGISTRY_ID: felt252 =
-    0x2ff8aa8dda405faf0eb17c5f806d7482b7352cf91fa9668e9ddf030f14b2ee9;
+    0x2d4d61e5a2e608d8adab5fc69e6d35baff40ba85dadbd5f4ff0be139d4b69b5;
 
 #[starknet::interface]
 pub trait IMinigameRegistry<TState> {
