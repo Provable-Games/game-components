@@ -1,7 +1,6 @@
 use core::array::SpanTrait;
 use core::clone::Clone;
 use core::num::traits::Zero;
-use core::traits::Into;
 use game_components_embeddable_game_standard::metagame::extensions::context::structs::GameContextDetails;
 use game_components_embeddable_game_standard::minigame::extensions::objectives::structs::GameObjectiveDetails;
 use game_components_embeddable_game_standard::minigame::extensions::settings::structs::GameSettingDetails;
@@ -145,6 +144,26 @@ fn uri_encode(input: ByteArray) -> ByteArray {
     output
 }
 
+/// Truncate a `ByteArray` to `max_chars` visible characters, appending "..." if truncated.
+/// Apply BEFORE `uri_encode` so limits are based on visible characters, not encoded bytes.
+fn truncate_with_ellipsis(text: ByteArray, max_chars: u32) -> ByteArray {
+    if text.len() <= max_chars {
+        return text;
+    }
+    let mut result: ByteArray = "";
+    let limit = max_chars - 3;
+    let mut i: u32 = 0;
+    loop {
+        if i >= limit {
+            break;
+        }
+        result.append_byte(text.at(i).unwrap());
+        i += 1;
+    }
+    result.append(@"...");
+    result
+}
+
 fn icon_check(
     x: ByteArray, y: ByteArray, w: ByteArray, h: ByteArray, color: @ByteArray,
 ) -> ByteArray {
@@ -230,17 +249,17 @@ pub fn create_default_svg(
     };
     let _game_id = format!("{}", token_metadata.game_id);
     let _score = format!("{}", score);
-    let _game_name = uri_encode(format!("{}", game_metadata.name));
-    let _developer = uri_encode(format!("{}", game_metadata.developer));
-    let _genre = uri_encode(format!("{}", game_metadata.genre));
+    let _game_name = uri_encode(truncate_with_ellipsis(format!("{}", game_metadata.name), 17));
+    let _developer = uri_encode(truncate_with_ellipsis(format!("{}", game_metadata.developer), 21));
+    let _genre = uri_encode(truncate_with_ellipsis(format!("{}", game_metadata.genre), 29));
     let desc_raw = game_metadata.description;
     let _settings_name: ByteArray = if settings_details.name.len() > 0 {
-        uri_encode(settings_details.name)
+        uri_encode(truncate_with_ellipsis(settings_details.name, 24))
     } else {
         "---"
     };
     let _objective_name: ByteArray = if objective_details.name.len() > 0 {
-        uri_encode(objective_details.name)
+        uri_encode(truncate_with_ellipsis(objective_details.name, 24))
     } else {
         "---"
     };
@@ -250,7 +269,7 @@ pub fn create_default_svg(
 
     let mut _player_name: ByteArray = Default::default();
     if player_name.is_non_zero() {
-        _player_name = uri_encode(felt252_to_byte_array(player_name));
+        _player_name = uri_encode(truncate_with_ellipsis(felt252_to_byte_array(player_name), 12));
     } else {
         _player_name = "---";
     }
@@ -266,7 +285,7 @@ pub fn create_default_svg(
 
     // Context details
     let _context_name: ByteArray = if context_details.name.len() > 0 {
-        uri_encode(context_details.name.clone())
+        uri_encode(truncate_with_ellipsis(context_details.name.clone(), 42))
     } else {
         "---"
     };
@@ -360,6 +379,19 @@ pub fn create_default_svg(
 
     // Clip path for inward-only border stroke
     svg.append(@"<clipPath id='card-clip'><rect width='470' height='600' rx='16'/></clipPath>");
+    svg.append(@"<clipPath id='pn-clip'><rect x='302' y='16' width='150' height='56'/></clipPath>");
+    svg
+        .append(
+            @"<clipPath id='lp-clip'><rect x='25' y='276' width='205' height='108'/></clipPath>",
+        );
+    svg
+        .append(
+            @"<clipPath id='rp-clip'><rect x='240' y='276' width='205' height='108'/></clipPath>",
+        );
+    svg
+        .append(
+            @"<clipPath id='ctx-clip'><rect x='25' y='458' width='420' height='68'/></clipPath>",
+        );
 
     // Styles with card rotation and edge depth
     svg
@@ -422,7 +454,7 @@ pub fn create_default_svg(
     // Player name (top right)
     svg
         .append(
-            @"<text x='440' y='41' text-anchor='end' style='fill:%23fff;font-size:18px;letter-spacing:1px'>",
+            @"<text x='440' y='41' text-anchor='end' clip-path='url(%23pn-clip)' style='fill:%23fff;font-size:18px;letter-spacing:1px'>",
         );
     svg += _player_name.clone();
     svg.append(@"</text>");
@@ -706,9 +738,12 @@ pub fn create_default_svg(
             @"<svg x='252' y='285' width='14' height='14' viewBox='0 0 16 16'><path fill='none' stroke='%23c9c9d1' stroke-width='2' stroke-linecap='round' d='M6.5 9.5a3.5 3.5 0 005 0l2-2a3.5 3.5 0 00-5-5l-1 1'/><path fill='none' stroke='%23c9c9d1' stroke-width='2' stroke-linecap='round' d='M9.5 6.5a3.5 3.5 0 00-5 0l-2 2a3.5 3.5 0 005 5l1-1'/></svg>",
         );
     svg.append(@"<text x='271' y='297' class='l'>CLIENT URL</text>");
-    svg.append(@"<text x='252' y='316' class='vs' style='font-size:9px'>");
+    svg
+        .append(
+            @"<text x='252' y='316' clip-path='url(%23rp-clip)' class='vs' style='font-size:9px'>",
+        );
     if client_url.len() > 0 {
-        svg += uri_encode(client_url);
+        svg += uri_encode(truncate_with_ellipsis(client_url, 35));
     } else {
         svg.append(@"---");
     }
@@ -728,7 +763,7 @@ pub fn create_default_svg(
             @"<svg x='37' y='343' width='14' height='14' viewBox='0 0 16 16'><path fill='%23c9c9d1' d='M6.8 1h2.4l.4 2 .7.3 1.7-1.1 1.7 1.7-1.1 1.7.3.7 2 .4v2.4l-2 .4-.3.7 1.1 1.7-1.7 1.7-1.7-1.1-.7.3-.4 2H6.8l-.4-2-.7-.3-1.7 1.1-1.7-1.7 1.1-1.7-.3-.7-2-.4V6.8l2-.4.3-.7L3.2 4l1.7-1.7 1.7 1.1.7-.3z'/><circle fill='%231e1e22' cx='8' cy='8' r='2.5'/></svg>",
         );
     svg.append(@"<text x='56' y='355' class='l'>SETTINGS</text>");
-    svg.append(@"<text x='37' y='374' class='vs'>");
+    svg.append(@"<text x='37' y='374' clip-path='url(%23lp-clip)' class='vs'>");
     svg += _settings_name;
     svg.append(@"</text>");
 
@@ -742,7 +777,7 @@ pub fn create_default_svg(
     svg.append(@"'/>");
     svg += icon_target("252", "343", "14", "14", @"%23c9c9d1");
     svg.append(@"<text x='271' y='355' class='l'>OBJECTIVE</text>");
-    svg.append(@"<text x='252' y='374' class='vs'>");
+    svg.append(@"<text x='252' y='374' clip-path='url(%23rp-clip)' class='vs'>");
     svg += _objective_name;
     svg.append(@"</text>");
 
@@ -793,7 +828,7 @@ pub fn create_default_svg(
     svg.append(@accent);
     svg.append(@"'/>");
     svg.append(@"<text x='37' y='476' class='l'>CONTEXT</text>");
-    svg.append(@"<text x='112' y='476' class='vs'>");
+    svg.append(@"<text x='112' y='476' clip-path='url(%23ctx-clip)' class='vs'>");
     svg += _context_name;
     svg.append(@"</text>");
 
@@ -817,9 +852,9 @@ pub fn create_default_svg(
             svg.append(@"<text x='37' y='");
             svg += format!("{}", y_pos);
             svg.append(@"' style='fill:%23888;font-size:10px'>");
-            svg += uri_encode(felt252_to_byte_array(*entry.name));
+            svg += uri_encode(truncate_with_ellipsis(felt252_to_byte_array(*entry.name), 15));
             svg.append(@": ");
-            svg += uri_encode(felt252_to_byte_array(*entry.value));
+            svg += uri_encode(truncate_with_ellipsis(felt252_to_byte_array(*entry.value), 35));
             svg.append(@"</text>");
             ctx_i += 1;
         };
@@ -866,7 +901,10 @@ mod tests {
     use game_components_embeddable_game_standard::registry::interface::GameMetadata;
     use game_components_embeddable_game_standard::token::structs::{Lifecycle, TokenMetadata};
     use snforge_std::{start_cheat_block_timestamp_global, stop_cheat_block_timestamp_global};
-    use super::{calculate_timeline_progress, create_default_svg, timestamp_to_datetime};
+    use super::{
+        calculate_timeline_progress, create_default_svg, timestamp_to_datetime,
+        truncate_with_ellipsis,
+    };
 
     fn default_token_metadata() -> TokenMetadata {
         TokenMetadata {
@@ -1056,5 +1094,105 @@ mod tests {
         stop_cheat_block_timestamp_global();
 
         println!("Loot Survivor SVG: {}", svg_result);
+    }
+
+    #[test]
+    fn test_truncate_with_ellipsis_short_text() {
+        let result = truncate_with_ellipsis("Hello", 10);
+        assert!(result == "Hello", "Short text should not be truncated");
+    }
+
+    #[test]
+    fn test_truncate_with_ellipsis_exact_length() {
+        let result = truncate_with_ellipsis("1234567890", 10);
+        assert!(result == "1234567890", "Exact length should not be truncated");
+    }
+
+    #[test]
+    fn test_truncate_with_ellipsis_truncated() {
+        let result = truncate_with_ellipsis("Hello World!!", 10);
+        assert!(result == "Hello W...", "Should truncate with ellipsis");
+    }
+
+    #[test]
+    fn test_truncate_with_ellipsis_boundary() {
+        let result = truncate_with_ellipsis("12345678901", 10);
+        assert!(result == "1234567...", "One over limit should truncate");
+    }
+
+    #[test]
+    fn test_truncate_with_ellipsis_empty() {
+        let result = truncate_with_ellipsis("", 10);
+        assert!(result == "", "Empty text should remain empty");
+    }
+
+    #[test]
+    fn test_svg_overflow_stress() {
+        start_cheat_block_timestamp_global(1656763200);
+
+        let game_metadata = GameMetadata {
+            contract_address: 0x1234567890123456789012345678901234567890.try_into().unwrap(),
+            name: "Extremely Long Game Name That Overflows",
+            description: "A purposefully verbose description to verify word wrapping still works after the truncation changes are applied to the card.",
+            developer: "Very Long Developer Studio Name",
+            publisher: "Publisher",
+            genre: "Action-Adventure-RPG-Roguelike-Sim",
+            image: "https://example.com/img.png",
+            color: "#FF6600",
+            client_url: "https://example.com",
+            renderer_address: 0x9876543210987654321098765432109876543210.try_into().unwrap(),
+            royalty_fraction: 1250,
+            skills_address: 0.try_into().unwrap(),
+            created_at: 0,
+            version: 0,
+        };
+
+        let mut token_metadata = default_token_metadata();
+        token_metadata.soulbound = true;
+        token_metadata.objective_id = 1;
+        token_metadata.paymaster = true;
+
+        let settings = GameSettingDetails {
+            name: "Ultra Nightmare Difficulty Mode",
+            description: "Maximum difficulty",
+            settings: array![GameSetting { name: 'Difficulty', value: 'Nightmare' }].span(),
+        };
+
+        let objectives = GameObjectiveDetails {
+            name: "Collect Every Single Artifact",
+            description: "Find all artifacts",
+            objectives: array![GameObjective { name: 'Artifacts', value: '100' }].span(),
+        };
+
+        let context = GameContextDetails {
+            name: "Season 42 Championship Grand Finals Invitational Tournament",
+            description: "The big one",
+            id: Option::Some(42),
+            context: array![
+                GameContext { name: 'TournamentRound', value: 'GrandChampionshipFinal' },
+                GameContext { name: 'Region', value: 'NorthAmericaEastCoast' },
+                GameContext { name: 'Bracket', value: 'WinnersSemiFinalRound' },
+            ]
+                .span(),
+        };
+
+        // 29-byte player name — near felt252 max
+        let long_player_name: felt252 = 'xXxDarkLordSlayer9000ProMaxxXx';
+
+        let svg_result = create_default_svg(
+            game_metadata,
+            token_metadata,
+            999999999,
+            long_player_name,
+            settings,
+            objectives,
+            context,
+            "https://very-long-client-url-that-should-definitely-be-truncated.example.com/game/play",
+        );
+
+        stop_cheat_block_timestamp_global();
+
+        assert!(svg_result.len() > 0, "SVG should be generated with overflow inputs");
+        println!("OVERFLOW STRESS SVG:\n{}", svg_result);
     }
 }
