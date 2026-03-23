@@ -1,7 +1,6 @@
 use core::array::SpanTrait;
 use core::clone::Clone;
 use core::num::traits::Zero;
-use core::traits::Into;
 use game_components_embeddable_game_standard::metagame::extensions::context::structs::GameContextDetails;
 use game_components_embeddable_game_standard::minigame::extensions::objectives::structs::GameObjectiveDetails;
 use game_components_embeddable_game_standard::minigame::extensions::settings::structs::GameSettingDetails;
