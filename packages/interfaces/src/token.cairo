@@ -2,6 +2,7 @@
 
 pub mod context;
 pub mod core;
+pub mod enumerable;
 pub mod minter;
 pub mod objectives;
 pub mod renderer;
@@ -12,6 +13,10 @@ pub use context::IMINIGAME_TOKEN_CONTEXT_ID;
 // Re-export commonly used items at top level
 pub use core::{
     IMINIGAME_TOKEN_ID, IMinigameToken, IMinigameTokenDispatcher, IMinigameTokenDispatcherTrait,
+};
+pub use enumerable::{
+    IMINIGAME_TOKEN_ENUMERABLE_ID, IMinigameTokenEnumerable, IMinigameTokenEnumerableDispatcher,
+    IMinigameTokenEnumerableDispatcherTrait,
 };
 pub use minter::{
     IMINIGAME_TOKEN_MINTER_ID, IMinigameTokenMinter, IMinigameTokenMinterDispatcher,
