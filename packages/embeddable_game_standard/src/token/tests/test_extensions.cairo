@@ -408,13 +408,7 @@ fn test_mint_events() {
     assert!(token_id != 0, "Token should be minted");
 }
 
-// Test E-02: ScoreUpdate event
-#[test]
-fn test_score_update_event() { // This would be tested with update_game when score changes
-// Requires mock game setup
-}
-
-// Test E-03: MetadataUpdate event
+// Test E-02: MetadataUpdate event
 #[test]
 fn test_metadata_update_event() { // This would be tested with update_game when metadata changes
 // Requires mock game setup
