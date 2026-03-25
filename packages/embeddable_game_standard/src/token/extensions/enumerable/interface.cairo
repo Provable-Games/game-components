@@ -1,5 +1,6 @@
-// Re-export from interfaces package for backward compatibility
-pub use game_components_interfaces::token::{
-    IMINIGAME_TOKEN_ENUMERABLE_ID, IMinigameTokenEnumerable, IMinigameTokenEnumerableDispatcher,
-    IMinigameTokenEnumerableDispatcherTrait,
+// Re-export OZ IERC721Enumerable interface.
+// The EnumerableComponent implements this interface with felt252 storage internally.
+pub use openzeppelin_interfaces::erc721::{
+    IERC721Enumerable, IERC721EnumerableDispatcher, IERC721EnumerableDispatcherTrait,
+    IERC721_ENUMERABLE_ID,
 };

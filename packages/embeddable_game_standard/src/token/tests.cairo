@@ -13,6 +13,7 @@ mod test_context;
 mod test_context_coverage;
 mod test_core_token;
 mod test_core_token_coverage;
+mod test_enumerable;
 mod test_events;
 mod test_examples_coverage;
 mod test_extensions;
