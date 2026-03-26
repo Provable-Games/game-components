@@ -1,6 +1,7 @@
 pub mod metagame_mock;
 pub mod minigame_mock;
 pub mod mock_entry_validator;
+pub mod mock_enumerable;
 pub mod mock_erc20;
 pub mod mock_erc721;
 pub mod mock_game;
