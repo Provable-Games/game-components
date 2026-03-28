@@ -13,16 +13,7 @@ pub mod ContextComponent {
 
     #[event]
     #[derive(Drop, starknet::Event)]
-    pub enum Event {
-        TokenContextUpdate: TokenContextUpdate,
-    }
-
-    #[derive(Drop, starknet::Event)]
-    pub struct TokenContextUpdate {
-        #[key]
-        pub token_id: felt252,
-        pub details: GameContextDetails,
-    }
+    pub enum Event {}
 
     // Implementation of the OptionalContext trait for integration with CoreTokenComponent
     pub impl ContextOptionalImpl<
@@ -39,10 +30,6 @@ pub mod ContextComponent {
                 src5_dispatcher.supports_interface(IMETAGAME_CONTEXT_ID),
                 "MinigameTokenContext: Minter does not implement IMetagameContext",
             );
-
-            // Emit native event with full details struct
-            let mut component = HasComponent::get_component_mut(ref self);
-            component.emit(TokenContextUpdate { token_id: token_id, details: context });
         }
     }
 

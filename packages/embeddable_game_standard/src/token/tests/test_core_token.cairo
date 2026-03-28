@@ -1634,7 +1634,7 @@ fn test_security_update_game_any_caller_allowed() {
 
 #[test]
 fn test_event_mint_with_player_name() {
-    // EVT-001: mint with player_name emits TokenPlayerNameUpdate
+    // EVT-001: mint with player_name emits MetadataUpdate
     let test_contracts = setup();
     let mut spy = spy_events();
 
@@ -1696,7 +1696,7 @@ fn test_event_update_game_emits_metadata_update() {
 
 #[test]
 fn test_event_update_player_name() {
-    // EVT-004: update_player_name emits TokenPlayerNameUpdate
+    // EVT-004: update_player_name emits MetadataUpdate
     let test_contracts = setup();
 
     let token_id = test_contracts
@@ -1727,7 +1727,7 @@ fn test_event_update_player_name() {
     test_contracts.test_token.update_player_name(token_id, 'NewName');
 
     let events = spy.get_events();
-    assert!(events.events.span().len() >= 1, "Should emit TokenPlayerNameUpdate event");
+    assert!(events.events.span().len() >= 1, "Should emit MetadataUpdate event");
 }
 
 #[test]

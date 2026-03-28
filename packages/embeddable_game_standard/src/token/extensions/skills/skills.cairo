@@ -14,6 +14,8 @@ pub mod SkillsComponent {
         IMINIGAME_TOKEN_SKILLS_ID, IMinigameTokenSkills,
     };
     use crate::token::token::address_utils;
+    use crate::token::token_component::CoreTokenComponent;
+    use crate::token::token_component::CoreTokenComponent::EventEmittersTrait;
     use crate::token::traits::OptionalSkills;
 
     #[storage]
@@ -23,20 +25,14 @@ pub mod SkillsComponent {
 
     #[event]
     #[derive(Drop, starknet::Event)]
-    pub enum Event {
-        TokenSkillsUpdate: TokenSkillsUpdate,
-    }
-
-    #[derive(Drop, starknet::Event)]
-    pub struct TokenSkillsUpdate {
-        #[key]
-        pub token_id: felt252,
-        pub skills_address: ContractAddress,
-    }
+    pub enum Event {}
 
     #[embeddable_as(SkillsImpl)]
     pub impl Skills<
-        TContractState, +HasComponent<TContractState>, +Drop<TContractState>,
+        TContractState,
+        +HasComponent<TContractState>,
+        impl CoreToken: CoreTokenComponent::HasComponent<TContractState>,
+        +Drop<TContractState>,
     > of IMinigameTokenSkills<ComponentState<TContractState>> {
         fn get_skills_address(
             self: @ComponentState<TContractState>, token_id: felt252,
@@ -59,8 +55,9 @@ pub mod SkillsComponent {
             let zero_address: ContractAddress = 0.try_into().unwrap();
             self.token_skills.entry(token_id).write(zero_address);
 
-            // Emit native event
-            self.emit(TokenSkillsUpdate { token_id, skills_address: zero_address });
+            let mut core_token = get_dep_component_mut!(ref self, CoreToken);
+            let token_id_u256: u256 = token_id.into();
+            core_token.emit_metadata_update(token_id_u256);
         }
 
         fn reset_token_skills_batch(
@@ -112,9 +109,6 @@ pub mod SkillsComponent {
         ) {
             let mut component = HasComponent::get_component_mut(ref self);
             component.token_skills.entry(token_id).write(skills_address);
-
-            // Emit native event
-            component.emit(TokenSkillsUpdate { token_id, skills_address });
         }
     }
 

@@ -8,8 +8,8 @@ use snforge_std::{
 };
 use starknet::ContractAddress;
 use crate::token::extensions::skills::interface::IMINIGAME_TOKEN_SKILLS_ID;
-use crate::token::extensions::skills::skills::SkillsComponent;
 use crate::token::interface::IMinigameTokenMixinDispatcherTrait;
+use crate::token::token_component::CoreTokenComponent;
 
 // Import setup helpers
 use super::setup::{ALICE, BOB, setup_multi_game};
@@ -868,16 +868,14 @@ fn test_reset_token_skills_emits_event() {
     test_contracts.test_token.reset_token_skills(token_id);
     stop_cheat_caller_address(test_contracts.test_token.contract_address);
 
-    // Check for TokenSkillsUpdate event
+    // Check for MetadataUpdate event
     spy
         .assert_emitted(
             @array![
                 (
                     test_contracts.test_token.contract_address,
-                    SkillsComponent::Event::TokenSkillsUpdate(
-                        SkillsComponent::TokenSkillsUpdate {
-                            token_id: token_id, skills_address: Zero::zero(),
-                        },
+                    CoreTokenComponent::Event::MetadataUpdate(
+                        CoreTokenComponent::MetadataUpdate { token_id: token_id.into() },
                     ),
                 ),
             ],
@@ -940,59 +938,14 @@ fn test_batch_reset_emits_multiple_events() {
             @array![
                 (
                     test_contracts.test_token.contract_address,
-                    SkillsComponent::Event::TokenSkillsUpdate(
-                        SkillsComponent::TokenSkillsUpdate {
-                            token_id: token_id1, skills_address: Zero::zero(),
-                        },
+                    CoreTokenComponent::Event::MetadataUpdate(
+                        CoreTokenComponent::MetadataUpdate { token_id: token_id1.into() },
                     ),
                 ),
                 (
                     test_contracts.test_token.contract_address,
-                    SkillsComponent::Event::TokenSkillsUpdate(
-                        SkillsComponent::TokenSkillsUpdate {
-                            token_id: token_id2, skills_address: Zero::zero(),
-                        },
-                    ),
-                ),
-            ],
-        );
-}
-
-#[test]
-fn test_mint_with_skills_emits_event() {
-    let test_contracts = setup_multi_game();
-    let mut spy = spy_events();
-
-    let token_id = test_contracts
-        .test_token
-        .mint(
-            test_contracts.minigame.contract_address,
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None, // renderer_address
-            Option::Some(CUSTOM_SKILLS()), // skills_address
-            ALICE(),
-            false,
-            false,
-            0,
-            0,
-        );
-
-    // Check for TokenSkillsUpdate event during mint
-    spy
-        .assert_emitted(
-            @array![
-                (
-                    test_contracts.test_token.contract_address,
-                    SkillsComponent::Event::TokenSkillsUpdate(
-                        SkillsComponent::TokenSkillsUpdate {
-                            token_id: token_id, skills_address: CUSTOM_SKILLS(),
-                        },
+                    CoreTokenComponent::Event::MetadataUpdate(
+                        CoreTokenComponent::MetadataUpdate { token_id: token_id2.into() },
                     ),
                 ),
             ],
