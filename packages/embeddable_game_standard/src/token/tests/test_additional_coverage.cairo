@@ -1064,7 +1064,7 @@ fn test_event_emission_on_player_name_update() {
     );
     test_contracts.test_token.update_player_name(token_id, 'NewName');
 
-    // Should emit TokenPlayerNameUpdate event
+    // Should emit MetadataUpdate event
     let events = spy.get_events();
     assert!(events.events.len() >= 1, "Should emit player name update event");
 }

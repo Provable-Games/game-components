@@ -55,27 +55,7 @@ pub mod CoreTokenComponent {
     #[event]
     #[derive(Drop, starknet::Event)]
     pub enum Event {
-        // Player events
-        TokenPlayerNameUpdate: TokenPlayerNameUpdate,
-        TokenClientUrlUpdate: TokenClientUrlUpdate,
-        // ERC721 standard
         MetadataUpdate: MetadataUpdate,
-    }
-
-    /// Emitted when player name is updated
-    #[derive(Drop, starknet::Event)]
-    pub struct TokenPlayerNameUpdate {
-        #[key]
-        pub id: felt252,
-        pub player_name: felt252,
-    }
-
-    /// Emitted when client URL is updated
-    #[derive(Drop, starknet::Event)]
-    pub struct TokenClientUrlUpdate {
-        #[key]
-        pub id: felt252,
-        pub client_url: ByteArray,
     }
 
     /// ERC721 standard metadata update event
@@ -722,7 +702,7 @@ pub mod CoreTokenComponent {
             );
             self.assert_token_ownership(token_id);
             self.token_player_names.entry(token_id).write(name);
-            self.emit_token_player_name_update(token_id, name);
+            self.emit_metadata_update(token_id.into());
         }
 
         // Batch write functions
@@ -935,13 +915,11 @@ pub mod CoreTokenComponent {
             // Set player name if provided
             if let Option::Some(name) = player_name {
                 self.token_player_names.entry(final_token_id).write(name);
-                self.emit_token_player_name_update(final_token_id, name);
             }
 
             // Set client url if provided
             if let Option::Some(url) = client_url {
                 self.token_client_url.entry(final_token_id).write(url.clone());
-                self.emit_token_client_url_update(final_token_id, url);
             }
 
             // Mint the ERC721 token
@@ -1064,23 +1042,12 @@ pub mod CoreTokenComponent {
                 lifecycle.end,
             );
         }
+    }
 
-        // =================================================================
-        // NATIVE EVENT EMITTERS
-        // =================================================================
-
-        fn emit_token_player_name_update(
-            ref self: ComponentState<TContractState>, id: felt252, player_name: felt252,
-        ) {
-            self.emit(TokenPlayerNameUpdate { id, player_name });
-        }
-
-        fn emit_token_client_url_update(
-            ref self: ComponentState<TContractState>, id: felt252, client_url: ByteArray,
-        ) {
-            self.emit(TokenClientUrlUpdate { id, client_url });
-        }
-
+    #[generate_trait]
+    pub impl EventEmittersImpl<
+        TContractState, +HasComponent<TContractState>,
+    > of EventEmittersTrait<TContractState> {
         fn emit_metadata_update(ref self: ComponentState<TContractState>, token_id: u256) {
             self.emit(MetadataUpdate { token_id });
         }

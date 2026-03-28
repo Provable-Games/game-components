@@ -5,12 +5,13 @@
 use openzeppelin_interfaces::erc721::ERC721ABIDispatcherTrait;
 use openzeppelin_interfaces::introspection::ISRC5DispatcherTrait;
 use snforge_std::{
-    CheatSpan, EventSpyTrait, cheat_caller_address, mock_call, spy_events,
+    CheatSpan, EventSpyAssertionsTrait, EventSpyTrait, cheat_caller_address, mock_call, spy_events,
     start_cheat_block_timestamp, stop_cheat_block_timestamp,
 };
 use starknet::ContractAddress;
 use crate::token::interface::{IMINIGAME_TOKEN_ID, IMinigameTokenMixinDispatcherTrait};
 use crate::token::structs::{MintParams, PlayerNameUpdate};
+use crate::token::token_component::CoreTokenComponent;
 use super::mocks::mock_game::IMockGameDispatcherTrait;
 use super::setup::{
     ALICE, BOB, CHARLIE, CURRENT_TIME, FAR_FUTURE_TIME, FUTURE_TIME, OWNER, PAST_TIME,
@@ -1633,12 +1634,12 @@ fn test_security_update_game_any_caller_allowed() {
 // ============================================================================
 
 #[test]
-fn test_event_mint_with_player_name() {
-    // EVT-001: mint with player_name emits TokenPlayerNameUpdate
+fn test_event_mint_with_player_name_no_metadata_update() {
+    // EVT-001: mint with player_name does NOT emit MetadataUpdate (Transfer covers mint)
     let test_contracts = setup();
     let mut spy = spy_events();
 
-    let _token_id = test_contracts
+    let token_id = test_contracts
         .test_token
         .mint(
             test_contracts.minigame.contract_address,
@@ -1658,8 +1659,17 @@ fn test_event_mint_with_player_name() {
             0,
         );
 
-    let events = spy.get_events();
-    assert!(events.events.span().len() >= 1, "Should emit at least 1 event for mint with name");
+    spy
+        .assert_not_emitted(
+            @array![
+                (
+                    test_contracts.test_token.contract_address,
+                    CoreTokenComponent::Event::MetadataUpdate(
+                        CoreTokenComponent::MetadataUpdate { token_id: token_id.into() },
+                    ),
+                ),
+            ],
+        );
 }
 
 #[test]
@@ -1696,7 +1706,7 @@ fn test_event_update_game_emits_metadata_update() {
 
 #[test]
 fn test_event_update_player_name() {
-    // EVT-004: update_player_name emits TokenPlayerNameUpdate
+    // EVT-004: update_player_name emits MetadataUpdate
     let test_contracts = setup();
 
     let token_id = test_contracts
@@ -1726,8 +1736,17 @@ fn test_event_update_player_name() {
     );
     test_contracts.test_token.update_player_name(token_id, 'NewName');
 
-    let events = spy.get_events();
-    assert!(events.events.span().len() >= 1, "Should emit TokenPlayerNameUpdate event");
+    spy
+        .assert_emitted(
+            @array![
+                (
+                    test_contracts.test_token.contract_address,
+                    CoreTokenComponent::Event::MetadataUpdate(
+                        CoreTokenComponent::MetadataUpdate { token_id: token_id.into() },
+                    ),
+                ),
+            ],
+        );
 }
 
 #[test]

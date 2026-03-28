@@ -1310,7 +1310,7 @@ fn test_emit_player_name_update_on_update() {
             0,
         );
 
-    // update_player_name emits TokenPlayerNameUpdate (line 1090)
+    // update_player_name emits MetadataUpdate
     cheat_caller_address(token_dispatcher.contract_address, ALICE(), CheatSpan::TargetCalls(1));
     token_dispatcher.update_player_name(token_id, 'UpdatedName');
 

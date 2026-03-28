@@ -14,6 +14,8 @@ pub mod RendererComponent {
         IMINIGAME_TOKEN_RENDERER_ID, IMinigameTokenRenderer,
     };
     use crate::token::token::address_utils;
+    use crate::token::token_component::CoreTokenComponent;
+    use crate::token::token_component::CoreTokenComponent::EventEmittersTrait;
     use crate::token::traits::OptionalRenderer;
 
     #[storage]
@@ -23,20 +25,14 @@ pub mod RendererComponent {
 
     #[event]
     #[derive(Drop, starknet::Event)]
-    pub enum Event {
-        TokenRendererUpdate: TokenRendererUpdate,
-    }
-
-    #[derive(Drop, starknet::Event)]
-    pub struct TokenRendererUpdate {
-        #[key]
-        pub token_id: felt252,
-        pub renderer: ContractAddress,
-    }
+    pub enum Event {}
 
     #[embeddable_as(RendererImpl)]
     pub impl Renderer<
-        TContractState, +HasComponent<TContractState>, +Drop<TContractState>,
+        TContractState,
+        +HasComponent<TContractState>,
+        impl CoreToken: CoreTokenComponent::HasComponent<TContractState>,
+        +Drop<TContractState>,
     > of IMinigameTokenRenderer<ComponentState<TContractState>> {
         fn get_renderer(
             self: @ComponentState<TContractState>, token_id: felt252,
@@ -59,8 +55,9 @@ pub mod RendererComponent {
             let zero_address: ContractAddress = 0.try_into().unwrap();
             self.token_renderers.entry(token_id).write(zero_address);
 
-            // Emit native event
-            self.emit(TokenRendererUpdate { token_id, renderer: zero_address });
+            let mut core_token = get_dep_component_mut!(ref self, CoreToken);
+            let token_id_u256: u256 = token_id.into();
+            core_token.emit_metadata_update(token_id_u256);
         }
 
         fn reset_token_renderer_batch(
@@ -112,9 +109,6 @@ pub mod RendererComponent {
         ) {
             let mut component = HasComponent::get_component_mut(ref self);
             component.token_renderers.entry(token_id).write(renderer);
-
-            // Emit native event
-            component.emit(TokenRendererUpdate { token_id, renderer });
         }
     }
 
