@@ -221,6 +221,7 @@ fn build_invalid_premint_calldata(params: InvalidPremintTestParams) -> Array<fel
         stream_token_amount: 1000 * TOKEN_UNIT,
         paired_token_amount: 100 * TOKEN_UNIT,
         min_liquidity: 1,
+        liquidity_owner: OWNER(),
     };
 
     let distribution_orders: Array<game_components_economy::tokenomics::DistributionOrder> = array![

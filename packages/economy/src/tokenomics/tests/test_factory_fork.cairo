@@ -72,6 +72,7 @@ fn _create_params_with_strk_and_premints(
         stream_token_amount: 1000 * TOKEN_UNIT, // 1000 tokens for LP
         paired_token_amount: 100 * TOKEN_UNIT, // 100 STRK for LP
         min_liquidity: 1,
+        liquidity_owner: OWNER(),
     };
 
     let distribution_orders: Array<DistributionOrder> = array![
@@ -155,6 +156,7 @@ fn test_factory_rejects_insufficient_supply_with_premints_fork() {
         stream_token_amount: 1000 * TOKEN_UNIT, // 1000 tokens for LP
         paired_token_amount: 100 * TOKEN_UNIT,
         min_liquidity: 1,
+        liquidity_owner: OWNER(),
     };
 
     let distribution_orders: Array<DistributionOrder> = array![

@@ -515,6 +515,7 @@ PAIRED_TOKEN=$(echo "$CONFIG" | jq -r '.liquidity_config.paired_token')
 POOL_FEE=$(echo "$CONFIG" | jq -r '.liquidity_config.fee')
 STREAM_TOKEN_AMOUNT=$(echo "$CONFIG" | jq -r '.liquidity_config.stream_token_amount')
 PAIRED_TOKEN_AMOUNT=$(echo "$CONFIG" | jq -r '.liquidity_config.paired_token_amount')
+LIQUIDITY_OWNER=$(echo "$CONFIG" | jq -r '.liquidity_config.liquidity_owner')
 
 # Validate liquidity config
 if [ "$PAIRED_TOKEN" == "null" ] || [ -z "$PAIRED_TOKEN" ]; then
@@ -532,6 +533,12 @@ if [ "$PAIRED_TOKEN_AMOUNT" == "null" ] || [ -z "$PAIRED_TOKEN_AMOUNT" ]; then
     print_error "Missing required field: liquidity_config.paired_token_amount"
     exit 1
 fi
+
+if [ "$LIQUIDITY_OWNER" == "null" ] || [ -z "$LIQUIDITY_OWNER" ]; then
+    print_error "Missing required field: liquidity_config.liquidity_owner"
+    exit 1
+fi
+validate_address "$LIQUIDITY_OWNER" "liquidity_config.liquidity_owner"
 
 # Convert human-readable amounts to wei (18 decimals)
 TOTAL_SUPPLY_WEI=$(to_wei "$TOTAL_SUPPLY")
@@ -597,6 +604,7 @@ cat << EOF
     Paired Token Amount: $PAIRED_TOKEN_AMOUNT tokens
     Implied Price:       1 $TOKEN_SYMBOL = $PRICE_RATIO paired tokens
     Min Liquidity:       $MIN_LIQUIDITY
+    Liquidity Owner:     $LIQUIDITY_OWNER
 
   Distribution Orders: $ORDER_COUNT
 EOF
@@ -690,6 +698,7 @@ print_step "Step 2: Creating stream token..."
 #     stream_token_amount: u128
 #     paired_token_amount: u128
 #     min_liquidity: u128
+#     liquidity_owner: ContractAddress
 #   distribution_orders: Span<DistributionOrder>
 #     len, [buy_token, fee, start_time, end_time, amount, recipient]...
 #   premint_allocations: Span<PremintAllocation>
@@ -701,7 +710,7 @@ ORDERS_CALLDATA=$(build_orders_calldata "$CONFIG")
 PREMINTS_CALLDATA=$(build_premints_calldata "$CONFIG")
 
 # Full calldata as space-separated felts
-CREATE_CALLDATA="$NAME_CALLDATA $SYMBOL_CALLDATA $TOTAL_SUPPLY_WEI $PAIRED_TOKEN $POOL_FEE $STREAM_TOKEN_AMOUNT_WEI $PAIRED_TOKEN_AMOUNT_WEI $MIN_LIQUIDITY $ORDERS_CALLDATA $PREMINTS_CALLDATA"
+CREATE_CALLDATA="$NAME_CALLDATA $SYMBOL_CALLDATA $TOTAL_SUPPLY_WEI $PAIRED_TOKEN $POOL_FEE $STREAM_TOKEN_AMOUNT_WEI $PAIRED_TOKEN_AMOUNT_WEI $MIN_LIQUIDITY $LIQUIDITY_OWNER $ORDERS_CALLDATA $PREMINTS_CALLDATA"
 
 print_verbose "Create calldata: $CREATE_CALLDATA"
 
@@ -789,7 +798,8 @@ cat > "$DEPLOYMENT_FILE" << EOF
     "stream_token_amount": "$STREAM_TOKEN_AMOUNT",
     "paired_token_amount": "$PAIRED_TOKEN_AMOUNT",
     "implied_price": "$PRICE_RATIO",
-    "min_liquidity": "$MIN_LIQUIDITY"
+    "min_liquidity": "$MIN_LIQUIDITY",
+    "liquidity_owner": "$LIQUIDITY_OWNER"
   },
   "distribution_orders_count": $ORDER_COUNT,
   "premint_allocations_count": $PREMINT_COUNT

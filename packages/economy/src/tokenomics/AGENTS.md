@@ -106,6 +106,7 @@ pub struct LiquidityConfig {
     pub stream_token_amount: u128,
     pub paired_token_amount: u128,
     pub min_liquidity: u128,
+    pub liquidity_owner: ContractAddress,
 }
 
 pub struct CreateTokenParams {

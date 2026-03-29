@@ -56,6 +56,7 @@ pub mod Errors {
     pub const STREAM_DISTRIBUTIONS_NOT_STARTED: felt252 = 'Distributions not started';
     pub const STREAM_INVALID_ORDER_INDEX: felt252 = 'Invalid order index';
     pub const STREAM_POSITION_NOT_FOUND: felt252 = 'Position not found';
+    pub const STREAM_INVALID_LIQUIDITY_OWNER: felt252 = 'Invalid liquidity owner';
     pub const STREAM_INVALID_PREMINT_RECIPIENT: felt252 = 'Invalid premint recipient';
     pub const STREAM_INVALID_PREMINT_AMOUNT: felt252 = 'Invalid premint amount';
 

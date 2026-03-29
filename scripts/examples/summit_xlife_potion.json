@@ -1,0 +1,28 @@
+{
+  "_comment": "All token amounts assume 18 decimals. Use human-readable values (e.g., '1000000' for 1M tokens).",
+
+  "name": "Extra Life",
+  "symbol": "XLIFE",
+
+  "liquidity_config": {
+    "paired_token": "0x042dd777885ad2c116be96d4d634abc90a26a790ffb5871e037dd5ae7d2ec86b",
+    "fee": "17014118346046924117642026945517453312",
+    "stream_token_amount": "2500",
+    "paired_token_amount": "2000",
+    "liquidity_owner": "0x041bb7729efa185f2cab327de0a668886302f1d4969e3edf504c4741648f858b"
+  },
+
+  "distribution_orders": [
+    {
+      "_comment": "TWAMM end_time must be aligned to powers of 16. Script validates and suggests valid times.",
+      "buy_token": "0x042dd777885ad2c116be96d4d634abc90a26a790ffb5871e037dd5ae7d2ec86b",
+      "fee": "17014118346046924117642026945517453312",
+      "start_time": 1771433984,
+      "end_time": 1779433472,
+      "amount": "450000",
+      "proceeds_recipient": "0x041bb7729efa185f2cab327de0a668886302f1d4969e3edf504c4741648f858b"
+    }
+  ],
+
+  "premint_allocations": []
+}
