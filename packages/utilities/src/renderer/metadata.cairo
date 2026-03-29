@@ -113,13 +113,11 @@ pub fn create_custom_metadata(
     }
     let renderer_felt: felt252 = game_metadata.renderer_address.into();
     if !renderer_felt.is_zero() {
-        attributes
-            .append(create_trait("Renderer", format!("0x{:x}", renderer_felt)));
+        attributes.append(create_trait("Renderer", format!("0x{:x}", renderer_felt)));
     }
     let skills_felt: felt252 = game_metadata.skills_address.into();
     if !skills_felt.is_zero() {
-        attributes
-            .append(create_trait("Skills", format!("0x{:x}", skills_felt)));
+        attributes.append(create_trait("Skills", format!("0x{:x}", skills_felt)));
     }
 
     // Add dynamic game details as traits
