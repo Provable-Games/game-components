@@ -107,6 +107,21 @@ pub fn create_custom_metadata(
         attributes.append(create_trait("Player Name", felt252_to_byte_array(player_name)));
     }
 
+    // Game-level metadata traits
+    if game_metadata.client_url.len() > 0 {
+        attributes.append(create_trait("Client URL", game_metadata.client_url));
+    }
+    let renderer_felt: felt252 = game_metadata.renderer_address.into();
+    if !renderer_felt.is_zero() {
+        attributes
+            .append(create_trait("Renderer", format!("0x{:x}", renderer_felt)));
+    }
+    let skills_felt: felt252 = game_metadata.skills_address.into();
+    if !skills_felt.is_zero() {
+        attributes
+            .append(create_trait("Skills", format!("0x{:x}", skills_felt)));
+    }
+
     // Add dynamic game details as traits
     let mut game_details_index = 0;
     loop {
