@@ -2,7 +2,7 @@
 /// etc.).
 /// This component manages:
 /// - Entry requirement configuration per context
-/// - Entry requirement type (token, allowlist, extension)
+/// - Entry requirement type (token, extension)
 /// - Qualification entries tracking
 /// - Entry count management
 
@@ -36,8 +36,6 @@ pub mod EntryRequirementComponent {
         EntryRequirement_meta: Map<u64, EntryRequirementMeta>,
         /// Token address for token-gated requirements
         EntryRequirement_token: Map<u64, ContractAddress>,
-        /// Allowlist addresses for allowlist-gated requirements (stored as Vec)
-        EntryRequirement_allowlist: Map<u64, Vec<ContractAddress>>,
         /// Extension address for extension-gated requirements
         EntryRequirement_extension_address: Map<u64, ContractAddress>,
         /// Extension config data (stored as Vec)
@@ -74,39 +72,6 @@ pub mod EntryRequirementComponent {
             ref self: ComponentState<TContractState>, context_id: u64, token: ContractAddress,
         ) {
             self.EntryRequirement_token.entry(context_id).write(token);
-        }
-
-        fn get_allowlist(
-            self: @ComponentState<TContractState>, context_id: u64,
-        ) -> Span<ContractAddress> {
-            let vec = self.EntryRequirement_allowlist.entry(context_id);
-            let mut arr = ArrayTrait::new();
-            let len = vec.len();
-            let mut i: u64 = 0;
-            loop {
-                if i >= len {
-                    break;
-                }
-                arr.append(vec.at(i).read());
-                i += 1;
-            }
-            arr.span()
-        }
-
-        fn set_allowlist(
-            ref self: ComponentState<TContractState>,
-            context_id: u64,
-            addresses: Span<ContractAddress>,
-        ) {
-            let mut vec = self.EntryRequirement_allowlist.entry(context_id);
-            let mut i: u32 = 0;
-            loop {
-                if i >= addresses.len() {
-                    break;
-                }
-                vec.push(*addresses.at(i));
-                i += 1;
-            };
         }
 
         fn get_extension_address(
@@ -215,10 +180,6 @@ pub mod EntryRequirementComponent {
                             self.set_token(context_id, token);
                             (entry_requirement::REQ_TYPE_TOKEN, req.entry_limit)
                         },
-                        EntryRequirementType::allowlist(addresses) => {
-                            self.set_allowlist(context_id, addresses);
-                            (entry_requirement::REQ_TYPE_ALLOWLIST, req.entry_limit)
-                        },
                         EntryRequirementType::extension(config) => {
                             assert!(
                                 !config.address.is_zero(),
@@ -272,7 +233,7 @@ pub mod EntryRequirementComponent {
         }
 
         /// Validates a qualification proof against an entry requirement.
-        /// Returns the qualifying address (NFT owner, allowlist address, or caller).
+        /// Returns the qualifying address (NFT owner or caller).
         fn validate_qualification(
             self: @ComponentState<TContractState>,
             context_id: u64,
@@ -290,10 +251,6 @@ pub mod EntryRequirementComponent {
             self: @ComponentState<TContractState>, entry_requirement: EntryRequirement,
         ) {
             EntryRequirementStoreTrait::assert_valid_entry_requirement(self, entry_requirement);
-        }
-
-        fn _contains_address(addresses: Span<ContractAddress>, target: ContractAddress) -> bool {
-            entry_requirement::contains_address(addresses, target)
         }
 
         /// Update qualification entries after a successful entry

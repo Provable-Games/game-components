@@ -100,38 +100,7 @@ fn test_set_and_get_token_requirement() {
         EntryRequirementType::token(addr) => {
             assert!(addr == token_addr, "token address mismatch");
         },
-        EntryRequirementType::allowlist(_) => { panic!("expected token type"); },
         EntryRequirementType::extension(_) => { panic!("expected token type"); },
-    }
-}
-
-#[test]
-fn test_set_and_get_allowlist_requirement() {
-    let mock = deploy_entry_requirement_mock();
-    let addr1 = make_address(0x111);
-    let addr2 = make_address(0x222);
-    let context_id: u64 = 99;
-
-    let req = EntryRequirement {
-        entry_limit: 5,
-        entry_requirement_type: EntryRequirementType::allowlist(array![addr1, addr2].span()),
-    };
-    mock.set_entry_requirement(context_id, Option::Some(req));
-
-    let result = mock.get_entry_requirement(context_id);
-    assert!(result.is_some(), "should return Some");
-
-    let retrieved = result.unwrap();
-    assert!(retrieved.entry_limit == 5, "entry_limit mismatch");
-
-    match retrieved.entry_requirement_type {
-        EntryRequirementType::token(_) => { panic!("expected allowlist type"); },
-        EntryRequirementType::allowlist(addresses) => {
-            assert!(addresses.len() == 2, "should have 2 addresses");
-            assert!(*addresses.at(0) == addr1, "first address mismatch");
-            assert!(*addresses.at(1) == addr2, "second address mismatch");
-        },
-        EntryRequirementType::extension(_) => { panic!("expected allowlist type"); },
     }
 }
 
@@ -159,7 +128,6 @@ fn test_set_and_get_extension_requirement() {
 
     match retrieved.entry_requirement_type {
         EntryRequirementType::token(_) => { panic!("expected extension type"); },
-        EntryRequirementType::allowlist(_) => { panic!("expected extension type"); },
         EntryRequirementType::extension(ext_config) => {
             assert!(ext_config.address == ext_addr, "extension address mismatch");
             assert!(ext_config.config.len() == 3, "config length mismatch");
@@ -410,41 +378,6 @@ fn test_update_qualification_entries_different_proofs_independent() {
 }
 
 #[test]
-fn test_update_qualification_entries_allowlist_type() {
-    let mock = deploy_entry_requirement_mock();
-    let context_id: u64 = 60;
-    let addr1 = make_address(0x111);
-    let proof = QualificationProof::Address(make_address(0x123));
-
-    let req = EntryRequirement {
-        entry_limit: 2,
-        entry_requirement_type: EntryRequirementType::allowlist(array![addr1].span()),
-    };
-
-    // Update should work the same for allowlist type (non-Extension branch)
-    mock.update_qualification_entries(context_id, proof, req);
-    let result = mock.get_qualification_entries(context_id, proof);
-    assert!(result.entry_count == 1, "entry_count should be 1");
-}
-
-#[test]
-#[should_panic(expected: "EntryRequirement: Maximum qualified entries reached")]
-fn test_update_qualification_entries_allowlist_panics_at_limit() {
-    let mock = deploy_entry_requirement_mock();
-    let context_id: u64 = 60;
-    let addr1 = make_address(0x111);
-    let proof = QualificationProof::Address(make_address(0x123));
-
-    let req = EntryRequirement {
-        entry_limit: 1,
-        entry_requirement_type: EntryRequirementType::allowlist(array![addr1].span()),
-    };
-
-    mock.update_qualification_entries(context_id, proof, req);
-    mock.update_qualification_entries(context_id, proof, req);
-}
-
-#[test]
 fn test_update_qualification_entries_nft_proof() {
     let mock = deploy_entry_requirement_mock();
     let context_id: u64 = 70;
@@ -547,51 +480,6 @@ fn test_validate_qualification_token_nonexistent_nft() {
 }
 
 #[test]
-fn test_validate_qualification_allowlist_returns_address() {
-    let mock = deploy_entry_requirement_mock();
-    let addr1 = make_address(0x111);
-    let addr2 = make_address(0x222);
-
-    let req = EntryRequirement {
-        entry_limit: 1,
-        entry_requirement_type: EntryRequirementType::allowlist(array![addr1, addr2].span()),
-    };
-
-    let result = mock.validate_qualification(1, req, QualificationProof::Address(addr2));
-    assert!(result == addr2, "should return the qualifying address");
-}
-
-#[test]
-#[should_panic(expected: "EntryRequirement: Qualifying address is not in allowlist")]
-fn test_validate_qualification_allowlist_address_not_found() {
-    let mock = deploy_entry_requirement_mock();
-    let addr1 = make_address(0x111);
-
-    let req = EntryRequirement {
-        entry_limit: 1,
-        entry_requirement_type: EntryRequirementType::allowlist(array![addr1].span()),
-    };
-
-    // Address 0x999 is not in allowlist
-    mock.validate_qualification(1, req, QualificationProof::Address(make_address(0x999)));
-}
-
-#[test]
-#[should_panic(expected: "EntryRequirement: Provided qualification proof is not of type 'Address'")]
-fn test_validate_qualification_allowlist_wrong_proof_type() {
-    let mock = deploy_entry_requirement_mock();
-    let addr1 = make_address(0x111);
-
-    let req = EntryRequirement {
-        entry_limit: 1,
-        entry_requirement_type: EntryRequirementType::allowlist(array![addr1].span()),
-    };
-
-    // Pass NFT proof for allowlist requirement
-    mock.validate_qualification(1, req, QualificationProof::NFT(NFTQualification { token_id: 1 }));
-}
-
-#[test]
 fn test_validate_qualification_extension_returns_caller() {
     let mock = deploy_entry_requirement_mock();
     let caller = make_address(0x555);
@@ -681,19 +569,6 @@ fn test_assert_valid_entry_requirement_token_not_erc721() {
         entry_limit: 1, entry_requirement_type: EntryRequirementType::token(non_erc721_addr),
     };
 
-    mock.assert_valid_entry_requirement(req);
-}
-
-#[test]
-fn test_assert_valid_entry_requirement_allowlist_noop() {
-    let mock = deploy_entry_requirement_mock();
-
-    let req = EntryRequirement {
-        entry_limit: 1,
-        entry_requirement_type: EntryRequirementType::allowlist(array![make_address(0x111)].span()),
-    };
-
-    // Should not panic
     mock.assert_valid_entry_requirement(req);
 }
 

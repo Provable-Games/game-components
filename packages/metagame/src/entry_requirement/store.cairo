@@ -9,8 +9,6 @@ pub trait Store<T> {
     fn set_meta(ref self: T, context_id: u64, meta: EntryRequirementMeta);
     fn get_token(self: @T, context_id: u64) -> ContractAddress;
     fn set_token(ref self: T, context_id: u64, token: ContractAddress);
-    fn get_allowlist(self: @T, context_id: u64) -> Span<ContractAddress>;
-    fn set_allowlist(ref self: T, context_id: u64, addresses: Span<ContractAddress>);
     fn get_extension_address(self: @T, context_id: u64) -> ContractAddress;
     fn set_extension_address(ref self: T, context_id: u64, address: ContractAddress);
     fn get_extension_config(self: @T, context_id: u64) -> Span<felt252>;

@@ -16,7 +16,6 @@ pub struct EntryRequirement {
 #[derive(Copy, Drop, Serde, PartialEq)]
 pub enum EntryRequirementType {
     token: ContractAddress,
-    allowlist: Span<ContractAddress>,
     extension: ExtensionConfig,
 }
 
