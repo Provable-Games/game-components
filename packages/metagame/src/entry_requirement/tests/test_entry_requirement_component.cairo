@@ -538,7 +538,10 @@ fn test_validate_qualification_extension_wrong_proof_type() {
     };
 
     // Pass NFT proof for extension requirement — should panic
-    mock.validate_qualification(1, req, QualificationProof::NFT(NFTQualification { token_id: 0x123 }));
+    mock
+        .validate_qualification(
+            1, req, QualificationProof::NFT(NFTQualification { token_id: 0x123 }),
+        );
 }
 
 // ============================================================================
