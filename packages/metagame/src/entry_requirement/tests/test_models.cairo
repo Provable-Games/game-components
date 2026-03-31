@@ -14,21 +14,12 @@ fn test_pack_unpack_token_type() {
 }
 
 #[test]
-fn test_pack_unpack_allowlist_type() {
-    let meta = EntryRequirementMeta { entry_limit: 5, req_type: 1 };
-    let packed = EntryRequirementMetaStorePacking::pack(meta);
-    let unpacked = EntryRequirementMetaStorePacking::unpack(packed);
-    assert!(unpacked.entry_limit == 5, "entry_limit mismatch");
-    assert!(unpacked.req_type == 1, "req_type mismatch");
-}
-
-#[test]
 fn test_pack_unpack_extension_type() {
-    let meta = EntryRequirementMeta { entry_limit: 100, req_type: 2 };
+    let meta = EntryRequirementMeta { entry_limit: 100, req_type: 1 };
     let packed = EntryRequirementMetaStorePacking::pack(meta);
     let unpacked = EntryRequirementMetaStorePacking::unpack(packed);
     assert!(unpacked.entry_limit == 100, "entry_limit mismatch");
-    assert!(unpacked.req_type == 2, "req_type mismatch");
+    assert!(unpacked.req_type == 1, "req_type mismatch");
 }
 
 #[test]
@@ -68,10 +59,10 @@ fn test_pack_format_token_type() {
 }
 
 #[test]
-fn test_pack_format_allowlist_type() {
+fn test_pack_format_extension_type() {
     let meta = EntryRequirementMeta { entry_limit: 5, req_type: 1 };
     let packed = EntryRequirementMetaStorePacking::pack(meta);
-    assert!(packed == 5 * 0x100 + 1, "packed format mismatch for allowlist type");
+    assert!(packed == 5 * 0x100 + 1, "packed format mismatch for extension type");
 }
 
 #[test]

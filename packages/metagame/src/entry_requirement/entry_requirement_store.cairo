@@ -59,10 +59,6 @@ pub impl EntryRequirementStoreImpl<T, +Store<T>, +Drop<T>> of EntryRequirementSt
                 EntryRequirementType::token(token)
             },
             1 => {
-                let addresses = self.get_allowlist(context_id);
-                EntryRequirementType::allowlist(addresses)
-            },
-            2 => {
                 let address = self.get_extension_address(context_id);
                 let config = self.get_extension_config(context_id);
                 EntryRequirementType::extension(ExtensionConfig { address, config })
@@ -81,10 +77,6 @@ pub impl EntryRequirementStoreImpl<T, +Store<T>, +Drop<T>> of EntryRequirementSt
                     EntryRequirementType::token(token) => {
                         self.set_token(context_id, token);
                         (entry_requirement::REQ_TYPE_TOKEN, req.entry_limit)
-                    },
-                    EntryRequirementType::allowlist(addresses) => {
-                        self.set_allowlist(context_id, addresses);
-                        (entry_requirement::REQ_TYPE_ALLOWLIST, req.entry_limit)
                     },
                     EntryRequirementType::extension(config) => {
                         self.set_extension_address(context_id, config.address);
@@ -139,19 +131,6 @@ pub impl EntryRequirementStoreImpl<T, +Store<T>, +Drop<T>> of EntryRequirementSt
                 let erc721_dispatcher = IERC721Dispatcher { contract_address: token_address };
                 erc721_dispatcher.owner_of(qualification.token_id)
             },
-            EntryRequirementType::allowlist(addresses) => {
-                let qualifying_address = match qualifier {
-                    QualificationProof::Address(addr) => addr,
-                    _ => panic!(
-                        "EntryRequirement: Provided qualification proof is not of type 'Address'",
-                    ),
-                };
-                assert!(
-                    entry_requirement::contains_address(addresses, qualifying_address),
-                    "EntryRequirement: Qualifying address is not in allowlist",
-                );
-                qualifying_address
-            },
             EntryRequirementType::extension(extension_config) => {
                 let qualification = match qualifier {
                     QualificationProof::Extension(qual) => qual,
@@ -185,7 +164,6 @@ pub impl EntryRequirementStoreImpl<T, +Store<T>, +Drop<T>> of EntryRequirementSt
                     display_address,
                 );
             },
-            EntryRequirementType::allowlist(_) => {},
             EntryRequirementType::extension(extension_config) => {
                 let extension_address = extension_config.address;
                 assert!(
