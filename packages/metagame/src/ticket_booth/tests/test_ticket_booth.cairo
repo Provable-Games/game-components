@@ -80,6 +80,7 @@ fn deploy_mock_erc20() -> ContractAddress {
 
 fn deploy_ticket_booth(
     opening_time: u64,
+    denshokan_address: ContractAddress,
     game_token_address: ContractAddress,
     payment_token: ContractAddress,
     cost_to_play: u128,
@@ -94,6 +95,7 @@ fn deploy_ticket_booth(
 
     let mut calldata = array![];
     calldata.append(opening_time.into());
+    calldata.append(denshokan_address.into());
     calldata.append(game_token_address.into());
     calldata.append(payment_token.into());
     calldata.append(cost_to_play.into());
@@ -176,12 +178,17 @@ fn deploy_ticket_booth(
     (address, dispatcher)
 }
 
+fn DENSHOKAN_ADDRESS() -> ContractAddress {
+    0xDE58.try_into().unwrap()
+}
+
 fn deploy_basic_ticket_booth() -> (ContractAddress, ITicketBoothDispatcher) {
     let game_token = deploy_mock_minigame_token();
     let payment_token = deploy_mock_erc20();
 
     deploy_ticket_booth(
         DEFAULT_OPENING_TIME,
+        DENSHOKAN_ADDRESS(),
         game_token,
         payment_token,
         DEFAULT_COST,
@@ -206,6 +213,7 @@ fn test_initialize_with_valid_parameters() {
 
     let (_, dispatcher) = deploy_ticket_booth(
         DEFAULT_OPENING_TIME,
+        DENSHOKAN_ADDRESS(),
         game_token,
         payment_token,
         DEFAULT_COST,
@@ -237,6 +245,7 @@ fn test_initialize_with_all_optional_params() {
 
     let (_, dispatcher) = deploy_ticket_booth(
         DEFAULT_OPENING_TIME,
+        DENSHOKAN_ADDRESS(),
         game_token,
         payment_token,
         DEFAULT_COST,
@@ -261,6 +270,7 @@ fn test_initialize_with_none_optional_params() {
 
     let (_, dispatcher) = deploy_ticket_booth(
         DEFAULT_OPENING_TIME,
+        DENSHOKAN_ADDRESS(),
         game_token,
         payment_token,
         DEFAULT_COST,
@@ -285,6 +295,7 @@ fn test_initialize_with_zero_opening_time() {
 
     let (_, dispatcher) = deploy_ticket_booth(
         0, // Immediately open
+        DENSHOKAN_ADDRESS(),
         game_token,
         payment_token,
         DEFAULT_COST,
@@ -314,6 +325,7 @@ fn test_initialize_with_golden_passes() {
 
     let (_, dispatcher) = deploy_ticket_booth(
         DEFAULT_OPENING_TIME,
+        DENSHOKAN_ADDRESS(),
         game_token,
         payment_token,
         DEFAULT_COST,
@@ -345,6 +357,7 @@ fn test_payment_token_view() {
 
     let (_, dispatcher) = deploy_ticket_booth(
         DEFAULT_OPENING_TIME,
+        DENSHOKAN_ADDRESS(),
         game_token,
         payment_token,
         DEFAULT_COST,
@@ -403,6 +416,7 @@ fn test_get_golden_pass_configured() {
 
     let (_, dispatcher) = deploy_ticket_booth(
         DEFAULT_OPENING_TIME,
+        DENSHOKAN_ADDRESS(),
         game_token,
         payment_token,
         DEFAULT_COST,
@@ -443,6 +457,7 @@ fn test_golden_pass_last_used_never_used() {
 
     let (_, dispatcher) = deploy_ticket_booth(
         DEFAULT_OPENING_TIME,
+        DENSHOKAN_ADDRESS(),
         game_token,
         payment_token,
         DEFAULT_COST,
@@ -489,6 +504,7 @@ fn test_is_golden_pass_usable_cooldown_not_elapsed() {
 
     let (address, dispatcher) = deploy_ticket_booth(
         DEFAULT_OPENING_TIME,
+        DENSHOKAN_ADDRESS(),
         game_token,
         payment_token,
         DEFAULT_COST,
@@ -526,6 +542,7 @@ fn test_is_golden_pass_usable_cooldown_elapsed() {
 
     let (address, dispatcher) = deploy_ticket_booth(
         DEFAULT_OPENING_TIME,
+        DENSHOKAN_ADDRESS(),
         game_token,
         payment_token,
         DEFAULT_COST,
@@ -563,6 +580,7 @@ fn test_is_golden_pass_usable_pass_expired() {
 
     let (address, dispatcher) = deploy_ticket_booth(
         DEFAULT_OPENING_TIME,
+        DENSHOKAN_ADDRESS(),
         game_token,
         payment_token,
         DEFAULT_COST,
@@ -632,6 +650,7 @@ fn test_buy_game_golden_pass_not_owner() {
 
     let (address, dispatcher) = deploy_ticket_booth(
         DEFAULT_OPENING_TIME,
+        DENSHOKAN_ADDRESS(),
         game_token,
         payment_token,
         DEFAULT_COST,
@@ -673,6 +692,7 @@ fn test_buy_game_golden_pass_on_cooldown() {
 
     let (address, dispatcher) = deploy_ticket_booth(
         DEFAULT_OPENING_TIME,
+        DENSHOKAN_ADDRESS(),
         game_token,
         payment_token,
         DEFAULT_COST,
@@ -714,6 +734,7 @@ fn test_fuzz_cost_to_play(cost: u128) {
 
     let (_, dispatcher) = deploy_ticket_booth(
         DEFAULT_OPENING_TIME,
+        DENSHOKAN_ADDRESS(),
         game_token,
         payment_token,
         cost,
@@ -737,6 +758,7 @@ fn test_fuzz_opening_time(opening_time: u64) {
 
     let (_, dispatcher) = deploy_ticket_booth(
         opening_time,
+        DENSHOKAN_ADDRESS(),
         game_token,
         payment_token,
         DEFAULT_COST,
@@ -784,6 +806,7 @@ mod MockTicketBoothContract {
     fn constructor(
         ref self: ContractState,
         opening_time: u64,
+        denshokan_address: ContractAddress,
         game_token_address: ContractAddress,
         payment_token: ContractAddress,
         cost_to_play: u128,
@@ -798,6 +821,7 @@ mod MockTicketBoothContract {
             .ticket_booth
             .initializer(
                 opening_time,
+                denshokan_address,
                 game_token_address,
                 payment_token,
                 cost_to_play,
@@ -806,8 +830,6 @@ mod MockTicketBoothContract {
                 settings_id,
                 start_time,
                 expiration_time,
-                Option::None, // client_url
-                Option::None, // renderer_address
                 golden_passes,
             );
     }
@@ -1033,6 +1055,10 @@ mod MockMinigameTokenForTicketBooth {
             0
         }
 
+        fn minted_by_address(self: @ContractState, token_id: felt252) -> ContractAddress {
+            0.try_into().unwrap()
+        }
+
         fn game_address(self: @ContractState) -> ContractAddress {
             Zero::zero()
         }
@@ -1088,6 +1114,12 @@ mod MockMinigameTokenForTicketBooth {
         }
 
         fn minted_by_batch(self: @ContractState, token_ids: Span<felt252>) -> Array<felt252> {
+            array![]
+        }
+
+        fn minted_by_address_batch(
+            self: @ContractState, token_ids: Span<felt252>,
+        ) -> Array<ContractAddress> {
             array![]
         }
 
@@ -1303,6 +1335,7 @@ fn test_buy_game_ticket_zero_receiver_burn_fallback() {
 
     let (address, dispatcher) = deploy_ticket_booth(
         DEFAULT_OPENING_TIME,
+        DENSHOKAN_ADDRESS(),
         game_token,
         payment_token,
         DEFAULT_COST,
@@ -1329,75 +1362,6 @@ fn test_buy_game_ticket_zero_receiver_burn_fallback() {
 }
 
 // =============================================================================
-// ADDITIONAL VIEW FUNCTION TESTS
-// =============================================================================
-
-// TB-U-54: client_url returns correct value when set
-#[test]
-fn test_client_url_view_when_set() {
-    let game_token = deploy_mock_minigame_token();
-    let payment_token = deploy_mock_erc20();
-
-    let contract = declare("MockTicketBoothContractWithClientUrl").unwrap().contract_class();
-    let mut calldata = array![];
-    calldata.append(DEFAULT_OPENING_TIME.into());
-    calldata.append(game_token.into());
-    calldata.append(payment_token.into());
-    calldata.append(DEFAULT_COST.into());
-    calldata.append(TICKET_RECEIVER().into());
-    calldata.append(1); // None for game_address
-    calldata.append(1); // None for settings_id
-    calldata.append(1); // None for start_time
-    calldata.append(1); // None for expiration_time
-    calldata.append(1); // None for golden_passes
-
-    let (address, _) = contract.deploy(@calldata).unwrap();
-    let dispatcher = ITicketBoothDispatcher { contract_address: address };
-
-    let client_url = dispatcher.client_url();
-    assert!(client_url == Option::Some("https://test.game.com"), "Client URL mismatch");
-}
-
-// TB-U-55: client_url returns None when not set
-#[test]
-fn test_client_url_view_when_none() {
-    let (_, dispatcher) = deploy_basic_ticket_booth();
-    let client_url = dispatcher.client_url();
-    assert!(client_url.is_none(), "Client URL should be None");
-}
-
-// TB-U-56: renderer_address returns correct value when set
-#[test]
-fn test_renderer_address_view_when_set() {
-    let game_token = deploy_mock_minigame_token();
-    let payment_token = deploy_mock_erc20();
-    let renderer: ContractAddress = 0xDEAD.try_into().unwrap();
-
-    let contract = declare("MockTicketBoothContractWithRenderer").unwrap().contract_class();
-    let mut calldata = array![];
-    calldata.append(DEFAULT_OPENING_TIME.into());
-    calldata.append(game_token.into());
-    calldata.append(payment_token.into());
-    calldata.append(DEFAULT_COST.into());
-    calldata.append(TICKET_RECEIVER().into());
-    calldata.append(renderer.into());
-
-    let (address, _) = contract.deploy(@calldata).unwrap();
-    let dispatcher = ITicketBoothDispatcher { contract_address: address };
-
-    let result = dispatcher.renderer_address();
-    assert!(result == Option::Some(renderer), "Renderer address mismatch");
-}
-
-// TB-U-57: renderer_address returns None when not set
-#[test]
-fn test_renderer_address_view_when_none() {
-    let (_, dispatcher) = deploy_basic_ticket_booth();
-    let result = dispatcher.renderer_address();
-    assert!(result.is_none(), "Renderer address should be None");
-}
-
-// =============================================================================
 // GOLDEN PASS EXPIRATION TESTS
 // =============================================================================
 
@@ -1418,6 +1382,7 @@ fn test_golden_pass_fixed_expiration() {
 
     let (_, dispatcher) = deploy_ticket_booth(
         DEFAULT_OPENING_TIME,
+        DENSHOKAN_ADDRESS(),
         game_token,
         payment_token,
         DEFAULT_COST,
@@ -1457,6 +1422,7 @@ fn test_golden_pass_dynamic_expiration() {
 
     let (_, dispatcher) = deploy_ticket_booth(
         DEFAULT_OPENING_TIME,
+        DENSHOKAN_ADDRESS(),
         game_token,
         payment_token,
         DEFAULT_COST,
@@ -1501,6 +1467,7 @@ fn test_multiple_golden_passes_configuration() {
 
     let (_, dispatcher) = deploy_ticket_booth(
         DEFAULT_OPENING_TIME,
+        DENSHOKAN_ADDRESS(),
         game_token,
         payment_token,
         DEFAULT_COST,
@@ -1550,6 +1517,7 @@ fn test_buy_game_golden_pass_expired() {
     // Set opening time to 1000 (DEFAULT_OPENING_TIME)
     let (address, dispatcher) = deploy_ticket_booth(
         DEFAULT_OPENING_TIME, // 1000
+        DENSHOKAN_ADDRESS(),
         game_token,
         payment_token,
         DEFAULT_COST,
@@ -1572,118 +1540,3 @@ fn test_buy_game_golden_pass_expired() {
     dispatcher.buy_game(payment, Option::None, ALICE(), false);
 }
 
-// =============================================================================
-// ADDITIONAL MOCK CONTRACTS
-// =============================================================================
-
-// Mock TicketBooth with client_url set
-#[starknet::contract]
-mod MockTicketBoothContractWithClientUrl {
-    use starknet::ContractAddress;
-    use crate::ticket_booth::ticket_booth_component::TicketBoothComponent;
-
-    component!(path: TicketBoothComponent, storage: ticket_booth, event: TicketBoothEvent);
-
-    #[abi(embed_v0)]
-    impl TicketBoothImpl = TicketBoothComponent::TicketBoothImpl<ContractState>;
-    impl TicketBoothInternalImpl = TicketBoothComponent::InternalImpl<ContractState>;
-
-    #[storage]
-    struct Storage {
-        #[substorage(v0)]
-        ticket_booth: TicketBoothComponent::Storage,
-    }
-
-    #[event]
-    #[derive(Drop, starknet::Event)]
-    enum Event {
-        #[flat]
-        TicketBoothEvent: TicketBoothComponent::Event,
-    }
-
-    #[constructor]
-    fn constructor(
-        ref self: ContractState,
-        opening_time: u64,
-        game_token_address: ContractAddress,
-        payment_token: ContractAddress,
-        cost_to_play: u128,
-        ticket_receiver_address: ContractAddress,
-        game_address: Option<ContractAddress>,
-        settings_id: Option<u32>,
-        start_time: Option<u64>,
-        expiration_time: Option<u64>,
-        golden_passes: Option<Span<(ContractAddress, crate::ticket_booth::structs::GoldenPass)>>,
-    ) {
-        self
-            .ticket_booth
-            .initializer(
-                opening_time,
-                game_token_address,
-                payment_token,
-                cost_to_play,
-                ticket_receiver_address,
-                game_address,
-                settings_id,
-                start_time,
-                expiration_time,
-                Option::Some("https://test.game.com"),
-                Option::None,
-                golden_passes,
-            );
-    }
-}
-
-// Mock TicketBooth with renderer_address set
-#[starknet::contract]
-mod MockTicketBoothContractWithRenderer {
-    use starknet::ContractAddress;
-    use crate::ticket_booth::ticket_booth_component::TicketBoothComponent;
-
-    component!(path: TicketBoothComponent, storage: ticket_booth, event: TicketBoothEvent);
-
-    #[abi(embed_v0)]
-    impl TicketBoothImpl = TicketBoothComponent::TicketBoothImpl<ContractState>;
-    impl TicketBoothInternalImpl = TicketBoothComponent::InternalImpl<ContractState>;
-
-    #[storage]
-    struct Storage {
-        #[substorage(v0)]
-        ticket_booth: TicketBoothComponent::Storage,
-    }
-
-    #[event]
-    #[derive(Drop, starknet::Event)]
-    enum Event {
-        #[flat]
-        TicketBoothEvent: TicketBoothComponent::Event,
-    }
-
-    #[constructor]
-    fn constructor(
-        ref self: ContractState,
-        opening_time: u64,
-        game_token_address: ContractAddress,
-        payment_token: ContractAddress,
-        cost_to_play: u128,
-        ticket_receiver_address: ContractAddress,
-        renderer_address: ContractAddress,
-    ) {
-        self
-            .ticket_booth
-            .initializer(
-                opening_time,
-                game_token_address,
-                payment_token,
-                cost_to_play,
-                ticket_receiver_address,
-                Option::None,
-                Option::None,
-                Option::None,
-                Option::None,
-                Option::None,
-                Option::Some(renderer_address),
-                Option::None,
-            );
-    }
-}

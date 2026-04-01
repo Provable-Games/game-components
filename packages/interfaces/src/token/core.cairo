@@ -8,7 +8,7 @@ use crate::structs::token::{
 /// SNIP-5 interface ID derived via src5_rs: XOR of extended function selectors
 /// Includes skills_address view function. Run `src5_rs parse` for full derivation.
 pub const IMINIGAME_TOKEN_ID: felt252 =
-    0x39b3cf4989f3d1493c059433fb1d41a763c166ef2f8f6bd801823f27414bdbc;
+    0x21c51b9820202309d87ff5d316b17b2d9280f2db9fd8fc2c6120c3a60869e49;
 
 #[starknet::interface]
 pub trait IMinigameToken<TState> {
@@ -19,6 +19,7 @@ pub trait IMinigameToken<TState> {
     fn player_name(self: @TState, token_id: felt252) -> felt252;
     fn objective_id(self: @TState, token_id: felt252) -> u32;
     fn minted_by(self: @TState, token_id: felt252) -> felt252;
+    fn minted_by_address(self: @TState, token_id: felt252) -> ContractAddress;
     fn game_address(self: @TState) -> ContractAddress;
     fn game_registry_address(self: @TState) -> ContractAddress;
     fn is_soulbound(self: @TState, token_id: felt252) -> bool;
@@ -35,6 +36,7 @@ pub trait IMinigameToken<TState> {
     fn player_name_batch(self: @TState, token_ids: Span<felt252>) -> Array<felt252>;
     fn objective_id_batch(self: @TState, token_ids: Span<felt252>) -> Array<u32>;
     fn minted_by_batch(self: @TState, token_ids: Span<felt252>) -> Array<felt252>;
+    fn minted_by_address_batch(self: @TState, token_ids: Span<felt252>) -> Array<ContractAddress>;
     fn is_soulbound_batch(self: @TState, token_ids: Span<felt252>) -> Array<bool>;
     fn renderer_address_batch(self: @TState, token_ids: Span<felt252>) -> Array<ContractAddress>;
     fn token_game_address_batch(self: @TState, token_ids: Span<felt252>) -> Array<ContractAddress>;

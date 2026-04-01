@@ -847,6 +847,9 @@ mod MockMinigameTokenForLibs {
         fn minted_by(self: @ContractState, token_id: felt252) -> felt252 {
             0
         }
+        fn minted_by_address(self: @ContractState, token_id: felt252) -> ContractAddress {
+            0.try_into().unwrap()
+        }
         fn game_address(self: @ContractState) -> ContractAddress {
             Zero::zero()
         }
@@ -956,6 +959,12 @@ mod MockMinigameTokenForLibs {
                 i += 1;
             }
             results
+        }
+
+        fn minted_by_address_batch(
+            self: @ContractState, token_ids: Span<felt252>,
+        ) -> Array<ContractAddress> {
+            array![]
         }
 
         fn is_soulbound_batch(self: @ContractState, token_ids: Span<felt252>) -> Array<bool> {
@@ -1715,6 +1724,9 @@ mod MockMinigameTokenWithRegistry {
         fn minted_by(self: @ContractState, token_id: felt252) -> felt252 {
             0
         }
+        fn minted_by_address(self: @ContractState, token_id: felt252) -> ContractAddress {
+            0.try_into().unwrap()
+        }
         fn game_address(self: @ContractState) -> ContractAddress {
             Zero::zero()
         }
@@ -1815,6 +1827,11 @@ mod MockMinigameTokenWithRegistry {
                 i += 1;
             }
             r
+        }
+        fn minted_by_address_batch(
+            self: @ContractState, token_ids: Span<felt252>,
+        ) -> Array<ContractAddress> {
+            array![]
         }
         fn is_soulbound_batch(self: @ContractState, token_ids: Span<felt252>) -> Array<bool> {
             let mut r = array![];
