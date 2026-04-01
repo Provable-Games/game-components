@@ -164,6 +164,14 @@ pub mod CoreTokenComponent {
             minted_by_val.into()
         }
 
+        fn minted_by_address(
+            self: @ComponentState<TContractState>, token_id: felt252,
+        ) -> ContractAddress {
+            let minted_by_id: u64 = unpack_minted_by(token_id);
+            let contract_ref = self.get_contract();
+            MinterOpt::get_minter_address(contract_ref, minted_by_id)
+        }
+
         fn game_address(self: @ComponentState<TContractState>) -> ContractAddress {
             self.game_address.read()
         }
@@ -326,6 +334,24 @@ pub mod CoreTokenComponent {
                 }
                 let minted_by_val: u64 = unpack_minted_by(*token_ids.at(i));
                 results.append(minted_by_val.into());
+                i += 1;
+            }
+            results
+        }
+
+        fn minted_by_address_batch(
+            self: @ComponentState<TContractState>, token_ids: Span<felt252>,
+        ) -> Array<ContractAddress> {
+            assert!(token_ids.len() > 0, "MinigameToken: token_ids array cannot be empty");
+            let contract_ref = self.get_contract();
+            let mut results: Array<ContractAddress> = ArrayTrait::new();
+            let mut i: u32 = 0;
+            loop {
+                if i >= token_ids.len() {
+                    break;
+                }
+                let minted_by_id: u64 = unpack_minted_by(*token_ids.at(i));
+                results.append(MinterOpt::get_minter_address(contract_ref, minted_by_id));
                 i += 1;
             }
             results

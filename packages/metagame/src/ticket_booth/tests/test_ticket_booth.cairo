@@ -1033,6 +1033,10 @@ mod MockMinigameTokenForTicketBooth {
             0
         }
 
+        fn minted_by_address(self: @ContractState, token_id: felt252) -> ContractAddress {
+            0.try_into().unwrap()
+        }
+
         fn game_address(self: @ContractState) -> ContractAddress {
             Zero::zero()
         }
@@ -1088,6 +1092,12 @@ mod MockMinigameTokenForTicketBooth {
         }
 
         fn minted_by_batch(self: @ContractState, token_ids: Span<felt252>) -> Array<felt252> {
+            array![]
+        }
+
+        fn minted_by_address_batch(
+            self: @ContractState, token_ids: Span<felt252>,
+        ) -> Array<ContractAddress> {
             array![]
         }
 

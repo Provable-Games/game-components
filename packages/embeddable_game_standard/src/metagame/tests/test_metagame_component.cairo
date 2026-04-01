@@ -670,6 +670,10 @@ mod MockMinigameToken {
             0
         }
 
+        fn minted_by_address(self: @ContractState, token_id: felt252) -> ContractAddress {
+            0.try_into().unwrap()
+        }
+
         fn game_address(self: @ContractState) -> ContractAddress {
             self.game_address.read()
         }
@@ -780,6 +784,12 @@ mod MockMinigameToken {
                 i += 1;
             }
             results
+        }
+
+        fn minted_by_address_batch(
+            self: @ContractState, token_ids: Span<felt252>,
+        ) -> Array<ContractAddress> {
+            array![]
         }
 
         fn is_soulbound_batch(self: @ContractState, token_ids: Span<felt252>) -> Array<bool> {

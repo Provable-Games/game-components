@@ -23,6 +23,7 @@ pub trait IMinigameTokenMixin<TState> {
     fn player_name(self: @TState, token_id: felt252) -> felt252;
     fn objective_id(self: @TState, token_id: felt252) -> u32;
     fn minted_by(self: @TState, token_id: felt252) -> felt252;
+    fn minted_by_address(self: @TState, token_id: felt252) -> ContractAddress;
     fn game_address(self: @TState) -> ContractAddress;
     fn game_registry_address(self: @TState) -> ContractAddress;
     fn is_soulbound(self: @TState, token_id: felt252) -> bool;
@@ -39,6 +40,7 @@ pub trait IMinigameTokenMixin<TState> {
     fn player_name_batch(self: @TState, token_ids: Span<felt252>) -> Array<felt252>;
     fn objective_id_batch(self: @TState, token_ids: Span<felt252>) -> Array<u32>;
     fn minted_by_batch(self: @TState, token_ids: Span<felt252>) -> Array<felt252>;
+    fn minted_by_address_batch(self: @TState, token_ids: Span<felt252>) -> Array<ContractAddress>;
     fn is_soulbound_batch(self: @TState, token_ids: Span<felt252>) -> Array<bool>;
     fn renderer_address_batch(self: @TState, token_ids: Span<felt252>) -> Array<ContractAddress>;
     fn token_game_address_batch(self: @TState, token_ids: Span<felt252>) -> Array<ContractAddress>;
