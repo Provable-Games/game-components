@@ -12,7 +12,6 @@
 #[feature("safe_dispatcher")]
 #[starknet::component]
 pub mod TicketBoothComponent {
-    use core::byte_array::ByteArray;
     use core::num::traits::Zero;
     use game_components_embeddable_game_standard::minigame::minigame::mint;
     use openzeppelin_interfaces::erc20::{IERC20Dispatcher, IERC20DispatcherTrait};
@@ -43,8 +42,6 @@ pub mod TicketBoothComponent {
         settings_id: Option<u32>,
         start_time: Option<u64>,
         expiration_time: Option<u64>,
-        client_url: Option<ByteArray>,
-        renderer_address: Option<ContractAddress>,
         golden_passes: Map<ContractAddress, GoldenPass>,
         golden_pass_last_used: Map<(ContractAddress, u128), u64>,
     }
@@ -78,8 +75,6 @@ pub mod TicketBoothComponent {
         fn settings_id(self: @TContractState) -> Option<u32>;
         fn start_time(self: @TContractState) -> Option<u64>;
         fn expiration_time(self: @TContractState) -> Option<u64>;
-        fn client_url(self: @TContractState) -> Option<ByteArray>;
-        fn renderer_address(self: @TContractState) -> Option<ContractAddress>;
         fn get_golden_pass(
             self: @TContractState, golden_pass_address: ContractAddress,
         ) -> Option<GoldenPass>;
@@ -194,15 +189,6 @@ pub mod TicketBoothComponent {
             self.expiration_time.read()
         }
 
-
-        fn client_url(self: @ComponentState<TContractState>) -> Option<ByteArray> {
-            self.client_url.read()
-        }
-
-        fn renderer_address(self: @ComponentState<TContractState>) -> Option<ContractAddress> {
-            self.renderer_address.read()
-        }
-
         fn opening_time(self: @ComponentState<TContractState>) -> u64 {
             self.opening_time.read()
         }
@@ -225,8 +211,6 @@ pub mod TicketBoothComponent {
             settings_id: Option<u32>,
             start_time: Option<u64>,
             expiration_time: Option<u64>,
-            client_url: Option<ByteArray>,
-            renderer_address: Option<ContractAddress>,
             golden_passes: Option<Span<(ContractAddress, GoldenPass)>>,
         ) {
             // Validate required parameters
@@ -246,9 +230,6 @@ pub mod TicketBoothComponent {
             self.settings_id.write(settings_id);
             self.start_time.write(start_time);
             self.expiration_time.write(expiration_time);
-
-            self.client_url.write(client_url);
-            self.renderer_address.write(renderer_address);
             self.ticket_receiver_address.write(ticket_receiver_address);
 
             // Configure golden passes if provided
