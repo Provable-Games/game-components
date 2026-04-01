@@ -190,6 +190,13 @@ fn test_token_of_owner_by_index_when_all_tokens_transferred() {
 // ================================================================================================
 
 #[test]
+#[should_panic(expected: 'ERC721Enum: burn not supported')]
+fn test_before_update_burn_panics() {
+    let (mut state, _) = setup();
+    state.before_update(ZERO(), TOKEN_1);
+}
+
+#[test]
 fn test_before_update_when_mint() {
     let (mut state, _) = setup();
     let new_token = 'TOKEN_4';

@@ -39,6 +39,7 @@ pub mod EnumerableComponent {
 
     pub mod Errors {
         pub const OUT_OF_BOUNDS_INDEX: felt252 = 'ERC721Enum: out of bounds index';
+        pub const BURN_NOT_SUPPORTED: felt252 = 'ERC721Enum: burn not supported';
     }
 
     #[embeddable_as(EnumerableImpl)]
@@ -92,6 +93,7 @@ pub mod EnumerableComponent {
         ) {
             let erc721_component = get_dep_component!(@self, ERC721);
             let previous_owner = erc721_component._owner_of(token_id);
+            assert(!to.is_zero() || previous_owner.is_zero(), Errors::BURN_NOT_SUPPORTED);
             let token_id_felt: felt252 = token_id.try_into().unwrap();
 
             if previous_owner.is_zero() {
