@@ -197,6 +197,14 @@ fn test_before_update_burn_panics() {
 }
 
 #[test]
+#[should_panic(expected: 'ERC721Enum: burn not supported')]
+fn test_before_update_mint_to_zero_panics() {
+    let (mut state, _) = setup();
+    let unminted_token = 'UNMINTED';
+    state.before_update(ZERO(), unminted_token);
+}
+
+#[test]
 fn test_before_update_when_mint() {
     let (mut state, _) = setup();
     let new_token = 'TOKEN_4';

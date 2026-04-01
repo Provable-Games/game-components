@@ -91,9 +91,9 @@ pub mod EnumerableComponent {
         fn before_update(
             ref self: ComponentState<TContractState>, to: ContractAddress, token_id: u256,
         ) {
+            assert(!to.is_zero(), Errors::BURN_NOT_SUPPORTED);
             let erc721_component = get_dep_component!(@self, ERC721);
             let previous_owner = erc721_component._owner_of(token_id);
-            assert(!to.is_zero() || previous_owner.is_zero(), Errors::BURN_NOT_SUPPORTED);
             let token_id_felt: felt252 = token_id.try_into().unwrap();
 
             if previous_owner.is_zero() {
@@ -102,7 +102,7 @@ pub mod EnumerableComponent {
                 self._remove_token_from_owner_enumeration(previous_owner, token_id_felt);
             }
 
-            if !to.is_zero() && previous_owner != to {
+            if previous_owner != to {
                 self._add_token_to_owner_enumeration(to, token_id_felt);
             }
         }
