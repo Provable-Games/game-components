@@ -1335,7 +1335,7 @@ fn test_buy_game_ticket_zero_receiver_burn_fallback() {
 
     let (address, dispatcher) = deploy_ticket_booth(
         DEFAULT_OPENING_TIME,
-        DENSHOKAN_ADDRESS(),
+        game_token, // Use deployed mock as denshokan since buy_game mints via this address
         game_token,
         payment_token,
         DEFAULT_COST,
