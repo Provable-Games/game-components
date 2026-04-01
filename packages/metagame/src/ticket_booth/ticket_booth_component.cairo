@@ -14,9 +14,7 @@
 pub mod TicketBoothComponent {
     use core::byte_array::ByteArray;
     use core::num::traits::Zero;
-    use game_components_interfaces::token::{
-        IMinigameTokenDispatcher, IMinigameTokenDispatcherTrait,
-    };
+    use game_components_embeddable_game_standard::minigame::minigame::mint;
     use openzeppelin_interfaces::erc20::{IERC20Dispatcher, IERC20DispatcherTrait};
     use openzeppelin_interfaces::erc721::{IERC721Dispatcher, IERC721DispatcherTrait};
     use starknet::contract_address::ContractAddress;
@@ -36,6 +34,7 @@ pub mod TicketBoothComponent {
     #[storage]
     pub struct Storage {
         opening_time: u64,
+        denshokan_address: ContractAddress,
         game_token_address: ContractAddress,
         game_address: ContractAddress,
         payment_token: ContractAddress,
@@ -217,6 +216,7 @@ pub mod TicketBoothComponent {
         fn initializer(
             ref self: ComponentState<TContractState>,
             opening_time: u64,
+            denshokan_address: ContractAddress,
             game_token_address: ContractAddress,
             payment_token: ContractAddress,
             cost_to_play: u128,
@@ -230,10 +230,12 @@ pub mod TicketBoothComponent {
             golden_passes: Option<Span<(ContractAddress, GoldenPass)>>,
         ) {
             // Validate required parameters
+            assert!(!denshokan_address.is_zero(), "Denshokan address cannot be zero");
             assert!(!game_token_address.is_zero(), "Game token address cannot be zero");
             assert!(cost_to_play > 0_u128, "Cost to play must be greater than zero");
 
             self.opening_time.write(opening_time);
+            self.denshokan_address.write(denshokan_address);
             self.game_token_address.write(game_token_address);
             self.payment_token.write(payment_token);
             self.cost_to_play.write(cost_to_play);
@@ -353,27 +355,24 @@ pub mod TicketBoothComponent {
             start_time: Option<u64>,
             expiration: Option<u64>,
         ) -> felt252 {
-            let minigame_token_dispatcher = IMinigameTokenDispatcher {
-                contract_address: self.game_token_address.read(),
-            };
-            minigame_token_dispatcher
-                .mint(
-                    self.game_address.read(),
-                    player_name,
-                    self.settings_id.read(),
-                    start_time,
-                    expiration,
-                    Option::None,
-                    Option::None,
-                    self.client_url.read(),
-                    self.renderer_address.read(),
-                    Option::None,
-                    to,
-                    soulbound,
-                    false,
-                    0,
-                    0,
-                )
+            mint(
+                self.denshokan_address.read(),
+                self.game_address.read(),
+                player_name,
+                self.settings_id.read(),
+                start_time,
+                expiration,
+                Option::None,
+                Option::None,
+                Option::None,
+                Option::None,
+                Option::None,
+                to,
+                soulbound,
+                false,
+                0,
+                0,
+            )
         }
 
         fn assert_before_opening(ref self: ComponentState<TContractState>) {
