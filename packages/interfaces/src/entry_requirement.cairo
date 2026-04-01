@@ -29,7 +29,6 @@ pub struct QualificationEntries {
 #[derive(Copy, Drop, Serde, PartialEq)]
 pub enum QualificationProof {
     NFT: NFTQualification,
-    Address: ContractAddress,
     Extension: Span<felt252>,
 }
 

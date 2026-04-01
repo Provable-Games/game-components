@@ -245,7 +245,7 @@ fn test_explicitly_cleared_context_is_none() {
 #[test]
 fn test_qualification_entries_default_zero() {
     let mock = deploy_entry_requirement_mock();
-    let proof = QualificationProof::Address(make_address(0x123));
+    let proof = QualificationProof::Extension(array![0x123].span());
     let entries = mock.get_qualification_entries(1, proof);
     assert!(entries.context_id == 1, "context_id mismatch");
     assert!(entries.entry_count == 0, "default entry_count should be 0");
@@ -254,7 +254,7 @@ fn test_qualification_entries_default_zero() {
 #[test]
 fn test_set_qualification_entries() {
     let mock = deploy_entry_requirement_mock();
-    let proof = QualificationProof::Address(make_address(0x123));
+    let proof = QualificationProof::Extension(array![0x123].span());
 
     let entries = QualificationEntries {
         context_id: 42, qualification_proof: proof, entry_count: 7,
@@ -289,7 +289,7 @@ fn test_update_qualification_entries_increments() {
     let mock = deploy_entry_requirement_mock();
     let context_id: u64 = 50;
     let token_addr = make_address(0xABC);
-    let proof = QualificationProof::Address(make_address(0x123));
+    let proof = QualificationProof::Extension(array![0x123].span());
 
     let req = EntryRequirement {
         entry_limit: 3, entry_requirement_type: EntryRequirementType::token(token_addr),
@@ -312,7 +312,7 @@ fn test_update_qualification_entries_panics_at_limit() {
     let mock = deploy_entry_requirement_mock();
     let context_id: u64 = 50;
     let token_addr = make_address(0xABC);
-    let proof = QualificationProof::Address(make_address(0x123));
+    let proof = QualificationProof::Extension(array![0x123].span());
 
     let req = EntryRequirement {
         entry_limit: 1, entry_requirement_type: EntryRequirementType::token(token_addr),
@@ -330,7 +330,7 @@ fn test_update_qualification_entries_no_limit() {
     let mock = deploy_entry_requirement_mock();
     let context_id: u64 = 50;
     let token_addr = make_address(0xABC);
-    let proof = QualificationProof::Address(make_address(0x123));
+    let proof = QualificationProof::Extension(array![0x123].span());
 
     // entry_limit = 0 means unlimited
     let req = EntryRequirement {
@@ -357,8 +357,8 @@ fn test_update_qualification_entries_different_proofs_independent() {
     let mock = deploy_entry_requirement_mock();
     let context_id: u64 = 50;
     let token_addr = make_address(0xABC);
-    let proof1 = QualificationProof::Address(make_address(0x111));
-    let proof2 = QualificationProof::Address(make_address(0x222));
+    let proof1 = QualificationProof::Extension(array![0x111].span());
+    let proof2 = QualificationProof::Extension(array![0x222].span());
 
     let req = EntryRequirement {
         entry_limit: 5, entry_requirement_type: EntryRequirementType::token(token_addr),
@@ -458,8 +458,8 @@ fn test_validate_qualification_token_wrong_proof_type() {
         entry_limit: 1, entry_requirement_type: EntryRequirementType::token(erc721_addr),
     };
 
-    // Pass Address proof for a token requirement
-    mock.validate_qualification(1, req, QualificationProof::Address(make_address(0x123)));
+    // Pass Extension proof for a token requirement — should panic
+    mock.validate_qualification(1, req, QualificationProof::Extension(array![0x123].span()));
 }
 
 #[test]
@@ -537,8 +537,11 @@ fn test_validate_qualification_extension_wrong_proof_type() {
         ),
     };
 
-    // Pass Address proof for extension requirement
-    mock.validate_qualification(1, req, QualificationProof::Address(make_address(0x123)));
+    // Pass NFT proof for extension requirement — should panic
+    mock
+        .validate_qualification(
+            1, req, QualificationProof::NFT(NFTQualification { token_id: 0x123 }),
+        );
 }
 
 // ============================================================================
@@ -737,10 +740,10 @@ fn test_update_qualification_entries_extension_wrong_proof_type() {
         ),
     };
 
-    // Pass Address proof for extension requirement - should panic
+    // Pass NFT proof for extension requirement - should panic
     mock
         .update_qualification_entries(
-            context_id, QualificationProof::Address(make_address(0x123)), req,
+            context_id, QualificationProof::NFT(NFTQualification { token_id: 0x123 }), req,
         );
 }
 
@@ -751,7 +754,7 @@ fn test_update_qualification_entries_extension_wrong_proof_type() {
 #[test]
 fn test_hash_qualification_proof_deterministic() {
     let mock = deploy_entry_requirement_mock();
-    let proof = QualificationProof::Address(make_address(0x123));
+    let proof = QualificationProof::Extension(array![0x123].span());
 
     let hash1 = mock.hash_qualification_proof(proof);
     let hash2 = mock.hash_qualification_proof(proof);
@@ -762,15 +765,15 @@ fn test_hash_qualification_proof_deterministic() {
 #[test]
 fn test_hash_qualification_proof_different_proofs_different_hashes() {
     let mock = deploy_entry_requirement_mock();
-    let proof_addr = QualificationProof::Address(make_address(0x123));
+    let proof_ext_a = QualificationProof::Extension(array![0x123].span());
     let proof_nft = QualificationProof::NFT(NFTQualification { token_id: 42 });
-    let proof_ext = QualificationProof::Extension(array![0x1].span());
+    let proof_ext_b = QualificationProof::Extension(array![0x1].span());
 
-    let hash_addr = mock.hash_qualification_proof(proof_addr);
+    let hash_ext_a = mock.hash_qualification_proof(proof_ext_a);
     let hash_nft = mock.hash_qualification_proof(proof_nft);
-    let hash_ext = mock.hash_qualification_proof(proof_ext);
+    let hash_ext_b = mock.hash_qualification_proof(proof_ext_b);
 
-    assert!(hash_addr != hash_nft, "address and nft proofs should have different hashes");
-    assert!(hash_addr != hash_ext, "address and extension proofs should have different hashes");
-    assert!(hash_nft != hash_ext, "nft and extension proofs should have different hashes");
+    assert!(hash_ext_a != hash_nft, "extension and nft proofs should have different hashes");
+    assert!(hash_ext_a != hash_ext_b, "different extension proofs should have different hashes");
+    assert!(hash_nft != hash_ext_b, "nft and extension proofs should have different hashes");
 }
