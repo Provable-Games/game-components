@@ -83,8 +83,8 @@ fn test_total_supply() {
     contract_state.erc721.mint(OWNER(), TOKEN_1);
     assert!(state.total_supply() == 1, "supply should be 1 after mint");
 
-    contract_state.erc721.burn(TOKEN_1);
-    assert!(state.total_supply() == 0, "supply should be 0 after burn");
+    contract_state.erc721.mint(OWNER(), TOKEN_2);
+    assert!(state.total_supply() == 2, "supply should be 2 after second mint");
 }
 
 // ================================================================================================
@@ -113,42 +113,6 @@ fn test_token_by_index_greater_than_supply() {
     state.token_by_index(supply_plus_one);
 }
 
-#[test]
-fn test_token_by_index_burn_last_token() {
-    let _ = setup();
-    let mut contract_state = CONTRACT_STATE();
-    contract_state.erc721.burn(TOKEN_3);
-
-    assert_token_by_index(array![TOKEN_1, TOKEN_2].span());
-}
-
-#[test]
-fn test_token_by_index_burn_first_token() {
-    let _ = setup();
-    let mut contract_state = CONTRACT_STATE();
-    contract_state.erc721.burn(TOKEN_1);
-
-    // Burnt tokens are replaced by the last token (swap-and-pop)
-    assert_token_by_index(array![TOKEN_3, TOKEN_2].span());
-}
-
-#[test]
-fn test_token_by_index_burn_and_mint_all() {
-    let (state, _) = setup();
-    let mut contract_state = CONTRACT_STATE();
-
-    contract_state.erc721.burn(TOKEN_2);
-    contract_state.erc721.burn(TOKEN_3);
-    contract_state.erc721.burn(TOKEN_1);
-
-    assert!(state.total_supply() == 0, "supply should be 0 after burning all");
-
-    contract_state.erc721.mint(OWNER(), TOKEN_1);
-    contract_state.erc721.mint(OWNER(), TOKEN_2);
-    contract_state.erc721.mint(OWNER(), TOKEN_3);
-
-    assert_token_by_index(array![TOKEN_1, TOKEN_2, TOKEN_3].span());
-}
 
 // ================================================================================================
 // token_of_owner_by_index
@@ -240,29 +204,6 @@ fn test_before_update_when_mint() {
 }
 
 #[test]
-fn test_before_update_when_last_token_burned() {
-    let (mut state, _) = setup();
-
-    state.before_update(ZERO(), TOKEN_3);
-
-    assert!(state.total_supply() == 2, "supply should be 2");
-    assert_owned_tokens_list_after_update(OWNER(), array![TOKEN_1, TOKEN_2].span());
-    assert_token_by_index(array![TOKEN_1, TOKEN_2].span());
-}
-
-#[test]
-fn test_before_update_when_first_token_burned() {
-    let (mut state, _) = setup();
-
-    state.before_update(ZERO(), TOKEN_1);
-
-    assert!(state.total_supply() == 2, "supply should be 2");
-    // Removed tokens are replaced by the last token (swap-and-pop)
-    assert_owned_tokens_list_after_update(OWNER(), array![TOKEN_3, TOKEN_2].span());
-    assert_token_by_index(array![TOKEN_3, TOKEN_2].span());
-}
-
-#[test]
 fn test_before_update_when_transfer_last_token() {
     let (mut state, _) = setup();
 
@@ -316,12 +257,10 @@ fn test__add_token_to_all_tokens_enumeration() {
     let initial_supply_felt: felt252 = state.total_supply().try_into().unwrap();
 
     assert_all_tokens_index_to_id(initial_supply_felt, 0);
-    assert_all_tokens_id_to_index(new_token_id, 0);
 
     state._add_token_to_all_tokens_enumeration(new_token_id);
 
     assert_all_tokens_index_to_id(initial_supply_felt, new_token_id);
-    assert_all_tokens_id_to_index(new_token_id, initial_supply_felt);
     assert!(state.total_supply() == 4, "supply should be 4");
 }
 
@@ -361,42 +300,6 @@ fn test__remove_token_from_owner_enumeration_with_first_token() {
 }
 
 // ================================================================================================
-// _remove_token_from_all_tokens_enumeration
-// ================================================================================================
-
-#[test]
-fn test__remove_token_from_all_tokens_enumeration_with_last_token() {
-    let (mut state, _) = setup();
-    let last_token_index: felt252 = (state.total_supply() - 1).try_into().unwrap();
-    let last_token_id: felt252 = TOKEN_3.try_into().unwrap();
-
-    assert_all_tokens_index_to_id(last_token_index, last_token_id);
-    assert_all_tokens_id_to_index(last_token_id, last_token_index);
-
-    state._remove_token_from_all_tokens_enumeration(last_token_id);
-
-    assert_all_tokens_index_to_id(last_token_index, last_token_id);
-    assert_all_tokens_id_to_index(last_token_id, last_token_index);
-    assert!(state.total_supply() == 2, "supply should be 2");
-}
-
-#[test]
-fn test__remove_token_from_all_tokens_enumeration_with_first_token() {
-    let (mut state, _) = setup();
-    let first_token_id: felt252 = TOKEN_1.try_into().unwrap();
-    let last_token_id: felt252 = TOKEN_3.try_into().unwrap();
-
-    assert_all_tokens_index_to_id(0, first_token_id);
-    assert_all_tokens_id_to_index(first_token_id, 0);
-
-    state._remove_token_from_all_tokens_enumeration(first_token_id);
-
-    assert_all_tokens_index_to_id(0, last_token_id);
-    assert_all_tokens_id_to_index(first_token_id, 0);
-    assert!(state.total_supply() == 2, "supply should be 2");
-}
-
-// ================================================================================================
 // all_tokens_of_owner
 // ================================================================================================
 
@@ -426,24 +329,6 @@ fn test_all_tokens_of_owner_after_transfer_last_token() {
 
     assert_all_tokens_of_owner(OWNER(), array![TOKEN_1, TOKEN_2].span());
     assert_all_tokens_of_owner(RECIPIENT(), array![TOKEN_3].span());
-}
-
-#[test]
-fn test_all_tokens_of_owner_after_burn_first_token() {
-    let _ = setup();
-    let mut contract_state = CONTRACT_STATE();
-    contract_state.erc721.burn(TOKEN_1);
-
-    assert_all_tokens_of_owner(OWNER(), array![TOKEN_3, TOKEN_2].span());
-}
-
-#[test]
-fn test_all_tokens_of_owner_after_burn_last_token() {
-    let _ = setup();
-    let mut contract_state = CONTRACT_STATE();
-    contract_state.erc721.burn(TOKEN_3);
-
-    assert_all_tokens_of_owner(OWNER(), array![TOKEN_1, TOKEN_2].span());
 }
 
 // ================================================================================================
@@ -502,12 +387,6 @@ fn assert_all_tokens_index_to_id(index: felt252, exp_token_id: felt252) {
     let state = @COMPONENT_STATE();
     let index_to_id = state.Enumerable_all_tokens.read(index);
     assert!(index_to_id == exp_token_id, "all_tokens index->id mismatch");
-}
-
-fn assert_all_tokens_id_to_index(token_id: felt252, exp_index: felt252) {
-    let state = @COMPONENT_STATE();
-    let id_to_index = state.Enumerable_all_tokens_index.read(token_id);
-    assert!(id_to_index == exp_index, "all_tokens id->index mismatch");
 }
 
 fn assert_owner_tokens_index_to_id(owner: ContractAddress, index: felt252, exp_token_id: felt252) {

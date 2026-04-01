@@ -5,8 +5,11 @@
 /// The external interface remains IERC721Enumerable (u256) for full compatibility
 /// with existing consumers and dispatchers.
 ///
-/// WARNING: The `before_update` function must be called after every transfer,
-/// mint, or burn operation via the ERC721HooksTrait::before_update hook.
+/// Burn is not supported — `all_tokens_index` has been removed to save one
+/// storage write per mint.
+///
+/// WARNING: The `before_update` function must be called after every transfer
+/// or mint operation via the ERC721HooksTrait::before_update hook.
 #[starknet::component]
 pub mod EnumerableComponent {
     use core::num::traits::Zero;
@@ -32,7 +35,6 @@ pub mod EnumerableComponent {
         pub Enumerable_owned_tokens_index: Map<felt252, felt252>,
         pub Enumerable_all_tokens_len: felt252,
         pub Enumerable_all_tokens: Map<felt252, felt252>,
-        pub Enumerable_all_tokens_index: Map<felt252, felt252>,
     }
 
     pub mod Errors {
@@ -98,9 +100,7 @@ pub mod EnumerableComponent {
                 self._remove_token_from_owner_enumeration(previous_owner, token_id_felt);
             }
 
-            if to.is_zero() {
-                self._remove_token_from_all_tokens_enumeration(token_id_felt);
-            } else if previous_owner != to {
+            if !to.is_zero() && previous_owner != to {
                 self._add_token_to_owner_enumeration(to, token_id_felt);
             }
         }
@@ -132,7 +132,6 @@ pub mod EnumerableComponent {
             ref self: ComponentState<TContractState>, token_id: felt252,
         ) {
             let supply = self.Enumerable_all_tokens_len.read();
-            self.Enumerable_all_tokens_index.write(token_id, supply);
             self.Enumerable_all_tokens.write(supply, token_id);
             self.Enumerable_all_tokens_len.write(supply + 1);
         }
@@ -154,21 +153,6 @@ pub mod EnumerableComponent {
 
             self.Enumerable_owned_tokens.write((from, last_token_index), 0);
             self.Enumerable_owned_tokens_index.write(token_id, 0);
-        }
-
-        fn _remove_token_from_all_tokens_enumeration(
-            ref self: ComponentState<TContractState>, token_id: felt252,
-        ) {
-            let last_token_index = self.Enumerable_all_tokens_len.read() - 1;
-            let this_token_index = self.Enumerable_all_tokens_index.read(token_id);
-            let last_token_id = self.Enumerable_all_tokens.read(last_token_index);
-
-            self.Enumerable_all_tokens.write(last_token_index, 0);
-            self.Enumerable_all_tokens_index.write(token_id, 0);
-            self.Enumerable_all_tokens_len.write(last_token_index);
-
-            self.Enumerable_all_tokens_index.write(last_token_id, this_token_index);
-            self.Enumerable_all_tokens.write(this_token_index, last_token_id);
         }
     }
 }
