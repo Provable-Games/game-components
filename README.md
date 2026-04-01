@@ -2,8 +2,8 @@
 
 <!-- Version badges - keep in sync with Scarb.toml -->
 
-[![Scarb](https://img.shields.io/badge/Scarb-2.15.1-blue)](https://github.com/software-mansion/scarb)
-[![Starknet Foundry](https://img.shields.io/badge/snforge-0.55.0-purple)](https://foundry-rs.github.io/starknet-foundry/)
+[![Scarb](https://img.shields.io/badge/Scarb-2.16.1-blue)](https://github.com/software-mansion/scarb)
+[![Starknet Foundry](https://img.shields.io/badge/snforge-0.58.1-purple)](https://foundry-rs.github.io/starknet-foundry/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Docs](https://img.shields.io/badge/Docs-Embeddable%20Game%20Standard-blue)](https://docs.provable.games/embeddable-game-standard)
 [![codecov](https://codecov.io/gh/Provable-Games/game-components/branch/next/graph/badge.svg?token=YNYQOJ76VV)](https://codecov.io/gh/Provable-Games/game-components)
@@ -107,8 +107,8 @@ Components for applications that coordinate and interact with games.
 
 <!-- Keep versions in sync with Scarb.toml -->
 
-- **Scarb**: 2.15.1
-- **Starknet Foundry**: 0.55.0
+- **Scarb**: 2.16.1
+- **Starknet Foundry**: 0.58.1
 
 ### Installation
 
