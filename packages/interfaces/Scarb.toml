@@ -6,6 +6,6 @@ edition.workspace = true
 [dependencies]
 starknet.workspace = true
 ekubo.workspace = true
-metagame_extensions_interfaces = { git = "https://github.com/Provable-Games/metagame_extensions.git", tag = "v0.1.1" }
+metagame_extensions_interfaces.workspace = true
 
 [lib]
