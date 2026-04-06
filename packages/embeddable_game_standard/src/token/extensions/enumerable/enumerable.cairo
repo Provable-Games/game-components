@@ -1,19 +1,15 @@
 /// # EnumerableComponent
 ///
-/// Drop-in replacement for OZ's ERC721EnumerableComponent that uses felt252
-/// for internal storage instead of u256, saving ~2x gas per storage operation.
-/// The external interface remains IERC721Enumerable (u256) for full compatibility
-/// with existing consumers and dispatchers.
-///
-/// Burn is not supported — `all_tokens_index` has been removed to save one
-/// storage write per mint.
+/// Tracks per-owner token enumeration using felt252 for internal storage
+/// instead of u256, saving ~2x gas per storage operation. Only owner-based
+/// enumeration is supported — global `all_tokens` enumeration has been
+/// removed to save gas on every mint.
 ///
 /// WARNING: The `before_update` function must be called after every transfer
 /// or mint operation via the ERC721HooksTrait::before_update hook.
 #[starknet::component]
 pub mod EnumerableComponent {
     use core::num::traits::Zero;
-    use openzeppelin_interfaces::erc721 as oz_interface;
     use openzeppelin_introspection::src5::SRC5Component;
     use openzeppelin_introspection::src5::SRC5Component::InternalTrait as SRC5InternalTrait;
     use openzeppelin_token::erc721::ERC721Component;
@@ -21,11 +17,8 @@ pub mod EnumerableComponent {
         ERC721Impl, InternalImpl as ERC721InternalImpl,
     };
     use starknet::ContractAddress;
-    use starknet::storage::{
-        Map, StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess,
-        StoragePointerWriteAccess,
-    };
-    use crate::token::extensions::enumerable::interface::IERC721_ENUMERABLE_ID;
+    use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess};
+    use crate::token::extensions::enumerable::interface::IENUMERABLE_OWNER_ID;
 
     // Internal storage uses felt252 for single-slot efficiency.
     // External interface converts u256 <-> felt252 at the boundary.
@@ -33,8 +26,6 @@ pub mod EnumerableComponent {
     pub struct Storage {
         pub Enumerable_owned_tokens: Map<(ContractAddress, felt252), felt252>,
         pub Enumerable_owned_tokens_index: Map<felt252, felt252>,
-        pub Enumerable_all_tokens_len: felt252,
-        pub Enumerable_all_tokens: Map<felt252, felt252>,
     }
 
     pub mod Errors {
@@ -50,19 +41,7 @@ pub mod EnumerableComponent {
         +ERC721Component::ERC721HooksTrait<TContractState>,
         +SRC5Component::HasComponent<TContractState>,
         +Drop<TContractState>,
-    > of oz_interface::IERC721Enumerable<ComponentState<TContractState>> {
-        fn total_supply(self: @ComponentState<TContractState>) -> u256 {
-            let len: felt252 = self.Enumerable_all_tokens_len.read();
-            len.into()
-        }
-
-        fn token_by_index(self: @ComponentState<TContractState>, index: u256) -> u256 {
-            assert(index < self.total_supply(), Errors::OUT_OF_BOUNDS_INDEX);
-            let index_felt: felt252 = index.try_into().unwrap();
-            let token_id: felt252 = self.Enumerable_all_tokens.read(index_felt);
-            token_id.into()
-        }
-
+    > of super::super::interface::IEnumerableOwner<ComponentState<TContractState>> {
         fn token_of_owner_by_index(
             self: @ComponentState<TContractState>, owner: ContractAddress, index: u256,
         ) -> u256 {
@@ -85,7 +64,7 @@ pub mod EnumerableComponent {
     > of InternalTrait<TContractState> {
         fn initializer(ref self: ComponentState<TContractState>) {
             let mut src5_component = get_dep_component_mut!(ref self, SRC5);
-            src5_component.register_interface(IERC721_ENUMERABLE_ID);
+            src5_component.register_interface(IENUMERABLE_OWNER_ID);
         }
 
         fn before_update(
@@ -96,9 +75,7 @@ pub mod EnumerableComponent {
             let previous_owner = erc721_component._owner_of(token_id);
             let token_id_felt: felt252 = token_id.try_into().unwrap();
 
-            if previous_owner.is_zero() {
-                self._add_token_to_all_tokens_enumeration(token_id_felt);
-            } else if previous_owner != to {
+            if !previous_owner.is_zero() && previous_owner != to {
                 self._remove_token_from_owner_enumeration(previous_owner, token_id_felt);
             }
 
@@ -128,14 +105,6 @@ pub mod EnumerableComponent {
             let len: felt252 = erc721_component.balance_of(to).try_into().unwrap();
             self.Enumerable_owned_tokens.write((to, len), token_id);
             self.Enumerable_owned_tokens_index.write(token_id, len);
-        }
-
-        fn _add_token_to_all_tokens_enumeration(
-            ref self: ComponentState<TContractState>, token_id: felt252,
-        ) {
-            let supply = self.Enumerable_all_tokens_len.read();
-            self.Enumerable_all_tokens.write(supply, token_id);
-            self.Enumerable_all_tokens_len.write(supply + 1);
         }
 
         fn _remove_token_from_owner_enumeration(

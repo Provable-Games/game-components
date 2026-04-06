@@ -1,6 +1,6 @@
 use EnumerableComponent::{EnumerableImpl, InternalImpl};
 use game_components_embeddable_game_standard::token::extensions::enumerable::enumerable::EnumerableComponent;
-use game_components_embeddable_game_standard::token::extensions::enumerable::interface::IERC721_ENUMERABLE_ID;
+use game_components_embeddable_game_standard::token::extensions::enumerable::interface::IENUMERABLE_OWNER_ID;
 use game_components_test_common::mocks::mock_enumerable::EnumerableMock;
 use openzeppelin_interfaces::introspection::ISRC5_ID;
 use openzeppelin_introspection::src5::SRC5Component::SRC5Impl;
@@ -65,54 +65,9 @@ fn test_initializer() {
 
     state.initializer();
 
-    assert!(mock_state.supports_interface(IERC721_ENUMERABLE_ID));
+    assert!(mock_state.supports_interface(IENUMERABLE_OWNER_ID));
     assert!(mock_state.supports_interface(ISRC5_ID));
 }
-
-// ================================================================================================
-// total_supply
-// ================================================================================================
-
-#[test]
-fn test_total_supply() {
-    let mut state = COMPONENT_STATE();
-    let mut contract_state = CONTRACT_STATE();
-
-    assert!(state.total_supply() == 0, "initial supply should be 0");
-
-    contract_state.erc721.mint(OWNER(), TOKEN_1);
-    assert!(state.total_supply() == 1, "supply should be 1 after mint");
-
-    contract_state.erc721.mint(OWNER(), TOKEN_2);
-    assert!(state.total_supply() == 2, "supply should be 2 after second mint");
-}
-
-// ================================================================================================
-// token_by_index
-// ================================================================================================
-
-#[test]
-fn test_token_by_index() {
-    let (_, token_list) = setup();
-    assert_token_by_index(token_list);
-}
-
-#[test]
-#[should_panic(expected: 'ERC721Enum: out of bounds index')]
-fn test_token_by_index_equal_to_supply() {
-    let (state, token_list) = setup();
-    let supply: u256 = token_list.len().into();
-    state.token_by_index(supply);
-}
-
-#[test]
-#[should_panic(expected: 'ERC721Enum: out of bounds index')]
-fn test_token_by_index_greater_than_supply() {
-    let (state, token_list) = setup();
-    let supply_plus_one: u256 = token_list.len().into() + 1;
-    state.token_by_index(supply_plus_one);
-}
-
 
 // ================================================================================================
 // token_of_owner_by_index
@@ -211,11 +166,9 @@ fn test_before_update_when_mint() {
 
     state.before_update(OWNER(), new_token);
 
-    assert!(state.total_supply() == 4, "supply should be 4");
     assert_owned_tokens_list_after_update(
         OWNER(), array![TOKEN_1, TOKEN_2, TOKEN_3, new_token].span(),
     );
-    assert_token_by_index(array![TOKEN_1, TOKEN_2, TOKEN_3, new_token].span());
 }
 
 #[test]
@@ -224,10 +177,8 @@ fn test_before_update_when_transfer_last_token() {
 
     state.before_update(RECIPIENT(), TOKEN_3);
 
-    assert!(state.total_supply() == 3, "supply should stay 3");
     assert_owned_tokens_list_after_update(OWNER(), array![TOKEN_1, TOKEN_2].span());
     assert_owned_tokens_list_after_update(RECIPIENT(), array![TOKEN_3].span());
-    assert_token_by_index(array![TOKEN_1, TOKEN_2, TOKEN_3].span());
 }
 
 #[test]
@@ -236,10 +187,8 @@ fn test_before_update_when_transfer_first_token() {
 
     state.before_update(RECIPIENT(), TOKEN_1);
 
-    assert!(state.total_supply() == 3, "supply should stay 3");
     assert_owned_tokens_list_after_update(OWNER(), array![TOKEN_3, TOKEN_2].span());
     assert_owned_tokens_list_after_update(RECIPIENT(), array![TOKEN_1].span());
-    assert_token_by_index(array![TOKEN_1, TOKEN_2, TOKEN_3].span());
 }
 
 // ================================================================================================
@@ -262,31 +211,13 @@ fn test__add_token_to_owner_enumeration() {
 }
 
 // ================================================================================================
-// _add_token_to_all_tokens_enumeration
-// ================================================================================================
-
-#[test]
-fn test__add_token_to_all_tokens_enumeration() {
-    let (mut state, _) = setup();
-    let new_token_id: felt252 = 'TOKEN_4';
-    let initial_supply_felt: felt252 = state.total_supply().try_into().unwrap();
-
-    assert_all_tokens_index_to_id(initial_supply_felt, 0);
-
-    state._add_token_to_all_tokens_enumeration(new_token_id);
-
-    assert_all_tokens_index_to_id(initial_supply_felt, new_token_id);
-    assert!(state.total_supply() == 4, "supply should be 4");
-}
-
-// ================================================================================================
 // _remove_token_from_owner_enumeration
 // ================================================================================================
 
 #[test]
 fn test__remove_token_from_owner_enumeration_with_last_token() {
-    let (mut state, _) = setup();
-    let last_token_index: felt252 = (state.total_supply() - 1).try_into().unwrap();
+    let (mut state, tokens_list) = setup();
+    let last_token_index: felt252 = (tokens_list.len() - 1).into();
     let last_token_id: felt252 = TOKEN_3.try_into().unwrap();
 
     assert_owner_tokens_index_to_id(OWNER(), last_token_index, last_token_id);
@@ -367,22 +298,6 @@ fn assert_token_of_owner_by_index(owner: ContractAddress, expected_token_list: S
     }
 }
 
-fn assert_token_by_index(expected_token_list: Span<u256>) {
-    let state = @COMPONENT_STATE();
-
-    let total_supply: u256 = state.total_supply();
-    let expected_list_len: u256 = expected_token_list.len().into();
-    assert!(total_supply == expected_list_len, "total_supply mismatch");
-
-    let mut i: u32 = 0;
-    while i != expected_token_list.len() {
-        let index: u256 = i.into();
-        let token = state.token_by_index(index);
-        assert!(token == *expected_token_list.at(i), "token_by_index mismatch");
-        i += 1;
-    }
-}
-
 /// Reads from storage directly, bypassing the out of bounds check.
 /// The `before_update` function does not update the ERC721 state.
 fn assert_owned_tokens_list_after_update(owner: ContractAddress, expected_list: Span<u256>) {
@@ -396,12 +311,6 @@ fn assert_owned_tokens_list_after_update(owner: ContractAddress, expected_list: 
         assert!(token_u256 == *expected_list.at(i), "owned_tokens mismatch");
         i += 1;
     }
-}
-
-fn assert_all_tokens_index_to_id(index: felt252, exp_token_id: felt252) {
-    let state = @COMPONENT_STATE();
-    let index_to_id = state.Enumerable_all_tokens.read(index);
-    assert!(index_to_id == exp_token_id, "all_tokens index->id mismatch");
 }
 
 fn assert_owner_tokens_index_to_id(owner: ContractAddress, index: felt252, exp_token_id: felt252) {
