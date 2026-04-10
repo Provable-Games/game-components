@@ -290,7 +290,9 @@ fn test_to_token_metadata_conversion_zeros() {
         metadata: 0,
     };
 
-    let mutable_state = TokenMutableState { game_over: false, completed_objective: false, completed_at: 0 };
+    let mutable_state = TokenMutableState {
+        game_over: false, completed_objective: false, completed_at: 0,
+    };
 
     let metadata = to_token_metadata(packed_id, mutable_state);
 
@@ -324,7 +326,9 @@ fn test_to_token_metadata_conversion_full() {
         metadata: 456,
     };
 
-    let mutable_state = TokenMutableState { game_over: true, completed_objective: true, completed_at: 0 };
+    let mutable_state = TokenMutableState {
+        game_over: true, completed_objective: true, completed_at: 0,
+    };
 
     let metadata = to_token_metadata(packed_id, mutable_state);
 
@@ -364,13 +368,17 @@ fn test_to_token_metadata_mutable_state_independence() {
     };
 
     // Test game_over = true, completed_objective = false
-    let mutable_state1 = TokenMutableState { game_over: true, completed_objective: false, completed_at: 0 };
+    let mutable_state1 = TokenMutableState {
+        game_over: true, completed_objective: false, completed_at: 0,
+    };
     let metadata1 = to_token_metadata(packed_id, mutable_state1);
     assert!(metadata1.game_over, "game_over should be true");
     assert!(!metadata1.completed_objective, "completed_objective should be false");
 
     // Test game_over = false, completed_objective = true
-    let mutable_state2 = TokenMutableState { game_over: false, completed_objective: true, completed_at: 0 };
+    let mutable_state2 = TokenMutableState {
+        game_over: false, completed_objective: true, completed_at: 0,
+    };
     let metadata2 = to_token_metadata(packed_id, mutable_state2);
     assert!(!metadata2.game_over, "game_over should be false");
     assert!(metadata2.completed_objective, "completed_objective should be true");
