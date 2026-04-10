@@ -87,24 +87,29 @@ pub struct PackedTokenId {
 }
 
 /// StorePacking implementation for TokenMutableState
-/// Packs 2 boolean fields into a single felt252 (uses only 2 bits)
-/// This is the most gas-efficient way to store boolean flags in Cairo.
+/// Packs 2 boolean fields + completed_at timestamp into a single felt252
+/// Layout: game_over(1) | completed_objective(1) | completed_at(32) = 34 bits
 pub impl TokenMutableStateStorePacking of StorePacking<TokenMutableState, felt252> {
     fn pack(value: TokenMutableState) -> felt252 {
-        let mut packed: u8 = 0;
+        let mut packed: u128 = 0;
         if value.game_over {
             packed = packed | 0x1; // bit 0
         }
         if value.completed_objective {
             packed = packed | 0x2; // bit 1
         }
+        packed = packed + Into::<u32, u128>::into(value.completed_at) * 0x4; // shift 2
         packed.into()
     }
 
     fn unpack(value: felt252) -> TokenMutableState {
-        let packed: u8 = value.try_into().unwrap();
+        let packed: u128 = value.try_into().unwrap();
+        let (hi, flags) = DivRem::div_rem(packed, 0x4); // extract 2 flag bits
+        let flags_u8: u8 = flags.try_into().unwrap();
         TokenMutableState {
-            game_over: (packed & 0x1) != 0, completed_objective: (packed & 0x2) != 0,
+            game_over: (flags_u8 & 0x1) != 0,
+            completed_objective: (flags_u8 & 0x2) != 0,
+            completed_at: hi.try_into().unwrap(),
         }
     }
 }

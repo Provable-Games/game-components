@@ -103,7 +103,7 @@ fn test_token_mutable_state_default() {
 
 #[test]
 fn test_token_mutable_state_pack_unpack_both_false() {
-    let state = TokenMutableState { game_over: false, completed_objective: false };
+    let state = TokenMutableState { game_over: false, completed_objective: false, completed_at: 0 };
     let packed = TokenMutableStateStorePacking::pack(state);
     let unpacked = TokenMutableStateStorePacking::unpack(packed);
 
@@ -113,7 +113,7 @@ fn test_token_mutable_state_pack_unpack_both_false() {
 
 #[test]
 fn test_token_mutable_state_pack_unpack_both_true() {
-    let state = TokenMutableState { game_over: true, completed_objective: true };
+    let state = TokenMutableState { game_over: true, completed_objective: true, completed_at: 0 };
     let packed = TokenMutableStateStorePacking::pack(state);
     let unpacked = TokenMutableStateStorePacking::unpack(packed);
 
@@ -123,7 +123,7 @@ fn test_token_mutable_state_pack_unpack_both_true() {
 
 #[test]
 fn test_token_mutable_state_pack_unpack_game_over_only() {
-    let state = TokenMutableState { game_over: true, completed_objective: false };
+    let state = TokenMutableState { game_over: true, completed_objective: false, completed_at: 0 };
     let packed = TokenMutableStateStorePacking::pack(state);
     let unpacked = TokenMutableStateStorePacking::unpack(packed);
 
@@ -133,7 +133,7 @@ fn test_token_mutable_state_pack_unpack_game_over_only() {
 
 #[test]
 fn test_token_mutable_state_pack_unpack_completed_objective_only() {
-    let state = TokenMutableState { game_over: false, completed_objective: true };
+    let state = TokenMutableState { game_over: false, completed_objective: true, completed_at: 0 };
     let packed = TokenMutableStateStorePacking::pack(state);
     let unpacked = TokenMutableStateStorePacking::unpack(packed);
 
@@ -151,7 +151,7 @@ fn test_token_mutable_state_bit_isolation() {
     let mut i = 0;
     while i < states.len() {
         let (game_over, completed_objective) = *states.at(i);
-        let state = TokenMutableState { game_over, completed_objective };
+        let state = TokenMutableState { game_over, completed_objective, completed_at: 0 };
         let packed = TokenMutableStateStorePacking::pack(state);
         let unpacked = TokenMutableStateStorePacking::unpack(packed);
 
@@ -290,7 +290,7 @@ fn test_to_token_metadata_conversion_zeros() {
         metadata: 0,
     };
 
-    let mutable_state = TokenMutableState { game_over: false, completed_objective: false };
+    let mutable_state = TokenMutableState { game_over: false, completed_objective: false, completed_at: 0 };
 
     let metadata = to_token_metadata(packed_id, mutable_state);
 
@@ -324,7 +324,7 @@ fn test_to_token_metadata_conversion_full() {
         metadata: 456,
     };
 
-    let mutable_state = TokenMutableState { game_over: true, completed_objective: true };
+    let mutable_state = TokenMutableState { game_over: true, completed_objective: true, completed_at: 0 };
 
     let metadata = to_token_metadata(packed_id, mutable_state);
 
@@ -364,13 +364,13 @@ fn test_to_token_metadata_mutable_state_independence() {
     };
 
     // Test game_over = true, completed_objective = false
-    let mutable_state1 = TokenMutableState { game_over: true, completed_objective: false };
+    let mutable_state1 = TokenMutableState { game_over: true, completed_objective: false, completed_at: 0 };
     let metadata1 = to_token_metadata(packed_id, mutable_state1);
     assert!(metadata1.game_over, "game_over should be true");
     assert!(!metadata1.completed_objective, "completed_objective should be false");
 
     // Test game_over = false, completed_objective = true
-    let mutable_state2 = TokenMutableState { game_over: false, completed_objective: true };
+    let mutable_state2 = TokenMutableState { game_over: false, completed_objective: true, completed_at: 0 };
     let metadata2 = to_token_metadata(packed_id, mutable_state2);
     assert!(!metadata2.game_over, "game_over should be false");
     assert!(metadata2.completed_objective, "completed_objective should be true");
@@ -458,7 +458,7 @@ fn test_fuzz_lifecycle_pack_unpack(start: u64, end: u64) {
 #[test]
 #[fuzzer(runs: 100)]
 fn test_fuzz_token_mutable_state_pack_unpack(game_over: bool, completed_objective: bool) {
-    let state = TokenMutableState { game_over, completed_objective };
+    let state = TokenMutableState { game_over, completed_objective, completed_at: 0 };
     let packed = TokenMutableStateStorePacking::pack(state);
     let unpacked = TokenMutableStateStorePacking::unpack(packed);
 

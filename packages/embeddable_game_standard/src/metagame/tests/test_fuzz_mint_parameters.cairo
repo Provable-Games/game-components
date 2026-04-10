@@ -574,7 +574,7 @@ mod MockMinigameTokenFuzz {
         }
 
         fn token_mutable_state(self: @ContractState, token_id: felt252) -> TokenMutableState {
-            TokenMutableState { game_over: false, completed_objective: false }
+            TokenMutableState { game_over: false, completed_objective: false, completed_at: 0 }
         }
 
         fn client_url(self: @ContractState, token_id: felt252) -> ByteArray {

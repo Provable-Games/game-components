@@ -870,7 +870,7 @@ mod MockMinigameTokenForLibs {
         }
 
         fn token_mutable_state(self: @ContractState, token_id: felt252) -> TokenMutableState {
-            TokenMutableState { game_over: false, completed_objective: false }
+            TokenMutableState { game_over: false, completed_objective: false, completed_at: 0 }
         }
 
         fn client_url(self: @ContractState, token_id: felt252) -> ByteArray {
@@ -1743,7 +1743,7 @@ mod MockMinigameTokenWithRegistry {
             self.token_game_address.read(token_id)
         }
         fn token_mutable_state(self: @ContractState, token_id: felt252) -> TokenMutableState {
-            TokenMutableState { game_over: false, completed_objective: false }
+            TokenMutableState { game_over: false, completed_objective: false, completed_at: 0 }
         }
 
         fn client_url(self: @ContractState, token_id: felt252) -> ByteArray {
