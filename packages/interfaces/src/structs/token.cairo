@@ -73,17 +73,18 @@ pub struct PlayerNameUpdate {
     pub name: felt252,
 }
 
-/// Mutable token state (game_over and completed_objective flags)
+/// Mutable token state (game_over, completed_objective, and completion timestamp)
 /// Used for efficient queries without parsing packed token data
 #[derive(Copy, Drop, Serde)]
 pub struct TokenMutableState {
     pub game_over: bool,
     pub completed_objective: bool,
+    pub completed_at: u32,
 }
 
 impl TokenMutableStateDefault of Default<TokenMutableState> {
     fn default() -> TokenMutableState {
-        TokenMutableState { game_over: false, completed_objective: false }
+        TokenMutableState { game_over: false, completed_objective: false, completed_at: 0 }
     }
 }
 

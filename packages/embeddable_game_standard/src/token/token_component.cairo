@@ -660,8 +660,15 @@ pub mod CoreTokenComponent {
             // Update mutable state if changed
             if final_completed_objective != mutable_state.completed_objective
                 || final_game_over != mutable_state.game_over {
+                let completed_at: u32 = if objective_complete_transition {
+                    get_block_timestamp().try_into().unwrap()
+                } else {
+                    mutable_state.completed_at
+                };
                 let updated_state = TokenMutableState {
-                    game_over: final_game_over, completed_objective: final_completed_objective,
+                    game_over: final_game_over,
+                    completed_objective: final_completed_objective,
+                    completed_at,
                 };
                 self.token_mutable_state.entry(token_id).write(updated_state);
             }
