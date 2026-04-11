@@ -32,6 +32,10 @@ pub mod LeaderboardComponent {
         owner: ContractAddress,
         entries_count: Map<u64, u32>, // context_id -> count
         entries: Map<(u64, u32), felt252>, // (context_id, position) -> token_id
+        scores: Map<(u64, u32), u64>, // (context_id, position) -> score
+        token_positions: Map<
+            (u64, felt252), u32,
+        >, // (context_id, token_id) -> position+1 (0=absent)
         max_entries: Map<u64, u32>, // context_id -> max_entries
         ascending: Map<u64, bool>, // context_id -> ascending
         game_address: Map<u64, ContractAddress> // context_id -> game_address
@@ -97,14 +101,17 @@ pub mod LeaderboardComponent {
         fn set_leaderboard(ref self: ComponentState<TContractState>, leaderboard: @Leaderboard) {
             let context_id = *leaderboard.context_id;
 
-            // Clear existing entries
+            // Clear existing entries + token_positions + scores
             let old_count = self.entries_count.read(context_id);
             let mut i = 0_u32;
             loop {
                 if i >= old_count {
                     break;
                 }
+                let old_token = self.entries.read((context_id, i));
+                self.token_positions.write((context_id, old_token), 0);
                 self.entries.write((context_id, i), 0);
+                self.scores.write((context_id, i), 0);
                 i += 1;
             }
 
@@ -119,8 +126,61 @@ pub mod LeaderboardComponent {
                 }
                 let token_id = *leaderboard.token_ids.at(j);
                 self.entries.write((context_id, j), token_id);
+                // Store position+1 (1-indexed) so 0 means "not on board"
+                self.token_positions.write((context_id, token_id), j + 1);
                 j += 1;
             };
+        }
+
+        // Direct storage accessors for optimized insertion
+        fn get_count(self: @ComponentState<TContractState>, context_id: u64) -> u32 {
+            self.entries_count.read(context_id)
+        }
+
+        fn set_count(ref self: ComponentState<TContractState>, context_id: u64, count: u32) {
+            self.entries_count.write(context_id, count);
+        }
+
+        fn get_entry_at(
+            self: @ComponentState<TContractState>, context_id: u64, position: u32,
+        ) -> felt252 {
+            self.entries.read((context_id, position))
+        }
+
+        fn set_entry_at(
+            ref self: ComponentState<TContractState>,
+            context_id: u64,
+            position: u32,
+            token_id: felt252,
+        ) {
+            self.entries.write((context_id, position), token_id);
+        }
+
+        fn get_score_at(
+            self: @ComponentState<TContractState>, context_id: u64, position: u32,
+        ) -> u64 {
+            self.scores.read((context_id, position))
+        }
+
+        fn set_score_at(
+            ref self: ComponentState<TContractState>, context_id: u64, position: u32, score: u64,
+        ) {
+            self.scores.write((context_id, position), score);
+        }
+
+        fn get_token_position(
+            self: @ComponentState<TContractState>, context_id: u64, token_id: felt252,
+        ) -> u32 {
+            self.token_positions.read((context_id, token_id))
+        }
+
+        fn set_token_position(
+            ref self: ComponentState<TContractState>,
+            context_id: u64,
+            token_id: felt252,
+            position: u32,
+        ) {
+            self.token_positions.write((context_id, token_id), position);
         }
     }
 
@@ -240,14 +300,17 @@ pub mod LeaderboardComponent {
         fn clear(ref self: ComponentState<TContractState>, context_id: u64) {
             self.assert_only_owner();
 
-            // Clear all entries for this context
+            // Clear all entries, scores, and token_positions for this context
             let count = self.entries_count.read(context_id);
             let mut i = 0_u32;
             loop {
                 if i >= count {
                     break;
                 }
+                let token_id = self.entries.read((context_id, i));
+                self.token_positions.write((context_id, token_id), 0);
                 self.entries.write((context_id, i), 0);
+                self.scores.write((context_id, i), 0);
                 i += 1;
             }
             self.entries_count.write(context_id, 0);
