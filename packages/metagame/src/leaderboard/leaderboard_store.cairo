@@ -8,14 +8,11 @@
 
 use core::num::traits::Zero;
 pub use game_components_interfaces::leaderboard::{
-    IGameDetailsDispatcher, IGameDetailsDispatcherTrait, LeaderboardConfig, LeaderboardEntry,
-    LeaderboardResult, LeaderboardStoreConfig,
+    IGameDetailsDispatcher, IGameDetailsDispatcherTrait, LeaderboardEntry, LeaderboardResult,
+    LeaderboardStoreConfig,
 };
-use game_components_metagame::leaderboard::leaderboard::leaderboard::{
-    LeaderboardOperationsImpl, LeaderboardUtilsImpl,
-};
+use game_components_metagame::leaderboard::leaderboard::leaderboard;
 use game_components_metagame::leaderboard::store::Store;
-use game_components_metagame::leaderboard::structs::Leaderboard;
 use starknet::ContractAddress;
 
 /// Main trait for leaderboard store operations
@@ -89,84 +86,43 @@ pub impl LeaderboardStoreImpl<T, +Store<T>, +Drop<T>> of LeaderboardStoreTrait<T
         config: LeaderboardStoreConfig,
     ) -> LeaderboardResult {
         // Convert 1-based position to 0-based index
-        let index = match LeaderboardUtilsImpl::position_to_index(position) {
+        let index = match leaderboard::position_to_index(position) {
             Option::Some(idx) => idx,
             Option::None => { return LeaderboardResult::InvalidPosition; },
         };
 
         let count = self.get_count(context_id);
+        let is_duplicate = self.get_token_position(context_id, token_id) != 0;
 
-        // Duplicate check — O(1) via token_positions map
-        if self.get_token_position(context_id, token_id) != 0 {
-            return LeaderboardResult::DuplicateEntry;
-        }
+        // Read neighbor data for pure validation
+        let (score_at_index, token_at_index) = if index < count {
+            (self.get_score_at(context_id, index), self.get_entry_at(context_id, index))
+        } else {
+            (0_u64, 0)
+        };
+        let (score_above, token_above) = if index > 0 {
+            (self.get_score_at(context_id, index - 1), self.get_entry_at(context_id, index - 1))
+        } else {
+            (0_u64, 0)
+        };
 
-        // Position bounds check
-        if index > count {
-            return LeaderboardResult::InvalidPosition;
-        }
-
-        // Check if leaderboard is full and insertion would be beyond max
-        if count >= config.max_entries && index >= config.max_entries {
-            return LeaderboardResult::LeaderboardFull;
-        }
-
-        // Validate score against neighbor at position (entry being displaced)
-        if index < count {
-            let score_at_pos = self.get_score_at(context_id, index);
-            if config.ascending {
-                if score > score_at_pos {
-                    return LeaderboardResult::ScoreTooLow;
-                }
-                // Tie-break: equal score — lower token ID wins
-                if score == score_at_pos {
-                    let existing_id: u256 = self.get_entry_at(context_id, index).into();
-                    let new_id: u256 = token_id.into();
-                    if new_id >= existing_id {
-                        return LeaderboardResult::ScoreTooLow;
-                    }
-                }
-            } else {
-                if score < score_at_pos {
-                    return LeaderboardResult::ScoreTooLow;
-                }
-                if score == score_at_pos {
-                    let existing_id: u256 = self.get_entry_at(context_id, index).into();
-                    let new_id: u256 = token_id.into();
-                    if new_id >= existing_id {
-                        return LeaderboardResult::ScoreTooLow;
-                    }
-                }
-            }
-        }
-
-        // Validate score against entry above (if exists)
-        if index > 0 {
-            let score_above = self.get_score_at(context_id, index - 1);
-            if config.ascending {
-                if score < score_above {
-                    return LeaderboardResult::ScoreTooHigh;
-                }
-                // Tie-break: equal score — lower token ID should be above
-                if score == score_above {
-                    let above_id: u256 = self.get_entry_at(context_id, index - 1).into();
-                    let new_id: u256 = token_id.into();
-                    if new_id < above_id {
-                        return LeaderboardResult::ScoreTooHigh;
-                    }
-                }
-            } else {
-                if score > score_above {
-                    return LeaderboardResult::ScoreTooHigh;
-                }
-                if score == score_above {
-                    let above_id: u256 = self.get_entry_at(context_id, index - 1).into();
-                    let new_id: u256 = token_id.into();
-                    if new_id < above_id {
-                        return LeaderboardResult::ScoreTooHigh;
-                    }
-                }
-            }
+        // Pure validation — no storage access
+        let result = leaderboard::validate_insertion(
+            index,
+            count,
+            config.max_entries,
+            config.ascending,
+            score,
+            token_id,
+            is_duplicate,
+            score_at_index,
+            token_at_index,
+            score_above,
+            token_above,
+        );
+        match result {
+            LeaderboardResult::Success => {},
+            _ => { return result; },
         }
 
         // Determine new count (cap at max_entries, evicting last if needed)
@@ -194,7 +150,6 @@ pub impl LeaderboardStoreImpl<T, +Store<T>, +Drop<T>> of LeaderboardStoreTrait<T
             let prev_score = self.get_score_at(context_id, i - 1);
             self.set_entry_at(context_id, i, prev_token);
             self.set_score_at(context_id, i, prev_score);
-            // Update shifted entry's token_position (stored as position+1)
             self.set_token_position(context_id, prev_token, i + 1);
             i -= 1;
         }
@@ -202,7 +157,7 @@ pub impl LeaderboardStoreImpl<T, +Store<T>, +Drop<T>> of LeaderboardStoreTrait<T
         // Write new entry at index
         self.set_entry_at(context_id, index, token_id);
         self.set_score_at(context_id, index, score);
-        self.set_token_position(context_id, token_id, index + 1); // 1-indexed
+        self.set_token_position(context_id, token_id, index + 1);
 
         // Update count
         self.set_count(context_id, new_count);
@@ -261,16 +216,12 @@ pub impl LeaderboardStoreImpl<T, +Store<T>, +Drop<T>> of LeaderboardStoreTrait<T
         self: @T, context_id: u64, score: u64, config: LeaderboardStoreConfig,
     ) -> bool {
         let count = self.get_count(context_id);
-        if count < config.max_entries {
-            return true; // Not full — any score qualifies
-        }
-        // Full — check against last entry's score
-        let last_score = self.get_score_at(context_id, count - 1);
-        if config.ascending {
-            score < last_score
+        let last_score = if count > 0 {
+            self.get_score_at(context_id, count - 1)
         } else {
-            score > last_score
-        }
+            0
+        };
+        leaderboard::qualifies(score, last_score, count, config.max_entries, config.ascending)
     }
 }
 
@@ -324,39 +275,67 @@ pub impl LeaderboardStoreHelpersImpl<T, +Store<T>, +Drop<T>> of LeaderboardStore
         self.get_count(context_id) >= max_entries
     }
 
-    /// Get the minimum qualifying score for the leaderboard
+    /// Get the minimum qualifying score — O(1), reads last entry's score
     fn get_minimum_qualifying_score(
         self: @T, context_id: u64, config: LeaderboardStoreConfig,
     ) -> Option<u64> {
-        let entries = self.get_leaderboard_entries(context_id, config.game_address);
-        let lb_config = LeaderboardConfig {
-            max_entries: config.max_entries, ascending: config.ascending, allow_ties: true,
-        };
-
-        LeaderboardUtilsImpl::get_qualifying_score(@lb_config, @entries)
+        let count = self.get_count(context_id);
+        if count < config.max_entries {
+            Option::None // Not full — any score qualifies
+        } else {
+            Option::Some(self.get_score_at(context_id, count - 1))
+        }
     }
 
-    /// Get a range of leaderboard entries (for pagination)
+    /// Get a range of leaderboard entries — reads only the requested range
     fn get_leaderboard_range(
         self: @T, context_id: u64, start: u32, count: u32, game_address: ContractAddress,
     ) -> Array<LeaderboardEntry> {
-        let entries = self.get_leaderboard_entries(context_id, game_address);
-        LeaderboardUtilsImpl::get_range(@entries, start, count)
+        let total = self.get_count(context_id);
+        let end = if start + count < total {
+            start + count
+        } else {
+            total
+        };
+        let mut entries = ArrayTrait::new();
+        let mut i = start;
+        while i < end {
+            let token_id = self.get_entry_at(context_id, i);
+            let score = if !game_address.is_zero() {
+                get_score_for_token(game_address, token_id)
+            } else {
+                self.get_score_at(context_id, i)
+            };
+            entries.append(LeaderboardEntry { id: token_id, score });
+            i += 1;
+        }
+        entries
     }
 
-    /// Find the position where a score would be inserted
+    /// Find the position where a score would be inserted — O(log n) binary search
     fn find_score_position(
         self: @T, context_id: u64, score: u64, config: LeaderboardStoreConfig,
     ) -> Option<u32> {
-        let entries = self.get_leaderboard_entries(context_id, config.game_address);
-        let lb_config = LeaderboardConfig {
-            max_entries: config.max_entries, ascending: config.ascending, allow_ties: true,
-        };
+        let count = self.get_count(context_id);
+        let mut lo: u32 = 0;
+        let mut hi: u32 = count;
 
-        // Create a temporary entry to find position
-        let temp_entry = LeaderboardEntry { id: 0, score };
+        while lo < hi {
+            let mid = lo + (hi - lo) / 2;
+            let mid_score = self.get_score_at(context_id, mid);
+            let go_left = if config.ascending {
+                score <= mid_score
+            } else {
+                score >= mid_score
+            };
+            if go_left {
+                hi = mid;
+            } else {
+                lo = mid + 1;
+            }
+        }
 
-        LeaderboardOperationsImpl::find_insert_position(@lb_config, @entries, @temp_entry)
+        Option::Some(lo)
     }
 }
 

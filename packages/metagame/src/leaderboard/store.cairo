@@ -1,11 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-use game_components_metagame::leaderboard::structs::Leaderboard;
-
 /// Generic store trait for leaderboard operations
 pub trait Store<T> {
+    /// Load all token IDs for a context (used by Budokan for event emission)
     fn get_leaderboard(self: @T, context_id: u64) -> Span<felt252>;
-    fn set_leaderboard(ref self: T, leaderboard: @Leaderboard);
 
     // Direct storage accessors for optimized insertion
     fn get_count(self: @T, context_id: u64) -> u32;

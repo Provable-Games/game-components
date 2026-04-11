@@ -17,15 +17,11 @@ pub mod LeaderboardComponent {
         StoragePointerWriteAccess,
     };
     use starknet::{ContractAddress, get_caller_address};
-    use crate::leaderboard::leaderboard::leaderboard::{
-        LeaderboardOperationsImpl, LeaderboardUtilsImpl,
-    };
     use crate::leaderboard::leaderboard_store::{
-        LeaderboardStoreHelpersImpl, LeaderboardStoreHelpersTrait, LeaderboardStoreImpl,
-        LeaderboardStoreTrait,
+        IGameDetailsDispatcher, IGameDetailsDispatcherTrait, LeaderboardStoreHelpersImpl,
+        LeaderboardStoreHelpersTrait, LeaderboardStoreImpl, LeaderboardStoreTrait,
     };
     use crate::leaderboard::store::Store;
-    use crate::leaderboard::structs::Leaderboard;
 
     #[storage]
     pub struct Storage {
@@ -96,40 +92,6 @@ pub mod LeaderboardComponent {
             }
 
             result.span()
-        }
-
-        fn set_leaderboard(ref self: ComponentState<TContractState>, leaderboard: @Leaderboard) {
-            let context_id = *leaderboard.context_id;
-
-            // Clear existing entries + token_positions + scores
-            let old_count = self.entries_count.read(context_id);
-            let mut i = 0_u32;
-            loop {
-                if i >= old_count {
-                    break;
-                }
-                let old_token = self.entries.read((context_id, i));
-                self.token_positions.write((context_id, old_token), 0);
-                self.entries.write((context_id, i), 0);
-                self.scores.write((context_id, i), 0);
-                i += 1;
-            }
-
-            // Write new entries
-            let new_count = leaderboard.token_ids.len();
-            self.entries_count.write(context_id, new_count);
-
-            let mut j = 0_u32;
-            loop {
-                if j >= new_count {
-                    break;
-                }
-                let token_id = *leaderboard.token_ids.at(j);
-                self.entries.write((context_id, j), token_id);
-                // Store position+1 (1-indexed) so 0 means "not on board"
-                self.token_positions.write((context_id, token_id), j + 1);
-                j += 1;
-            };
         }
 
         // Direct storage accessors for optimized insertion
@@ -232,8 +194,25 @@ pub mod LeaderboardComponent {
             self: @ComponentState<TContractState>, context_id: u64, count: u32,
         ) -> Array<LeaderboardEntry> {
             let game_address = self.game_address.read(context_id);
-            let entries = self.get_leaderboard_entries(context_id, game_address);
-            LeaderboardUtilsImpl::get_top_n(@entries, count)
+            let total = self.entries_count.read(context_id);
+            let limit = if count < total {
+                count
+            } else {
+                total
+            };
+            let mut entries = ArrayTrait::new();
+            let mut i = 0_u32;
+            while i < limit {
+                let token_id = self.entries.read((context_id, i));
+                let score = if !game_address.is_zero() {
+                    IGameDetailsDispatcher { contract_address: game_address }.score(token_id)
+                } else {
+                    self.scores.read((context_id, i))
+                };
+                entries.append(LeaderboardEntry { id: token_id, score });
+                i += 1;
+            }
+            entries
         }
 
         fn get_position(

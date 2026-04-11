@@ -1,366 +1,113 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-/// Pure Cairo library for leaderboard management
-/// This library provides core leaderboard functionality without storage dependencies
+/// Pure Cairo library for leaderboard logic.
+/// All functions are stateless — they take inputs and return results.
+/// Storage interaction is handled by the store layer (leaderboard_store.cairo).
 pub mod leaderboard {
-    // Import types from interfaces package (single source of truth)
-    pub use game_components_interfaces::leaderboard::{
-        LeaderboardConfig, LeaderboardEntry, LeaderboardResult,
-    };
+    pub use game_components_interfaces::leaderboard::{LeaderboardConfig, LeaderboardResult};
 
-    /// Trait for score comparison
-    pub trait ScoreComparator {
-        /// Compare two scores and return true if first is better than second
-        fn is_better_score(self: @LeaderboardConfig, first: u64, second: u64) -> bool;
-        /// Compare two scores and return true if they are equal
-        fn is_equal_score(self: @LeaderboardConfig, first: u64, second: u64) -> bool;
-        /// Handle tie-breaking between two entries with same score
-        fn break_tie(
-            self: @LeaderboardConfig, first: @LeaderboardEntry, second: @LeaderboardEntry,
-        ) -> bool;
-    }
-
-    /// Implementation of ScoreComparator
-    pub impl ScoreComparatorImpl of ScoreComparator {
-        fn is_better_score(self: @LeaderboardConfig, first: u64, second: u64) -> bool {
-            if *self.ascending {
-                first < second
-            } else {
-                first > second
-            }
-        }
-
-        fn is_equal_score(self: @LeaderboardConfig, first: u64, second: u64) -> bool {
-            first == second
-        }
-
-        fn break_tie(
-            self: @LeaderboardConfig, first: @LeaderboardEntry, second: @LeaderboardEntry,
-        ) -> bool {
-            // In case of tie, lower ID wins (first come, first served)
-            let first_id: u256 = (*first.id).into();
-            let second_id: u256 = (*second.id).into();
-            first_id < second_id
+    /// Check if score_a is strictly better than score_b.
+    /// Ascending: lower is better. Descending: higher is better.
+    pub fn is_better_score(score_a: u64, score_b: u64, ascending: bool) -> bool {
+        if ascending {
+            score_a < score_b
+        } else {
+            score_a > score_b
         }
     }
 
-    /// Core leaderboard operations
-    pub trait LeaderboardOperations {
-        /// Find the position where a new entry should be inserted
-        fn find_insert_position(
-            config: @LeaderboardConfig,
-            entries: @Array<LeaderboardEntry>,
-            new_entry: @LeaderboardEntry,
-        ) -> Option<u32>;
-
-        /// Validate if an entry can be inserted at a specific position
-        fn validate_position(
-            config: @LeaderboardConfig,
-            entries: @Array<LeaderboardEntry>,
-            new_entry: @LeaderboardEntry,
-            position: u32,
-        ) -> LeaderboardResult;
-
-        /// Insert an entry into the leaderboard
-        fn insert_entry(
-            config: @LeaderboardConfig,
-            entries: @Array<LeaderboardEntry>,
-            new_entry: @LeaderboardEntry,
-            position: u32,
-        ) -> (Array<LeaderboardEntry>, LeaderboardResult);
-
-        /// Check if an entry exists in the leaderboard
-        fn contains_entry(entries: @Array<LeaderboardEntry>, id: felt252) -> bool;
-
-        /// Get the position of an entry by ID (0-based)
-        fn get_entry_position(entries: @Array<LeaderboardEntry>, id: felt252) -> Option<u32>;
-
-        /// Check if a score qualifies for the leaderboard
-        fn qualifies_for_leaderboard(
-            config: @LeaderboardConfig, entries: @Array<LeaderboardEntry>, score: u64,
-        ) -> bool;
+    /// Tie-break: lower token ID wins (deterministic ordering for equal scores).
+    pub fn wins_tiebreak(token_a: felt252, token_b: felt252) -> bool {
+        let a: u256 = token_a.into();
+        let b: u256 = token_b.into();
+        a < b
     }
 
-    /// Implementation of LeaderboardOperations
-    pub impl LeaderboardOperationsImpl of LeaderboardOperations {
-        fn find_insert_position(
-            config: @LeaderboardConfig,
-            entries: @Array<LeaderboardEntry>,
-            new_entry: @LeaderboardEntry,
-        ) -> Option<u32> {
-            let mut position = 0_u32;
-            let entries_len = entries.len();
-
-            // If leaderboard is empty, insert at position 0
-            if entries_len == 0 {
-                return Option::Some(0);
-            }
-
-            // Find the correct position
-            loop {
-                if position >= entries_len {
-                    // Insert at the end if we've reached the end
-                    break Option::Some(entries_len);
-                }
-
-                let current_entry = entries.at(position);
-
-                // Check if new score is better than current position
-                if config.is_better_score(*new_entry.score, *current_entry.score) {
-                    break Option::Some(position);
-                }
-
-                // Handle ties
-                if config.is_equal_score(*new_entry.score, *current_entry.score) {
-                    if config.break_tie(new_entry, current_entry) {
-                        break Option::Some(position);
-                    }
-                }
-
-                position += 1;
-            }
-        }
-
-        fn validate_position(
-            config: @LeaderboardConfig,
-            entries: @Array<LeaderboardEntry>,
-            new_entry: @LeaderboardEntry,
-            position: u32,
-        ) -> LeaderboardResult {
-            let entries_len = entries.len();
-
-            // Check if entry already exists
-            if Self::contains_entry(entries, *new_entry.id) {
-                return LeaderboardResult::DuplicateEntry;
-            }
-
-            // Validate position bounds
-            if position > entries_len {
-                return LeaderboardResult::InvalidPosition;
-            }
-
-            // Check if leaderboard is full and new entry would be beyond max
-            if entries_len >= (*config.max_entries).into()
-                && position >= (*config.max_entries).into() {
-                return LeaderboardResult::LeaderboardFull;
-            }
-
-            // Validate score at position
-            if position < entries_len {
-                let current_at_position = entries.at(position);
-
-                // New score must be better than or equal to current at position
-                if !config.is_better_score(*new_entry.score, *current_at_position.score)
-                    && !config.is_equal_score(*new_entry.score, *current_at_position.score) {
-                    return LeaderboardResult::ScoreTooLow;
-                }
-
-                // If equal scores, must win tie-breaker
-                if config.is_equal_score(*new_entry.score, *current_at_position.score)
-                    && !config.break_tie(new_entry, current_at_position) {
-                    return LeaderboardResult::ScoreTooLow;
-                }
-            }
-
-            // Validate against entry above (if exists)
-            if position > 0 {
-                let above_entry = entries.at(position - 1);
-
-                // New score must not be better than entry above
-                if config.is_better_score(*new_entry.score, *above_entry.score) {
-                    return LeaderboardResult::ScoreTooHigh;
-                }
-
-                // If equal scores with entry above, must lose tie-breaker
-                if config.is_equal_score(*new_entry.score, *above_entry.score)
-                    && config.break_tie(new_entry, above_entry) {
-                    return LeaderboardResult::ScoreTooHigh;
-                }
-            }
-
-            LeaderboardResult::Success
-        }
-
-        fn insert_entry(
-            config: @LeaderboardConfig,
-            entries: @Array<LeaderboardEntry>,
-            new_entry: @LeaderboardEntry,
-            position: u32,
-        ) -> (Array<LeaderboardEntry>, LeaderboardResult) {
-            // Validate the insertion
-            let validation_result = Self::validate_position(config, entries, new_entry, position);
-            match validation_result {
-                LeaderboardResult::Success => {},
-                _ => {
-                    // Return a copy of the original array
-                    let mut cloned_entries = ArrayTrait::new();
-                    let mut i = 0_u32;
-                    loop {
-                        if i >= entries.len() {
-                            break;
-                        }
-                        cloned_entries.append(*entries.at(i));
-                        i += 1;
-                    }
-                    return (cloned_entries, validation_result);
-                },
-            }
-
-            let mut new_leaderboard = ArrayTrait::new();
-            let entries_len = entries.len();
-            let max_entries: u32 = (*config.max_entries).into();
-            let mut i = 0_u32;
-
-            // Copy entries up to the insertion position
-            loop {
-                if i >= position {
-                    break;
-                }
-                new_leaderboard.append(*entries.at(i));
-                i += 1;
-            }
-
-            // Insert the new entry
-            new_leaderboard.append(*new_entry);
-
-            // Copy remaining entries up to max_entries - 1
-            loop {
-                if i >= entries_len || new_leaderboard.len() >= max_entries {
-                    break;
-                }
-                new_leaderboard.append(*entries.at(i));
-                i += 1;
-            }
-
-            (new_leaderboard, LeaderboardResult::Success)
-        }
-
-        fn contains_entry(entries: @Array<LeaderboardEntry>, id: felt252) -> bool {
-            let mut i = 0_u32;
-            loop {
-                if i >= entries.len() {
-                    break false;
-                }
-                if *entries.at(i).id == id {
-                    break true;
-                }
-                i += 1;
-            }
-        }
-
-        fn get_entry_position(entries: @Array<LeaderboardEntry>, id: felt252) -> Option<u32> {
-            let mut i = 0_u32;
-            loop {
-                if i >= entries.len() {
-                    break Option::None;
-                }
-                if *entries.at(i).id == id {
-                    break Option::Some(i);
-                }
-                i += 1;
-            }
-        }
-
-        fn qualifies_for_leaderboard(
-            config: @LeaderboardConfig, entries: @Array<LeaderboardEntry>, score: u64,
-        ) -> bool {
-            let entries_len = entries.len();
-
-            // If leaderboard isn't full, any score qualifies
-            if entries_len < (*config.max_entries).into() {
-                return true;
-            }
-
-            // Check against last entry
-            let last_entry = entries.at(entries_len - 1);
-            config.is_better_score(score, *last_entry.score)
+    /// Convert 1-based position to 0-based index. Returns None for position 0.
+    pub fn position_to_index(position: u32) -> Option<u32> {
+        if position == 0 {
+            Option::None
+        } else {
+            Option::Some(position - 1)
         }
     }
 
-    /// Utility functions for leaderboard management
-    pub trait LeaderboardUtils {
-        /// Convert 1-based position to 0-based index
-        fn position_to_index(position: u32) -> Option<u32>;
+    /// Validate that a new entry can be inserted at the given index.
+    /// Pure function — takes pre-read values, no storage access.
+    ///
+    /// Parameters:
+    /// - index: 0-based insertion point
+    /// - count: current number of entries
+    /// - max_entries: configured maximum
+    /// - ascending: sort order
+    /// - score: new entry's score
+    /// - token_id: new entry's token ID
+    /// - is_duplicate: whether this token_id is already on the leaderboard
+    /// - score_at_index: score of the entry currently at `index` (if index < count)
+    /// - token_at_index: token_id of the entry currently at `index` (if index < count)
+    /// - score_above: score of the entry at `index - 1` (if index > 0)
+    /// - token_above: token_id of the entry at `index - 1` (if index > 0)
+    pub fn validate_insertion(
+        index: u32,
+        count: u32,
+        max_entries: u32,
+        ascending: bool,
+        score: u64,
+        token_id: felt252,
+        is_duplicate: bool,
+        score_at_index: u64,
+        token_at_index: felt252,
+        score_above: u64,
+        token_above: felt252,
+    ) -> LeaderboardResult {
+        // Duplicate check
+        if is_duplicate {
+            return LeaderboardResult::DuplicateEntry;
+        }
 
-        /// Convert 0-based index to 1-based position
-        fn index_to_position(index: u32) -> Option<u32>;
+        // Position bounds
+        if index > count {
+            return LeaderboardResult::InvalidPosition;
+        }
 
-        /// Create a new empty leaderboard
-        fn new() -> Array<LeaderboardEntry>;
+        // Full leaderboard — can't insert beyond max
+        if count >= max_entries && index >= max_entries {
+            return LeaderboardResult::LeaderboardFull;
+        }
 
-        /// Get entries within a range (for pagination)
-        fn get_range(
-            entries: @Array<LeaderboardEntry>, start: u32, count: u32,
-        ) -> Array<LeaderboardEntry>;
+        // Validate against entry at insertion point (being displaced)
+        if index < count {
+            if is_better_score(score_at_index, score, ascending) {
+                return LeaderboardResult::ScoreTooLow;
+            }
+            // Equal score — tie-break by token ID
+            if score == score_at_index && !wins_tiebreak(token_id, token_at_index) {
+                return LeaderboardResult::ScoreTooLow;
+            }
+        }
 
-        /// Get top N entries
-        fn get_top_n(entries: @Array<LeaderboardEntry>, n: u32) -> Array<LeaderboardEntry>;
+        // Validate against entry above (must not be better than it)
+        if index > 0 {
+            if is_better_score(score, score_above, ascending) {
+                return LeaderboardResult::ScoreTooHigh;
+            }
+            // Equal score above — must lose tie-break (i.e., entry above should stay above)
+            if score == score_above && wins_tiebreak(token_id, token_above) {
+                return LeaderboardResult::ScoreTooHigh;
+            }
+        }
 
-        /// Check if leaderboard is full
-        fn is_full(config: @LeaderboardConfig, entries: @Array<LeaderboardEntry>) -> bool;
-
-        /// Get the minimum qualifying score
-        fn get_qualifying_score(
-            config: @LeaderboardConfig, entries: @Array<LeaderboardEntry>,
-        ) -> Option<u64>;
+        LeaderboardResult::Success
     }
 
-    /// Implementation of LeaderboardUtils
-    pub impl LeaderboardUtilsImpl of LeaderboardUtils {
-        fn position_to_index(position: u32) -> Option<u32> {
-            if position == 0 {
-                Option::None
-            } else {
-                Option::Some(position - 1)
-            }
+    /// Check if a score qualifies for a leaderboard.
+    /// Pure function — takes pre-read values.
+    pub fn qualifies(
+        score: u64, last_score: u64, count: u32, max_entries: u32, ascending: bool,
+    ) -> bool {
+        if count < max_entries {
+            return true;
         }
-
-        fn index_to_position(index: u32) -> Option<u32> {
-            Option::Some(index + 1)
-        }
-
-        fn new() -> Array<LeaderboardEntry> {
-            ArrayTrait::new()
-        }
-
-        fn get_range(
-            entries: @Array<LeaderboardEntry>, start: u32, count: u32,
-        ) -> Array<LeaderboardEntry> {
-            let mut result = ArrayTrait::new();
-            let entries_len = entries.len();
-            let end = core::cmp::min(start + count, entries_len);
-            let mut i = start;
-
-            loop {
-                if i >= end {
-                    break;
-                }
-                result.append(*entries.at(i));
-                i += 1;
-            }
-
-            result
-        }
-
-        fn get_top_n(entries: @Array<LeaderboardEntry>, n: u32) -> Array<LeaderboardEntry> {
-            Self::get_range(entries, 0, n)
-        }
-
-        fn is_full(config: @LeaderboardConfig, entries: @Array<LeaderboardEntry>) -> bool {
-            entries.len() >= (*config.max_entries).into()
-        }
-
-        fn get_qualifying_score(
-            config: @LeaderboardConfig, entries: @Array<LeaderboardEntry>,
-        ) -> Option<u64> {
-            if !Self::is_full(config, entries) {
-                // If not full, any score qualifies
-                Option::None
-            } else {
-                // Return the score of the last entry
-                let last_idx = entries.len() - 1;
-                Option::Some(*entries.at(last_idx).score)
-            }
-        }
+        is_better_score(score, last_score, ascending)
     }
 }

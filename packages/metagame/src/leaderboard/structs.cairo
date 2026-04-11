@@ -1,7 +1,2 @@
 // SPDX-License-Identifier: BUSL-1.1
-
-#[derive(Drop, Serde)]
-pub struct Leaderboard {
-    pub context_id: u64,
-    pub token_ids: Array<felt252>,
-}
+// Leaderboard structs are defined in game_components_interfaces::leaderboard
