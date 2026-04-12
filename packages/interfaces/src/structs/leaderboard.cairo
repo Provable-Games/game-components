@@ -22,7 +22,7 @@ pub struct LeaderboardEntry {
 }
 
 /// Result of a leaderboard operation
-#[derive(Drop, Serde, Copy)]
+#[derive(Drop, Serde, Copy, PartialEq)]
 pub enum LeaderboardResult {
     Success: (),
     InvalidPosition: (),

@@ -17,21 +17,21 @@ pub mod LeaderboardComponent {
         StoragePointerWriteAccess,
     };
     use starknet::{ContractAddress, get_caller_address};
-    use crate::leaderboard::leaderboard::leaderboard::{
-        LeaderboardOperationsImpl, LeaderboardUtilsImpl,
-    };
     use crate::leaderboard::leaderboard_store::{
-        LeaderboardStoreHelpersImpl, LeaderboardStoreHelpersTrait, LeaderboardStoreImpl,
-        LeaderboardStoreTrait,
+        IGameDetailsDispatcher, IGameDetailsDispatcherTrait, LeaderboardStoreHelpersImpl,
+        LeaderboardStoreHelpersTrait, LeaderboardStoreImpl, LeaderboardStoreTrait,
     };
     use crate::leaderboard::store::Store;
-    use crate::leaderboard::structs::Leaderboard;
 
     #[storage]
     pub struct Storage {
         owner: ContractAddress,
         entries_count: Map<u64, u32>, // context_id -> count
         entries: Map<(u64, u32), felt252>, // (context_id, position) -> token_id
+        scores: Map<(u64, u32), u64>, // (context_id, position) -> score
+        token_positions: Map<
+            (u64, felt252), u32,
+        >, // (context_id, token_id) -> position+1 (0=absent)
         max_entries: Map<u64, u32>, // context_id -> max_entries
         ascending: Map<u64, bool>, // context_id -> ascending
         game_address: Map<u64, ContractAddress> // context_id -> game_address
@@ -94,33 +94,55 @@ pub mod LeaderboardComponent {
             result.span()
         }
 
-        fn set_leaderboard(ref self: ComponentState<TContractState>, leaderboard: @Leaderboard) {
-            let context_id = *leaderboard.context_id;
+        // Direct storage accessors for optimized insertion
+        fn get_count(self: @ComponentState<TContractState>, context_id: u64) -> u32 {
+            self.entries_count.read(context_id)
+        }
 
-            // Clear existing entries
-            let old_count = self.entries_count.read(context_id);
-            let mut i = 0_u32;
-            loop {
-                if i >= old_count {
-                    break;
-                }
-                self.entries.write((context_id, i), 0);
-                i += 1;
-            }
+        fn set_count(ref self: ComponentState<TContractState>, context_id: u64, count: u32) {
+            self.entries_count.write(context_id, count);
+        }
 
-            // Write new entries
-            let new_count = leaderboard.token_ids.len();
-            self.entries_count.write(context_id, new_count);
+        fn get_entry_at(
+            self: @ComponentState<TContractState>, context_id: u64, position: u32,
+        ) -> felt252 {
+            self.entries.read((context_id, position))
+        }
 
-            let mut j = 0_u32;
-            loop {
-                if j >= new_count {
-                    break;
-                }
-                let token_id = *leaderboard.token_ids.at(j);
-                self.entries.write((context_id, j), token_id);
-                j += 1;
-            };
+        fn set_entry_at(
+            ref self: ComponentState<TContractState>,
+            context_id: u64,
+            position: u32,
+            token_id: felt252,
+        ) {
+            self.entries.write((context_id, position), token_id);
+        }
+
+        fn get_score_at(
+            self: @ComponentState<TContractState>, context_id: u64, position: u32,
+        ) -> u64 {
+            self.scores.read((context_id, position))
+        }
+
+        fn set_score_at(
+            ref self: ComponentState<TContractState>, context_id: u64, position: u32, score: u64,
+        ) {
+            self.scores.write((context_id, position), score);
+        }
+
+        fn get_token_position(
+            self: @ComponentState<TContractState>, context_id: u64, token_id: felt252,
+        ) -> u32 {
+            self.token_positions.read((context_id, token_id))
+        }
+
+        fn set_token_position(
+            ref self: ComponentState<TContractState>,
+            context_id: u64,
+            token_id: felt252,
+            position: u32,
+        ) {
+            self.token_positions.write((context_id, token_id), position);
         }
     }
 
@@ -145,8 +167,9 @@ pub mod LeaderboardComponent {
                 game_address: self.game_address.read(context_id),
             };
 
-            let result = self
-                .submit_score_to_leaderboard(context_id, token_id, score, position, config);
+            let result = LeaderboardStoreTrait::submit_score(
+                ref self, context_id, token_id, score, position, config,
+            );
 
             match result {
                 LeaderboardResult::Success => {
@@ -165,21 +188,38 @@ pub mod LeaderboardComponent {
             self: @ComponentState<TContractState>, context_id: u64,
         ) -> Array<LeaderboardEntry> {
             let game_address = self.game_address.read(context_id);
-            self.get_leaderboard_entries(context_id, game_address)
+            LeaderboardStoreTrait::get_entries(self, context_id, game_address)
         }
 
         fn get_top_entries(
             self: @ComponentState<TContractState>, context_id: u64, count: u32,
         ) -> Array<LeaderboardEntry> {
             let game_address = self.game_address.read(context_id);
-            let entries = self.get_leaderboard_entries(context_id, game_address);
-            LeaderboardUtilsImpl::get_top_n(@entries, count)
+            let total = self.entries_count.read(context_id);
+            let limit = if count < total {
+                count
+            } else {
+                total
+            };
+            let mut entries = ArrayTrait::new();
+            let mut i = 0_u32;
+            while i < limit {
+                let token_id = self.entries.read((context_id, i));
+                let score = if !game_address.is_zero() {
+                    IGameDetailsDispatcher { contract_address: game_address }.score(token_id)
+                } else {
+                    self.scores.read((context_id, i))
+                };
+                entries.append(LeaderboardEntry { id: token_id, score });
+                i += 1;
+            }
+            entries
         }
 
         fn get_position(
             self: @ComponentState<TContractState>, context_id: u64, token_id: felt252,
         ) -> Option<u32> {
-            self.get_entry_position(context_id, token_id)
+            LeaderboardStoreTrait::get_position(self, context_id, token_id)
         }
 
         fn qualifies(self: @ComponentState<TContractState>, context_id: u64, score: u64) -> bool {
@@ -188,12 +228,12 @@ pub mod LeaderboardComponent {
                 ascending: self.ascending.read(context_id),
                 game_address: self.game_address.read(context_id),
             };
-            self.qualifies_for_leaderboard(context_id, score, config)
+            LeaderboardStoreTrait::qualifies(self, context_id, score, config)
         }
 
         fn is_full(self: @ComponentState<TContractState>, context_id: u64) -> bool {
             let max_entries = self.max_entries.read(context_id);
-            self.is_leaderboard_full(context_id, max_entries)
+            LeaderboardStoreHelpersTrait::is_full(self, context_id, max_entries)
         }
 
         fn get_leaderboard_length(self: @ComponentState<TContractState>, context_id: u64) -> u32 {
@@ -240,14 +280,17 @@ pub mod LeaderboardComponent {
         fn clear(ref self: ComponentState<TContractState>, context_id: u64) {
             self.assert_only_owner();
 
-            // Clear all entries for this context
+            // Clear all entries, scores, and token_positions for this context
             let count = self.entries_count.read(context_id);
             let mut i = 0_u32;
             loop {
                 if i >= count {
                     break;
                 }
+                let token_id = self.entries.read((context_id, i));
+                self.token_positions.write((context_id, token_id), 0);
                 self.entries.write((context_id, i), 0);
+                self.scores.write((context_id, i), 0);
                 i += 1;
             }
             self.entries_count.write(context_id, 0);
