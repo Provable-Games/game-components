@@ -167,8 +167,9 @@ pub mod LeaderboardComponent {
                 game_address: self.game_address.read(context_id),
             };
 
-            let result = self
-                .submit_score_to_leaderboard(context_id, token_id, score, position, config);
+            let result = LeaderboardStoreTrait::submit_score(
+                ref self, context_id, token_id, score, position, config,
+            );
 
             match result {
                 LeaderboardResult::Success => {
@@ -187,7 +188,7 @@ pub mod LeaderboardComponent {
             self: @ComponentState<TContractState>, context_id: u64,
         ) -> Array<LeaderboardEntry> {
             let game_address = self.game_address.read(context_id);
-            self.get_leaderboard_entries(context_id, game_address)
+            LeaderboardStoreTrait::get_entries(self, context_id, game_address)
         }
 
         fn get_top_entries(
@@ -218,7 +219,7 @@ pub mod LeaderboardComponent {
         fn get_position(
             self: @ComponentState<TContractState>, context_id: u64, token_id: felt252,
         ) -> Option<u32> {
-            self.get_entry_position(context_id, token_id)
+            LeaderboardStoreTrait::get_position(self, context_id, token_id)
         }
 
         fn qualifies(self: @ComponentState<TContractState>, context_id: u64, score: u64) -> bool {
@@ -227,12 +228,12 @@ pub mod LeaderboardComponent {
                 ascending: self.ascending.read(context_id),
                 game_address: self.game_address.read(context_id),
             };
-            self.qualifies_for_leaderboard(context_id, score, config)
+            LeaderboardStoreTrait::qualifies(self, context_id, score, config)
         }
 
         fn is_full(self: @ComponentState<TContractState>, context_id: u64) -> bool {
             let max_entries = self.max_entries.read(context_id);
-            self.is_leaderboard_full(context_id, max_entries)
+            LeaderboardStoreHelpersTrait::is_full(self, context_id, max_entries)
         }
 
         fn get_leaderboard_length(self: @ComponentState<TContractState>, context_id: u64) -> u32 {
