@@ -12,6 +12,7 @@ pub use structs::{
 pub mod distribution;
 pub mod entry_fee;
 pub mod entry_requirement;
+pub mod gpp;
 pub mod leaderboard;
 
 // Interface modules
@@ -36,6 +37,12 @@ pub use entry_fee::{
 pub use entry_requirement::{
     EntryRequirement, EntryRequirementType, IEntryRequirement, IEntryRequirementDispatcher,
     IEntryRequirementDispatcherTrait, NFTQualification, QualificationEntries, QualificationProof,
+};
+
+// GPP
+pub use gpp::{
+    GppConfig, GppERC20Prize, GppERC721Prize, GppPoolState, GppPrizeType, IGPP_ID, IGpp,
+    IGppDispatcher, IGppDispatcherTrait,
 };
 
 // Leaderboard
