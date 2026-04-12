@@ -172,7 +172,7 @@ pub impl LeaderboardStoreImpl<T, +Store<T>, +Drop<T>> of LeaderboardStoreTrait<T
     ) -> (LeaderboardResult, u32) {
         let count = self.get_count(context_id);
 
-        // Binary search for insert position on stored scores
+        // Binary search for leftmost position with this score
         let mut lo: u32 = 0;
         let mut hi: u32 = count;
 
@@ -191,6 +191,20 @@ pub impl LeaderboardStoreImpl<T, +Store<T>, +Drop<T>> of LeaderboardStoreTrait<T
             } else {
                 lo = mid + 1;
             }
+        }
+
+        // Scan forward through equal-score entries for tie-break position
+        // (lower token_id wins — should be placed before higher token_ids)
+        while lo < count {
+            let entry_score = self.get_score_at(context_id, lo);
+            if entry_score != score {
+                break;
+            }
+            let entry_token = self.get_entry_at(context_id, lo);
+            if leaderboard::wins_tiebreak(token_id, entry_token) {
+                break;
+            }
+            lo += 1;
         }
 
         // Convert 0-based index to 1-based position
@@ -279,6 +293,9 @@ pub impl LeaderboardStoreHelpersImpl<T, +Store<T>, +Drop<T>> of LeaderboardStore
     fn get_minimum_qualifying_score(
         self: @T, context_id: u64, config: LeaderboardStoreConfig,
     ) -> Option<u64> {
+        if config.max_entries == 0 {
+            return Option::None;
+        }
         let count = self.get_count(context_id);
         if count < config.max_entries {
             Option::None // Not full — any score qualifies

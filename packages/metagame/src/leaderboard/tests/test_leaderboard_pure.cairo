@@ -233,3 +233,27 @@ fn test_qualifies_ascending() {
     assert!(leaderboard::qualifies(30, 50, 3, 3, true)); // 30 < 50 → qualifies (ascending)
     assert!(!leaderboard::qualifies(100, 50, 3, 3, true)); // 100 > 50 → doesn't qualify
 }
+
+#[test]
+fn test_qualifies_zero_capacity() {
+    assert!(!leaderboard::qualifies(100, 0, 0, 0, false)); // zero capacity → never qualifies
+    assert!(!leaderboard::qualifies(1, 0, 0, 0, true)); // zero capacity ascending
+}
+
+#[test]
+fn test_validate_insertion_zero_capacity() {
+    let result = leaderboard::validate_insertion(
+        index: 0,
+        count: 0,
+        max_entries: 0,
+        ascending: false,
+        score: 100,
+        token_id: 1,
+        is_duplicate: false,
+        score_at_index: 0,
+        token_at_index: 0,
+        score_above: 0,
+        token_above: 0,
+    );
+    assert!(result == LeaderboardResult::LeaderboardFull);
+}

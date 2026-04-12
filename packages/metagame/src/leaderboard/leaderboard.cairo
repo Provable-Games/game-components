@@ -105,6 +105,9 @@ pub mod leaderboard {
     pub fn qualifies(
         score: u64, last_score: u64, count: u32, max_entries: u32, ascending: bool,
     ) -> bool {
+        if max_entries == 0 {
+            return false;
+        }
         if count < max_entries {
             return true;
         }
