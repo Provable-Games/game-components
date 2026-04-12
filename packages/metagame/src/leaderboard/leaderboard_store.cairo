@@ -12,6 +12,7 @@ pub use game_components_interfaces::leaderboard::{
     LeaderboardStoreConfig,
 };
 use game_components_metagame::leaderboard::leaderboard::leaderboard;
+use game_components_metagame::leaderboard::leaderboard::leaderboard::wins_tiebreak;
 use game_components_metagame::leaderboard::store::Store;
 use starknet::ContractAddress;
 
@@ -197,8 +198,10 @@ pub trait LeaderboardStoreHelpersTrait<T> {
     ) -> Array<LeaderboardEntry>;
 
     /// Find the position where a score would be inserted (1-based) — O(log n) view function
+    /// Accounts for token_id tiebreaking so the returned position is always valid for
+    /// submit_score without further adjustment.
     fn find_position(
-        self: @T, context_id: u64, score: u64, config: LeaderboardStoreConfig,
+        self: @T, context_id: u64, score: u64, token_id: felt252, config: LeaderboardStoreConfig,
     ) -> Option<u32>;
 }
 
@@ -250,8 +253,9 @@ pub impl LeaderboardStoreHelpersImpl<T, +Store<T>, +Drop<T>> of LeaderboardStore
     }
 
     /// Find the position where a score would be inserted — O(log n) binary search
+    /// Uses token_id for deterministic tiebreaking on equal scores (lower token_id wins).
     fn find_position(
-        self: @T, context_id: u64, score: u64, config: LeaderboardStoreConfig,
+        self: @T, context_id: u64, score: u64, token_id: felt252, config: LeaderboardStoreConfig,
     ) -> Option<u32> {
         let count = self.get_count(context_id);
         let mut lo: u32 = 0;
@@ -260,10 +264,13 @@ pub impl LeaderboardStoreHelpersImpl<T, +Store<T>, +Drop<T>> of LeaderboardStore
         while lo < hi {
             let mid = lo + (hi - lo) / 2;
             let mid_score = self.get_score_at(context_id, mid);
-            let go_left = if config.ascending {
-                score <= mid_score
+            let go_left = if score == mid_score {
+                let mid_token = self.get_entry_at(context_id, mid);
+                wins_tiebreak(token_id, mid_token)
+            } else if config.ascending {
+                score < mid_score
             } else {
-                score >= mid_score
+                score > mid_score
             };
             if go_left {
                 hi = mid;
