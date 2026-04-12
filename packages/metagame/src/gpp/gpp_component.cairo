@@ -230,6 +230,9 @@ pub mod GppComponent {
             assert!(capacity > 0, "ZERO_CAPACITY");
             assert!(game_lifetime > 0, "ZERO_GAME_LIFETIME");
 
+            let existing = self.gpp_config.read(context_id);
+            assert!(existing.prize_type == PRIZE_TYPE_UNSET, "ALREADY_CONFIGURED");
+
             let config = PackedGppConfig {
                 capacity, game_lifetime, prize_type: PRIZE_TYPE_UNSET, per_entrant: 0,
             };
@@ -365,6 +368,7 @@ pub mod GppComponent {
             ref self: ComponentState<TContractState>, context_id: u64, game_token_id: felt252,
         ) {
             let mut pool_state = self.gpp_pool.read(context_id);
+            assert!(pool_state.active_count > 0, "NO_ACTIVE_SLOT");
             pool_state.active_count -= 1;
             self.gpp_pool.write(context_id, pool_state);
 
@@ -378,6 +382,7 @@ pub mod GppComponent {
         ) {
             let config = self.gpp_config.read(context_id);
             let mut pool_state = self.gpp_pool.read(context_id);
+            assert!(pool_state.active_count > 0, "NO_ACTIVE_SLOT");
             pool_state.active_count -= 1;
 
             if config.prize_type == PRIZE_TYPE_ERC20 {
