@@ -272,7 +272,7 @@ pub impl LeaderboardStoreHelpersImpl<T, +Store<T>, +Drop<T>> of LeaderboardStore
             }
         }
 
-        Option::Some(lo)
+        Option::Some(lo + 1) // convert to 1-based position
     }
 }
 
