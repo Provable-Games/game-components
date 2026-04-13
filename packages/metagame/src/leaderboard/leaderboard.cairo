@@ -65,13 +65,13 @@ pub mod leaderboard {
             return LeaderboardResult::DuplicateEntry;
         }
 
-        // Position bounds
+        // Position bounds: can append (index == count) or overwrite (index < count)
         if index > count {
             return LeaderboardResult::InvalidPosition;
         }
 
-        // Full leaderboard — can't insert beyond max
-        if count >= max_entries && index >= max_entries {
+        // Full leaderboard — can only overwrite existing positions, not append
+        if count >= max_entries && index >= count {
             return LeaderboardResult::LeaderboardFull;
         }
 
