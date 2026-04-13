@@ -249,6 +249,17 @@ pub mod LeaderboardComponent {
                 game_address: self.game_address.read(context_id),
             }
         }
+
+        fn find_position(
+            self: @ComponentState<TContractState>, context_id: u64, score: u64, token_id: felt252,
+        ) -> Option<u32> {
+            let config = LeaderboardStoreConfig {
+                max_entries: self.max_entries.read(context_id),
+                ascending: self.ascending.read(context_id),
+                game_address: self.game_address.read(context_id),
+            };
+            LeaderboardStoreHelpersTrait::find_position(self, context_id, score, token_id, config)
+        }
     }
 
     #[embeddable_as(LeaderboardAdminImpl)]
