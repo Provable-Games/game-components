@@ -300,7 +300,7 @@ fn test_max_entries_enforcement() {
         _ => panic!("Should fail - leaderboard is full and score is too low"),
     }
 
-    // Submit high score - should succeed and push out lowest
+    // Submit high score at position 2 - should succeed and evict token 2 (score 90)
     game_admin.set_score(5, 95);
     let result = leaderboard.submit_score(WEEKLY_TOURNAMENT, 5, 95, 2);
     match result {
@@ -308,7 +308,10 @@ fn test_max_entries_enforcement() {
         _ => panic!("Should succeed - score is good enough"),
     }
 
-    // Verify token 3 (score 80) was pushed out
+    // Token 2 (score 90) was evicted from position 2, re-submit at position 3
+    let _ = leaderboard.submit_score(WEEKLY_TOURNAMENT, 2, 90, 3);
+
+    // Verify token 3 (score 80) was displaced by token 2's re-submission
     let entries = leaderboard.get_entries(WEEKLY_TOURNAMENT);
     assert!(entries.len() == 3, "Should still have 3 entries");
     assert!(*entries.at(2).score == 90, "Lowest should now be 90");
@@ -837,7 +840,7 @@ fn test_invalid_position_beyond_length() {
     }
 }
 
-// TC-TIE-01: Tie-breaking by token ID
+// TC-TIE-01: Tie-breaking by token ID (overwrite model)
 #[test]
 fn test_tie_breaking_lower_id_wins() {
     let (leaderboard, admin) = deploy_leaderboard_preset(OWNER());
@@ -849,13 +852,16 @@ fn test_tie_breaking_lower_id_wins() {
     game_admin.set_score(10, 100);
     let _ = leaderboard.submit_score(WEEKLY_TOURNAMENT, 10, 100, 1);
 
-    // Add entry with token ID 5, same score 100 - should be placed BEFORE token 10
+    // Add entry with token ID 5, same score 100 — evicts token 10 from position 1
     game_admin.set_score(5, 100);
     let result = leaderboard.submit_score(WEEKLY_TOURNAMENT, 5, 100, 1);
     match result {
         LeaderboardResult::Success => {},
         _ => panic!("Should succeed - lower ID wins tie-break"),
     }
+
+    // Re-submit evicted token 10 at position 2
+    let _ = leaderboard.submit_score(WEEKLY_TOURNAMENT, 10, 100, 2);
 
     // Verify positions
     let entries = leaderboard.get_entries(WEEKLY_TOURNAMENT);
@@ -885,7 +891,7 @@ fn test_tie_breaking_higher_id_loses() {
     }
 }
 
-// TC-ASC-01: Ascending tournament - lower score is better
+// TC-ASC-01: Ascending tournament - lower score is better (overwrite model)
 #[test]
 fn test_ascending_tournament_order() {
     let (leaderboard, admin) = deploy_leaderboard_preset(OWNER());
@@ -900,8 +906,10 @@ fn test_ascending_tournament_order() {
     game_admin.set_score(3, 150);
 
     let _ = leaderboard.submit_score(WEEKLY_TOURNAMENT, 1, 100, 1);
-    let _ = leaderboard
-        .submit_score(WEEKLY_TOURNAMENT, 2, 50, 1); // Should go to position 1 (lower is better)
+    // Token 2 overwrites position 1, evicting token 1
+    let _ = leaderboard.submit_score(WEEKLY_TOURNAMENT, 2, 50, 1);
+    // Re-submit evicted token 1 at position 2
+    let _ = leaderboard.submit_score(WEEKLY_TOURNAMENT, 1, 100, 2);
     let _ = leaderboard.submit_score(WEEKLY_TOURNAMENT, 3, 150, 3);
 
     let entries = leaderboard.get_entries(WEEKLY_TOURNAMENT);
@@ -943,7 +951,7 @@ fn test_get_top_entries_pagination() {
     assert!(top3.len() == 3, "Should return 3 entries");
 }
 
-// TC-FULL-02: Leaderboard full - push out lowest
+// TC-FULL-02: Leaderboard full - overwrite evicts entry at position (overwrite model)
 #[test]
 fn test_full_leaderboard_pushes_out_lowest() {
     let (leaderboard, admin) = deploy_leaderboard_preset(OWNER());
@@ -963,7 +971,7 @@ fn test_full_leaderboard_pushes_out_lowest() {
 
     assert!(leaderboard.is_full(WEEKLY_TOURNAMENT), "Should be full");
 
-    // Add higher score - should push out token 3
+    // Add higher score at position 2 — evicts token 2 (score 90)
     game_admin.set_score(4, 95);
     let result = leaderboard.submit_score(WEEKLY_TOURNAMENT, 4, 95, 2);
     match result {
@@ -971,13 +979,16 @@ fn test_full_leaderboard_pushes_out_lowest() {
         _ => panic!("Should succeed"),
     }
 
+    // Token 2 was evicted, re-submit at position 3 — evicts token 3 (score 80)
+    let _ = leaderboard.submit_score(WEEKLY_TOURNAMENT, 2, 90, 3);
+
     let entries = leaderboard.get_entries(WEEKLY_TOURNAMENT);
     assert!(entries.len() == 3, "Should still have 3 entries");
     assert!(*entries.at(0).id == 1, "Token 1 should still be first");
     assert!(*entries.at(1).id == 4, "Token 4 should be second");
-    assert!(*entries.at(2).id == 2, "Token 2 should be third (80 was pushed out)");
+    assert!(*entries.at(2).id == 2, "Token 2 should be third");
 
-    // Verify token 3 is gone
+    // Verify token 3 is gone (evicted by token 2's re-submission)
     let pos = leaderboard.get_position(WEEKLY_TOURNAMENT, 3);
     assert!(pos.is_none(), "Token 3 should be pushed out");
 }
@@ -1142,7 +1153,7 @@ fn test_large_leaderboard() {
     assert!(*top5.at(4).score == 950, "Fifth should have score 950");
 }
 
-// TC-MID-INSERT-01: Insert in middle of leaderboard
+// TC-MID-INSERT-01: Insert in middle of leaderboard (overwrite model)
 #[test]
 fn test_insert_in_middle() {
     let (leaderboard, admin) = deploy_leaderboard_preset(OWNER());
@@ -1158,13 +1169,18 @@ fn test_insert_in_middle() {
     let _ = leaderboard.submit_score(WEEKLY_TOURNAMENT, 2, 50, 2);
     let _ = leaderboard.submit_score(WEEKLY_TOURNAMENT, 3, 25, 3);
 
-    // Insert 75 at position 2
+    // Insert 75 at position 2 — evicts token 2 (score 50)
     game_admin.set_score(4, 75);
     let result = leaderboard.submit_score(WEEKLY_TOURNAMENT, 4, 75, 2);
     match result {
         LeaderboardResult::Success => {},
         _ => panic!("Should succeed"),
     }
+
+    // Re-submit evicted token 2 at position 3 — evicts token 3 (score 25)
+    let _ = leaderboard.submit_score(WEEKLY_TOURNAMENT, 2, 50, 3);
+    // Re-submit evicted token 3 at position 4
+    let _ = leaderboard.submit_score(WEEKLY_TOURNAMENT, 3, 25, 4);
 
     let entries = leaderboard.get_entries(WEEKLY_TOURNAMENT);
     assert!(entries.len() == 4, "Should have 4 entries");

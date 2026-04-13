@@ -23,7 +23,7 @@ pub trait LeaderboardStoreTrait<T> {
         self: @T, context_id: u64, game_address: ContractAddress,
     ) -> Array<LeaderboardEntry>;
 
-    /// Submit a score at a specific position (1-based). O(k) where k = entries shifted.
+    /// Submit a score at a specific position (1-based). O(1) — overwrites displaced entry.
     fn submit_score(
         ref self: T,
         context_id: u64,
@@ -41,7 +41,7 @@ pub trait LeaderboardStoreTrait<T> {
 }
 
 /// Implementation of LeaderboardStoreTrait
-/// Uses direct storage access for O(k) insertion instead of loading the full array.
+/// Uses direct storage access for O(1) insertion — overwrites displaced entry, no shifting.
 pub impl LeaderboardStoreImpl<T, +Store<T>, +Drop<T>> of LeaderboardStoreTrait<T> {
     /// Get leaderboard entries with scores from stored data
     fn get_entries(
@@ -69,7 +69,7 @@ pub impl LeaderboardStoreImpl<T, +Store<T>, +Drop<T>> of LeaderboardStoreTrait<T
     }
 
     /// Submit a score to the leaderboard at a specific position.
-    /// Operates directly on storage — only shifts entries that need moving.
+    /// O(1) — validates against neighbors, overwrites the position, evicts displaced entry.
     /// Position is 1-based (1 = first place).
     fn submit_score(
         ref self: T,
@@ -119,42 +119,20 @@ pub impl LeaderboardStoreImpl<T, +Store<T>, +Drop<T>> of LeaderboardStoreTrait<T
             _ => { return result; },
         }
 
-        // Determine new count (cap at max_entries, evicting last if needed)
-        let new_count = if count < config.max_entries {
-            count + 1
-        } else {
-            config.max_entries
-        };
-
-        // If at max and evicting, clear the last entry's token_position
-        if count >= config.max_entries {
-            let evicted_token = self.get_entry_at(context_id, count - 1);
+        // Evict displaced entry or increment count for append
+        if index < count {
+            // Overwriting existing position — evict the displaced entry
+            let evicted_token = self.get_entry_at(context_id, index);
             self.set_token_position(context_id, evicted_token, 0);
-        }
-
-        // Shift entries from index to end, one position forward (backwards to avoid overwrite)
-        let shift_end = if count < config.max_entries {
-            count
         } else {
-            config.max_entries - 1
-        };
-        let mut i = shift_end;
-        while i > index {
-            let prev_token = self.get_entry_at(context_id, i - 1);
-            let prev_score = self.get_score_at(context_id, i - 1);
-            self.set_entry_at(context_id, i, prev_token);
-            self.set_score_at(context_id, i, prev_score);
-            self.set_token_position(context_id, prev_token, i + 1);
-            i -= 1;
+            // Appending to end — increment count
+            self.set_count(context_id, count + 1);
         }
 
         // Write new entry at index
         self.set_entry_at(context_id, index, token_id);
         self.set_score_at(context_id, index, score);
         self.set_token_position(context_id, token_id, index + 1);
-
-        // Update count
-        self.set_count(context_id, new_count);
 
         LeaderboardResult::Success
     }

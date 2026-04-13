@@ -162,7 +162,7 @@ fn test_submit_score_to_empty_leaderboard() {
     assert!(leaderboard.get_leaderboard_length(TOURNAMENT_1) == 1, "Should have 1 entry");
 }
 
-// Test LB-U-09: Submit multiple scores maintains order
+// Test LB-U-09: Submit multiple scores maintains order (overwrite model)
 #[test]
 fn test_submit_multiple_scores_maintains_order() {
     let (leaderboard, admin) = deploy_mock_leaderboard();
@@ -178,7 +178,11 @@ fn test_submit_multiple_scores_maintains_order() {
     // Submit in order
     let _ = leaderboard.submit_score(TOURNAMENT_1, 1, 100, 1);
     let _ = leaderboard.submit_score(TOURNAMENT_1, 2, 80, 2);
-    let _ = leaderboard.submit_score(TOURNAMENT_1, 3, 90, 2); // Insert between
+    // Token 3 overwrites position 2, evicting token 2
+    let _ = leaderboard.submit_score(TOURNAMENT_1, 3, 90, 2);
+
+    // Token 2 was evicted, must be re-submitted at position 3
+    let _ = leaderboard.submit_score(TOURNAMENT_1, 2, 80, 3);
 
     let entries = leaderboard.get_entries(TOURNAMENT_1);
     assert!(entries.len() == 3, "Should have 3 entries");
@@ -470,7 +474,7 @@ fn test_same_token_multiple_tournaments() {
 // ASCENDING ORDER TESTS
 // ==============================================================================
 
-// Test LB-U-25: Ascending leaderboard orders correctly
+// Test LB-U-25: Ascending leaderboard orders correctly (overwrite model)
 #[test]
 fn test_ascending_leaderboard_order() {
     let (leaderboard, admin) = deploy_mock_leaderboard();
@@ -485,7 +489,10 @@ fn test_ascending_leaderboard_order() {
 
     let _ = leaderboard.submit_score(TOURNAMENT_1, 2, 50, 1); // First (fastest)
     let _ = leaderboard.submit_score(TOURNAMENT_1, 1, 100, 2); // Second (slowest)
-    let _ = leaderboard.submit_score(TOURNAMENT_1, 3, 75, 2); // Insert between
+    // Token 3 overwrites position 2, evicting token 1
+    let _ = leaderboard.submit_score(TOURNAMENT_1, 3, 75, 2);
+    // Re-submit evicted token 1 at position 3
+    let _ = leaderboard.submit_score(TOURNAMENT_1, 1, 100, 3);
 
     let entries = leaderboard.get_entries(TOURNAMENT_1);
     assert!(*entries.at(0).score == 50, "First should be 50 (fastest)");
@@ -571,9 +578,9 @@ fn test_reconfigure_existing_tournament() {
 // ADDITIONAL SCORE SUBMISSION TESTS
 // ==============================================================================
 
-// Test LB-SUB-02: Submit score when leaderboard full (displaces last)
+// Test LB-SUB-02: Submit score when leaderboard full (overwrites position, evicts entry)
 #[test]
-fn test_submit_score_full_displaces_last() {
+fn test_submit_score_full_displaces_entry() {
     let (leaderboard, admin) = deploy_mock_leaderboard();
     let (game_address, game_admin) = deploy_mock_game_details();
 
@@ -592,23 +599,23 @@ fn test_submit_score_full_displaces_last() {
 
     assert!(leaderboard.is_full(TOURNAMENT_1), "Leaderboard should be full");
 
-    // Submit better score
+    // Submit better score at position 2 — evicts token 2
     let result = leaderboard.submit_score(TOURNAMENT_1, 4, 90, 2);
 
     match result {
         LeaderboardResult::Success => {},
-        _ => panic!("Should succeed and displace last"),
+        _ => panic!("Should succeed and displace entry at position 2"),
     }
+
+    // Token 2 was evicted from position 2
+    let pos2 = leaderboard.get_position(TOURNAMENT_1, 2);
+    assert!(pos2 == Option::None, "Token 2 should have been evicted");
 
     let entries = leaderboard.get_entries(TOURNAMENT_1);
     assert!(entries.len() == 3, "Should still have 3 entries");
     assert!(*entries.at(0).score == 100, "First should be 100");
     assert!(*entries.at(1).score == 90, "Second should be 90");
-    assert!(*entries.at(2).score == 80, "Third should be 80 (60 dropped)");
-
-    // Token 3 should no longer be in leaderboard
-    let pos3 = leaderboard.get_position(TOURNAMENT_1, 3);
-    assert!(pos3 == Option::None, "Token 3 should have been dropped");
+    assert!(*entries.at(2).score == 60, "Third should be 60 (unchanged)");
 }
 
 // Test LB-SUB-03: Submit score when leaderboard full (score too low)
@@ -1013,7 +1020,7 @@ fn test_single_entry_leaderboard() {
 // INTEGRATION TESTS
 // ==============================================================================
 
-// Test LB-INT-01: Full lifecycle test
+// Test LB-INT-01: Full lifecycle test (overwrite model)
 #[test]
 fn test_full_lifecycle() {
     let (leaderboard, admin) = deploy_mock_leaderboard();
@@ -1030,7 +1037,10 @@ fn test_full_lifecycle() {
 
     let _ = leaderboard.submit_score(TOURNAMENT_1, 1, 100, 1);
     let _ = leaderboard.submit_score(TOURNAMENT_1, 2, 80, 2);
+    // Token 3 overwrites position 2, evicting token 2
     let _ = leaderboard.submit_score(TOURNAMENT_1, 3, 90, 2);
+    // Re-submit evicted token 2 at position 3
+    let _ = leaderboard.submit_score(TOURNAMENT_1, 2, 80, 3);
 
     assert!(leaderboard.get_leaderboard_length(TOURNAMENT_1) == 3, "Should have 3 entries");
 
@@ -1210,7 +1220,7 @@ fn test_submit_tie_loses_tiebreaker() {
     }
 }
 
-// Test submitting with tie where entry wins tiebreaker (lower ID)
+// Test submitting with tie where entry wins tiebreaker (lower ID, overwrite model)
 #[test]
 fn test_submit_tie_wins_tiebreaker() {
     let (leaderboard, admin) = deploy_mock_leaderboard();
@@ -1225,12 +1235,18 @@ fn test_submit_tie_wins_tiebreaker() {
     let _ = leaderboard.submit_score(TOURNAMENT_1, 5, 100, 1);
 
     // Submit ID 1 at position 1 (same score but lower ID should win tiebreaker)
+    // This evicts ID 5 from position 1
     let result = leaderboard.submit_score(TOURNAMENT_1, 1, 100, 1);
 
     match result {
         LeaderboardResult::Success => {},
         _ => panic!("Lower ID should win tiebreaker"),
     }
+
+    assert!(*leaderboard.get_entries(TOURNAMENT_1).at(0).id == 1, "ID 1 should be first");
+
+    // Re-submit evicted ID 5 at position 2
+    let _ = leaderboard.submit_score(TOURNAMENT_1, 5, 100, 2);
 
     let entries = leaderboard.get_entries(TOURNAMENT_1);
     assert!(*entries.at(0).id == 1, "ID 1 should be first (won tiebreaker)");
@@ -1305,7 +1321,7 @@ fn test_qualifies_one_below_capacity() {
     assert!(leaderboard.qualifies(TOURNAMENT_1, 0), "Even 0 qualifies when not full");
 }
 
-// Test ascending mode with equal scores (tiebreaker)
+// Test ascending mode with equal scores (tiebreaker, overwrite model)
 #[test]
 fn test_ascending_tie_breaking() {
     let (leaderboard, admin) = deploy_mock_leaderboard();
@@ -1319,13 +1335,16 @@ fn test_ascending_tie_breaking() {
     // Submit ID 5 first
     let _ = leaderboard.submit_score(TOURNAMENT_1, 5, 50, 1);
 
-    // Submit ID 1 at position 1 (same score, lower ID wins tiebreaker even in ascending)
+    // Submit ID 1 at position 1 (same score, lower ID wins tiebreaker) — evicts ID 5
     let result = leaderboard.submit_score(TOURNAMENT_1, 1, 50, 1);
 
     match result {
         LeaderboardResult::Success => {},
         _ => panic!("Should succeed - lower ID wins tiebreaker"),
     }
+
+    // Re-submit evicted ID 5 at position 2
+    let _ = leaderboard.submit_score(TOURNAMENT_1, 5, 50, 2);
 
     let entries = leaderboard.get_entries(TOURNAMENT_1);
     assert!(*entries.at(0).id == 1, "ID 1 should be first");
@@ -1438,7 +1457,7 @@ fn test_max_entries_zero_is_full() {
     assert!(leaderboard.get_leaderboard_length(TOURNAMENT_1) == 0, "Should have no entries");
 }
 
-// Test multiple score submissions building up the leaderboard
+// Test multiple score submissions building up the leaderboard (overwrite model)
 #[test]
 fn test_incremental_leaderboard_buildup() {
     let (leaderboard, admin) = deploy_mock_leaderboard();
@@ -1452,13 +1471,23 @@ fn test_incremental_leaderboard_buildup() {
     assert!(leaderboard.get_leaderboard_length(TOURNAMENT_1) == 1, "Should have 1 entry");
 
     game_admin.set_score(2, 100);
-    let _ = leaderboard.submit_score(TOURNAMENT_1, 2, 100, 1); // Goes to first
+    // ID 2 overwrites position 1, evicting ID 1 (count stays 1)
+    let _ = leaderboard.submit_score(TOURNAMENT_1, 2, 100, 1);
+    assert!(leaderboard.get_leaderboard_length(TOURNAMENT_1) == 1, "Should have 1 entry");
+    assert!(*leaderboard.get_entries(TOURNAMENT_1).at(0).id == 2, "ID 2 should be first");
+
+    // Re-submit evicted ID 1 at position 2 (append)
+    let _ = leaderboard.submit_score(TOURNAMENT_1, 1, 50, 2);
     let entries = leaderboard.get_entries(TOURNAMENT_1);
     assert!(*entries.at(0).id == 2, "ID 2 should be first");
     assert!(*entries.at(1).id == 1, "ID 1 should be second");
 
     game_admin.set_score(3, 75);
-    let _ = leaderboard.submit_score(TOURNAMENT_1, 3, 75, 2); // Goes to middle
+    // ID 3 overwrites position 2, evicting ID 1
+    let _ = leaderboard.submit_score(TOURNAMENT_1, 3, 75, 2);
+    // Re-submit evicted ID 1 at position 3
+    let _ = leaderboard.submit_score(TOURNAMENT_1, 1, 50, 3);
+
     let entries = leaderboard.get_entries(TOURNAMENT_1);
     assert!(*entries.at(0).id == 2, "ID 2 should be first");
     assert!(*entries.at(1).id == 3, "ID 3 should be second");
@@ -1645,7 +1674,7 @@ fn test_clear_preserves_config() {
     assert!(config.game_address == game_address, "Game address preserved");
 }
 
-// Test ascending mode displacement
+// Test ascending mode displacement (overwrite model)
 #[test]
 fn test_ascending_displacement() {
     let (leaderboard, admin) = deploy_mock_leaderboard();
@@ -1663,7 +1692,7 @@ fn test_ascending_displacement() {
     let _ = leaderboard.submit_score(TOURNAMENT_1, 2, 20, 2);
     let _ = leaderboard.submit_score(TOURNAMENT_1, 3, 30, 3);
 
-    // Insert 15 which displaces 30
+    // Token 4 (score 15) overwrites position 2, evicting token 2 (score 20)
     let result = leaderboard.submit_score(TOURNAMENT_1, 4, 15, 2);
 
     match result {
@@ -1671,11 +1700,18 @@ fn test_ascending_displacement() {
         _ => panic!("Should succeed in ascending displacement"),
     }
 
+    // Board is full, token 2 (score 20) was evicted — re-submit at position 3 evicting token 3
+    let _ = leaderboard.submit_score(TOURNAMENT_1, 2, 20, 3);
+
     let entries = leaderboard.get_entries(TOURNAMENT_1);
     assert!(entries.len() == 3, "Should have 3 entries");
     assert!(*entries.at(0).score == 10, "First should be 10");
     assert!(*entries.at(1).score == 15, "Second should be 15");
-    assert!(*entries.at(2).score == 20, "Third should be 20 (30 displaced)");
+    assert!(*entries.at(2).score == 20, "Third should be 20");
+
+    // Token 3 (score 30) was evicted and no longer qualifies (ascending, 30 > 20)
+    let pos3 = leaderboard.get_position(TOURNAMENT_1, 3);
+    assert!(pos3 == Option::None, "Token 3 should be evicted");
 }
 
 // Test fuzz with both ascending and descending
@@ -1770,7 +1806,7 @@ fn test_position_after_clear_resubmit() {
     assert!(leaderboard.get_position(TOURNAMENT_1, 1) == Option::None, "Token 1 not submitted yet");
 }
 
-// Test sequential submissions building leaderboard
+// Test sequential submissions building leaderboard (overwrite model)
 #[test]
 fn test_sequential_insertion_order() {
     let (leaderboard, admin) = deploy_mock_leaderboard();
@@ -1783,14 +1819,54 @@ fn test_sequential_insertion_order() {
     game_admin.set_score(3, 100);
 
     // All same score, so tiebreaker (lower ID first)
-    let _ = leaderboard.submit_score(TOURNAMENT_1, 3, 100, 1); // First
-    let _ = leaderboard.submit_score(TOURNAMENT_1, 1, 100, 1); // ID 1 < 3, goes first
-    let _ = leaderboard.submit_score(TOURNAMENT_1, 2, 100, 2); // ID 2 between 1 and 3
+    let _ = leaderboard.submit_score(TOURNAMENT_1, 3, 100, 1); // First entry
+    // ID 1 wins tiebreaker, overwrites position 1, evicts ID 3
+    let _ = leaderboard.submit_score(TOURNAMENT_1, 1, 100, 1);
+    // ID 2 appends at position 2
+    let _ = leaderboard.submit_score(TOURNAMENT_1, 2, 100, 2);
+    // Re-submit evicted ID 3 at position 3
+    let _ = leaderboard.submit_score(TOURNAMENT_1, 3, 100, 3);
 
     let entries = leaderboard.get_entries(TOURNAMENT_1);
     assert!(*entries.at(0).id == 1, "ID 1 should be first (lowest)");
     assert!(*entries.at(1).id == 2, "ID 2 should be second");
     assert!(*entries.at(2).id == 3, "ID 3 should be third");
+}
+
+// Test overwrite then append — exercises both code paths in submit_score
+#[test]
+fn test_overwrite_then_append() {
+    let (leaderboard, admin) = deploy_mock_leaderboard();
+    let (game_address, game_admin) = deploy_mock_game_details();
+
+    configure_tournament_with_game(admin, TOURNAMENT_1, 5, false, game_address);
+
+    game_admin.set_score(1, 100);
+    game_admin.set_score(2, 80);
+    game_admin.set_score(3, 90);
+
+    // Fill two positions
+    let _ = leaderboard.submit_score(TOURNAMENT_1, 1, 100, 1);
+    let _ = leaderboard.submit_score(TOURNAMENT_1, 2, 80, 2);
+    assert!(leaderboard.get_leaderboard_length(TOURNAMENT_1) == 2, "Should have 2 entries");
+
+    // Overwrite position 2 (evicts token 2)
+    let _ = leaderboard.submit_score(TOURNAMENT_1, 3, 90, 2);
+    assert!(
+        leaderboard.get_leaderboard_length(TOURNAMENT_1) == 2, "Count unchanged after overwrite",
+    );
+    assert!(leaderboard.get_position(TOURNAMENT_1, 2) == Option::None, "Token 2 evicted");
+
+    // Append evicted token 2 at position 3 (exercises the set_count increment path)
+    let _ = leaderboard.submit_score(TOURNAMENT_1, 2, 80, 3);
+    assert!(
+        leaderboard.get_leaderboard_length(TOURNAMENT_1) == 3, "Count incremented after append",
+    );
+
+    let entries = leaderboard.get_entries(TOURNAMENT_1);
+    assert!(*entries.at(0).score == 100, "First: 100");
+    assert!(*entries.at(1).score == 90, "Second: 90");
+    assert!(*entries.at(2).score == 80, "Third: 80");
 }
 
 // ==============================================================================
@@ -1877,7 +1953,7 @@ fn test_is_full_various_configs() {
     assert!(!leaderboard.is_full(TOURNAMENT_2), "T2 with max=100 should not be full");
 }
 
-// Test get_position after reordering
+// Test get_position after reordering (overwrite model)
 #[test]
 fn test_get_position_after_reorder() {
     let (leaderboard, admin) = deploy_mock_leaderboard();
@@ -1889,10 +1965,15 @@ fn test_get_position_after_reorder() {
     game_admin.set_score(2, 80);
     game_admin.set_score(3, 90);
 
-    // Submit in different order than final ranking
+    // Submit in different order than final ranking, with re-submissions
     let _ = leaderboard.submit_score(TOURNAMENT_1, 1, 50, 1);
+    // ID 2 overwrites pos 1, evicts ID 1
     let _ = leaderboard.submit_score(TOURNAMENT_1, 2, 80, 1);
+    // ID 3 overwrites pos 1, evicts ID 2
     let _ = leaderboard.submit_score(TOURNAMENT_1, 3, 90, 1);
+    // Re-submit evicted entries
+    let _ = leaderboard.submit_score(TOURNAMENT_1, 2, 80, 2);
+    let _ = leaderboard.submit_score(TOURNAMENT_1, 1, 50, 3);
 
     // Final order: 3(90), 2(80), 1(50)
     assert!(leaderboard.get_position(TOURNAMENT_1, 3) == Option::Some(1), "ID 3 at pos 1");
