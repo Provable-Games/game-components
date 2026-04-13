@@ -1833,6 +1833,42 @@ fn test_sequential_insertion_order() {
     assert!(*entries.at(2).id == 3, "ID 3 should be third");
 }
 
+// Test overwrite then append — exercises both code paths in submit_score
+#[test]
+fn test_overwrite_then_append() {
+    let (leaderboard, admin) = deploy_mock_leaderboard();
+    let (game_address, game_admin) = deploy_mock_game_details();
+
+    configure_tournament_with_game(admin, TOURNAMENT_1, 5, false, game_address);
+
+    game_admin.set_score(1, 100);
+    game_admin.set_score(2, 80);
+    game_admin.set_score(3, 90);
+
+    // Fill two positions
+    let _ = leaderboard.submit_score(TOURNAMENT_1, 1, 100, 1);
+    let _ = leaderboard.submit_score(TOURNAMENT_1, 2, 80, 2);
+    assert!(leaderboard.get_leaderboard_length(TOURNAMENT_1) == 2, "Should have 2 entries");
+
+    // Overwrite position 2 (evicts token 2)
+    let _ = leaderboard.submit_score(TOURNAMENT_1, 3, 90, 2);
+    assert!(
+        leaderboard.get_leaderboard_length(TOURNAMENT_1) == 2, "Count unchanged after overwrite",
+    );
+    assert!(leaderboard.get_position(TOURNAMENT_1, 2) == Option::None, "Token 2 evicted");
+
+    // Append evicted token 2 at position 3 (exercises the set_count increment path)
+    let _ = leaderboard.submit_score(TOURNAMENT_1, 2, 80, 3);
+    assert!(
+        leaderboard.get_leaderboard_length(TOURNAMENT_1) == 3, "Count incremented after append",
+    );
+
+    let entries = leaderboard.get_entries(TOURNAMENT_1);
+    assert!(*entries.at(0).score == 100, "First: 100");
+    assert!(*entries.at(1).score == 90, "Second: 90");
+    assert!(*entries.at(2).score == 80, "Third: 80");
+}
+
 // ==============================================================================
 // ADDITIONAL COMPONENT COVERAGE TESTS
 // ==============================================================================
