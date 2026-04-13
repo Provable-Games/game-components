@@ -10,9 +10,9 @@ pub use crate::structs::leaderboard::{
 
 /// SNIP-5 interface ID derived via src5_rs: XOR of extended function selectors
 /// - submit_score, get_entries, get_top_entries, get_position, qualifies,
-///   is_full, get_leaderboard_length, get_config
+///   is_full, get_leaderboard_length, get_config, find_position
 pub const ILEADERBOARD_ID: felt252 =
-    0x381684b12c5a80d08222695ee5eca750b99e56cb53101a47378c542859907e1;
+    0x117a0c835a5dbc7ad37e8f5dcd306fd4266da5696b19d15e93bb5f39328bb14;
 
 /// Interface for retrieving game scores
 /// Implemented by game contracts to provide score data for leaderboard entries
@@ -50,6 +50,10 @@ pub trait ILeaderboard<TState> {
 
     /// Get the configuration for a context's leaderboard
     fn get_config(self: @TState, context_id: u64) -> LeaderboardStoreConfig;
+
+    /// Find the position where a score would be inserted (1-based).
+    /// O(log n) binary search — use as a view function for off-chain position calculation.
+    fn find_position(self: @TState, context_id: u64, score: u64, token_id: felt252) -> Option<u32>;
 }
 
 /// Admin interface for leaderboard management
