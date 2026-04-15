@@ -2100,3 +2100,202 @@ fn test_reconfigure_with_entries() {
     assert!(config.ascending == true, "Ascending should be updated");
 }
 
+// ==============================================================================
+// FIND_POSITION VIEW FUNCTION TESTS
+// ==============================================================================
+
+// Test FP-01: find_position on empty leaderboard
+#[test]
+fn test_find_position_empty_leaderboard() {
+    let (leaderboard, admin) = deploy_mock_leaderboard();
+    let (game_address, _) = deploy_mock_game_details();
+
+    configure_tournament_with_game(admin, TOURNAMENT_1, 10, false, game_address);
+
+    let pos = leaderboard.find_position(TOURNAMENT_1, 100, 1);
+    assert!(pos == Option::Some(1), "Should return position 1 on empty board");
+}
+
+// Test FP-02: find_position returns correct position in descending leaderboard
+#[test]
+fn test_find_position_descending() {
+    let (leaderboard, admin) = deploy_mock_leaderboard();
+    let (game_address, game_admin) = deploy_mock_game_details();
+
+    configure_tournament_with_game(admin, TOURNAMENT_1, 10, false, game_address);
+
+    game_admin.set_score(1, 100);
+    game_admin.set_score(2, 80);
+    game_admin.set_score(3, 60);
+
+    let _ = leaderboard.submit_score(TOURNAMENT_1, 1, 100, 1);
+    let _ = leaderboard.submit_score(TOURNAMENT_1, 2, 80, 2);
+    let _ = leaderboard.submit_score(TOURNAMENT_1, 3, 60, 3);
+
+    // Best score — should go first
+    let pos = leaderboard.find_position(TOURNAMENT_1, 200, 10);
+    assert!(pos == Option::Some(1), "200 should be position 1");
+
+    // Between 100 and 80
+    let pos = leaderboard.find_position(TOURNAMENT_1, 90, 10);
+    assert!(pos == Option::Some(2), "90 should be position 2");
+
+    // Between 80 and 60
+    let pos = leaderboard.find_position(TOURNAMENT_1, 70, 10);
+    assert!(pos == Option::Some(3), "70 should be position 3");
+
+    // Worst score — append at end
+    let pos = leaderboard.find_position(TOURNAMENT_1, 50, 10);
+    assert!(pos == Option::Some(4), "50 should be position 4 (append)");
+}
+
+// Test FP-03: find_position returns correct position in ascending leaderboard
+#[test]
+fn test_find_position_ascending() {
+    let (leaderboard, admin) = deploy_mock_leaderboard();
+    let (game_address, game_admin) = deploy_mock_game_details();
+
+    configure_tournament_with_game(admin, TOURNAMENT_1, 10, true, game_address);
+
+    game_admin.set_score(1, 10);
+    game_admin.set_score(2, 20);
+    game_admin.set_score(3, 30);
+
+    let _ = leaderboard.submit_score(TOURNAMENT_1, 1, 10, 1);
+    let _ = leaderboard.submit_score(TOURNAMENT_1, 2, 20, 2);
+    let _ = leaderboard.submit_score(TOURNAMENT_1, 3, 30, 3);
+
+    // Best (lowest) score — first
+    let pos = leaderboard.find_position(TOURNAMENT_1, 5, 10);
+    assert!(pos == Option::Some(1), "5 should be position 1 in ascending");
+
+    // Between 10 and 20
+    let pos = leaderboard.find_position(TOURNAMENT_1, 15, 10);
+    assert!(pos == Option::Some(2), "15 should be position 2 in ascending");
+
+    // Worst (highest) score — append
+    let pos = leaderboard.find_position(TOURNAMENT_1, 40, 10);
+    assert!(pos == Option::Some(4), "40 should be position 4 in ascending");
+}
+
+// Test FP-04: find_position with tiebreaking (lower token_id wins)
+#[test]
+fn test_find_position_tiebreak() {
+    let (leaderboard, admin) = deploy_mock_leaderboard();
+    let (game_address, game_admin) = deploy_mock_game_details();
+
+    configure_tournament_with_game(admin, TOURNAMENT_1, 10, false, game_address);
+
+    game_admin.set_score(5, 100);
+    let _ = leaderboard.submit_score(TOURNAMENT_1, 5, 100, 1);
+
+    // Same score, lower token_id — should go before token 5
+    let pos = leaderboard.find_position(TOURNAMENT_1, 100, 1);
+    assert!(pos == Option::Some(1), "Token 1 should win tiebreak vs token 5");
+
+    // Same score, higher token_id — should go after token 5
+    let pos = leaderboard.find_position(TOURNAMENT_1, 100, 10);
+    assert!(pos == Option::Some(2), "Token 10 should lose tiebreak vs token 5");
+}
+
+// Test FP-05: find_position result is valid for submit_score
+#[test]
+fn test_find_position_valid_for_submit() {
+    let (leaderboard, admin) = deploy_mock_leaderboard();
+    let (game_address, game_admin) = deploy_mock_game_details();
+
+    configure_tournament_with_game(admin, TOURNAMENT_1, 10, false, game_address);
+
+    game_admin.set_score(1, 100);
+    game_admin.set_score(3, 60);
+
+    let _ = leaderboard.submit_score(TOURNAMENT_1, 1, 100, 1);
+    let _ = leaderboard.submit_score(TOURNAMENT_1, 3, 60, 2);
+
+    // Find position for new token, then use it to submit
+    game_admin.set_score(2, 80);
+    let pos = leaderboard.find_position(TOURNAMENT_1, 80, 2);
+    assert!(pos == Option::Some(2), "80 should go at position 2");
+
+    let result = leaderboard.submit_score(TOURNAMENT_1, 2, 80, pos.unwrap());
+    match result {
+        LeaderboardResult::Success => {},
+        _ => panic!("find_position result should be valid for submit_score"),
+    }
+
+    let entries = leaderboard.get_entries(TOURNAMENT_1);
+    assert!(*entries.at(0).score == 100, "First: 100");
+    assert!(*entries.at(1).score == 80, "Second: 80");
+}
+
+// Test FP-06: find_position with multiple equal scores and tiebreaking
+#[test]
+fn test_find_position_multiple_ties() {
+    let (leaderboard, admin) = deploy_mock_leaderboard();
+    let (game_address, game_admin) = deploy_mock_game_details();
+
+    configure_tournament_with_game(admin, TOURNAMENT_1, 10, false, game_address);
+
+    // All same score, ordered by token_id tiebreak
+    game_admin.set_score(2, 100);
+    game_admin.set_score(5, 100);
+    game_admin.set_score(8, 100);
+
+    let _ = leaderboard.submit_score(TOURNAMENT_1, 2, 100, 1);
+    let _ = leaderboard.submit_score(TOURNAMENT_1, 5, 100, 2);
+    let _ = leaderboard.submit_score(TOURNAMENT_1, 8, 100, 3);
+
+    // Token 1 wins all tiebreaks
+    let pos = leaderboard.find_position(TOURNAMENT_1, 100, 1);
+    assert!(pos == Option::Some(1), "Token 1 should go first (wins all tiebreaks)");
+
+    // Token 3 goes between 2 and 5
+    let pos = leaderboard.find_position(TOURNAMENT_1, 100, 3);
+    assert!(pos == Option::Some(2), "Token 3 should go between 2 and 5");
+
+    // Token 6 goes between 5 and 8
+    let pos = leaderboard.find_position(TOURNAMENT_1, 100, 6);
+    assert!(pos == Option::Some(3), "Token 6 should go between 5 and 8");
+
+    // Token 10 goes after 8
+    let pos = leaderboard.find_position(TOURNAMENT_1, 100, 10);
+    assert!(pos == Option::Some(4), "Token 10 should go after 8");
+}
+
+// Test FP-07: find_position on unconfigured tournament (max_entries=0)
+#[test]
+fn test_find_position_unconfigured() {
+    let (leaderboard, _) = deploy_mock_leaderboard();
+
+    let pos = leaderboard.find_position(999, 100, 1);
+    assert!(pos == Option::Some(1), "Should return position 1 on unconfigured board");
+}
+
+// Test FP-08: find_position with single entry
+#[test]
+fn test_find_position_single_entry() {
+    let (leaderboard, admin) = deploy_mock_leaderboard();
+    let (game_address, game_admin) = deploy_mock_game_details();
+
+    configure_tournament_with_game(admin, TOURNAMENT_1, 10, false, game_address);
+
+    game_admin.set_score(5, 50);
+    let _ = leaderboard.submit_score(TOURNAMENT_1, 5, 50, 1);
+
+    // Higher score — before
+    let pos = leaderboard.find_position(TOURNAMENT_1, 100, 1);
+    assert!(pos == Option::Some(1), "Higher score goes first");
+
+    // Lower score — after
+    let pos = leaderboard.find_position(TOURNAMENT_1, 10, 1);
+    assert!(pos == Option::Some(2), "Lower score goes second");
+
+    // Equal score, lower ID — wins tiebreak
+    let pos = leaderboard.find_position(TOURNAMENT_1, 50, 1);
+    assert!(pos == Option::Some(1), "Equal score, lower ID goes first");
+
+    // Equal score, higher ID — loses tiebreak
+    let pos = leaderboard.find_position(TOURNAMENT_1, 50, 10);
+    assert!(pos == Option::Some(2), "Equal score, higher ID goes second");
+}
+
