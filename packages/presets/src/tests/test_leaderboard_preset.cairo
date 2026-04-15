@@ -1317,3 +1317,90 @@ fn test_boundary_scores() {
     // Leaderboard is not full (max 10 entries, only 2 filled), so any score qualifies
     assert!(leaderboard.qualifies(WEEKLY_TOURNAMENT, 100), "100 should qualify when not full");
 }
+
+// ==============================================================================
+// FIND_POSITION VIEW FUNCTION TESTS
+// ==============================================================================
+
+// Test PR-FP-01: find_position on empty tournament returns position 1
+#[test]
+fn test_preset_find_position_empty() {
+    let (leaderboard, admin) = deploy_leaderboard_preset(OWNER());
+    let (game_address, _) = deploy_mock_game();
+
+    setup_tournament(admin, WEEKLY_TOURNAMENT, 10, false, game_address);
+
+    let pos = leaderboard.find_position(WEEKLY_TOURNAMENT, 100, 1);
+    assert!(pos == Option::Some(1), "Empty board should return position 1");
+}
+
+// Test PR-FP-02: find_position integrates with full tournament workflow
+#[test]
+fn test_preset_find_position_workflow() {
+    let (leaderboard, admin) = deploy_leaderboard_preset(OWNER());
+    let (game_address, game_admin) = deploy_mock_game();
+
+    setup_tournament(admin, WEEKLY_TOURNAMENT, 10, false, game_address);
+
+    // Build leaderboard: 1000, 800, 600
+    game_admin.set_score(1, 1000);
+    game_admin.set_score(2, 800);
+    game_admin.set_score(3, 600);
+
+    let _ = leaderboard.submit_score(WEEKLY_TOURNAMENT, 1, 1000, 1);
+    let _ = leaderboard.submit_score(WEEKLY_TOURNAMENT, 2, 800, 2);
+    let _ = leaderboard.submit_score(WEEKLY_TOURNAMENT, 3, 600, 3);
+
+    // Use find_position to determine where a new score goes, then submit
+    game_admin.set_score(4, 900);
+    let pos = leaderboard.find_position(WEEKLY_TOURNAMENT, 900, 4);
+    assert!(pos == Option::Some(2), "900 should go at position 2");
+
+    let result = leaderboard.submit_score(WEEKLY_TOURNAMENT, 4, 900, pos.unwrap());
+    match result {
+        LeaderboardResult::Success => {},
+        _ => panic!("Submit at find_position result should succeed"),
+    }
+}
+
+// Test PR-FP-03: find_position works across multiple tournaments
+#[test]
+fn test_preset_find_position_multi_tournament() {
+    let (leaderboard, admin) = deploy_leaderboard_preset(OWNER());
+    let (game_address, game_admin) = deploy_mock_game();
+
+    setup_tournament(admin, WEEKLY_TOURNAMENT, 10, false, game_address); // Descending
+    setup_tournament(admin, SPECIAL_EVENT, 10, true, game_address); // Ascending
+
+    game_admin.set_score(1, 100);
+    let _ = leaderboard.submit_score(WEEKLY_TOURNAMENT, 1, 100, 1);
+    let _ = leaderboard.submit_score(SPECIAL_EVENT, 1, 100, 1);
+
+    // Descending: 200 goes before 100
+    let pos_desc = leaderboard.find_position(WEEKLY_TOURNAMENT, 200, 2);
+    assert!(pos_desc == Option::Some(1), "200 should be first in descending");
+
+    // Ascending: 200 goes after 100
+    let pos_asc = leaderboard.find_position(SPECIAL_EVENT, 200, 2);
+    assert!(pos_asc == Option::Some(2), "200 should be second in ascending");
+}
+
+// Test PR-FP-04: find_position with tiebreaking
+#[test]
+fn test_preset_find_position_tiebreak() {
+    let (leaderboard, admin) = deploy_leaderboard_preset(OWNER());
+    let (game_address, game_admin) = deploy_mock_game();
+
+    setup_tournament(admin, WEEKLY_TOURNAMENT, 10, false, game_address);
+
+    game_admin.set_score(5, 100);
+    let _ = leaderboard.submit_score(WEEKLY_TOURNAMENT, 5, 100, 1);
+
+    // Lower token_id wins tiebreak
+    let pos = leaderboard.find_position(WEEKLY_TOURNAMENT, 100, 1);
+    assert!(pos == Option::Some(1), "Lower token_id should win tiebreak");
+
+    // Higher token_id loses tiebreak
+    let pos = leaderboard.find_position(WEEKLY_TOURNAMENT, 100, 10);
+    assert!(pos == Option::Some(2), "Higher token_id should lose tiebreak");
+}
