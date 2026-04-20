@@ -35,7 +35,7 @@ pub fn create_custom_metadata(
     player_name: felt252,
     objective_name: ByteArray,
 ) -> ByteArray {
-    let _token_id = format!("{}", token_id);
+    let _token_id = format!("0x{:x}", token_id);
     let _game_id = format!("{}", token_metadata.game_id);
     let _score = format!("{}", score);
     let _minted_at = format!("{}", token_metadata.minted_at);
