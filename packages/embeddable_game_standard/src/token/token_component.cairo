@@ -921,9 +921,12 @@ pub mod CoreTokenComponent {
                 metadata_val,
             );
 
-            // Emit context event with the final token_id
-            if let Option::Some(ctx) = context {
-                ContextOpt::emit_context(ref contract_self, caller, final_token_id, ctx);
+            // Call context hook if context was provided
+            match context {
+                Option::Some(ctx) => {
+                    ContextOpt::on_context_set(ref contract_self, caller, final_token_id, ctx);
+                },
+                Option::None => {},
             }
 
             // Handle renderer if provided
