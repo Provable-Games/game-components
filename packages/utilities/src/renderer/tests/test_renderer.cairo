@@ -884,6 +884,39 @@ fn test_custom_metadata_completed_objective_true() {
     );
 }
 
+#[test]
+fn test_custom_metadata_completed_at_nonzero() {
+    start_cheat_block_timestamp_global(2000000000);
+
+    let mut token_metadata = default_token_metadata();
+    token_metadata.completed_objective = true;
+    token_metadata.completed_at = 1672531200;
+    token_metadata.objective_id = 1;
+
+    let result = create_custom_metadata(
+        1,
+        "Token",
+        "Desc",
+        default_game_metadata(),
+        "https://example.com/image.png",
+        array![].span(),
+        empty_settings_details(),
+        empty_context_details(),
+        token_metadata,
+        100,
+        MINTED_BY_ADDRESS(),
+        0,
+        "",
+    );
+
+    stop_cheat_block_timestamp_global();
+
+    assert!(
+        starts_with(@result, @"data:application/json;base64,"),
+        "Should produce valid metadata with completed_at",
+    );
+}
+
 // ==============================================================================
 // CREATE_CUSTOM_METADATA TESTS - LIFECYCLE
 // ==============================================================================

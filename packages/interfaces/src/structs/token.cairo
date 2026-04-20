@@ -19,6 +19,7 @@ pub struct TokenMetadata {
     pub soulbound: bool,
     pub game_over: bool,
     pub completed_objective: bool,
+    /// Unix timestamp when objective was completed, 0 if not yet completed
     pub completed_at: u32,
     pub has_context: bool,
     pub objective_id: u32,

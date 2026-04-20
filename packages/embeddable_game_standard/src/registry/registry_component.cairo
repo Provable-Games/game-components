@@ -501,9 +501,11 @@ pub mod MinigameRegistryComponent {
             assert_valid_fee_numerator(fee_numerator);
 
             // Initialize default game fee
+            let license = default_license();
             self
                 .default_game_fee_info
-                .write(GameFeeInfo { license: default_license(), fee_numerator });
+                .write(GameFeeInfo { license: license.clone(), fee_numerator });
+            self.emit(DefaultGameFeeUpdate { license, fee_numerator });
         }
     }
 
