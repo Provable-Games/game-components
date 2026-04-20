@@ -1,8 +1,6 @@
 #[starknet::component]
 pub mod ContextComponent {
-    use game_components_embeddable_game_standard::metagame::extensions::context::interface::IMETAGAME_CONTEXT_ID;
     use game_components_embeddable_game_standard::metagame::extensions::context::structs::GameContextDetails;
-    use openzeppelin_interfaces::introspection::{ISRC5Dispatcher, ISRC5DispatcherTrait};
     use openzeppelin_introspection::src5::SRC5Component::{self, InternalTrait as SRC5InternalTrait};
     use starknet::ContractAddress;
     use crate::token::extensions::context::interface::IMINIGAME_TOKEN_CONTEXT_ID;
@@ -15,21 +13,18 @@ pub mod ContextComponent {
     #[derive(Drop, starknet::Event)]
     pub enum Event {}
 
-    // Implementation of the OptionalContext trait for integration with CoreTokenComponent
+    // No-op: context data is encoded in the token URI, not emitted as an event.
+    // The has_context flag in the packed token ID signals context presence.
     pub impl ContextOptionalImpl<
         TContractState, +HasComponent<TContractState>, +Drop<TContractState>,
     > of OptionalContext<TContractState> {
-        fn emit_context(
+        fn on_context_set(
             ref self: TContractState,
             caller: ContractAddress,
             token_id: felt252,
             context: GameContextDetails,
         ) {
-            let src5_dispatcher = ISRC5Dispatcher { contract_address: caller };
-            assert!(
-                src5_dispatcher.supports_interface(IMETAGAME_CONTEXT_ID),
-                "MinigameTokenContext: Minter does not implement IMetagameContext",
-            );
+            let _ = (caller, token_id, context);
         }
     }
 

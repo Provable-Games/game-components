@@ -10,7 +10,9 @@ pub trait OptionalMinter<TContractState> {
 }
 
 pub trait OptionalContext<TContractState> {
-    fn emit_context(
+    /// Hook called during mint when context is provided.
+    /// Context data is encoded in the token URI — this is a no-op extension point.
+    fn on_context_set(
         ref self: TContractState,
         caller: ContractAddress,
         token_id: felt252,

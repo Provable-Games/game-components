@@ -17,12 +17,13 @@ pub impl NoOpMinter<TContractState> of OptionalMinter<TContractState> {
 }
 
 pub impl NoOpContext<TContractState> of OptionalContext<TContractState> {
-    fn emit_context(
+    fn on_context_set(
         ref self: TContractState,
         caller: ContractAddress,
         token_id: felt252,
         context: GameContextDetails,
-    ) { // No-op
+    ) {
+        let _ = (caller, token_id, context);
     }
 }
 

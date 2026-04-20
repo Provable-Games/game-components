@@ -921,10 +921,9 @@ pub mod CoreTokenComponent {
                 metadata_val,
             );
 
-            // Emit context event with the final token_id
-            if let Option::Some(ctx) = context {
-                ContextOpt::emit_context(ref contract_self, caller, final_token_id, ctx);
-            }
+            // Context data is encoded in the token URI via has_context flag.
+            // No runtime hook needed — context is already packed into the token ID.
+            let _ = context;
 
             // Handle renderer if provided
             match renderer_address {
