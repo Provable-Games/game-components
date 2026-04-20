@@ -26,6 +26,7 @@ fn create_test_metadata(
         soulbound: false,
         game_over,
         completed_objective,
+        completed_at: 0,
         has_context: false,
         objective_id: 0,
         paymaster: false,

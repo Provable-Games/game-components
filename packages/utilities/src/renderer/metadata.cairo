@@ -97,6 +97,10 @@ pub fn create_custom_metadata(
                     "Objectives Completed", bool_to_str(token_metadata.completed_objective),
                 ),
             );
+        if token_metadata.completed_at > 0 {
+            attributes
+                .append(create_trait("Completed At", format!("{}", token_metadata.completed_at)));
+        }
         if objective_name.len() > 0 {
             attributes.append(create_trait("Objective Name", objective_name));
         }

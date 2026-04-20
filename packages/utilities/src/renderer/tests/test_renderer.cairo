@@ -66,6 +66,7 @@ fn default_token_metadata() -> TokenMetadata {
         game_over: false,
         soulbound: false,
         completed_objective: false,
+        completed_at: 0,
         has_context: false,
         objective_id: 0,
         paymaster: false,

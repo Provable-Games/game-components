@@ -641,6 +641,7 @@ mod MockMinigameToken {
                 soulbound: false,
                 game_over: false,
                 completed_objective: false,
+                completed_at: 0,
                 has_context: false,
                 objective_id: 0,
                 paymaster: false,
