@@ -8,6 +8,14 @@ pub mod leaderboard {
         LeaderboardConfig, LeaderboardEntry, LeaderboardResult,
     };
 
+    /// Extract minted_at (lowest 35 bits of high u128) from a packed token ID.
+    /// Layout: high u128 = minted_at(35) | end_delay(25) | objective_id(30) | ...
+    fn unpack_minted_at(token_id: felt252) -> u64 {
+        let packed: u256 = token_id.into();
+        let (_, minted_at) = DivRem::div_rem(packed.high, 0x800000000_u128.try_into().unwrap());
+        minted_at.try_into().unwrap()
+    }
+
     /// Trait for score comparison
     pub trait ScoreComparator {
         /// Compare two scores and return true if first is better than second
@@ -37,10 +45,17 @@ pub mod leaderboard {
         fn break_tie(
             self: @LeaderboardConfig, first: @LeaderboardEntry, second: @LeaderboardEntry,
         ) -> bool {
-            // In case of tie, lower ID wins (first come, first served)
-            let first_id: u256 = (*first.id).into();
-            let second_id: u256 = (*second.id).into();
-            first_id < second_id
+            // In case of tie, earlier minted token wins
+            let first_minted = unpack_minted_at(*first.id);
+            let second_minted = unpack_minted_at(*second.id);
+            if first_minted != second_minted {
+                first_minted < second_minted
+            } else {
+                // Same mint time — fall back to lower token ID for determinism
+                let first_id: u256 = (*first.id).into();
+                let second_id: u256 = (*second.id).into();
+                first_id < second_id
+            }
         }
     }
 
