@@ -35,7 +35,7 @@ pub fn create_custom_metadata(
     player_name: felt252,
     objective_name: ByteArray,
 ) -> ByteArray {
-    let _token_id = format!("0x{:x}", token_id);
+    let _token_id_hex = format!("0x{:x}", token_id);
     let _game_id = format!("{}", token_metadata.game_id);
     let _score = format!("{}", score);
     let _minted_at = format!("{}", token_metadata.minted_at);
@@ -51,12 +51,13 @@ pub fn create_custom_metadata(
     let _minted_by = format!("0x{:x}", address_as_felt);
 
     let mut metadata = JsonImpl::new()
-        .add("name", token_name + " #" + _token_id)
+        .add("name", token_name)
         .add("description", token_description)
         .add("image", game_details_image);
 
     // Core game metadata traits
     let mut attributes = array![
+        create_trait("Token ID", _token_id_hex),
         create_trait("Game ID", _game_id), create_trait("Game Name", game_metadata.name),
         create_trait("Game Developer", game_metadata.developer),
         create_trait("Publisher", game_metadata.publisher),
