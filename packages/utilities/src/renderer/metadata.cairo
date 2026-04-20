@@ -57,8 +57,8 @@ pub fn create_custom_metadata(
 
     // Core game metadata traits
     let mut attributes = array![
-        create_trait("Token ID", _token_id_hex),
-        create_trait("Game ID", _game_id), create_trait("Game Name", game_metadata.name),
+        create_trait("Token ID", _token_id_hex), create_trait("Game ID", _game_id),
+        create_trait("Game Name", game_metadata.name),
         create_trait("Game Developer", game_metadata.developer),
         create_trait("Publisher", game_metadata.publisher),
         create_trait("Genre", game_metadata.genre), create_trait("Minted By", _minted_by),
