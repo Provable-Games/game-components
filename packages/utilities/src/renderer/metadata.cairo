@@ -86,15 +86,17 @@ pub fn create_custom_metadata(
             },
             Option::None => {},
         }
-        let mut ctx_span = context_details.context;
-        while let Option::Some(ctx) = ctx_span.pop_front() {
+        let ctx_span = context_details.context;
+        let mut i: u32 = 0;
+        while i < ctx_span.len() {
+            let ctx = ctx_span[i];
             attributes
                 .append(
                     create_trait(
-                        "Context: " + felt252_to_byte_array(*ctx.name),
-                        felt252_to_byte_array(*ctx.value),
+                        felt252_to_byte_array(*ctx.name), felt252_to_byte_array(*ctx.value),
                     ),
                 );
+            i += 1;
         };
     }
 
