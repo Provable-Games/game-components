@@ -59,7 +59,7 @@ Automatic callbacks from token contracts on game state changes.
 ## Usage
 
 ```cairo
-use game_components_metagame::metagame::MetagameComponent;
+use game_components_embeddable_game_standard::metagame::metagame_component::MetagameComponent;
 use openzeppelin_introspection::src5::SRC5Component;
 
 #[starknet::contract]

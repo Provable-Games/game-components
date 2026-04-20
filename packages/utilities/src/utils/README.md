@@ -93,7 +93,4 @@ let metadata_uri = create_custom_metadata(
 
 - `graffiti` - JSON building
 - `alexandria_encoding` - Base64 encoding
-- `game_components_metagame` - GameContext structs
-- `game_components_minigame` - GameSetting, GameObjective structs
-- `game_components_registry` - GameMetadata struct
-- `game_components_token` - TokenMetadata struct
+- `game_components_embeddable_game_standard` - GameContext, GameSetting, GameObjective, GameMetadata, TokenMetadata structs
