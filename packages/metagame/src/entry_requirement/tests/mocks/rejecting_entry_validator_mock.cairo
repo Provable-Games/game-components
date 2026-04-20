@@ -7,7 +7,9 @@ pub mod RejectingEntryValidatorMock {
     use openzeppelin_introspection::src5::SRC5Component;
     use openzeppelin_introspection::src5::SRC5Component::InternalTrait as SRC5InternalTrait;
     use starknet::ContractAddress;
-    use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
+    use starknet::storage::{
+        Map, StorageMapReadAccess, StoragePointerReadAccess, StoragePointerWriteAccess,
+    };
 
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
 
@@ -17,7 +19,7 @@ pub mod RejectingEntryValidatorMock {
     #[storage]
     struct Storage {
         owner_address: ContractAddress,
-        registration_only: bool,
+        bannable: Map<u64, bool>,
         #[substorage(v0)]
         src5: SRC5Component::Storage,
     }
@@ -30,9 +32,8 @@ pub mod RejectingEntryValidatorMock {
     }
 
     #[constructor]
-    fn constructor(ref self: ContractState, owner: ContractAddress, registration_only: bool) {
+    fn constructor(ref self: ContractState, owner: ContractAddress) {
         self.owner_address.write(owner);
-        self.registration_only.write(registration_only);
         self.src5.register_interface(IENTRY_REQUIREMENT_EXTENSION_ID);
     }
 
@@ -42,8 +43,8 @@ pub mod RejectingEntryValidatorMock {
             self.owner_address.read()
         }
 
-        fn registration_only(self: @ContractState) -> bool {
-            self.registration_only.read()
+        fn bannable(self: @ContractState, context_id: u64) -> bool {
+            self.bannable.read(context_id)
         }
 
         fn valid_entry(
