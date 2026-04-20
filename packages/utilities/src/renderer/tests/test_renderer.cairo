@@ -66,6 +66,7 @@ fn default_token_metadata() -> TokenMetadata {
         game_over: false,
         soulbound: false,
         completed_objective: false,
+        completed_at: 0,
         has_context: false,
         objective_id: 0,
         paymaster: false,
@@ -880,6 +881,39 @@ fn test_custom_metadata_completed_objective_true() {
     assert!(
         starts_with(@result, @"data:application/json;base64,"),
         "Should handle completed_objective=true",
+    );
+}
+
+#[test]
+fn test_custom_metadata_completed_at_nonzero() {
+    start_cheat_block_timestamp_global(2000000000);
+
+    let mut token_metadata = default_token_metadata();
+    token_metadata.completed_objective = true;
+    token_metadata.completed_at = 1672531200;
+    token_metadata.objective_id = 1;
+
+    let result = create_custom_metadata(
+        1,
+        "Token",
+        "Desc",
+        default_game_metadata(),
+        "https://example.com/image.png",
+        array![].span(),
+        empty_settings_details(),
+        empty_context_details(),
+        token_metadata,
+        100,
+        MINTED_BY_ADDRESS(),
+        0,
+        "",
+    );
+
+    stop_cheat_block_timestamp_global();
+
+    assert!(
+        starts_with(@result, @"data:application/json;base64,"),
+        "Should produce valid metadata with completed_at",
     );
 }
 

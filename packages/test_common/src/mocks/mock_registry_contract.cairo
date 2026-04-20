@@ -8,7 +8,9 @@ pub trait IMockRegistryInit<TContractState> {
 /// This contract embeds the registry component and provides test access
 #[starknet::contract]
 pub mod MockRegistryContract {
-    use game_components_embeddable_game_standard::registry::interface::IMinigameRegistry;
+    use game_components_embeddable_game_standard::registry::interface::{
+        DEFAULT_GAME_FEE_BPS, IMinigameRegistry,
+    };
     use game_components_embeddable_game_standard::registry::registry_component::{
         MinigameRegistryComponent, MinigameRegistryHooksEmptyImpl,
     };
@@ -50,7 +52,7 @@ pub mod MockRegistryContract {
 
     #[constructor]
     fn constructor(ref self: ContractState) {
-        self.registry.initializer();
+        self.registry.initializer(DEFAULT_GAME_FEE_BPS);
     }
 
     #[abi(embed_v0)]

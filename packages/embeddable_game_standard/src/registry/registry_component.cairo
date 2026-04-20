@@ -20,8 +20,7 @@ pub mod MinigameRegistryComponent {
     use starknet::syscalls::call_contract_syscall;
     use starknet::{ContractAddress, get_block_timestamp, get_caller_address, get_contract_address};
     use crate::registry::interface::{
-        DEFAULT_GAME_FEE_BPS, GameFeeInfo, GameMetadata, IMINIGAME_REGISTRY_ID, IMinigameRegistry,
-        default_license,
+        GameFeeInfo, GameMetadata, IMINIGAME_REGISTRY_ID, IMinigameRegistry, default_license,
     };
     use crate::registry::registry::registry::{
         Errors, apply_metadata_defaults, assert_valid_fee_numerator,
@@ -495,16 +494,18 @@ pub mod MinigameRegistryComponent {
         /// Initializes the component by registering the SRC5 interface
         /// and setting the default game fee.
         /// Should be called in the contract's constructor.
-        fn initializer(ref self: ComponentState<TContractState>) {
+        fn initializer(ref self: ComponentState<TContractState>, fee_numerator: u16) {
             let mut src5_component = get_dep_component_mut!(ref self, SRC5);
             src5_component.register_interface(IMINIGAME_REGISTRY_ID);
 
+            assert_valid_fee_numerator(fee_numerator);
+
             // Initialize default game fee
+            let license = default_license();
             self
                 .default_game_fee_info
-                .write(
-                    GameFeeInfo { license: default_license(), fee_numerator: DEFAULT_GAME_FEE_BPS },
-                );
+                .write(GameFeeInfo { license: license.clone(), fee_numerator });
+            self.emit(DefaultGameFeeUpdate { license, fee_numerator });
         }
     }
 

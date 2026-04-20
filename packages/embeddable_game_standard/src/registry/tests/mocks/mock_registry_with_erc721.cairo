@@ -2,6 +2,7 @@
 /// This contract embeds the registry component with ERC721 for owner_of support
 #[starknet::contract]
 pub mod MockRegistryWithERC721 {
+    use game_components_embeddable_game_standard::registry::interface::DEFAULT_GAME_FEE_BPS;
     use game_components_embeddable_game_standard::registry::registry_component::MinigameRegistryComponent;
     use openzeppelin_introspection::src5::SRC5Component;
     use openzeppelin_token::erc721::{ERC721Component, ERC721HooksEmptyImpl};
@@ -73,6 +74,6 @@ pub mod MockRegistryWithERC721 {
         // Initialize ERC721
         self.erc721.initializer("Game Creator", "GCREATOR", "");
         // Initialize registry (registers SRC5 interface + sets default game fee)
-        self.registry.initializer();
+        self.registry.initializer(DEFAULT_GAME_FEE_BPS);
     }
 }

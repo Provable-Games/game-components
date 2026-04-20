@@ -402,6 +402,7 @@ pub fn to_token_metadata(packed: PackedTokenId, mutable_state: TokenMutableState
         soulbound: packed.soulbound,
         game_over: mutable_state.game_over,
         completed_objective: mutable_state.completed_objective,
+        completed_at: mutable_state.completed_at,
         has_context: packed.has_context,
         objective_id: packed.objective_id,
         paymaster: packed.paymaster,

@@ -97,6 +97,7 @@ pub fn create_game_token_metadata(
         // Objectives
         objective_id,
         completed_objective: false,
+        completed_at: 0,
         // Metadata
         lifecycle,
         soulbound,

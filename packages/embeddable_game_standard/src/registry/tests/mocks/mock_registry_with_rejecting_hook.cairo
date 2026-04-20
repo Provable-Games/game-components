@@ -2,6 +2,7 @@
 /// This contract tests that hooks can prevent game registration
 #[starknet::contract]
 pub mod MockRegistryWithRejectingHook {
+    use game_components_embeddable_game_standard::registry::interface::DEFAULT_GAME_FEE_BPS;
     use game_components_embeddable_game_standard::registry::registry_component::MinigameRegistryComponent;
     use openzeppelin_introspection::src5::SRC5Component;
     use starknet::ContractAddress;
@@ -58,6 +59,6 @@ pub mod MockRegistryWithRejectingHook {
 
     #[constructor]
     fn constructor(ref self: ContractState) {
-        self.registry.initializer();
+        self.registry.initializer(DEFAULT_GAME_FEE_BPS);
     }
 }
