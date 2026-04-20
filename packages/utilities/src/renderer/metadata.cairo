@@ -86,6 +86,16 @@ pub fn create_custom_metadata(
             },
             Option::None => {},
         }
+        let mut ctx_span = context_details.context;
+        while let Option::Some(ctx) = ctx_span.pop_front() {
+            attributes
+                .append(
+                    create_trait(
+                        "Context: " + felt252_to_byte_array(*ctx.name),
+                        felt252_to_byte_array(*ctx.value),
+                    ),
+                );
+        };
     }
 
     // Optional objectives traits
