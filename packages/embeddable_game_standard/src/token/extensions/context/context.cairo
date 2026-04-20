@@ -13,8 +13,6 @@ pub mod ContextComponent {
     #[derive(Drop, starknet::Event)]
     pub enum Event {}
 
-    // No-op: context data is encoded in the token URI, not emitted as an event.
-    // The has_context flag in the packed token ID signals context presence.
     pub impl ContextOptionalImpl<
         TContractState, +HasComponent<TContractState>, +Drop<TContractState>,
     > of OptionalContext<TContractState> {
@@ -23,9 +21,7 @@ pub mod ContextComponent {
             caller: ContractAddress,
             token_id: felt252,
             context: GameContextDetails,
-        ) {
-            let _ = (caller, token_id, context);
-        }
+        ) {}
     }
 
     #[generate_trait]

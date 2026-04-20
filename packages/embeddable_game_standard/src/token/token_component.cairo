@@ -921,9 +921,13 @@ pub mod CoreTokenComponent {
                 metadata_val,
             );
 
-            // Context data is encoded in the token URI via has_context flag.
-            // No runtime hook needed — context is already packed into the token ID.
-            let _ = context;
+            // Call context hook if context was provided
+            match context {
+                Option::Some(ctx) => {
+                    ContextOpt::on_context_set(ref contract_self, caller, final_token_id, ctx);
+                },
+                Option::None => {},
+            }
 
             // Handle renderer if provided
             match renderer_address {

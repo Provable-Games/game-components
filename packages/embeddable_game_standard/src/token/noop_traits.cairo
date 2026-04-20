@@ -22,9 +22,7 @@ pub impl NoOpContext<TContractState> of OptionalContext<TContractState> {
         caller: ContractAddress,
         token_id: felt252,
         context: GameContextDetails,
-    ) {
-        let _ = (caller, token_id, context);
-    }
+    ) {}
 }
 
 pub impl NoOpObjectives<TContractState> of OptionalObjectives<TContractState> {
