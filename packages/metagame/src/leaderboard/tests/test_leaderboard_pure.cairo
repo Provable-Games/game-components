@@ -1,6 +1,17 @@
 // Pure leaderboard library tests
+use game_components_embeddable_game_standard::token::structs::pack_token_id;
 use game_components_interfaces::leaderboard::LeaderboardResult;
 use game_components_metagame::leaderboard::leaderboard::leaderboard;
+
+/// Helper to create a packed token ID with a specific minted_at timestamp.
+fn make_token(minted_at: u64) -> felt252 {
+    pack_token_id(1, 1, 0, minted_at, 0, 0, 0, false, false, false, 0, 0, 0)
+}
+
+/// Helper to create a packed token ID with specific minted_at and salt.
+fn make_token_with_salt(minted_at: u64, salt: u16) -> felt252 {
+    pack_token_id(1, 1, 0, minted_at, 0, 0, 0, false, false, false, 0, salt, 0)
+}
 
 // ── is_better_score ──
 
@@ -21,10 +32,20 @@ fn test_is_better_score_ascending() {
 // ── wins_tiebreak ──
 
 #[test]
-fn test_wins_tiebreak_lower_id_wins() {
-    assert!(leaderboard::wins_tiebreak(1, 2)); // lower wins
-    assert!(!leaderboard::wins_tiebreak(2, 1)); // higher loses
-    assert!(!leaderboard::wins_tiebreak(1, 1)); // equal — no winner
+fn test_wins_tiebreak_earlier_minted_wins() {
+    let early = make_token(1000);
+    let late = make_token(2000);
+    assert!(leaderboard::wins_tiebreak(early, late)); // earlier wins
+    assert!(!leaderboard::wins_tiebreak(late, early)); // later loses
+}
+
+#[test]
+fn test_wins_tiebreak_same_mint_time_falls_back_to_token_id() {
+    let a = make_token_with_salt(1000, 1);
+    let b = make_token_with_salt(1000, 2);
+    // Same minted_at — falls back to lower token ID
+    assert!(leaderboard::wins_tiebreak(a, b) || leaderboard::wins_tiebreak(b, a));
+    assert!(!leaderboard::wins_tiebreak(a, a)); // equal — no winner
 }
 
 // ── position_to_index ──

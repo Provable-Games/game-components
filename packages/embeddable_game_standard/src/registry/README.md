@@ -69,7 +69,7 @@ Use `MinigameRegistryHooksEmptyImpl` for the no-op default.
 ## Usage
 
 ```cairo
-use game_components_registry::registry::MinigameRegistryComponent;
+use game_components_embeddable_game_standard::registry::registry_component::MinigameRegistryComponent;
 
 #[starknet::contract]
 mod MyRegistry {

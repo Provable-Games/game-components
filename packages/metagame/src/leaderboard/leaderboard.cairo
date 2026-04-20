@@ -16,11 +16,26 @@ pub mod leaderboard {
         }
     }
 
-    /// Tie-break: lower token ID wins (deterministic ordering for equal scores).
+    /// Extract minted_at (lowest 35 bits of high u128) from a packed token ID.
+    /// Layout: high u128 = minted_at(35) | end_delay(25) | objective_id(30) | ...
+    fn unpack_minted_at(token_id: felt252) -> u64 {
+        let packed: u256 = token_id.into();
+        let (_, minted_at) = DivRem::div_rem(packed.high, 0x800000000_u128.try_into().unwrap());
+        minted_at.try_into().unwrap()
+    }
+
+    /// Tie-break: earlier minted token wins (deterministic ordering for equal scores).
     pub fn wins_tiebreak(token_a: felt252, token_b: felt252) -> bool {
-        let a: u256 = token_a.into();
-        let b: u256 = token_b.into();
-        a < b
+        let minted_a = unpack_minted_at(token_a);
+        let minted_b = unpack_minted_at(token_b);
+        if minted_a != minted_b {
+            minted_a < minted_b
+        } else {
+            // Same mint time — fall back to lower token ID for determinism
+            let a: u256 = token_a.into();
+            let b: u256 = token_b.into();
+            a < b
+        }
     }
 
     /// Convert 1-based position to 0-based index. Returns None for position 0.

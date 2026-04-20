@@ -82,7 +82,7 @@ Achievement tracking.
 ## Usage
 
 ```cairo
-use game_components_minigame::minigame::MinigameComponent;
+use game_components_embeddable_game_standard::minigame::minigame_component::MinigameComponent;
 use game_components_interfaces::minigame::IMinigameTokenData;
 use openzeppelin_introspection::src5::SRC5Component;
 

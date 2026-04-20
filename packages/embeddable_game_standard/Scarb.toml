@@ -14,7 +14,6 @@ openzeppelin_access.workspace = true
 # Game components dependencies
 game_components_interfaces = { path = "../interfaces" }
 game_components_utilities = { path = "../utilities" }
-game_components_metagame = { path = "../metagame" }
 
 [dev-dependencies]
 snforge_std.workspace = true
