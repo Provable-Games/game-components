@@ -108,7 +108,7 @@ fn test_set_and_get_token_requirement() {
 fn test_set_and_get_extension_requirement() {
     let mock = deploy_entry_requirement_mock();
     let owner = make_address(0x1);
-    let ext_addr = deploy_entry_validator_mock(owner, false);
+    let ext_addr = deploy_entry_validator_mock(owner);
     let config_data: Array<felt252> = array![1, 2, 3];
     let context_id: u64 = 77;
 
@@ -403,24 +403,20 @@ fn deploy_erc721_mock() -> ContractAddress {
     contract_address
 }
 
-fn deploy_entry_validator_mock(owner: ContractAddress, registration_only: bool) -> ContractAddress {
+fn deploy_entry_validator_mock(owner: ContractAddress) -> ContractAddress {
     let contract_class = declare("EntryValidatorMock").expect('declare failed').contract_class();
     let mut calldata = array![];
     owner.serialize(ref calldata);
-    registration_only.serialize(ref calldata);
     let (contract_address, _) = contract_class.deploy(@calldata).expect('deploy failed');
     contract_address
 }
 
-fn deploy_rejecting_entry_validator_mock(
-    owner: ContractAddress, registration_only: bool,
-) -> ContractAddress {
+fn deploy_rejecting_entry_validator_mock(owner: ContractAddress) -> ContractAddress {
     let contract_class = declare("RejectingEntryValidatorMock")
         .expect('declare failed')
         .contract_class();
     let mut calldata = array![];
     owner.serialize(ref calldata);
-    registration_only.serialize(ref calldata);
     let (contract_address, _) = contract_class.deploy(@calldata).expect('deploy failed');
     contract_address
 }
@@ -483,7 +479,7 @@ fn test_validate_qualification_token_nonexistent_nft() {
 fn test_validate_qualification_extension_returns_caller() {
     let mock = deploy_entry_requirement_mock();
     let caller = make_address(0x555);
-    let validator_addr = deploy_entry_validator_mock(caller, false);
+    let validator_addr = deploy_entry_validator_mock(caller);
 
     let req = EntryRequirement {
         entry_limit: 1,
@@ -506,7 +502,7 @@ fn test_validate_qualification_extension_returns_caller() {
 fn test_validate_qualification_extension_rejects() {
     let mock = deploy_entry_requirement_mock();
     let caller = make_address(0x555);
-    let validator_addr = deploy_rejecting_entry_validator_mock(caller, false);
+    let validator_addr = deploy_rejecting_entry_validator_mock(caller);
 
     let req = EntryRequirement {
         entry_limit: 1,
@@ -528,7 +524,7 @@ fn test_validate_qualification_extension_rejects() {
 fn test_validate_qualification_extension_wrong_proof_type() {
     let mock = deploy_entry_requirement_mock();
     let caller = make_address(0x555);
-    let validator_addr = deploy_entry_validator_mock(caller, false);
+    let validator_addr = deploy_entry_validator_mock(caller);
 
     let req = EntryRequirement {
         entry_limit: 1,
@@ -566,7 +562,7 @@ fn test_assert_valid_entry_requirement_token_erc721() {
 fn test_assert_valid_entry_requirement_token_not_erc721() {
     let mock = deploy_entry_requirement_mock();
     // Deploy an entry validator (which doesn't support IERC721)
-    let non_erc721_addr = deploy_entry_validator_mock(make_address(0x1), false);
+    let non_erc721_addr = deploy_entry_validator_mock(make_address(0x1));
 
     let req = EntryRequirement {
         entry_limit: 1, entry_requirement_type: EntryRequirementType::token(non_erc721_addr),
@@ -578,7 +574,7 @@ fn test_assert_valid_entry_requirement_token_not_erc721() {
 #[test]
 fn test_assert_valid_entry_requirement_extension_valid() {
     let mock = deploy_entry_requirement_mock();
-    let validator_addr = deploy_entry_validator_mock(make_address(0x1), false);
+    let validator_addr = deploy_entry_validator_mock(make_address(0x1));
 
     let req = EntryRequirement {
         entry_limit: 1,
@@ -628,15 +624,12 @@ fn test_assert_valid_entry_requirement_extension_not_entry_validator() {
 // Helper deploy function for AcceptingLimitedEntryValidatorMock
 // ============================================================================
 
-fn deploy_accepting_limited_entry_validator_mock(
-    owner: ContractAddress, registration_only: bool,
-) -> ContractAddress {
+fn deploy_accepting_limited_entry_validator_mock(owner: ContractAddress) -> ContractAddress {
     let contract_class = declare("AcceptingLimitedEntryValidatorMock")
         .expect('declare failed')
         .contract_class();
     let mut calldata = array![];
     owner.serialize(ref calldata);
-    registration_only.serialize(ref calldata);
     let (contract_address, _) = contract_class.deploy(@calldata).expect('deploy failed');
     contract_address
 }
@@ -651,7 +644,7 @@ fn test_update_qualification_entries_extension_none_entries_left() {
     // This means no limit check - should succeed silently
     let mock = deploy_entry_requirement_mock();
     let caller = make_address(0x555);
-    let validator_addr = deploy_entry_validator_mock(caller, false);
+    let validator_addr = deploy_entry_validator_mock(caller);
     let context_id: u64 = 80;
 
     let req = EntryRequirement {
@@ -677,7 +670,7 @@ fn test_update_qualification_entries_extension_some_entries_remaining() {
     // entries_left > 0 - should succeed
     let mock = deploy_entry_requirement_mock();
     let caller = make_address(0x555);
-    let validator_addr = deploy_accepting_limited_entry_validator_mock(caller, false);
+    let validator_addr = deploy_accepting_limited_entry_validator_mock(caller);
     let context_id: u64 = 81;
 
     let req = EntryRequirement {
@@ -704,7 +697,7 @@ fn test_update_qualification_entries_extension_zero_entries_left() {
     // entries_left == 0 - should panic
     let mock = deploy_entry_requirement_mock();
     let caller = make_address(0x555);
-    let validator_addr = deploy_rejecting_entry_validator_mock(caller, false);
+    let validator_addr = deploy_rejecting_entry_validator_mock(caller);
     let context_id: u64 = 82;
 
     let req = EntryRequirement {
@@ -730,7 +723,7 @@ fn test_update_qualification_entries_extension_zero_entries_left() {
 fn test_update_qualification_entries_extension_wrong_proof_type() {
     let mock = deploy_entry_requirement_mock();
     let caller = make_address(0x555);
-    let validator_addr = deploy_entry_validator_mock(caller, false);
+    let validator_addr = deploy_entry_validator_mock(caller);
     let context_id: u64 = 83;
 
     let req = EntryRequirement {
