@@ -7,9 +7,7 @@ pub mod RejectingEntryValidatorMock {
     use openzeppelin_introspection::src5::SRC5Component;
     use openzeppelin_introspection::src5::SRC5Component::InternalTrait as SRC5InternalTrait;
     use starknet::ContractAddress;
-    use starknet::storage::{
-        Map, StorageMapReadAccess, StoragePointerReadAccess, StoragePointerWriteAccess,
-    };
+    use starknet::storage::{Map, StorageMapReadAccess, StoragePointerWriteAccess};
 
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
 
