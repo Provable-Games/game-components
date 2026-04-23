@@ -86,6 +86,8 @@ fn test_set_entry_fee_succeeds_when_not_set() {
             game_creator_share: Option::None,
             refund_share: Option::None,
             additional_shares: array![].span(),
+            distribution: Option::None,
+            distribution_count: 0,
         },
     );
     // First call should succeed (is_entry_fee_set returns false)
@@ -108,6 +110,8 @@ fn test_set_entry_fee_panics_when_already_set() {
             game_creator_share: Option::None,
             refund_share: Option::None,
             additional_shares: array![].span(),
+            distribution: Option::None,
+            distribution_count: 0,
         },
     );
     mock.set_entry_fee(1, entry_fee);
@@ -120,6 +124,8 @@ fn test_set_entry_fee_panics_when_already_set() {
             game_creator_share: Option::None,
             refund_share: Option::None,
             additional_shares: array![].span(),
+            distribution: Option::None,
+            distribution_count: 0,
         },
     );
     mock.set_entry_fee(1, entry_fee2);
@@ -136,6 +142,8 @@ fn test_set_entry_fee_different_contexts_succeed() {
             game_creator_share: Option::None,
             refund_share: Option::None,
             additional_shares: array![].span(),
+            distribution: Option::None,
+            distribution_count: 0,
         },
     );
     mock.set_entry_fee(1, entry_fee1);
@@ -147,6 +155,8 @@ fn test_set_entry_fee_different_contexts_succeed() {
             game_creator_share: Option::None,
             refund_share: Option::None,
             additional_shares: array![].span(),
+            distribution: Option::None,
+            distribution_count: 0,
         },
     );
     // Different context should succeed (is_entry_fee_set returns false for context 2)
@@ -178,6 +188,8 @@ fn test_get_entry_fee_with_both_shares_nonzero() {
             game_creator_share: Option::Some(1500), // 15%
             refund_share: Option::Some(750), // 7.5%
             additional_shares: shares.span(),
+            distribution: Option::None,
+            distribution_count: 0,
         },
     );
     mock.set_entry_fee(42, entry_fee);
@@ -216,6 +228,8 @@ fn test_get_entry_fee_no_additional_but_gc_and_refund() {
             game_creator_share: Option::Some(5000), // 50%
             refund_share: Option::Some(2500), // 25%
             additional_shares: array![].span(),
+            distribution: Option::None,
+            distribution_count: 0,
         },
     );
     mock.set_entry_fee(10, entry_fee);
@@ -243,6 +257,8 @@ fn test_additional_shares_crossing_slot_boundary_17() {
             game_creator_share: Option::None,
             refund_share: Option::None,
             additional_shares: shares.span(),
+            distribution: Option::None,
+            distribution_count: 0,
         },
     );
     mock.set_entry_fee(1, entry_fee);
@@ -273,6 +289,8 @@ fn test_additional_shares_crossing_slot_boundary_20() {
             game_creator_share: Option::Some(100),
             refund_share: Option::Some(50),
             additional_shares: shares.span(),
+            distribution: Option::None,
+            distribution_count: 0,
         },
     );
     mock.set_entry_fee(1, entry_fee);
@@ -301,6 +319,8 @@ fn test_additional_shares_crossing_slot_boundary_32() {
             game_creator_share: Option::None,
             refund_share: Option::None,
             additional_shares: shares.span(),
+            distribution: Option::None,
+            distribution_count: 0,
         },
     );
     mock.set_entry_fee(1, entry_fee);
@@ -329,6 +349,8 @@ fn test_get_entry_fee_with_cross_slot_shares() {
             game_creator_share: Option::Some(2000),
             refund_share: Option::Some(1000),
             additional_shares: shares.span(),
+            distribution: Option::None,
+            distribution_count: 0,
         },
     );
     mock.set_entry_fee(5, entry_fee);
@@ -356,6 +378,8 @@ fn test_game_creator_is_claimed_default_false() {
             game_creator_share: Option::Some(500),
             refund_share: Option::None,
             additional_shares: array![].span(),
+            distribution: Option::None,
+            distribution_count: 0,
         },
     );
     mock.set_entry_fee(1, entry_fee);
@@ -373,6 +397,8 @@ fn test_game_creator_set_claimed() {
             game_creator_share: Option::Some(500),
             refund_share: Option::None,
             additional_shares: array![].span(),
+            distribution: Option::None,
+            distribution_count: 0,
         },
     );
     mock.set_entry_fee(1, entry_fee);
@@ -392,6 +418,8 @@ fn test_game_creator_claim_preserves_other_data() {
             game_creator_share: Option::Some(1000),
             refund_share: Option::Some(500),
             additional_shares: create_additional_shares(2).span(),
+            distribution: Option::None,
+            distribution_count: 0,
         },
     );
     mock.set_entry_fee(1, entry_fee);
@@ -472,6 +500,8 @@ fn test_additional_share_claim_across_slots() {
             game_creator_share: Option::None,
             refund_share: Option::None,
             additional_shares: create_additional_shares(20).span(),
+            distribution: Option::None,
+            distribution_count: 0,
         },
     );
     mock.set_entry_fee(1, entry_fee);
@@ -734,6 +764,8 @@ fn test_mixed_claim_types_on_same_context() {
             game_creator_share: Option::Some(500),
             refund_share: Option::Some(300),
             additional_shares: create_additional_shares(3).span(),
+            distribution: Option::None,
+            distribution_count: 0,
         },
     );
     mock.set_entry_fee(1, entry_fee);
@@ -778,6 +810,8 @@ fn test_get_additional_shares_empty() {
             game_creator_share: Option::None,
             refund_share: Option::None,
             additional_shares: array![].span(),
+            distribution: Option::None,
+            distribution_count: 0,
         },
     );
     mock.set_entry_fee(1, entry_fee);
@@ -802,6 +836,8 @@ fn test_exactly_16_shares_full_slot() {
             game_creator_share: Option::Some(1000),
             refund_share: Option::Some(500),
             additional_shares: shares.span(),
+            distribution: Option::None,
+            distribution_count: 0,
         },
     );
     mock.set_entry_fee(1, entry_fee);

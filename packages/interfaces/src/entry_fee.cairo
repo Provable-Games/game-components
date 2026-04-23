@@ -1,5 +1,6 @@
 use metagame_extensions_interfaces::extension::ExtensionConfig;
 use starknet::ContractAddress;
+use crate::distribution::Distribution;
 
 /// SNIP-5 interface ID derived via src5_rs: XOR of extended function selectors
 /// - get_entry_fee(u64)->Option<EntryFeeConfig>
@@ -27,6 +28,16 @@ pub struct EntryFeeConfig {
     pub refund_share: Option<u16>,
     /// Additional shares deducted before position distribution
     pub additional_shares: Span<AdditionalShare>,
+    /// Shape of the position-based payout for the remaining pool. `None`
+    /// means no position distribution is configured (refund-only /
+    /// additional-only fees). For `Distribution::Custom(shares)` the
+    /// component persists the shares array in packed storage and
+    /// `shares.len()` implicitly defines the paid-places count.
+    pub distribution: Option<Distribution>,
+    /// Number of paid places for position-based distribution. `0` means
+    /// "dynamic — use the actual leaderboard size at payout time". Ignored
+    /// when `distribution == None`.
+    pub distribution_count: u32,
 }
 
 /// Entry fee enum: dispatch to either store config or set extension

@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 
+use game_components_utilities::distribution::packed_shares::CustomShares;
+use game_components_utilities::distribution::structs::PackedDistribution;
 use starknet::ContractAddress;
 use crate::entry_fee::structs::PackedAdditionalShares;
 
@@ -23,4 +25,14 @@ pub trait Store<T> {
     fn get_extension_config_len(self: @T, context_id: u64) -> u64;
     fn get_extension_config_at(self: @T, context_id: u64, index: u64) -> felt252;
     fn push_extension_config(ref self: T, context_id: u64, value: felt252);
+    /// Packed custom distribution shares for slot `slot` (15 `u16` per slot).
+    /// The number of shares is sourced from `get_distribution().positions` —
+    /// no separate count is stored here.
+    fn get_distribution_shares_packed(self: @T, context_id: u64, slot: u8) -> CustomShares;
+    fn set_distribution_shares_packed(ref self: T, context_id: u64, slot: u8, shares: CustomShares);
+    /// Distribution shape (type tag + weight + paid-places count) for the
+    /// entry-fee pool payout. Unset unless the context configured a payout
+    /// distribution.
+    fn get_distribution(self: @T, context_id: u64) -> PackedDistribution;
+    fn set_distribution(ref self: T, context_id: u64, distribution: PackedDistribution);
 }
