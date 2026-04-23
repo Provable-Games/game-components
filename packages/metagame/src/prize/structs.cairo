@@ -3,18 +3,19 @@ pub use game_components_interfaces::distribution::Distribution;
 pub use game_components_interfaces::prize::{
     ERC20Data, ERC721Data, Prize, PrizeConfig, PrizeData, PrizeType, TokenTypeData,
 };
+// Re-export CustomShares machinery from utilities so existing consumers that
+// import from `crate::prize::structs` continue to work.
+pub use game_components_utilities::distribution::packed_shares::{
+    CustomShares, CustomSharesImpl, CustomSharesTrait, SHARES_PER_SLOT as CUSTOM_SHARES_PER_SLOT,
+};
 use starknet::ContractAddress;
 use starknet::storage_access::StorePacking;
-use crate::prize::libs::share_math::{SHARES_PER_SLOT, get_packed_share, set_packed_share};
 
 /// NonZero<u128> constants for DivRem-based unpacking.
 mod nz128 {
     pub const TWO_POW_8: NonZero<u128> = 0x100;
     pub const TWO_POW_16: NonZero<u128> = 0x10000;
 }
-
-// Re-export SHARES_PER_SLOT as CUSTOM_SHARES_PER_SLOT for backward compatibility
-pub use crate::prize::libs::share_math::SHARES_PER_SLOT as CUSTOM_SHARES_PER_SLOT;
 
 // Payout type constants for storage
 pub const PAYOUT_TYPE_POSITION: u8 = 0;
@@ -215,66 +216,6 @@ pub impl StoredPrizeImpl of StoredPrizeTrait {
             token_type,
             sponsor_address: self.sponsor_address,
         }
-    }
-}
-
-/// Custom shares - stores up to 15 u16 shares in a single felt252
-/// Each share = 16 bits, Layout: [share0(16)] | [share1(16)] | ... | [share14(16)] = 240 bits
-/// This reduces storage operations from N reads to ceil(N/15) reads
-#[derive(Copy, Drop, Serde, starknet::Store)]
-pub struct CustomShares {
-    pub packed: felt252,
-}
-
-/// Helper functions for packing/unpacking custom shares
-#[generate_trait]
-pub impl CustomSharesImpl of CustomSharesTrait {
-    /// Create an empty packed shares struct
-    fn new() -> CustomShares {
-        CustomShares { packed: 0 }
-    }
-
-    /// Get a single share from the packed value at the given index (0-14)
-    fn get_share(self: @CustomShares, index: u8) -> u16 {
-        get_packed_share((*self.packed).into(), index)
-    }
-
-    /// Set a single share in the packed value at the given index (0-14)
-    fn set_share(ref self: CustomShares, index: u8, share: u16) {
-        let new_packed = set_packed_share(self.packed.into(), index, share);
-        self.packed = new_packed.try_into().unwrap();
-    }
-
-    /// Pack an array of shares (up to 15) into a CustomShares
-    fn from_array(shares: Span<u16>) -> CustomShares {
-        let mut packed = Self::new();
-        let len: u32 = if shares.len() > SHARES_PER_SLOT.into() {
-            SHARES_PER_SLOT.into()
-        } else {
-            shares.len()
-        };
-        let mut i: u32 = 0;
-        while i < len {
-            packed.set_share(i.try_into().unwrap(), *shares.at(i));
-            i += 1;
-        }
-        packed
-    }
-
-    /// Unpack shares to an array (returns shares up to count)
-    fn to_array(self: @CustomShares, count: u8) -> Array<u16> {
-        let mut result = ArrayTrait::new();
-        let len: u8 = if count > SHARES_PER_SLOT {
-            SHARES_PER_SLOT
-        } else {
-            count
-        };
-        let mut i: u8 = 0;
-        while i < len {
-            result.append(self.get_share(i));
-            i += 1;
-        }
-        result
     }
 }
 

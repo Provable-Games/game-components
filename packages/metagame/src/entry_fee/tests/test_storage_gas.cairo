@@ -70,6 +70,8 @@ fn test_storage_gas_1_additional_share() {
             game_creator_share: Option::None,
             refund_share: Option::None,
             additional_shares: create_additional_shares(1).span(),
+            distribution: Option::None,
+            distribution_count: 0,
         },
     );
 
@@ -95,6 +97,8 @@ fn test_storage_gas_4_additional_shares() {
             game_creator_share: Option::None,
             refund_share: Option::None,
             additional_shares: create_additional_shares(4).span(),
+            distribution: Option::None,
+            distribution_count: 0,
         },
     );
 
@@ -120,6 +124,8 @@ fn test_storage_gas_8_additional_shares() {
             game_creator_share: Option::None,
             refund_share: Option::None,
             additional_shares: create_additional_shares(8).span(),
+            distribution: Option::None,
+            distribution_count: 0,
         },
     );
 
@@ -146,6 +152,8 @@ fn test_storage_gas_16_additional_shares() {
             game_creator_share: Option::None,
             refund_share: Option::None,
             additional_shares: create_additional_shares(16).span(),
+            distribution: Option::None,
+            distribution_count: 0,
         },
     );
 
@@ -170,6 +178,8 @@ fn test_storage_gas_claim_status() {
             game_creator_share: Option::None,
             refund_share: Option::None,
             additional_shares: create_additional_shares(8).span(),
+            distribution: Option::None,
+            distribution_count: 0,
         },
     );
 
@@ -207,6 +217,8 @@ fn test_storage_gas_claim_multiple_shares() {
             game_creator_share: Option::None,
             refund_share: Option::None,
             additional_shares: create_additional_shares(16).span(),
+            distribution: Option::None,
+            distribution_count: 0,
         },
     );
 
@@ -256,6 +268,8 @@ fn test_get_entry_fee_roundtrip_with_shares() {
             game_creator_share: Option::Some(1000), // 10%
             refund_share: Option::Some(500), // 5%
             additional_shares: create_additional_shares(2).span(),
+            distribution: Option::None,
+            distribution_count: 0,
         },
     );
     mock.set_entry_fee(1, entry_fee);
@@ -279,6 +293,8 @@ fn test_get_entry_fee_roundtrip_no_shares() {
             game_creator_share: Option::None,
             refund_share: Option::None,
             additional_shares: array![].span(),
+            distribution: Option::None,
+            distribution_count: 0,
         },
     );
     mock.set_entry_fee(1, entry_fee);

@@ -70,4 +70,14 @@ pub mod EntryFeeMock {
     fn get_extension_address(self: @ContractState, context_id: u64) -> ContractAddress {
         self.entry_fee.get_extension_address(context_id)
     }
+
+    #[external(v0)]
+    fn store_distribution_shares(ref self: ContractState, context_id: u64, shares: Span<u16>) {
+        self.entry_fee._store_distribution_shares(context_id, shares);
+    }
+
+    #[external(v0)]
+    fn get_distribution_shares(self: @ContractState, context_id: u64, count: u32) -> Array<u16> {
+        self.entry_fee._get_distribution_shares(context_id, count)
+    }
 }

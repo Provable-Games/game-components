@@ -10,6 +10,10 @@
 pub mod EntryFeeComponent {
     use core::num::traits::Zero;
     use game_components_interfaces::entry_fee::{IENTRY_FEE_ID, IEntryFee};
+    use game_components_utilities::distribution::packed_shares::CustomShares;
+    use game_components_utilities::distribution::structs::{
+        PackedDistribution, PackedDistributionStorePacking,
+    };
     use metagame_extensions_interfaces::entry_fee_extension::{
         IENTRY_FEE_EXTENSION_ID, IEntryFeeExtensionDispatcher, IEntryFeeExtensionDispatcherTrait,
     };
@@ -45,6 +49,17 @@ pub mod EntryFeeComponent {
         /// Each slot packs up to 16 shares (15 bits each = 240 bits per felt252)
         /// slot_index = share_index / 16
         EntryFee_additional_shares_packed: Map<(u64, u8), PackedAdditionalShares>,
+        /// Packed custom distribution shares per context: (context_id, slot_index) -> CustomShares
+        /// Each slot packs up to 15 u16 shares (16 bits each = 240 bits per felt252).
+        /// Unset unless the context uses a `Distribution::Custom` payout split.
+        /// The number of shares is the `positions` field of the sibling
+        /// `EntryFee_distribution` entry (they are written atomically in
+        /// `set_entry_fee_config`) — no separate count is stored.
+        EntryFee_distribution_shares_packed: Map<(u64, u8), CustomShares>,
+        /// Distribution shape + paid-places count packed into a single
+        /// felt252 (see `PackedDistribution`). Zero-valued when no
+        /// distribution is configured for the context.
+        EntryFee_distribution: Map<u64, PackedDistribution>,
         /// Refund claimed: (context_id, token_id) -> claimed
         EntryFee_refund_claimed: Map<(u64, felt252), bool>,
         /// Extension address for extension-enhanced entry fees
@@ -151,6 +166,35 @@ pub mod EntryFeeComponent {
         ) {
             self.EntryFee_extension_config.entry(context_id).push(value);
         }
+
+        fn get_distribution_shares_packed(
+            self: @ComponentState<TContractState>, context_id: u64, slot: u8,
+        ) -> CustomShares {
+            self.EntryFee_distribution_shares_packed.entry((context_id, slot)).read()
+        }
+
+        fn set_distribution_shares_packed(
+            ref self: ComponentState<TContractState>,
+            context_id: u64,
+            slot: u8,
+            shares: CustomShares,
+        ) {
+            self.EntryFee_distribution_shares_packed.entry((context_id, slot)).write(shares);
+        }
+
+        fn get_distribution(
+            self: @ComponentState<TContractState>, context_id: u64,
+        ) -> PackedDistribution {
+            self.EntryFee_distribution.entry(context_id).read()
+        }
+
+        fn set_distribution(
+            ref self: ComponentState<TContractState>,
+            context_id: u64,
+            distribution: PackedDistribution,
+        ) {
+            self.EntryFee_distribution.entry(context_id).write(distribution);
+        }
     }
 
     #[embeddable_as(EntryFeeImpl)]
@@ -182,6 +226,35 @@ pub mod EntryFeeComponent {
             self: @ComponentState<TContractState>, context_id: u64,
         ) -> Span<AdditionalShare> {
             EntryFeeStoreTrait::get_additional_shares(self, context_id)
+        }
+
+        /// Persist a custom distribution shares array for a context.
+        /// Packs 15 `u16` shares per `felt252` slot via `CustomShares`.
+        /// Consumers pair this with their own paid-places count semantics.
+        fn _store_distribution_shares(
+            ref self: ComponentState<TContractState>, context_id: u64, shares: Span<u16>,
+        ) {
+            EntryFeeStoreTrait::store_distribution_shares(ref self, context_id, shares);
+        }
+
+        /// Read `count` custom distribution shares for a context. Callers
+        /// supply the count (typically sourced from the sibling
+        /// `PackedDistribution.positions`); returns an empty array when
+        /// `count == 0`.
+        fn _get_distribution_shares(
+            self: @ComponentState<TContractState>, context_id: u64, count: u32,
+        ) -> Array<u16> {
+            EntryFeeStoreTrait::get_distribution_shares(self, context_id, count)
+        }
+
+        /// Read a single custom distribution share at a 1-indexed position.
+        /// O(1) — only one packed `felt252` slot is read. Use this in claim
+        /// paths instead of `_get_distribution_shares` when only one share
+        /// is needed.
+        fn _get_custom_share_at(
+            self: @ComponentState<TContractState>, context_id: u64, position: u32,
+        ) -> u16 {
+            EntryFeeStoreTrait::get_custom_share_at(self, context_id, position)
         }
 
         /// Set entry fee or extension for a context.

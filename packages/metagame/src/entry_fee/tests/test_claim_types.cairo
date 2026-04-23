@@ -32,6 +32,8 @@ fn setup_entry_fee_with_additional_shares(mock: IEntryFeeMockDispatcher) {
                 AdditionalShare { recipient: make_address(0xA2), share_bps: 100 },
             ]
                 .span(),
+            distribution: Option::None,
+            distribution_count: 0,
         },
     );
     mock.set_entry_fee(1, entry_fee);
