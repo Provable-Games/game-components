@@ -7,7 +7,7 @@ use metagame_extensions_interfaces::entry_requirement_extension::{
 };
 use openzeppelin_interfaces::erc721::{IERC721Dispatcher, IERC721DispatcherTrait, IERC721_ID};
 use openzeppelin_interfaces::introspection::{ISRC5Dispatcher, ISRC5DispatcherTrait};
-use starknet::{ContractAddress, get_caller_address};
+use starknet::{ContractAddress, get_caller_address, get_contract_address};
 use crate::entry_requirement::entry_requirement::entry_requirement;
 use crate::entry_requirement::store::Store;
 use crate::entry_requirement::structs::{
@@ -142,9 +142,11 @@ pub impl EntryRequirementStoreImpl<T, +Store<T>, +Drop<T>> of EntryRequirementSt
                     contract_address: extension_config.address,
                 };
                 let caller_address = get_caller_address();
+                let context_owner = get_contract_address();
                 let display_extension_address: felt252 = extension_config.address.into();
                 assert!(
-                    extension_dispatcher.valid_entry(context_id, caller_address, qualification),
+                    extension_dispatcher
+                        .valid_entry(context_owner, context_id, caller_address, qualification),
                     "EntryRequirement: Invalid entry according to extension {}",
                     display_extension_address,
                 );
@@ -195,6 +197,7 @@ pub impl EntryRequirementStoreImpl<T, +Store<T>, +Drop<T>> of EntryRequirementSt
                 };
                 let display_extension_address: felt252 = extension_address.into();
                 let caller_address = get_caller_address();
+                let context_owner = get_contract_address();
 
                 let qualification = match qualifier {
                     QualificationProof::Extension(qual) => qual,
@@ -204,7 +207,7 @@ pub impl EntryRequirementStoreImpl<T, +Store<T>, +Drop<T>> of EntryRequirementSt
                 };
 
                 let entries_left = extension_dispatcher
-                    .entries_left(context_id, caller_address, qualification);
+                    .entries_left(context_owner, context_id, caller_address, qualification);
 
                 match entries_left {
                     Option::Some(entries_left) => {
