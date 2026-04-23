@@ -20,7 +20,7 @@ pub mod AcceptingLimitedEntryValidatorMock {
     #[storage]
     struct Storage {
         owner_address: ContractAddress,
-        bannable: Map<u64, bool>,
+        bannable: Map<(ContractAddress, u64), bool>,
         #[substorage(v0)]
         src5: SRC5Component::Storage,
     }
@@ -40,16 +40,21 @@ pub mod AcceptingLimitedEntryValidatorMock {
 
     #[abi(embed_v0)]
     impl EntryValidatorImpl of IEntryRequirementExtension<ContractState> {
-        fn context_owner(self: @ContractState, context_id: u64) -> ContractAddress {
-            self.owner_address.read()
+        fn is_context_registered(
+            self: @ContractState, context_owner: ContractAddress, context_id: u64,
+        ) -> bool {
+            true
         }
 
-        fn bannable(self: @ContractState, context_id: u64) -> bool {
-            self.bannable.read(context_id)
+        fn bannable(
+            self: @ContractState, context_owner: ContractAddress, context_id: u64,
+        ) -> bool {
+            self.bannable.read((context_owner, context_id))
         }
 
         fn valid_entry(
             self: @ContractState,
+            context_owner: ContractAddress,
             context_id: u64,
             player_address: ContractAddress,
             qualification: Span<felt252>,
@@ -59,6 +64,7 @@ pub mod AcceptingLimitedEntryValidatorMock {
 
         fn should_ban(
             self: @ContractState,
+            context_owner: ContractAddress,
             context_id: u64,
             game_token_id: felt252,
             current_owner: ContractAddress,
@@ -69,6 +75,7 @@ pub mod AcceptingLimitedEntryValidatorMock {
 
         fn entries_left(
             self: @ContractState,
+            context_owner: ContractAddress,
             context_id: u64,
             player_address: ContractAddress,
             qualification: Span<felt252>,
