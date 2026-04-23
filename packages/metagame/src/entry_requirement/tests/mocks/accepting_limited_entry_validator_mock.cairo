@@ -46,9 +46,7 @@ pub mod AcceptingLimitedEntryValidatorMock {
             true
         }
 
-        fn bannable(
-            self: @ContractState, context_owner: ContractAddress, context_id: u64,
-        ) -> bool {
+        fn bannable(self: @ContractState, context_owner: ContractAddress, context_id: u64) -> bool {
             self.bannable.read((context_owner, context_id))
         }
 
