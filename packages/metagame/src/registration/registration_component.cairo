@@ -1,11 +1,16 @@
 // SPDX-License-Identifier: BUSL-1.1
 
 /// RegistrationComponent handles registration storage and logic for any context.
-/// Entries are keyed by (context_id, entry_id) for direct enumeration.
+/// Entries are keyed by (context_id, entry_id) for direct enumeration. Reverse
+/// indexes keyed by token_id support O(1) token-to-entry lookups, since each
+/// token belongs to exactly one context within a component instance.
 ///
-/// Storage is split into two Maps for gas efficiency:
+/// Storage layout:
 ///   - Registration_token_ids: (context_id, entry_id) -> felt252  (game token ID)
 ///   - Registration_flags: (context_id, entry_id) -> u8  (bit 0 = has_submitted, bit 1 = is_banned)
+///   - Registration_entry_counts: context_id -> u32  (next entry_id is count + 1)
+///   - Registration_token_context: token_id -> u64  (reverse: which context owns this token)
+///   - Registration_token_entry_id: token_id -> u32  (reverse: token's slot within its context)
 
 #[starknet::component]
 pub mod RegistrationComponent {
@@ -25,6 +30,10 @@ pub mod RegistrationComponent {
         Registration_flags: Map<(u64, u32), u8>,
         /// Entry count per context
         Registration_entry_counts: Map<u64, u32>,
+        /// Reverse: token_id -> context_id (0 if not registered)
+        Registration_token_context: Map<felt252, u64>,
+        /// Reverse: token_id -> entry_id within its context (0 if not registered)
+        Registration_token_entry_id: Map<felt252, u32>,
     }
 
     #[event]
@@ -67,6 +76,26 @@ pub mod RegistrationComponent {
         fn set_entry_count(ref self: ComponentState<TContractState>, context_id: u64, count: u32) {
             self.Registration_entry_counts.entry(context_id).write(count);
         }
+
+        fn get_token_context(self: @ComponentState<TContractState>, token_id: felt252) -> u64 {
+            self.Registration_token_context.entry(token_id).read()
+        }
+
+        fn set_token_context(
+            ref self: ComponentState<TContractState>, token_id: felt252, context_id: u64,
+        ) {
+            self.Registration_token_context.entry(token_id).write(context_id);
+        }
+
+        fn get_token_entry_id(self: @ComponentState<TContractState>, token_id: felt252) -> u32 {
+            self.Registration_token_entry_id.entry(token_id).read()
+        }
+
+        fn set_token_entry_id(
+            ref self: ComponentState<TContractState>, token_id: felt252, entry_id: u32,
+        ) {
+            self.Registration_token_entry_id.entry(token_id).write(entry_id);
+        }
     }
 
     #[embeddable_as(RegistrationImpl)]
@@ -93,6 +122,24 @@ pub mod RegistrationComponent {
 
         fn get_entry_count(self: @ComponentState<TContractState>, context_id: u64) -> u32 {
             Store::get_entry_count(self, context_id)
+        }
+
+        fn get_token_context(
+            self: @ComponentState<TContractState>, token_id: felt252,
+        ) -> u64 {
+            Store::get_token_context(self, token_id)
+        }
+
+        fn get_entry_id_for_token(
+            self: @ComponentState<TContractState>, token_id: felt252,
+        ) -> u32 {
+            Store::get_token_entry_id(self, token_id)
+        }
+
+        fn get_entry_by_token(
+            self: @ComponentState<TContractState>, token_id: felt252,
+        ) -> Registration {
+            RegistrationStoreTrait::get_entry_by_token(self, token_id)
         }
     }
 
