@@ -34,13 +34,13 @@ pub mod RegistrationMock {
     }
 
     #[external(v0)]
-    fn mark_entry_submitted(ref self: ContractState, context_id: u64, entry_id: u32) {
-        self.registration.mark_entry_submitted(context_id, entry_id);
+    fn mark_token_submitted(ref self: ContractState, token_id: felt252) {
+        self.registration.mark_token_submitted(token_id);
     }
 
     #[external(v0)]
-    fn ban_entry(ref self: ContractState, context_id: u64, entry_id: u32) {
-        self.registration.ban_entry(context_id, entry_id);
+    fn ban_token(ref self: ContractState, token_id: felt252) {
+        self.registration.ban_token(token_id);
     }
 
     #[external(v0)]
@@ -56,7 +56,7 @@ pub mod RegistrationMock {
     }
 
     #[external(v0)]
-    fn get_entry_id_for_token(self: @ContractState, token_id: felt252) -> u32 {
-        self.registration._get_entry_id_for_token(token_id)
+    fn is_token_submitted(self: @ContractState, token_id: felt252) -> bool {
+        self.registration._is_token_submitted(token_id)
     }
 }

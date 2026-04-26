@@ -1,20 +1,21 @@
 // SPDX-License-Identifier: BUSL-1.1
 
 /// RegistrationComponent handles registration storage and logic for any context.
-/// Entries are keyed by (context_id, entry_id) for direct enumeration. A reverse
-/// index keyed by token_id supports O(1) token-to-entry lookups, since each
-/// token belongs to exactly one context within a component instance.
+/// Entries are keyed by (context_id, entry_id) for direct enumeration. Flags
+/// (has_submitted / is_banned) are keyed directly by token_id, since each
+/// token belongs to exactly one context within a component instance — this
+/// gives consumers O(1) flag access from a token_id without an intermediate
+/// entry_id lookup. A reverse index maps token_id back to its context_id for
+/// the metagame `has_context` interface.
 ///
 /// Storage layout:
 ///   - Registration_token_ids: (context_id, entry_id) -> felt252  (game token ID)
-///   - Registration_flags: (context_id, entry_id) -> u8  (bit 0 = has_submitted, bit 1 = is_banned)
+///   - Registration_flags: token_id -> u8  (bit 0 = has_submitted, bit 1 = is_banned)
 ///   - Registration_entry_counts: context_id -> u32  (next entry_id is count + 1)
 ///   - Registration_token_context: token_id -> u64  (reverse: which context owns this token)
-///   - Registration_token_entry_id: token_id -> u32  (reverse: token's slot within its context)
 ///
 /// Conventions:
-///   - context_id is expected to be >= 1. The reverse-index lookups
-///     (`_get_token_context`, `_get_entry_id_for_token`) treat 0 as
+///   - context_id is expected to be >= 1. `_get_token_context` treats 0 as
 ///     "not registered", so a caller using context_id == 0 cannot
 ///     distinguish a real context-zero registration from an unknown
 ///     token via the reverse index. entry_id is always >= 1 by
@@ -34,14 +35,12 @@ pub mod RegistrationComponent {
     pub struct Storage {
         /// Game token ID keyed by (context_id, entry_id)
         Registration_token_ids: Map<(u64, u32), felt252>,
-        /// Flags keyed by (context_id, entry_id): bit 0 = has_submitted, bit 1 = is_banned
-        Registration_flags: Map<(u64, u32), u8>,
+        /// Flags keyed by token_id: bit 0 = has_submitted, bit 1 = is_banned
+        Registration_flags: Map<felt252, u8>,
         /// Entry count per context
         Registration_entry_counts: Map<u64, u32>,
         /// Reverse: token_id -> context_id (0 if not registered)
         Registration_token_context: Map<felt252, u64>,
-        /// Reverse: token_id -> entry_id within its context (0 if not registered)
-        Registration_token_entry_id: Map<felt252, u32>,
     }
 
     #[event]
@@ -67,14 +66,12 @@ pub mod RegistrationComponent {
             self.Registration_token_ids.entry((context_id, entry_id)).write(token_id);
         }
 
-        fn get_flags(self: @ComponentState<TContractState>, context_id: u64, entry_id: u32) -> u8 {
-            self.Registration_flags.entry((context_id, entry_id)).read()
+        fn get_flags(self: @ComponentState<TContractState>, token_id: felt252) -> u8 {
+            self.Registration_flags.entry(token_id).read()
         }
 
-        fn set_flags(
-            ref self: ComponentState<TContractState>, context_id: u64, entry_id: u32, flags: u8,
-        ) {
-            self.Registration_flags.entry((context_id, entry_id)).write(flags);
+        fn set_flags(ref self: ComponentState<TContractState>, token_id: felt252, flags: u8) {
+            self.Registration_flags.entry(token_id).write(flags);
         }
 
         fn get_entry_count(self: @ComponentState<TContractState>, context_id: u64) -> u32 {
@@ -94,16 +91,6 @@ pub mod RegistrationComponent {
         ) {
             self.Registration_token_context.entry(token_id).write(context_id);
         }
-
-        fn get_token_entry_id(self: @ComponentState<TContractState>, token_id: felt252) -> u32 {
-            self.Registration_token_entry_id.entry(token_id).read()
-        }
-
-        fn set_token_entry_id(
-            ref self: ComponentState<TContractState>, token_id: felt252, entry_id: u32,
-        ) {
-            self.Registration_token_entry_id.entry(token_id).write(entry_id);
-        }
     }
 
     #[embeddable_as(RegistrationImpl)]
@@ -122,10 +109,8 @@ pub mod RegistrationComponent {
             RegistrationStoreTrait::entry_exists(self, context_id, entry_id)
         }
 
-        fn is_entry_banned(
-            self: @ComponentState<TContractState>, context_id: u64, entry_id: u32,
-        ) -> bool {
-            RegistrationStoreTrait::is_entry_banned(self, context_id, entry_id)
+        fn is_token_banned(self: @ComponentState<TContractState>, token_id: felt252) -> bool {
+            RegistrationStoreTrait::is_token_banned(self, token_id)
         }
 
         fn get_entry_count(self: @ComponentState<TContractState>, context_id: u64) -> u32 {
@@ -155,14 +140,12 @@ pub mod RegistrationComponent {
             RegistrationStoreTrait::increment_entry_count(ref self, context_id)
         }
 
-        fn mark_entry_submitted(
-            ref self: ComponentState<TContractState>, context_id: u64, entry_id: u32,
-        ) {
-            RegistrationStoreTrait::mark_entry_submitted(ref self, context_id, entry_id);
+        fn mark_token_submitted(ref self: ComponentState<TContractState>, token_id: felt252) {
+            RegistrationStoreTrait::mark_token_submitted(ref self, token_id);
         }
 
-        fn ban_entry(ref self: ComponentState<TContractState>, context_id: u64, entry_id: u32) {
-            RegistrationStoreTrait::ban_entry(ref self, context_id, entry_id);
+        fn ban_token(ref self: ComponentState<TContractState>, token_id: felt252) {
+            RegistrationStoreTrait::ban_token(ref self, token_id);
         }
 
         fn _entry_exists(
@@ -181,10 +164,12 @@ pub mod RegistrationComponent {
             Store::get_token_context(self, token_id)
         }
 
-        fn _get_entry_id_for_token(
-            self: @ComponentState<TContractState>, token_id: felt252,
-        ) -> u32 {
-            Store::get_token_entry_id(self, token_id)
+        fn _is_token_submitted(self: @ComponentState<TContractState>, token_id: felt252) -> bool {
+            RegistrationStoreTrait::is_token_submitted(self, token_id)
+        }
+
+        fn _is_token_banned(self: @ComponentState<TContractState>, token_id: felt252) -> bool {
+            RegistrationStoreTrait::is_token_banned(self, token_id)
         }
     }
 }

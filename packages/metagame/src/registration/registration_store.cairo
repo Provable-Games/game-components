@@ -12,14 +12,16 @@ pub trait RegistrationStoreTrait<T> {
     fn get_entry(self: @T, context_id: u64, entry_id: u32) -> Registration;
     /// Write a registration entry to storage
     fn set_entry(ref self: T, registration: @Registration);
-    /// Check if an entry exists (token_id != 0)
+    /// Check if an entry exists (token_id at slot != 0)
     fn entry_exists(self: @T, context_id: u64, entry_id: u32) -> bool;
-    /// Check if an entry is banned (flags-only read)
-    fn is_entry_banned(self: @T, context_id: u64, entry_id: u32) -> bool;
-    /// Mark an entry as having submitted a score (flags-only read/write)
-    fn mark_entry_submitted(ref self: T, context_id: u64, entry_id: u32);
-    /// Ban an entry (flags-only read/write)
-    fn ban_entry(ref self: T, context_id: u64, entry_id: u32);
+    /// Check if a token has submitted (flags-only read)
+    fn is_token_submitted(self: @T, token_id: felt252) -> bool;
+    /// Check if a token is banned (flags-only read)
+    fn is_token_banned(self: @T, token_id: felt252) -> bool;
+    /// Mark a token as having submitted a score (flags-only read/write)
+    fn mark_token_submitted(ref self: T, token_id: felt252);
+    /// Ban a token (flags-only read/write)
+    fn ban_token(ref self: T, token_id: felt252);
     /// Increment entry count and return new count
     fn increment_entry_count(ref self: T, context_id: u64) -> u32;
     /// Validate registration for score submission
@@ -29,7 +31,7 @@ pub trait RegistrationStoreTrait<T> {
 pub impl RegistrationStoreImpl<T, +Store<T>, +Drop<T>> of RegistrationStoreTrait<T> {
     fn get_entry(self: @T, context_id: u64, entry_id: u32) -> Registration {
         let game_token_id = self.get_token_id(context_id, entry_id);
-        let flags = self.get_flags(context_id, entry_id);
+        let flags = self.get_flags(game_token_id);
         let (has_submitted, is_banned) = RegistrationOperationsImpl::unpack_flags(flags);
         Registration { context_id, entry_id, game_token_id, has_submitted, is_banned }
     }
@@ -37,11 +39,10 @@ pub impl RegistrationStoreImpl<T, +Store<T>, +Drop<T>> of RegistrationStoreTrait
     fn set_entry(ref self: T, registration: @Registration) {
         RegistrationValidationImpl::assert_valid_token_id(*registration.game_token_id);
         // If this slot was previously held by a different token, clear its reverse
-        // mappings so the displaced token no longer claims this slot via the index.
+        // mapping so the displaced token no longer claims this slot.
         let prev_token = self.get_token_id(*registration.context_id, *registration.entry_id);
         if prev_token != 0 && prev_token != *registration.game_token_id {
             self.set_token_context(prev_token, 0);
-            self.set_token_entry_id(prev_token, 0);
         }
         self
             .set_token_id(
@@ -50,28 +51,32 @@ pub impl RegistrationStoreImpl<T, +Store<T>, +Drop<T>> of RegistrationStoreTrait
         let flags = RegistrationOperationsImpl::pack_flags(
             *registration.has_submitted, *registration.is_banned,
         );
-        self.set_flags(*registration.context_id, *registration.entry_id, flags);
+        self.set_flags(*registration.game_token_id, flags);
         self.set_token_context(*registration.game_token_id, *registration.context_id);
-        self.set_token_entry_id(*registration.game_token_id, *registration.entry_id);
     }
 
     fn entry_exists(self: @T, context_id: u64, entry_id: u32) -> bool {
         self.get_token_id(context_id, entry_id) != 0
     }
 
-    fn is_entry_banned(self: @T, context_id: u64, entry_id: u32) -> bool {
-        let flags = self.get_flags(context_id, entry_id);
+    fn is_token_submitted(self: @T, token_id: felt252) -> bool {
+        let flags = self.get_flags(token_id);
+        RegistrationOperationsImpl::is_submitted(flags)
+    }
+
+    fn is_token_banned(self: @T, token_id: felt252) -> bool {
+        let flags = self.get_flags(token_id);
         RegistrationOperationsImpl::is_banned(flags)
     }
 
-    fn mark_entry_submitted(ref self: T, context_id: u64, entry_id: u32) {
-        let flags = self.get_flags(context_id, entry_id);
-        self.set_flags(context_id, entry_id, RegistrationOperationsImpl::set_submitted(flags));
+    fn mark_token_submitted(ref self: T, token_id: felt252) {
+        let flags = self.get_flags(token_id);
+        self.set_flags(token_id, RegistrationOperationsImpl::set_submitted(flags));
     }
 
-    fn ban_entry(ref self: T, context_id: u64, entry_id: u32) {
-        let flags = self.get_flags(context_id, entry_id);
-        self.set_flags(context_id, entry_id, RegistrationOperationsImpl::set_banned(flags));
+    fn ban_token(ref self: T, token_id: felt252) {
+        let flags = self.get_flags(token_id);
+        self.set_flags(token_id, RegistrationOperationsImpl::set_banned(flags));
     }
 
     fn increment_entry_count(ref self: T, context_id: u64) -> u32 {

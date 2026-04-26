@@ -15,8 +15,8 @@ pub trait IRegistration<TState> {
     /// Check if an entry exists at (context_id, entry_id)
     fn entry_exists(self: @TState, context_id: u64, entry_id: u32) -> bool;
 
-    /// Check if an entry is banned
-    fn is_entry_banned(self: @TState, context_id: u64, entry_id: u32) -> bool;
+    /// Check if a token is banned
+    fn is_token_banned(self: @TState, token_id: felt252) -> bool;
 
     /// Get entry count for a context
     fn get_entry_count(self: @TState, context_id: u64) -> u32;

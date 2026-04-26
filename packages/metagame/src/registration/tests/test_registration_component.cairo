@@ -6,18 +6,18 @@ trait IRegistrationMock<TContractState> {
     // From IRegistration (component embedded)
     fn get_entry(self: @TContractState, context_id: u64, entry_id: u32) -> Registration;
     fn entry_exists(self: @TContractState, context_id: u64, entry_id: u32) -> bool;
-    fn is_entry_banned(self: @TContractState, context_id: u64, entry_id: u32) -> bool;
+    fn is_token_banned(self: @TContractState, token_id: felt252) -> bool;
     fn get_entry_count(self: @TContractState, context_id: u64) -> u32;
     // From mock externals (exposing internal trait for tests)
     fn set_entry(ref self: TContractState, registration: Registration);
     fn increment_entry_count(ref self: TContractState, context_id: u64) -> u32;
-    fn mark_entry_submitted(ref self: TContractState, context_id: u64, entry_id: u32);
-    fn ban_entry(ref self: TContractState, context_id: u64, entry_id: u32);
+    fn mark_token_submitted(ref self: TContractState, token_id: felt252);
+    fn ban_token(ref self: TContractState, token_id: felt252);
     fn assert_valid_for_submission(
         self: @TContractState, registration: Registration, context_id: u64,
     );
     fn get_token_context(self: @TContractState, token_id: felt252) -> u64;
-    fn get_entry_id_for_token(self: @TContractState, token_id: felt252) -> u32;
+    fn is_token_submitted(self: @TContractState, token_id: felt252) -> bool;
 }
 
 fn deploy_mock() -> IRegistrationMockDispatcher {
@@ -86,60 +86,63 @@ fn test_set_entry_zero_token_id_panics() {
 }
 
 // ============================================================================
-// is_entry_banned
+// is_token_banned
 // ============================================================================
 
 #[test]
-fn test_is_entry_banned_default_false() {
+fn test_is_token_banned_default_false() {
     let mock = deploy_mock();
-    let banned = mock.is_entry_banned(1, 1);
+    let banned = mock.is_token_banned(0xDEAD);
     assert!(!banned, "default is_banned should be false");
 }
 
 #[test]
-fn test_ban_entry() {
+fn test_ban_token() {
     let mock = deploy_mock();
     let context_id: u64 = 10;
     let entry_id: u32 = 1;
+    let token_id: felt252 = 0xBBBB;
 
-    let reg = make_registration(context_id, entry_id, 0xBBBB, false, false);
+    let reg = make_registration(context_id, entry_id, token_id, false, false);
     mock.set_entry(reg);
 
-    assert!(!mock.is_entry_banned(context_id, entry_id), "should not be banned initially");
+    assert!(!mock.is_token_banned(token_id), "should not be banned initially");
 
-    mock.ban_entry(context_id, entry_id);
+    mock.ban_token(token_id);
 
-    assert!(mock.is_entry_banned(context_id, entry_id), "should be banned after ban call");
+    assert!(mock.is_token_banned(token_id), "should be banned after ban call");
 
-    // Verify other fields are preserved
+    // Verify other fields are preserved (round-trip via get_entry)
     let retrieved = mock.get_entry(context_id, entry_id);
-    assert!(retrieved.game_token_id == 0xBBBB, "game_token_id should be preserved after ban");
+    assert!(retrieved.game_token_id == token_id, "game_token_id should be preserved after ban");
     assert!(!retrieved.has_submitted, "has_submitted should be preserved after ban");
+    assert!(retrieved.is_banned, "is_banned should reflect through get_entry");
 }
 
 // ============================================================================
-// mark_entry_submitted
+// mark_token_submitted
 // ============================================================================
 
 #[test]
-fn test_mark_entry_submitted() {
+fn test_mark_token_submitted() {
     let mock = deploy_mock();
     let context_id: u64 = 20;
     let entry_id: u32 = 2;
+    let token_id: felt252 = 0xCCCC;
 
-    let reg = make_registration(context_id, entry_id, 0xCCCC, false, false);
+    let reg = make_registration(context_id, entry_id, token_id, false, false);
     mock.set_entry(reg);
 
-    let before = mock.get_entry(context_id, entry_id);
-    assert!(!before.has_submitted, "should not be submitted initially");
+    assert!(!mock.is_token_submitted(token_id), "should not be submitted initially");
 
-    mock.mark_entry_submitted(context_id, entry_id);
+    mock.mark_token_submitted(token_id);
 
+    assert!(mock.is_token_submitted(token_id), "should be submitted after mark");
+
+    // Verify other fields are preserved (round-trip via get_entry)
     let after = mock.get_entry(context_id, entry_id);
-    assert!(after.has_submitted, "should be submitted after mark");
-
-    // Verify other fields are preserved
-    assert!(after.game_token_id == 0xCCCC, "game_token_id should be preserved");
+    assert!(after.has_submitted, "has_submitted should reflect through get_entry");
+    assert!(after.game_token_id == token_id, "game_token_id should be preserved");
     assert!(!after.is_banned, "is_banned should be preserved");
 }
 
@@ -290,10 +293,8 @@ fn test_overwrite_entry() {
 
     // New token resolves to the slot via the reverse index.
     assert!(mock.get_token_context(0x8888) == context_id, "new token context");
-    assert!(mock.get_entry_id_for_token(0x8888) == entry_id, "new token entry_id");
-    // Previous token's reverse mappings must be cleared so it no longer claims the slot.
+    // Previous token's reverse mapping must be cleared so it no longer claims the slot.
     assert!(mock.get_token_context(0x7777) == 0, "old token context should be cleared");
-    assert!(mock.get_entry_id_for_token(0x7777) == 0, "old token entry_id should be cleared");
 }
 
 // ============================================================================
@@ -305,17 +306,18 @@ fn test_ban_then_mark_submitted() {
     let mock = deploy_mock();
     let context_id: u64 = 50;
     let entry_id: u32 = 1;
+    let token_id: felt252 = 0x9999;
 
-    let reg = make_registration(context_id, entry_id, 0x9999, false, false);
+    let reg = make_registration(context_id, entry_id, token_id, false, false);
     mock.set_entry(reg);
 
-    mock.ban_entry(context_id, entry_id);
-    mock.mark_entry_submitted(context_id, entry_id);
+    mock.ban_token(token_id);
+    mock.mark_token_submitted(token_id);
 
     let retrieved = mock.get_entry(context_id, entry_id);
     assert!(retrieved.is_banned, "should be banned");
     assert!(retrieved.has_submitted, "should be submitted");
-    assert!(retrieved.game_token_id == 0x9999, "game_token_id should be preserved");
+    assert!(retrieved.game_token_id == token_id, "game_token_id should be preserved");
 }
 
 // ============================================================================
@@ -383,18 +385,17 @@ fn test_enumerate_entries() {
 }
 
 // ============================================================================
-// Reverse lookups: token_id -> context_id / entry_id
+// Reverse lookup: token_id -> context_id
 // ============================================================================
 
 #[test]
-fn test_token_reverse_lookups_default_zero() {
+fn test_token_reverse_lookup_default_zero() {
     let mock = deploy_mock();
     assert!(mock.get_token_context(0xDEAD) == 0, "default token_context should be 0");
-    assert!(mock.get_entry_id_for_token(0xDEAD) == 0, "default entry_id_for_token should be 0");
 }
 
 #[test]
-fn test_token_reverse_lookups_after_set_entry() {
+fn test_token_reverse_lookup_after_set_entry() {
     let mock = deploy_mock();
     let context_id: u64 = 7;
     let entry_id: u32 = 3;
@@ -404,11 +405,10 @@ fn test_token_reverse_lookups_after_set_entry() {
     mock.set_entry(reg);
 
     assert!(mock.get_token_context(token_id) == context_id, "token_context mismatch");
-    assert!(mock.get_entry_id_for_token(token_id) == entry_id, "entry_id_for_token mismatch");
 }
 
 #[test]
-fn test_token_reverse_lookups_independent_tokens() {
+fn test_token_reverse_lookup_independent_tokens() {
     let mock = deploy_mock();
 
     let reg_a = make_registration(1, 1, 0xAAA, false, false);
@@ -417,7 +417,29 @@ fn test_token_reverse_lookups_independent_tokens() {
     mock.set_entry(reg_b);
 
     assert!(mock.get_token_context(0xAAA) == 1, "token A context");
-    assert!(mock.get_entry_id_for_token(0xAAA) == 1, "token A entry_id");
     assert!(mock.get_token_context(0xBBB) == 2, "token B context");
-    assert!(mock.get_entry_id_for_token(0xBBB) == 5, "token B entry_id");
+}
+
+// ============================================================================
+// Token-keyed flag isolation: flags are scoped to token, not context+entry
+// ============================================================================
+
+#[test]
+fn test_token_flags_are_independent_per_token() {
+    // Two different tokens at the same (context, entry_id) coords across two
+    // distinct contexts should not bleed flags into each other.
+    let mock = deploy_mock();
+
+    let reg_a = make_registration(1, 1, 0xA, false, false);
+    let reg_b = make_registration(2, 1, 0xB, false, false);
+    mock.set_entry(reg_a);
+    mock.set_entry(reg_b);
+
+    mock.mark_token_submitted(0xA);
+    mock.ban_token(0xB);
+
+    assert!(mock.is_token_submitted(0xA), "A submitted");
+    assert!(!mock.is_token_banned(0xA), "A not banned");
+    assert!(!mock.is_token_submitted(0xB), "B not submitted");
+    assert!(mock.is_token_banned(0xB), "B banned");
 }
