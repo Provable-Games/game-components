@@ -169,9 +169,7 @@ pub mod RegistrationComponent {
             RegistrationValidationImpl::assert_valid_for_submission(registration, context_id);
         }
 
-        fn _get_token_context(
-            self: @ComponentState<TContractState>, token_id: felt252,
-        ) -> u64 {
+        fn _get_token_context(self: @ComponentState<TContractState>, token_id: felt252) -> u64 {
             Store::get_token_context(self, token_id)
         }
 
