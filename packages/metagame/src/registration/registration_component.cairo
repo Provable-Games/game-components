@@ -1,18 +1,18 @@
 // SPDX-License-Identifier: BUSL-1.1
 
 /// RegistrationComponent handles registration storage and logic for any context.
-/// Entries are keyed by (context_id, entry_id) for direct enumeration. Flags
-/// (has_submitted / is_banned) are keyed directly by token_id, since each
-/// token belongs to exactly one context within a component instance — this
-/// gives consumers O(1) flag access from a token_id without an intermediate
-/// entry_id lookup. A reverse index maps token_id back to its context_id for
-/// the metagame `has_context` interface.
+/// Entries are keyed by (context_id, entry_id) for direct enumeration.
+/// Per-token state (context_id + has_submitted + is_banned) lives in a single
+/// packed felt252 keyed by token_id, giving consumers O(1) state access from a
+/// token without intermediate lookups.
 ///
 /// Storage layout:
 ///   - Registration_token_ids: (context_id, entry_id) -> felt252  (game token ID)
-///   - Registration_flags: token_id -> u8  (bit 0 = has_submitted, bit 1 = is_banned)
 ///   - Registration_entry_counts: context_id -> u32  (next entry_id is count + 1)
-///   - Registration_token_context: token_id -> u64  (reverse: which context owns this token)
+///   - Registration_token_state: token_id -> packed felt252
+///       bits  0..63: context_id (u64) — 0 means "not registered"
+///       bit   64:    has_submitted
+///       bit   65:    is_banned
 ///
 /// Conventions:
 ///   - context_id is expected to be >= 1. `_get_token_context` treats 0 as
@@ -35,12 +35,10 @@ pub mod RegistrationComponent {
     pub struct Storage {
         /// Game token ID keyed by (context_id, entry_id)
         Registration_token_ids: Map<(u64, u32), felt252>,
-        /// Flags keyed by token_id: bit 0 = has_submitted, bit 1 = is_banned
-        Registration_flags: Map<felt252, u8>,
         /// Entry count per context
         Registration_entry_counts: Map<u64, u32>,
-        /// Reverse: token_id -> context_id (0 if not registered)
-        Registration_token_context: Map<felt252, u64>,
+        /// Per-token packed state. See structs.cairo TokenStateStorePacking for layout.
+        Registration_token_state: Map<felt252, felt252>,
     }
 
     #[event]
@@ -66,14 +64,6 @@ pub mod RegistrationComponent {
             self.Registration_token_ids.entry((context_id, entry_id)).write(token_id);
         }
 
-        fn get_flags(self: @ComponentState<TContractState>, token_id: felt252) -> u8 {
-            self.Registration_flags.entry(token_id).read()
-        }
-
-        fn set_flags(ref self: ComponentState<TContractState>, token_id: felt252, flags: u8) {
-            self.Registration_flags.entry(token_id).write(flags);
-        }
-
         fn get_entry_count(self: @ComponentState<TContractState>, context_id: u64) -> u32 {
             self.Registration_entry_counts.entry(context_id).read()
         }
@@ -82,14 +72,16 @@ pub mod RegistrationComponent {
             self.Registration_entry_counts.entry(context_id).write(count);
         }
 
-        fn get_token_context(self: @ComponentState<TContractState>, token_id: felt252) -> u64 {
-            self.Registration_token_context.entry(token_id).read()
+        fn get_token_state_raw(
+            self: @ComponentState<TContractState>, token_id: felt252,
+        ) -> felt252 {
+            self.Registration_token_state.entry(token_id).read()
         }
 
-        fn set_token_context(
-            ref self: ComponentState<TContractState>, token_id: felt252, context_id: u64,
+        fn set_token_state_raw(
+            ref self: ComponentState<TContractState>, token_id: felt252, state: felt252,
         ) {
-            self.Registration_token_context.entry(token_id).write(context_id);
+            self.Registration_token_state.entry(token_id).write(state);
         }
     }
 
@@ -161,7 +153,7 @@ pub mod RegistrationComponent {
         }
 
         fn _get_token_context(self: @ComponentState<TContractState>, token_id: felt252) -> u64 {
-            Store::get_token_context(self, token_id)
+            RegistrationStoreTrait::get_token_context(self, token_id)
         }
 
         fn _is_token_submitted(self: @ComponentState<TContractState>, token_id: felt252) -> bool {
