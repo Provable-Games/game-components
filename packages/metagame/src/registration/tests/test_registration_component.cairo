@@ -287,6 +287,13 @@ fn test_overwrite_entry() {
     assert!(retrieved.game_token_id == 0x8888, "game_token_id should be overwritten");
     assert!(retrieved.has_submitted, "has_submitted should be overwritten");
     assert!(retrieved.is_banned, "is_banned should be overwritten");
+
+    // New token resolves to the slot via the reverse index.
+    assert!(mock.get_token_context(0x8888) == context_id, "new token context");
+    assert!(mock.get_entry_id_for_token(0x8888) == entry_id, "new token entry_id");
+    // Previous token's reverse mappings must be cleared so it no longer claims the slot.
+    assert!(mock.get_token_context(0x7777) == 0, "old token context should be cleared");
+    assert!(mock.get_entry_id_for_token(0x7777) == 0, "old token entry_id should be cleared");
 }
 
 // ============================================================================

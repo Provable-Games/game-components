@@ -11,6 +11,14 @@
 ///   - Registration_entry_counts: context_id -> u32  (next entry_id is count + 1)
 ///   - Registration_token_context: token_id -> u64  (reverse: which context owns this token)
 ///   - Registration_token_entry_id: token_id -> u32  (reverse: token's slot within its context)
+///
+/// Conventions:
+///   - context_id is expected to be >= 1. The reverse-index lookups
+///     (`_get_token_context`, `_get_entry_id_for_token`) treat 0 as
+///     "not registered", so a caller using context_id == 0 cannot
+///     distinguish a real context-zero registration from an unknown
+///     token via the reverse index. entry_id is always >= 1 by
+///     construction (see `increment_entry_count`).
 
 #[starknet::component]
 pub mod RegistrationComponent {
