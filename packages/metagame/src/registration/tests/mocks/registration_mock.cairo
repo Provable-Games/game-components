@@ -49,4 +49,14 @@ pub mod RegistrationMock {
     ) {
         self.registration.assert_valid_for_submission(@registration, context_id);
     }
+
+    #[external(v0)]
+    fn get_token_context(self: @ContractState, token_id: felt252) -> u64 {
+        self.registration._get_token_context(token_id)
+    }
+
+    #[external(v0)]
+    fn get_entry_id_for_token(self: @ContractState, token_id: felt252) -> u32 {
+        self.registration._get_entry_id_for_token(token_id)
+    }
 }

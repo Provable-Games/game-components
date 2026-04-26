@@ -36,6 +36,13 @@ pub impl RegistrationStoreImpl<T, +Store<T>, +Drop<T>> of RegistrationStoreTrait
 
     fn set_entry(ref self: T, registration: @Registration) {
         RegistrationValidationImpl::assert_valid_token_id(*registration.game_token_id);
+        // If this slot was previously held by a different token, clear its reverse
+        // mappings so the displaced token no longer claims this slot via the index.
+        let prev_token = self.get_token_id(*registration.context_id, *registration.entry_id);
+        if prev_token != 0 && prev_token != *registration.game_token_id {
+            self.set_token_context(prev_token, 0);
+            self.set_token_entry_id(prev_token, 0);
+        }
         self
             .set_token_id(
                 *registration.context_id, *registration.entry_id, *registration.game_token_id,
@@ -44,6 +51,8 @@ pub impl RegistrationStoreImpl<T, +Store<T>, +Drop<T>> of RegistrationStoreTrait
             *registration.has_submitted, *registration.is_banned,
         );
         self.set_flags(*registration.context_id, *registration.entry_id, flags);
+        self.set_token_context(*registration.game_token_id, *registration.context_id);
+        self.set_token_entry_id(*registration.game_token_id, *registration.entry_id);
     }
 
     fn entry_exists(self: @T, context_id: u64, entry_id: u32) -> bool {

@@ -8,7 +8,7 @@ trait IRegistrationMock<TContractState> {
     fn entry_exists(self: @TContractState, context_id: u64, entry_id: u32) -> bool;
     fn is_entry_banned(self: @TContractState, context_id: u64, entry_id: u32) -> bool;
     fn get_entry_count(self: @TContractState, context_id: u64) -> u32;
-    // From mock externals
+    // From mock externals (exposing internal trait for tests)
     fn set_entry(ref self: TContractState, registration: Registration);
     fn increment_entry_count(ref self: TContractState, context_id: u64) -> u32;
     fn mark_entry_submitted(ref self: TContractState, context_id: u64, entry_id: u32);
@@ -16,6 +16,8 @@ trait IRegistrationMock<TContractState> {
     fn assert_valid_for_submission(
         self: @TContractState, registration: Registration, context_id: u64,
     );
+    fn get_token_context(self: @TContractState, token_id: felt252) -> u64;
+    fn get_entry_id_for_token(self: @TContractState, token_id: felt252) -> u32;
 }
 
 fn deploy_mock() -> IRegistrationMockDispatcher {
@@ -285,6 +287,13 @@ fn test_overwrite_entry() {
     assert!(retrieved.game_token_id == 0x8888, "game_token_id should be overwritten");
     assert!(retrieved.has_submitted, "has_submitted should be overwritten");
     assert!(retrieved.is_banned, "is_banned should be overwritten");
+
+    // New token resolves to the slot via the reverse index.
+    assert!(mock.get_token_context(0x8888) == context_id, "new token context");
+    assert!(mock.get_entry_id_for_token(0x8888) == entry_id, "new token entry_id");
+    // Previous token's reverse mappings must be cleared so it no longer claims the slot.
+    assert!(mock.get_token_context(0x7777) == 0, "old token context should be cleared");
+    assert!(mock.get_entry_id_for_token(0x7777) == 0, "old token entry_id should be cleared");
 }
 
 // ============================================================================
@@ -371,4 +380,44 @@ fn test_enumerate_entries() {
 
     // 0x100 + 0x200 + 0x300 = 0x600
     assert!(token_sum == 0x600, "token sum mismatch");
+}
+
+// ============================================================================
+// Reverse lookups: token_id -> context_id / entry_id
+// ============================================================================
+
+#[test]
+fn test_token_reverse_lookups_default_zero() {
+    let mock = deploy_mock();
+    assert!(mock.get_token_context(0xDEAD) == 0, "default token_context should be 0");
+    assert!(mock.get_entry_id_for_token(0xDEAD) == 0, "default entry_id_for_token should be 0");
+}
+
+#[test]
+fn test_token_reverse_lookups_after_set_entry() {
+    let mock = deploy_mock();
+    let context_id: u64 = 7;
+    let entry_id: u32 = 3;
+    let token_id: felt252 = 0xCAFE;
+
+    let reg = make_registration(context_id, entry_id, token_id, false, false);
+    mock.set_entry(reg);
+
+    assert!(mock.get_token_context(token_id) == context_id, "token_context mismatch");
+    assert!(mock.get_entry_id_for_token(token_id) == entry_id, "entry_id_for_token mismatch");
+}
+
+#[test]
+fn test_token_reverse_lookups_independent_tokens() {
+    let mock = deploy_mock();
+
+    let reg_a = make_registration(1, 1, 0xAAA, false, false);
+    let reg_b = make_registration(2, 5, 0xBBB, false, false);
+    mock.set_entry(reg_a);
+    mock.set_entry(reg_b);
+
+    assert!(mock.get_token_context(0xAAA) == 1, "token A context");
+    assert!(mock.get_entry_id_for_token(0xAAA) == 1, "token A entry_id");
+    assert!(mock.get_token_context(0xBBB) == 2, "token B context");
+    assert!(mock.get_entry_id_for_token(0xBBB) == 5, "token B entry_id");
 }
