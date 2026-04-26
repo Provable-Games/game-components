@@ -24,8 +24,6 @@ pub trait RegistrationStoreTrait<T> {
     fn increment_entry_count(ref self: T, context_id: u64) -> u32;
     /// Validate registration for score submission
     fn validate_for_submission(self: @T, context_id: u64, entry_id: u32);
-    /// Reverse lookup: get the full registration for a token (panics if unregistered)
-    fn get_entry_by_token(self: @T, token_id: felt252) -> Registration;
 }
 
 pub impl RegistrationStoreImpl<T, +Store<T>, +Drop<T>> of RegistrationStoreTrait<T> {
@@ -79,11 +77,5 @@ pub impl RegistrationStoreImpl<T, +Store<T>, +Drop<T>> of RegistrationStoreTrait
     fn validate_for_submission(self: @T, context_id: u64, entry_id: u32) {
         let entry = self.get_entry(context_id, entry_id);
         RegistrationValidationImpl::assert_valid_for_submission(@entry, context_id);
-    }
-
-    fn get_entry_by_token(self: @T, token_id: felt252) -> Registration {
-        let context_id = self.get_token_context(token_id);
-        let entry_id = self.get_token_entry_id(token_id);
-        self.get_entry(context_id, entry_id)
     }
 }

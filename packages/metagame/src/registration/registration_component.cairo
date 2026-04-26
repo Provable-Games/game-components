@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 
 /// RegistrationComponent handles registration storage and logic for any context.
-/// Entries are keyed by (context_id, entry_id) for direct enumeration. Reverse
-/// indexes keyed by token_id support O(1) token-to-entry lookups, since each
+/// Entries are keyed by (context_id, entry_id) for direct enumeration. A reverse
+/// index keyed by token_id supports O(1) token-to-entry lookups, since each
 /// token belongs to exactly one context within a component instance.
 ///
 /// Storage layout:
@@ -123,24 +123,6 @@ pub mod RegistrationComponent {
         fn get_entry_count(self: @ComponentState<TContractState>, context_id: u64) -> u32 {
             Store::get_entry_count(self, context_id)
         }
-
-        fn get_token_context(
-            self: @ComponentState<TContractState>, token_id: felt252,
-        ) -> u64 {
-            Store::get_token_context(self, token_id)
-        }
-
-        fn get_entry_id_for_token(
-            self: @ComponentState<TContractState>, token_id: felt252,
-        ) -> u32 {
-            Store::get_token_entry_id(self, token_id)
-        }
-
-        fn get_entry_by_token(
-            self: @ComponentState<TContractState>, token_id: felt252,
-        ) -> Registration {
-            RegistrationStoreTrait::get_entry_by_token(self, token_id)
-        }
     }
 
     #[generate_trait]
@@ -197,12 +179,6 @@ pub mod RegistrationComponent {
             self: @ComponentState<TContractState>, token_id: felt252,
         ) -> u32 {
             Store::get_token_entry_id(self, token_id)
-        }
-
-        fn _get_entry_by_token(
-            self: @ComponentState<TContractState>, token_id: felt252,
-        ) -> Registration {
-            RegistrationStoreTrait::get_entry_by_token(self, token_id)
         }
     }
 }

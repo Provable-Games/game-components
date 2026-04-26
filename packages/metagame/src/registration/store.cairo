@@ -11,7 +11,7 @@ pub trait Store<T> {
     /// Reverse index: token_id -> context_id (0 if not registered)
     fn get_token_context(self: @T, token_id: felt252) -> u64;
     fn set_token_context(ref self: T, token_id: felt252, context_id: u64);
-    /// Reverse index: token_id -> entry_id (0 if not registered)
+    /// Reverse index: token_id -> entry_id within its context (0 if not registered)
     fn get_token_entry_id(self: @T, token_id: felt252) -> u32;
     fn set_token_entry_id(ref self: T, token_id: felt252, entry_id: u32);
 }

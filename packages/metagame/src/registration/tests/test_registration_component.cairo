@@ -8,10 +8,7 @@ trait IRegistrationMock<TContractState> {
     fn entry_exists(self: @TContractState, context_id: u64, entry_id: u32) -> bool;
     fn is_entry_banned(self: @TContractState, context_id: u64, entry_id: u32) -> bool;
     fn get_entry_count(self: @TContractState, context_id: u64) -> u32;
-    fn get_token_context(self: @TContractState, token_id: felt252) -> u64;
-    fn get_entry_id_for_token(self: @TContractState, token_id: felt252) -> u32;
-    fn get_entry_by_token(self: @TContractState, token_id: felt252) -> Registration;
-    // From mock externals
+    // From mock externals (exposing internal trait for tests)
     fn set_entry(ref self: TContractState, registration: Registration);
     fn increment_entry_count(ref self: TContractState, context_id: u64) -> u32;
     fn mark_entry_submitted(ref self: TContractState, context_id: u64, entry_id: u32);
@@ -19,6 +16,8 @@ trait IRegistrationMock<TContractState> {
     fn assert_valid_for_submission(
         self: @TContractState, registration: Registration, context_id: u64,
     );
+    fn get_token_context(self: @TContractState, token_id: felt252) -> u64;
+    fn get_entry_id_for_token(self: @TContractState, token_id: felt252) -> u32;
 }
 
 fn deploy_mock() -> IRegistrationMockDispatcher {
@@ -399,31 +398,6 @@ fn test_token_reverse_lookups_after_set_entry() {
 
     assert!(mock.get_token_context(token_id) == context_id, "token_context mismatch");
     assert!(mock.get_entry_id_for_token(token_id) == entry_id, "entry_id_for_token mismatch");
-
-    let by_token = mock.get_entry_by_token(token_id);
-    assert!(by_token.context_id == context_id, "by_token context_id mismatch");
-    assert!(by_token.entry_id == entry_id, "by_token entry_id mismatch");
-    assert!(by_token.game_token_id == token_id, "by_token game_token_id mismatch");
-    assert!(!by_token.has_submitted, "by_token has_submitted should be false");
-    assert!(!by_token.is_banned, "by_token is_banned should be false");
-}
-
-#[test]
-fn test_get_entry_by_token_reflects_flag_updates() {
-    let mock = deploy_mock();
-    let context_id: u64 = 9;
-    let entry_id: u32 = 1;
-    let token_id: felt252 = 0xBEEF;
-
-    let reg = make_registration(context_id, entry_id, token_id, false, false);
-    mock.set_entry(reg);
-
-    mock.mark_entry_submitted(context_id, entry_id);
-    mock.ban_entry(context_id, entry_id);
-
-    let by_token = mock.get_entry_by_token(token_id);
-    assert!(by_token.has_submitted, "should reflect submitted flag");
-    assert!(by_token.is_banned, "should reflect banned flag");
 }
 
 #[test]

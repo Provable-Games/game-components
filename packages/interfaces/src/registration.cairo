@@ -20,13 +20,4 @@ pub trait IRegistration<TState> {
 
     /// Get entry count for a context
     fn get_entry_count(self: @TState, context_id: u64) -> u32;
-
-    /// Get the context_id a token is registered for (0 if not registered)
-    fn get_token_context(self: @TState, token_id: felt252) -> u64;
-
-    /// Get the entry_id assigned to a token (0 if not registered)
-    fn get_entry_id_for_token(self: @TState, token_id: felt252) -> u32;
-
-    /// Get the full registration entry for a token
-    fn get_entry_by_token(self: @TState, token_id: felt252) -> Registration;
 }
