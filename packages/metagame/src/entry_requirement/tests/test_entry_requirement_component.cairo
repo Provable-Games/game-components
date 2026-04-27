@@ -639,9 +639,11 @@ fn deploy_accepting_limited_entry_validator_mock(owner: ContractAddress) -> Cont
 // ============================================================================
 
 #[test]
-fn test_update_qualification_entries_extension_none_entries_left() {
-    // EntryValidatorMock returns Option::None from entries_left
-    // This means no limit check - should succeed silently
+fn test_update_qualification_entries_extension_is_noop() {
+    // The framework no longer cross-checks the extension's `entries_left` here — extensions
+    // enforce both eligibility and remaining-entry quota inside their own `valid_entry`.
+    // `update_qualification_entries` must therefore complete silently for any extension
+    // requirement, regardless of what the extension would have reported.
     let mock = deploy_entry_requirement_mock();
     let caller = make_address(0x555);
     let validator_addr = deploy_entry_validator_mock(caller);
@@ -657,7 +659,6 @@ fn test_update_qualification_entries_extension_none_entries_left() {
     snforge_std::cheat_caller_address(
         mock.contract_address, caller, snforge_std::CheatSpan::TargetCalls(1),
     );
-    // Should not panic - entries_left returns None (no limit)
     mock
         .update_qualification_entries(
             context_id, QualificationProof::Extension(array![].span()), req,
@@ -665,36 +666,9 @@ fn test_update_qualification_entries_extension_none_entries_left() {
 }
 
 #[test]
-fn test_update_qualification_entries_extension_some_entries_remaining() {
-    // AcceptingLimitedEntryValidatorMock returns Option::Some(5)
-    // entries_left > 0 - should succeed
-    let mock = deploy_entry_requirement_mock();
-    let caller = make_address(0x555);
-    let validator_addr = deploy_accepting_limited_entry_validator_mock(caller);
-    let context_id: u64 = 81;
-
-    let req = EntryRequirement {
-        entry_limit: 10,
-        entry_requirement_type: EntryRequirementType::extension(
-            ExtensionConfig { address: validator_addr, config: array![].span() },
-        ),
-    };
-
-    snforge_std::cheat_caller_address(
-        mock.contract_address, caller, snforge_std::CheatSpan::TargetCalls(1),
-    );
-    // Should not panic - entries_left returns Some(5) which is > 0
-    mock
-        .update_qualification_entries(
-            context_id, QualificationProof::Extension(array![].span()), req,
-        );
-}
-
-#[test]
-#[should_panic(expected: "EntryRequirement: No entries left according to extension")]
-fn test_update_qualification_entries_extension_zero_entries_left() {
-    // RejectingEntryValidatorMock returns Option::Some(0)
-    // entries_left == 0 - should panic
+fn test_update_qualification_entries_extension_noop_even_when_extension_would_reject() {
+    // Same as above with a rejecting/zero-entries-left mock. Pre-change this would have
+    // panicked with "No entries left"; post-change the framework never asks the extension.
     let mock = deploy_entry_requirement_mock();
     let caller = make_address(0x555);
     let validator_addr = deploy_rejecting_entry_validator_mock(caller);
@@ -717,10 +691,11 @@ fn test_update_qualification_entries_extension_zero_entries_left() {
 }
 
 #[test]
-#[should_panic(
-    expected: "EntryRequirement: Provided qualification proof is not of type 'Extension'",
-)]
-fn test_update_qualification_entries_extension_wrong_proof_type() {
+fn test_update_qualification_entries_extension_accepts_any_proof_type() {
+    // Pre-change the framework destructured the qualifier inside the extension branch and
+    // panicked on a non-Extension proof. Post-change the branch is a no-op, so any proof
+    // shape is accepted (the qualifier is consumed by `validate_qualification`, which runs
+    // earlier in `enter_tournament`).
     let mock = deploy_entry_requirement_mock();
     let caller = make_address(0x555);
     let validator_addr = deploy_entry_validator_mock(caller);
@@ -733,7 +708,9 @@ fn test_update_qualification_entries_extension_wrong_proof_type() {
         ),
     };
 
-    // Pass NFT proof for extension requirement - should panic
+    snforge_std::cheat_caller_address(
+        mock.contract_address, caller, snforge_std::CheatSpan::TargetCalls(1),
+    );
     mock
         .update_qualification_entries(
             context_id, QualificationProof::NFT(NFTQualification { token_id: 0x123 }), req,
