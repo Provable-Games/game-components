@@ -183,6 +183,13 @@ pub impl EntryRequirementStoreImpl<T, +Store<T>, +Drop<T>> of EntryRequirementSt
         }
     }
 
+    /// Track a successful entry against the configured limit.
+    ///
+    /// For extension-typed requirements this is a no-op: extensions enforce both eligibility
+    /// and remaining-entry quota inside their own `valid_entry` (already called by
+    /// `validate_qualification`). The framework deliberately does NOT make a second
+    /// `entries_left` cross-contract call here — it would walk the same on-chain state a
+    /// second time. See `IEntryRequirementExtension` docs for the contract.
     fn update_qualification_entries(
         ref self: T,
         context_id: u64,
@@ -190,13 +197,7 @@ pub impl EntryRequirementStoreImpl<T, +Store<T>, +Drop<T>> of EntryRequirementSt
         entry_requirement: EntryRequirement,
     ) {
         match entry_requirement.entry_requirement_type {
-            EntryRequirementType::extension(_) => {
-                // Extensions enforce both eligibility and remaining-entry quota inside
-                // their own `valid_entry` (called from `validate_qualification`). The
-                // framework no longer makes a redundant `entries_left` cross-contract
-                // call here — it would walk the same on-chain state a second time.
-                // See IEntryRequirementExtension docs for the contract.
-            },
+            EntryRequirementType::extension(_) => {},
             _ => {
                 let entry_limit = entry_requirement.entry_limit;
                 if entry_limit != 0 {
