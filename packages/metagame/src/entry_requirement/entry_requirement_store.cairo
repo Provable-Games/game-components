@@ -190,35 +190,12 @@ pub impl EntryRequirementStoreImpl<T, +Store<T>, +Drop<T>> of EntryRequirementSt
         entry_requirement: EntryRequirement,
     ) {
         match entry_requirement.entry_requirement_type {
-            EntryRequirementType::extension(extension_config) => {
-                let extension_address = extension_config.address;
-                let extension_dispatcher = IEntryRequirementExtensionDispatcher {
-                    contract_address: extension_address,
-                };
-                let display_extension_address: felt252 = extension_address.into();
-                let caller_address = get_caller_address();
-                let context_owner = get_contract_address();
-
-                let qualification = match qualifier {
-                    QualificationProof::Extension(qual) => qual,
-                    _ => panic!(
-                        "EntryRequirement: Provided qualification proof is not of type 'Extension'",
-                    ),
-                };
-
-                let entries_left = extension_dispatcher
-                    .entries_left(context_owner, context_id, caller_address, qualification);
-
-                match entries_left {
-                    Option::Some(entries_left) => {
-                        assert!(
-                            entries_left > 0,
-                            "EntryRequirement: No entries left according to extension {}",
-                            display_extension_address,
-                        );
-                    },
-                    Option::None => {},
-                }
+            EntryRequirementType::extension(_) => {
+                // Extensions enforce both eligibility and remaining-entry quota inside
+                // their own `valid_entry` (called from `validate_qualification`). The
+                // framework no longer makes a redundant `entries_left` cross-contract
+                // call here — it would walk the same on-chain state a second time.
+                // See IEntryRequirementExtension docs for the contract.
             },
             _ => {
                 let entry_limit = entry_requirement.entry_limit;
