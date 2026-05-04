@@ -129,7 +129,7 @@ pub mod TicketBoothComponent {
 
             // Mint the game token with configured settings
             let token_id = self
-                .mint_game(player_name, to, soulbound, self.start_time.read(), expiration);
+                .mint_game(player_name, to, soulbound, current_time, expiration);
 
             // Emit the event
             self.emit(GameBought { player: to, token_id, payment_type });
