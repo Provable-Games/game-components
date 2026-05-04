@@ -44,6 +44,7 @@ pub mod TicketBoothComponent {
         expiration_time: Option<u64>,
         golden_passes: Map<ContractAddress, GoldenPass>,
         golden_pass_last_used: Map<(ContractAddress, u128), u64>,
+        closed: bool,
     }
 
     #[event]
@@ -86,6 +87,7 @@ pub mod TicketBoothComponent {
         ) -> bool;
         fn ticket_receiver_address(self: @TContractState) -> ContractAddress;
         fn opening_time(self: @TContractState) -> u64;
+        fn is_closed(self: @TContractState) -> bool;
     }
 
     #[embeddable_as(TicketBoothImpl)]
@@ -100,6 +102,7 @@ pub mod TicketBoothComponent {
             soulbound: bool,
         ) -> felt252 {
             assert!(get_block_timestamp() >= self.opening_time.read(), "Game not open yet");
+            self.assert_not_closed();
 
             let caller = get_caller_address();
             let current_time = get_block_timestamp();
@@ -191,6 +194,10 @@ pub mod TicketBoothComponent {
 
         fn opening_time(self: @ComponentState<TContractState>) -> u64 {
             self.opening_time.read()
+        }
+
+        fn is_closed(self: @ComponentState<TContractState>) -> bool {
+            self.closed.read()
         }
     }
 
@@ -361,6 +368,18 @@ pub mod TicketBoothComponent {
                 get_block_timestamp() < self.opening_time.read(),
                 "Cannot update after opening time",
             );
+        }
+
+        fn assert_not_closed(self: @ComponentState<TContractState>) {
+            assert!(!self.closed.read(), "Ticket booth is closed");
+        }
+
+        fn close_internal(ref self: ComponentState<TContractState>) {
+            self.closed.write(true);
+        }
+
+        fn open_internal(ref self: ComponentState<TContractState>) {
+            self.closed.write(false);
         }
 
         // Internal functions with business logic - called by contract's ownership-checked functions
