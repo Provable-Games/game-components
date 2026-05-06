@@ -600,9 +600,9 @@ fn test_core_token_playability_with_lifecycle() {
             0,
         );
 
-    // Token that ends soon after current time (to test expiry)
-    // end_delay = end - start = (PAST_TIME + 1) - PAST_TIME = 1
-    // lifecycle.end = minted_at + start_delay + end_delay = CURRENT_TIME + 0 + 1 = CURRENT_TIME + 1
+    // Token that ends one second after the current time (to test expiry).
+    // `end` is interpreted as an absolute timestamp, not a duration — so we
+    // pass `CURRENT_TIME + 1` directly rather than `start + 1`.
     let expiring_token = test_contracts
         .test_token
         .mint(
@@ -610,7 +610,7 @@ fn test_core_token_playability_with_lifecycle() {
             Option::None,
             Option::None,
             Option::Some(PAST_TIME),
-            Option::Some(PAST_TIME + 1), // end_delay = 1 second (end - start)
+            Option::Some(CURRENT_TIME + 1),
             Option::None,
             Option::None,
             Option::None,
@@ -646,10 +646,8 @@ fn test_core_token_playability_with_lifecycle() {
 
     // Verify playability at CURRENT_TIME
     assert!(!test_contracts.test_token.is_playable(future_token), "Future token not playable yet");
-    // expiring_token: start_delay=0 (PAST_TIME < CURRENT_TIME), end_delay=1 (end - start)
-    // lifecycle.start = minted_at + start_delay = CURRENT_TIME + 0 = CURRENT_TIME
-    // lifecycle.end = minted_at + start_delay + end_delay = CURRENT_TIME + 0 + 1 = CURRENT_TIME + 1
-    // At CURRENT_TIME: playable (start <= now < end)
+    // expiring_token: start clamped to mint time (since PAST_TIME < CURRENT_TIME),
+    // end = CURRENT_TIME + 1. At CURRENT_TIME: playable (start <= now < end).
     assert!(
         test_contracts.test_token.is_playable(expiring_token),
         "Expiring token should be playable now",

@@ -588,6 +588,104 @@ fn test_mint_with_max_timestamp_values() {
     assert!(metadata.lifecycle.end == end_time, "End time should match");
 }
 
+// Regression: when `start` is in the past (e.g. retroactive mint, late entry
+// into a window that already opened) the packed token cannot represent
+// `lifecycle.start < minted_at`, so the effective start is clamped to mint
+// time. The reconstructed `lifecycle.end` must still equal the caller's
+// requested end, not `mint_time + (end - start)` — which would silently
+// extend the playable window past the cutoff the caller specified.
+#[test]
+fn test_mint_with_start_in_past_clamps_to_mint_time_and_preserves_end() {
+    let test_contracts = setup();
+
+    // Mint mid-way between PAST_TIME and FUTURE_TIME with start=PAST_TIME.
+    let mint_time = CURRENT_TIME;
+    start_cheat_block_timestamp(test_contracts.test_token.contract_address, mint_time);
+
+    let token_id = test_contracts
+        .test_token
+        .mint(
+            test_contracts.minigame.contract_address,
+            Option::None,
+            Option::None,
+            Option::Some(PAST_TIME),
+            Option::Some(FUTURE_TIME),
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            ALICE(),
+            false,
+            false,
+            0,
+            0,
+        );
+
+    let metadata = test_contracts.test_token.token_metadata(token_id);
+    assert!(
+        metadata.lifecycle.start == mint_time,
+        "Start should clamp to mint time, got {}",
+        metadata.lifecycle.start,
+    );
+    assert!(
+        metadata.lifecycle.end == FUTURE_TIME,
+        "End should equal caller-specified end ({}), got {}",
+        FUTURE_TIME,
+        metadata.lifecycle.end,
+    );
+
+    stop_cheat_block_timestamp(test_contracts.test_token.contract_address);
+}
+
+// Regression: passing `start = None` (defaults to 0) with an absolute end
+// previously made `end_delay = end - 0`, which both overflowed the 25-bit
+// field for any reasonable timestamp and gave the token the wrong window.
+// With the fix, omitted start is treated as "starts at mint time" and
+// end_delay collapses to `end - mint_time`.
+#[test]
+fn test_mint_with_unset_start_uses_mint_time_as_start() {
+    let test_contracts = setup();
+
+    let mint_time = CURRENT_TIME;
+    start_cheat_block_timestamp(test_contracts.test_token.contract_address, mint_time);
+
+    let token_id = test_contracts
+        .test_token
+        .mint(
+            test_contracts.minigame.contract_address,
+            Option::None,
+            Option::None,
+            Option::None, // start unset
+            Option::Some(FUTURE_TIME),
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            ALICE(),
+            false,
+            false,
+            0,
+            0,
+        );
+
+    let metadata = test_contracts.test_token.token_metadata(token_id);
+    assert!(
+        metadata.lifecycle.start == mint_time,
+        "Start should default to mint time, got {}",
+        metadata.lifecycle.start,
+    );
+    assert!(
+        metadata.lifecycle.end == FUTURE_TIME,
+        "End should equal caller-specified end ({}), got {}",
+        FUTURE_TIME,
+        metadata.lifecycle.end,
+    );
+
+    stop_cheat_block_timestamp(test_contracts.test_token.contract_address);
+}
+
 #[test]
 fn test_mint_sequential_token_ids() {
     // Verify token IDs are sequential
