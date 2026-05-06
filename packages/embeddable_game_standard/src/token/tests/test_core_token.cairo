@@ -686,6 +686,102 @@ fn test_mint_with_unset_start_uses_mint_time_as_start() {
     stop_cheat_block_timestamp(test_contracts.test_token.contract_address);
 }
 
+// Regression: minting with an `end` already past `current_time` would
+// previously slip through and produce `end_delay = 0`, which the storage
+// format silently treats as "no expiration". Must panic instead so caller
+// bugs surface loudly rather than producing an immortal token.
+#[test]
+#[should_panic(expected: "MinigameToken: Lifecycle end must be in the future and after start")]
+fn test_mint_with_end_before_mint_time_panics() {
+    let test_contracts = setup();
+
+    start_cheat_block_timestamp(test_contracts.test_token.contract_address, CURRENT_TIME);
+
+    test_contracts
+        .test_token
+        .mint(
+            test_contracts.minigame.contract_address,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::Some(PAST_TIME), // end already in the past
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            ALICE(),
+            false,
+            false,
+            0,
+            0,
+        );
+}
+
+// Regression: `end == current_time` is the boundary case — the token would
+// expire the instant it's minted, so `end_delay` collapses to 0 and the
+// storage format would interpret it as "no expiration".
+#[test]
+#[should_panic(expected: "MinigameToken: Lifecycle end must be in the future and after start")]
+fn test_mint_with_end_equal_to_mint_time_panics() {
+    let test_contracts = setup();
+
+    start_cheat_block_timestamp(test_contracts.test_token.contract_address, CURRENT_TIME);
+
+    test_contracts
+        .test_token
+        .mint(
+            test_contracts.minigame.contract_address,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::Some(CURRENT_TIME),
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            ALICE(),
+            false,
+            false,
+            0,
+            0,
+        );
+}
+
+// Regression: `start == end` with both in the future passes `validate()`
+// (which only enforces `start <= end`) and the `end > current_time` half of
+// the assertion, but produces a zero-length window — never playable, and
+// `end_delay = 0` would silently flip the token to "no expiration". Must
+// panic on the conjunctive `end > start` half of the guard.
+#[test]
+#[should_panic(expected: "MinigameToken: Lifecycle end must be in the future and after start")]
+fn test_mint_with_zero_length_window_panics() {
+    let test_contracts = setup();
+
+    start_cheat_block_timestamp(test_contracts.test_token.contract_address, CURRENT_TIME);
+
+    test_contracts
+        .test_token
+        .mint(
+            test_contracts.minigame.contract_address,
+            Option::None,
+            Option::None,
+            Option::Some(FUTURE_TIME),
+            Option::Some(FUTURE_TIME),
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            ALICE(),
+            false,
+            false,
+            0,
+            0,
+        );
+}
+
 #[test]
 fn test_mint_sequential_token_ids() {
     // Verify token IDs are sequential

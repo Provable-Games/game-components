@@ -858,14 +858,23 @@ pub mod CoreTokenComponent {
             let lifecycle = token_state::create_lifecycle_with_defaults(start, end);
             lifecycle.validate();
 
-            // A non-zero `end` must be in the future at mint time. Otherwise the
-            // packed `end_delay` would collapse to 0 — which the storage format
-            // treats as "no expiration" — silently producing a token that lives
-            // forever instead of one that's already expired (almost certainly a
-            // caller bug).
+            // A non-zero `end` must be strictly after both `current_time` and
+            // `lifecycle.start`. Otherwise the packed `end_delay` collapses to
+            // 0 — which the storage format treats as "no expiration" —
+            // silently producing a token that lives forever. Two failure modes
+            // hit this path:
+            //
+            //   * `end <= current_time` — caller passed a window already in
+            //     the past; `lifecycle.end > effective_start` is false because
+            //     `effective_start >= current_time >= end`.
+            //   * `end == start` (with `start > current_time`) — `validate()`
+            //     allows it, but a zero-length window is never playable
+            //     (`is_playable` requires `start <= now < end`), so the caller
+            //     almost certainly didn't mean to mint an immortal token.
             assert!(
-                lifecycle.end == 0 || lifecycle.end > current_time,
-                "MinigameToken: Lifecycle end must be in the future",
+                lifecycle.end == 0
+                    || (lifecycle.end > current_time && lifecycle.end > lifecycle.start),
+                "MinigameToken: Lifecycle end must be in the future and after start",
             );
 
             // Compute delays relative to current time.
