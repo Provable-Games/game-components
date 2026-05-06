@@ -858,14 +858,50 @@ pub mod CoreTokenComponent {
             let lifecycle = token_state::create_lifecycle_with_defaults(start, end);
             lifecycle.validate();
 
-            // Compute delays relative to current time
-            let start_delay: u32 = if lifecycle.start > current_time {
-                (lifecycle.start - current_time).try_into().unwrap()
+            // A non-zero `end` must be strictly after both `current_time` and
+            // `lifecycle.start`. Otherwise the packed `end_delay` collapses to
+            // 0 — which the storage format treats as "no expiration" —
+            // silently producing a token that lives forever. Two failure modes
+            // hit this path:
+            //
+            //   * `end <= current_time` — caller passed a window already in
+            //     the past; `lifecycle.end > effective_start` is false because
+            //     `effective_start >= current_time >= end`.
+            //   * `end == start` (with `start > current_time`) — `validate()`
+            //     allows it, but a zero-length window is never playable
+            //     (`is_playable` requires `start <= now < end`), so the caller
+            //     almost certainly didn't mean to mint an immortal token.
+            assert!(
+                lifecycle.end == 0
+                    || (lifecycle.end > current_time && lifecycle.end > lifecycle.start),
+                "MinigameToken: Lifecycle end must be in the future and after start",
+            );
+
+            // Compute delays relative to current time.
+            //
+            // The packed token stores `[minted_at, start_delay, end_delay]` where
+            // both delays are non-negative u32s. That makes
+            // `lifecycle.start >= minted_at` a structural invariant — there is
+            // no representation for a window that opened before the mint.
+            //
+            // When a caller passes `start <= current_time` (e.g. retroactive
+            // mint, late entry into a tournament that already started, or an
+            // unset `start` defaulting to 0), we clamp the effective start to
+            // `current_time` and derive `end_delay` from that clamped value.
+            // Without this, `end_delay = lifecycle.end - lifecycle.start` would
+            // encode the *original* window length, and the reconstructed end
+            // (`minted_at + start_delay + end_delay`) would land at
+            // `mint_time + (end - start)` instead of the caller's intended
+            // `lifecycle.end` — silently extending the playable window past
+            // the cutoff the caller specified.
+            let effective_start = if lifecycle.start > current_time {
+                lifecycle.start
             } else {
-                0
+                current_time
             };
-            let end_delay: u32 = if lifecycle.end > 0 && lifecycle.end > lifecycle.start {
-                (lifecycle.end - lifecycle.start).try_into().unwrap()
+            let start_delay: u32 = (effective_start - current_time).try_into().unwrap();
+            let end_delay: u32 = if lifecycle.end > effective_start {
+                (lifecycle.end - effective_start).try_into().unwrap()
             } else {
                 0
             };
