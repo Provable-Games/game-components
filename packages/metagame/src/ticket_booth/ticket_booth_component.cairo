@@ -70,6 +70,14 @@ pub mod TicketBoothComponent {
             to: ContractAddress,
             soulbound: bool,
         ) -> felt252;
+        fn buy_game_with_salt(
+            ref self: TContractState,
+            payment_type: PaymentType,
+            player_name: Option<felt252>,
+            to: ContractAddress,
+            soulbound: bool,
+            salt: u16,
+        ) -> felt252;
 
         fn payment_token(self: @TContractState) -> ContractAddress;
         fn cost_to_play(self: @TContractState) -> u128;
@@ -173,7 +181,9 @@ pub mod TicketBoothComponent {
 
             // Mint the game token with configured settings
             let token_id = self
-                .mint_game_with_salt(player_name, to, soulbound, Option::Some(current_time), expiration, salt);
+                .mint_game_with_salt(
+                    player_name, to, soulbound, Option::Some(current_time), expiration, salt,
+                );
 
             // Emit the event
             self.emit(GameBought { player: to, token_id, payment_type });
