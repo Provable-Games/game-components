@@ -1,8 +1,12 @@
+use alexandria_merkle_tree::merkle_tree::poseidon::PoseidonHasherImpl;
+use alexandria_merkle_tree::merkle_tree::{Hasher, MerkleTree, MerkleTreeImpl};
+use core::poseidon::poseidon_hash_span;
 use snforge_std::{
-    ContractClassTrait, DeclareResultTrait, declare, mock_call, start_cheat_caller_address,
-    stop_cheat_caller_address,
+    ContractClassTrait, DeclareResultTrait, EventSpyAssertionsTrait, declare, mock_call, spy_events,
+    start_cheat_caller_address, stop_cheat_caller_address,
 };
 use starknet::ContractAddress;
+use crate::merkledrop::merkledrop_component::MerkledropComponent;
 use crate::merkledrop::signature::EthereumSignature;
 use crate::merkledrop::tests::mocks::mock_dungeon::{
     IMockDungeonDispatcher, IMockDungeonDispatcherTrait,
@@ -167,4 +171,80 @@ fn test__claim_unknown_tree_fails() {
     let leaf = eth_leaf_data();
     let proof: Array<felt252> = array![0];
     dungeon.claim_with_eth_signature(0x123, proof.span(), leaf.span(), recipient, test_signature());
+}
+
+// ------------------------ Off-chain root registration -------------------------
+
+#[test]
+fn test__register_root_stores_tree() {
+    let dungeon = deploy_dungeon();
+    let mut spy = spy_events();
+
+    let root: felt252 = 0xabc;
+    let end: u64 = 0xffffffffffffffff;
+    let returned = dungeon.register_drop_root(root, end);
+
+    assert!(returned == root, "register_root must return the input root");
+    assert!(dungeon.tree_expiry(root) == end, "tree expiry not stored");
+
+    // A single MerkleTreeCreated event with leaf_count = 0 (off-chain detail).
+    spy
+        .assert_emitted(
+            @array![
+                (
+                    dungeon.contract_address,
+                    MerkledropComponent::Event::MerkleTreeCreated(
+                        MerkledropComponent::MerkleTreeCreated { root, end, leaf_count: 0 },
+                    ),
+                ),
+            ],
+        );
+}
+
+#[test]
+#[should_panic(expected: "merkledrop: zero root")]
+fn test__register_root_rejects_zero() {
+    let dungeon = deploy_dungeon();
+    dungeon.register_drop_root(0, 0xffffffffffffffff);
+}
+
+#[test]
+#[should_panic(expected: "merkledrop: tree exists")]
+fn test__register_root_rejects_duplicate() {
+    let dungeon = deploy_dungeon();
+    let root: felt252 = 0xabc;
+    let end: u64 = 0xffffffffffffffff;
+    dungeon.register_drop_root(root, end);
+    // Second registration of the same root must revert.
+    dungeon.register_drop_root(root, end);
+}
+
+#[test]
+fn test__claim_with_eth_signature_after_register_root_succeeds() {
+    let dungeon = deploy_dungeon();
+    let recipient: ContractAddress = RECIPIENT_FELT.try_into().unwrap();
+
+    // Compute the root off-chain (here: in the test) using the same Poseidon
+    // scheme the component uses for verification. For a 1-leaf tree, the
+    // alexandria pad makes the sibling proof `[0]`, so the root is just
+    // poseidon-hash of (leaf, 0) in sorted order.
+    let leaf = eth_leaf_data();
+    let leaf_hash = poseidon_hash_span(leaf.span());
+    let proof: Array<felt252> = array![0];
+    let mut mt: MerkleTree<Hasher> = MerkleTreeImpl::<_, PoseidonHasherImpl>::new();
+    let root = MerkleTreeImpl::<
+        _, PoseidonHasherImpl,
+    >::compute_root(ref mt, leaf_hash, proof.span());
+
+    // Register only the precomputed root. No per-leaf events emitted.
+    let end: u64 = 0xffffffffffffffff;
+    let returned = dungeon.register_drop_root(root, end);
+    assert!(returned == root, "register_root must return the input root");
+    assert!(dungeon.tree_expiry(root) == end, "tree expiry not stored");
+
+    // Claim against the off-chain-built root using the known-good signature.
+    dungeon.claim_with_eth_signature(root, proof.span(), leaf.span(), recipient, test_signature());
+
+    assert!(dungeon.has_access(recipient, DUNGEON_ID), "access not granted");
+    assert!(dungeon.is_consumed(root, leaf_hash), "nullifier not set");
 }

@@ -1,11 +1,17 @@
 //! Merkle-drop component with two claim paths sharing one nullifier + hook.
 //!
 //! Shared mechanics:
-//!   - On-chain tree building (alexandria Poseidon). The operator submits
-//!     raw leaf data; the contract computes the root, stores it, and emits
-//!     one `LeafRegistered` event per leaf carrying the proof. Off-chain
-//!     pipelines parse these events from the registration receipt to
-//!     assemble per-leaf claim URLs / proofs.
+//!   - Two registration paths:
+//!       * `register(data, end)` -- on-chain tree building (alexandria
+//!         Poseidon). The operator submits raw leaf data; the contract
+//!         computes the root, stores it, and emits one `LeafRegistered`
+//!         event per leaf carrying the proof. Suitable for small campaigns
+//!         (under ~1000 leaves; Starknet caps events per tx at 1000).
+//!       * `register_root(root, end)` -- off-chain tree building. The
+//!         operator computes the root off-chain (using the same Poseidon
+//!         scheme this component uses for verification) and only the root
+//!         is stored on-chain. Required for large campaigns (10k+ leaves)
+//!         where per-leaf events would blow the event limit.
 //!   - Per-leaf single-use nullifier keyed by `(root, leaf_hash)`.
 //!   - The implementing contract receives an `on_merkledrop_claim`
 //!     callback after verification succeeds.
@@ -110,6 +116,27 @@ pub mod MerkledropComponent {
         +Drop<TContractState>,
         impl Merkledrop: MerkledropTrait<TContractState>,
     > of InternalTrait<TContractState> {
+        /// Register a precomputed root without building the tree on-chain.
+        /// The implementor is responsible for computing the root off-chain
+        /// (using the same Poseidon scheme this component uses for verification).
+        /// Emits a single `MerkleTreeCreated` event with `leaf_count = 0` (the
+        /// component doesn't know -- that's an off-chain detail).
+        ///
+        /// Use this path for large campaigns (10k+ leaves) where emitting one
+        /// `LeafRegistered` event per leaf would exceed Starknet's 1000-events
+        /// -per-tx limit. The off-chain pipeline already has the proofs, so
+        /// it can distribute them directly without parsing them out of a
+        /// registration receipt.
+        fn register_root(
+            ref self: ComponentState<TContractState>, root: felt252, end: u64,
+        ) -> felt252 {
+            assert!(root != 0, "merkledrop: zero root");
+            assert!(self.trees.entry(root).read() == 0, "merkledrop: tree exists");
+            self.trees.entry(root).write(end);
+            self.emit(MerkleTreeCreated { root, end, leaf_count: 0 });
+            root
+        }
+
         /// Build a tree from raw leaf data, store the root, and emit per-leaf
         /// proofs as events. Returns the root, which doubles as the tree id.
         fn register(

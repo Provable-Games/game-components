@@ -12,6 +12,7 @@ use crate::merkledrop::signature::EthereumSignature;
 #[starknet::interface]
 pub trait IMockDungeon<T> {
     fn register_drop(ref self: T, data: Span<Span<felt252>>, end: u64) -> felt252;
+    fn register_drop_root(ref self: T, root: felt252, end: u64) -> felt252;
     fn claim(
         ref self: T,
         root: felt252,
@@ -65,6 +66,10 @@ pub mod MockDungeon {
     impl MockDungeonImpl of super::IMockDungeon<ContractState> {
         fn register_drop(ref self: ContractState, data: Span<Span<felt252>>, end: u64) -> felt252 {
             self.merkledrop.register(data, end)
+        }
+
+        fn register_drop_root(ref self: ContractState, root: felt252, end: u64) -> felt252 {
+            self.merkledrop.register_root(root, end)
         }
 
         fn claim(
