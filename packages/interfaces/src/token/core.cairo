@@ -2,13 +2,16 @@
 use starknet::ContractAddress;
 use crate::structs::metagame::GameContextDetails;
 use crate::structs::token::{
-    MintParams, PlayerNameUpdate, TokenFullState, TokenMetadata, TokenMutableState,
+    MintBatchRecipient, PlayerNameUpdate, TokenFullState, TokenMetadata, TokenMutableState,
 };
 
-/// SNIP-5 interface ID derived via src5_rs: XOR of extended function selectors
-/// Includes skills_address view function. Run `src5_rs parse` for full derivation.
+/// SNIP-5 interface ID derived via src5_rs: XOR of extended function selectors.
+///
+/// Surface includes `mint`, `mint_batch_recipients(Array<MintBatchRecipient>, ...)`,
+/// `update_game`, and the read/batch-read methods. Run `src5_rs parse` against a
+/// stripped copy of this trait (see packages/interfaces/src/AGENTS.md) to rederive.
 pub const IMINIGAME_TOKEN_ID: felt252 =
-    0x21c51b9820202309d87ff5d316b17b2d9280f2db9fd8fc2c6120c3a60869e49;
+    0x246f614bd76b91c378a91877851f2ccdb99278e9fb77c782a22355059ce9906;
 
 #[starknet::interface]
 pub trait IMinigameToken<TState> {
@@ -63,12 +66,16 @@ pub trait IMinigameToken<TState> {
         salt: u16,
         metadata: u16,
     ) -> felt252;
-    /// Batch mint with full per-token parameters.
-    /// Each MintParams contains all configuration for that token.
-    fn mint_batch(ref self: TState, mints: Array<MintParams>) -> Array<felt252>;
-
-    /// Batch mint identical tokens to multiple recipients.
-    /// Shares all parameters across recipients and auto-increments salt (base_salt + index).
+    /// Batch mint identical tokens to one or more recipients with per-recipient counts.
+    ///
+    /// All recipients share the same mint configuration (game, settings, objective,
+    /// lifecycle, context, renderer, skills, soulbound, paymaster, metadata).
+    /// Each `MintBatchRecipient { to, count }` mints `count` tokens to `to`.
+    ///
+    /// Salt assignment is a single global counter across the batch (`base_salt + i`,
+    /// `i` in `0..sum(counts)`). Token ids do not encode the recipient, so salts
+    /// must be globally unique within the tx — `salt + sum(counts) - 1 <= 0x3FF`
+    /// (10-bit salt field in `pack_token_id`).
     fn mint_batch_recipients(
         ref self: TState,
         game_address: ContractAddress,
@@ -81,7 +88,7 @@ pub trait IMinigameToken<TState> {
         client_url: Option<ByteArray>,
         renderer_address: Option<ContractAddress>,
         skills_address: Option<ContractAddress>,
-        recipients: Array<ContractAddress>,
+        recipients: Array<MintBatchRecipient>,
         soulbound: bool,
         paymaster: bool,
         salt: u16,

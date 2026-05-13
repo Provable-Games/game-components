@@ -18,7 +18,7 @@ Single source of truth for all game component interface definitions. Other packa
 
 | Module | Structs |
 |--------|---------|
-| `structs/token` | `TokenMetadata`, `Lifecycle`, `MintParams`, `PlayerNameUpdate` |
+| `structs/token` | `TokenMetadata`, `Lifecycle`, `MintBatchRecipient`, `MintParams`, `PlayerNameUpdate` |
 | `structs/minigame` | `GameDetail`, `MintGameParams`, `GameSettingDetails`, `GameSetting`, `GameObjective` |
 | `structs/metagame` | `GameContextDetails`, `GameContext` |
 | `structs/leaderboard` | `LeaderboardConfig`, `LeaderboardEntry`, `LeaderboardResult`, `LeaderboardStoreConfig` |
@@ -71,7 +71,7 @@ let supports = src5_dispatcher.supports_interface(IMINIGAME_SETTINGS_ID);
 
 ```cairo
 use game_components_interfaces::{
-    TokenMetadata, Lifecycle, MintParams,
+    TokenMetadata, Lifecycle, MintBatchRecipient,
     GameMetadata, GameDetail,
     LeaderboardEntry, LeaderboardConfig,
 };

@@ -69,6 +69,16 @@ pub struct MintParams {
     pub metadata: u16,
 }
 
+/// Per-recipient parameters for `mint_batch_recipients`.
+/// Mints `count` tokens to `to` with the shared mint config supplied by the caller.
+/// The salt provided to `mint_batch_recipients` increments by one per minted token
+/// (across all recipients) for deterministic, collision-free token IDs.
+#[derive(Copy, Drop, Serde)]
+pub struct MintBatchRecipient {
+    pub to: ContractAddress,
+    pub count: u16,
+}
+
 /// Per-token name update parameters for batch name updates
 #[derive(Copy, Drop, Serde)]
 pub struct PlayerNameUpdate {

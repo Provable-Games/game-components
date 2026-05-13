@@ -10,7 +10,7 @@ pub use game_components_interfaces::token::{
 };
 use starknet::ContractAddress;
 use crate::token::structs::{
-    MintParams, PlayerNameUpdate, TokenFullState, TokenMetadata, TokenMutableState,
+    MintBatchRecipient, PlayerNameUpdate, TokenFullState, TokenMetadata, TokenMutableState,
 };
 
 #[starknet::interface]
@@ -71,7 +71,6 @@ pub trait IMinigameTokenMixin<TState> {
     fn update_player_name(ref self: TState, token_id: felt252, name: felt252);
 
     // Batch write functions
-    fn mint_batch(ref self: TState, mints: Array<MintParams>) -> Array<felt252>;
     fn mint_batch_recipients(
         ref self: TState,
         game_address: ContractAddress,
@@ -84,7 +83,7 @@ pub trait IMinigameTokenMixin<TState> {
         client_url: Option<ByteArray>,
         renderer_address: Option<ContractAddress>,
         skills_address: Option<ContractAddress>,
-        recipients: Array<ContractAddress>,
+        recipients: Array<MintBatchRecipient>,
         soulbound: bool,
         paymaster: bool,
         salt: u16,

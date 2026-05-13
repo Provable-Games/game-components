@@ -2,7 +2,8 @@ pub use game_components_interfaces::structs::metagame::GameContextDetails;
 
 // Re-export structs from interfaces for backward compatibility
 pub use game_components_interfaces::structs::token::{
-    Lifecycle, MintParams, PlayerNameUpdate, TokenFullState, TokenMetadata, TokenMutableState,
+    Lifecycle, MintBatchRecipient, MintParams, PlayerNameUpdate, TokenFullState, TokenMetadata,
+    TokenMutableState,
 };
 use starknet::storage_access::StorePacking;
 

@@ -6,7 +6,6 @@ use game_components_embeddable_game_standard::registry::interface::{
 use game_components_embeddable_game_standard::token::interface::{
     IMinigameTokenDispatcher, IMinigameTokenDispatcherTrait,
 };
-use game_components_embeddable_game_standard::token::structs::MintParams;
 use openzeppelin_interfaces::erc721::{IERC721Dispatcher, IERC721DispatcherTrait};
 use starknet::ContractAddress;
 use crate::minigame::structs::MintGameParams;
@@ -201,13 +200,9 @@ pub fn mint_batch(
         contract_address: minigame_token_address,
     };
 
-    // Convert MintGameParams to MintParams
-    let mut mint_params_array = array![];
-    let mut index = 0;
-    loop {
-        if index >= mints.len() {
-            break;
-        }
+    let mut token_ids: Array<felt252> = array![];
+    let mut index: u32 = 0;
+    while index < mints.len() {
         let mint_game_param = mints.at(index);
 
         // Clone non-copyable Option types
@@ -215,36 +210,34 @@ pub fn mint_batch(
             Option::Some(ctx) => Option::Some(ctx.clone()),
             Option::None => Option::None,
         };
-
         let client_url_clone = match mint_game_param.client_url {
             Option::Some(url) => Option::Some(url.clone()),
             Option::None => Option::None,
         };
 
-        mint_params_array
-            .append(
-                MintParams {
-                    game_address: game_address,
-                    player_name: *mint_game_param.player_name,
-                    settings_id: *mint_game_param.settings_id,
-                    start: *mint_game_param.start,
-                    end: *mint_game_param.end,
-                    objective_id: *mint_game_param.objective_id,
-                    context: context_clone,
-                    client_url: client_url_clone,
-                    renderer_address: *mint_game_param.renderer_address,
-                    skills_address: *mint_game_param.skills_address,
-                    to: *mint_game_param.to,
-                    soulbound: *mint_game_param.soulbound,
-                    paymaster: *mint_game_param.paymaster,
-                    salt: *mint_game_param.salt,
-                    metadata: *mint_game_param.metadata,
-                },
+        let token_id = minigame_token_dispatcher
+            .mint(
+                game_address,
+                *mint_game_param.player_name,
+                *mint_game_param.settings_id,
+                *mint_game_param.start,
+                *mint_game_param.end,
+                *mint_game_param.objective_id,
+                context_clone,
+                client_url_clone,
+                *mint_game_param.renderer_address,
+                *mint_game_param.skills_address,
+                *mint_game_param.to,
+                *mint_game_param.soulbound,
+                *mint_game_param.paymaster,
+                *mint_game_param.salt,
+                *mint_game_param.metadata,
             );
+        token_ids.append(token_id);
         index += 1;
-    }
+    };
 
-    minigame_token_dispatcher.mint_batch(mint_params_array)
+    token_ids
 }
 
 /// Gets the player name for a game token

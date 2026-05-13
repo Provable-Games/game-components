@@ -997,7 +997,8 @@ mod MockMinigameTokenForTicketBooth {
     use core::num::traits::Zero;
     use game_components_interfaces::structs::metagame::GameContextDetails;
     use game_components_interfaces::structs::token::{
-        Lifecycle, MintParams, PlayerNameUpdate, TokenFullState, TokenMetadata, TokenMutableState,
+        Lifecycle, MintBatchRecipient, PlayerNameUpdate, TokenFullState, TokenMetadata,
+        TokenMutableState,
     };
     use game_components_interfaces::token::{IMINIGAME_TOKEN_ID, IMinigameToken};
     use openzeppelin_interfaces::introspection::ISRC5;
@@ -1176,10 +1177,6 @@ mod MockMinigameTokenForTicketBooth {
             token_id
         }
 
-        fn mint_batch(ref self: ContractState, mints: Array<MintParams>) -> Array<felt252> {
-            array![]
-        }
-
         fn mint_batch_recipients(
             ref self: ContractState,
             game_address: ContractAddress,
@@ -1192,7 +1189,7 @@ mod MockMinigameTokenForTicketBooth {
             client_url: Option<ByteArray>,
             renderer_address: Option<ContractAddress>,
             skills_address: Option<ContractAddress>,
-            recipients: Array<ContractAddress>,
+            recipients: Array<MintBatchRecipient>,
             soulbound: bool,
             paymaster: bool,
             salt: u16,

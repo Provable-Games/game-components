@@ -744,11 +744,12 @@ fn test_mint_game_with_time_bounds() {
 #[test]
 fn test_mint_game_batch_multiple() {
     let token_address = addr(0x123);
-    let expected_tokens: Array<felt252> = array![1, 2, 3];
 
     mock_call(token_address, selector!("supports_interface"), true, 100);
     mock_call(token_address, selector!("game_registry_address"), addr(0x0), 100);
-    mock_call(token_address, selector!("mint_batch"), expected_tokens.clone(), 100);
+    // mint_batch helper now loops dispatcher.mint(); mock returns the same value each call.
+    let expected_token_id: felt252 = 1;
+    mock_call(token_address, selector!("mint"), expected_token_id, 100);
 
     let (minigame_dispatcher, minigame_init_dispatcher) = deploy_mock_game();
 
@@ -831,11 +832,12 @@ fn test_mint_game_batch_multiple() {
 #[test]
 fn test_mint_game_batch_empty() {
     let token_address = addr(0x123);
-    let expected_tokens: Array<felt252> = array![];
 
     mock_call(token_address, selector!("supports_interface"), true, 100);
     mock_call(token_address, selector!("game_registry_address"), addr(0x0), 100);
-    mock_call(token_address, selector!("mint_batch"), expected_tokens.clone(), 100);
+    // mint_batch helper now loops dispatcher.mint(); mock returns the same value each call.
+    let expected_token_id: felt252 = 1;
+    mock_call(token_address, selector!("mint"), expected_token_id, 100);
 
     let (minigame_dispatcher, minigame_init_dispatcher) = deploy_mock_game();
 
@@ -867,11 +869,12 @@ fn test_mint_game_batch_empty() {
 #[test]
 fn test_mint_game_batch_single() {
     let token_address = addr(0x123);
-    let expected_tokens: Array<felt252> = array![1];
 
     mock_call(token_address, selector!("supports_interface"), true, 100);
     mock_call(token_address, selector!("game_registry_address"), addr(0x0), 100);
-    mock_call(token_address, selector!("mint_batch"), expected_tokens.clone(), 100);
+    // mint_batch helper now loops dispatcher.mint(); mock returns the same value each call.
+    let expected_token_id: felt252 = 1;
+    mock_call(token_address, selector!("mint"), expected_token_id, 100);
 
     let (minigame_dispatcher, minigame_init_dispatcher) = deploy_mock_game();
 
@@ -922,11 +925,12 @@ fn test_mint_game_batch_single() {
 #[test]
 fn test_mint_game_batch_mixed_params() {
     let token_address = addr(0x123);
-    let expected_tokens: Array<felt252> = array![1, 2];
 
     mock_call(token_address, selector!("supports_interface"), true, 100);
     mock_call(token_address, selector!("game_registry_address"), addr(0x0), 100);
-    mock_call(token_address, selector!("mint_batch"), expected_tokens.clone(), 100);
+    // mint_batch helper now loops dispatcher.mint(); mock returns the same value each call.
+    let expected_token_id: felt252 = 1;
+    mock_call(token_address, selector!("mint"), expected_token_id, 100);
 
     let (minigame_dispatcher, minigame_init_dispatcher) = deploy_mock_game();
 
@@ -993,11 +997,12 @@ fn test_mint_game_batch_mixed_params() {
 #[test]
 fn test_mint_game_batch_multiple_recipients() {
     let token_address = addr(0x123);
-    let expected_tokens: Array<felt252> = array![1, 2, 3, 4];
 
     mock_call(token_address, selector!("supports_interface"), true, 100);
     mock_call(token_address, selector!("game_registry_address"), addr(0x0), 100);
-    mock_call(token_address, selector!("mint_batch"), expected_tokens.clone(), 100);
+    // mint_batch helper now loops dispatcher.mint(); mock returns the same value each call.
+    let expected_token_id: felt252 = 1;
+    mock_call(token_address, selector!("mint"), expected_token_id, 100);
 
     let (minigame_dispatcher, minigame_init_dispatcher) = deploy_mock_game();
 
@@ -1759,11 +1764,12 @@ fn test_mint_game_with_context() {
 #[test]
 fn test_mint_game_batch_with_context() {
     let token_address = addr(0x123);
-    let expected_tokens: Array<felt252> = array![1, 2];
 
     mock_call(token_address, selector!("supports_interface"), true, 100);
     mock_call(token_address, selector!("game_registry_address"), addr(0x0), 100);
-    mock_call(token_address, selector!("mint_batch"), expected_tokens.clone(), 100);
+    // mint_batch helper now loops dispatcher.mint(); mock returns the same value each call.
+    let expected_token_id: felt252 = 1;
+    mock_call(token_address, selector!("mint"), expected_token_id, 100);
 
     let (minigame_dispatcher, minigame_init_dispatcher) = deploy_mock_game();
 
@@ -2071,7 +2077,6 @@ fn test_initialize_with_external_extension_addresses() {
 #[test]
 fn test_mint_game_batch_large() {
     let token_address = addr(0x123);
-    let mut expected_tokens: Array<felt252> = array![];
     let mut mints: Array<MintGameParams> = array![];
 
     // Create 10 mints
@@ -2080,7 +2085,6 @@ fn test_mint_game_batch_large() {
         if i >= 10 {
             break;
         }
-        expected_tokens.append((i + 1).into());
         mints
             .append(
                 MintGameParams {
@@ -2105,7 +2109,9 @@ fn test_mint_game_batch_large() {
 
     mock_call(token_address, selector!("supports_interface"), true, 100);
     mock_call(token_address, selector!("game_registry_address"), addr(0x0), 100);
-    mock_call(token_address, selector!("mint_batch"), expected_tokens.clone(), 100);
+    // mint_batch helper now loops dispatcher.mint(); mock returns the same value each call.
+    let expected_token_id: felt252 = 1;
+    mock_call(token_address, selector!("mint"), expected_token_id, 100);
 
     let (minigame_dispatcher, minigame_init_dispatcher) = deploy_mock_game();
 
