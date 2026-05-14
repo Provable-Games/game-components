@@ -4,15 +4,15 @@ ERC721 NFT representing playable game instances.
 
 ### Core Interface (IMinigameToken)
 
-**Interface ID:** `IMINIGAME_TOKEN_ID = 0xe67e1d4ee0d7c0cd75c9082845e0641ca255f8fe509d2b121db0b2287c4e8d`
+**Interface ID:** `IMINIGAME_TOKEN_ID = 0x246f614bd76b91c378a91877851f2ccdb99278e9fb77c782a22355059ce9906`
 
-| Method             | Signature                                  | Description                  |
-| ------------------ | ------------------------------------------ | ---------------------------- |
-| token_metadata     | `(token_id: u64) -> TokenMetadata`         | Get full token metadata      |
-| is_playable        | `(token_id: u64) -> bool`                  | Check if token can be played |
-| mint               | `(...params) -> u64`                       | Mint new token with config   |
-| mint_batch         | `(mints: Array<MintParams>) -> Array<u64>` | Batch mint tokens            |
-| update_game        | `(token_id: u64)`                          | Sync token state from game   |
+| Method                  | Signature                                                                                | Description                            |
+| ----------------------- | ---------------------------------------------------------------------------------------- | -------------------------------------- |
+| token_metadata          | `(token_id: felt252) -> TokenMetadata`                                                   | Get full token metadata                |
+| is_playable             | `(token_id: felt252) -> bool`                                                            | Check if token can be played           |
+| mint                    | `(...params) -> felt252`                                                                 | Mint a single token                    |
+| mint_batch_recipients   | `(...shared params, recipients: Array<MintBatchRecipient>, ...) -> Array<felt252>`       | Batch mint, per-recipient counts       |
+| update_game             | `(token_id: felt252)`                                                                    | Sync token state from game             |
 
 **Batch views:** `*_batch` variants for all view functions (token_metadata, is_playable, settings_id, etc.)
 
@@ -69,7 +69,7 @@ struct TokenMetadata {
 }
 
 struct Lifecycle { start: u64, end: u64 }
-struct MintParams { to: ContractAddress, soulbound: bool, ... }
+struct MintBatchRecipient { to: ContractAddress, count: u16 }
 ```
 
 ### Extension Directory Structure

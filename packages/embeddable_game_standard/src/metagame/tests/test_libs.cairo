@@ -781,7 +781,8 @@ mod MockMinigameTokenForLibs {
         IMINIGAME_TOKEN_ID, IMinigameToken,
     };
     use game_components_embeddable_game_standard::token::structs::{
-        Lifecycle, MintParams, PlayerNameUpdate, TokenFullState, TokenMetadata, TokenMutableState,
+        Lifecycle, MintBatchRecipient, PlayerNameUpdate, TokenFullState, TokenMetadata,
+        TokenMutableState,
     };
     use openzeppelin_interfaces::introspection::ISRC5;
     use starknet::ContractAddress;
@@ -1068,46 +1069,6 @@ mod MockMinigameTokenForLibs {
             token_id
         }
 
-        fn mint_batch(ref self: ContractState, mints: Array<MintParams>) -> Array<felt252> {
-            let mut results = array![];
-            let mut i = 0;
-            loop {
-                if i >= mints.len() {
-                    break;
-                }
-                let params = mints.at(i);
-                let context_clone = match params.context {
-                    Option::Some(ctx) => Option::Some(ctx.clone()),
-                    Option::None => Option::None,
-                };
-                let client_url_clone = match params.client_url {
-                    Option::Some(url) => Option::Some(url.clone()),
-                    Option::None => Option::None,
-                };
-                let token_id = self
-                    .mint(
-                        *params.game_address,
-                        *params.player_name,
-                        *params.settings_id,
-                        *params.start,
-                        *params.end,
-                        *params.objective_id,
-                        context_clone,
-                        client_url_clone,
-                        *params.renderer_address,
-                        Option::None,
-                        *params.to,
-                        *params.soulbound,
-                        *params.paymaster,
-                        *params.salt,
-                        *params.metadata,
-                    );
-                results.append(token_id);
-                i += 1;
-            }
-            results
-        }
-
         fn mint_batch_recipients(
             ref self: ContractState,
             game_address: ContractAddress,
@@ -1120,7 +1081,7 @@ mod MockMinigameTokenForLibs {
             client_url: Option<ByteArray>,
             renderer_address: Option<ContractAddress>,
             skills_address: Option<ContractAddress>,
-            recipients: Array<ContractAddress>,
+            recipients: Array<MintBatchRecipient>,
             soulbound: bool,
             paymaster: bool,
             salt: u16,
@@ -1663,7 +1624,8 @@ mod MockMinigameTokenWithRegistry {
         IMINIGAME_TOKEN_ID, IMinigameToken,
     };
     use game_components_embeddable_game_standard::token::structs::{
-        Lifecycle, MintParams, PlayerNameUpdate, TokenFullState, TokenMetadata, TokenMutableState,
+        Lifecycle, MintBatchRecipient, PlayerNameUpdate, TokenFullState, TokenMetadata,
+        TokenMutableState,
     };
     use openzeppelin_interfaces::introspection::ISRC5;
     use starknet::ContractAddress;
@@ -1930,46 +1892,6 @@ mod MockMinigameTokenWithRegistry {
             token_id
         }
 
-        fn mint_batch(ref self: ContractState, mints: Array<MintParams>) -> Array<felt252> {
-            let mut results = array![];
-            let mut i = 0;
-            loop {
-                if i >= mints.len() {
-                    break;
-                }
-                let params = mints.at(i);
-                let context_clone = match params.context {
-                    Option::Some(ctx) => Option::Some(ctx.clone()),
-                    Option::None => Option::None,
-                };
-                let client_url_clone = match params.client_url {
-                    Option::Some(url) => Option::Some(url.clone()),
-                    Option::None => Option::None,
-                };
-                let token_id = self
-                    .mint(
-                        *params.game_address,
-                        *params.player_name,
-                        *params.settings_id,
-                        *params.start,
-                        *params.end,
-                        *params.objective_id,
-                        context_clone,
-                        client_url_clone,
-                        *params.renderer_address,
-                        Option::None,
-                        *params.to,
-                        *params.soulbound,
-                        *params.paymaster,
-                        *params.salt,
-                        *params.metadata,
-                    );
-                results.append(token_id);
-                i += 1;
-            }
-            results
-        }
-
         fn mint_batch_recipients(
             ref self: ContractState,
             game_address: ContractAddress,
@@ -1982,7 +1904,7 @@ mod MockMinigameTokenWithRegistry {
             client_url: Option<ByteArray>,
             renderer_address: Option<ContractAddress>,
             skills_address: Option<ContractAddress>,
-            recipients: Array<ContractAddress>,
+            recipients: Array<MintBatchRecipient>,
             soulbound: bool,
             paymaster: bool,
             salt: u16,

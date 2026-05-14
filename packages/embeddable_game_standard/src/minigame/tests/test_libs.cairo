@@ -528,10 +528,7 @@ fn test_mint_batch_empty_array() {
     let game_address = GAME_ADDRESS();
     let mints: Array<MintGameParams> = array![];
 
-    // Mock mint_batch to return empty array
-    let expected: Array<felt252> = array![];
-    mock_call(token_address, selector!("mint_batch"), expected.clone(), 1);
-
+    // No mock needed: the helper makes zero `mint` calls when the input is empty.
     let result = libs::mint_batch(token_address, game_address, mints);
 
     assert!(result.len() == 0, "Should return empty array");
@@ -560,8 +557,8 @@ fn test_mint_batch_single_mint() {
         metadata: 0,
     };
 
-    let expected: Array<felt252> = array![1];
-    mock_call(token_address, selector!("mint_batch"), expected.clone(), 1);
+    let expected_token_id: felt252 = 1;
+    mock_call(token_address, selector!("mint"), expected_token_id, 1);
 
     let result = libs::mint_batch(token_address, game_address, array![mint_params]);
 
@@ -626,15 +623,14 @@ fn test_mint_batch_multiple_mints() {
         metadata: 0,
     };
 
-    let expected: Array<felt252> = array![1, 2, 3];
-    mock_call(token_address, selector!("mint_batch"), expected.clone(), 1);
+    // The helper now loops `mint()` per element; mock_call returns the same
+    // value each call so we just assert length.
+    let expected_token_id: felt252 = 1;
+    mock_call(token_address, selector!("mint"), expected_token_id, 3);
 
     let result = libs::mint_batch(token_address, game_address, array![mint1, mint2, mint3]);
 
     assert!(result.len() == 3, "Should return 3 tokens");
-    assert!(*result.at(0) == 1, "First token should be 1");
-    assert!(*result.at(1) == 2, "Second token should be 2");
-    assert!(*result.at(2) == 3, "Third token should be 3");
 }
 
 // Test LIB-U-26: mint_batch with varied params
@@ -678,8 +674,8 @@ fn test_mint_batch_varied_params() {
         metadata: 0,
     };
 
-    let expected: Array<felt252> = array![10, 11];
-    mock_call(token_address, selector!("mint_batch"), expected.clone(), 1);
+    let expected_token_id: felt252 = 10;
+    mock_call(token_address, selector!("mint"), expected_token_id, 2);
 
     let result = libs::mint_batch(token_address, game_address, array![mint1, mint2]);
 
@@ -722,8 +718,8 @@ fn test_mint_batch_multiple_recipients() {
         i += 1;
     }
 
-    let expected: Array<felt252> = array![1, 2, 3, 4];
-    mock_call(token_address, selector!("mint_batch"), expected.clone(), 1);
+    let expected_token_id: felt252 = 1;
+    mock_call(token_address, selector!("mint"), expected_token_id, 4);
 
     let result = libs::mint_batch(token_address, game_address, mints);
 
@@ -921,7 +917,6 @@ fn test_mint_batch_large_batch() {
 
     // Create array with 10 mints
     let mut mints: Array<MintGameParams> = array![];
-    let mut expected: Array<felt252> = array![];
 
     let mut i: u32 = 0;
     loop {
@@ -947,11 +942,11 @@ fn test_mint_batch_large_batch() {
                     metadata: 0,
                 },
             );
-        expected.append((i + 1).into());
         i += 1;
     }
 
-    mock_call(token_address, selector!("mint_batch"), expected.clone(), 1);
+    let expected_token_id: felt252 = 1;
+    mock_call(token_address, selector!("mint"), expected_token_id, 10);
 
     let result = libs::mint_batch(token_address, game_address, mints);
 
@@ -998,8 +993,8 @@ fn test_mint_batch_with_client_url() {
         metadata: 0,
     };
 
-    let expected: Array<felt252> = array![1, 2];
-    mock_call(token_address, selector!("mint_batch"), expected.clone(), 1);
+    let expected_token_id: felt252 = 1;
+    mock_call(token_address, selector!("mint"), expected_token_id, 2);
 
     let result = libs::mint_batch(token_address, game_address, array![mint1, mint2]);
 
@@ -1324,8 +1319,8 @@ fn test_mint_batch_with_context() {
         metadata: 0,
     };
 
-    let expected: Array<felt252> = array![1, 2];
-    mock_call(token_address, selector!("mint_batch"), expected.clone(), 1);
+    let expected_token_id: felt252 = 1;
+    mock_call(token_address, selector!("mint"), expected_token_id, 2);
 
     let result = libs::mint_batch(token_address, game_address, array![mint1, mint2]);
 
@@ -1396,8 +1391,8 @@ fn test_mint_batch_mixed_context() {
         metadata: 0,
     };
 
-    let expected: Array<felt252> = array![1, 2, 3];
-    mock_call(token_address, selector!("mint_batch"), expected.clone(), 1);
+    let expected_token_id: felt252 = 1;
+    mock_call(token_address, selector!("mint"), expected_token_id, 3);
 
     let result = libs::mint_batch(token_address, game_address, array![mint1, mint2, mint3]);
 
@@ -1479,8 +1474,8 @@ fn test_mint_batch_with_empty_context_span() {
         metadata: 0,
     };
 
-    let expected: Array<felt252> = array![1];
-    mock_call(token_address, selector!("mint_batch"), expected.clone(), 1);
+    let expected_token_id: felt252 = 1;
+    mock_call(token_address, selector!("mint"), expected_token_id, 1);
 
     let result = libs::mint_batch(token_address, game_address, array![mint]);
 

@@ -10,7 +10,7 @@ use snforge_std::{
 };
 use starknet::ContractAddress;
 use crate::token::interface::{IMINIGAME_TOKEN_ID, IMinigameTokenMixinDispatcherTrait};
-use crate::token::structs::{MintParams, PlayerNameUpdate};
+use crate::token::structs::{MintBatchRecipient, PlayerNameUpdate};
 use crate::token::token_component::CoreTokenComponent;
 use super::mocks::mock_game::IMockGameDispatcherTrait;
 use super::setup::{
@@ -1058,199 +1058,159 @@ fn test_mint_with_renderer_address() {
 // ============================================================================
 
 #[test]
-#[should_panic(expected: "MinigameToken: mints array cannot be empty")]
-fn test_mint_batch_empty_array_panics() {
-    // TC-MB-001: Empty array
+#[should_panic(expected: "MinigameToken: recipients array cannot be empty")]
+fn test_mint_batch_recipients_empty_array_panics() {
+    // TC-MBR-001: Empty recipients array
     let test_contracts = setup();
 
-    let mints: Array<MintParams> = array![];
-    test_contracts.test_token.mint_batch(mints);
+    let recipients: Array<MintBatchRecipient> = array![];
+    test_contracts
+        .test_token
+        .mint_batch_recipients(
+            test_contracts.minigame.contract_address,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            recipients,
+            false,
+            false,
+            0,
+            0,
+        );
 }
 
 #[test]
-fn test_mint_batch_single_mint() {
-    // TC-MB-002: Single mint in batch
+fn test_mint_batch_recipients_single() {
+    // TC-MBR-002: Single recipient, count=1
     let test_contracts = setup();
 
-    let mints: Array<MintParams> = array![
-        MintParams {
-            game_address: test_contracts.minigame.contract_address,
-            player_name: Option::Some('Player1'),
-            settings_id: Option::None,
-            start: Option::None,
-            end: Option::None,
-            objective_id: Option::None,
-            context: Option::None,
-            client_url: Option::None,
-            renderer_address: Option::None,
-            skills_address: Option::None,
-            to: ALICE(),
-            soulbound: false,
-            paymaster: false,
-            salt: 0,
-            metadata: 0,
-        },
-    ];
-
-    let token_ids = test_contracts.test_token.mint_batch(mints);
+    let recipients = array![MintBatchRecipient { to: ALICE(), count: 1 }];
+    let token_ids = test_contracts
+        .test_token
+        .mint_batch_recipients(
+            test_contracts.minigame.contract_address,
+            Option::Some('Player1'),
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            recipients,
+            false,
+            false,
+            0,
+            0,
+        );
     assert!(token_ids.len() == 1, "Should return one token_id");
 }
 
 #[test]
-fn test_mint_batch_multiple_mints() {
-    // TC-MB-003: Multiple mints
+fn test_mint_batch_recipients_multiple() {
+    // TC-MBR-003: Multiple recipients, count=1 each
     let test_contracts = setup();
 
-    let mints: Array<MintParams> = array![
-        MintParams {
-            game_address: test_contracts.minigame.contract_address,
-            player_name: Option::Some('Alice'),
-            settings_id: Option::None,
-            start: Option::None,
-            end: Option::None,
-            objective_id: Option::None,
-            context: Option::None,
-            client_url: Option::None,
-            renderer_address: Option::None,
-            skills_address: Option::None,
-            to: ALICE(),
-            soulbound: false,
-            paymaster: false,
-            salt: 0,
-            metadata: 0,
-        },
-        MintParams {
-            game_address: test_contracts.minigame.contract_address,
-            player_name: Option::Some('Bob'),
-            settings_id: Option::None,
-            start: Option::None,
-            end: Option::None,
-            objective_id: Option::None,
-            context: Option::None,
-            client_url: Option::None,
-            renderer_address: Option::None,
-            skills_address: Option::None,
-            to: BOB(),
-            soulbound: true,
-            paymaster: false,
-            salt: 1,
-            metadata: 0,
-        },
-        MintParams {
-            game_address: test_contracts.minigame.contract_address,
-            player_name: Option::Some('Charlie'),
-            settings_id: Option::None,
-            start: Option::None,
-            end: Option::None,
-            objective_id: Option::None,
-            context: Option::None,
-            client_url: Option::None,
-            renderer_address: Option::None,
-            skills_address: Option::None,
-            to: CHARLIE(),
-            soulbound: false,
-            paymaster: false,
-            salt: 2,
-            metadata: 0,
-        },
+    let recipients = array![
+        MintBatchRecipient { to: ALICE(), count: 1 }, MintBatchRecipient { to: BOB(), count: 1 },
+        MintBatchRecipient { to: CHARLIE(), count: 1 },
     ];
-
-    let token_ids = test_contracts.test_token.mint_batch(mints);
+    let token_ids = test_contracts
+        .test_token
+        .mint_batch_recipients(
+            test_contracts.minigame.contract_address,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            recipients,
+            false,
+            false,
+            0,
+            0,
+        );
     assert!(token_ids.len() == 3, "Should return 3 token_ids");
-
-    // Verify unique
     assert!(*token_ids.at(0) != *token_ids.at(1), "IDs should be unique");
     assert!(*token_ids.at(1) != *token_ids.at(2), "IDs should be unique");
 }
 
 #[test]
-fn test_mint_batch_mixed_settings() {
-    // TC-MB-004: Mixed settings per token
+fn test_mint_batch_recipients_with_lifecycle() {
+    // TC-MBR-004: Shared lifecycle across recipients
     let test_contracts = setup();
 
-    let mints: Array<MintParams> = array![
-        MintParams {
-            game_address: test_contracts.minigame.contract_address,
-            player_name: Option::Some('Player1'),
-            settings_id: Option::None,
-            start: Option::Some(CURRENT_TIME),
-            end: Option::Some(FUTURE_TIME),
-            objective_id: Option::None,
-            context: Option::None,
-            client_url: Option::None,
-            renderer_address: Option::None,
-            skills_address: Option::None,
-            to: ALICE(),
-            soulbound: false,
-            paymaster: false,
-            salt: 0,
-            metadata: 0,
-        },
-        MintParams {
-            game_address: test_contracts.minigame.contract_address,
-            player_name: Option::None,
-            settings_id: Option::None,
-            start: Option::None,
-            end: Option::None,
-            objective_id: Option::None,
-            context: Option::None,
-            client_url: Option::None,
-            renderer_address: Option::None,
-            skills_address: Option::None,
-            to: BOB(),
-            soulbound: true,
-            paymaster: false,
-            salt: 1,
-            metadata: 0,
-        },
+    let recipients = array![
+        MintBatchRecipient { to: ALICE(), count: 1 }, MintBatchRecipient { to: BOB(), count: 1 },
     ];
+    let token_ids = test_contracts
+        .test_token
+        .mint_batch_recipients(
+            test_contracts.minigame.contract_address,
+            Option::Some('Player1'),
+            Option::None,
+            Option::Some(CURRENT_TIME),
+            Option::Some(FUTURE_TIME),
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            recipients,
+            false,
+            false,
+            0,
+            0,
+        );
 
-    let token_ids = test_contracts.test_token.mint_batch(mints);
-
-    // Verify different settings
     let token_id1 = *token_ids.at(0);
     let token_id2 = *token_ids.at(1);
-
-    assert!(!test_contracts.test_token.is_soulbound(token_id1), "Token 1 not soulbound");
-    assert!(test_contracts.test_token.is_soulbound(token_id2), "Token 2 soulbound");
     assert!(
-        test_contracts.test_token.player_name(token_id1) == 'Player1', "Token 1 has player name",
+        test_contracts.test_token.player_name(token_id1) == 'Player1', "Token 1 player name set",
     );
-    assert!(test_contracts.test_token.player_name(token_id2) == 0, "Token 2 has no player name");
+    assert!(
+        test_contracts.test_token.player_name(token_id2) == 'Player1', "Token 2 shares player name",
+    );
 }
 
 #[test]
-fn test_mint_batch_large() {
-    // TC-MB-005: Large batch
+fn test_mint_batch_recipients_with_counts() {
+    // TC-MBR-005: Per-recipient counts > 1 (the case mint_batch_to was for)
     let test_contracts = setup();
 
-    let mut mints: Array<MintParams> = array![];
-    let mut i: u32 = 0;
-    while i < 10 {
-        mints
-            .append(
-                MintParams {
-                    game_address: test_contracts.minigame.contract_address,
-                    player_name: Option::None,
-                    settings_id: Option::None,
-                    start: Option::None,
-                    end: Option::None,
-                    objective_id: Option::None,
-                    context: Option::None,
-                    client_url: Option::None,
-                    renderer_address: Option::None,
-                    skills_address: Option::None,
-                    to: ALICE(),
-                    soulbound: false,
-                    paymaster: false,
-                    salt: i.try_into().unwrap(),
-                    metadata: 0,
-                },
-            );
-        i += 1;
-    }
-
-    let token_ids = test_contracts.test_token.mint_batch(mints);
+    let recipients = array![
+        MintBatchRecipient { to: ALICE(), count: 6 }, MintBatchRecipient { to: BOB(), count: 4 },
+    ];
+    let token_ids = test_contracts
+        .test_token
+        .mint_batch_recipients(
+            test_contracts.minigame.contract_address,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            recipients,
+            false,
+            false,
+            0,
+            0,
+        );
     assert!(token_ids.len() == 10, "Should return 10 token_ids");
 }
 
@@ -2138,61 +2098,29 @@ fn test_event_batch_mint_multiple_transfers() {
     let test_contracts = setup();
     let mut spy = spy_events();
 
-    let mints: Array<MintParams> = array![
-        MintParams {
-            game_address: test_contracts.minigame.contract_address,
-            player_name: Option::None,
-            settings_id: Option::None,
-            start: Option::None,
-            end: Option::None,
-            objective_id: Option::None,
-            context: Option::None,
-            client_url: Option::None,
-            renderer_address: Option::None,
-            skills_address: Option::None,
-            to: ALICE(),
-            soulbound: false,
-            paymaster: false,
-            salt: 0,
-            metadata: 0,
-        },
-        MintParams {
-            game_address: test_contracts.minigame.contract_address,
-            player_name: Option::None,
-            settings_id: Option::None,
-            start: Option::None,
-            end: Option::None,
-            objective_id: Option::None,
-            context: Option::None,
-            client_url: Option::None,
-            renderer_address: Option::None,
-            skills_address: Option::None,
-            to: BOB(),
-            soulbound: false,
-            paymaster: false,
-            salt: 1,
-            metadata: 0,
-        },
-        MintParams {
-            game_address: test_contracts.minigame.contract_address,
-            player_name: Option::None,
-            settings_id: Option::None,
-            start: Option::None,
-            end: Option::None,
-            objective_id: Option::None,
-            context: Option::None,
-            client_url: Option::None,
-            renderer_address: Option::None,
-            skills_address: Option::None,
-            to: CHARLIE(),
-            soulbound: false,
-            paymaster: false,
-            salt: 2,
-            metadata: 0,
-        },
+    let recipients = array![
+        MintBatchRecipient { to: ALICE(), count: 1 }, MintBatchRecipient { to: BOB(), count: 1 },
+        MintBatchRecipient { to: CHARLIE(), count: 1 },
     ];
-
-    test_contracts.test_token.mint_batch(mints);
+    test_contracts
+        .test_token
+        .mint_batch_recipients(
+            test_contracts.minigame.contract_address,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            recipients,
+            false,
+            false,
+            0,
+            0,
+        );
 
     let events = spy.get_events();
     assert!(events.events.span().len() >= 3, "Should emit at least 3 Transfer events");

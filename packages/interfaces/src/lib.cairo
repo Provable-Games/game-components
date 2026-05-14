@@ -101,8 +101,8 @@ pub use registry::{
 pub use structs::{
     GameContext, GameContextDetails, GameDetail, GameFeeInfo, GameMetadata, GameObjective,
     GameObjectiveDetails, GameSetting, GameSettingDetails, LeaderboardConfig, LeaderboardEntry,
-    LeaderboardResult, LeaderboardStoreConfig, Lifecycle, MintGameParams, MintParams,
-    PlayerNameUpdate, TokenMetadata,
+    LeaderboardResult, LeaderboardStoreConfig, Lifecycle, MintBatchRecipient, MintGameParams,
+    MintParams, PlayerNameUpdate, TokenMetadata,
 };
 
 // Token

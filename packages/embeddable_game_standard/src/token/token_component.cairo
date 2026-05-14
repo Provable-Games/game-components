@@ -28,7 +28,7 @@ pub mod CoreTokenComponent {
         IMinigameToken,
     };
     use crate::token::structs::{
-        LifecycleStorePacking, MintParams, PlayerNameUpdate, TokenFullState, TokenMetadata,
+        LifecycleStorePacking, MintBatchRecipient, PlayerNameUpdate, TokenFullState, TokenMetadata,
         TokenMutableState, TokenMutableStateStorePacking, extract_tx_hash_bits, pack_token_id,
         to_token_metadata, unpack_game_id, unpack_minted_by, unpack_objective_id, unpack_soulbound,
         unpack_token_id,
@@ -501,42 +501,18 @@ pub mod CoreTokenComponent {
                 )
         }
 
-        /// Batch mint with full per-token parameters.
-        fn mint_batch(
-            ref self: ComponentState<TContractState>, mut mints: Array<MintParams>,
-        ) -> Array<felt252> {
-            assert!(mints.len() > 0, "MinigameToken: mints array cannot be empty");
-            let mut token_ids: Array<felt252> = ArrayTrait::new();
-            loop {
-                match mints.pop_front() {
-                    Option::Some(params) => {
-                        let token_id = self
-                            .mint_game(
-                                params.game_address,
-                                params.player_name,
-                                params.settings_id,
-                                params.start,
-                                params.end,
-                                params.objective_id,
-                                params.context,
-                                params.client_url,
-                                params.renderer_address,
-                                params.skills_address,
-                                params.to,
-                                params.soulbound,
-                                params.paymaster,
-                                params.salt,
-                                params.metadata,
-                            );
-                        token_ids.append(token_id);
-                    },
-                    Option::None => { break; },
-                }
-            }
-            token_ids
-        }
-
-        /// Batch mint identical tokens to multiple recipients with auto-incrementing salt.
+        /// Batch mint identical tokens to one or more recipients with per-recipient counts.
+        ///
+        /// All recipients share the same mint configuration (game, settings, objective,
+        /// lifecycle, context, renderer, skills, soulbound, paymaster, metadata). Each
+        /// `MintBatchRecipient { to, count }` mints `count` tokens to `to`. Salt is a
+        /// single global counter across the batch (`salt + i` for `i in 0..sum(counts)`);
+        /// the recipient is not encoded in `token_id`, so salts must be globally unique
+        /// within the tx.
+        ///
+        /// Versus calling `mint`/`mint_game` per token, this hoists the SRC5 game check,
+        /// settings/objective validation, minter registration, lifecycle math, and tx
+        /// info reads to a single pre-loop pass — paying them once for the whole batch.
         fn mint_batch_recipients(
             ref self: ComponentState<TContractState>,
             game_address: ContractAddress,
@@ -549,58 +525,167 @@ pub mod CoreTokenComponent {
             client_url: Option<ByteArray>,
             renderer_address: Option<ContractAddress>,
             skills_address: Option<ContractAddress>,
-            mut recipients: Array<ContractAddress>,
+            recipients: Array<MintBatchRecipient>,
             soulbound: bool,
             paymaster: bool,
             salt: u16,
             metadata: u16,
         ) -> Array<felt252> {
-            let count = recipients.len();
-            assert!(count > 0, "MinigameToken: recipients array cannot be empty");
-            // Ensure salt won't overflow u16 during auto-increment
-            let max_salt: u32 = salt.into() + count - 1;
+            let recipient_count = recipients.len();
+            assert!(recipient_count > 0, "MinigameToken: recipients array cannot be empty");
+
+            // Sum per-recipient counts and bound the global salt counter.
+            // The salt field in pack_token_id is 10 bits, so salt + total - 1 <= 0x3FF.
+            let mut total_tokens: u32 = 0;
+            let mut sum_idx: u32 = 0;
+            while sum_idx < recipient_count {
+                let r: @MintBatchRecipient = recipients.at(sum_idx);
+                let c: u16 = *r.count;
+                assert!(c > 0, "MinigameToken: per-recipient count must be > 0");
+                total_tokens += c.into();
+                sum_idx += 1;
+            }
+            let max_salt: u32 = salt.into() + total_tokens - 1;
             assert!(
-                max_salt <= 0xFFFF, "MinigameToken: salt overflow, reduce base salt or recipients",
+                max_salt <= 0x3FF,
+                "MinigameToken: salt overflow (salt + total tokens - 1 must be <= 1023)",
             );
 
+            // =================================================================
+            // HOIST: invariants shared across the entire batch
+            // =================================================================
+            let caller = get_caller_address();
+            let current_time = get_block_timestamp();
+            let tx_hash_bits = extract_tx_hash_bits(get_tx_info().unbox().transaction_hash);
+
+            // Lifecycle math is identical for every token; compute once.
+            // See mint_game for the rationale on the end-in-future check and the
+            // effective_start clamp.
+            let lifecycle = token_state::create_lifecycle_with_defaults(start, end);
+            lifecycle.validate();
+            assert!(
+                lifecycle.end == 0
+                    || (lifecycle.end > current_time && lifecycle.end > lifecycle.start),
+                "MinigameToken: Lifecycle end must be in the future and after start",
+            );
+            let effective_start = if lifecycle.start > current_time {
+                lifecycle.start
+            } else {
+                current_time
+            };
+            let start_delay: u32 = (effective_start - current_time).try_into().unwrap();
+            let end_delay: u32 = if lifecycle.end > effective_start {
+                (lifecycle.end - effective_start).try_into().unwrap()
+            } else {
+                0
+            };
+
+            // Single SRC5 / registry round-trip for the entire batch.
+            let (final_game_address, game_id) = self
+                .validate_and_process_game_address(game_address);
+
+            let contract = self.get_contract();
+            let mut contract_self = self.get_contract_mut();
+
+            // Each of these is at most one cross-contract call per batch (vs. one
+            // per token in the old per-recipient loop).
+            let validated_settings_id = match settings_id {
+                Option::Some(sid) => {
+                    SettingsOpt::validate_settings(contract, final_game_address, sid);
+                    sid
+                },
+                Option::None => 0,
+            };
+            let validated_objective_id: u32 = match objective_id {
+                Option::Some(obj_id) => {
+                    ObjectivesOpt::validate_objective(contract, final_game_address, obj_id);
+                    obj_id
+                },
+                Option::None => 0,
+            };
+
+            // Caller is fixed for the whole batch — register once.
+            let minted_by = MinterOpt::add_minter(ref contract_self, caller);
+            let has_context = context.is_some();
+
+            // =================================================================
+            // LOOP: per-token work only
+            // =================================================================
             let mut token_ids: Array<felt252> = ArrayTrait::new();
-            let mut index: u16 = 0;
-            loop {
-                match recipients.pop_front() {
-                    Option::Some(to) => {
-                        let current_salt = salt + index;
-                        let ctx = match @context {
-                            Option::Some(c) => Option::Some(c.clone()),
-                            Option::None => Option::None,
-                        };
-                        let url = match @client_url {
-                            Option::Some(u) => Option::Some(u.clone()),
-                            Option::None => Option::None,
-                        };
-                        let token_id = self
-                            .mint_game(
-                                game_address,
-                                player_name,
-                                settings_id,
-                                start,
-                                end,
-                                objective_id,
-                                ctx,
-                                url,
-                                renderer_address,
-                                skills_address,
-                                to,
-                                soulbound,
-                                paymaster,
-                                current_salt,
-                                metadata,
+            let mut salt_offset: u16 = 0;
+            let mut r_idx: u32 = 0;
+            while r_idx < recipient_count {
+                let r: @MintBatchRecipient = recipients.at(r_idx);
+                let to: ContractAddress = *r.to;
+                let count: u16 = *r.count;
+
+                let mut k: u16 = 0;
+                while k < count {
+                    let current_salt = salt + salt_offset;
+
+                    let final_token_id = pack_token_id(
+                        game_id.try_into().unwrap(),
+                        minted_by,
+                        validated_settings_id,
+                        current_time,
+                        start_delay,
+                        end_delay,
+                        validated_objective_id,
+                        soulbound,
+                        has_context,
+                        paymaster,
+                        tx_hash_bits,
+                        current_salt,
+                        metadata,
+                    );
+
+                    // Per-token extension hooks (context, renderer, skills).
+                    match @context {
+                        Option::Some(c) => {
+                            ContextOpt::on_context_set(
+                                ref contract_self, caller, final_token_id, c.clone(),
                             );
-                        token_ids.append(token_id);
-                        index += 1;
-                    },
-                    Option::None => { break; },
+                        },
+                        Option::None => {},
+                    }
+                    match renderer_address {
+                        Option::Some(raddr) => {
+                            RendererOpt::set_token_renderer(
+                                ref contract_self, final_token_id, raddr,
+                            );
+                        },
+                        Option::None => {},
+                    }
+                    match skills_address {
+                        Option::Some(addr) => {
+                            SkillsOpt::set_token_skills(ref contract_self, final_token_id, addr);
+                        },
+                        Option::None => {},
+                    }
+
+                    // Per-token storage (player name, client url).
+                    if let Option::Some(name) = player_name {
+                        self.token_player_names.entry(final_token_id).write(name);
+                    }
+                    match @client_url {
+                        Option::Some(u) => {
+                            self.token_client_url.entry(final_token_id).write(u.clone());
+                        },
+                        Option::None => {},
+                    }
+
+                    // Mint ERC721.
+                    let mut c_mut = self.get_contract_mut();
+                    let mut erc721_component = ERC721::get_component_mut(ref c_mut);
+                    erc721_component.mint(to, final_token_id.into());
+
+                    token_ids.append(final_token_id);
+                    salt_offset += 1;
+                    k += 1;
                 }
+                r_idx += 1;
             }
+
             token_ids
         }
 
