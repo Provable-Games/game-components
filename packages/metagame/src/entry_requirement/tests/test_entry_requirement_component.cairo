@@ -32,6 +32,7 @@ trait IEntryRequirementMock<TContractState> {
         context_id: u64,
         entry_requirement: EntryRequirement,
         qualifier: QualificationProof,
+        claimed_qualifier: Option<ContractAddress>,
     ) -> ContractAddress;
     fn assert_valid_entry_requirement(self: @TContractState, entry_requirement: EntryRequirement);
     fn hash_qualification_proof(self: @TContractState, proof: QualificationProof) -> felt252;
@@ -440,7 +441,9 @@ fn test_validate_qualification_token_returns_owner() {
     };
 
     let result = mock
-        .validate_qualification(1, req, QualificationProof::NFT(NFTQualification { token_id }));
+        .validate_qualification(
+            1, req, QualificationProof::NFT(NFTQualification { token_id }), Option::None,
+        );
     assert!(result == owner, "should return the NFT owner");
 }
 
@@ -455,7 +458,10 @@ fn test_validate_qualification_token_wrong_proof_type() {
     };
 
     // Pass Extension proof for a token requirement — should panic
-    mock.validate_qualification(1, req, QualificationProof::Extension(array![0x123].span()));
+    mock
+        .validate_qualification(
+            1, req, QualificationProof::Extension(array![0x123].span()), Option::None,
+        );
 }
 
 #[test]
@@ -471,7 +477,10 @@ fn test_validate_qualification_token_nonexistent_nft() {
     // Token 999 was never minted
     mock
         .validate_qualification(
-            1, req, QualificationProof::NFT(NFTQualification { token_id: 999 }),
+            1,
+            req,
+            QualificationProof::NFT(NFTQualification { token_id: 999 }),
+            Option::None,
         );
 }
 
@@ -493,7 +502,9 @@ fn test_validate_qualification_extension_returns_caller() {
         mock.contract_address, caller, snforge_std::CheatSpan::TargetCalls(1),
     );
     let result = mock
-        .validate_qualification(1, req, QualificationProof::Extension(array![].span()));
+        .validate_qualification(
+            1, req, QualificationProof::Extension(array![].span()), Option::None,
+        );
     assert!(result == caller, "should return the caller address");
 }
 
@@ -514,7 +525,10 @@ fn test_validate_qualification_extension_rejects() {
     snforge_std::cheat_caller_address(
         mock.contract_address, caller, snforge_std::CheatSpan::TargetCalls(1),
     );
-    mock.validate_qualification(1, req, QualificationProof::Extension(array![].span()));
+    mock
+        .validate_qualification(
+            1, req, QualificationProof::Extension(array![].span()), Option::None,
+        );
 }
 
 #[test]
@@ -536,7 +550,10 @@ fn test_validate_qualification_extension_wrong_proof_type() {
     // Pass NFT proof for extension requirement — should panic
     mock
         .validate_qualification(
-            1, req, QualificationProof::NFT(NFTQualification { token_id: 0x123 }),
+            1,
+            req,
+            QualificationProof::NFT(NFTQualification { token_id: 0x123 }),
+            Option::None,
         );
 }
 
