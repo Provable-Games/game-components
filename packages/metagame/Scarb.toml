@@ -9,6 +9,7 @@ edition.workspace = true
 starknet.workspace = true
 openzeppelin_interfaces.workspace = true
 openzeppelin_introspection.workspace = true
+alexandria_merkle_tree.workspace = true
 game_components_embeddable_game_standard = { path = "../embeddable_game_standard" }
 game_components_interfaces = { path = "../interfaces" }
 game_components_utilities = { path = "../utilities" }
