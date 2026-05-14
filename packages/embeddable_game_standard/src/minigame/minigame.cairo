@@ -235,7 +235,7 @@ pub fn mint_batch(
             );
         token_ids.append(token_id);
         index += 1;
-    };
+    }
 
     token_ids
 }

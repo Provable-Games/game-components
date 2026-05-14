@@ -801,8 +801,7 @@ fn test_mint_batch_recipients_multiple() {
 
     // One token to each of Alice, Bob, Charlie.
     let recipients = array![
-        MintBatchRecipient { to: ALICE(), count: 1 },
-        MintBatchRecipient { to: BOB(), count: 1 },
+        MintBatchRecipient { to: ALICE(), count: 1 }, MintBatchRecipient { to: BOB(), count: 1 },
         MintBatchRecipient { to: CHARLIE(), count: 1 },
     ];
     let token_ids = test_contracts
@@ -840,8 +839,7 @@ fn test_mint_batch_recipients_with_counts() {
 
     // 3 tokens to Alice, 2 tokens to Bob — exercises the per-recipient count path.
     let recipients = array![
-        MintBatchRecipient { to: ALICE(), count: 3 },
-        MintBatchRecipient { to: BOB(), count: 2 },
+        MintBatchRecipient { to: ALICE(), count: 3 }, MintBatchRecipient { to: BOB(), count: 2 },
     ];
     let token_ids = test_contracts
         .test_token

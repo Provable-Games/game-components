@@ -1119,8 +1119,7 @@ fn test_mint_batch_recipients_multiple() {
     let test_contracts = setup();
 
     let recipients = array![
-        MintBatchRecipient { to: ALICE(), count: 1 },
-        MintBatchRecipient { to: BOB(), count: 1 },
+        MintBatchRecipient { to: ALICE(), count: 1 }, MintBatchRecipient { to: BOB(), count: 1 },
         MintBatchRecipient { to: CHARLIE(), count: 1 },
     ];
     let token_ids = test_contracts
@@ -2100,8 +2099,7 @@ fn test_event_batch_mint_multiple_transfers() {
     let mut spy = spy_events();
 
     let recipients = array![
-        MintBatchRecipient { to: ALICE(), count: 1 },
-        MintBatchRecipient { to: BOB(), count: 1 },
+        MintBatchRecipient { to: ALICE(), count: 1 }, MintBatchRecipient { to: BOB(), count: 1 },
         MintBatchRecipient { to: CHARLIE(), count: 1 },
     ];
     test_contracts

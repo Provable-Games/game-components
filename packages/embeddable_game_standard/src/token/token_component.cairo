@@ -544,7 +544,7 @@ pub mod CoreTokenComponent {
                 assert!(c > 0, "MinigameToken: per-recipient count must be > 0");
                 total_tokens += c.into();
                 sum_idx += 1;
-            };
+            }
             let max_salt: u32 = salt.into() + total_tokens - 1;
             assert!(
                 max_salt <= 0x3FF,
@@ -556,9 +556,7 @@ pub mod CoreTokenComponent {
             // =================================================================
             let caller = get_caller_address();
             let current_time = get_block_timestamp();
-            let tx_hash_bits = extract_tx_hash_bits(
-                get_tx_info().unbox().transaction_hash,
-            );
+            let tx_hash_bits = extract_tx_hash_bits(get_tx_info().unbox().transaction_hash);
 
             // Lifecycle math is identical for every token; compute once.
             // See mint_game for the rationale on the end-in-future check and the
@@ -649,7 +647,7 @@ pub mod CoreTokenComponent {
                             );
                         },
                         Option::None => {},
-                    };
+                    }
                     match renderer_address {
                         Option::Some(raddr) => {
                             RendererOpt::set_token_renderer(
@@ -657,13 +655,13 @@ pub mod CoreTokenComponent {
                             );
                         },
                         Option::None => {},
-                    };
+                    }
                     match skills_address {
                         Option::Some(addr) => {
                             SkillsOpt::set_token_skills(ref contract_self, final_token_id, addr);
                         },
                         Option::None => {},
-                    };
+                    }
 
                     // Per-token storage (player name, client url).
                     if let Option::Some(name) = player_name {
@@ -674,7 +672,7 @@ pub mod CoreTokenComponent {
                             self.token_client_url.entry(final_token_id).write(u.clone());
                         },
                         Option::None => {},
-                    };
+                    }
 
                     // Mint ERC721.
                     let mut c_mut = self.get_contract_mut();
@@ -684,9 +682,9 @@ pub mod CoreTokenComponent {
                     token_ids.append(final_token_id);
                     salt_offset += 1;
                     k += 1;
-                };
+                }
                 r_idx += 1;
-            };
+            }
 
             token_ids
         }
