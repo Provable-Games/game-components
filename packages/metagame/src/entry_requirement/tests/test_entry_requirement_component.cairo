@@ -477,10 +477,7 @@ fn test_validate_qualification_token_nonexistent_nft() {
     // Token 999 was never minted
     mock
         .validate_qualification(
-            1,
-            req,
-            QualificationProof::NFT(NFTQualification { token_id: 999 }),
-            Option::None,
+            1, req, QualificationProof::NFT(NFTQualification { token_id: 999 }), Option::None,
         );
 }
 
@@ -550,10 +547,134 @@ fn test_validate_qualification_extension_wrong_proof_type() {
     // Pass NFT proof for extension requirement — should panic
     mock
         .validate_qualification(
-            1,
-            req,
-            QualificationProof::NFT(NFTQualification { token_id: 0x123 }),
-            Option::None,
+            1, req, QualificationProof::NFT(NFTQualification { token_id: 0x123 }), Option::None,
+        );
+}
+
+// ============================================================================
+// validate_qualification with claimed_qualifier (delegated path)
+// ============================================================================
+
+#[test]
+fn test_validate_qualification_token_with_claimed_owner_succeeds() {
+    // Some(addr) where addr == owner_of(token_id) — protocol verifies via owner_of,
+    // returns the owner. Caller can be any third party.
+    let mock = deploy_entry_requirement_mock();
+    let erc721_addr = deploy_erc721_mock();
+    let token_id = 0x1234;
+    let owner = make_address(0xABCDEF);
+
+    IERC721MockSetupDispatcher { contract_address: erc721_addr }.set_owner(token_id, owner);
+
+    let req = EntryRequirement {
+        entry_limit: 1, entry_requirement_type: EntryRequirementType::token(erc721_addr),
+    };
+
+    let result = mock
+        .validate_qualification(
+            1, req, QualificationProof::NFT(NFTQualification { token_id }), Option::Some(owner),
+        );
+    assert!(result == owner, "should return the resolved owner");
+}
+
+#[test]
+#[should_panic(expected: "EntryRequirement: claimed qualifier does not own the gating NFT")]
+fn test_validate_qualification_token_with_wrong_claimed_panics() {
+    // Some(addr) where addr != owner_of(token_id) — protocol panics. Protects
+    // against forged claims for NFT-gated requirements.
+    let mock = deploy_entry_requirement_mock();
+    let erc721_addr = deploy_erc721_mock();
+    let token_id = 0x1234;
+    let owner = make_address(0xABCDEF);
+    let wrong = make_address(0xDEADBEEF);
+
+    IERC721MockSetupDispatcher { contract_address: erc721_addr }.set_owner(token_id, owner);
+
+    let req = EntryRequirement {
+        entry_limit: 1, entry_requirement_type: EntryRequirementType::token(erc721_addr),
+    };
+
+    mock
+        .validate_qualification(
+            1, req, QualificationProof::NFT(NFTQualification { token_id }), Option::Some(wrong),
+        );
+}
+
+#[test]
+#[should_panic(expected: "EntryRequirement: claimed qualifier does not own the gating NFT")]
+fn test_validate_qualification_token_with_zero_claimed_panics() {
+    // Claiming the zero address on a minted token cannot match owner_of — falls
+    // out of the same assert as the wrong-owner case. (No separate "zero" path
+    // exists for token gates: the protocol can rely on owner_of returning a real
+    // address for minted tokens.)
+    let mock = deploy_entry_requirement_mock();
+    let erc721_addr = deploy_erc721_mock();
+    let token_id = 0x1234;
+    let owner = make_address(0xABCDEF);
+    let zero: starknet::ContractAddress = 0.try_into().unwrap();
+
+    IERC721MockSetupDispatcher { contract_address: erc721_addr }.set_owner(token_id, owner);
+
+    let req = EntryRequirement {
+        entry_limit: 1, entry_requirement_type: EntryRequirementType::token(erc721_addr),
+    };
+
+    mock
+        .validate_qualification(
+            1, req, QualificationProof::NFT(NFTQualification { token_id }), Option::Some(zero),
+        );
+}
+
+#[test]
+fn test_validate_qualification_extension_with_claimed_returns_claimed() {
+    // Extension path: Some(addr) propagates `addr` to the extension as
+    // `player_address` and (on success) returns it. Caller is unrelated to addr.
+    let mock = deploy_entry_requirement_mock();
+    let mock_caller = make_address(0xCAFE);
+    let validator_addr = deploy_entry_validator_mock(mock_caller);
+    let claimed = make_address(0x1234567);
+
+    let req = EntryRequirement {
+        entry_limit: 1,
+        entry_requirement_type: EntryRequirementType::extension(
+            ExtensionConfig { address: validator_addr, config: array![].span() },
+        ),
+    };
+
+    snforge_std::cheat_caller_address(
+        mock.contract_address, mock_caller, snforge_std::CheatSpan::TargetCalls(1),
+    );
+    let result = mock
+        .validate_qualification(
+            1, req, QualificationProof::Extension(array![].span()), Option::Some(claimed),
+        );
+    assert!(result == claimed, "extension path should return the claimed qualifier");
+    assert!(result != mock_caller, "caller should not be the resolved qualifier when Some is set");
+}
+
+#[test]
+#[should_panic(expected: "EntryRequirement: claimed qualifier cannot be zero")]
+fn test_validate_qualification_extension_with_zero_claimed_panics() {
+    // The framework rejects a zero claimed qualifier before calling the extension
+    // so extensions never have to defend against `player_address == 0`.
+    let mock = deploy_entry_requirement_mock();
+    let mock_caller = make_address(0xCAFE);
+    let validator_addr = deploy_entry_validator_mock(mock_caller);
+    let zero: starknet::ContractAddress = 0.try_into().unwrap();
+
+    let req = EntryRequirement {
+        entry_limit: 1,
+        entry_requirement_type: EntryRequirementType::extension(
+            ExtensionConfig { address: validator_addr, config: array![].span() },
+        ),
+    };
+
+    snforge_std::cheat_caller_address(
+        mock.contract_address, mock_caller, snforge_std::CheatSpan::TargetCalls(1),
+    );
+    mock
+        .validate_qualification(
+            1, req, QualificationProof::Extension(array![].span()), Option::Some(zero),
         );
 }
 

@@ -32,15 +32,20 @@ pub trait EntryRequirementStoreTrait<T> {
     /// Validate a qualification proof.
     ///
     /// `claimed_qualifier`:
-    /// - `None` — the caller is treated as the qualifier (legacy behavior).
-    /// - `Some(addr)` — the caller is claiming `addr` qualified. The protocol must verify
-    ///   this independently:
+    /// - `None` — behaviour is gate-dependent:
+    ///     * Token gate: returns `IERC721.owner_of(token_id)` (the resolved
+    ///       qualifier is the NFT owner, *not* the caller).
+    ///     * Extension gate: `get_caller_address()` is treated as the qualifier
+    ///       (legacy behaviour for extensions).
+    /// - `Some(addr)` — the caller is claiming `addr` qualified. The protocol must
+    ///   verify this independently:
     ///     * Token gate: asserts `IERC721.owner_of(token_id) == addr`.
     ///     * Extension: `addr` is passed to the extension as `player_address`; the
     ///       extension is responsible for verifying the delegation (e.g. signature,
-    ///       merkle proof) inside `valid_entry`. Extensions that don't verify the
-    ///       claimed qualifier MUST NOT be used in flows that pass `Some(_)` — anyone
-    ///       could otherwise mint as anyone.
+    ///       merkle proof) inside `valid_entry`. A zero `addr` is rejected at the
+    ///       framework boundary. Extensions that don't verify the claimed qualifier
+    ///       MUST NOT be used in flows that pass `Some(_)` — anyone could otherwise
+    ///       mint as anyone.
     ///
     /// Returns the resolved qualifier address.
     fn validate_qualification(
@@ -168,8 +173,18 @@ pub impl EntryRequirementStoreImpl<T, +Store<T>, +Drop<T>> of EntryRequirementSt
                 // Default: caller is qualifier (legacy). Delegated flow: caller claims
                 // `claimed_qualifier`; the extension is responsible for verifying that
                 // claim from `qualification` (e.g. signature recovery, merkle proof).
+                //
+                // A zero claimed qualifier is rejected at the framework boundary so
+                // extensions never have to defend against `player_address == 0` (some
+                // implementations would silently accept it and key state against the
+                // zero address). `get_caller_address()` is non-zero by construction.
                 let qualifier_address = match claimed_qualifier {
-                    Option::Some(addr) => addr,
+                    Option::Some(addr) => {
+                        assert!(
+                            !addr.is_zero(), "EntryRequirement: claimed qualifier cannot be zero",
+                        );
+                        addr
+                    },
                     Option::None => get_caller_address(),
                 };
                 let context_owner = get_contract_address();

@@ -235,10 +235,13 @@ pub mod EntryRequirementComponent {
         /// Validates a qualification proof against an entry requirement.
         ///
         /// `claimed_qualifier`:
-        /// - `None`: caller is the qualifier (legacy behavior).
+        /// - `None`: resolution is gate-dependent — token gates return
+        ///   `IERC721.owner_of(token_id)` (the NFT owner, *not* the caller);
+        ///   extension gates fall back to `get_caller_address()`.
         /// - `Some(addr)`: caller claims `addr` is the qualifier. For token gates, the
         ///   protocol verifies via `owner_of`; for extensions, the extension is responsible
-        ///   for verifying the claim (e.g. via signature).
+        ///   for verifying the claim (e.g. via signature recovery or merkle proof). A zero
+        ///   `addr` is rejected at the framework boundary.
         ///
         /// Returns the resolved qualifier address.
         fn validate_qualification(
