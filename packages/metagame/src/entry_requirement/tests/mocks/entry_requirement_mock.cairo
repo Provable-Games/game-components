@@ -68,8 +68,11 @@ pub mod EntryRequirementMock {
         context_id: u64,
         entry_requirement: EntryRequirement,
         qualifier: QualificationProof,
+        claimed_qualifier: Option<ContractAddress>,
     ) -> ContractAddress {
-        self.entry_req.validate_qualification(context_id, entry_requirement, qualifier)
+        self
+            .entry_req
+            .validate_qualification(context_id, entry_requirement, qualifier, claimed_qualifier)
     }
 
     #[external(v0)]

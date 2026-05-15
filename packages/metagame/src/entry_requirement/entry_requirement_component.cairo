@@ -233,15 +233,26 @@ pub mod EntryRequirementComponent {
         }
 
         /// Validates a qualification proof against an entry requirement.
-        /// Returns the qualifying address (NFT owner or caller).
+        ///
+        /// `claimed_qualifier`:
+        /// - `None`: resolution is gate-dependent — token gates return
+        ///   `IERC721.owner_of(token_id)` (the NFT owner, *not* the caller);
+        ///   extension gates fall back to `get_caller_address()`.
+        /// - `Some(addr)`: caller claims `addr` is the qualifier. For token gates, the
+        ///   protocol verifies via `owner_of`; for extensions, the extension is responsible
+        ///   for verifying the claim (e.g. via signature recovery or merkle proof). A zero
+        ///   `addr` is rejected at the framework boundary.
+        ///
+        /// Returns the resolved qualifier address.
         fn validate_qualification(
             self: @ComponentState<TContractState>,
             context_id: u64,
             entry_requirement: EntryRequirement,
             qualifier: QualificationProof,
+            claimed_qualifier: Option<ContractAddress>,
         ) -> ContractAddress {
             EntryRequirementStoreTrait::validate_qualification(
-                self, context_id, entry_requirement, qualifier,
+                self, context_id, entry_requirement, qualifier, claimed_qualifier,
             )
         }
 

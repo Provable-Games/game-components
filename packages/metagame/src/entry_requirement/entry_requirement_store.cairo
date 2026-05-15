@@ -29,12 +29,31 @@ pub trait EntryRequirementStoreTrait<T> {
     ) -> QualificationEntries;
     /// Set qualification entries
     fn set_qualification_entries(ref self: T, entries: @QualificationEntries);
-    /// Validate a qualification proof
+    /// Validate a qualification proof.
+    ///
+    /// `claimed_qualifier`:
+    /// - `None` — behaviour is gate-dependent:
+    ///     * Token gate: returns `IERC721.owner_of(token_id)` (the resolved
+    ///       qualifier is the NFT owner, *not* the caller).
+    ///     * Extension gate: `get_caller_address()` is treated as the qualifier
+    ///       (legacy behaviour for extensions).
+    /// - `Some(addr)` — the caller is claiming `addr` qualified. The protocol must
+    ///   verify this independently:
+    ///     * Token gate: asserts `IERC721.owner_of(token_id) == addr`.
+    ///     * Extension: `addr` is passed to the extension as `player_address`; the
+    ///       extension is responsible for verifying the delegation (e.g. signature,
+    ///       merkle proof) inside `valid_entry`. A zero `addr` is rejected at the
+    ///       framework boundary. Extensions that don't verify the claimed qualifier
+    ///       MUST NOT be used in flows that pass `Some(_)` — anyone could otherwise
+    ///       mint as anyone.
+    ///
+    /// Returns the resolved qualifier address.
     fn validate_qualification(
         self: @T,
         context_id: u64,
         entry_requirement: EntryRequirement,
         qualifier: QualificationProof,
+        claimed_qualifier: Option<ContractAddress>,
     ) -> ContractAddress;
     /// Validate entry requirement configuration
     fn assert_valid_entry_requirement(self: @T, entry_requirement: EntryRequirement);
@@ -119,6 +138,7 @@ pub impl EntryRequirementStoreImpl<T, +Store<T>, +Drop<T>> of EntryRequirementSt
         context_id: u64,
         entry_requirement: EntryRequirement,
         qualifier: QualificationProof,
+        claimed_qualifier: Option<ContractAddress>,
     ) -> ContractAddress {
         match entry_requirement.entry_requirement_type {
             EntryRequirementType::token(token_address) => {
@@ -129,7 +149,16 @@ pub impl EntryRequirementStoreImpl<T, +Store<T>, +Drop<T>> of EntryRequirementSt
                     ),
                 };
                 let erc721_dispatcher = IERC721Dispatcher { contract_address: token_address };
-                erc721_dispatcher.owner_of(qualification.token_id)
+                let owner = erc721_dispatcher.owner_of(qualification.token_id);
+                // If the caller claims a delegated qualifier, the on-chain owner must match.
+                // This protects against forged claims for NFT-gated requirements.
+                if let Option::Some(claimed) = claimed_qualifier {
+                    assert!(
+                        owner == claimed,
+                        "EntryRequirement: claimed qualifier does not own the gating NFT",
+                    );
+                }
+                owner
             },
             EntryRequirementType::extension(extension_config) => {
                 let qualification = match qualifier {
@@ -141,16 +170,32 @@ pub impl EntryRequirementStoreImpl<T, +Store<T>, +Drop<T>> of EntryRequirementSt
                 let extension_dispatcher = IEntryRequirementExtensionDispatcher {
                     contract_address: extension_config.address,
                 };
-                let caller_address = get_caller_address();
+                // Default: caller is qualifier (legacy). Delegated flow: caller claims
+                // `claimed_qualifier`; the extension is responsible for verifying that
+                // claim from `qualification` (e.g. signature recovery, merkle proof).
+                //
+                // A zero claimed qualifier is rejected at the framework boundary so
+                // extensions never have to defend against `player_address == 0` (some
+                // implementations would silently accept it and key state against the
+                // zero address). `get_caller_address()` is non-zero by construction.
+                let qualifier_address = match claimed_qualifier {
+                    Option::Some(addr) => {
+                        assert!(
+                            !addr.is_zero(), "EntryRequirement: claimed qualifier cannot be zero",
+                        );
+                        addr
+                    },
+                    Option::None => get_caller_address(),
+                };
                 let context_owner = get_contract_address();
                 let display_extension_address: felt252 = extension_config.address.into();
                 assert!(
                     extension_dispatcher
-                        .valid_entry(context_owner, context_id, caller_address, qualification),
+                        .valid_entry(context_owner, context_id, qualifier_address, qualification),
                     "EntryRequirement: Invalid entry according to extension {}",
                     display_extension_address,
                 );
-                caller_address
+                qualifier_address
             },
         }
     }
