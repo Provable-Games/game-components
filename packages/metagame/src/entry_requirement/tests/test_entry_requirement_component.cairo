@@ -653,6 +653,33 @@ fn test_validate_qualification_extension_with_claimed_returns_claimed() {
 }
 
 #[test]
+fn test_validate_qualification_extension_with_none_falls_back_to_caller() {
+    // Companion to the existing `_extension_returns_caller` test, framed as a
+    // direct exercise of the `Option::None => get_caller_address()` arm of the
+    // delegation match introduced by this PR. The caller is treated as the
+    // qualifier and returned as-is.
+    let mock = deploy_entry_requirement_mock();
+    let caller = make_address(0xC0FFEE);
+    let validator_addr = deploy_entry_validator_mock(caller);
+
+    let req = EntryRequirement {
+        entry_limit: 1,
+        entry_requirement_type: EntryRequirementType::extension(
+            ExtensionConfig { address: validator_addr, config: array![].span() },
+        ),
+    };
+
+    snforge_std::cheat_caller_address(
+        mock.contract_address, caller, snforge_std::CheatSpan::TargetCalls(1),
+    );
+    let result = mock
+        .validate_qualification(
+            1, req, QualificationProof::Extension(array![].span()), Option::None,
+        );
+    assert!(result == caller, "extension None path must resolve to caller");
+}
+
+#[test]
 #[should_panic(expected: "EntryRequirement: claimed qualifier cannot be zero")]
 fn test_validate_qualification_extension_with_zero_claimed_panics() {
     // The framework rejects a zero claimed qualifier before calling the extension
