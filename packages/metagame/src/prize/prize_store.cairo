@@ -36,10 +36,6 @@ pub trait PrizeStoreTrait<T> {
     fn assert_prize_not_claimed_by_hash(self: @T, context_id: u64, hash: felt252);
     /// Store custom shares in packed format
     fn store_custom_shares(ref self: T, prize_id: u64, shares: Span<u16>);
-    /// Read extension config for a context and prize
-    fn read_extension_config(self: @T, context_id: u64, prize_id: u64) -> Span<felt252>;
-    /// Write extension config for a context and prize
-    fn write_extension_config(ref self: T, context_id: u64, prize_id: u64, config: Span<felt252>);
 }
 
 pub impl PrizeStoreImpl<T, +Store<T>, +Drop<T>> of PrizeStoreTrait<T> {
@@ -186,30 +182,5 @@ pub impl PrizeStoreImpl<T, +Store<T>, +Drop<T>> of PrizeStoreTrait<T> {
         if shares_len > 0 {
             Store::set_custom_shares_packed(ref self, prize_id, current_slot, packed_shares);
         }
-    }
-
-    fn read_extension_config(self: @T, context_id: u64, prize_id: u64) -> Span<felt252> {
-        let len = Store::get_extension_config_len(self, context_id, prize_id);
-        let mut arr = ArrayTrait::new();
-        let mut i: u64 = 0;
-        loop {
-            if i >= len {
-                break;
-            }
-            arr.append(Store::get_extension_config_at(self, context_id, prize_id, i));
-            i += 1;
-        }
-        arr.span()
-    }
-
-    fn write_extension_config(ref self: T, context_id: u64, prize_id: u64, config: Span<felt252>) {
-        let mut i: u32 = 0;
-        loop {
-            if i >= config.len() {
-                break;
-            }
-            Store::push_extension_config(ref self, context_id, prize_id, *config.at(i));
-            i += 1;
-        };
     }
 }

@@ -23,8 +23,7 @@ pub mod EntryFeeComponent {
     use openzeppelin_introspection::src5::SRC5Component;
     use openzeppelin_introspection::src5::SRC5Component::InternalTrait as SRC5InternalTrait;
     use starknet::storage::{
-        Map, MutableVecTrait, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess,
-        Vec, VecTrait,
+        Map, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess,
     };
     use starknet::{ContractAddress, get_caller_address, get_contract_address};
     use crate::entry_fee::entry_fee_store::{EntryFeeStoreImpl, EntryFeeStoreTrait};
@@ -62,10 +61,12 @@ pub mod EntryFeeComponent {
         EntryFee_distribution: Map<u64, PackedDistribution>,
         /// Refund claimed: (context_id, token_id) -> claimed
         EntryFee_refund_claimed: Map<(u64, felt252), bool>,
-        /// Extension address for extension-enhanced entry fees
+        /// Extension address for extension-enhanced entry fees. Doubles as
+        /// the "is this context's fee an extension?" flag: zero means no
+        /// extension is configured. The extension contract owns the
+        /// authoritative config — this component only stores the address
+        /// it needs for dispatch.
         EntryFee_extension_address: Map<u64, ContractAddress>,
-        /// Extension config data (stored as Vec)
-        EntryFee_extension_config: Map<u64, Vec<felt252>>,
     }
 
     #[event]
@@ -149,22 +150,6 @@ pub mod EntryFeeComponent {
             ref self: ComponentState<TContractState>, context_id: u64, address: ContractAddress,
         ) {
             self.EntryFee_extension_address.entry(context_id).write(address);
-        }
-
-        fn get_extension_config_len(self: @ComponentState<TContractState>, context_id: u64) -> u64 {
-            self.EntryFee_extension_config.entry(context_id).len()
-        }
-
-        fn get_extension_config_at(
-            self: @ComponentState<TContractState>, context_id: u64, index: u64,
-        ) -> felt252 {
-            self.EntryFee_extension_config.entry(context_id).at(index).read()
-        }
-
-        fn push_extension_config(
-            ref self: ComponentState<TContractState>, context_id: u64, value: felt252,
-        ) {
-            self.EntryFee_extension_config.entry(context_id).push(value);
         }
 
         fn get_distribution_shares_packed(
@@ -298,12 +283,16 @@ pub mod EntryFeeComponent {
             EntryFeeStoreTrait::set_entry_fee_config(ref self, context_id, config);
         }
 
-        /// Internal: store extension config and notify extension contract
+        /// Internal: persist the extension address and forward the config
+        /// to the extension contract. The config blob is NOT persisted here
+        /// — the extension is the sole source of truth for its own config,
+        /// and indexers wanting to recover it should read the original
+        /// extension call (e.g. via the host's `TournamentCreated`-style
+        /// event) or query the extension's own view methods.
         fn _set_extension(
             ref self: ComponentState<TContractState>, context_id: u64, ext: ExtensionConfig,
         ) {
             EntryFeeStoreTrait::store_extension_address(ref self, context_id, ext.address);
-            EntryFeeStoreTrait::write_extension_config(ref self, context_id, ext.config);
 
             let dispatcher = IEntryFeeExtensionDispatcher { contract_address: ext.address };
             dispatcher.set_entry_fee_config(context_id, ext.config);
@@ -392,21 +381,7 @@ pub mod EntryFeeComponent {
 
         // --- Extension helpers ---
 
-        /// Read extension config for a context
-        fn read_extension_config(
-            self: @ComponentState<TContractState>, context_id: u64,
-        ) -> Span<felt252> {
-            EntryFeeStoreTrait::read_extension_config(self, context_id)
-        }
-
-        /// Write extension config for a context
-        fn write_extension_config(
-            ref self: ComponentState<TContractState>, context_id: u64, config: Span<felt252>,
-        ) {
-            EntryFeeStoreTrait::write_extension_config(ref self, context_id, config);
-        }
-
-        /// Get extension address for a context
+        /// Get extension address for a context (zero = no extension configured).
         fn get_extension_address(
             self: @ComponentState<TContractState>, context_id: u64,
         ) -> ContractAddress {

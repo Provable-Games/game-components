@@ -124,22 +124,6 @@ pub mod PrizeMock {
         self.prize._get_custom_shares(prize_id)
     }
 
-    /// Read extension config for a context and prize
-    #[external(v0)]
-    fn read_extension_config(
-        self: @ContractState, context_id: u64, prize_id: u64,
-    ) -> Span<felt252> {
-        self.prize.read_extension_config(context_id, prize_id)
-    }
-
-    /// Write extension config for a context and prize
-    #[external(v0)]
-    fn write_extension_config(
-        ref self: ContractState, context_id: u64, prize_id: u64, config: Span<felt252>,
-    ) {
-        self.prize.write_extension_config(context_id, prize_id, config);
-    }
-
     /// Get extension address for a context and prize
     #[external(v0)]
     fn get_extension_address(

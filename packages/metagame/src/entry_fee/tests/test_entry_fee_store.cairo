@@ -27,8 +27,6 @@ trait IEntryFeeMockFull<TContractState> {
     fn is_claimed(self: @TContractState, context_id: u64, claim_type: EntryFeeClaimType) -> bool;
     fn set_claimed(ref self: TContractState, context_id: u64, claim_type: EntryFeeClaimType);
     // Extension functions
-    fn read_extension_config(self: @TContractState, context_id: u64) -> Span<felt252>;
-    fn write_extension_config(ref self: TContractState, context_id: u64, config: Span<felt252>);
     fn get_extension_address(self: @TContractState, context_id: u64) -> ContractAddress;
     fn claim_entry_fee_extension(
         ref self: TContractState, context_id: u64, claim_params: Span<felt252>,
@@ -540,13 +538,15 @@ fn test_additional_share_claim_across_slots() {
 
 // ============================================================================
 // 7. Extension storage via set_entry_fee(Extension) with mock_call
-//    This exercises: _set_extension -> store_extension_address,
-//    write_extension_config, and the IEntryFeeExtension dispatch.
+//    Exercises _set_extension -> store_extension_address and the
+//    IEntryFeeExtension.set_entry_fee_config dispatch. The extension
+//    config blob is forwarded to the extension and not persisted on the
+//    component — the extension is the sole source of truth for it.
 //    Also exercises is_entry_fee_set returning true for extension.
 // ============================================================================
 
 #[test]
-fn test_set_entry_fee_extension_stores_address_and_config() {
+fn test_set_entry_fee_extension_stores_address() {
     let mock = deploy_mock();
     let ext_addr = make_address(0xDEAD);
 
@@ -561,16 +561,9 @@ fn test_set_entry_fee_extension_stores_address_and_config() {
     );
     mock.set_entry_fee(1, entry_fee);
 
-    // Verify extension address was stored via store_extension_address bridge
-    let stored_addr = mock.get_extension_address(1);
-    assert!(stored_addr == ext_addr, "extension address mismatch");
-
-    // Verify extension config was written via write_extension_config bridge
-    let stored_config = mock.read_extension_config(1);
-    assert!(stored_config.len() == 3, "extension config should have 3 elements");
-    assert!(*stored_config.at(0) == 0x111, "config element 0 mismatch");
-    assert!(*stored_config.at(1) == 0x222, "config element 1 mismatch");
-    assert!(*stored_config.at(2) == 0x333, "config element 2 mismatch");
+    // Address is persisted on the component; config is forwarded to the
+    // extension (mocked here) and not stored.
+    assert!(mock.get_extension_address(1) == ext_addr, "extension address mismatch");
 }
 
 #[test]
@@ -614,11 +607,7 @@ fn test_set_entry_fee_extension_with_empty_config() {
     );
     mock.set_entry_fee(1, entry_fee);
 
-    let stored_addr = mock.get_extension_address(1);
-    assert!(stored_addr == ext_addr, "extension address mismatch");
-
-    let stored_config = mock.read_extension_config(1);
-    assert!(stored_config.len() == 0, "extension config should be empty");
+    assert!(mock.get_extension_address(1) == ext_addr, "extension address mismatch");
 }
 
 #[test]
@@ -638,77 +627,6 @@ fn test_get_entry_fee_returns_none_for_extension_only() {
     // get_entry_fee checks token address, which is zero for extension-only entry fees
     let result = mock.get_entry_fee(1);
     assert!(result.is_none(), "should be None for extension-only entry fee (no token)");
-}
-
-// ============================================================================
-// 8. Extension read/write directly via mock helpers
-//    Exercises read_extension_config and write_extension_config bridge paths.
-// ============================================================================
-
-#[test]
-fn test_extension_config_empty_by_default() {
-    let mock = deploy_mock();
-    let config = mock.read_extension_config(1);
-    assert!(config.len() == 0, "extension config should be empty by default");
-}
-
-#[test]
-fn test_write_and_read_extension_config_single_element() {
-    let mock = deploy_mock();
-
-    let config = array![0x12345].span();
-    mock.write_extension_config(1, config);
-
-    let result = mock.read_extension_config(1);
-    assert!(result.len() == 1, "should have 1 element");
-    assert!(*result.at(0) == 0x12345, "element 0 mismatch");
-}
-
-#[test]
-fn test_write_and_read_extension_config_multiple_elements() {
-    let mock = deploy_mock();
-
-    let config = array![0x111, 0x222, 0x333, 0x444, 0x555].span();
-    mock.write_extension_config(1, config);
-
-    let result = mock.read_extension_config(1);
-    assert!(result.len() == 5, "should have 5 elements");
-    assert!(*result.at(0) == 0x111, "element 0 mismatch");
-    assert!(*result.at(1) == 0x222, "element 1 mismatch");
-    assert!(*result.at(2) == 0x333, "element 2 mismatch");
-    assert!(*result.at(3) == 0x444, "element 3 mismatch");
-    assert!(*result.at(4) == 0x555, "element 4 mismatch");
-}
-
-#[test]
-fn test_extension_config_isolation_by_context() {
-    let mock = deploy_mock();
-
-    mock.write_extension_config(1, array![0xAAA, 0xBBB].span());
-    mock.write_extension_config(2, array![0xCCC].span());
-
-    let config1 = mock.read_extension_config(1);
-    let config2 = mock.read_extension_config(2);
-    let config3 = mock.read_extension_config(3);
-
-    assert!(config1.len() == 2, "context 1 should have 2 elements");
-    assert!(*config1.at(0) == 0xAAA, "context 1 element 0 mismatch");
-    assert!(*config1.at(1) == 0xBBB, "context 1 element 1 mismatch");
-
-    assert!(config2.len() == 1, "context 2 should have 1 element");
-    assert!(*config2.at(0) == 0xCCC, "context 2 element 0 mismatch");
-
-    assert!(config3.len() == 0, "context 3 should be empty");
-}
-
-#[test]
-fn test_write_extension_config_empty_span() {
-    let mock = deploy_mock();
-
-    mock.write_extension_config(1, array![].span());
-
-    let result = mock.read_extension_config(1);
-    assert!(result.len() == 0, "writing empty span should result in empty config");
 }
 
 // ============================================================================
@@ -862,37 +780,7 @@ fn test_exactly_16_shares_full_slot() {
 }
 
 // ============================================================================
-// 13. Extension address and config together via mock helpers
-// ============================================================================
-
-#[test]
-fn test_extension_address_and_config_together() {
-    let mock = deploy_mock();
-    let ext_addr = make_address(0xE0E0E0);
-
-    mock_extension_calls(ext_addr);
-
-    let config_data = array![0x42, 0x84, 0xFF];
-    let entry_fee = EntryFee::Extension(
-        metagame_extensions_interfaces::extension::ExtensionConfig {
-            address: ext_addr, config: config_data.span(),
-        },
-    );
-    mock.set_entry_fee(1, entry_fee);
-
-    // Verify address via get_extension bridge
-    assert!(mock.get_extension_address(1) == ext_addr, "extension address mismatch");
-
-    // Verify config via read_extension_config bridge
-    let config = mock.read_extension_config(1);
-    assert!(config.len() == 3, "config should have 3 elements");
-    assert!(*config.at(0) == 0x42, "config element 0 mismatch");
-    assert!(*config.at(1) == 0x84, "config element 1 mismatch");
-    assert!(*config.at(2) == 0xFF, "config element 2 mismatch");
-}
-
-// ============================================================================
-// 14. claim_entry_fee_extension dispatch
+// 13. claim_entry_fee_extension dispatch
 // ============================================================================
 
 #[test]

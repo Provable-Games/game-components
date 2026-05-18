@@ -57,16 +57,6 @@ pub mod EntryFeeMock {
     }
 
     #[external(v0)]
-    fn read_extension_config(self: @ContractState, context_id: u64) -> Span<felt252> {
-        self.entry_fee.read_extension_config(context_id)
-    }
-
-    #[external(v0)]
-    fn write_extension_config(ref self: ContractState, context_id: u64, config: Span<felt252>) {
-        self.entry_fee.write_extension_config(context_id, config);
-    }
-
-    #[external(v0)]
     fn get_extension_address(self: @ContractState, context_id: u64) -> ContractAddress {
         self.entry_fee.get_extension_address(context_id)
     }

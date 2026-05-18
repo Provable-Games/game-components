@@ -23,8 +23,7 @@ pub mod PrizeComponent {
     use openzeppelin_introspection::src5::SRC5Component;
     use openzeppelin_introspection::src5::SRC5Component::InternalTrait as SRC5InternalTrait;
     use starknet::storage::{
-        Map, MutableVecTrait, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess,
-        Vec, VecTrait,
+        Map, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess,
     };
     use starknet::{ContractAddress, get_caller_address, get_contract_address};
     use crate::prize::prize::prize::hash_prize_type;
@@ -51,10 +50,11 @@ pub mod PrizeComponent {
         Prize_custom_shares_packed: Map<(u64, u8), CustomShares>,
         /// Number of custom shares for a prize
         Prize_custom_shares_count: Map<u64, u32>,
-        /// Extension address keyed by (context_id, prize_id)
+        /// Extension address keyed by (context_id, prize_id). Doubles as
+        /// the "is this prize an extension?" flag (zero = built-in path).
+        /// The extension contract owns the authoritative config — we only
+        /// store the address needed for claim-time dispatch.
         Prize_extension_address: Map<(u64, u64), ContractAddress>,
-        /// Extension config data keyed by (context_id, prize_id)
-        Prize_extension_config: Map<(u64, u64), Vec<felt252>>,
     }
 
     #[event]
@@ -128,27 +128,6 @@ pub mod PrizeComponent {
             addr: ContractAddress,
         ) {
             self.Prize_extension_address.entry((context_id, prize_id)).write(addr);
-        }
-
-        fn get_extension_config_len(
-            self: @ComponentState<TContractState>, context_id: u64, prize_id: u64,
-        ) -> u64 {
-            self.Prize_extension_config.entry((context_id, prize_id)).len()
-        }
-
-        fn get_extension_config_at(
-            self: @ComponentState<TContractState>, context_id: u64, prize_id: u64, index: u64,
-        ) -> felt252 {
-            self.Prize_extension_config.entry((context_id, prize_id)).at(index).read()
-        }
-
-        fn push_extension_config(
-            ref self: ComponentState<TContractState>,
-            context_id: u64,
-            prize_id: u64,
-            value: felt252,
-        ) {
-            self.Prize_extension_config.entry((context_id, prize_id)).push(value);
         }
     }
 
@@ -337,7 +316,12 @@ pub mod PrizeComponent {
             id
         }
 
-        /// Internal: store extension config and notify extension contract
+        /// Internal: persist the extension address and forward the config
+        /// to the extension. The config blob is NOT persisted here — the
+        /// extension is the sole source of truth for its own config.
+        /// Indexers wanting to recover it should read the original
+        /// extension call from the host's event stream (e.g. budokan's
+        /// PrizeAdded) or query the extension's own view methods.
         fn _set_extension(
             ref self: ComponentState<TContractState>,
             context_id: u64,
@@ -345,7 +329,6 @@ pub mod PrizeComponent {
             ext: ExtensionConfig,
         ) {
             Store::set_extension_address(ref self, context_id, prize_id, ext.address);
-            PrizeStoreTrait::write_extension_config(ref self, context_id, prize_id, ext.config);
 
             let dispatcher = IPrizeExtensionDispatcher { contract_address: ext.address };
             dispatcher.add_prize(context_id, prize_id, ext.config);
@@ -417,24 +400,7 @@ pub mod PrizeComponent {
 
         // --- Extension helpers ---
 
-        /// Read extension config for a context and prize
-        fn read_extension_config(
-            self: @ComponentState<TContractState>, context_id: u64, prize_id: u64,
-        ) -> Span<felt252> {
-            PrizeStoreTrait::read_extension_config(self, context_id, prize_id)
-        }
-
-        /// Write extension config for a context and prize
-        fn write_extension_config(
-            ref self: ComponentState<TContractState>,
-            context_id: u64,
-            prize_id: u64,
-            config: Span<felt252>,
-        ) {
-            PrizeStoreTrait::write_extension_config(ref self, context_id, prize_id, config);
-        }
-
-        /// Get extension address for a context and prize
+        /// Get extension address for a context and prize (zero = built-in).
         fn get_extension_address(
             self: @ComponentState<TContractState>, context_id: u64, prize_id: u64,
         ) -> ContractAddress {

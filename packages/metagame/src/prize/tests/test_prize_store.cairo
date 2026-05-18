@@ -21,12 +21,6 @@ trait IPrizeMockFull<TContractState> {
     fn assert_prize_exists(self: @TContractState, prize_id: u64);
     fn assert_prize_not_claimed(self: @TContractState, context_id: u64, prize_type: PrizeType);
     fn get_custom_shares(self: @TContractState, prize_id: u64) -> Array<u16>;
-    fn read_extension_config(
-        self: @TContractState, context_id: u64, prize_id: u64,
-    ) -> Span<felt252>;
-    fn write_extension_config(
-        ref self: TContractState, context_id: u64, prize_id: u64, config: Span<felt252>,
-    );
     fn get_extension_address(
         self: @TContractState, context_id: u64, prize_id: u64,
     ) -> ContractAddress;
@@ -205,62 +199,14 @@ fn test_claim_by_hash_isolation_across_contexts() {
 }
 
 // ============================================================================
-// Extension config read/write (prize_store.cairo lines 191-214)
+// Extension address (config storage was dropped — extension owns its own state)
 // ============================================================================
-
-#[test]
-fn test_extension_config_empty_by_default() {
-    let mock = deploy();
-    let config = mock.read_extension_config(1, 1);
-    assert!(config.len() == 0, "should be empty by default");
-}
-
-#[test]
-fn test_write_and_read_extension_config() {
-    let mock = deploy();
-    let config_data = array![111, 222, 333].span();
-    mock.write_extension_config(1, 1, config_data);
-
-    let read_config = mock.read_extension_config(1, 1);
-    assert!(read_config.len() == 3, "should have 3 elements");
-    assert!(*read_config.at(0) == 111, "element 0 mismatch");
-    assert!(*read_config.at(1) == 222, "element 1 mismatch");
-    assert!(*read_config.at(2) == 333, "element 2 mismatch");
-}
-
-#[test]
-fn test_extension_config_isolation_by_context_and_prize() {
-    let mock = deploy();
-    mock.write_extension_config(1, 1, array![10].span());
-    mock.write_extension_config(1, 2, array![20, 30].span());
-    mock.write_extension_config(2, 1, array![40, 50, 60].span());
-
-    let c1p1 = mock.read_extension_config(1, 1);
-    let c1p2 = mock.read_extension_config(1, 2);
-    let c2p1 = mock.read_extension_config(2, 1);
-
-    assert!(c1p1.len() == 1, "c1p1 len");
-    assert!(c1p2.len() == 2, "c1p2 len");
-    assert!(c2p1.len() == 3, "c2p1 len");
-    assert!(*c1p1.at(0) == 10, "c1p1 val");
-    assert!(*c1p2.at(0) == 20, "c1p2 val");
-    assert!(*c2p1.at(0) == 40, "c2p1 val");
-}
 
 #[test]
 fn test_extension_address_default_zero() {
     let mock = deploy();
     let ext_addr = mock.get_extension_address(1, 1);
     assert!(ext_addr.is_zero(), "should be zero by default");
-}
-
-#[test]
-fn test_write_extension_config_empty_span() {
-    let mock = deploy();
-    mock.write_extension_config(1, 1, array![].span());
-
-    let config = mock.read_extension_config(1, 1);
-    assert!(config.len() == 0, "should still be empty");
 }
 
 // ============================================================================

@@ -18,7 +18,4 @@ pub trait Store<T> {
     fn set_custom_shares_packed(ref self: T, prize_id: u64, slot: u8, shares: CustomShares);
     fn get_extension_address(self: @T, context_id: u64, prize_id: u64) -> ContractAddress;
     fn set_extension_address(ref self: T, context_id: u64, prize_id: u64, addr: ContractAddress);
-    fn get_extension_config_len(self: @T, context_id: u64, prize_id: u64) -> u64;
-    fn get_extension_config_at(self: @T, context_id: u64, prize_id: u64, index: u64) -> felt252;
-    fn push_extension_config(ref self: T, context_id: u64, prize_id: u64, value: felt252);
 }

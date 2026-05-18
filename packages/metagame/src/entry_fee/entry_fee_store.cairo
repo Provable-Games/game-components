@@ -35,10 +35,6 @@ pub trait EntryFeeStoreTrait<T> {
     fn is_claimed(self: @T, context_id: u64, claim_type: EntryFeeClaimType) -> bool;
     /// Mark a claim as completed.
     fn set_claimed(ref self: T, context_id: u64, claim_type: EntryFeeClaimType);
-    /// Read extension config for a context.
-    fn read_extension_config(self: @T, context_id: u64) -> Span<felt252>;
-    /// Write extension config for a context.
-    fn write_extension_config(ref self: T, context_id: u64, config: Span<felt252>);
     /// Store extension address.
     fn store_extension_address(ref self: T, context_id: u64, address: ContractAddress);
     /// Get extension address.
@@ -296,31 +292,6 @@ pub impl EntryFeeStoreImpl<T, +Store<T>, +Drop<T>> of EntryFeeStoreTrait<T> {
                 self.set_packed_shares(context_id, slot_index, packed);
             },
         }
-    }
-
-    fn read_extension_config(self: @T, context_id: u64) -> Span<felt252> {
-        let len = self.get_extension_config_len(context_id);
-        let mut arr = ArrayTrait::new();
-        let mut i: u64 = 0;
-        loop {
-            if i >= len {
-                break;
-            }
-            arr.append(self.get_extension_config_at(context_id, i));
-            i += 1;
-        }
-        arr.span()
-    }
-
-    fn write_extension_config(ref self: T, context_id: u64, config: Span<felt252>) {
-        let mut i: u32 = 0;
-        loop {
-            if i >= config.len() {
-                break;
-            }
-            self.push_extension_config(context_id, *config.at(i));
-            i += 1;
-        };
     }
 
     fn store_extension_address(ref self: T, context_id: u64, address: ContractAddress) {
