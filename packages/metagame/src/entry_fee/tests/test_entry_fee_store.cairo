@@ -30,6 +30,9 @@ trait IEntryFeeMockFull<TContractState> {
     fn read_extension_config(self: @TContractState, context_id: u64) -> Span<felt252>;
     fn write_extension_config(ref self: TContractState, context_id: u64, config: Span<felt252>);
     fn get_extension_address(self: @TContractState, context_id: u64) -> ContractAddress;
+    fn claim_entry_fee_extension(
+        ref self: TContractState, context_id: u64, claim_params: Span<felt252>,
+    );
 }
 
 // ============================================================================
@@ -886,4 +889,56 @@ fn test_extension_address_and_config_together() {
     assert!(*config.at(0) == 0x42, "config element 0 mismatch");
     assert!(*config.at(1) == 0x84, "config element 1 mismatch");
     assert!(*config.at(2) == 0xFF, "config element 2 mismatch");
+}
+
+// ============================================================================
+// 14. claim_entry_fee_extension dispatch
+// ============================================================================
+
+#[test]
+fn test_claim_entry_fee_extension_dispatches_when_configured() {
+    let mock = deploy_mock();
+    let ext_addr = make_address(0xE0E0E0);
+
+    mock_extension_calls(ext_addr);
+    // Mock the extension claim method — return value is `()`.
+    mock_call(ext_addr, selector!("claim_entry_fee"), (), 10);
+
+    let entry_fee = EntryFee::Extension(
+        metagame_extensions_interfaces::extension::ExtensionConfig {
+            address: ext_addr, config: array![].span(),
+        },
+    );
+    mock.set_entry_fee(7, entry_fee);
+
+    // Should not panic — the dispatch goes through to the mocked extension.
+    mock.claim_entry_fee_extension(7, array![0xAA].span());
+}
+
+#[test]
+#[should_panic(expected: "EntryFee: No extension configured")]
+fn test_claim_entry_fee_extension_panics_when_unset() {
+    let mock = deploy_mock();
+    // No set_entry_fee call — extension address is zero.
+    mock.claim_entry_fee_extension(99, array![].span());
+}
+
+#[test]
+#[should_panic(expected: "EntryFee: No extension configured")]
+fn test_claim_entry_fee_extension_panics_when_builtin() {
+    let mock = deploy_mock();
+    let entry_fee = EntryFee::Config(
+        EntryFeeConfig {
+            token_address: make_address(0xCAFE),
+            amount: 100,
+            game_creator_share: Option::None,
+            refund_share: Option::None,
+            additional_shares: array![].span(),
+            distribution: Option::None,
+            distribution_count: 0,
+        },
+    );
+    mock.set_entry_fee(1, entry_fee);
+    // Built-in path stores no extension address — should panic.
+    mock.claim_entry_fee_extension(1, array![].span());
 }

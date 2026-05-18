@@ -3,7 +3,7 @@
 pub mod PrizeMock {
     use openzeppelin_introspection::src5::SRC5Component;
     use crate::prize::prize_component::PrizeComponent;
-    use crate::prize::structs::{PrizeData, PrizeType};
+    use crate::prize::structs::{Prize, PrizeData, PrizeType};
 
     component!(path: PrizeComponent, storage: prize, event: PrizeEvent);
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
@@ -146,5 +146,20 @@ pub mod PrizeMock {
         self: @ContractState, context_id: u64, prize_id: u64,
     ) -> starknet::ContractAddress {
         self.prize.get_extension_address(context_id, prize_id)
+    }
+
+    /// Forward a claim to the prize extension for (context_id, prize_id).
+    #[external(v0)]
+    fn claim_prize_extension(
+        ref self: ContractState, context_id: u64, prize_id: u64, claim_params: Span<felt252>,
+    ) {
+        self.prize.claim_prize_extension(context_id, prize_id, claim_params);
+    }
+
+    /// Add a prize (delegates to component). Exposes the full Prize sum-type
+    /// so tests can drive both the Config and Extension paths.
+    #[external(v0)]
+    fn add_prize(ref self: ContractState, context_id: u64, prize: Prize) -> u64 {
+        self.prize.add_prize(context_id, prize)
     }
 }

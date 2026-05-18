@@ -340,6 +340,24 @@ pub mod EntryFeeComponent {
             }
         }
 
+        /// Forward a claim call to the entry-fee extension configured for
+        /// `context_id`. Reverts if no extension was configured (the
+        /// built-in deposit/payout path is host-owned and does not flow
+        /// through this method). `claim_params` is opaque — the extension
+        /// deserializes whatever shape it expects.
+        ///
+        /// Hosts are responsible for any cross-cutting concerns
+        /// (finalization checks, reentrancy guards, replay protection on
+        /// the host side) before invoking this.
+        fn claim_entry_fee_extension(
+            ref self: ComponentState<TContractState>, context_id: u64, claim_params: Span<felt252>,
+        ) {
+            let extension_address = EntryFeeStoreTrait::get_extension(@self, context_id);
+            assert!(!extension_address.is_zero(), "EntryFee: No extension configured");
+            let dispatcher = IEntryFeeExtensionDispatcher { contract_address: extension_address };
+            dispatcher.claim_entry_fee(context_id, claim_params);
+        }
+
         /// Payout to a recipient
         fn payout(
             ref self: ComponentState<TContractState>,

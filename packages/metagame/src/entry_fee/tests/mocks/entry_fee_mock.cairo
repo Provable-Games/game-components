@@ -80,4 +80,11 @@ pub mod EntryFeeMock {
     fn get_distribution_shares(self: @ContractState, context_id: u64, count: u32) -> Array<u16> {
         self.entry_fee._get_distribution_shares(context_id, count)
     }
+
+    #[external(v0)]
+    fn claim_entry_fee_extension(
+        ref self: ContractState, context_id: u64, claim_params: Span<felt252>,
+    ) {
+        self.entry_fee.claim_entry_fee_extension(context_id, claim_params);
+    }
 }

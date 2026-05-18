@@ -351,6 +351,27 @@ pub mod PrizeComponent {
             dispatcher.add_prize(context_id, prize_id, ext.config);
         }
 
+        /// Forward a claim call to the prize extension configured for
+        /// `(context_id, prize_id)`. Reverts if `prize_id` was added via
+        /// the built-in `Prize::Config` path (no extension address
+        /// stored). `claim_params` is opaque — the extension deserializes
+        /// whatever shape it expects.
+        ///
+        /// Hosts are responsible for any cross-cutting concerns
+        /// (finalization checks, reentrancy guards, double-claim
+        /// protection on the host side) before invoking this.
+        fn claim_prize_extension(
+            ref self: ComponentState<TContractState>,
+            context_id: u64,
+            prize_id: u64,
+            claim_params: Span<felt252>,
+        ) {
+            let extension_address = Store::get_extension_address(@self, context_id, prize_id);
+            assert!(!extension_address.is_zero(), "Prize: No extension configured for prize");
+            let dispatcher = IPrizeExtensionDispatcher { contract_address: extension_address };
+            dispatcher.claim_prize(context_id, claim_params);
+        }
+
         /// Payout full ERC20 amount to a recipient
         fn payout_erc20(
             ref self: ComponentState<TContractState>,
