@@ -2,10 +2,12 @@
 // Verifies O(1) insertion regardless of position or leaderboard size
 
 use game_components_metagame::leaderboard::interface::{
-    ILeaderboardAdminDispatcher, ILeaderboardAdminDispatcherTrait, ILeaderboardDispatcher,
-    ILeaderboardDispatcherTrait,
+    ILeaderboardAdminDispatcher, ILeaderboardAdminDispatcherTrait,
 };
 use game_components_metagame::leaderboard::leaderboard::leaderboard::LeaderboardResult;
+use game_components_test_common::mocks::mock_leaderboard_contract::{
+    IMockLeaderboardTestDispatcher, IMockLeaderboardTestDispatcherTrait,
+};
 use game_components_testing::constants::OWNER;
 use snforge_std::{
     ContractClassTrait, DeclareResultTrait, declare, start_cheat_caller_address,
@@ -17,7 +19,7 @@ use super::mocks::mock_game_details::{
 };
 
 fn deploy() -> (
-    ILeaderboardDispatcher,
+    IMockLeaderboardTestDispatcher,
     ILeaderboardAdminDispatcher,
     ContractAddress,
     IMockGameDetailsAdminDispatcher,
@@ -31,7 +33,7 @@ fn deploy() -> (
     let (game_addr, _) = game_contract.deploy(@array![]).unwrap();
 
     (
-        ILeaderboardDispatcher { contract_address: addr },
+        IMockLeaderboardTestDispatcher { contract_address: addr },
         ILeaderboardAdminDispatcher { contract_address: addr },
         game_addr,
         IMockGameDetailsAdminDispatcher { contract_address: game_addr },
@@ -40,7 +42,7 @@ fn deploy() -> (
 
 /// Fill a leaderboard to `size` entries sequentially.
 fn fill_leaderboard(
-    lb: ILeaderboardDispatcher,
+    lb: IMockLeaderboardTestDispatcher,
     admin: ILeaderboardAdminDispatcher,
     game_addr: ContractAddress,
     game_admin: IMockGameDetailsAdminDispatcher,
