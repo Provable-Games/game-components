@@ -30,7 +30,7 @@ pub mod PrizeComponent {
     use crate::prize::prize_store::{PrizeStoreImpl, PrizeStoreTrait};
     use crate::prize::store::Store;
     use crate::prize::structs::{
-        CustomShares, ERC20Data, ExtensionPrizePayload, Prize, PrizeRecord, PrizeType, StoredPrize,
+        CustomShares, ExtensionPrizePayload, Prize, PrizeRecord, PrizeType, StoredPrize,
         TokenPrizePayload, TokenTypeData,
     };
 
@@ -451,7 +451,7 @@ pub mod PrizeComponent {
             let extension_address = Store::get_extension_address(@self, context_id, prize_id);
             assert!(!extension_address.is_zero(), "Prize: No extension configured for prize");
             let dispatcher = IPrizeExtensionDispatcher { contract_address: extension_address };
-            dispatcher.claim_prize(context_id, claim_params);
+            dispatcher.claim_prize(context_id, prize_id, claim_params);
         }
 
         /// Payout full ERC20 amount to a recipient
