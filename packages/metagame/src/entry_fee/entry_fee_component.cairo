@@ -61,6 +61,12 @@ pub mod EntryFeeComponent {
         EntryFee_distribution: Map<u64, PackedDistribution>,
         /// Refund claimed: (context_id, token_id) -> claimed
         EntryFee_refund_claimed: Map<(u64, felt252), bool>,
+        /// Position-based distribution claim: (context_id, position) -> claimed.
+        /// Hosts that distribute the fee pool by leaderboard position use this
+        /// to dedupe per-position payouts. Previously tracked in each host's
+        /// own storage; centralised here so any consumer of EntryFeeComponent
+        /// gets the dedupe behaviour for free.
+        EntryFee_position_claimed: Map<(u64, u32), bool>,
         /// Extension address for extension-enhanced entry fees. Doubles as
         /// the "is this context's fee an extension?" flag: zero means no
         /// extension is configured. The extension contract owns the
@@ -138,6 +144,18 @@ pub mod EntryFeeComponent {
             claimed: bool,
         ) {
             self.EntryFee_refund_claimed.entry((context_id, token_id)).write(claimed);
+        }
+
+        fn get_position_claimed(
+            self: @ComponentState<TContractState>, context_id: u64, position: u32,
+        ) -> bool {
+            self.EntryFee_position_claimed.entry((context_id, position)).read()
+        }
+
+        fn set_position_claimed(
+            ref self: ComponentState<TContractState>, context_id: u64, position: u32, claimed: bool,
+        ) {
+            self.EntryFee_position_claimed.entry((context_id, position)).write(claimed);
         }
 
         fn get_extension_address(

@@ -177,10 +177,11 @@ pub impl PackedAdditionalSharesImpl of PackedAdditionalSharesTrait {
 }
 
 /// Entry fee claim types for non-position-based shares
-/// Position-based distribution claims are handled separately
 #[allow(starknet::store_no_default_variant)]
 #[derive(Copy, Drop, Serde, PartialEq, starknet::Store)]
 pub enum EntryFeeClaimType {
+    /// Claim a position-based distribution share (1-indexed)
+    Position: u32,
     /// Claim the game creator's share
     GameCreator,
     /// Claim refund share for a specific token_id

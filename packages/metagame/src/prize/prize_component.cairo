@@ -66,6 +66,11 @@ pub mod PrizeComponent {
         /// caller of `add_prize` at registration). Built-in prizes
         /// keep sponsor on `StoredPrize.sponsor_address`.
         Prize_extension_prize_sponsor: Map<u64, ContractAddress>,
+        /// `prize_id -> 1-indexed leaderboard position` for built-in
+        /// non-distributed prizes (Single payouts to position N).
+        /// Distributed prizes don't use this; extension prizes own
+        /// their own per-position semantics. Zero means unset.
+        Prize_payout_position: Map<u64, u32>,
     }
 
     #[event]
@@ -163,6 +168,16 @@ pub mod PrizeComponent {
             ref self: ComponentState<TContractState>, prize_id: u64, sponsor: ContractAddress,
         ) {
             self.Prize_extension_prize_sponsor.entry(prize_id).write(sponsor);
+        }
+
+        fn get_payout_position(self: @ComponentState<TContractState>, prize_id: u64) -> u32 {
+            self.Prize_payout_position.entry(prize_id).read()
+        }
+
+        fn set_payout_position(
+            ref self: ComponentState<TContractState>, prize_id: u64, position: u32,
+        ) {
+            self.Prize_payout_position.entry(prize_id).write(position);
         }
     }
 
@@ -317,6 +332,24 @@ pub mod PrizeComponent {
             self: @ComponentState<TContractState>, context_id: u64, prize_type: PrizeType,
         ) {
             PrizeStoreTrait::assert_prize_not_claimed(self, context_id, prize_type);
+        }
+
+        /// Read the leaderboard position a built-in prize pays out to.
+        /// Zero when unset (distributed prizes, extension prizes, or
+        /// prizes added without a position).
+        fn get_payout_position(self: @ComponentState<TContractState>, prize_id: u64) -> u32 {
+            Store::get_payout_position(self, prize_id)
+        }
+
+        /// Record the leaderboard position a built-in prize pays out to.
+        /// Hosts call this at add_prize time for non-distributed token
+        /// prizes; the component then owns the per-prize position storage
+        /// so any other consumer of PrizeComponent shares the same
+        /// position-aware claim flow.
+        fn set_payout_position(
+            ref self: ComponentState<TContractState>, prize_id: u64, position: u32,
+        ) {
+            Store::set_payout_position(ref self, prize_id, position);
         }
 
         /// Assert that a prize has not been claimed using pre-computed hash (gas optimization)

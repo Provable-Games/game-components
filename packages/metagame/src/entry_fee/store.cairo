@@ -20,6 +20,8 @@ pub trait Store<T> {
     fn set_packed_shares(ref self: T, context_id: u64, slot: u8, shares: PackedAdditionalShares);
     fn get_refund_claimed(self: @T, context_id: u64, token_id: felt252) -> bool;
     fn set_refund_claimed(ref self: T, context_id: u64, token_id: felt252, claimed: bool);
+    fn get_position_claimed(self: @T, context_id: u64, position: u32) -> bool;
+    fn set_position_claimed(ref self: T, context_id: u64, position: u32, claimed: bool);
     fn get_extension_address(self: @T, context_id: u64) -> ContractAddress;
     fn set_extension_address(ref self: T, context_id: u64, address: ContractAddress);
     /// Packed custom distribution shares for slot `slot` (15 `u16` per slot).

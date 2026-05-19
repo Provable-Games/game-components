@@ -252,6 +252,9 @@ pub impl EntryFeeStoreImpl<T, +Store<T>, +Drop<T>> of EntryFeeStoreTrait<T> {
 
     fn is_claimed(self: @T, context_id: u64, claim_type: EntryFeeClaimType) -> bool {
         match claim_type {
+            EntryFeeClaimType::Position(position) => {
+                self.get_position_claimed(context_id, position)
+            },
             EntryFeeClaimType::GameCreator => {
                 let packed = self.get_data_raw(context_id);
                 unpack_game_creator_claimed(packed)
@@ -271,6 +274,9 @@ pub impl EntryFeeStoreImpl<T, +Store<T>, +Drop<T>> of EntryFeeStoreTrait<T> {
 
     fn set_claimed(ref self: T, context_id: u64, claim_type: EntryFeeClaimType) {
         match claim_type {
+            EntryFeeClaimType::Position(position) => {
+                self.set_position_claimed(context_id, position, true);
+            },
             EntryFeeClaimType::GameCreator => {
                 // Read raw packed, full unpack, modify, repack, write back
                 let packed = self.get_data_raw(context_id);

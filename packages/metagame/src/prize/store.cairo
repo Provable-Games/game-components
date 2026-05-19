@@ -28,4 +28,12 @@ pub trait Store<T> {
     /// registration time). Built-in prizes have sponsor in StoredPrize.
     fn get_extension_prize_sponsor(self: @T, prize_id: u64) -> ContractAddress;
     fn set_extension_prize_sponsor(ref self: T, prize_id: u64, sponsor: ContractAddress);
+    /// The leaderboard position this built-in prize pays out to. Set by
+    /// the host at add_prize time for `Prize::Token` with a non-distributed
+    /// payout shape; zero means unset (distributed prizes don't use it,
+    /// and extension prizes own their own per-position semantics).
+    /// Stored on the component so any host using PrizeComponent gets
+    /// position-aware claim resolution without a parallel storage map.
+    fn get_payout_position(self: @T, prize_id: u64) -> u32;
+    fn set_payout_position(ref self: T, prize_id: u64, position: u32);
 }
