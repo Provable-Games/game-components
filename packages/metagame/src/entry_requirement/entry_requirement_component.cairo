@@ -17,8 +17,7 @@ pub mod EntryRequirementComponent {
     use openzeppelin_introspection::src5::SRC5Component::InternalTrait as SRC5InternalTrait;
     use starknet::ContractAddress;
     use starknet::storage::{
-        Map, MutableVecTrait, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess,
-        Vec, VecTrait,
+        Map, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess,
     };
     use crate::entry_requirement::entry_requirement::entry_requirement;
     use crate::entry_requirement::entry_requirement_store::{
@@ -36,10 +35,10 @@ pub mod EntryRequirementComponent {
         EntryRequirement_meta: Map<u64, EntryRequirementMeta>,
         /// Token address for token-gated requirements
         EntryRequirement_token: Map<u64, ContractAddress>,
-        /// Extension address for extension-gated requirements
+        /// Extension address for extension-gated requirements. The
+        /// extension contract owns its own per-context config — we only
+        /// store the address needed for dispatch / view reconstruction.
         EntryRequirement_extension_address: Map<u64, ContractAddress>,
-        /// Extension config data (stored as Vec)
-        EntryRequirement_extension_config: Map<u64, Vec<felt252>>,
         /// Qualification entries tracking keyed by (context_id, qualification_hash)
         EntryRequirement_qualification_entries: Map<(u64, felt252), u32>,
     }
@@ -84,37 +83,6 @@ pub mod EntryRequirementComponent {
             ref self: ComponentState<TContractState>, context_id: u64, address: ContractAddress,
         ) {
             self.EntryRequirement_extension_address.entry(context_id).write(address);
-        }
-
-        fn get_extension_config(
-            self: @ComponentState<TContractState>, context_id: u64,
-        ) -> Span<felt252> {
-            let vec = self.EntryRequirement_extension_config.entry(context_id);
-            let mut arr = ArrayTrait::new();
-            let len = vec.len();
-            let mut i: u64 = 0;
-            loop {
-                if i >= len {
-                    break;
-                }
-                arr.append(vec.at(i).read());
-                i += 1;
-            }
-            arr.span()
-        }
-
-        fn set_extension_config(
-            ref self: ComponentState<TContractState>, context_id: u64, config: Span<felt252>,
-        ) {
-            let mut vec = self.EntryRequirement_extension_config.entry(context_id);
-            let mut i: u32 = 0;
-            loop {
-                if i >= config.len() {
-                    break;
-                }
-                vec.push(*config.at(i));
-                i += 1;
-            };
         }
 
         fn get_qualification_entries(
@@ -192,8 +160,10 @@ pub mod EntryRequirementComponent {
                                 "EntryRequirement: Extension {} does not support IEntryRequirementExtension",
                                 display_address,
                             );
+                            // Address-only persistence: the extension contract
+                            // owns its own config (the host typically forwards
+                            // it directly via `add_config`).
                             self.set_extension_address(context_id, config.address);
-                            self.set_extension_config(context_id, config.config);
                             (entry_requirement::REQ_TYPE_EXTENSION, req.entry_limit)
                         },
                     };
