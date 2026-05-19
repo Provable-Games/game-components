@@ -338,13 +338,23 @@ pub mod EntryFeeComponent {
         /// Hosts are responsible for any cross-cutting concerns
         /// (finalization checks, reentrancy guards, replay protection on
         /// the host side) before invoking this.
-        fn claim_entry_fee_extension(
-            ref self: ComponentState<TContractState>, context_id: u64, claim_params: Span<felt252>,
+        /// Forward a payout to the entry-fee extension configured for
+        /// `context_id`. The host (e.g. budokan) computes recipient and
+        /// (optionally) the leaderboard position the claim corresponds
+        /// to; the extension is just an asset manager that executes the
+        /// transfer. Hosts are responsible for any cross-cutting concerns
+        /// (finalization checks, recipient validation) before invoking.
+        fn payout_entry_fee_extension(
+            ref self: ComponentState<TContractState>,
+            context_id: u64,
+            recipient: ContractAddress,
+            position: Option<u32>,
+            claim_params: Span<felt252>,
         ) {
             let extension_address = EntryFeeStoreTrait::get_extension(@self, context_id);
             assert!(!extension_address.is_zero(), "EntryFee: No extension configured");
             let dispatcher = IEntryFeeExtensionDispatcher { contract_address: extension_address };
-            dispatcher.claim_entry_fee(context_id, claim_params);
+            dispatcher.payout_entry_fee(context_id, recipient, position, claim_params);
         }
 
         /// Payout to a recipient
