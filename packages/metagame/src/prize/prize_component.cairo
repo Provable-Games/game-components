@@ -433,25 +433,32 @@ pub mod PrizeComponent {
             dispatcher.add_prize(context_id, prize_id, ext.config);
         }
 
-        /// Forward a claim call to the prize extension configured for
+        /// Forward a payout call to the prize extension configured for
         /// `(context_id, prize_id)`. Reverts if `prize_id` was added via
-        /// the built-in `Prize::Config` path (no extension address
-        /// stored). `claim_params` is opaque — the extension deserializes
-        /// whatever shape it expects.
+        /// the built-in `Prize::Token` path (no extension address
+        /// stored).
+        ///
+        /// The host (e.g. budokan) decides whether the payout is a winner
+        /// distribution or a sponsor refund by picking the right
+        /// `recipient`. The extension itself is a dumb asset manager —
+        /// it just transfers the escrow at `(prize_id, position)` to
+        /// `recipient`. Per-position payout dedupe lives on the
+        /// extension, not the host.
         ///
         /// Hosts are responsible for any cross-cutting concerns
-        /// (finalization checks, reentrancy guards, double-claim
-        /// protection on the host side) before invoking this.
-        fn claim_prize_extension(
+        /// (finalization checks, reentrancy guards) before invoking this.
+        fn payout_prize_extension(
             ref self: ComponentState<TContractState>,
             context_id: u64,
             prize_id: u64,
-            claim_params: Span<felt252>,
+            position: u32,
+            recipient: ContractAddress,
+            payout_params: Span<felt252>,
         ) {
             let extension_address = Store::get_extension_address(@self, context_id, prize_id);
             assert!(!extension_address.is_zero(), "Prize: No extension configured for prize");
             let dispatcher = IPrizeExtensionDispatcher { contract_address: extension_address };
-            dispatcher.claim_prize(context_id, prize_id, claim_params);
+            dispatcher.payout_prize(context_id, prize_id, position, recipient, payout_params);
         }
 
         /// Payout full ERC20 amount to a recipient

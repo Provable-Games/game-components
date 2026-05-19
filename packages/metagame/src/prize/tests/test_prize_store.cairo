@@ -32,8 +32,13 @@ trait IPrizeMockFull<TContractState> {
     fn get_extension_address(
         self: @TContractState, context_id: u64, prize_id: u64,
     ) -> ContractAddress;
-    fn claim_prize_extension(
-        ref self: TContractState, context_id: u64, prize_id: u64, claim_params: Span<felt252>,
+    fn payout_prize_extension(
+        ref self: TContractState,
+        context_id: u64,
+        prize_id: u64,
+        position: u32,
+        recipient: ContractAddress,
+        payout_params: Span<felt252>,
     );
     fn add_prize(
         ref self: TContractState, context_id: u64, prize: crate::prize::structs::Prize,
@@ -226,11 +231,11 @@ fn test_extension_address_default_zero() {
 }
 
 // ============================================================================
-// claim_prize_extension dispatch
+// payout_prize_extension dispatch
 // ============================================================================
 
 #[test]
-fn test_claim_prize_extension_dispatches_when_configured() {
+fn test_payout_prize_extension_dispatches_when_configured() {
     let mock = deploy();
     let ext_addr = addr(0xE0E0E0);
 
@@ -250,15 +255,15 @@ fn test_claim_prize_extension_dispatches_when_configured() {
             ),
         );
 
-    // Mock the extension's claim entrypoint and verify the component
+    // Mock the extension's payout entrypoint and verify the component
     // dispatches without panicking.
-    mock_call(ext_addr, selector!("claim_prize"), (), 10);
-    mock.claim_prize_extension(42, prize_id, array![0xBEEF].span());
+    mock_call(ext_addr, selector!("payout_prize"), (), 10);
+    mock.payout_prize_extension(42, prize_id, 1, addr(0xFEED), array![].span());
 }
 
 #[test]
 #[should_panic(expected: "Prize: No extension configured for prize")]
-fn test_claim_prize_extension_panics_when_unset() {
+fn test_payout_prize_extension_panics_when_unset() {
     let mock = deploy();
-    mock.claim_prize_extension(1, 1, array![].span());
+    mock.payout_prize_extension(1, 1, 1, addr(0xFEED), array![].span());
 }

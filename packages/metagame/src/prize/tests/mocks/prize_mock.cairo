@@ -139,12 +139,17 @@ pub mod PrizeMock {
         self.prize.get_extension_address(context_id, prize_id)
     }
 
-    /// Forward a claim to the prize extension for (context_id, prize_id).
+    /// Forward a payout to the prize extension for (context_id, prize_id).
     #[external(v0)]
-    fn claim_prize_extension(
-        ref self: ContractState, context_id: u64, prize_id: u64, claim_params: Span<felt252>,
+    fn payout_prize_extension(
+        ref self: ContractState,
+        context_id: u64,
+        prize_id: u64,
+        position: u32,
+        recipient: starknet::ContractAddress,
+        payout_params: Span<felt252>,
     ) {
-        self.prize.claim_prize_extension(context_id, prize_id, claim_params);
+        self.prize.payout_prize_extension(context_id, prize_id, position, recipient, payout_params);
     }
 
     /// Add a prize (delegates to component). Exposes the full Prize sum-type

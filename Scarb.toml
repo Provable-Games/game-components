@@ -41,7 +41,7 @@ openzeppelin_introspection = { git = "https://github.com/OpenZeppelin/cairo-cont
 openzeppelin_token = { git = "https://github.com/OpenZeppelin/cairo-contracts.git", tag = "v3.0.0" }
 openzeppelin_interfaces = { git = "https://github.com/OpenZeppelin/cairo-contracts.git", tag = "v3.0.0" }
 ekubo = { git = "https://github.com/EkuboProtocol/starknet-contracts.git", tag = "v4.0.1" }
-metagame_extensions_interfaces = { git = "https://github.com/Provable-Games/metagame_extensions.git", rev = "51ac398f2fb4a0fa30f3e601b0eb3f0daabd8994" }
+metagame_extensions_interfaces = { git = "https://github.com/Provable-Games/metagame_extensions.git", rev = "dbe56fa608fd9f37766758c9e21c37546fad1346" }
 alexandria_merkle_tree = { git = "https://github.com/keep-starknet-strange/alexandria.git", tag = "v0.9.0" }
 
 [dependencies]
