@@ -2,8 +2,9 @@
 #[starknet::contract]
 pub mod PrizeMock {
     use openzeppelin_introspection::src5::SRC5Component;
+    use starknet::ContractAddress;
     use crate::prize::prize_component::PrizeComponent;
-    use crate::prize::structs::{Prize, PrizeType, TokenPrize};
+    use crate::prize::structs::{Prize, PrizeType, TokenPrizePayload};
 
     component!(path: PrizeComponent, storage: prize, event: PrizeEvent);
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
@@ -94,8 +95,14 @@ pub mod PrizeMock {
 
     /// Store a token prize directly (for component testing without token transfers)
     #[external(v0)]
-    fn set_token_prize(ref self: ContractState, prize_id: u64, prize: TokenPrize) {
-        self.prize.set_token_prize(prize_id, prize);
+    fn set_token_record(
+        ref self: ContractState,
+        prize_id: u64,
+        context_id: u64,
+        sponsor_address: ContractAddress,
+        payload: TokenPrizePayload,
+    ) {
+        self.prize.set_token_record(prize_id, context_id, sponsor_address, payload);
     }
 
     // Note: get_prize and get_total_prizes are already exposed via #[abi(embed_v0)] PrizeImpl

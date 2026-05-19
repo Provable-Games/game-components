@@ -82,8 +82,8 @@ pub use minigame::{
 
 // Prize
 pub use prize::{
-    ERC20Data, ERC721Data, ExtensionPrize, IPrize, IPrizeDispatcher, IPrizeDispatcherTrait, Prize,
-    PrizeType, TokenPrize, TokenTypeData,
+    ERC20Data, ERC721Data, ExtensionPrizePayload, IPrize, IPrizeDispatcher, IPrizeDispatcherTrait,
+    Prize, PrizeRecord, PrizeType, TokenPrizePayload, TokenTypeData,
 };
 
 // Registration

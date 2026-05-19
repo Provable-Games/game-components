@@ -24,4 +24,8 @@ pub trait Store<T> {
     /// StoredPrize, not this map).
     fn get_extension_prize_context(self: @T, prize_id: u64) -> u64;
     fn set_extension_prize_context(ref self: T, prize_id: u64, context_id: u64);
+    /// For extension prizes, the sponsor (caller of add_prize at
+    /// registration time). Built-in prizes have sponsor in StoredPrize.
+    fn get_extension_prize_sponsor(self: @T, prize_id: u64) -> ContractAddress;
+    fn set_extension_prize_sponsor(ref self: T, prize_id: u64, sponsor: ContractAddress);
 }

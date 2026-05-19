@@ -1,7 +1,8 @@
 // Re-export all types from game_components_interfaces
 pub use game_components_interfaces::distribution::Distribution;
 pub use game_components_interfaces::prize::{
-    ERC20Data, ERC721Data, ExtensionPrize, Prize, PrizeType, TokenPrize, TokenTypeData,
+    ERC20Data, ERC721Data, ExtensionPrizePayload, Prize, PrizeRecord, PrizeType, TokenPrizePayload,
+    TokenTypeData,
 };
 // Re-export CustomShares machinery from utilities so existing consumers that
 // import from `crate::prize::structs` continue to work.
@@ -195,32 +196,35 @@ fn unpack_token_type(packed_token_type: PackedTokenTypeData) -> TokenTypeData {
 /// Helper functions to convert between Prize (API) and StoredPrize (storage)
 #[generate_trait]
 pub impl StoredPrizeImpl of StoredPrizeTrait {
-    /// Convert a Token-variant Prize to StoredPrize (for writing to
-    /// storage). Only valid for `Prize::Token` — extension prizes are
-    /// not persisted via this path; their state lives on the
-    /// extension contract.
-    fn from_token_prize(prize: TokenPrize) -> StoredPrize {
-        let packed_token_type = pack_token_type(prize.token_type);
+    /// Build a StoredPrize from the host's contextual data + a
+    /// `TokenPrizePayload`. Only valid for built-in (Token) prizes —
+    /// extension prizes are not persisted via this path; their state
+    /// lives on the extension contract.
+    fn from_token_record(
+        context_id: u64, sponsor_address: ContractAddress, payload: TokenPrizePayload,
+    ) -> StoredPrize {
+        let packed_token_type = pack_token_type(payload.token_type);
         StoredPrize {
-            context_id: prize.context_id,
-            token_address: prize.token_address,
+            context_id,
+            token_address: payload.token_address,
             token_type: packed_token_type,
-            sponsor_address: prize.sponsor_address,
+            sponsor_address,
         }
     }
 
-    /// Convert StoredPrize to a `Prize::Token` (built-in path).
-    /// Extension prizes are assembled separately in the component's
-    /// `_get_prize` (which dispatches to the extension contract for
-    /// the original config blob).
-    fn to_token_prize(self: StoredPrize, id: u64) -> TokenPrize {
+    /// Convert StoredPrize to a `Prize::Token`-shaped `PrizeRecord`
+    /// (built-in path). Extension records are assembled separately in
+    /// the component's `_get_prize` (which dispatches to the extension
+    /// contract for the original config blob).
+    fn to_token_record(self: StoredPrize, id: u64) -> PrizeRecord {
         let token_type = unpack_token_type(self.token_type);
-        TokenPrize {
+        PrizeRecord {
             id,
             context_id: self.context_id,
             sponsor_address: self.sponsor_address,
-            token_address: self.token_address,
-            token_type,
+            prize: Prize::Token(
+                TokenPrizePayload { token_address: self.token_address, token_type },
+            ),
         }
     }
 }
