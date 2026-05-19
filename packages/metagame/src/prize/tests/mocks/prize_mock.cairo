@@ -3,7 +3,7 @@
 pub mod PrizeMock {
     use openzeppelin_introspection::src5::SRC5Component;
     use crate::prize::prize_component::PrizeComponent;
-    use crate::prize::structs::{Prize, PrizeData, PrizeType};
+    use crate::prize::structs::{Prize, PrizeType, TokenPrize};
 
     component!(path: PrizeComponent, storage: prize, event: PrizeEvent);
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
@@ -92,10 +92,10 @@ pub mod PrizeMock {
         was_claimed
     }
 
-    /// Store a prize directly (for component testing without token transfers)
+    /// Store a token prize directly (for component testing without token transfers)
     #[external(v0)]
-    fn set_prize(ref self: ContractState, prize_id: u64, prize: PrizeData) {
-        self.prize.set_prize(prize_id, prize);
+    fn set_token_prize(ref self: ContractState, prize_id: u64, prize: TokenPrize) {
+        self.prize.set_token_prize(prize_id, prize);
     }
 
     // Note: get_prize and get_total_prizes are already exposed via #[abi(embed_v0)] PrizeImpl

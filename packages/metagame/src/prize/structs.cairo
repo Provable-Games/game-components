@@ -1,7 +1,7 @@
 // Re-export all types from game_components_interfaces
 pub use game_components_interfaces::distribution::Distribution;
 pub use game_components_interfaces::prize::{
-    ERC20Data, ERC721Data, Prize, PrizeConfig, PrizeData, PrizeType, TokenTypeData,
+    ERC20Data, ERC721Data, ExtensionPrize, Prize, PrizeType, TokenPrize, TokenTypeData,
 };
 // Re-export CustomShares machinery from utilities so existing consumers that
 // import from `crate::prize::structs` continue to work.
@@ -195,8 +195,11 @@ fn unpack_token_type(packed_token_type: PackedTokenTypeData) -> TokenTypeData {
 /// Helper functions to convert between Prize (API) and StoredPrize (storage)
 #[generate_trait]
 pub impl StoredPrizeImpl of StoredPrizeTrait {
-    /// Convert PrizeData to StoredPrize (for writing to storage)
-    fn from_prize(prize: PrizeData) -> StoredPrize {
+    /// Convert a Token-variant Prize to StoredPrize (for writing to
+    /// storage). Only valid for `Prize::Token` — extension prizes are
+    /// not persisted via this path; their state lives on the
+    /// extension contract.
+    fn from_token_prize(prize: TokenPrize) -> StoredPrize {
         let packed_token_type = pack_token_type(prize.token_type);
         StoredPrize {
             context_id: prize.context_id,
@@ -206,15 +209,18 @@ pub impl StoredPrizeImpl of StoredPrizeTrait {
         }
     }
 
-    /// Convert StoredPrize to PrizeData (for reading from storage)
-    fn to_prize(self: StoredPrize, id: u64) -> PrizeData {
+    /// Convert StoredPrize to a `Prize::Token` (built-in path).
+    /// Extension prizes are assembled separately in the component's
+    /// `_get_prize` (which dispatches to the extension contract for
+    /// the original config blob).
+    fn to_token_prize(self: StoredPrize, id: u64) -> TokenPrize {
         let token_type = unpack_token_type(self.token_type);
-        PrizeData {
+        TokenPrize {
             id,
             context_id: self.context_id,
+            sponsor_address: self.sponsor_address,
             token_address: self.token_address,
             token_type,
-            sponsor_address: self.sponsor_address,
         }
     }
 }

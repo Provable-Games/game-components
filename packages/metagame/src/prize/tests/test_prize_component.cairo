@@ -1,6 +1,6 @@
 use game_components_utilities::distribution::structs::Distribution;
 use snforge_std::{ContractClassTrait, DeclareResultTrait, declare};
-use crate::prize::structs::{ERC20Data, ERC721Data, PrizeData, PrizeType, TokenTypeData};
+use crate::prize::structs::{ERC20Data, ERC721Data, Prize, PrizeType, TokenPrize, TokenTypeData};
 
 #[starknet::interface]
 trait IPrizeMockExtended<TContractState> {
@@ -9,8 +9,8 @@ trait IPrizeMockExtended<TContractState> {
     fn is_claimed(self: @TContractState, context_id: u64, prize_type: PrizeType) -> bool;
     fn set_claimed(ref self: TContractState, context_id: u64, prize_type: PrizeType);
     // New mock functions for component testing
-    fn set_prize(ref self: TContractState, prize_id: u64, prize: PrizeData);
-    fn get_prize(self: @TContractState, prize_id: u64) -> PrizeData;
+    fn set_token_prize(ref self: TContractState, prize_id: u64, prize: TokenPrize);
+    fn get_prize(self: @TContractState, prize_id: u64) -> Prize;
     fn get_total_prizes(self: @TContractState) -> u64;
     fn increment_prize_count(ref self: TContractState) -> u64;
     fn assert_prize_exists(self: @TContractState, prize_id: u64);
@@ -27,8 +27,8 @@ fn deploy_prize_mock() -> IPrizeMockExtendedDispatcher {
 
 fn make_erc20_prize(
     id: u64, context_id: u64, amount: u128, distribution: Option<Distribution>, count: Option<u32>,
-) -> PrizeData {
-    PrizeData {
+) -> TokenPrize {
+    TokenPrize {
         id,
         context_id,
         token_address: core::traits::TryInto::try_into(0xE2C20).unwrap(),
@@ -39,8 +39,8 @@ fn make_erc20_prize(
     }
 }
 
-fn make_erc721_prize(id: u64, context_id: u64, token_id: u128) -> PrizeData {
-    PrizeData {
+fn make_erc721_prize(id: u64, context_id: u64, token_id: u128) -> TokenPrize {
+    TokenPrize {
         id,
         context_id,
         token_address: core::traits::TryInto::try_into(0xE2C721).unwrap(),
@@ -50,7 +50,7 @@ fn make_erc721_prize(id: u64, context_id: u64, token_id: u128) -> PrizeData {
 }
 
 // ============================================================================
-// set_prize / get_prize roundtrip tests
+// set_token_prize / get_prize roundtrip tests
 // ============================================================================
 
 #[test]
@@ -58,9 +58,12 @@ fn test_set_and_get_prize_erc20_no_distribution() {
     let mock = deploy_prize_mock();
 
     let prize = make_erc20_prize(1, 100, 5000, Option::None, Option::None);
-    mock.set_prize(1, prize);
+    mock.set_token_prize(1, prize);
 
-    let retrieved = mock.get_prize(1);
+    let retrieved = match mock.get_prize(1) {
+        Prize::Token(t) => t,
+        Prize::Extension(_) => panic!("expected token prize"),
+    };
     assert!(retrieved.context_id == 100, "context_id mismatch");
 
     match retrieved.token_type {
@@ -79,9 +82,12 @@ fn test_set_and_get_prize_erc20_linear() {
     let prize = make_erc20_prize(
         1, 200, 10000, Option::Some(Distribution::Linear(25)), Option::Some(5),
     );
-    mock.set_prize(1, prize);
+    mock.set_token_prize(1, prize);
 
-    let retrieved = mock.get_prize(1);
+    let retrieved = match mock.get_prize(1) {
+        Prize::Token(t) => t,
+        Prize::Extension(_) => panic!("expected token prize"),
+    };
 
     match retrieved.token_type {
         TokenTypeData::erc20(data) => {
@@ -106,9 +112,12 @@ fn test_set_and_get_prize_erc721() {
     let mock = deploy_prize_mock();
 
     let prize = make_erc721_prize(1, 300, 42);
-    mock.set_prize(1, prize);
+    mock.set_token_prize(1, prize);
 
-    let retrieved = mock.get_prize(1);
+    let retrieved = match mock.get_prize(1) {
+        Prize::Token(t) => t,
+        Prize::Extension(_) => panic!("expected token prize"),
+    };
     assert!(retrieved.context_id == 300, "context_id mismatch");
 
     match retrieved.token_type {
@@ -155,7 +164,7 @@ fn test_assert_prize_exists_succeeds_for_stored() {
     let mock = deploy_prize_mock();
 
     let prize = make_erc20_prize(1, 100, 5000, Option::None, Option::None);
-    mock.set_prize(1, prize);
+    mock.set_token_prize(1, prize);
 
     // Should not panic
     mock.assert_prize_exists(1);

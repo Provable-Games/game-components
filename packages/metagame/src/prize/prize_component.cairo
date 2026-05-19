@@ -30,7 +30,8 @@ pub mod PrizeComponent {
     use crate::prize::prize_store::{PrizeStoreImpl, PrizeStoreTrait};
     use crate::prize::store::Store;
     use crate::prize::structs::{
-        CustomShares, Prize, PrizeConfig, PrizeData, PrizeType, StoredPrize, TokenTypeData,
+        CustomShares, ERC20Data, ExtensionPrize, Prize, PrizeType, StoredPrize, TokenPrize,
+        TokenTypeData,
     };
 
     #[storage]
@@ -50,11 +51,17 @@ pub mod PrizeComponent {
         Prize_custom_shares_packed: Map<(u64, u8), CustomShares>,
         /// Number of custom shares for a prize
         Prize_custom_shares_count: Map<u64, u32>,
-        /// Extension address keyed by (context_id, prize_id). Doubles as
-        /// the "is this prize an extension?" flag (zero = built-in path).
-        /// The extension contract owns the authoritative config — we only
-        /// store the address needed for claim-time dispatch.
+        /// Extension address keyed by (context_id, prize_id). The
+        /// extension contract owns the authoritative config — we only
+        /// store the address needed for claim-time dispatch and to
+        /// resolve `IPrizeExtension.get_config` for reads.
         Prize_extension_address: Map<(u64, u64), ContractAddress>,
+        /// `prize_id -> context_id` reverse index for extension prizes.
+        /// Needed because `get_prize(prize_id)` takes only the id but
+        /// extension storage is keyed by (context_id, prize_id). Built-in
+        /// prizes have their context_id stored in `StoredPrize.context_id`
+        /// and are absent from this map.
+        Prize_extension_prize_context: Map<u64, u64>,
     }
 
     #[event]
@@ -129,14 +136,53 @@ pub mod PrizeComponent {
         ) {
             self.Prize_extension_address.entry((context_id, prize_id)).write(addr);
         }
+
+        fn get_extension_prize_context(
+            self: @ComponentState<TContractState>, prize_id: u64,
+        ) -> u64 {
+            self.Prize_extension_prize_context.entry(prize_id).read()
+        }
+
+        fn set_extension_prize_context(
+            ref self: ComponentState<TContractState>, prize_id: u64, context_id: u64,
+        ) {
+            self.Prize_extension_prize_context.entry(prize_id).write(context_id);
+        }
+    }
+
+    /// Resolve a `prize_id` to its full `Prize` sum-type view.
+    ///
+    /// Branching: the `Prize_extension_prize_context` reverse index is
+    /// populated only for extension prizes. A non-zero read identifies
+    /// the prize as an extension, lets us reconstruct the
+    /// `(context_id, prize_id)` key, and we dispatch to the
+    /// extension's `get_config` view to fetch the original config
+    /// blob. Built-in prizes fall through to the
+    /// `PrizeStoreTrait::get_token_prize` store-bridge path.
+    fn resolve_prize<TContractState, +HasComponent<TContractState>>(
+        self: @ComponentState<TContractState>, prize_id: u64,
+    ) -> Prize {
+        let context_id = Store::get_extension_prize_context(self, prize_id);
+        if context_id == 0 {
+            return Prize::Token(PrizeStoreTrait::get_token_prize(self, prize_id));
+        }
+        let extension_address = Store::get_extension_address(self, context_id, prize_id);
+        let context_owner = get_contract_address();
+        let dispatcher = IPrizeExtensionDispatcher { contract_address: extension_address };
+        let extension_config = dispatcher.get_config(context_owner, context_id, prize_id);
+        Prize::Extension(
+            ExtensionPrize {
+                id: prize_id, context_id, address: extension_address, config: extension_config,
+            },
+        )
     }
 
     #[embeddable_as(PrizeImpl)]
     impl PrizeComponentImpl<
         TContractState, +HasComponent<TContractState>,
     > of IPrize<ComponentState<TContractState>> {
-        fn get_prize(self: @ComponentState<TContractState>, prize_id: u64) -> PrizeData {
-            PrizeStoreTrait::get_prize(self, prize_id)
+        fn get_prize(self: @ComponentState<TContractState>, prize_id: u64) -> Prize {
+            resolve_prize(self, prize_id)
         }
 
         fn get_total_prizes(self: @ComponentState<TContractState>) -> u64 {
@@ -154,10 +200,26 @@ pub mod PrizeComponent {
     pub impl PrizeInternalImpl<
         TContractState, +HasComponent<TContractState>,
     > of PrizeInternalTrait<TContractState> {
-        /// Get a prize by its ID
-        /// The PrizeData struct is unpacked from storage and the id field is set
-        fn _get_prize(self: @ComponentState<TContractState>, prize_id: u64) -> PrizeData {
-            PrizeStoreTrait::get_prize(self, prize_id)
+        /// Get a prize by its ID.
+        ///
+        /// For built-in (`Prize::Config`) prizes this reads the
+        /// `StoredPrize` slot and assembles a `PrizeData { kind: Config, ... }`.
+        ///
+        /// For extension (`Prize::Extension`) prizes this:
+        ///   1. detects the kind via the `prize_id -> context_id`
+        ///      reverse index populated by `_set_extension`,
+        ///   2. reads the extension address from
+        ///      `Prize_extension_address[(context_id, prize_id)]`,
+        ///   3. dispatches `IPrizeExtension.get_config(...)` to fetch
+        ///      the original config blob the sponsor passed at
+        ///      `add_prize` time,
+        ///   4. assembles a `PrizeData { kind: Extension, ... }`.
+        ///
+        /// Note: extension prizes incur a cross-contract call on every
+        /// read. Callers wanting bulk reads should batch / cache
+        /// accordingly.
+        fn _get_prize(self: @ComponentState<TContractState>, prize_id: u64) -> Prize {
+            resolve_prize(self, prize_id)
         }
 
         /// Get custom shares for a prize (used for Custom distribution)
@@ -166,9 +228,12 @@ pub mod PrizeComponent {
             PrizeStoreTrait::get_custom_shares(self, prize_id)
         }
 
-        /// Store a prize (converts to StoredPrize for storage)
-        fn set_prize(ref self: ComponentState<TContractState>, prize_id: u64, prize: PrizeData) {
-            PrizeStoreTrait::set_prize(ref self, prize_id, prize);
+        /// Store a token prize (converts to StoredPrize for storage).
+        /// Extension prizes are not persisted via this path.
+        fn set_token_prize(
+            ref self: ComponentState<TContractState>, prize_id: u64, prize: TokenPrize,
+        ) {
+            PrizeStoreTrait::set_token_prize(ref self, prize_id, prize);
         }
 
         /// Get total prizes count (internal)
@@ -237,14 +302,20 @@ pub mod PrizeComponent {
 
         /// Add a prize or set extension for a context.
         /// Returns the prize_id in both cases.
-        /// - Prize::Config: deposits tokens, stores prize data
-        /// - Prize::Extension: increments prize count and delegates to extension
+        /// - `Prize::Token` : deposits tokens, stores prize data. Host-
+        ///   assigned fields on the input variant (`id`, `context_id`,
+        ///   `sponsor_address`) are ignored — the host overwrites them.
+        /// - `Prize::Extension` : increments prize count, registers the
+        ///   extension address keyed by `(context_id, prize_id)`, and
+        ///   dispatches `IPrizeExtension.add_prize(...)`. Input host
+        ///   fields (`id`, `context_id`) are likewise ignored.
         fn add_prize(
             ref self: ComponentState<TContractState>, context_id: u64, prize: Prize,
         ) -> u64 {
             match prize {
-                Prize::Config(config) => { self._add_prize_config(context_id, config) },
-                Prize::Extension(ext) => {
+                Prize::Token(input) => self._add_token_prize(context_id, input),
+                Prize::Extension(input) => {
+                    let ext = ExtensionConfig { address: input.address, config: input.config };
                     assert!(!ext.address.is_zero(), "Prize: Extension address cannot be zero");
                     let src5 = ISRC5Dispatcher { contract_address: ext.address };
                     let display_address: felt252 = ext.address.into();
@@ -260,12 +331,16 @@ pub mod PrizeComponent {
             }
         }
 
-        /// Internal: deposit tokens, store prize data, return prize_id
-        fn _add_prize_config(
-            ref self: ComponentState<TContractState>, context_id: u64, config: PrizeConfig,
+        /// Internal: deposit tokens, store prize data, return prize_id.
+        /// `input` is a `TokenPrize` whose host-assigned fields (id,
+        /// context_id, sponsor_address) are ignored — the host
+        /// overwrites them with the assigned id, the caller-supplied
+        /// `context_id` parameter, and `get_caller_address()`.
+        fn _add_token_prize(
+            ref self: ComponentState<TContractState>, context_id: u64, input: TokenPrize,
         ) -> u64 {
-            let token_address = config.token_address;
-            let token_type = config.token_type;
+            let token_address = input.token_address;
+            let token_type = input.token_type;
 
             // Deposit the prize tokens
             match @token_type {
@@ -304,24 +379,23 @@ pub mod PrizeComponent {
                 }
             }
 
-            // Create the prize data (StorePacking handles the packing in storage)
+            // Persist the built-in token prize. Host-assigned fields
+            // (id, context_id, sponsor_address) overwrite whatever the
+            // caller passed in `input`.
             let sponsor = get_caller_address();
-            let prize_data = PrizeData {
-                id, context_id, token_address, token_type, sponsor_address: sponsor,
+            let prize = TokenPrize {
+                id, context_id, sponsor_address: sponsor, token_address, token_type,
             };
-
-            // Store the prize data
-            PrizeStoreTrait::set_prize(ref self, id, prize_data);
+            PrizeStoreTrait::set_token_prize(ref self, id, prize);
 
             id
         }
 
-        /// Internal: persist the extension address and forward the config
-        /// to the extension. The config blob is NOT persisted here — the
-        /// extension is the sole source of truth for its own config.
-        /// Indexers wanting to recover it should read the original
-        /// extension call from the host's event stream (e.g. budokan's
-        /// PrizeAdded) or query the extension's own view methods.
+        /// Internal: persist the extension address + the reverse
+        /// `prize_id -> context_id` index, then forward the config to
+        /// the extension. The config blob is NOT persisted here — it
+        /// lives on the extension contract, and reads (`get_prize`)
+        /// fetch it back via `IPrizeExtension.get_config`.
         fn _set_extension(
             ref self: ComponentState<TContractState>,
             context_id: u64,
@@ -329,6 +403,8 @@ pub mod PrizeComponent {
             ext: ExtensionConfig,
         ) {
             Store::set_extension_address(ref self, context_id, prize_id, ext.address);
+            // Reverse index for the prize_id-only `get_prize` lookup.
+            Store::set_extension_prize_context(ref self, prize_id, context_id);
 
             let dispatcher = IPrizeExtensionDispatcher { contract_address: ext.address };
             dispatcher.add_prize(context_id, prize_id, ext.config);
@@ -381,7 +457,7 @@ pub mod PrizeComponent {
         fn refund_prize_erc20(
             ref self: ComponentState<TContractState>, prize_id: u64, amount: u128,
         ) {
-            let prize = PrizeStoreTrait::get_prize(@self, prize_id);
+            let prize = PrizeStoreTrait::get_token_prize(@self, prize_id);
             let erc20 = IERC20Dispatcher { contract_address: prize.token_address };
             assert!(
                 erc20.transfer(prize.sponsor_address, amount.into()),
@@ -393,7 +469,7 @@ pub mod PrizeComponent {
         fn refund_prize_erc721(
             ref self: ComponentState<TContractState>, prize_id: u64, token_id: u128,
         ) {
-            let prize = PrizeStoreTrait::get_prize(@self, prize_id);
+            let prize = PrizeStoreTrait::get_token_prize(@self, prize_id);
             let erc721 = IERC721Dispatcher { contract_address: prize.token_address };
             erc721.transfer_from(get_contract_address(), prize.sponsor_address, token_id.into());
         }

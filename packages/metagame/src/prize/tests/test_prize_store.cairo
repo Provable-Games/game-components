@@ -5,12 +5,12 @@ use core::num::traits::Zero;
 use game_components_utilities::distribution::structs::Distribution;
 use snforge_std::{ContractClassTrait, DeclareResultTrait, declare, mock_call};
 use starknet::ContractAddress;
-use crate::prize::structs::{ERC20Data, ERC721Data, PrizeData, PrizeType, TokenTypeData};
+use crate::prize::structs::{ERC20Data, ERC721Data, Prize, PrizeType, TokenPrize, TokenTypeData};
 
 #[starknet::interface]
 trait IPrizeMockFull<TContractState> {
-    fn set_prize(ref self: TContractState, prize_id: u64, prize: PrizeData);
-    fn get_prize(self: @TContractState, prize_id: u64) -> PrizeData;
+    fn set_token_prize(ref self: TContractState, prize_id: u64, prize: TokenPrize);
+    fn get_prize(self: @TContractState, prize_id: u64) -> Prize;
     fn get_total_prizes(self: @TContractState) -> u64;
     fn increment_prize_count(ref self: TContractState) -> u64;
     fn hash_prize_type(self: @TContractState, prize_type: PrizeType) -> felt252;
@@ -44,8 +44,8 @@ fn addr(value: felt252) -> ContractAddress {
 
 fn make_erc20_prize(
     id: u64, context_id: u64, amount: u128, distribution: Option<Distribution>, count: Option<u32>,
-) -> PrizeData {
-    PrizeData {
+) -> TokenPrize {
+    TokenPrize {
         id,
         context_id,
         token_address: addr(0xE2C20),
@@ -106,7 +106,7 @@ fn test_hash_prize_type_deterministic() {
 fn test_get_prize_erc20_custom_distribution_stores_shares_separately() {
     let mock = deploy();
 
-    // Custom distribution - shares are stored via store_custom_shares during set_prize
+    // Custom distribution - shares are stored via store_custom_shares during set_token_prize
     // but the StoredPrize only preserves the variant type, not the shares.
     // get_prize then reconstructs shares from packed storage.
     let prize = make_erc20_prize(
@@ -116,15 +116,18 @@ fn test_get_prize_erc20_custom_distribution_stores_shares_separately() {
         Option::Some(Distribution::Custom(array![5000_u16, 3000_u16, 2000_u16].span())),
         Option::Some(3),
     );
-    mock.set_prize(1, prize);
+    mock.set_token_prize(1, prize);
 
-    let retrieved = mock.get_prize(1);
+    let retrieved = match mock.get_prize(1) {
+        Prize::Token(t) => t,
+        Prize::Extension(_) => panic!("expected token prize"),
+    };
     match retrieved.token_type {
         TokenTypeData::erc20(data) => {
             assert!(data.amount == 5000, "amount mismatch");
             // The Custom variant is preserved but shares come from packed storage
-            // Since set_prize doesn't call store_custom_shares (only _add_prize_config does),
-            // the shares array will be empty when retrieved via get_prize after set_prize
+            // Since set_token_prize doesn't call store_custom_shares (only _add_prize_config does),
+            // the shares array will be empty when retrieved via get_prize after set_token_prize
             match data.distribution {
                 Option::Some(dist) => {
                     match dist {
@@ -143,16 +146,19 @@ fn test_get_prize_erc20_custom_distribution_stores_shares_separately() {
 fn test_get_prize_erc721_passthrough() {
     let mock = deploy();
 
-    let prize = PrizeData {
+    let prize = TokenPrize {
         id: 2,
         context_id: 200,
         token_address: addr(0xE2C721),
         token_type: TokenTypeData::erc721(ERC721Data { id: 42 }),
         sponsor_address: addr(0x999),
     };
-    mock.set_prize(2, prize);
+    mock.set_token_prize(2, prize);
 
-    let retrieved = mock.get_prize(2);
+    let retrieved = match mock.get_prize(2) {
+        Prize::Token(t) => t,
+        Prize::Extension(_) => panic!("expected token prize"),
+    };
     match retrieved.token_type {
         TokenTypeData::erc20(_) => { panic!("expected erc721"); },
         TokenTypeData::erc721(data) => { assert!(data.id == 42, "id mismatch"); },
@@ -228,8 +234,8 @@ fn test_claim_prize_extension_dispatches_when_configured() {
         .add_prize(
             42,
             crate::prize::structs::Prize::Extension(
-                metagame_extensions_interfaces::extension::ExtensionConfig {
-                    address: ext_addr, config: array![].span(),
+                crate::prize::structs::ExtensionPrize {
+                    id: 0, context_id: 0, address: ext_addr, config: array![].span(),
                 },
             ),
         );

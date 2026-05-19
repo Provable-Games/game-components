@@ -4,18 +4,21 @@ use core::num::traits::Zero;
 use crate::prize::prize::prize::hash_prize_type;
 use crate::prize::store::Store;
 use crate::prize::structs::{
-    CUSTOM_SHARES_PER_SLOT, CustomSharesImpl, ERC20Data, PrizeData, PrizeType, StoredPrizeTrait,
+    CUSTOM_SHARES_PER_SLOT, CustomSharesImpl, ERC20Data, PrizeType, StoredPrizeTrait, TokenPrize,
     TokenTypeData,
 };
 
 /// Store bridge: composes Store<T> reads with pure lib operations
 pub trait PrizeStoreTrait<T> {
-    /// Get a prize by its ID, converting from storage format and restoring custom shares
-    fn get_prize(self: @T, prize_id: u64) -> PrizeData;
+    /// Get a built-in token prize by its ID, converting from storage
+    /// format and restoring custom shares. Extension prizes are
+    /// routed via the component's `resolve_prize` before this is
+    /// called and never reach the store bridge.
+    fn get_token_prize(self: @T, prize_id: u64) -> TokenPrize;
     /// Get custom shares for a prize (reconstructs from packed storage)
     fn get_custom_shares(self: @T, prize_id: u64) -> Array<u16>;
-    /// Store a prize (converts to StoredPrize for storage)
-    fn set_prize(ref self: T, prize_id: u64, prize: PrizeData);
+    /// Store a token prize (converts to StoredPrize for storage)
+    fn set_token_prize(ref self: T, prize_id: u64, prize: TokenPrize);
     /// Get total prizes count
     fn get_total_prizes(self: @T) -> u64;
     /// Increment total prizes and return the new prize ID
@@ -39,10 +42,9 @@ pub trait PrizeStoreTrait<T> {
 }
 
 pub impl PrizeStoreImpl<T, +Store<T>, +Drop<T>> of PrizeStoreTrait<T> {
-    fn get_prize(self: @T, prize_id: u64) -> PrizeData {
+    fn get_token_prize(self: @T, prize_id: u64) -> TokenPrize {
         let stored = Store::get_prize(self, prize_id);
-        // Convert StoredPrize to PrizeData
-        let mut prize = stored.to_prize(prize_id);
+        let mut prize = stored.to_token_prize(prize_id);
 
         // For custom distributions, restore the shares from separate storage
         prize.token_type = match prize.token_type {
@@ -105,8 +107,8 @@ pub impl PrizeStoreImpl<T, +Store<T>, +Drop<T>> of PrizeStoreTrait<T> {
         shares
     }
 
-    fn set_prize(ref self: T, prize_id: u64, prize: PrizeData) {
-        let stored = StoredPrizeTrait::from_prize(prize);
+    fn set_token_prize(ref self: T, prize_id: u64, prize: TokenPrize) {
+        let stored = StoredPrizeTrait::from_token_prize(prize);
         Store::set_prize(ref self, prize_id, stored);
     }
 

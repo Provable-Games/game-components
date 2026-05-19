@@ -1,12 +1,12 @@
 use game_components_utilities::distribution::structs::Distribution;
-use crate::prize::structs::{ERC20Data, ERC721Data, PrizeData, StoredPrizeTrait, TokenTypeData};
+use crate::prize::structs::{ERC20Data, ERC721Data, StoredPrizeTrait, TokenPrize, TokenTypeData};
 
 // ============================================================================
 // pack_token_type / unpack_token_type roundtrip tests via StoredPrizeTrait
 // ============================================================================
 
-fn make_prize(token_type: TokenTypeData) -> PrizeData {
-    PrizeData {
+fn make_prize(token_type: TokenTypeData) -> TokenPrize {
+    TokenPrize {
         id: 0,
         context_id: 1,
         token_address: core::traits::TryInto::try_into(0x123).unwrap(),
@@ -21,8 +21,8 @@ fn test_pack_unpack_token_type_erc20_no_distribution() {
         ERC20Data { amount: 500, distribution: Option::None, distribution_count: Option::None },
     );
 
-    let stored = StoredPrizeTrait::from_prize(make_prize(original));
-    let restored = stored.to_prize(1);
+    let stored = StoredPrizeTrait::from_token_prize(make_prize(original));
+    let restored = stored.to_token_prize(1);
 
     match restored.token_type {
         TokenTypeData::erc20(data) => {
@@ -44,8 +44,8 @@ fn test_pack_unpack_token_type_erc20_linear() {
         },
     );
 
-    let stored = StoredPrizeTrait::from_prize(make_prize(original));
-    let restored = stored.to_prize(1);
+    let stored = StoredPrizeTrait::from_token_prize(make_prize(original));
+    let restored = stored.to_token_prize(1);
 
     match restored.token_type {
         TokenTypeData::erc20(data) => {
@@ -75,8 +75,8 @@ fn test_pack_unpack_token_type_erc20_exponential() {
         },
     );
 
-    let stored = StoredPrizeTrait::from_prize(make_prize(original));
-    let restored = stored.to_prize(1);
+    let stored = StoredPrizeTrait::from_token_prize(make_prize(original));
+    let restored = stored.to_token_prize(1);
 
     match restored.token_type {
         TokenTypeData::erc20(data) => {
@@ -106,8 +106,8 @@ fn test_pack_unpack_token_type_erc20_uniform() {
         },
     );
 
-    let stored = StoredPrizeTrait::from_prize(make_prize(original));
-    let restored = stored.to_prize(1);
+    let stored = StoredPrizeTrait::from_token_prize(make_prize(original));
+    let restored = stored.to_token_prize(1);
 
     match restored.token_type {
         TokenTypeData::erc20(data) => {
@@ -141,8 +141,8 @@ fn test_pack_unpack_token_type_erc20_custom() {
         },
     );
 
-    let stored = StoredPrizeTrait::from_prize(make_prize(original));
-    let restored = stored.to_prize(1);
+    let stored = StoredPrizeTrait::from_token_prize(make_prize(original));
+    let restored = stored.to_token_prize(1);
 
     match restored.token_type {
         TokenTypeData::erc20(data) => {
@@ -166,8 +166,8 @@ fn test_pack_unpack_token_type_erc20_custom() {
 fn test_pack_unpack_token_type_erc721() {
     let original = TokenTypeData::erc721(ERC721Data { id: 42 });
 
-    let stored = StoredPrizeTrait::from_prize(make_prize(original));
-    let restored = stored.to_prize(1);
+    let stored = StoredPrizeTrait::from_token_prize(make_prize(original));
+    let restored = stored.to_token_prize(1);
 
     match restored.token_type {
         TokenTypeData::erc20(_) => { panic!("expected erc721"); },
@@ -184,7 +184,7 @@ fn test_stored_prize_from_to_roundtrip_erc20() {
     let token_addr = core::traits::TryInto::try_into(0xABC).unwrap();
     let sponsor_addr = core::traits::TryInto::try_into(0xDEF).unwrap();
 
-    let prize = PrizeData {
+    let prize = TokenPrize {
         id: 7,
         context_id: 42,
         token_address: token_addr,
@@ -198,8 +198,8 @@ fn test_stored_prize_from_to_roundtrip_erc20() {
         sponsor_address: sponsor_addr,
     };
 
-    let stored = StoredPrizeTrait::from_prize(prize);
-    let restored = stored.to_prize(7);
+    let stored = StoredPrizeTrait::from_token_prize(prize);
+    let restored = stored.to_token_prize(7);
 
     assert!(restored.id == 7, "id mismatch");
     assert!(restored.context_id == 42, "context_id mismatch");
@@ -212,7 +212,7 @@ fn test_stored_prize_from_to_roundtrip_erc721() {
     let token_addr = core::traits::TryInto::try_into(0xABC).unwrap();
     let sponsor_addr = core::traits::TryInto::try_into(0xDEF).unwrap();
 
-    let prize = PrizeData {
+    let prize = TokenPrize {
         id: 3,
         context_id: 99,
         token_address: token_addr,
@@ -220,8 +220,8 @@ fn test_stored_prize_from_to_roundtrip_erc721() {
         sponsor_address: sponsor_addr,
     };
 
-    let stored = StoredPrizeTrait::from_prize(prize);
-    let restored = stored.to_prize(3);
+    let stored = StoredPrizeTrait::from_token_prize(prize);
+    let restored = stored.to_token_prize(3);
 
     assert!(restored.id == 3, "id mismatch");
     assert!(restored.context_id == 99, "context_id mismatch");
