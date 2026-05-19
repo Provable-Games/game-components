@@ -484,7 +484,7 @@ pub mod PrizeComponent {
             ref self: ComponentState<TContractState>,
             context_id: u64,
             prize_id: u64,
-            position: u32,
+            position: Option<u32>,
             recipient: ContractAddress,
             payout_params: Span<felt252>,
         ) {

@@ -145,7 +145,7 @@ pub mod PrizeMock {
         ref self: ContractState,
         context_id: u64,
         prize_id: u64,
-        position: u32,
+        position: Option<u32>,
         recipient: starknet::ContractAddress,
         payout_params: Span<felt252>,
     ) {

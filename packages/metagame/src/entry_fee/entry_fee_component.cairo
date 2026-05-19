@@ -375,6 +375,22 @@ pub mod EntryFeeComponent {
             dispatcher.payout_entry_fee(context_id, recipient, position, claim_params);
         }
 
+        /// Read-through dispatcher for `IEntryFeeExtension.get_config`. Lets
+        /// host viewers (frontends, indexer RPC fallbacks) surface the
+        /// original config blob for extension-fee contexts without needing
+        /// per-extension knowledge of the extension's internal storage.
+        /// Returns an empty span when the context has no extension fee.
+        fn get_entry_fee_extension_config(
+            self: @ComponentState<TContractState>, context_owner: ContractAddress, context_id: u64,
+        ) -> Span<felt252> {
+            let extension_address = EntryFeeStoreTrait::get_extension(self, context_id);
+            if extension_address.is_zero() {
+                return array![].span();
+            }
+            let dispatcher = IEntryFeeExtensionDispatcher { contract_address: extension_address };
+            dispatcher.get_config(context_owner, context_id)
+        }
+
         /// Payout to a recipient
         fn payout(
             ref self: ComponentState<TContractState>,
