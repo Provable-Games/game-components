@@ -830,7 +830,7 @@ fn test_score_too_high_rejection() {
 // TC-INVPOS-01: Invalid position rejection
 #[test]
 fn test_invalid_position_beyond_length() {
-    let (leaderboard, admin, mock) = deploy_leaderboard_preset(OWNER());
+    let (_leaderboard, admin, mock) = deploy_leaderboard_preset(OWNER());
     let (game_address, game_admin) = deploy_mock_game();
 
     setup_tournament(admin, WEEKLY_TOURNAMENT, 10, false, game_address);
