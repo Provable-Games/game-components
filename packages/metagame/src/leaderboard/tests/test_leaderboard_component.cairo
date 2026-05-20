@@ -653,7 +653,7 @@ fn test_submit_score_full_too_low() {
 // Test LB-SUB-04: Submit with position beyond current length
 #[test]
 fn test_submit_position_beyond_length() {
-    let (leaderboard, admin, mock) = deploy_mock_leaderboard();
+    let (_leaderboard, admin, mock) = deploy_mock_leaderboard();
     let (game_address, game_admin) = deploy_mock_game_details();
 
     configure_tournament_with_game(admin, TOURNAMENT_1, 10, false, game_address);
@@ -1179,7 +1179,7 @@ fn test_fuzz_qualification_boundary(score: u64) {
 // Test submitting score at position that creates a gap (ScoreTooHigh validation)
 #[test]
 fn test_submit_score_too_high_for_position() {
-    let (leaderboard, admin, mock) = deploy_mock_leaderboard();
+    let (_leaderboard, admin, mock) = deploy_mock_leaderboard();
     let (game_address, game_admin) = deploy_mock_game_details();
 
     configure_tournament_with_game(admin, TOURNAMENT_1, 10, false, game_address);
