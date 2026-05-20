@@ -267,3 +267,149 @@ fn test_payout_prize_extension_panics_when_unset() {
     let mock = deploy();
     mock.payout_prize_extension(1, 1, Option::Some(1_u32), addr(0xFEED), array![].span());
 }
+
+// ============================================================================
+// Direct coverage for the store-bridge methods that the component touches
+// only indirectly (or in branches the existing tests don't exercise).
+//
+// These mirror flows that prize_component.cairo runs internally on every
+// add_prize / payout / claim, but cairo-coverage doesn't always attribute
+// the deep-stack reads back to the test that triggered them. Exercising
+// the same methods through the mock's external entrypoints credits the
+// store bridge directly.
+// ============================================================================
+
+#[test]
+fn test_total_prizes_starts_at_zero() {
+    let mock = deploy();
+    assert!(mock.get_total_prizes() == 0, "fresh contract should report zero prizes");
+}
+
+#[test]
+fn test_increment_prize_count_returns_new_id_each_call() {
+    let mock = deploy();
+    let first = mock.increment_prize_count();
+    let second = mock.increment_prize_count();
+    let third = mock.increment_prize_count();
+    assert!(first == 1, "first prize id should be 1");
+    assert!(second == 2, "second prize id should be 2");
+    assert!(third == 3, "third prize id should be 3");
+    assert!(mock.get_total_prizes() == 3, "total should track increments");
+}
+
+#[test]
+fn test_is_claimed_through_hashing_path() {
+    let mock = deploy();
+    let prize_type = PrizeType::Distributed((7, 4));
+
+    assert!(!mock.is_claimed(99, prize_type), "should not be claimed initially");
+
+    mock.set_claimed(99, prize_type);
+
+    assert!(mock.is_claimed(99, prize_type), "should be claimed after set");
+    // Isolation: same prize_type in a different context is independent.
+    assert!(!mock.is_claimed(100, prize_type), "different context should not be claimed");
+}
+
+#[test]
+fn test_assert_prize_exists_passes_after_set_token_record() {
+    let mock = deploy();
+    let (_, context_id, sponsor, payload) = make_erc20_prize(
+        1, 50, 1000, Option::None, Option::None,
+    );
+    mock.set_token_record(1, context_id, sponsor, payload);
+    // Should not panic.
+    mock.assert_prize_exists(1);
+}
+
+#[test]
+fn test_assert_prize_not_claimed_passes_when_unclaimed() {
+    let mock = deploy();
+    // Should not panic.
+    mock.assert_prize_not_claimed(1, PrizeType::Single(1));
+}
+
+#[test]
+#[should_panic(expected: "Prize: Prize has already been claimed")]
+fn test_assert_prize_not_claimed_panics_after_claim() {
+    let mock = deploy();
+    let prize_type = PrizeType::Single(1);
+    mock.set_claimed(42, prize_type);
+    mock.assert_prize_not_claimed(42, prize_type);
+}
+
+// Drive a full add_prize through the component with a Custom distribution.
+// This is the only path that calls PrizeStoreTrait::store_custom_shares
+// (lines 184-212 of prize_store.cairo) and the round-trip via get_prize
+// (the Distribution::Custom match arm in get_token_record) reads them
+// back through get_custom_shares (lines 102-127).
+#[test]
+fn test_add_prize_custom_distribution_round_trip_through_packed_storage() {
+    let mock = deploy();
+    let token = addr(0xE2C20);
+    let sponsor = addr(0x999);
+    let amount: u128 = 10_000;
+
+    // add_prize calls IERC20::transfer_from to escrow the ERC20 amount;
+    // mock it so the prize ingest path completes without a real token.
+    mock_call(token, selector!("transfer_from"), true, 4);
+
+    // Cross 15 shares to force the loop in store_custom_shares to write
+    // multiple packed slots — exercises the slot_index transition branch
+    // (line 198: "if slot_index != current_slot && i > 0").
+    let shares = array![
+        100_u16, 200_u16, 300_u16, 400_u16, 500_u16,
+        600_u16, 700_u16, 800_u16, 900_u16, 1000_u16,
+        1100_u16, 1200_u16, 1300_u16, 1400_u16, 1500_u16,
+        1600_u16, 1700_u16,
+    ];
+
+    snforge_std::start_cheat_caller_address(mock.contract_address, sponsor);
+    let prize_id = mock
+        .add_prize(
+            42_u64,
+            crate::prize::structs::Prize::Token(
+                TokenPrizePayload {
+                    token_address: token,
+                    token_type: TokenTypeData::erc20(
+                        ERC20Data {
+                            amount,
+                            distribution: Option::Some(Distribution::Custom(shares.span())),
+                            distribution_count: Option::Some(17),
+                        },
+                    ),
+                },
+            ),
+        );
+    snforge_std::stop_cheat_caller_address(mock.contract_address);
+
+    assert!(prize_id > 0, "add_prize should assign a non-zero prize_id");
+
+    // Reading back via get_prize exercises get_token_record + get_custom_shares
+    // (the loop and the slot-load branch).
+    let reconstructed = mock.get_custom_shares(prize_id);
+    assert!(reconstructed.len() == 17, "should round-trip all 17 stored shares");
+    assert!(*reconstructed.at(0) == 100, "first share preserved");
+    assert!(*reconstructed.at(14) == 1500, "last share of first slot preserved");
+    assert!(*reconstructed.at(15) == 1600, "first share of second slot preserved");
+    assert!(*reconstructed.at(16) == 1700, "last share preserved");
+
+    // get_prize itself walks the Custom branch in get_token_record.
+    let record = mock.get_prize(prize_id);
+    match record.prize {
+        Prize::Token(token_payload) => {
+            match token_payload.token_type {
+                TokenTypeData::erc20(data) => {
+                    match data.distribution {
+                        Option::Some(Distribution::Custom(reread)) => {
+                            assert!(reread.len() == 17, "get_prize should restore all shares");
+                        },
+                        _ => panic!("expected Custom distribution"),
+                    }
+                },
+                _ => panic!("expected erc20"),
+            }
+        },
+        Prize::Extension(_) => panic!("expected token prize"),
+    }
+}
