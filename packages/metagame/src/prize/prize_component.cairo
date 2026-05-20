@@ -468,15 +468,16 @@ pub mod PrizeComponent {
 
         /// Forward a payout call to the prize extension configured for
         /// `(context_id, prize_id)`. Reverts if `prize_id` was added via
-        /// the built-in `Prize::Token` path (no extension address
-        /// stored).
+        /// the built-in `Prize::Token` path (no extension address stored).
         ///
-        /// The host (e.g. budokan) decides whether the payout is a winner
-        /// distribution or a sponsor refund by picking the right
-        /// `recipient`. The extension itself is a dumb asset manager —
-        /// it just transfers the escrow at `(prize_id, position)` to
-        /// `recipient`. Per-position payout dedupe lives on the
-        /// extension, not the host.
+        /// The host is a pure dispatcher: it passes the supplied
+        /// `(token_id, payout_params)` straight through. The extension
+        /// resolves recipient, eligibility, and dedupe entirely from its
+        /// own state. `token_id = Some(id)` typically signals a claim
+        /// (extension derives recipient via `owner_of(id)`); `None`
+        /// signals a non-claim flow (sponsor refund, dao distribution,
+        /// raffle) and the extension extracts whatever it needs from
+        /// `payout_params`.
         ///
         /// Hosts are responsible for any cross-cutting concerns
         /// (finalization checks, reentrancy guards) before invoking this.
@@ -484,14 +485,13 @@ pub mod PrizeComponent {
             ref self: ComponentState<TContractState>,
             context_id: u64,
             prize_id: u64,
-            position: Option<u32>,
-            recipient: ContractAddress,
+            token_id: Option<felt252>,
             payout_params: Span<felt252>,
         ) {
             let extension_address = Store::get_extension_address(@self, context_id, prize_id);
             assert!(!extension_address.is_zero(), "Prize: No extension configured for prize");
             let dispatcher = IPrizeExtensionDispatcher { contract_address: extension_address };
-            dispatcher.payout_prize(context_id, prize_id, position, recipient, payout_params);
+            dispatcher.payout_prize(context_id, prize_id, token_id, payout_params);
         }
 
         /// Payout full ERC20 amount to a recipient

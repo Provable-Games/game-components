@@ -75,10 +75,9 @@ pub mod EntryFeeMock {
     fn payout_entry_fee_extension(
         ref self: ContractState,
         context_id: u64,
-        recipient: starknet::ContractAddress,
-        position: Option<u32>,
+        token_id: Option<felt252>,
         claim_params: Span<felt252>,
     ) {
-        self.entry_fee.payout_entry_fee_extension(context_id, recipient, position, claim_params);
+        self.entry_fee.payout_entry_fee_extension(context_id, token_id, claim_params);
     }
 }

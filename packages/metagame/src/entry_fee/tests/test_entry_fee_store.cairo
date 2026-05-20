@@ -31,8 +31,7 @@ trait IEntryFeeMockFull<TContractState> {
     fn payout_entry_fee_extension(
         ref self: TContractState,
         context_id: u64,
-        recipient: ContractAddress,
-        position: Option<u32>,
+        token_id: Option<felt252>,
         claim_params: Span<felt252>,
     );
 }
@@ -804,7 +803,7 @@ fn test_payout_entry_fee_extension_dispatches_when_configured() {
     mock.set_entry_fee(7, entry_fee);
 
     // Should not panic — the dispatch goes through to the mocked extension.
-    mock.payout_entry_fee_extension(7, make_address(0xFEED), Option::Some(1_u32), array![].span());
+    mock.payout_entry_fee_extension(7, Option::Some(99_felt252), array![].span());
 }
 
 #[test]
@@ -812,7 +811,7 @@ fn test_payout_entry_fee_extension_dispatches_when_configured() {
 fn test_payout_entry_fee_extension_panics_when_unset() {
     let mock = deploy_mock();
     // No set_entry_fee call — extension address is zero.
-    mock.payout_entry_fee_extension(99, make_address(0xFEED), Option::None, array![].span());
+    mock.payout_entry_fee_extension(99, Option::None, array![].span());
 }
 
 #[test]
@@ -832,5 +831,5 @@ fn test_payout_entry_fee_extension_panics_when_builtin() {
     );
     mock.set_entry_fee(1, entry_fee);
     // Built-in path stores no extension address — should panic.
-    mock.payout_entry_fee_extension(1, make_address(0xFEED), Option::None, array![].span());
+    mock.payout_entry_fee_extension(1, Option::None, array![].span());
 }
