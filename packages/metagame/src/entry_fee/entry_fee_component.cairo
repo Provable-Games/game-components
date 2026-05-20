@@ -23,8 +23,7 @@ pub mod EntryFeeComponent {
     use openzeppelin_introspection::src5::SRC5Component;
     use openzeppelin_introspection::src5::SRC5Component::InternalTrait as SRC5InternalTrait;
     use starknet::storage::{
-        Map, MutableVecTrait, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess,
-        Vec, VecTrait,
+        Map, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess,
     };
     use starknet::{ContractAddress, get_caller_address, get_contract_address};
     use crate::entry_fee::entry_fee_store::{EntryFeeStoreImpl, EntryFeeStoreTrait};
@@ -62,10 +61,18 @@ pub mod EntryFeeComponent {
         EntryFee_distribution: Map<u64, PackedDistribution>,
         /// Refund claimed: (context_id, token_id) -> claimed
         EntryFee_refund_claimed: Map<(u64, felt252), bool>,
-        /// Extension address for extension-enhanced entry fees
+        /// Position-based distribution claim: (context_id, position) -> claimed.
+        /// Hosts that distribute the fee pool by leaderboard position use this
+        /// to dedupe per-position payouts. Previously tracked in each host's
+        /// own storage; centralised here so any consumer of EntryFeeComponent
+        /// gets the dedupe behaviour for free.
+        EntryFee_position_claimed: Map<(u64, u32), bool>,
+        /// Extension address for extension-enhanced entry fees. Doubles as
+        /// the "is this context's fee an extension?" flag: zero means no
+        /// extension is configured. The extension contract owns the
+        /// authoritative config — this component only stores the address
+        /// it needs for dispatch.
         EntryFee_extension_address: Map<u64, ContractAddress>,
-        /// Extension config data (stored as Vec)
-        EntryFee_extension_config: Map<u64, Vec<felt252>>,
     }
 
     #[event]
@@ -139,6 +146,18 @@ pub mod EntryFeeComponent {
             self.EntryFee_refund_claimed.entry((context_id, token_id)).write(claimed);
         }
 
+        fn get_position_claimed(
+            self: @ComponentState<TContractState>, context_id: u64, position: u32,
+        ) -> bool {
+            self.EntryFee_position_claimed.entry((context_id, position)).read()
+        }
+
+        fn set_position_claimed(
+            ref self: ComponentState<TContractState>, context_id: u64, position: u32, claimed: bool,
+        ) {
+            self.EntryFee_position_claimed.entry((context_id, position)).write(claimed);
+        }
+
         fn get_extension_address(
             self: @ComponentState<TContractState>, context_id: u64,
         ) -> ContractAddress {
@@ -149,22 +168,6 @@ pub mod EntryFeeComponent {
             ref self: ComponentState<TContractState>, context_id: u64, address: ContractAddress,
         ) {
             self.EntryFee_extension_address.entry(context_id).write(address);
-        }
-
-        fn get_extension_config_len(self: @ComponentState<TContractState>, context_id: u64) -> u64 {
-            self.EntryFee_extension_config.entry(context_id).len()
-        }
-
-        fn get_extension_config_at(
-            self: @ComponentState<TContractState>, context_id: u64, index: u64,
-        ) -> felt252 {
-            self.EntryFee_extension_config.entry(context_id).at(index).read()
-        }
-
-        fn push_extension_config(
-            ref self: ComponentState<TContractState>, context_id: u64, value: felt252,
-        ) {
-            self.EntryFee_extension_config.entry(context_id).push(value);
         }
 
         fn get_distribution_shares_packed(
@@ -298,12 +301,16 @@ pub mod EntryFeeComponent {
             EntryFeeStoreTrait::set_entry_fee_config(ref self, context_id, config);
         }
 
-        /// Internal: store extension config and notify extension contract
+        /// Internal: persist the extension address and forward the config
+        /// to the extension contract. The config blob is NOT persisted here
+        /// — the extension is the sole source of truth for its own config,
+        /// and indexers wanting to recover it should read the original
+        /// extension call (e.g. via the host's `TournamentCreated`-style
+        /// event) or query the extension's own view methods.
         fn _set_extension(
             ref self: ComponentState<TContractState>, context_id: u64, ext: ExtensionConfig,
         ) {
             EntryFeeStoreTrait::store_extension_address(ref self, context_id, ext.address);
-            EntryFeeStoreTrait::write_extension_config(ref self, context_id, ext.config);
 
             let dispatcher = IEntryFeeExtensionDispatcher { contract_address: ext.address };
             dispatcher.set_entry_fee_config(context_id, ext.config);
@@ -340,6 +347,50 @@ pub mod EntryFeeComponent {
             }
         }
 
+        /// Forward a claim call to the entry-fee extension configured for
+        /// `context_id`. Reverts if no extension was configured (the
+        /// built-in deposit/payout path is host-owned and does not flow
+        /// through this method). `claim_params` is opaque — the extension
+        /// deserializes whatever shape it expects.
+        ///
+        /// Hosts are responsible for any cross-cutting concerns
+        /// (finalization checks, reentrancy guards, replay protection on
+        /// the host side) before invoking this.
+        /// Forward a payout to the entry-fee extension configured for
+        /// `context_id`. The host (e.g. budokan) computes recipient and
+        /// (optionally) the leaderboard position the claim corresponds
+        /// to; the extension is just an asset manager that executes the
+        /// transfer. Hosts are responsible for any cross-cutting concerns
+        /// (finalization checks, recipient validation) before invoking.
+        fn payout_entry_fee_extension(
+            ref self: ComponentState<TContractState>,
+            context_id: u64,
+            recipient: ContractAddress,
+            position: Option<u32>,
+            claim_params: Span<felt252>,
+        ) {
+            let extension_address = EntryFeeStoreTrait::get_extension(@self, context_id);
+            assert!(!extension_address.is_zero(), "EntryFee: No extension configured");
+            let dispatcher = IEntryFeeExtensionDispatcher { contract_address: extension_address };
+            dispatcher.payout_entry_fee(context_id, recipient, position, claim_params);
+        }
+
+        /// Read-through dispatcher for `IEntryFeeExtension.get_config`. Lets
+        /// host viewers (frontends, indexer RPC fallbacks) surface the
+        /// original config blob for extension-fee contexts without needing
+        /// per-extension knowledge of the extension's internal storage.
+        /// Returns an empty span when the context has no extension fee.
+        fn get_entry_fee_extension_config(
+            self: @ComponentState<TContractState>, context_owner: ContractAddress, context_id: u64,
+        ) -> Span<felt252> {
+            let extension_address = EntryFeeStoreTrait::get_extension(self, context_id);
+            if extension_address.is_zero() {
+                return array![].span();
+            }
+            let dispatcher = IEntryFeeExtensionDispatcher { contract_address: extension_address };
+            dispatcher.get_config(context_owner, context_id)
+        }
+
         /// Payout to a recipient
         fn payout(
             ref self: ComponentState<TContractState>,
@@ -374,21 +425,7 @@ pub mod EntryFeeComponent {
 
         // --- Extension helpers ---
 
-        /// Read extension config for a context
-        fn read_extension_config(
-            self: @ComponentState<TContractState>, context_id: u64,
-        ) -> Span<felt252> {
-            EntryFeeStoreTrait::read_extension_config(self, context_id)
-        }
-
-        /// Write extension config for a context
-        fn write_extension_config(
-            ref self: ComponentState<TContractState>, context_id: u64, config: Span<felt252>,
-        ) {
-            EntryFeeStoreTrait::write_extension_config(ref self, context_id, config);
-        }
-
-        /// Get extension address for a context
+        /// Get extension address for a context (zero = no extension configured).
         fn get_extension_address(
             self: @ComponentState<TContractState>, context_id: u64,
         ) -> ContractAddress {

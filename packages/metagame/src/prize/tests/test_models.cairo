@@ -1,18 +1,14 @@
 use game_components_utilities::distribution::structs::Distribution;
-use crate::prize::structs::{ERC20Data, ERC721Data, PrizeData, StoredPrizeTrait, TokenTypeData};
+use crate::prize::structs::{
+    ERC20Data, ERC721Data, Prize, StoredPrizeTrait, TokenPrizePayload, TokenTypeData,
+};
 
 // ============================================================================
 // pack_token_type / unpack_token_type roundtrip tests via StoredPrizeTrait
 // ============================================================================
 
-fn make_prize(token_type: TokenTypeData) -> PrizeData {
-    PrizeData {
-        id: 0,
-        context_id: 1,
-        token_address: core::traits::TryInto::try_into(0x123).unwrap(),
-        token_type,
-        sponsor_address: core::traits::TryInto::try_into(0x456).unwrap(),
-    }
+fn make_prize(token_type: TokenTypeData) -> TokenPrizePayload {
+    TokenPrizePayload { token_address: core::traits::TryInto::try_into(0x123).unwrap(), token_type }
 }
 
 #[test]
@@ -21,9 +17,14 @@ fn test_pack_unpack_token_type_erc20_no_distribution() {
         ERC20Data { amount: 500, distribution: Option::None, distribution_count: Option::None },
     );
 
-    let stored = StoredPrizeTrait::from_prize(make_prize(original));
-    let restored = stored.to_prize(1);
-
+    let stored = StoredPrizeTrait::from_token_record(
+        1, core::traits::TryInto::try_into(0x456).unwrap(), make_prize(original),
+    );
+    let restored_record = stored.to_token_record(1);
+    let restored = match restored_record.prize {
+        Prize::Token(t) => t,
+        Prize::Extension(_) => panic!("expected token"),
+    };
     match restored.token_type {
         TokenTypeData::erc20(data) => {
             assert!(data.amount == 500, "amount mismatch");
@@ -44,9 +45,14 @@ fn test_pack_unpack_token_type_erc20_linear() {
         },
     );
 
-    let stored = StoredPrizeTrait::from_prize(make_prize(original));
-    let restored = stored.to_prize(1);
-
+    let stored = StoredPrizeTrait::from_token_record(
+        1, core::traits::TryInto::try_into(0x456).unwrap(), make_prize(original),
+    );
+    let restored_record = stored.to_token_record(1);
+    let restored = match restored_record.prize {
+        Prize::Token(t) => t,
+        Prize::Extension(_) => panic!("expected token"),
+    };
     match restored.token_type {
         TokenTypeData::erc20(data) => {
             assert!(data.amount == 1000, "amount mismatch");
@@ -75,9 +81,14 @@ fn test_pack_unpack_token_type_erc20_exponential() {
         },
     );
 
-    let stored = StoredPrizeTrait::from_prize(make_prize(original));
-    let restored = stored.to_prize(1);
-
+    let stored = StoredPrizeTrait::from_token_record(
+        1, core::traits::TryInto::try_into(0x456).unwrap(), make_prize(original),
+    );
+    let restored_record = stored.to_token_record(1);
+    let restored = match restored_record.prize {
+        Prize::Token(t) => t,
+        Prize::Extension(_) => panic!("expected token"),
+    };
     match restored.token_type {
         TokenTypeData::erc20(data) => {
             assert!(data.amount == 2000, "amount mismatch");
@@ -106,9 +117,14 @@ fn test_pack_unpack_token_type_erc20_uniform() {
         },
     );
 
-    let stored = StoredPrizeTrait::from_prize(make_prize(original));
-    let restored = stored.to_prize(1);
-
+    let stored = StoredPrizeTrait::from_token_record(
+        1, core::traits::TryInto::try_into(0x456).unwrap(), make_prize(original),
+    );
+    let restored_record = stored.to_token_record(1);
+    let restored = match restored_record.prize {
+        Prize::Token(t) => t,
+        Prize::Extension(_) => panic!("expected token"),
+    };
     match restored.token_type {
         TokenTypeData::erc20(data) => {
             assert!(data.amount == 3000, "amount mismatch");
@@ -141,9 +157,14 @@ fn test_pack_unpack_token_type_erc20_custom() {
         },
     );
 
-    let stored = StoredPrizeTrait::from_prize(make_prize(original));
-    let restored = stored.to_prize(1);
-
+    let stored = StoredPrizeTrait::from_token_record(
+        1, core::traits::TryInto::try_into(0x456).unwrap(), make_prize(original),
+    );
+    let restored_record = stored.to_token_record(1);
+    let restored = match restored_record.prize {
+        Prize::Token(t) => t,
+        Prize::Extension(_) => panic!("expected token"),
+    };
     match restored.token_type {
         TokenTypeData::erc20(data) => {
             assert!(data.amount == 4000, "amount mismatch");
@@ -166,9 +187,14 @@ fn test_pack_unpack_token_type_erc20_custom() {
 fn test_pack_unpack_token_type_erc721() {
     let original = TokenTypeData::erc721(ERC721Data { id: 42 });
 
-    let stored = StoredPrizeTrait::from_prize(make_prize(original));
-    let restored = stored.to_prize(1);
-
+    let stored = StoredPrizeTrait::from_token_record(
+        1, core::traits::TryInto::try_into(0x456).unwrap(), make_prize(original),
+    );
+    let restored_record = stored.to_token_record(1);
+    let restored = match restored_record.prize {
+        Prize::Token(t) => t,
+        Prize::Extension(_) => panic!("expected token"),
+    };
     match restored.token_type {
         TokenTypeData::erc20(_) => { panic!("expected erc721"); },
         TokenTypeData::erc721(data) => { assert!(data.id == 42, "id mismatch"); },
@@ -184,9 +210,7 @@ fn test_stored_prize_from_to_roundtrip_erc20() {
     let token_addr = core::traits::TryInto::try_into(0xABC).unwrap();
     let sponsor_addr = core::traits::TryInto::try_into(0xDEF).unwrap();
 
-    let prize = PrizeData {
-        id: 7,
-        context_id: 42,
+    let payload = TokenPrizePayload {
         token_address: token_addr,
         token_type: TokenTypeData::erc20(
             ERC20Data {
@@ -195,16 +219,19 @@ fn test_stored_prize_from_to_roundtrip_erc20() {
                 distribution_count: Option::Some(10),
             },
         ),
-        sponsor_address: sponsor_addr,
     };
 
-    let stored = StoredPrizeTrait::from_prize(prize);
-    let restored = stored.to_prize(7);
+    let stored = StoredPrizeTrait::from_token_record(42, sponsor_addr, payload);
+    let restored = stored.to_token_record(7);
 
     assert!(restored.id == 7, "id mismatch");
     assert!(restored.context_id == 42, "context_id mismatch");
-    assert!(restored.token_address == token_addr, "token_address mismatch");
     assert!(restored.sponsor_address == sponsor_addr, "sponsor_address mismatch");
+    let p = match restored.prize {
+        Prize::Token(p) => p,
+        Prize::Extension(_) => panic!("expected token"),
+    };
+    assert!(p.token_address == token_addr, "token_address mismatch");
 }
 
 #[test]
@@ -212,23 +239,23 @@ fn test_stored_prize_from_to_roundtrip_erc721() {
     let token_addr = core::traits::TryInto::try_into(0xABC).unwrap();
     let sponsor_addr = core::traits::TryInto::try_into(0xDEF).unwrap();
 
-    let prize = PrizeData {
-        id: 3,
-        context_id: 99,
-        token_address: token_addr,
-        token_type: TokenTypeData::erc721(ERC721Data { id: 777 }),
-        sponsor_address: sponsor_addr,
+    let payload = TokenPrizePayload {
+        token_address: token_addr, token_type: TokenTypeData::erc721(ERC721Data { id: 777 }),
     };
 
-    let stored = StoredPrizeTrait::from_prize(prize);
-    let restored = stored.to_prize(3);
+    let stored = StoredPrizeTrait::from_token_record(99, sponsor_addr, payload);
+    let restored = stored.to_token_record(3);
 
     assert!(restored.id == 3, "id mismatch");
     assert!(restored.context_id == 99, "context_id mismatch");
-    assert!(restored.token_address == token_addr, "token_address mismatch");
     assert!(restored.sponsor_address == sponsor_addr, "sponsor_address mismatch");
 
-    match restored.token_type {
+    let p = match restored.prize {
+        Prize::Token(p) => p,
+        Prize::Extension(_) => panic!("expected token"),
+    };
+    assert!(p.token_address == token_addr, "token_address mismatch");
+    match p.token_type {
         TokenTypeData::erc20(_) => { panic!("expected erc721"); },
         TokenTypeData::erc721(data) => { assert!(data.id == 777, "id mismatch"); },
     }

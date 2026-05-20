@@ -9,6 +9,9 @@ use game_components_metagame::leaderboard::interface::{
     ILeaderboardDispatcher, ILeaderboardDispatcherTrait,
 };
 use game_components_metagame::leaderboard::leaderboard::leaderboard::LeaderboardResult;
+use game_components_test_common::mocks::mock_leaderboard_contract::{
+    IMockLeaderboardTestDispatcher, IMockLeaderboardTestDispatcherTrait,
+};
 use game_components_testing::constants::{NEW_OWNER, OWNER, USER1, USER2};
 use openzeppelin_interfaces::introspection::{ISRC5Dispatcher, ISRC5DispatcherTrait};
 use snforge_std::{
@@ -38,7 +41,7 @@ const SPECIAL_EVENT: u64 = 100;
 /// that LeaderboardPreset uses, so test results are equivalent.
 fn deploy_leaderboard_preset(
     owner: ContractAddress,
-) -> (ILeaderboardDispatcher, ILeaderboardAdminDispatcher) {
+) -> (ILeaderboardDispatcher, ILeaderboardAdminDispatcher, IMockLeaderboardTestDispatcher) {
     let contract = declare("MockLeaderboardContract").unwrap().contract_class();
     let mut calldata = array![];
     owner.serialize(ref calldata);
@@ -46,7 +49,8 @@ fn deploy_leaderboard_preset(
 
     let leaderboard = ILeaderboardDispatcher { contract_address };
     let admin = ILeaderboardAdminDispatcher { contract_address };
-    (leaderboard, admin)
+    let mock = IMockLeaderboardTestDispatcher { contract_address };
+    (leaderboard, admin, mock)
 }
 
 /// Deploy the mock game details contract
@@ -77,7 +81,7 @@ fn setup_tournament(
 // Test PR-LB-01: Preset deploys successfully with owner
 #[test]
 fn test_preset_deploys_with_owner() {
-    let (_, admin) = deploy_leaderboard_preset(OWNER());
+    let (_, admin, _) = deploy_leaderboard_preset(OWNER());
 
     assert!(admin.owner() == OWNER(), "Owner should be set from constructor");
 }
@@ -85,7 +89,7 @@ fn test_preset_deploys_with_owner() {
 // Test PR-LB-02: Preset supports ILeaderboard interface
 #[test]
 fn test_preset_supports_leaderboard_interface() {
-    let (leaderboard, _) = deploy_leaderboard_preset(OWNER());
+    let (leaderboard, _, _) = deploy_leaderboard_preset(OWNER());
     let src5 = ISRC5Dispatcher { contract_address: leaderboard.contract_address };
 
     assert!(src5.supports_interface(ILEADERBOARD_ID), "Should support ILeaderboard interface");
@@ -94,7 +98,7 @@ fn test_preset_supports_leaderboard_interface() {
 // Test PR-LB-03: Preset starts with empty leaderboards
 #[test]
 fn test_preset_starts_empty() {
-    let (leaderboard, _) = deploy_leaderboard_preset(OWNER());
+    let (leaderboard, _, _) = deploy_leaderboard_preset(OWNER());
 
     assert!(
         leaderboard.get_leaderboard_length(WEEKLY_TOURNAMENT) == 0, "Tournament should start empty",
@@ -112,7 +116,7 @@ fn test_preset_starts_empty() {
 // Test PR-LB-04: Complete tournament lifecycle
 #[test]
 fn test_complete_tournament_lifecycle() {
-    let (leaderboard, admin) = deploy_leaderboard_preset(OWNER());
+    let (leaderboard, admin, mock) = deploy_leaderboard_preset(OWNER());
     let (game_address, game_admin) = deploy_mock_game();
 
     // 1. Configure tournament
@@ -129,13 +133,13 @@ fn test_complete_tournament_lifecycle() {
     game_admin.set_score(104, 900); // Player D
 
     // 3. Submit scores
-    let _ = leaderboard.submit_score(WEEKLY_TOURNAMENT, 103, 1200, 1); // Player C first
-    let _ = leaderboard.submit_score(WEEKLY_TOURNAMENT, 101, 1000, 2); // Player A second
-    let _ = leaderboard.submit_score(WEEKLY_TOURNAMENT, 104, 900, 3); // Player D third
-    let _ = leaderboard.submit_score(WEEKLY_TOURNAMENT, 102, 800, 4); // Player B fourth
+    let _ = mock.submit_score(WEEKLY_TOURNAMENT, 103, 1200, 1); // Player C first
+    let _ = mock.submit_score(WEEKLY_TOURNAMENT, 101, 1000, 2); // Player A second
+    let _ = mock.submit_score(WEEKLY_TOURNAMENT, 104, 900, 3); // Player D third
+    let _ = mock.submit_score(WEEKLY_TOURNAMENT, 102, 800, 4); // Player B fourth
 
     // 4. Verify leaderboard state
-    let entries = leaderboard.get_entries(WEEKLY_TOURNAMENT);
+    let entries = leaderboard.get_leaderboard_entries(WEEKLY_TOURNAMENT);
     assert!(entries.len() == 4, "Should have 4 entries");
     assert!(*entries.at(0).id == 103, "Player C should be first");
     assert!(*entries.at(1).id == 101, "Player A should be second");
@@ -151,7 +155,7 @@ fn test_complete_tournament_lifecycle() {
     );
 
     // 6. Get top 3
-    let top_3 = leaderboard.get_top_entries(WEEKLY_TOURNAMENT, 3);
+    let top_3 = leaderboard.get_top_leaderboard_entries(WEEKLY_TOURNAMENT, 3);
     assert!(top_3.len() == 3, "Should return top 3");
     assert!(*top_3.at(0).score == 1200, "Highest score is 1200");
 
@@ -168,7 +172,7 @@ fn test_complete_tournament_lifecycle() {
 // Test PR-LB-05: Multiple tournaments running simultaneously
 #[test]
 fn test_multiple_simultaneous_tournaments() {
-    let (leaderboard, admin) = deploy_leaderboard_preset(OWNER());
+    let (leaderboard, admin, mock) = deploy_leaderboard_preset(OWNER());
     let (game_address, game_admin) = deploy_mock_game();
 
     // Configure different tournaments
@@ -182,15 +186,15 @@ fn test_multiple_simultaneous_tournaments() {
     game_admin.set_score(3, 50);
 
     // Submit to weekly (descending)
-    let _ = leaderboard.submit_score(WEEKLY_TOURNAMENT, 2, 200, 1);
-    let _ = leaderboard.submit_score(WEEKLY_TOURNAMENT, 1, 100, 2);
+    let _ = mock.submit_score(WEEKLY_TOURNAMENT, 2, 200, 1);
+    let _ = mock.submit_score(WEEKLY_TOURNAMENT, 1, 100, 2);
 
     // Submit to monthly (descending)
-    let _ = leaderboard.submit_score(MONTHLY_TOURNAMENT, 1, 100, 1);
+    let _ = mock.submit_score(MONTHLY_TOURNAMENT, 1, 100, 1);
 
     // Submit to special (ascending - speedrun)
-    let _ = leaderboard.submit_score(SPECIAL_EVENT, 3, 50, 1);
-    let _ = leaderboard.submit_score(SPECIAL_EVENT, 1, 100, 2);
+    let _ = mock.submit_score(SPECIAL_EVENT, 3, 50, 1);
+    let _ = mock.submit_score(SPECIAL_EVENT, 1, 100, 2);
 
     // Verify each tournament is independent
     assert!(leaderboard.get_leaderboard_length(WEEKLY_TOURNAMENT) == 2, "Weekly has 2 entries");
@@ -198,7 +202,7 @@ fn test_multiple_simultaneous_tournaments() {
     assert!(leaderboard.get_leaderboard_length(SPECIAL_EVENT) == 2, "Special has 2 entries");
 
     // Verify special event order (ascending)
-    let special_entries = leaderboard.get_entries(SPECIAL_EVENT);
+    let special_entries = leaderboard.get_leaderboard_entries(SPECIAL_EVENT);
     assert!(*special_entries.at(0).score == 50, "Fastest time (50) should be first");
     assert!(*special_entries.at(1).score == 100, "Slower time (100) should be second");
 }
@@ -210,7 +214,7 @@ fn test_multiple_simultaneous_tournaments() {
 // Test PR-LB-06: Ownership transfer works correctly
 #[test]
 fn test_ownership_transfer() {
-    let (leaderboard, admin) = deploy_leaderboard_preset(OWNER());
+    let (leaderboard, admin, _) = deploy_leaderboard_preset(OWNER());
     let (game_address, _) = deploy_mock_game();
 
     // Original owner configures
@@ -237,7 +241,7 @@ fn test_ownership_transfer() {
 #[test]
 #[should_panic(expected: "Only owner can call this function")]
 fn test_non_owner_cannot_configure() {
-    let (_, admin) = deploy_leaderboard_preset(OWNER());
+    let (_, admin, _) = deploy_leaderboard_preset(OWNER());
     let (game_address, _) = deploy_mock_game();
 
     start_cheat_caller_address(admin.contract_address, USER1());
@@ -249,7 +253,7 @@ fn test_non_owner_cannot_configure() {
 #[test]
 #[should_panic(expected: "Only owner can call this function")]
 fn test_non_owner_cannot_clear() {
-    let (_, admin) = deploy_leaderboard_preset(OWNER());
+    let (_, admin, _) = deploy_leaderboard_preset(OWNER());
 
     start_cheat_caller_address(admin.contract_address, USER1());
     admin.clear(WEEKLY_TOURNAMENT);
@@ -260,7 +264,7 @@ fn test_non_owner_cannot_clear() {
 #[test]
 #[should_panic(expected: "Only owner can call this function")]
 fn test_non_owner_cannot_transfer() {
-    let (_, admin) = deploy_leaderboard_preset(OWNER());
+    let (_, admin, _) = deploy_leaderboard_preset(OWNER());
 
     start_cheat_caller_address(admin.contract_address, USER1());
     admin.transfer_ownership(USER2());
@@ -274,7 +278,7 @@ fn test_non_owner_cannot_transfer() {
 // Test PR-LB-10: Max entries enforcement
 #[test]
 fn test_max_entries_enforcement() {
-    let (leaderboard, admin) = deploy_leaderboard_preset(OWNER());
+    let (leaderboard, admin, mock) = deploy_leaderboard_preset(OWNER());
     let (game_address, game_admin) = deploy_mock_game();
 
     // Configure with only 3 max entries
@@ -287,14 +291,14 @@ fn test_max_entries_enforcement() {
     game_admin.set_score(4, 50); // Low score
 
     // Fill leaderboard
-    let _ = leaderboard.submit_score(WEEKLY_TOURNAMENT, 1, 100, 1);
-    let _ = leaderboard.submit_score(WEEKLY_TOURNAMENT, 2, 90, 2);
-    let _ = leaderboard.submit_score(WEEKLY_TOURNAMENT, 3, 80, 3);
+    let _ = mock.submit_score(WEEKLY_TOURNAMENT, 1, 100, 1);
+    let _ = mock.submit_score(WEEKLY_TOURNAMENT, 2, 90, 2);
+    let _ = mock.submit_score(WEEKLY_TOURNAMENT, 3, 80, 3);
 
     assert!(leaderboard.is_full(WEEKLY_TOURNAMENT), "Should be full");
 
     // Try to submit low score - should fail
-    let result = leaderboard.submit_score(WEEKLY_TOURNAMENT, 4, 50, 4);
+    let result = mock.submit_score(WEEKLY_TOURNAMENT, 4, 50, 4);
     match result {
         LeaderboardResult::LeaderboardFull => {},
         _ => panic!("Should fail - leaderboard is full and score is too low"),
@@ -302,17 +306,17 @@ fn test_max_entries_enforcement() {
 
     // Submit high score at position 2 - should succeed and evict token 2 (score 90)
     game_admin.set_score(5, 95);
-    let result = leaderboard.submit_score(WEEKLY_TOURNAMENT, 5, 95, 2);
+    let result = mock.submit_score(WEEKLY_TOURNAMENT, 5, 95, 2);
     match result {
         LeaderboardResult::Success => {},
         _ => panic!("Should succeed - score is good enough"),
     }
 
     // Token 2 (score 90) was evicted from position 2, re-submit at position 3
-    let _ = leaderboard.submit_score(WEEKLY_TOURNAMENT, 2, 90, 3);
+    let _ = mock.submit_score(WEEKLY_TOURNAMENT, 2, 90, 3);
 
     // Verify token 3 (score 80) was displaced by token 2's re-submission
-    let entries = leaderboard.get_entries(WEEKLY_TOURNAMENT);
+    let entries = leaderboard.get_leaderboard_entries(WEEKLY_TOURNAMENT);
     assert!(entries.len() == 3, "Should still have 3 entries");
     assert!(*entries.at(2).score == 90, "Lowest should now be 90");
 }
@@ -320,7 +324,7 @@ fn test_max_entries_enforcement() {
 // Test PR-LB-11: Qualification check
 #[test]
 fn test_qualification_check() {
-    let (leaderboard, admin) = deploy_leaderboard_preset(OWNER());
+    let (leaderboard, admin, mock) = deploy_leaderboard_preset(OWNER());
     let (game_address, game_admin) = deploy_mock_game();
 
     setup_tournament(admin, WEEKLY_TOURNAMENT, 2, false, game_address);
@@ -331,8 +335,8 @@ fn test_qualification_check() {
     game_admin.set_score(1, 100);
     game_admin.set_score(2, 80);
 
-    let _ = leaderboard.submit_score(WEEKLY_TOURNAMENT, 1, 100, 1);
-    let _ = leaderboard.submit_score(WEEKLY_TOURNAMENT, 2, 80, 2);
+    let _ = mock.submit_score(WEEKLY_TOURNAMENT, 1, 100, 1);
+    let _ = mock.submit_score(WEEKLY_TOURNAMENT, 2, 80, 2);
 
     // Full - need to beat last place
     assert!(leaderboard.qualifies(WEEKLY_TOURNAMENT, 90), "90 qualifies (beats 80)");
@@ -343,13 +347,13 @@ fn test_qualification_check() {
 // Test PR-LB-12: Empty leaderboard queries
 #[test]
 fn test_empty_leaderboard_queries() {
-    let (leaderboard, _) = deploy_leaderboard_preset(OWNER());
+    let (leaderboard, _, _) = deploy_leaderboard_preset(OWNER());
 
     // All queries on empty tournament should return sensible defaults
-    let entries = leaderboard.get_entries(999);
+    let entries = leaderboard.get_leaderboard_entries(999);
     assert!(entries.len() == 0, "Empty tournament returns empty array");
 
-    let top = leaderboard.get_top_entries(999, 10);
+    let top = leaderboard.get_top_leaderboard_entries(999, 10);
     assert!(top.len() == 0, "Top entries of empty tournament is empty");
 
     let position = leaderboard.get_position(999, 1);
@@ -369,7 +373,7 @@ fn test_empty_leaderboard_queries() {
 // Event emission is the responsibility of the embedding contract's hooks.
 #[test]
 fn test_full_lifecycle_operations() {
-    let (leaderboard, admin) = deploy_leaderboard_preset(OWNER());
+    let (leaderboard, admin, mock) = deploy_leaderboard_preset(OWNER());
     let (game_address, game_admin) = deploy_mock_game();
 
     // Configure tournament
@@ -379,7 +383,7 @@ fn test_full_lifecycle_operations() {
 
     // Submit score
     game_admin.set_score(1, 100);
-    let _ = leaderboard.submit_score(WEEKLY_TOURNAMENT, 1, 100, 1);
+    let _ = mock.submit_score(WEEKLY_TOURNAMENT, 1, 100, 1);
 
     // Clear leaderboard
     start_cheat_caller_address(admin.contract_address, OWNER());
@@ -405,7 +409,7 @@ fn test_full_lifecycle_operations() {
 // Test PR-LB-14: Reconfigure tournament updates settings
 #[test]
 fn test_reconfigure_tournament() {
-    let (leaderboard, admin) = deploy_leaderboard_preset(OWNER());
+    let (leaderboard, admin, _) = deploy_leaderboard_preset(OWNER());
     let (game_address, _) = deploy_mock_game();
     let (new_game_address, _) = deploy_mock_game();
 
@@ -434,7 +438,7 @@ fn test_reconfigure_tournament() {
 // TC-SRC5-02: Does not support random interface
 #[test]
 fn test_does_not_support_random_interface() {
-    let (leaderboard, _) = deploy_leaderboard_preset(OWNER());
+    let (leaderboard, _, _) = deploy_leaderboard_preset(OWNER());
     let src5 = ISRC5Dispatcher { contract_address: leaderboard.contract_address };
 
     // Random interface ID that shouldn't be supported
@@ -445,14 +449,14 @@ fn test_does_not_support_random_interface() {
 // TC-POS-02: Get position of non-existent entry
 #[test]
 fn test_get_position_of_non_existent_entry() {
-    let (leaderboard, admin) = deploy_leaderboard_preset(OWNER());
+    let (leaderboard, admin, mock) = deploy_leaderboard_preset(OWNER());
     let (game_address, game_admin) = deploy_mock_game();
 
     setup_tournament(admin, WEEKLY_TOURNAMENT, 10, false, game_address);
 
     // Add one entry
     game_admin.set_score(1, 100);
-    let _ = leaderboard.submit_score(WEEKLY_TOURNAMENT, 1, 100, 1);
+    let _ = mock.submit_score(WEEKLY_TOURNAMENT, 1, 100, 1);
 
     // Query position of token that doesn't exist
     let position = leaderboard.get_position(WEEKLY_TOURNAMENT, 999);
@@ -462,7 +466,7 @@ fn test_get_position_of_non_existent_entry() {
 // TC-TOP-02: Get top N where N > leaderboard size
 #[test]
 fn test_get_top_entries_more_than_available() {
-    let (leaderboard, admin) = deploy_leaderboard_preset(OWNER());
+    let (leaderboard, admin, mock) = deploy_leaderboard_preset(OWNER());
     let (game_address, game_admin) = deploy_mock_game();
 
     setup_tournament(admin, WEEKLY_TOURNAMENT, 10, false, game_address);
@@ -470,42 +474,42 @@ fn test_get_top_entries_more_than_available() {
     // Add only 2 entries
     game_admin.set_score(1, 100);
     game_admin.set_score(2, 90);
-    let _ = leaderboard.submit_score(WEEKLY_TOURNAMENT, 1, 100, 1);
-    let _ = leaderboard.submit_score(WEEKLY_TOURNAMENT, 2, 90, 2);
+    let _ = mock.submit_score(WEEKLY_TOURNAMENT, 1, 100, 1);
+    let _ = mock.submit_score(WEEKLY_TOURNAMENT, 2, 90, 2);
 
     // Request top 10
-    let top = leaderboard.get_top_entries(WEEKLY_TOURNAMENT, 10);
+    let top = leaderboard.get_top_leaderboard_entries(WEEKLY_TOURNAMENT, 10);
     assert!(top.len() == 2, "Should return all available entries (2)");
 }
 
 // TC-TOP-03: Get top 0 entries
 #[test]
 fn test_get_top_zero_entries() {
-    let (leaderboard, admin) = deploy_leaderboard_preset(OWNER());
+    let (leaderboard, admin, mock) = deploy_leaderboard_preset(OWNER());
     let (game_address, game_admin) = deploy_mock_game();
 
     setup_tournament(admin, WEEKLY_TOURNAMENT, 10, false, game_address);
 
     // Add entry
     game_admin.set_score(1, 100);
-    let _ = leaderboard.submit_score(WEEKLY_TOURNAMENT, 1, 100, 1);
+    let _ = mock.submit_score(WEEKLY_TOURNAMENT, 1, 100, 1);
 
     // Request top 0
-    let top = leaderboard.get_top_entries(WEEKLY_TOURNAMENT, 0);
+    let top = leaderboard.get_top_leaderboard_entries(WEEKLY_TOURNAMENT, 0);
     assert!(top.len() == 0, "Should return empty array for count 0");
 }
 
 // TC-QUA-02: Score qualifies when leaderboard not full
 #[test]
 fn test_qualifies_when_not_full() {
-    let (leaderboard, admin) = deploy_leaderboard_preset(OWNER());
+    let (leaderboard, admin, mock) = deploy_leaderboard_preset(OWNER());
     let (game_address, game_admin) = deploy_mock_game();
 
     setup_tournament(admin, WEEKLY_TOURNAMENT, 5, false, game_address);
 
     // Add just one entry
     game_admin.set_score(1, 100);
-    let _ = leaderboard.submit_score(WEEKLY_TOURNAMENT, 1, 100, 1);
+    let _ = mock.submit_score(WEEKLY_TOURNAMENT, 1, 100, 1);
 
     // Not full - any score should qualify
     assert!(leaderboard.qualifies(WEEKLY_TOURNAMENT, 1), "Should qualify when not full");
@@ -515,7 +519,7 @@ fn test_qualifies_when_not_full() {
 // TC-FUL-01: Empty leaderboard is not full
 #[test]
 fn test_empty_leaderboard_is_not_full() {
-    let (leaderboard, admin) = deploy_leaderboard_preset(OWNER());
+    let (leaderboard, admin, _) = deploy_leaderboard_preset(OWNER());
     let (game_address, _) = deploy_mock_game();
 
     setup_tournament(admin, WEEKLY_TOURNAMENT, 5, false, game_address);
@@ -528,7 +532,7 @@ fn test_empty_leaderboard_is_not_full() {
 // TC-CFG-02: Get config of unconfigured tournament
 #[test]
 fn test_get_config_unconfigured_tournament() {
-    let (leaderboard, _) = deploy_leaderboard_preset(OWNER());
+    let (leaderboard, _, _) = deploy_leaderboard_preset(OWNER());
 
     let config = leaderboard.get_config(999);
     // Should return default values
@@ -539,7 +543,7 @@ fn test_get_config_unconfigured_tournament() {
 // TC-CLR-03: Clear empty leaderboard
 #[test]
 fn test_clear_empty_leaderboard() {
-    let (leaderboard, admin) = deploy_leaderboard_preset(OWNER());
+    let (leaderboard, admin, _) = deploy_leaderboard_preset(OWNER());
     let (game_address, _) = deploy_mock_game();
 
     setup_tournament(admin, WEEKLY_TOURNAMENT, 10, false, game_address);
@@ -559,7 +563,7 @@ fn test_clear_empty_leaderboard() {
 // TC-CLR-04: Clear does not affect other tournaments
 #[test]
 fn test_clear_does_not_affect_other_tournaments() {
-    let (leaderboard, admin) = deploy_leaderboard_preset(OWNER());
+    let (leaderboard, admin, mock) = deploy_leaderboard_preset(OWNER());
     let (game_address, game_admin) = deploy_mock_game();
 
     setup_tournament(admin, WEEKLY_TOURNAMENT, 10, false, game_address);
@@ -568,8 +572,8 @@ fn test_clear_does_not_affect_other_tournaments() {
     // Add entries to both
     game_admin.set_score(1, 100);
     game_admin.set_score(2, 90);
-    let _ = leaderboard.submit_score(WEEKLY_TOURNAMENT, 1, 100, 1);
-    let _ = leaderboard.submit_score(MONTHLY_TOURNAMENT, 2, 90, 1);
+    let _ = mock.submit_score(WEEKLY_TOURNAMENT, 1, 100, 1);
+    let _ = mock.submit_score(MONTHLY_TOURNAMENT, 2, 90, 1);
 
     // Clear only weekly
     start_cheat_caller_address(admin.contract_address, OWNER());
@@ -589,7 +593,7 @@ fn test_clear_does_not_affect_other_tournaments() {
 #[test]
 #[should_panic(expected: "Only owner can call this function")]
 fn test_old_owner_cannot_configure_after_transfer() {
-    let (_, admin) = deploy_leaderboard_preset(OWNER());
+    let (_, admin, _) = deploy_leaderboard_preset(OWNER());
     let (game_address, _) = deploy_mock_game();
 
     // Transfer ownership
@@ -606,7 +610,7 @@ fn test_old_owner_cannot_configure_after_transfer() {
 // TC-QUA-06: Score qualifies ascending tournament
 #[test]
 fn test_qualifies_ascending_tournament() {
-    let (leaderboard, admin) = deploy_leaderboard_preset(OWNER());
+    let (leaderboard, admin, mock) = deploy_leaderboard_preset(OWNER());
     let (game_address, game_admin) = deploy_mock_game();
 
     // Ascending tournament (lower is better, like speedrun times)
@@ -615,8 +619,8 @@ fn test_qualifies_ascending_tournament() {
     // Fill with high scores (bad in ascending)
     game_admin.set_score(1, 100);
     game_admin.set_score(2, 150);
-    let _ = leaderboard.submit_score(SPECIAL_EVENT, 1, 100, 1);
-    let _ = leaderboard.submit_score(SPECIAL_EVENT, 2, 150, 2);
+    let _ = mock.submit_score(SPECIAL_EVENT, 1, 100, 1);
+    let _ = mock.submit_score(SPECIAL_EVENT, 2, 150, 2);
 
     // Lower score should qualify (better in ascending)
     assert!(leaderboard.qualifies(SPECIAL_EVENT, 50), "50 should qualify (better than 150)");
@@ -630,13 +634,13 @@ fn test_qualifies_ascending_tournament() {
 // TC-INT-04: Ownership transfer with active tournaments
 #[test]
 fn test_ownership_transfer_preserves_tournaments() {
-    let (leaderboard, admin) = deploy_leaderboard_preset(OWNER());
+    let (leaderboard, admin, mock) = deploy_leaderboard_preset(OWNER());
     let (game_address, game_admin) = deploy_mock_game();
 
     // Setup and populate tournament
     setup_tournament(admin, WEEKLY_TOURNAMENT, 10, false, game_address);
     game_admin.set_score(1, 100);
-    let _ = leaderboard.submit_score(WEEKLY_TOURNAMENT, 1, 100, 1);
+    let _ = mock.submit_score(WEEKLY_TOURNAMENT, 1, 100, 1);
 
     // Transfer ownership
     start_cheat_caller_address(admin.contract_address, OWNER());
@@ -672,7 +676,7 @@ fn test_fuzz_submit_score_positions(position: u32) {
         return;
     }
 
-    let (leaderboard, admin) = deploy_leaderboard_preset(OWNER());
+    let (leaderboard, admin, mock) = deploy_leaderboard_preset(OWNER());
     let (game_address, game_admin) = deploy_mock_game();
 
     // Configure tournament with enough capacity
@@ -682,7 +686,7 @@ fn test_fuzz_submit_score_positions(position: u32) {
     game_admin.set_score(position.into(), 100);
 
     // Submit at fuzzed position
-    let result = leaderboard.submit_score(WEEKLY_TOURNAMENT, position.into(), 100, position);
+    let result = mock.submit_score(WEEKLY_TOURNAMENT, position.into(), 100, position);
 
     match result {
         LeaderboardResult::Success => {
@@ -707,7 +711,7 @@ fn test_fuzz_configure_tournament(tournament_id: u64, max_entries: u32, ascendin
 
     let ascending = ascending_byte % 2 == 0;
 
-    let (leaderboard, admin) = deploy_leaderboard_preset(OWNER());
+    let (leaderboard, admin, _) = deploy_leaderboard_preset(OWNER());
     let (game_address, _) = deploy_mock_game();
 
     start_cheat_caller_address(admin.contract_address, OWNER());
@@ -729,7 +733,7 @@ fn test_fuzz_qualifies(score: u64, entry_score: u64) {
         return;
     }
 
-    let (leaderboard, admin) = deploy_leaderboard_preset(OWNER());
+    let (leaderboard, admin, mock) = deploy_leaderboard_preset(OWNER());
     let (game_address, game_admin) = deploy_mock_game();
 
     // Descending tournament
@@ -737,7 +741,7 @@ fn test_fuzz_qualifies(score: u64, entry_score: u64) {
 
     // Fill with one entry
     game_admin.set_score(1, entry_score);
-    let _ = leaderboard.submit_score(WEEKLY_TOURNAMENT, 1, entry_score, 1);
+    let _ = mock.submit_score(WEEKLY_TOURNAMENT, 1, entry_score, 1);
 
     let qualifies = leaderboard.qualifies(WEEKLY_TOURNAMENT, score);
 
@@ -756,13 +760,13 @@ fn test_fuzz_qualifies(score: u64, entry_score: u64) {
 // TC-DUP-01: Duplicate entry detection
 #[test]
 fn test_duplicate_entry_detection() {
-    let (leaderboard, admin) = deploy_leaderboard_preset(OWNER());
+    let (_, admin, mock) = deploy_leaderboard_preset(OWNER());
     let (game_address, game_admin) = deploy_mock_game();
 
     setup_tournament(admin, WEEKLY_TOURNAMENT, 10, false, game_address);
 
     game_admin.set_score(1, 100);
-    let result1 = leaderboard.submit_score(WEEKLY_TOURNAMENT, 1, 100, 1);
+    let result1 = mock.submit_score(WEEKLY_TOURNAMENT, 1, 100, 1);
     match result1 {
         LeaderboardResult::Success => {},
         _ => panic!("First submission should succeed"),
@@ -770,7 +774,7 @@ fn test_duplicate_entry_detection() {
 
     // Try to submit same token again
     game_admin.set_score(1, 150);
-    let result2 = leaderboard.submit_score(WEEKLY_TOURNAMENT, 1, 150, 1);
+    let result2 = mock.submit_score(WEEKLY_TOURNAMENT, 1, 150, 1);
     match result2 {
         LeaderboardResult::DuplicateEntry => {},
         _ => panic!("Duplicate entry should be rejected"),
@@ -780,18 +784,18 @@ fn test_duplicate_entry_detection() {
 // TC-SCORETOO-01: Score too low rejection
 #[test]
 fn test_score_too_low_rejection() {
-    let (leaderboard, admin) = deploy_leaderboard_preset(OWNER());
+    let (_, admin, mock) = deploy_leaderboard_preset(OWNER());
     let (game_address, game_admin) = deploy_mock_game();
 
     setup_tournament(admin, WEEKLY_TOURNAMENT, 10, false, game_address);
 
     // Add entry with score 100
     game_admin.set_score(1, 100);
-    let _ = leaderboard.submit_score(WEEKLY_TOURNAMENT, 1, 100, 1);
+    let _ = mock.submit_score(WEEKLY_TOURNAMENT, 1, 100, 1);
 
     // Try to add entry with lower score at position 1 (should fail - score not good enough)
     game_admin.set_score(2, 50);
-    let result = leaderboard.submit_score(WEEKLY_TOURNAMENT, 2, 50, 1);
+    let result = mock.submit_score(WEEKLY_TOURNAMENT, 2, 50, 1);
     match result {
         LeaderboardResult::ScoreTooLow => {},
         _ => panic!("Should reject score too low for position"),
@@ -801,22 +805,22 @@ fn test_score_too_low_rejection() {
 // TC-SCORETOOHIGH-01: Score too high rejection
 #[test]
 fn test_score_too_high_rejection() {
-    let (leaderboard, admin) = deploy_leaderboard_preset(OWNER());
+    let (_, admin, mock) = deploy_leaderboard_preset(OWNER());
     let (game_address, game_admin) = deploy_mock_game();
 
     setup_tournament(admin, WEEKLY_TOURNAMENT, 10, false, game_address);
 
     // Add first entry with score 100 at position 1
     game_admin.set_score(1, 100);
-    let _ = leaderboard.submit_score(WEEKLY_TOURNAMENT, 1, 100, 1);
+    let _ = mock.submit_score(WEEKLY_TOURNAMENT, 1, 100, 1);
 
     // Add second entry with score 50 at position 2
     game_admin.set_score(2, 50);
-    let _ = leaderboard.submit_score(WEEKLY_TOURNAMENT, 2, 50, 2);
+    let _ = mock.submit_score(WEEKLY_TOURNAMENT, 2, 50, 2);
 
     // Try to add entry with score 80 at position 3 (should fail - score better than position 2)
     game_admin.set_score(3, 80);
-    let result = leaderboard.submit_score(WEEKLY_TOURNAMENT, 3, 80, 3);
+    let result = mock.submit_score(WEEKLY_TOURNAMENT, 3, 80, 3);
     match result {
         LeaderboardResult::ScoreTooHigh => {},
         _ => panic!("Should reject score too high for position"),
@@ -826,14 +830,14 @@ fn test_score_too_high_rejection() {
 // TC-INVPOS-01: Invalid position rejection
 #[test]
 fn test_invalid_position_beyond_length() {
-    let (leaderboard, admin) = deploy_leaderboard_preset(OWNER());
+    let (_leaderboard, admin, mock) = deploy_leaderboard_preset(OWNER());
     let (game_address, game_admin) = deploy_mock_game();
 
     setup_tournament(admin, WEEKLY_TOURNAMENT, 10, false, game_address);
 
     // Try to submit at position 5 when leaderboard is empty (invalid - should be position 1)
     game_admin.set_score(1, 100);
-    let result = leaderboard.submit_score(WEEKLY_TOURNAMENT, 1, 100, 5);
+    let result = mock.submit_score(WEEKLY_TOURNAMENT, 1, 100, 5);
     match result {
         LeaderboardResult::InvalidPosition => {},
         _ => panic!("Should reject invalid position"),
@@ -843,28 +847,28 @@ fn test_invalid_position_beyond_length() {
 // TC-TIE-01: Tie-breaking by token ID (overwrite model)
 #[test]
 fn test_tie_breaking_lower_id_wins() {
-    let (leaderboard, admin) = deploy_leaderboard_preset(OWNER());
+    let (leaderboard, admin, mock) = deploy_leaderboard_preset(OWNER());
     let (game_address, game_admin) = deploy_mock_game();
 
     setup_tournament(admin, WEEKLY_TOURNAMENT, 10, false, game_address);
 
     // Add entry with token ID 10, score 100
     game_admin.set_score(10, 100);
-    let _ = leaderboard.submit_score(WEEKLY_TOURNAMENT, 10, 100, 1);
+    let _ = mock.submit_score(WEEKLY_TOURNAMENT, 10, 100, 1);
 
     // Add entry with token ID 5, same score 100 — evicts token 10 from position 1
     game_admin.set_score(5, 100);
-    let result = leaderboard.submit_score(WEEKLY_TOURNAMENT, 5, 100, 1);
+    let result = mock.submit_score(WEEKLY_TOURNAMENT, 5, 100, 1);
     match result {
         LeaderboardResult::Success => {},
         _ => panic!("Should succeed - lower ID wins tie-break"),
     }
 
     // Re-submit evicted token 10 at position 2
-    let _ = leaderboard.submit_score(WEEKLY_TOURNAMENT, 10, 100, 2);
+    let _ = mock.submit_score(WEEKLY_TOURNAMENT, 10, 100, 2);
 
     // Verify positions
-    let entries = leaderboard.get_entries(WEEKLY_TOURNAMENT);
+    let entries = leaderboard.get_leaderboard_entries(WEEKLY_TOURNAMENT);
     assert!(entries.len() == 2, "Should have 2 entries");
     assert!(*entries.at(0).id == 5, "Token 5 should be first (won tie-break)");
     assert!(*entries.at(1).id == 10, "Token 10 should be second");
@@ -873,18 +877,18 @@ fn test_tie_breaking_lower_id_wins() {
 // TC-TIE-02: Tie-breaking - higher ID loses
 #[test]
 fn test_tie_breaking_higher_id_loses() {
-    let (leaderboard, admin) = deploy_leaderboard_preset(OWNER());
+    let (_, admin, mock) = deploy_leaderboard_preset(OWNER());
     let (game_address, game_admin) = deploy_mock_game();
 
     setup_tournament(admin, WEEKLY_TOURNAMENT, 10, false, game_address);
 
     // Add entry with token ID 5, score 100
     game_admin.set_score(5, 100);
-    let _ = leaderboard.submit_score(WEEKLY_TOURNAMENT, 5, 100, 1);
+    let _ = mock.submit_score(WEEKLY_TOURNAMENT, 5, 100, 1);
 
     // Add entry with token ID 10, same score 100 at position 1 - should fail (higher ID loses)
     game_admin.set_score(10, 100);
-    let result = leaderboard.submit_score(WEEKLY_TOURNAMENT, 10, 100, 1);
+    let result = mock.submit_score(WEEKLY_TOURNAMENT, 10, 100, 1);
     match result {
         LeaderboardResult::ScoreTooLow => {},
         _ => panic!("Should fail - higher ID loses tie-break"),
@@ -894,7 +898,7 @@ fn test_tie_breaking_higher_id_loses() {
 // TC-ASC-01: Ascending tournament - lower score is better (overwrite model)
 #[test]
 fn test_ascending_tournament_order() {
-    let (leaderboard, admin) = deploy_leaderboard_preset(OWNER());
+    let (leaderboard, admin, mock) = deploy_leaderboard_preset(OWNER());
     let (game_address, game_admin) = deploy_mock_game();
 
     // Ascending tournament (speedrun - lower time is better)
@@ -905,14 +909,14 @@ fn test_ascending_tournament_order() {
     game_admin.set_score(2, 50);
     game_admin.set_score(3, 150);
 
-    let _ = leaderboard.submit_score(WEEKLY_TOURNAMENT, 1, 100, 1);
+    let _ = mock.submit_score(WEEKLY_TOURNAMENT, 1, 100, 1);
     // Token 2 overwrites position 1, evicting token 1
-    let _ = leaderboard.submit_score(WEEKLY_TOURNAMENT, 2, 50, 1);
+    let _ = mock.submit_score(WEEKLY_TOURNAMENT, 2, 50, 1);
     // Re-submit evicted token 1 at position 2
-    let _ = leaderboard.submit_score(WEEKLY_TOURNAMENT, 1, 100, 2);
-    let _ = leaderboard.submit_score(WEEKLY_TOURNAMENT, 3, 150, 3);
+    let _ = mock.submit_score(WEEKLY_TOURNAMENT, 1, 100, 2);
+    let _ = mock.submit_score(WEEKLY_TOURNAMENT, 3, 150, 3);
 
-    let entries = leaderboard.get_entries(WEEKLY_TOURNAMENT);
+    let entries = leaderboard.get_leaderboard_entries(WEEKLY_TOURNAMENT);
     assert!(entries.len() == 3, "Should have 3 entries");
     assert!(*entries.at(0).id == 2, "Token 2 (score 50) should be first");
     assert!(*entries.at(1).id == 1, "Token 1 (score 100) should be second");
@@ -922,7 +926,7 @@ fn test_ascending_tournament_order() {
 // TC-RANGE-01: Get leaderboard range (pagination)
 #[test]
 fn test_get_top_entries_pagination() {
-    let (leaderboard, admin) = deploy_leaderboard_preset(OWNER());
+    let (leaderboard, admin, mock) = deploy_leaderboard_preset(OWNER());
     let (game_address, game_admin) = deploy_mock_game();
 
     setup_tournament(admin, WEEKLY_TOURNAMENT, 10, false, game_address);
@@ -934,27 +938,27 @@ fn test_get_top_entries_pagination() {
     game_admin.set_score(4, 70);
     game_admin.set_score(5, 60);
 
-    let _ = leaderboard.submit_score(WEEKLY_TOURNAMENT, 1, 100, 1);
-    let _ = leaderboard.submit_score(WEEKLY_TOURNAMENT, 2, 90, 2);
-    let _ = leaderboard.submit_score(WEEKLY_TOURNAMENT, 3, 80, 3);
-    let _ = leaderboard.submit_score(WEEKLY_TOURNAMENT, 4, 70, 4);
-    let _ = leaderboard.submit_score(WEEKLY_TOURNAMENT, 5, 60, 5);
+    let _ = mock.submit_score(WEEKLY_TOURNAMENT, 1, 100, 1);
+    let _ = mock.submit_score(WEEKLY_TOURNAMENT, 2, 90, 2);
+    let _ = mock.submit_score(WEEKLY_TOURNAMENT, 3, 80, 3);
+    let _ = mock.submit_score(WEEKLY_TOURNAMENT, 4, 70, 4);
+    let _ = mock.submit_score(WEEKLY_TOURNAMENT, 5, 60, 5);
 
     // Get top 2
-    let top2 = leaderboard.get_top_entries(WEEKLY_TOURNAMENT, 2);
+    let top2 = leaderboard.get_top_leaderboard_entries(WEEKLY_TOURNAMENT, 2);
     assert!(top2.len() == 2, "Should return 2 entries");
     assert!(*top2.at(0).id == 1, "First should be token 1");
     assert!(*top2.at(1).id == 2, "Second should be token 2");
 
     // Get top 3
-    let top3 = leaderboard.get_top_entries(WEEKLY_TOURNAMENT, 3);
+    let top3 = leaderboard.get_top_leaderboard_entries(WEEKLY_TOURNAMENT, 3);
     assert!(top3.len() == 3, "Should return 3 entries");
 }
 
 // TC-FULL-02: Leaderboard full - overwrite evicts entry at position (overwrite model)
 #[test]
 fn test_full_leaderboard_pushes_out_lowest() {
-    let (leaderboard, admin) = deploy_leaderboard_preset(OWNER());
+    let (leaderboard, admin, mock) = deploy_leaderboard_preset(OWNER());
     let (game_address, game_admin) = deploy_mock_game();
 
     // Small leaderboard of 3
@@ -965,24 +969,24 @@ fn test_full_leaderboard_pushes_out_lowest() {
     game_admin.set_score(2, 90);
     game_admin.set_score(3, 80);
 
-    let _ = leaderboard.submit_score(WEEKLY_TOURNAMENT, 1, 100, 1);
-    let _ = leaderboard.submit_score(WEEKLY_TOURNAMENT, 2, 90, 2);
-    let _ = leaderboard.submit_score(WEEKLY_TOURNAMENT, 3, 80, 3);
+    let _ = mock.submit_score(WEEKLY_TOURNAMENT, 1, 100, 1);
+    let _ = mock.submit_score(WEEKLY_TOURNAMENT, 2, 90, 2);
+    let _ = mock.submit_score(WEEKLY_TOURNAMENT, 3, 80, 3);
 
     assert!(leaderboard.is_full(WEEKLY_TOURNAMENT), "Should be full");
 
     // Add higher score at position 2 — evicts token 2 (score 90)
     game_admin.set_score(4, 95);
-    let result = leaderboard.submit_score(WEEKLY_TOURNAMENT, 4, 95, 2);
+    let result = mock.submit_score(WEEKLY_TOURNAMENT, 4, 95, 2);
     match result {
         LeaderboardResult::Success => {},
         _ => panic!("Should succeed"),
     }
 
     // Token 2 was evicted, re-submit at position 3 — evicts token 3 (score 80)
-    let _ = leaderboard.submit_score(WEEKLY_TOURNAMENT, 2, 90, 3);
+    let _ = mock.submit_score(WEEKLY_TOURNAMENT, 2, 90, 3);
 
-    let entries = leaderboard.get_entries(WEEKLY_TOURNAMENT);
+    let entries = leaderboard.get_leaderboard_entries(WEEKLY_TOURNAMENT);
     assert!(entries.len() == 3, "Should still have 3 entries");
     assert!(*entries.at(0).id == 1, "Token 1 should still be first");
     assert!(*entries.at(1).id == 4, "Token 4 should be second");
@@ -1011,13 +1015,13 @@ fn test_initialization_sets_owner() {
 // TC-ZERO-01: Position 0 is invalid
 #[test]
 fn test_position_zero_is_invalid() {
-    let (leaderboard, admin) = deploy_leaderboard_preset(OWNER());
+    let (_, admin, mock) = deploy_leaderboard_preset(OWNER());
     let (game_address, game_admin) = deploy_mock_game();
 
     setup_tournament(admin, WEEKLY_TOURNAMENT, 10, false, game_address);
 
     game_admin.set_score(1, 100);
-    let result = leaderboard.submit_score(WEEKLY_TOURNAMENT, 1, 100, 0);
+    let result = mock.submit_score(WEEKLY_TOURNAMENT, 1, 100, 0);
     match result {
         LeaderboardResult::InvalidPosition => {},
         _ => panic!("Position 0 should be invalid"),
@@ -1027,7 +1031,7 @@ fn test_position_zero_is_invalid() {
 // TC-MULTI-01: Multiple tournaments completely independent
 #[test]
 fn test_tournaments_are_independent() {
-    let (leaderboard, admin) = deploy_leaderboard_preset(OWNER());
+    let (leaderboard, admin, mock) = deploy_leaderboard_preset(OWNER());
     let (game_address, game_admin) = deploy_mock_game();
 
     // Different configs for different tournaments
@@ -1037,8 +1041,8 @@ fn test_tournaments_are_independent() {
     // Add same token to both tournaments
     game_admin.set_score(100, 500);
 
-    let _ = leaderboard.submit_score(1, 100, 500, 1);
-    let _ = leaderboard.submit_score(2, 100, 500, 1);
+    let _ = mock.submit_score(1, 100, 500, 1);
+    let _ = mock.submit_score(2, 100, 500, 1);
 
     // Both should have the entry
     assert!(leaderboard.get_leaderboard_length(1) == 1, "Tournament 1 should have 1 entry");
@@ -1056,7 +1060,7 @@ fn test_tournaments_are_independent() {
 // TC-QUA-ASC-01: Qualifies for ascending tournament when full
 #[test]
 fn test_qualifies_ascending_tournament_when_full() {
-    let (leaderboard, admin) = deploy_leaderboard_preset(OWNER());
+    let (leaderboard, admin, mock) = deploy_leaderboard_preset(OWNER());
     let (game_address, game_admin) = deploy_mock_game();
 
     // Ascending tournament with 1 slot
@@ -1064,7 +1068,7 @@ fn test_qualifies_ascending_tournament_when_full() {
 
     // Fill with score 100
     game_admin.set_score(1, 100);
-    let _ = leaderboard.submit_score(WEEKLY_TOURNAMENT, 1, 100, 1);
+    let _ = mock.submit_score(WEEKLY_TOURNAMENT, 1, 100, 1);
 
     // In ascending, lower score qualifies
     assert!(leaderboard.qualifies(WEEKLY_TOURNAMENT, 50), "50 should qualify (lower is better)");
@@ -1078,7 +1082,7 @@ fn test_qualifies_ascending_tournament_when_full() {
 // TC-TIE-03: Tie with same ID (impossible in practice, but tests comparator)
 #[test]
 fn test_tie_breaking_ascending_mode() {
-    let (leaderboard, admin) = deploy_leaderboard_preset(OWNER());
+    let (leaderboard, admin, mock) = deploy_leaderboard_preset(OWNER());
     let (game_address, game_admin) = deploy_mock_game();
 
     // Ascending tournament
@@ -1086,24 +1090,24 @@ fn test_tie_breaking_ascending_mode() {
 
     // Add entries with same score
     game_admin.set_score(10, 100);
-    let _ = leaderboard.submit_score(WEEKLY_TOURNAMENT, 10, 100, 1);
+    let _ = mock.submit_score(WEEKLY_TOURNAMENT, 10, 100, 1);
 
     // Lower ID should win tie-break even in ascending mode
     game_admin.set_score(5, 100);
-    let result = leaderboard.submit_score(WEEKLY_TOURNAMENT, 5, 100, 1);
+    let result = mock.submit_score(WEEKLY_TOURNAMENT, 5, 100, 1);
     match result {
         LeaderboardResult::Success => {},
         _ => panic!("Should succeed - lower ID wins tie-break"),
     }
 
-    let entries = leaderboard.get_entries(WEEKLY_TOURNAMENT);
+    let entries = leaderboard.get_leaderboard_entries(WEEKLY_TOURNAMENT);
     assert!(*entries.at(0).id == 5, "Token 5 should be first (won tie-break)");
 }
 
 // TC-SCORE-EQ-01: Equal score at position where it belongs
 #[test]
 fn test_equal_score_valid_position() {
-    let (leaderboard, admin) = deploy_leaderboard_preset(OWNER());
+    let (leaderboard, admin, mock) = deploy_leaderboard_preset(OWNER());
     let (game_address, game_admin) = deploy_mock_game();
 
     setup_tournament(admin, WEEKLY_TOURNAMENT, 10, false, game_address);
@@ -1111,26 +1115,26 @@ fn test_equal_score_valid_position() {
     // Add two entries: 100 and 50
     game_admin.set_score(1, 100);
     game_admin.set_score(2, 50);
-    let _ = leaderboard.submit_score(WEEKLY_TOURNAMENT, 1, 100, 1);
-    let _ = leaderboard.submit_score(WEEKLY_TOURNAMENT, 2, 50, 2);
+    let _ = mock.submit_score(WEEKLY_TOURNAMENT, 1, 100, 1);
+    let _ = mock.submit_score(WEEKLY_TOURNAMENT, 2, 50, 2);
 
     // Add entry with score 50 at position 2 (same as token 2)
     // Lower ID (3 > 2) so it should go after token 2
     game_admin.set_score(3, 50);
-    let result = leaderboard.submit_score(WEEKLY_TOURNAMENT, 3, 50, 3);
+    let result = mock.submit_score(WEEKLY_TOURNAMENT, 3, 50, 3);
     match result {
         LeaderboardResult::Success => {},
         _ => panic!("Should succeed at position 3"),
     }
 
-    let entries = leaderboard.get_entries(WEEKLY_TOURNAMENT);
+    let entries = leaderboard.get_leaderboard_entries(WEEKLY_TOURNAMENT);
     assert!(entries.len() == 3, "Should have 3 entries");
 }
 
 // TC-LARGE-01: Large tournament with many entries
 #[test]
 fn test_large_leaderboard() {
-    let (leaderboard, admin) = deploy_leaderboard_preset(OWNER());
+    let (leaderboard, admin, mock) = deploy_leaderboard_preset(OWNER());
     let (game_address, game_admin) = deploy_mock_game();
 
     setup_tournament(admin, WEEKLY_TOURNAMENT, 20, false, game_address);
@@ -1140,14 +1144,14 @@ fn test_large_leaderboard() {
     while i <= 10 {
         let score: u64 = 1000 - (i * 10);
         game_admin.set_score(i.into(), score);
-        let _ = leaderboard.submit_score(WEEKLY_TOURNAMENT, i.into(), score, i.try_into().unwrap());
+        let _ = mock.submit_score(WEEKLY_TOURNAMENT, i.into(), score, i.try_into().unwrap());
         i += 1;
     }
 
     assert!(leaderboard.get_leaderboard_length(WEEKLY_TOURNAMENT) == 10, "Should have 10 entries");
 
     // Get top 5
-    let top5 = leaderboard.get_top_entries(WEEKLY_TOURNAMENT, 5);
+    let top5 = leaderboard.get_top_leaderboard_entries(WEEKLY_TOURNAMENT, 5);
     assert!(top5.len() == 5, "Should return top 5");
     assert!(*top5.at(0).score == 990, "First should have score 990");
     assert!(*top5.at(4).score == 950, "Fifth should have score 950");
@@ -1156,7 +1160,7 @@ fn test_large_leaderboard() {
 // TC-MID-INSERT-01: Insert in middle of leaderboard (overwrite model)
 #[test]
 fn test_insert_in_middle() {
-    let (leaderboard, admin) = deploy_leaderboard_preset(OWNER());
+    let (leaderboard, admin, mock) = deploy_leaderboard_preset(OWNER());
     let (game_address, game_admin) = deploy_mock_game();
 
     setup_tournament(admin, WEEKLY_TOURNAMENT, 10, false, game_address);
@@ -1165,24 +1169,24 @@ fn test_insert_in_middle() {
     game_admin.set_score(1, 100);
     game_admin.set_score(2, 50);
     game_admin.set_score(3, 25);
-    let _ = leaderboard.submit_score(WEEKLY_TOURNAMENT, 1, 100, 1);
-    let _ = leaderboard.submit_score(WEEKLY_TOURNAMENT, 2, 50, 2);
-    let _ = leaderboard.submit_score(WEEKLY_TOURNAMENT, 3, 25, 3);
+    let _ = mock.submit_score(WEEKLY_TOURNAMENT, 1, 100, 1);
+    let _ = mock.submit_score(WEEKLY_TOURNAMENT, 2, 50, 2);
+    let _ = mock.submit_score(WEEKLY_TOURNAMENT, 3, 25, 3);
 
     // Insert 75 at position 2 — evicts token 2 (score 50)
     game_admin.set_score(4, 75);
-    let result = leaderboard.submit_score(WEEKLY_TOURNAMENT, 4, 75, 2);
+    let result = mock.submit_score(WEEKLY_TOURNAMENT, 4, 75, 2);
     match result {
         LeaderboardResult::Success => {},
         _ => panic!("Should succeed"),
     }
 
     // Re-submit evicted token 2 at position 3 — evicts token 3 (score 25)
-    let _ = leaderboard.submit_score(WEEKLY_TOURNAMENT, 2, 50, 3);
+    let _ = mock.submit_score(WEEKLY_TOURNAMENT, 2, 50, 3);
     // Re-submit evicted token 3 at position 4
-    let _ = leaderboard.submit_score(WEEKLY_TOURNAMENT, 3, 25, 4);
+    let _ = mock.submit_score(WEEKLY_TOURNAMENT, 3, 25, 4);
 
-    let entries = leaderboard.get_entries(WEEKLY_TOURNAMENT);
+    let entries = leaderboard.get_leaderboard_entries(WEEKLY_TOURNAMENT);
     assert!(entries.len() == 4, "Should have 4 entries");
     assert!(*entries.at(0).id == 1, "First: token 1 (100)");
     assert!(*entries.at(1).id == 4, "Second: token 4 (75)");
@@ -1193,7 +1197,7 @@ fn test_insert_in_middle() {
 // TC-END-INSERT-01: Insert at end of leaderboard
 #[test]
 fn test_insert_at_end() {
-    let (leaderboard, admin) = deploy_leaderboard_preset(OWNER());
+    let (leaderboard, admin, mock) = deploy_leaderboard_preset(OWNER());
     let (game_address, game_admin) = deploy_mock_game();
 
     setup_tournament(admin, WEEKLY_TOURNAMENT, 10, false, game_address);
@@ -1201,12 +1205,12 @@ fn test_insert_at_end() {
     // Add entries: 100, 50
     game_admin.set_score(1, 100);
     game_admin.set_score(2, 50);
-    let _ = leaderboard.submit_score(WEEKLY_TOURNAMENT, 1, 100, 1);
-    let _ = leaderboard.submit_score(WEEKLY_TOURNAMENT, 2, 50, 2);
+    let _ = mock.submit_score(WEEKLY_TOURNAMENT, 1, 100, 1);
+    let _ = mock.submit_score(WEEKLY_TOURNAMENT, 2, 50, 2);
 
     // Insert 25 at position 3 (end)
     game_admin.set_score(3, 25);
-    let result = leaderboard.submit_score(WEEKLY_TOURNAMENT, 3, 25, 3);
+    let result = mock.submit_score(WEEKLY_TOURNAMENT, 3, 25, 3);
     match result {
         LeaderboardResult::Success => {},
         _ => panic!("Should succeed at end"),
@@ -1220,7 +1224,7 @@ fn test_insert_at_end() {
 // TC-CLEAR-LARGE-01: Clear large leaderboard
 #[test]
 fn test_clear_large_leaderboard() {
-    let (leaderboard, admin) = deploy_leaderboard_preset(OWNER());
+    let (leaderboard, admin, mock) = deploy_leaderboard_preset(OWNER());
     let (game_address, game_admin) = deploy_mock_game();
 
     setup_tournament(admin, WEEKLY_TOURNAMENT, 50, false, game_address);
@@ -1230,7 +1234,7 @@ fn test_clear_large_leaderboard() {
     while i <= 10 {
         let score: u64 = 1000 - (i * 10);
         game_admin.set_score(i.into(), score);
-        let _ = leaderboard.submit_score(WEEKLY_TOURNAMENT, i.into(), score, i.try_into().unwrap());
+        let _ = mock.submit_score(WEEKLY_TOURNAMENT, i.into(), score, i.try_into().unwrap());
         i += 1;
     }
 
@@ -1246,7 +1250,7 @@ fn test_clear_large_leaderboard() {
 
     // Verify we can add entries again
     game_admin.set_score(100, 500);
-    let result = leaderboard.submit_score(WEEKLY_TOURNAMENT, 100, 500, 1);
+    let result = mock.submit_score(WEEKLY_TOURNAMENT, 100, 500, 1);
     match result {
         LeaderboardResult::Success => {},
         _ => panic!("Should be able to add after clear"),
@@ -1256,7 +1260,7 @@ fn test_clear_large_leaderboard() {
 // TC-POS-BOUNDARY-01: Position at boundary of max_entries
 #[test]
 fn test_position_at_max_boundary() {
-    let (leaderboard, admin) = deploy_leaderboard_preset(OWNER());
+    let (leaderboard, admin, mock) = deploy_leaderboard_preset(OWNER());
     let (game_address, game_admin) = deploy_mock_game();
 
     // Tournament with max 3 entries
@@ -1267,17 +1271,17 @@ fn test_position_at_max_boundary() {
     game_admin.set_score(2, 90);
     game_admin.set_score(3, 80);
 
-    let _ = leaderboard.submit_score(WEEKLY_TOURNAMENT, 1, 100, 1);
-    let _ = leaderboard.submit_score(WEEKLY_TOURNAMENT, 2, 90, 2);
-    let _ = leaderboard.submit_score(WEEKLY_TOURNAMENT, 3, 80, 3);
+    let _ = mock.submit_score(WEEKLY_TOURNAMENT, 1, 100, 1);
+    let _ = mock.submit_score(WEEKLY_TOURNAMENT, 2, 90, 2);
+    let _ = mock.submit_score(WEEKLY_TOURNAMENT, 3, 80, 3);
 
     // Try to add at position 3 with score 85 (better than 80)
     game_admin.set_score(4, 85);
-    let result = leaderboard.submit_score(WEEKLY_TOURNAMENT, 4, 85, 3);
+    let result = mock.submit_score(WEEKLY_TOURNAMENT, 4, 85, 3);
     match result {
         LeaderboardResult::Success => {
             // Token 3 (80) should be pushed out
-            let entries = leaderboard.get_entries(WEEKLY_TOURNAMENT);
+            let entries = leaderboard.get_leaderboard_entries(WEEKLY_TOURNAMENT);
             assert!(entries.len() == 3, "Should still have 3 entries");
             assert!(*entries.at(2).id == 4, "Token 4 should be at position 3");
         },
@@ -1288,7 +1292,7 @@ fn test_position_at_max_boundary() {
 // TC-SCORE-BOUNDARY-01: Edge score values
 #[test]
 fn test_boundary_scores() {
-    let (leaderboard, admin) = deploy_leaderboard_preset(OWNER());
+    let (leaderboard, admin, mock) = deploy_leaderboard_preset(OWNER());
     let (game_address, game_admin) = deploy_mock_game();
 
     setup_tournament(admin, WEEKLY_TOURNAMENT, 10, false, game_address);
@@ -1296,7 +1300,7 @@ fn test_boundary_scores() {
     // Test with max u64 score
     let max_score: u64 = 0xFFFFFFFFFFFFFFFF;
     game_admin.set_score(1, max_score);
-    let result = leaderboard.submit_score(WEEKLY_TOURNAMENT, 1, max_score, 1);
+    let result = mock.submit_score(WEEKLY_TOURNAMENT, 1, max_score, 1);
     match result {
         LeaderboardResult::Success => {},
         _ => panic!("Max score should work"),
@@ -1304,13 +1308,13 @@ fn test_boundary_scores() {
 
     // Test with zero score
     game_admin.set_score(2, 0);
-    let result2 = leaderboard.submit_score(WEEKLY_TOURNAMENT, 2, 0, 2);
+    let result2 = mock.submit_score(WEEKLY_TOURNAMENT, 2, 0, 2);
     match result2 {
         LeaderboardResult::Success => {},
         _ => panic!("Zero score should work"),
     }
 
-    let entries = leaderboard.get_entries(WEEKLY_TOURNAMENT);
+    let entries = leaderboard.get_leaderboard_entries(WEEKLY_TOURNAMENT);
     assert!(entries.len() == 2, "Should have 2 entries");
     assert!(*entries.at(0).score == max_score, "Max score should be first");
     assert!(*entries.at(1).score == 0, "Zero score should be second");
@@ -1325,7 +1329,7 @@ fn test_boundary_scores() {
 // Test PR-FP-01: find_position on empty tournament returns position 1
 #[test]
 fn test_preset_find_position_empty() {
-    let (leaderboard, admin) = deploy_leaderboard_preset(OWNER());
+    let (leaderboard, admin, _) = deploy_leaderboard_preset(OWNER());
     let (game_address, _) = deploy_mock_game();
 
     setup_tournament(admin, WEEKLY_TOURNAMENT, 10, false, game_address);
@@ -1337,7 +1341,7 @@ fn test_preset_find_position_empty() {
 // Test PR-FP-02: find_position integrates with full tournament workflow
 #[test]
 fn test_preset_find_position_workflow() {
-    let (leaderboard, admin) = deploy_leaderboard_preset(OWNER());
+    let (leaderboard, admin, mock) = deploy_leaderboard_preset(OWNER());
     let (game_address, game_admin) = deploy_mock_game();
 
     setup_tournament(admin, WEEKLY_TOURNAMENT, 10, false, game_address);
@@ -1347,16 +1351,16 @@ fn test_preset_find_position_workflow() {
     game_admin.set_score(2, 800);
     game_admin.set_score(3, 600);
 
-    let _ = leaderboard.submit_score(WEEKLY_TOURNAMENT, 1, 1000, 1);
-    let _ = leaderboard.submit_score(WEEKLY_TOURNAMENT, 2, 800, 2);
-    let _ = leaderboard.submit_score(WEEKLY_TOURNAMENT, 3, 600, 3);
+    let _ = mock.submit_score(WEEKLY_TOURNAMENT, 1, 1000, 1);
+    let _ = mock.submit_score(WEEKLY_TOURNAMENT, 2, 800, 2);
+    let _ = mock.submit_score(WEEKLY_TOURNAMENT, 3, 600, 3);
 
     // Use find_position to determine where a new score goes, then submit
     game_admin.set_score(4, 900);
     let pos = leaderboard.find_position(WEEKLY_TOURNAMENT, 900, 4);
     assert!(pos == Option::Some(2), "900 should go at position 2");
 
-    let result = leaderboard.submit_score(WEEKLY_TOURNAMENT, 4, 900, pos.unwrap());
+    let result = mock.submit_score(WEEKLY_TOURNAMENT, 4, 900, pos.unwrap());
     match result {
         LeaderboardResult::Success => {},
         _ => panic!("Submit at find_position result should succeed"),
@@ -1366,15 +1370,15 @@ fn test_preset_find_position_workflow() {
 // Test PR-FP-03: find_position works across multiple tournaments
 #[test]
 fn test_preset_find_position_multi_tournament() {
-    let (leaderboard, admin) = deploy_leaderboard_preset(OWNER());
+    let (leaderboard, admin, mock) = deploy_leaderboard_preset(OWNER());
     let (game_address, game_admin) = deploy_mock_game();
 
     setup_tournament(admin, WEEKLY_TOURNAMENT, 10, false, game_address); // Descending
     setup_tournament(admin, SPECIAL_EVENT, 10, true, game_address); // Ascending
 
     game_admin.set_score(1, 100);
-    let _ = leaderboard.submit_score(WEEKLY_TOURNAMENT, 1, 100, 1);
-    let _ = leaderboard.submit_score(SPECIAL_EVENT, 1, 100, 1);
+    let _ = mock.submit_score(WEEKLY_TOURNAMENT, 1, 100, 1);
+    let _ = mock.submit_score(SPECIAL_EVENT, 1, 100, 1);
 
     // Descending: 200 goes before 100
     let pos_desc = leaderboard.find_position(WEEKLY_TOURNAMENT, 200, 2);
@@ -1388,13 +1392,13 @@ fn test_preset_find_position_multi_tournament() {
 // Test PR-FP-04: find_position with tiebreaking
 #[test]
 fn test_preset_find_position_tiebreak() {
-    let (leaderboard, admin) = deploy_leaderboard_preset(OWNER());
+    let (leaderboard, admin, mock) = deploy_leaderboard_preset(OWNER());
     let (game_address, game_admin) = deploy_mock_game();
 
     setup_tournament(admin, WEEKLY_TOURNAMENT, 10, false, game_address);
 
     game_admin.set_score(5, 100);
-    let _ = leaderboard.submit_score(WEEKLY_TOURNAMENT, 5, 100, 1);
+    let _ = mock.submit_score(WEEKLY_TOURNAMENT, 5, 100, 1);
 
     // Lower token_id wins tiebreak
     let pos = leaderboard.find_position(WEEKLY_TOURNAMENT, 100, 1);
@@ -1403,4 +1407,104 @@ fn test_preset_find_position_tiebreak() {
     // Higher token_id loses tiebreak
     let pos = leaderboard.find_position(WEEKLY_TOURNAMENT, 100, 10);
     assert!(pos == Option::Some(2), "Higher token_id should lose tiebreak");
+}
+
+// ==============================================================================
+// ACTUAL LEADERBOARD PRESET TESTS
+// ==============================================================================
+// The helpers above deploy MockLeaderboardContract for convenience (it exposes
+// IMockLeaderboardTest for unvalidated test access). These tests deploy the
+// real LeaderboardPreset contract so its concrete impls — the constructor,
+// the LeaderboardPresetSubmitImpl wrapper around the internal submit_score,
+// and the registered admin/read mixins — are actually exercised. Without
+// these, the preset itself shows 0% patch coverage despite the rest of the
+// file having many tests against the equivalent mock.
+
+use game_components_presets::leaderboard::{
+    ILeaderboardPresetSubmitDispatcher, ILeaderboardPresetSubmitDispatcherTrait,
+};
+
+fn deploy_real_leaderboard_preset(
+    owner: ContractAddress,
+) -> (ILeaderboardDispatcher, ILeaderboardAdminDispatcher, ILeaderboardPresetSubmitDispatcher) {
+    let contract = declare("LeaderboardPreset").unwrap().contract_class();
+    let mut calldata = array![];
+    owner.serialize(ref calldata);
+    let (contract_address, _) = contract.deploy(@calldata).unwrap();
+
+    let leaderboard = ILeaderboardDispatcher { contract_address };
+    let admin = ILeaderboardAdminDispatcher { contract_address };
+    let submit = ILeaderboardPresetSubmitDispatcher { contract_address };
+    (leaderboard, admin, submit)
+}
+
+// Real preset: constructor wires the owner through to the admin component.
+#[test]
+fn test_real_preset_constructor_sets_owner() {
+    let (_, admin, _) = deploy_real_leaderboard_preset(OWNER());
+
+    assert!(admin.owner() == OWNER(), "Owner should be set from constructor");
+}
+
+// Real preset: SRC5 advertises ILEADERBOARD_ID after deployment.
+#[test]
+fn test_real_preset_supports_leaderboard_interface() {
+    let (leaderboard, _, _) = deploy_real_leaderboard_preset(OWNER());
+
+    let src5 = ISRC5Dispatcher { contract_address: leaderboard.contract_address };
+    assert!(src5.supports_interface(ILEADERBOARD_ID), "Should support ILeaderboard interface");
+}
+
+// Real preset: public submit_score wrapper accepts an entry, returns Success,
+// and the read interface reflects the submitted score (proves the wrapper
+// forwards to LeaderboardInternalTrait::submit_score, not a no-op).
+#[test]
+fn test_real_preset_public_submit_score_records_entry() {
+    let (leaderboard, admin, submit) = deploy_real_leaderboard_preset(OWNER());
+    let (game_address, game_admin) = deploy_mock_game();
+
+    setup_tournament(admin, WEEKLY_TOURNAMENT, 10, false, game_address);
+    game_admin.set_score(1, 100);
+
+    let result = submit.submit_score(WEEKLY_TOURNAMENT, 1, 100, 1);
+    match result {
+        LeaderboardResult::Success => {},
+        _ => panic!("submit_score should return Success"),
+    }
+
+    assert!(
+        leaderboard.get_leaderboard_length(WEEKLY_TOURNAMENT) == 1,
+        "leaderboard should record the submitted entry",
+    );
+    assert!(
+        leaderboard.get_position(WEEKLY_TOURNAMENT, 1) == Option::Some(1),
+        "submitted token should be at position 1",
+    );
+}
+
+// Real preset: confirm the reference-impl note in the docstring is accurate
+// — the public submit_score has NO validation, so an arbitrary caller can
+// submit for any token. A production host would gate this; the preset
+// deliberately does not.
+#[test]
+fn test_real_preset_public_submit_score_is_unvalidated() {
+    let (leaderboard, admin, submit) = deploy_real_leaderboard_preset(OWNER());
+    let (game_address, game_admin) = deploy_mock_game();
+
+    setup_tournament(admin, WEEKLY_TOURNAMENT, 10, false, game_address);
+    game_admin.set_score(42, 200);
+
+    // USER1 (not the owner, no registration) submits for token 42.
+    start_cheat_caller_address(submit.contract_address, USER1());
+    let result = submit.submit_score(WEEKLY_TOURNAMENT, 42, 200, 1);
+    stop_cheat_caller_address(submit.contract_address);
+
+    match result {
+        LeaderboardResult::Success => {},
+        _ => panic!("preset submit_score should accept unvalidated submissions"),
+    }
+    assert!(
+        leaderboard.get_position(WEEKLY_TOURNAMENT, 42) == Option::Some(1),
+        "token should be on leaderboard despite no caller validation",
+    );
 }

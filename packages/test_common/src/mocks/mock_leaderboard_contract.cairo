@@ -2,6 +2,12 @@
 #[starknet::interface]
 pub trait IMockLeaderboardTest<TContractState> {
     fn get_entry_count(self: @TContractState, context_id: u64) -> u32;
+    /// Test-only wrapper around the internal submit_score (which lives on
+    /// LeaderboardInternalTrait, not the public ILeaderboard). Real hosts
+    /// wrap with their own validation; the mock exposes it raw.
+    fn submit_score(
+        ref self: TContractState, context_id: u64, token_id: felt252, score: u64, position: u32,
+    ) -> game_components_interfaces::leaderboard::LeaderboardResult;
 }
 
 /// Mock leaderboard contract for testing LeaderboardComponent
@@ -67,6 +73,12 @@ pub mod MockLeaderboardContract {
     impl MockLeaderboardTestImpl of super::IMockLeaderboardTest<ContractState> {
         fn get_entry_count(self: @ContractState, context_id: u64) -> u32 {
             self.leaderboard.get_leaderboard_length(context_id)
+        }
+
+        fn submit_score(
+            ref self: ContractState, context_id: u64, token_id: felt252, score: u64, position: u32,
+        ) -> LeaderboardResult {
+            self.leaderboard.submit_score(context_id, token_id, score, position)
         }
     }
 }

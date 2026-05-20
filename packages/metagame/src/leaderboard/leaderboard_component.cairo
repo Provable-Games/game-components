@@ -154,44 +154,32 @@ pub mod LeaderboardComponent {
         impl SRC5: SRC5Component::HasComponent<TContractState>,
         +Drop<TContractState>,
     > of ILeaderboard<ComponentState<TContractState>> {
-        fn submit_score(
-            ref self: ComponentState<TContractState>,
-            context_id: u64,
-            token_id: felt252,
-            score: u64,
-            position: u32,
-        ) -> LeaderboardResult {
-            let config = LeaderboardStoreConfig {
-                max_entries: self.max_entries.read(context_id),
-                ascending: self.ascending.read(context_id),
-                game_address: self.game_address.read(context_id),
-            };
-
-            let result = LeaderboardStoreTrait::submit_score(
-                ref self, context_id, token_id, score, position, config,
-            );
-
-            match result {
-                LeaderboardResult::Success => {
-                    let mut contract = self.get_contract_mut();
-                    LeaderboardHooksTrait::on_score_submitted(
-                        ref contract, context_id, token_id, score, position,
-                    );
-                },
-                _ => {},
-            }
-
-            result
-        }
-
-        fn get_entries(
+        fn get_leaderboard_entries(
             self: @ComponentState<TContractState>, context_id: u64,
         ) -> Array<LeaderboardEntry> {
             let game_address = self.game_address.read(context_id);
             LeaderboardStoreTrait::get_entries(self, context_id, game_address)
         }
 
-        fn get_top_entries(
+        fn get_leaderboard_entry(
+            self: @ComponentState<TContractState>, context_id: u64, position: u32,
+        ) -> LeaderboardEntry {
+            assert!(position > 0, "Leaderboard: position must be 1-indexed");
+            let count = self.entries_count.read(context_id);
+            assert!(position <= count, "Leaderboard: position {} out of range", position);
+            let storage_index: u32 = position - 1;
+            let token_id = self.entries.read((context_id, storage_index));
+            let game_address = self.game_address.read(context_id);
+            let score = if !game_address.is_zero() {
+                // Live score read from the game contract.
+                IGameDetailsDispatcher { contract_address: game_address }.score(token_id)
+            } else {
+                self.scores.read((context_id, storage_index))
+            };
+            LeaderboardEntry { id: token_id, score }
+        }
+
+        fn get_top_leaderboard_entries(
             self: @ComponentState<TContractState>, context_id: u64, count: u32,
         ) -> Array<LeaderboardEntry> {
             let game_address = self.game_address.read(context_id);
@@ -365,6 +353,47 @@ pub mod LeaderboardComponent {
             LeaderboardHooksTrait::on_configured(
                 ref contract, context_id, max_entries, ascending, game_address,
             );
+        }
+
+        /// Submit a score at an explicit position. Internal-only — hosts
+        /// must validate (phase gates, eligibility, banning, qualification
+        /// proofs, etc.) before invoking. Returns the placement outcome
+        /// (`Success` / `NotQualified` / etc.) for the host to surface as
+        /// it sees fit.
+        ///
+        /// Lives on the internal trait rather than the public `ILeaderboard`
+        /// because the component cannot enforce the host's validation
+        /// constraints; exposing it publicly would let any caller bypass
+        /// them. Hosts call `self.leaderboard.submit_score(...)` from
+        /// their own validated entrypoint.
+        fn submit_score(
+            ref self: ComponentState<TContractState>,
+            context_id: u64,
+            token_id: felt252,
+            score: u64,
+            position: u32,
+        ) -> LeaderboardResult {
+            let config = LeaderboardStoreConfig {
+                max_entries: self.max_entries.read(context_id),
+                ascending: self.ascending.read(context_id),
+                game_address: self.game_address.read(context_id),
+            };
+
+            let result = LeaderboardStoreTrait::submit_score(
+                ref self, context_id, token_id, score, position, config,
+            );
+
+            match result {
+                LeaderboardResult::Success => {
+                    let mut contract = self.get_contract_mut();
+                    LeaderboardHooksTrait::on_score_submitted(
+                        ref contract, context_id, token_id, score, position,
+                    );
+                },
+                _ => {},
+            }
+
+            result
         }
     }
 

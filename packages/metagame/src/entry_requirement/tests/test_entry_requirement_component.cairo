@@ -131,10 +131,11 @@ fn test_set_and_get_extension_requirement() {
         EntryRequirementType::token(_) => { panic!("expected extension type"); },
         EntryRequirementType::extension(ext_config) => {
             assert!(ext_config.address == ext_addr, "extension address mismatch");
-            assert!(ext_config.config.len() == 3, "config length mismatch");
-            assert!(*ext_config.config.at(0) == 1, "config[0] mismatch");
-            assert!(*ext_config.config.at(1) == 2, "config[1] mismatch");
-            assert!(*ext_config.config.at(2) == 3, "config[2] mismatch");
+            // Config is no longer persisted on the component — the
+            // extension contract is the sole source of truth. The view
+            // returns an empty config span; hosts wanting to surface the
+            // original blob should source it from their own event stream.
+            assert!(ext_config.config.len() == 0, "config should be empty (not persisted)");
         },
     }
 }

@@ -18,7 +18,22 @@ pub trait Store<T> {
     fn set_custom_shares_packed(ref self: T, prize_id: u64, slot: u8, shares: CustomShares);
     fn get_extension_address(self: @T, context_id: u64, prize_id: u64) -> ContractAddress;
     fn set_extension_address(ref self: T, context_id: u64, prize_id: u64, addr: ContractAddress);
-    fn get_extension_config_len(self: @T, context_id: u64, prize_id: u64) -> u64;
-    fn get_extension_config_at(self: @T, context_id: u64, prize_id: u64, index: u64) -> felt252;
-    fn push_extension_config(ref self: T, context_id: u64, prize_id: u64, value: felt252);
+    /// For extension prizes, the context_id this prize_id belongs to.
+    /// Built-in prizes have context_id in StoredPrize and are absent
+    /// from this map (reads as 0 — built-in prizes are detected via
+    /// StoredPrize, not this map).
+    fn get_extension_prize_context(self: @T, prize_id: u64) -> u64;
+    fn set_extension_prize_context(ref self: T, prize_id: u64, context_id: u64);
+    /// For extension prizes, the sponsor (caller of add_prize at
+    /// registration time). Built-in prizes have sponsor in StoredPrize.
+    fn get_extension_prize_sponsor(self: @T, prize_id: u64) -> ContractAddress;
+    fn set_extension_prize_sponsor(ref self: T, prize_id: u64, sponsor: ContractAddress);
+    /// The leaderboard position this built-in prize pays out to. Set by
+    /// the host at add_prize time for `Prize::Token` with a non-distributed
+    /// payout shape; zero means unset (distributed prizes don't use it,
+    /// and extension prizes own their own per-position semantics).
+    /// Stored on the component so any host using PrizeComponent gets
+    /// position-aware claim resolution without a parallel storage map.
+    fn get_payout_position(self: @T, prize_id: u64) -> u32;
+    fn set_payout_position(ref self: T, prize_id: u64, position: u32);
 }

@@ -11,8 +11,6 @@ pub trait Store<T> {
     fn set_token(ref self: T, context_id: u64, token: ContractAddress);
     fn get_extension_address(self: @T, context_id: u64) -> ContractAddress;
     fn set_extension_address(ref self: T, context_id: u64, address: ContractAddress);
-    fn get_extension_config(self: @T, context_id: u64) -> Span<felt252>;
-    fn set_extension_config(ref self: T, context_id: u64, config: Span<felt252>);
     fn get_qualification_entries(self: @T, context_id: u64, hash: felt252) -> u32;
     fn set_qualification_entries(ref self: T, context_id: u64, hash: felt252, count: u32);
 }

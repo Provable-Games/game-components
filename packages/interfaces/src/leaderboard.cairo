@@ -9,10 +9,23 @@ pub use crate::structs::leaderboard::{
 };
 
 /// SNIP-5 interface ID derived via src5_rs: XOR of extended function selectors
-/// - submit_score, get_entries, get_top_entries, get_position, qualifies,
-///   is_full, get_leaderboard_length, get_config, find_position
+/// - get_leaderboard_entries, get_leaderboard_entry,
+///   get_top_leaderboard_entries, get_leaderboard_length, get_position,
+///   qualifies, is_full, get_config, find_position
+///
+/// All read-only accessors use the `get_leaderboard_*` prefix so
+/// selectors don't collide with sibling component interfaces (e.g.
+/// `IRegistration::get_entry`, `IRegistration::get_entry_count`) on
+/// hosts that implement multiple component traits.
+///
+/// NOTE: `submit_score` is INTENTIONALLY NOT on the public interface.
+/// Score submission requires host-side validation (phase, eligibility,
+/// banning, qualification proofs, etc.) — leaving it as a public method
+/// on the component would let any caller bypass that. Hosts (budokan,
+/// etc.) call `LeaderboardInternalTrait::submit_score` from their own
+/// validated entrypoint.
 pub const ILEADERBOARD_ID: felt252 =
-    0x117a0c835a5dbc7ad37e8f5dcd306fd4266da5696b19d15e93bb5f39328bb14;
+    0x38e08ed38655566cb7dbf84dd9e3e0005f7edb8fc245876cb0ee79aa965a829;
 
 /// Interface for retrieving game scores
 /// Implemented by game contracts to provide score data for leaderboard entries
@@ -21,20 +34,28 @@ pub trait IGameDetails<TState> {
     fn score(self: @TState, token_id: felt252) -> u64;
 }
 
-/// Multi-context leaderboard interface
-/// Supports managing leaderboards for multiple contexts (tournaments, seasons, etc.)
+/// Multi-context leaderboard interface (read-only).
+///
+/// Score submission is intentionally NOT here — see the module docstring
+/// on `ILEADERBOARD_ID`. Hosts wrap `LeaderboardInternalTrait::submit_score`
+/// in their own validated entrypoint.
 #[starknet::interface]
 pub trait ILeaderboard<TState> {
-    /// Submit a score at an explicit position
-    fn submit_score(
-        ref self: TState, context_id: u64, token_id: felt252, score: u64, position: u32,
-    ) -> LeaderboardResult;
-
     /// Get all leaderboard entries with scores for a context
-    fn get_entries(self: @TState, context_id: u64) -> Array<LeaderboardEntry>;
+    fn get_leaderboard_entries(self: @TState, context_id: u64) -> Array<LeaderboardEntry>;
+
+    /// Get a single leaderboard entry by position (1-indexed). O(1) read.
+    /// Reverts if `position == 0` or `position > get_leaderboard_length(context_id)`.
+    /// Intended for cross-contract callers (notably extension contracts
+    /// validating claims against a specific leaderboard slot) that would
+    /// otherwise pay for a full `get_leaderboard_entries` array fetch to
+    /// read one element.
+    fn get_leaderboard_entry(self: @TState, context_id: u64, position: u32) -> LeaderboardEntry;
 
     /// Get top N entries for a context
-    fn get_top_entries(self: @TState, context_id: u64, count: u32) -> Array<LeaderboardEntry>;
+    fn get_top_leaderboard_entries(
+        self: @TState, context_id: u64, count: u32,
+    ) -> Array<LeaderboardEntry>;
 
     /// Get the position of a specific token in a context
     fn get_position(self: @TState, context_id: u64, token_id: felt252) -> Option<u32>;

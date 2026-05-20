@@ -2,8 +2,9 @@
 #[starknet::contract]
 pub mod PrizeMock {
     use openzeppelin_introspection::src5::SRC5Component;
+    use starknet::ContractAddress;
     use crate::prize::prize_component::PrizeComponent;
-    use crate::prize::structs::{PrizeData, PrizeType};
+    use crate::prize::structs::{Prize, PrizeType, TokenPrizePayload};
 
     component!(path: PrizeComponent, storage: prize, event: PrizeEvent);
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
@@ -92,10 +93,16 @@ pub mod PrizeMock {
         was_claimed
     }
 
-    /// Store a prize directly (for component testing without token transfers)
+    /// Store a token prize directly (for component testing without token transfers)
     #[external(v0)]
-    fn set_prize(ref self: ContractState, prize_id: u64, prize: PrizeData) {
-        self.prize.set_prize(prize_id, prize);
+    fn set_token_record(
+        ref self: ContractState,
+        prize_id: u64,
+        context_id: u64,
+        sponsor_address: ContractAddress,
+        payload: TokenPrizePayload,
+    ) {
+        self.prize.set_token_record(prize_id, context_id, sponsor_address, payload);
     }
 
     // Note: get_prize and get_total_prizes are already exposed via #[abi(embed_v0)] PrizeImpl
@@ -124,27 +131,31 @@ pub mod PrizeMock {
         self.prize._get_custom_shares(prize_id)
     }
 
-    /// Read extension config for a context and prize
-    #[external(v0)]
-    fn read_extension_config(
-        self: @ContractState, context_id: u64, prize_id: u64,
-    ) -> Span<felt252> {
-        self.prize.read_extension_config(context_id, prize_id)
-    }
-
-    /// Write extension config for a context and prize
-    #[external(v0)]
-    fn write_extension_config(
-        ref self: ContractState, context_id: u64, prize_id: u64, config: Span<felt252>,
-    ) {
-        self.prize.write_extension_config(context_id, prize_id, config);
-    }
-
     /// Get extension address for a context and prize
     #[external(v0)]
     fn get_extension_address(
         self: @ContractState, context_id: u64, prize_id: u64,
     ) -> starknet::ContractAddress {
         self.prize.get_extension_address(context_id, prize_id)
+    }
+
+    /// Forward a payout to the prize extension for (context_id, prize_id).
+    #[external(v0)]
+    fn payout_prize_extension(
+        ref self: ContractState,
+        context_id: u64,
+        prize_id: u64,
+        position: Option<u32>,
+        recipient: starknet::ContractAddress,
+        payout_params: Span<felt252>,
+    ) {
+        self.prize.payout_prize_extension(context_id, prize_id, position, recipient, payout_params);
+    }
+
+    /// Add a prize (delegates to component). Exposes the full Prize sum-type
+    /// so tests can drive both the Config and Extension paths.
+    #[external(v0)]
+    fn add_prize(ref self: ContractState, context_id: u64, prize: Prize) -> u64 {
+        self.prize.add_prize(context_id, prize)
     }
 }

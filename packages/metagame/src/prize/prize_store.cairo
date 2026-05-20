@@ -1,21 +1,33 @@
 // SPDX-License-Identifier: BUSL-1.1
 
 use core::num::traits::Zero;
+use starknet::ContractAddress;
 use crate::prize::prize::prize::hash_prize_type;
 use crate::prize::store::Store;
 use crate::prize::structs::{
-    CUSTOM_SHARES_PER_SLOT, CustomSharesImpl, ERC20Data, PrizeData, PrizeType, StoredPrizeTrait,
-    TokenTypeData,
+    CUSTOM_SHARES_PER_SLOT, CustomSharesImpl, ERC20Data, Prize, PrizeRecord, PrizeType,
+    StoredPrizeTrait, TokenPrizePayload, TokenTypeData,
 };
 
 /// Store bridge: composes Store<T> reads with pure lib operations
 pub trait PrizeStoreTrait<T> {
-    /// Get a prize by its ID, converting from storage format and restoring custom shares
-    fn get_prize(self: @T, prize_id: u64) -> PrizeData;
+    /// Get a built-in token prize as a `PrizeRecord`, converting from
+    /// storage format and restoring custom shares. Extension prizes
+    /// are routed via the component's `resolve_prize` before this is
+    /// called and never reach the store bridge.
+    fn get_token_record(self: @T, prize_id: u64) -> PrizeRecord;
     /// Get custom shares for a prize (reconstructs from packed storage)
     fn get_custom_shares(self: @T, prize_id: u64) -> Array<u16>;
-    /// Store a prize (converts to StoredPrize for storage)
-    fn set_prize(ref self: T, prize_id: u64, prize: PrizeData);
+    /// Store a token prize. Takes the host-assigned context + sponsor
+    /// alongside the variant payload; converts to StoredPrize for
+    /// storage.
+    fn set_token_record(
+        ref self: T,
+        prize_id: u64,
+        context_id: u64,
+        sponsor_address: ContractAddress,
+        payload: TokenPrizePayload,
+    );
     /// Get total prizes count
     fn get_total_prizes(self: @T) -> u64;
     /// Increment total prizes and return the new prize ID
@@ -36,50 +48,55 @@ pub trait PrizeStoreTrait<T> {
     fn assert_prize_not_claimed_by_hash(self: @T, context_id: u64, hash: felt252);
     /// Store custom shares in packed format
     fn store_custom_shares(ref self: T, prize_id: u64, shares: Span<u16>);
-    /// Read extension config for a context and prize
-    fn read_extension_config(self: @T, context_id: u64, prize_id: u64) -> Span<felt252>;
-    /// Write extension config for a context and prize
-    fn write_extension_config(ref self: T, context_id: u64, prize_id: u64, config: Span<felt252>);
 }
 
 pub impl PrizeStoreImpl<T, +Store<T>, +Drop<T>> of PrizeStoreTrait<T> {
-    fn get_prize(self: @T, prize_id: u64) -> PrizeData {
+    fn get_token_record(self: @T, prize_id: u64) -> PrizeRecord {
         let stored = Store::get_prize(self, prize_id);
-        // Convert StoredPrize to PrizeData
-        let mut prize = stored.to_prize(prize_id);
+        let mut record = stored.to_token_record(prize_id);
 
-        // For custom distributions, restore the shares from separate storage
-        prize.token_type = match prize.token_type {
-            TokenTypeData::erc20(erc20_data) => {
-                let distribution = match erc20_data.distribution {
-                    Option::Some(dist) => {
-                        match dist {
-                            game_components_utilities::distribution::structs::Distribution::Custom(_) => {
-                                // Reconstruct custom shares from storage
-                                let shares = self.get_custom_shares(prize_id);
-                                Option::Some(
-                                    game_components_utilities::distribution::structs::Distribution::Custom(
-                                        shares.span(),
-                                    ),
-                                )
+        // For custom distributions, restore the shares from separate storage.
+        // Reach into the Token payload (we know it's Token because
+        // `to_token_record` always builds the Token variant for the
+        // built-in store path).
+        let new_payload = match record.prize {
+            Prize::Token(payload) => {
+                let new_token_type = match payload.token_type {
+                    TokenTypeData::erc20(erc20_data) => {
+                        let distribution = match erc20_data.distribution {
+                            Option::Some(dist) => {
+                                match dist {
+                                    game_components_utilities::distribution::structs::Distribution::Custom(_) => {
+                                        let shares = self.get_custom_shares(prize_id);
+                                        Option::Some(
+                                            game_components_utilities::distribution::structs::Distribution::Custom(
+                                                shares.span(),
+                                            ),
+                                        )
+                                    },
+                                    _ => Option::Some(dist),
+                                }
                             },
-                            _ => Option::Some(dist),
-                        }
+                            Option::None => Option::None,
+                        };
+                        TokenTypeData::erc20(
+                            ERC20Data {
+                                amount: erc20_data.amount,
+                                distribution,
+                                distribution_count: erc20_data.distribution_count,
+                            },
+                        )
                     },
-                    Option::None => Option::None,
+                    TokenTypeData::erc721(erc721_data) => TokenTypeData::erc721(erc721_data),
                 };
-                TokenTypeData::erc20(
-                    ERC20Data {
-                        amount: erc20_data.amount,
-                        distribution,
-                        distribution_count: erc20_data.distribution_count,
-                    },
-                )
+                TokenPrizePayload {
+                    token_address: payload.token_address, token_type: new_token_type,
+                }
             },
-            TokenTypeData::erc721(erc721_data) => TokenTypeData::erc721(erc721_data),
+            Prize::Extension(_) => panic!("get_token_record: storage returned Extension variant"),
         };
-
-        prize
+        record.prize = Prize::Token(new_payload);
+        record
     }
 
     fn get_custom_shares(self: @T, prize_id: u64) -> Array<u16> {
@@ -109,8 +126,14 @@ pub impl PrizeStoreImpl<T, +Store<T>, +Drop<T>> of PrizeStoreTrait<T> {
         shares
     }
 
-    fn set_prize(ref self: T, prize_id: u64, prize: PrizeData) {
-        let stored = StoredPrizeTrait::from_prize(prize);
+    fn set_token_record(
+        ref self: T,
+        prize_id: u64,
+        context_id: u64,
+        sponsor_address: ContractAddress,
+        payload: TokenPrizePayload,
+    ) {
+        let stored = StoredPrizeTrait::from_token_record(context_id, sponsor_address, payload);
         Store::set_prize(ref self, prize_id, stored);
     }
 
@@ -186,30 +209,5 @@ pub impl PrizeStoreImpl<T, +Store<T>, +Drop<T>> of PrizeStoreTrait<T> {
         if shares_len > 0 {
             Store::set_custom_shares_packed(ref self, prize_id, current_slot, packed_shares);
         }
-    }
-
-    fn read_extension_config(self: @T, context_id: u64, prize_id: u64) -> Span<felt252> {
-        let len = Store::get_extension_config_len(self, context_id, prize_id);
-        let mut arr = ArrayTrait::new();
-        let mut i: u64 = 0;
-        loop {
-            if i >= len {
-                break;
-            }
-            arr.append(Store::get_extension_config_at(self, context_id, prize_id, i));
-            i += 1;
-        }
-        arr.span()
-    }
-
-    fn write_extension_config(ref self: T, context_id: u64, prize_id: u64, config: Span<felt252>) {
-        let mut i: u32 = 0;
-        loop {
-            if i >= config.len() {
-                break;
-            }
-            Store::push_extension_config(ref self, context_id, prize_id, *config.at(i));
-            i += 1;
-        };
     }
 }

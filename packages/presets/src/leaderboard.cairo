@@ -18,9 +18,24 @@
 /// ## Usage
 /// Deploy this contract with an owner, then use it to manage
 /// leaderboards for multiple tournaments by submitting scores with tournament_id.
+///
+/// Note: `submit_score` is exposed publicly with NO validation — this is
+/// a reference implementation. Production hosts (e.g. budokan) wrap
+/// `LeaderboardInternalTrait::submit_score` in their own validated
+/// entrypoint (phase gates, eligibility, banning, qualification proofs).
+/// See `ILEADERBOARD_ID` in game_components_interfaces for the
+/// rationale.
+
+#[starknet::interface]
+pub trait ILeaderboardPresetSubmit<TState> {
+    fn submit_score(
+        ref self: TState, context_id: u64, token_id: felt252, score: u64, position: u32,
+    ) -> game_components_interfaces::leaderboard::LeaderboardResult;
+}
 
 #[starknet::contract]
 mod LeaderboardPreset {
+    use game_components_interfaces::leaderboard::LeaderboardResult;
     use game_components_metagame::leaderboard::leaderboard_component::LeaderboardComponent::{
         LeaderboardAdminImpl, LeaderboardImpl, LeaderboardInternalTrait,
     };
@@ -67,5 +82,17 @@ mod LeaderboardPreset {
     #[constructor]
     fn constructor(ref self: ContractState, owner: ContractAddress) {
         self.leaderboard.initializer(owner);
+    }
+
+    /// Reference-impl public submit_score. Wraps the component's internal
+    /// method with no extra validation — anyone can submit any score for
+    /// any token_id. Real hosts must add their own validation.
+    #[abi(embed_v0)]
+    impl LeaderboardPresetSubmitImpl of super::ILeaderboardPresetSubmit<ContractState> {
+        fn submit_score(
+            ref self: ContractState, context_id: u64, token_id: felt252, score: u64, position: u32,
+        ) -> LeaderboardResult {
+            self.leaderboard.submit_score(context_id, token_id, score, position)
+        }
     }
 }

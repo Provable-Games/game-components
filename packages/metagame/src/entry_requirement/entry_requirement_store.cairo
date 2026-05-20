@@ -78,9 +78,15 @@ pub impl EntryRequirementStoreImpl<T, +Store<T>, +Drop<T>> of EntryRequirementSt
                 EntryRequirementType::token(token)
             },
             1 => {
+                // Config is not persisted — the extension contract is the
+                // source of truth. Hosts that need to surface the original
+                // config should source it from their own event stream
+                // (e.g. the `TournamentCreated`-style event that carries
+                // the full `EntryRequirement` payload supplied at creation).
                 let address = self.get_extension_address(context_id);
-                let config = self.get_extension_config(context_id);
-                EntryRequirementType::extension(ExtensionConfig { address, config })
+                EntryRequirementType::extension(
+                    ExtensionConfig { address, config: array![].span() },
+                )
             },
             _ => { return Option::None; },
         };
@@ -98,8 +104,8 @@ pub impl EntryRequirementStoreImpl<T, +Store<T>, +Drop<T>> of EntryRequirementSt
                         (entry_requirement::REQ_TYPE_TOKEN, req.entry_limit)
                     },
                     EntryRequirementType::extension(config) => {
+                        // Address-only persistence — see get_entry_requirement.
                         self.set_extension_address(context_id, config.address);
-                        self.set_extension_config(context_id, config.config);
                         (entry_requirement::REQ_TYPE_EXTENSION, req.entry_limit)
                     },
                 };
