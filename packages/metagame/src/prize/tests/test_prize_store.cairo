@@ -36,8 +36,7 @@ trait IPrizeMockFull<TContractState> {
         ref self: TContractState,
         context_id: u64,
         prize_id: u64,
-        position: Option<u32>,
-        recipient: ContractAddress,
+        token_id: Option<felt252>,
         payout_params: Span<felt252>,
     );
     fn add_prize(
@@ -258,14 +257,14 @@ fn test_payout_prize_extension_dispatches_when_configured() {
     // Mock the extension's payout entrypoint and verify the component
     // dispatches without panicking.
     mock_call(ext_addr, selector!("payout_prize"), (), 10);
-    mock.payout_prize_extension(42, prize_id, Option::Some(1_u32), addr(0xFEED), array![].span());
+    mock.payout_prize_extension(42, prize_id, Option::Some(99_felt252), array![].span());
 }
 
 #[test]
 #[should_panic(expected: "Prize: No extension configured for prize")]
 fn test_payout_prize_extension_panics_when_unset() {
     let mock = deploy();
-    mock.payout_prize_extension(1, 1, Option::Some(1_u32), addr(0xFEED), array![].span());
+    mock.payout_prize_extension(1, 1, Option::Some(99_felt252), array![].span());
 }
 
 // ============================================================================

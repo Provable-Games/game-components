@@ -145,11 +145,10 @@ pub mod PrizeMock {
         ref self: ContractState,
         context_id: u64,
         prize_id: u64,
-        position: Option<u32>,
-        recipient: starknet::ContractAddress,
+        token_id: Option<felt252>,
         payout_params: Span<felt252>,
     ) {
-        self.prize.payout_prize_extension(context_id, prize_id, position, recipient, payout_params);
+        self.prize.payout_prize_extension(context_id, prize_id, token_id, payout_params);
     }
 
     /// Add a prize (delegates to component). Exposes the full Prize sum-type
