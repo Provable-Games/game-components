@@ -358,10 +358,8 @@ fn test_add_prize_custom_distribution_round_trip_through_packed_storage() {
     // multiple packed slots — exercises the slot_index transition branch
     // (line 198: "if slot_index != current_slot && i > 0").
     let shares = array![
-        100_u16, 200_u16, 300_u16, 400_u16, 500_u16,
-        600_u16, 700_u16, 800_u16, 900_u16, 1000_u16,
-        1100_u16, 1200_u16, 1300_u16, 1400_u16, 1500_u16,
-        1600_u16, 1700_u16,
+        100_u16, 200_u16, 300_u16, 400_u16, 500_u16, 600_u16, 700_u16, 800_u16, 900_u16, 1000_u16,
+        1100_u16, 1200_u16, 1300_u16, 1400_u16, 1500_u16, 1600_u16, 1700_u16,
     ];
 
     snforge_std::start_cheat_caller_address(mock.contract_address, sponsor);
