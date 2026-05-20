@@ -1408,3 +1408,103 @@ fn test_preset_find_position_tiebreak() {
     let pos = leaderboard.find_position(WEEKLY_TOURNAMENT, 100, 10);
     assert!(pos == Option::Some(2), "Higher token_id should lose tiebreak");
 }
+
+// ==============================================================================
+// ACTUAL LEADERBOARD PRESET TESTS
+// ==============================================================================
+// The helpers above deploy MockLeaderboardContract for convenience (it exposes
+// IMockLeaderboardTest for unvalidated test access). These tests deploy the
+// real LeaderboardPreset contract so its concrete impls — the constructor,
+// the LeaderboardPresetSubmitImpl wrapper around the internal submit_score,
+// and the registered admin/read mixins — are actually exercised. Without
+// these, the preset itself shows 0% patch coverage despite the rest of the
+// file having many tests against the equivalent mock.
+
+use game_components_presets::leaderboard::{
+    ILeaderboardPresetSubmitDispatcher, ILeaderboardPresetSubmitDispatcherTrait,
+};
+
+fn deploy_real_leaderboard_preset(
+    owner: ContractAddress,
+) -> (ILeaderboardDispatcher, ILeaderboardAdminDispatcher, ILeaderboardPresetSubmitDispatcher) {
+    let contract = declare("LeaderboardPreset").unwrap().contract_class();
+    let mut calldata = array![];
+    owner.serialize(ref calldata);
+    let (contract_address, _) = contract.deploy(@calldata).unwrap();
+
+    let leaderboard = ILeaderboardDispatcher { contract_address };
+    let admin = ILeaderboardAdminDispatcher { contract_address };
+    let submit = ILeaderboardPresetSubmitDispatcher { contract_address };
+    (leaderboard, admin, submit)
+}
+
+// Real preset: constructor wires the owner through to the admin component.
+#[test]
+fn test_real_preset_constructor_sets_owner() {
+    let (_, admin, _) = deploy_real_leaderboard_preset(OWNER());
+
+    assert!(admin.owner() == OWNER(), "Owner should be set from constructor");
+}
+
+// Real preset: SRC5 advertises ILEADERBOARD_ID after deployment.
+#[test]
+fn test_real_preset_supports_leaderboard_interface() {
+    let (leaderboard, _, _) = deploy_real_leaderboard_preset(OWNER());
+
+    let src5 = ISRC5Dispatcher { contract_address: leaderboard.contract_address };
+    assert!(src5.supports_interface(ILEADERBOARD_ID), "Should support ILeaderboard interface");
+}
+
+// Real preset: public submit_score wrapper accepts an entry, returns Success,
+// and the read interface reflects the submitted score (proves the wrapper
+// forwards to LeaderboardInternalTrait::submit_score, not a no-op).
+#[test]
+fn test_real_preset_public_submit_score_records_entry() {
+    let (leaderboard, admin, submit) = deploy_real_leaderboard_preset(OWNER());
+    let (game_address, game_admin) = deploy_mock_game();
+
+    setup_tournament(admin, WEEKLY_TOURNAMENT, 10, false, game_address);
+    game_admin.set_score(1, 100);
+
+    let result = submit.submit_score(WEEKLY_TOURNAMENT, 1, 100, 1);
+    match result {
+        LeaderboardResult::Success => {},
+        _ => panic!("submit_score should return Success"),
+    }
+
+    assert!(
+        leaderboard.get_leaderboard_length(WEEKLY_TOURNAMENT) == 1,
+        "leaderboard should record the submitted entry",
+    );
+    assert!(
+        leaderboard.get_position(WEEKLY_TOURNAMENT, 1) == Option::Some(1),
+        "submitted token should be at position 1",
+    );
+}
+
+// Real preset: confirm the reference-impl note in the docstring is accurate
+// — the public submit_score has NO validation, so an arbitrary caller can
+// submit for any token. A production host would gate this; the preset
+// deliberately does not.
+#[test]
+fn test_real_preset_public_submit_score_is_unvalidated() {
+    let (leaderboard, admin, submit) = deploy_real_leaderboard_preset(OWNER());
+    let (game_address, game_admin) = deploy_mock_game();
+
+    setup_tournament(admin, WEEKLY_TOURNAMENT, 10, false, game_address);
+    game_admin.set_score(42, 200);
+
+    // USER1 (not the owner, no registration) submits for token 42.
+    start_cheat_caller_address(submit.contract_address, USER1());
+    let result = submit.submit_score(WEEKLY_TOURNAMENT, 42, 200, 1);
+    stop_cheat_caller_address(submit.contract_address);
+
+    match result {
+        LeaderboardResult::Success => {},
+        _ => panic!("preset submit_score should accept unvalidated submissions"),
+    }
+    assert!(
+        leaderboard.get_position(WEEKLY_TOURNAMENT, 42) == Option::Some(1),
+        "token should be on leaderboard despite no caller validation",
+    );
+}
