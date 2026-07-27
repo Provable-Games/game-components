@@ -268,3 +268,36 @@ fn bench_custom_n10_pos1() {
     let share = calculate_share_with_dust(dist, 1, 10, BASIS_POINTS);
     assert!(share > 0, "winner share");
 }
+
+#[test]
+fn bench_exp_w10_n100_pos1() {
+    let dist = Distribution::Exponential(10);
+    let share = calculate_share_with_dust(dist, 1, 100, BASIS_POINTS);
+    assert!(share > 0, "winner share");
+}
+
+#[test]
+fn bench_custom_n100_pos1() {
+    let mut shares: Array<u16> = array![];
+    let mut i: u32 = 0;
+    while i < 100 {
+        shares.append(100);
+        i += 1;
+    }
+    let dist = Distribution::Custom(shares.span());
+    let share = calculate_share_with_dust(dist, 1, 100, BASIS_POINTS);
+    assert!(share > 0, "winner share");
+}
+
+#[test]
+fn bench_custom_n100_pos_last() {
+    let mut shares: Array<u16> = array![];
+    let mut i: u32 = 0;
+    while i < 100 {
+        shares.append(100);
+        i += 1;
+    }
+    let dist = Distribution::Custom(shares.span());
+    let share = calculate_share_with_dust(dist, 100, 100, BASIS_POINTS);
+    assert!(share > 0, "last-place share");
+}
