@@ -23,6 +23,16 @@
 //!
 //! `exp_w10_n10_pos1` is the live shape behind Budokan tournament 26
 //! (Exponential weight 10, 10 paid places, single entrant claiming 1st).
+//!
+//! Precision note, relevant to the large-`n` benchmarks: shares are u16 basis
+//! points, so a position whose normalized weight is below 1/10000 of the pool
+//! truncates to 0. For Linear weight 10 that starts around 140 places (the
+//! weights sum to n(n+1)/2, so the last place gets 10000 * 1 / 20100 = 0 at
+//! n=200); Exponential tails off sooner still. This is a property of the
+//! basis-point representation, not of any particular implementation — but it
+//! means a sufficiently large weighted prize has positions that can never be
+//! claimed, because Budokan asserts `prize_amount > 0`. Hence the relaxed
+//! assertions on the `n200`/`n1000` tail benchmarks.
 
 use crate::distribution::calculator::{calculate_share, calculate_share_with_dust};
 use crate::distribution::structs::{BASIS_POINTS, Distribution};
@@ -99,6 +109,119 @@ fn bench_exp_w15_n10_pos_last() {
 fn bench_exp_w15_n25_pos1() {
     let dist = Distribution::Exponential(15);
     let share = calculate_share_with_dust(dist, 1, 25, BASIS_POINTS);
+    assert!(share > 0, "winner share");
+}
+
+// ==========================================================================
+// ALLOCATION CROSSOVER
+//
+// The weight vector is materialized into an `Array<Fixed>`, which the
+// per-position implementation never did. That allocation buys nothing on
+// paths that were not quadratic to begin with:
+//
+//   * non-winner positions — they never summed every share, so they pay
+//     append + read cost against no saving;
+//   * very small `n` — n^2 and n are the same order when n is 1 or 2.
+//
+// These benchmarks bracket both, so the crossover is measured rather than
+// assumed. Compare against the same shapes on the pre-hoist implementation.
+// ==========================================================================
+
+#[test]
+fn bench_exp_w10_n1_pos1() {
+    let dist = Distribution::Exponential(10);
+    let share = calculate_share_with_dust(dist, 1, 1, BASIS_POINTS);
+    assert!(share > 0, "sole payout");
+}
+
+#[test]
+fn bench_exp_w10_n2_pos1() {
+    let dist = Distribution::Exponential(10);
+    let share = calculate_share_with_dust(dist, 1, 2, BASIS_POINTS);
+    assert!(share > 0, "winner share");
+}
+
+#[test]
+fn bench_exp_w10_n3_pos1() {
+    let dist = Distribution::Exponential(10);
+    let share = calculate_share_with_dust(dist, 1, 3, BASIS_POINTS);
+    assert!(share > 0, "winner share");
+}
+
+#[test]
+fn bench_exp_w10_n3_pos_last() {
+    let dist = Distribution::Exponential(10);
+    let share = calculate_share_with_dust(dist, 3, 3, BASIS_POINTS);
+    assert!(share > 0, "last-place share");
+}
+
+#[test]
+fn bench_exp_w10_n100_pos_last() {
+    let dist = Distribution::Exponential(10);
+    let share = calculate_share_with_dust(dist, 100, 100, BASIS_POINTS);
+    assert!(share > 0, "last-place share");
+}
+
+#[test]
+fn bench_exp_w10_n200_pos_last() {
+    let dist = Distribution::Exponential(10);
+    let share = calculate_share_with_dust(dist, 200, 200, BASIS_POINTS);
+    // The tail rounds to 0 bps at this size — see the precision note above.
+    assert!(share <= BASIS_POINTS, "share must stay within basis points");
+}
+
+#[test]
+fn bench_linear_w10_n200_pos_last() {
+    let dist = Distribution::Linear(10);
+    let share = calculate_share_with_dust(dist, 200, 200, BASIS_POINTS);
+    // The tail rounds to 0 bps at this size — see the precision note above.
+    assert!(share <= BASIS_POINTS, "share must stay within basis points");
+}
+
+// ==========================================================================
+// CEILING — very large paid-place counts
+//
+// `distribution_count` is a u32, so nothing in the type system stops a
+// 1000-place prize. These pin what the winner's claim actually costs there,
+// which is the number to check a transaction budget against before allowing
+// a tournament to be created with that shape.
+// ==========================================================================
+
+#[test]
+fn bench_exp_w10_n500_pos1() {
+    let dist = Distribution::Exponential(10);
+    let share = calculate_share_with_dust(dist, 1, 500, BASIS_POINTS);
+    assert!(share > 0, "winner share");
+}
+
+#[test]
+fn bench_exp_w10_n1000_pos1() {
+    let dist = Distribution::Exponential(10);
+    let share = calculate_share_with_dust(dist, 1, 1000, BASIS_POINTS);
+    assert!(share > 0, "winner share");
+}
+
+#[test]
+fn bench_exp_w10_n1000_pos_last() {
+    let dist = Distribution::Exponential(10);
+    let share = calculate_share_with_dust(dist, 1000, 1000, BASIS_POINTS);
+    // The tail rounds to 0 bps at this size — see the precision note above.
+    assert!(share <= BASIS_POINTS, "share must stay within basis points");
+}
+
+#[test]
+fn bench_custom_n1000_pos1() {
+    // Custom is the O(1) comparison point: an explicit shares array, no
+    // normalization, no pow — what a 1000-place prize costs when the curve
+    // is precomputed off-chain instead of derived on-chain.
+    let mut shares: Array<u16> = array![];
+    let mut i: u32 = 0;
+    while i < 1000 {
+        shares.append(10);
+        i += 1;
+    }
+    let dist = Distribution::Custom(shares.span());
+    let share = calculate_share_with_dust(dist, 1, 1000, BASIS_POINTS);
     assert!(share > 0, "winner share");
 }
 
