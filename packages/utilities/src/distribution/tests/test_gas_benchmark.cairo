@@ -35,7 +35,11 @@
 //! assertions on the `n200`/`n1000` tail benchmarks.
 
 use crate::distribution::calculator::{calculate_share, calculate_share_with_dust};
+use crate::distribution::payout::calculate_payout;
 use crate::distribution::structs::{BASIS_POINTS, Distribution};
+
+/// 1000 tokens at 18 decimals.
+const POOL: u256 = 1000_000000000000000000;
 
 // ==========================================================================
 // BASELINE — harness overhead with no share computation
@@ -300,4 +304,54 @@ fn bench_custom_n100_pos_last() {
     let dist = Distribution::Custom(shares.span());
     let share = calculate_share_with_dust(dist, 100, 100, BASIS_POINTS);
     assert!(share > 0, "last-place share");
+}
+
+// ==========================================================================
+// EXACT TOKEN-UNIT PAYOUTS (distribution::payout)
+//
+// Closed-form weight sum, integer arithmetic, no pow and no per-position
+// loop — so cost is flat in the number of paid places. Compare against the
+// `exp_w10_nX_pos1` figures above, which grow linearly.
+// ==========================================================================
+
+#[test]
+fn bench_payout_exp_k1_n10_pos1() {
+    let p = calculate_payout(Distribution::Exponential(10), 1, 10, POOL);
+    assert!(p > 0, "payout");
+}
+
+#[test]
+fn bench_payout_exp_k1_n100_pos1() {
+    let p = calculate_payout(Distribution::Exponential(10), 1, 100, POOL);
+    assert!(p > 0, "payout");
+}
+
+#[test]
+fn bench_payout_exp_k1_n1000_pos1() {
+    let p = calculate_payout(Distribution::Exponential(10), 1, 1000, POOL);
+    assert!(p > 0, "payout");
+}
+
+#[test]
+fn bench_payout_exp_k1_n1000_pos_last() {
+    let p = calculate_payout(Distribution::Exponential(10), 1000, 1000, POOL);
+    assert!(p > 0, "payout");
+}
+
+#[test]
+fn bench_payout_exp_k3_n1000_pos1() {
+    let p = calculate_payout(Distribution::Exponential(30), 1, 1000, POOL);
+    assert!(p > 0, "payout");
+}
+
+#[test]
+fn bench_payout_exp_k3_n1000_pos_last() {
+    let p = calculate_payout(Distribution::Exponential(30), 1000, 1000, POOL);
+    assert!(p > 0, "payout");
+}
+
+#[test]
+fn bench_payout_linear_n1000_pos1() {
+    let p = calculate_payout(Distribution::Linear(10), 1, 1000, POOL);
+    assert!(p > 0, "payout");
 }
