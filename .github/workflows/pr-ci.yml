@@ -414,6 +414,14 @@ jobs:
     # Repo default workflow token is read-only; a reusable workflow's job
     # permissions can't exceed the caller's, so grant the write scopes the
     # review jobs need (PR comments + Claude OIDC) here.
+    #
+    # @v1 is a mutable tag on purpose — it is the org convention every caller
+    # uses, and it is what lets a model deprecation be fixed once upstream
+    # rather than in seven repos. Pinning a SHA here would defeat the reason
+    # this workflow is shared. `secrets: inherit` likewise: the callee is
+    # first-party and declares exactly CLAUDE_CODE_OAUTH_TOKEN and
+    # CODEX_AUTH_DOT_JSON, and inheriting means a new upstream secret does not
+    # need a PR in every caller.
     permissions:
       contents: read
       issues: write
