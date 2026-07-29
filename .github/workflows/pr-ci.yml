@@ -407,6 +407,10 @@ jobs:
   # silently drop reviews on docs-only PRs.
   review:
     uses: Provable-Games/.github/.github/workflows/code-review.yml@v1
+    with:
+      # Preserves the merge gate the inline review jobs had: a [CRITICAL] or
+      # [HIGH] finding fails the job rather than only posting a comment.
+      block_on_severity: true
     # Repo default workflow token is read-only; a reusable workflow's job
     # permissions can't exceed the caller's, so grant the write scopes the
     # review jobs need (PR comments + Claude OIDC) here.

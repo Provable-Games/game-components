@@ -10,21 +10,8 @@
       "agent_id": "general",
       "agent_name": "General Engineering",
       "prompt_file": ".github/prompts/general-purpose.md",
-      "diff_paths": [
-        ".env.example",
-        ".github/",
-        ".gitignore",
-        ".tool-versions",
-        "AGENTS.md",
-        "CLAUDE.md",
-        "GEMINI.md",
-        "README.md",
-        "Scarb.lock",
-        "Scarb.toml",
-        "codecov.yml",
-        "scripts/",
-        "src/"
-      ]
+      "diff_paths": ["."],
+      "exclude_paths": ["packages/"]
     }
   ]
 }
