@@ -68,6 +68,7 @@ pub trait IMinigameTokenMixin<TState> {
         metadata: u16,
     ) -> felt252;
     fn update_game(ref self: TState, token_id: felt252);
+    fn refresh_metadata(ref self: TState, token_id: felt252);
     fn update_player_name(ref self: TState, token_id: felt252, name: felt252);
 
     // Batch write functions
@@ -90,6 +91,7 @@ pub trait IMinigameTokenMixin<TState> {
         metadata: u16,
     ) -> Array<felt252>;
     fn update_game_batch(ref self: TState, token_ids: Span<felt252>);
+    fn refresh_metadata_batch(ref self: TState, token_ids: Span<felt252>);
     fn update_player_name_batch(ref self: TState, updates: Span<PlayerNameUpdate>);
 
     // Minter functionality
