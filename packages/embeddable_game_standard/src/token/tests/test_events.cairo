@@ -1,10 +1,14 @@
 use openzeppelin_interfaces::erc721::ERC721ABIDispatcherTrait;
-use snforge_std::{CheatSpan, EventSpyTrait, cheat_caller_address, spy_events};
-use crate::token::interface::IMinigameTokenMixinDispatcherTrait;
+use snforge_std::{
+    CheatSpan, EventSpyAssertionsTrait, EventSpyTrait, cheat_caller_address, spy_events,
+};
+use starknet::ContractAddress;
+use crate::token::interface::{IMinigameTokenMixinDispatcher, IMinigameTokenMixinDispatcherTrait};
+use crate::token::token_component::CoreTokenComponent;
 use super::mocks::minigame_mock::IMinigameMockInitDispatcherTrait;
 
 // Import IMockGameDispatcher trait
-use super::mocks::mock_game::{IMockGameDispatcherTrait};
+use super::mocks::mock_game::{IMockGameDispatcher, IMockGameDispatcherTrait};
 
 // Import test helpers from setup module
 use super::setup::{
@@ -298,4 +302,170 @@ fn test_multi_game_registry_events() {
     // Should emit TokenMinted with correct game_id
     let events = spy.get_events();
     assert!(events.events.span().len() >= 1, "Should emit TokenMinted event");
+}
+
+// ================================================================================================
+// REFRESH_METADATA TESTS
+// ================================================================================================
+
+// Mints a token against a fresh mock game and returns (token dispatcher, mock game, token id).
+fn setup_refresh_metadata() -> (
+    IMinigameTokenMixinDispatcher, IMockGameDispatcher, ContractAddress, felt252,
+) {
+    let (minigame, mock_game) = deploy_basic_mock_game();
+    let (token_dispatcher, _, _, token_address) = deploy_optimized_token_with_game(
+        minigame.contract_address,
+    );
+
+    let token_id = token_dispatcher
+        .mint(
+            minigame.contract_address,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            ALICE(),
+            false,
+            false,
+            0,
+            0,
+        );
+
+    (token_dispatcher, mock_game, token_address, token_id)
+}
+
+#[test]
+fn test_refresh_metadata_emits_metadata_update() {
+    let (token_dispatcher, _mock_game, token_address, token_id) = setup_refresh_metadata();
+
+    let mut spy = spy_events();
+    token_dispatcher.refresh_metadata(token_id);
+
+    spy
+        .assert_emitted(
+            @array![
+                (
+                    token_address,
+                    CoreTokenComponent::Event::MetadataUpdate(
+                        CoreTokenComponent::MetadataUpdate { token_id: token_id.into() },
+                    ),
+                ),
+            ],
+        );
+}
+
+// The whole point of the entrypoint: it must never persist game state. A game that is over
+// on the game contract stays "not over" on the token until update_game is called, so
+// refresh_metadata can never be substituted for the game-over sync.
+#[test]
+fn test_refresh_metadata_does_not_persist_game_state() {
+    let (token_dispatcher, mock_game, _token_address, token_id) = setup_refresh_metadata();
+
+    mock_game.set_score(token_id, 100);
+    mock_game.set_game_over(token_id, true);
+
+    token_dispatcher.refresh_metadata(token_id);
+
+    let state = token_dispatcher.token_mutable_state(token_id);
+    assert!(!state.game_over, "refresh_metadata must not persist game_over");
+    assert!(!state.completed_objective, "refresh_metadata must not persist completed_objective");
+    assert!(token_dispatcher.is_playable(token_id), "token should still be playable");
+
+    // update_game is still the thing that syncs it.
+    token_dispatcher.update_game(token_id);
+    assert!(token_dispatcher.token_mutable_state(token_id).game_over, "update_game should sync");
+}
+
+#[test]
+fn test_refresh_metadata_emits_only_one_event() {
+    let (token_dispatcher, _mock_game, _token_address, token_id) = setup_refresh_metadata();
+
+    let mut spy = spy_events();
+    token_dispatcher.refresh_metadata(token_id);
+
+    let events = spy.get_events();
+    assert!(
+        events.events.span().len() == 1,
+        "refresh_metadata should emit exactly 1 event, got {}",
+        events.events.span().len(),
+    );
+}
+
+#[test]
+#[should_panic]
+fn test_refresh_metadata_nonexistent_token_panics() {
+    let (token_dispatcher, _mock_game, _token_address, _token_id) = setup_refresh_metadata();
+
+    token_dispatcher.refresh_metadata(999999);
+}
+
+#[test]
+fn test_refresh_metadata_batch_emits_per_token() {
+    let (minigame, _mock_game) = deploy_basic_mock_game();
+    let (token_dispatcher, _, _, token_address) = deploy_optimized_token_with_game(
+        minigame.contract_address,
+    );
+
+    // Distinct salts, otherwise the packed token ids collide.
+    let mut token_ids: Array<felt252> = array![];
+    let mut salt: u16 = 0;
+    while salt < 3 {
+        token_ids
+            .append(
+                token_dispatcher
+                    .mint(
+                        minigame.contract_address,
+                        Option::None,
+                        Option::None,
+                        Option::None,
+                        Option::None,
+                        Option::None,
+                        Option::None,
+                        Option::None,
+                        Option::None,
+                        Option::None,
+                        ALICE(),
+                        false,
+                        false,
+                        salt,
+                        0,
+                    ),
+            );
+        salt += 1;
+    }
+
+    let mut spy = spy_events();
+    token_dispatcher.refresh_metadata_batch(token_ids.span());
+
+    let events = spy.get_events();
+    assert!(
+        events.events.span().len() == 3,
+        "should emit 1 event per token, got {}",
+        events.events.span().len(),
+    );
+
+    spy
+        .assert_emitted(
+            @array![
+                (
+                    token_address,
+                    CoreTokenComponent::Event::MetadataUpdate(
+                        CoreTokenComponent::MetadataUpdate { token_id: (*token_ids.at(2)).into() },
+                    ),
+                ),
+            ],
+        );
+}
+
+#[test]
+#[should_panic(expected: "MinigameToken: token_ids array cannot be empty")]
+fn test_refresh_metadata_batch_empty_panics() {
+    let (token_dispatcher, _mock_game, _token_address, _token_id) = setup_refresh_metadata();
+
+    token_dispatcher.refresh_metadata_batch(array![].span());
 }

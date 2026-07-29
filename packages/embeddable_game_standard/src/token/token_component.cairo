@@ -807,6 +807,28 @@ pub mod CoreTokenComponent {
             }
         }
 
+        /// Emits an ERC-4906 `MetadataUpdate` for `token_id` without touching token state.
+        ///
+        /// `update_game` re-reads `game_over` and `score` from the game contract and notifies the
+        /// minter, which costs several cross-contract calls. Indexers only need the event to learn
+        /// that a token's rendered metadata is stale — `token_uri` reads score live from the game
+        /// — so games can call this after ordinary mid-game actions and reserve `update_game` for
+        /// transitions that must be persisted (game over, objective completion).
+        ///
+        /// Permissionless, like `update_game`. It writes no state, so the worst case is a caller
+        /// paying to trigger a re-render.
+        fn refresh_metadata(ref self: ComponentState<TContractState>, token_id: felt252) {
+            let contract = self.get_contract();
+            let erc721_component = ERC721::get_component(contract);
+            assert!(
+                erc721_component.exists(token_id.into()),
+                "MinigameToken: Token {} does not exist",
+                token_id,
+            );
+
+            self.emit_metadata_update(token_id.into());
+        }
+
         fn update_player_name(
             ref self: ComponentState<TContractState>, token_id: felt252, name: felt252,
         ) {
@@ -833,6 +855,21 @@ pub mod CoreTokenComponent {
                 }
                 let token_id = *token_ids.at(i);
                 self.update_game(token_id);
+                i += 1;
+            };
+        }
+
+        fn refresh_metadata_batch(
+            ref self: ComponentState<TContractState>, token_ids: Span<felt252>,
+        ) {
+            assert!(token_ids.len() > 0, "MinigameToken: token_ids array cannot be empty");
+            let mut i: u32 = 0;
+            loop {
+                if i >= token_ids.len() {
+                    break;
+                }
+                let token_id = *token_ids.at(i);
+                self.refresh_metadata(token_id);
                 i += 1;
             };
         }
