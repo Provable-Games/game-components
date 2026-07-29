@@ -817,15 +817,13 @@ pub mod CoreTokenComponent {
         ///
         /// Permissionless, like `update_game`. It writes no state, so the worst case is a caller
         /// paying to trigger a re-render.
+        ///
+        /// Deliberately does not check that `token_id` exists. The event is advisory, the check
+        /// costs ~52k gas on what is meant to be the cheap path, and it would not stop spam anyway
+        /// — a caller can emit for any real token id just as easily. Consumers must resolve
+        /// `token_id` against their own record of minted tokens before acting on it; `token_uri`
+        /// reverts for a token that does not exist.
         fn refresh_metadata(ref self: ComponentState<TContractState>, token_id: felt252) {
-            let contract = self.get_contract();
-            let erc721_component = ERC721::get_component(contract);
-            assert!(
-                erc721_component.exists(token_id.into()),
-                "MinigameToken: Token {} does not exist",
-                token_id,
-            );
-
             self.emit_metadata_update(token_id.into());
         }
 

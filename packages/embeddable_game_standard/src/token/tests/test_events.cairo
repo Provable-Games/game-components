@@ -396,12 +396,28 @@ fn test_refresh_metadata_emits_only_one_event() {
     );
 }
 
+// refresh_metadata does not check existence — see the doc comment on the entrypoint. This pins
+// that contract so a future "hardening" change has to be deliberate: consumers are responsible
+// for resolving the token id against their own record of minted tokens.
 #[test]
-#[should_panic]
-fn test_refresh_metadata_nonexistent_token_panics() {
-    let (token_dispatcher, _mock_game, _token_address, _token_id) = setup_refresh_metadata();
+fn test_refresh_metadata_unminted_token_emits_without_reverting() {
+    let (token_dispatcher, _mock_game, token_address, _token_id) = setup_refresh_metadata();
 
-    token_dispatcher.refresh_metadata(999999);
+    let unminted: felt252 = 999999;
+    let mut spy = spy_events();
+    token_dispatcher.refresh_metadata(unminted);
+
+    spy
+        .assert_emitted(
+            @array![
+                (
+                    token_address,
+                    CoreTokenComponent::Event::MetadataUpdate(
+                        CoreTokenComponent::MetadataUpdate { token_id: unminted.into() },
+                    ),
+                ),
+            ],
+        );
 }
 
 #[test]
