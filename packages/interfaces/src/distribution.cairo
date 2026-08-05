@@ -1,3 +1,37 @@
+/// How a pool is split across paid places.
+///
+/// ## This enum is closed — do not add variants
+///
+/// The shape space is covered: flat (`Uniform`), linear, polynomial
+/// (`Exponential`), scale-free decay (`Geometric`), headline-plus-tail
+/// (`Tiered`), and arbitrary (`Custom`). Before reaching for variant #7:
+///
+/// - **A shape these can't express, with a fixed field?** Use `Custom` — it
+///   encodes any curve exactly, up to its packed-storage ceiling. That is the
+///   escape hatch; it removes the need for the enum to grow.
+/// - **Anything involving external state** — dynamic payouts, oracle-driven
+///   amounts, streaming, vesting? That is an integration, not a curve: use a
+///   prize/entry-fee *extension*, which exists precisely for logic the host
+///   cannot know about.
+///
+/// Every variant added here ripples through Serde (events, calldata,
+/// indexers, SDKs, clients) and two packed-storage layouts, and costs
+/// consumer-contract bytecode against Starknet's 81,920-felt class limit —
+/// adding `Geometric` + `Tiered` cost Budokan ~3,000 felts, leaving it ~95%
+/// full. Curves are core; integrations are extensions.
+///
+/// ## Choosing a variant
+///
+/// | you want | use | notes |
+/// | --- | --- | --- |
+/// | everyone equal | `Uniform` | cheapest |
+/// | gentle gradient | `Linear(w)` | any weight |
+/// | steeper gradient, small field | `Exponential(10*k)` | k in 1..=5; 1st ≈ (k+1)/n |
+/// | "each place gets X% of the one above" | `Geometric(a, b)` | 1st ≈ 1 - b/a at any field size;
+/// reach bounded by ratio |
+/// | headline 1st prize AND thousands of paid places | `Tiered` | the only variant that serves a
+/// very large field |
+/// | exact hand-authored percentages | `Custom(shares)` | fixed field only |
 #[derive(Drop, Copy, Serde, PartialEq)]
 pub enum Distribution {
     Linear: u16,
