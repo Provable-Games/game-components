@@ -162,9 +162,22 @@ pub fn payout_weight_sum(distribution: Distribution, total_payouts: u32) -> u256
         },
         Distribution::Uniform => n,
         Distribution::Custom(shares) => {
+            // Sum only the positions that actually get paid. `payout_weight`
+            // returns 0 for an index past `total_payouts` (and past the array),
+            // so counting the whole array here would put weight for unpaid
+            // positions into the denominator and shrink every payout — the
+            // shortfall being the truncated tail's full weight, not the
+            // sub-`n`-unit rounding this module otherwise guarantees.
+            //
+            // The two parameters are independent: a caller may pay fewer places
+            // than the stored curve describes.
             let mut total: u256 = 0;
             let mut i: u32 = 0;
-            let len = shares.len();
+            let len = if shares.len() < total_payouts {
+                shares.len()
+            } else {
+                total_payouts
+            };
             while i < len {
                 let share: u16 = *shares.at(i);
                 total += share.into();
@@ -187,6 +200,24 @@ pub fn payout_weight_sum(distribution: Distribution, total_payouts: u32) -> u256
 ///
 /// Panics for a distribution `supports_exact_payout` rejects — callers must
 /// check first rather than silently receiving a different curve.
+///
+/// ## Overflow envelope
+///
+/// The largest intermediate is `total_amount * W(1) = total_amount * n^k`, so
+/// `Exponential` has a ceiling in `(total_payouts, k, total_amount)` past which
+/// this reverts rather than returning a wrong number. Against a pool of 10^27
+/// (a billion tokens at 18 decimals), which is far beyond any realistic
+/// tournament:
+///
+/// | `total_payouts` | highest safe `k` |
+/// | --------------- | ---------------- |
+/// | 100             | 18 (i.e. any k)  |
+/// | 1,000           | 15               |
+/// | 10,000          | 13               |
+///
+/// `MAX_EXACT_EXPONENT` is 5, so every accepted curve sits well inside this at
+/// any field size the leaderboard can hold. The bound only becomes reachable if
+/// that cap is raised, which is why it is written down here.
 pub fn calculate_payout(
     distribution: Distribution, payout_index: u32, total_payouts: u32, total_amount: u256,
 ) -> u256 {

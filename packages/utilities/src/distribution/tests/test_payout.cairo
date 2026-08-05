@@ -247,3 +247,27 @@ fn test_custom_uses_its_explicit_shares() {
     assert!(calculate_payout(dist, 2, 3, 1000) == 300, "three tenths");
     assert!(calculate_payout(dist, 3, 3, 1000) == 200, "one fifth");
 }
+
+/// Paying fewer places than the stored curve describes must not strand funds.
+///
+/// `payout_weight` yields 0 past `total_payouts`, so the denominator has to
+/// stop there too. Summing the whole array instead would leave the truncated
+/// tail's weight in the denominator — here 2000 of 10000, silently shrinking
+/// every payout by a fifth and stranding that fifth of the pool.
+#[test]
+fn test_custom_truncated_to_fewer_places_still_pays_the_whole_pool() {
+    let shares: Array<u16> = array![5000, 3000, 2000];
+    let dist = Distribution::Custom(shares.span());
+
+    assert!(payout_weight_sum(dist, 2) == 8000, "denominator covers only paid places");
+
+    let first = calculate_payout(dist, 1, 2, 1000);
+    let second = calculate_payout(dist, 2, 2, 1000);
+    assert!(first == 625, "5000/8000 of the pool, got {}", first);
+    assert!(second == 375, "3000/8000 of the pool, got {}", second);
+    assert!(calculate_payout(dist, 3, 2, 1000) == 0, "position past total_payouts pays nothing");
+
+    // Conservation: the shortfall is rounding, not a truncated tail.
+    assert!(first + second <= 1000, "never overpays");
+    assert!(1000 - (first + second) < 2, "shortfall under one unit per paid place");
+}
