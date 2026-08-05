@@ -145,9 +145,21 @@ fn pack_token_type(token_type: TokenTypeData) -> PackedTokenTypeData {
                         ),
                         game_components_utilities::distribution::structs::Distribution::Geometric((
                             a, b,
-                        )) => (PAYOUT_TYPE_GEOMETRIC, a * 256 + b, 0_u16, 0_u16),
+                        )) => {
+                            // Bound owned at the pack site — see the
+                            // entry-fee store twin for the rationale.
+                            assert!(
+                                a <= 255 && b <= 255,
+                                "Prize: geometric ratio terms must fit 8 bits",
+                            );
+                            (PAYOUT_TYPE_GEOMETRIC, a * 256 + b, 0_u16, 0_u16)
+                        },
                         game_components_utilities::distribution::structs::Distribution::Tiered(cfg) => {
                             let (a, b) = cfg.head_ratio;
+                            assert!(
+                                a <= 255 && b <= 255,
+                                "Prize: geometric ratio terms must fit 8 bits",
+                            );
                             (PAYOUT_TYPE_TIERED, a * 256 + b, cfg.head_count, cfg.head_share_bps)
                         },
                     }

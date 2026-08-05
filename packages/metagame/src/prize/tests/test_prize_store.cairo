@@ -419,3 +419,31 @@ fn test_add_prize_custom_distribution_round_trip_through_packed_storage() {
         Prize::Extension(_) => panic!("expected token prize"),
     }
 }
+
+/// The two geometric ratio terms share one u16 param slot (a*256 + b), so the
+/// pack site owns the 8-bit bound — a host that skipped its own validation
+/// must hit a named assert here, not a u16 overflow or a silently different
+/// ratio on unpack.
+#[test]
+#[should_panic(expected: "Prize: geometric ratio terms must fit 8 bits")]
+fn test_geometric_ratio_past_8_bits_refused_at_pack() {
+    let mock = deploy();
+    // Escrow precedes packing, so satisfy the transfer to reach the assert.
+    mock_call(addr(0xE2C20), selector!("transfer_from"), true, 1);
+    mock
+        .add_prize(
+            1,
+            Prize::Token(
+                TokenPrizePayload {
+                    token_address: addr(0xE2C20),
+                    token_type: TokenTypeData::erc20(
+                        ERC20Data {
+                            amount: 10_000,
+                            distribution: Option::Some(Distribution::Geometric((300, 7))),
+                            distribution_count: Option::Some(10),
+                        },
+                    ),
+                },
+            ),
+        );
+}

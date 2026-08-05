@@ -249,9 +249,21 @@ pub impl EntryFeeStoreImpl<T, +Store<T>, +Drop<T>> of EntryFeeStoreTrait<T> {
                 Distribution::Custom(_) => (DIST_TYPE_CUSTOM, 0_u16, 0_u16, 0_u16),
                 Distribution::Geometric((
                     a, b,
-                )) => (DIST_TYPE_GEOMETRIC, *a * 256 + *b, 0_u16, 0_u16),
+                )) => {
+                    // The two ratio terms share one u16 param slot as
+                    // a*256 + b. Values past 255 would either panic on the
+                    // u16 multiply or unpack as a silently different ratio,
+                    // so the bound is owned here, not left to the host.
+                    assert!(
+                        *a <= 255 && *b <= 255, "EntryFee: geometric ratio terms must fit 8 bits",
+                    );
+                    (DIST_TYPE_GEOMETRIC, *a * 256 + *b, 0_u16, 0_u16)
+                },
                 Distribution::Tiered(cfg) => {
                     let (a, b) = *cfg.head_ratio;
+                    assert!(
+                        a <= 255 && b <= 255, "EntryFee: geometric ratio terms must fit 8 bits",
+                    );
                     (DIST_TYPE_TIERED, a * 256 + b, *cfg.head_count, *cfg.head_share_bps)
                 },
             },

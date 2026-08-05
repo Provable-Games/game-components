@@ -17,12 +17,20 @@
 //! 1. **O(1), independent of the number of paid places.** No per-position
 //!    loop, no allocation, no `pow`. A 1000-place prize costs the same as a
 //!    2-place one.
-//! 2. **No unclaimable positions.** The smallest payout is 1 wei rather than
-//!    1 basis point, so a tail position only rounds away when its true share
-//!    is under one indivisible unit of the token. Under the basis-point path,
-//!    a steep 100-place curve silently gives late positions exactly 0 — and
-//!    Budokan asserts `prize_amount > 0`, so those players cannot claim at
-//!    all.
+//! 2. **No unclaimable positions — for a sufficient pool.** The smallest
+//!    payout is 1 wei rather than 1 basis point, so a tail position only
+//!    rounds away when its true share is under one indivisible unit of the
+//!    token. Under the basis-point path, a steep 100-place curve silently
+//!    gives late positions exactly 0 — and Budokan asserts
+//!    `prize_amount > 0`, so those players cannot claim at all.
+//!
+//!    The guarantee is conditional on the pool: any curve floors to zero
+//!    when a position's true share is under one unit. For `Tiered` the tail
+//!    is the binding case — every tail place pays iff
+//!    `total * (BASIS_POINTS - head_share_bps) / BASIS_POINTS >= n - m`.
+//!    Hosts that know the pool at creation should verify the *last* place
+//!    pays at least one unit and refuse the configuration otherwise, which
+//!    is what Budokan's `add_prize` does.
 //! 3. **Dust stops mattering.** Basis-point truncation strands up to
 //!    `n / 10000` of the pool (0.5% of a 100-place prize), which is why
 //!    `calculate_share_with_dust` exists and why payout index 1 has to sum
