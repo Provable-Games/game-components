@@ -40,7 +40,11 @@
 //! | `Linear(w)`       | `10 + (n - p) * w`  | `10n + w * n(n-1)/2`         |
 //! | `Exponential(w)`  | `(n - p + 1)^k`     | `sum_{j=1..n} j^k` (Faulhaber)|
 //! | `Uniform`         | `1`                 | `n`                          |
-//! | `Custom(shares)`  | `shares[p-1]`       | `sum(shares)`                |
+//! | `Custom(shares)`  | `shares[p-1]`       | `sum(shares[0..n])`          |
+//!
+//! `Custom`'s sum is bounded by the paid-place count, not the array length —
+//! a caller may pay fewer places than the stored curve describes, and weight
+//! for positions that never pay must not sit in the denominator.
 //!
 //! `w` is the weight scaled by 10 (so `10` = 1.0), matching `calculator`.
 //! `k = w / 10` — see `supports_exact_payout` for which weights qualify.
@@ -112,7 +116,9 @@ fn int_pow(base: u256, exponent: u32) -> u256 {
 
 /// The unnormalized integer weight of one payout position, 1-indexed.
 /// Returns 0 when `payout_index` falls outside 1..=total_payouts.
-pub fn payout_weight(distribution: Distribution, payout_index: u32, total_payouts: u32) -> u256 {
+pub(crate) fn payout_weight(
+    distribution: Distribution, payout_index: u32, total_payouts: u32,
+) -> u256 {
     if payout_index == 0 || payout_index > total_payouts {
         return 0;
     }
@@ -141,9 +147,15 @@ pub fn payout_weight(distribution: Distribution, payout_index: u32, total_payout
 
 /// The sum of every position's weight — the normalization denominator.
 ///
+/// Crate-internal: unlike `calculate_payout` this does not gate on
+/// `supports_exact_payout`, and `Exponential` truncates `k = weight / 10`. An
+/// external caller passing a fractional weight would silently receive the k=1
+/// curve rather than a panic, so the gated entry point stays the only public
+/// way in.
+///
 /// Closed form for `Linear`, `Exponential` and `Uniform`, so this is O(1).
 /// `Custom` sums its explicit array, which is inherent to the variant.
-pub fn payout_weight_sum(distribution: Distribution, total_payouts: u32) -> u256 {
+pub(crate) fn payout_weight_sum(distribution: Distribution, total_payouts: u32) -> u256 {
     if total_payouts == 0 {
         return 0;
     }
