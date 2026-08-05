@@ -3,7 +3,7 @@
 //! Pure calculation functions for distribution share computation.
 //! These functions are stateless and can be used without the DistributionComponent.
 
-use game_components_utilities::math::{FixedTrait, ONE};
+use game_components_utilities::math::{Fixed, FixedTrait, ONE};
 use crate::distribution::structs::Distribution;
 
 /// Calculate the distribution share for a given payout index in basis points
@@ -25,14 +25,17 @@ pub fn calculate_share(
     }
 
     match distribution {
-        Distribution::Linear(weight) => {
-            calculate_linear_share(payout_index, total_payouts, available_share, weight)
-        },
-        Distribution::Exponential(weight) => {
-            calculate_exponential_share(payout_index, total_payouts, available_share, weight)
+        Distribution::Linear(_) |
+        Distribution::Exponential(_) => {
+            let (weights, denominator) = weight_vector(distribution, total_payouts);
+            share_at(@weights, denominator, payout_index, available_share)
         },
         Distribution::Uniform => calculate_uniform_share(total_payouts, available_share),
         Distribution::Custom(shares) => calculate_custom_share(payout_index, shares),
+        Distribution::Geometric(_) |
+        Distribution::Tiered(_) => panic!(
+            "Distribution: no basis-point form; use payout::calculate_payout",
+        ),
     }
 }
 
@@ -42,16 +45,39 @@ pub fn calculate_share(
 pub fn calculate_total(
     distribution: Distribution, total_payouts: u32, available_share: u16,
 ) -> u16 {
-    let mut total: u16 = 0;
-    let mut p: u32 = 1;
-    loop {
-        if p > total_payouts {
-            break;
-        }
-        total += calculate_share(distribution, p, total_payouts, available_share);
-        p += 1;
+    if total_payouts == 0 || available_share == 0 {
+        return 0;
     }
-    total
+
+    match distribution {
+        // The weighted distributions normalize each share against the sum of
+        // every position's weight. Building that vector once and summing from
+        // it keeps this O(n); calling `calculate_share` per position would
+        // rebuild the whole vector n times over (and with it, n `pow` calls
+        // each) for an O(n^2) total.
+        Distribution::Linear(_) |
+        Distribution::Exponential(_) => {
+            let (weights, denominator) = weight_vector(distribution, total_payouts);
+            sum_shares(@weights, denominator, available_share)
+        },
+        Distribution::Geometric(_) |
+        Distribution::Tiered(_) => panic!(
+            "Distribution: no basis-point form; use payout::calculate_payout",
+        ),
+        Distribution::Uniform |
+        Distribution::Custom(_) => {
+            let mut total: u16 = 0;
+            let mut p: u32 = 1;
+            loop {
+                if p > total_payouts {
+                    break;
+                }
+                total += calculate_share(distribution, p, total_payouts, available_share);
+                p += 1;
+            }
+            total
+        },
+    }
 }
 
 /// Calculate the rounding dust (difference between available_share and sum of all shares)
@@ -83,119 +109,153 @@ pub fn calculate_dust(distribution: Distribution, total_payouts: u32, available_
 pub fn calculate_share_with_dust(
     distribution: Distribution, payout_index: u32, total_payouts: u32, available_share: u16,
 ) -> u16 {
-    let base_share = calculate_share(distribution, payout_index, total_payouts, available_share);
+    // Payouts other than the winner never touch dust, so they take the plain
+    // single-share path.
+    if payout_index != 1 {
+        return calculate_share(distribution, payout_index, total_payouts, available_share);
+    }
 
-    // If this is payout_index 1 (winner), add any rounding dust
-    if payout_index == 1 {
-        let dust = calculate_dust(distribution, total_payouts, available_share);
-        base_share + dust
-    } else {
-        base_share
+    match distribution {
+        // The winner needs both its own share AND the sum of every share (to
+        // derive dust). Both come off one weight vector — the expensive part
+        // is built once, not twice, and not once per position.
+        Distribution::Linear(_) |
+        Distribution::Exponential(_) => {
+            // No early-out for `total_payouts == 0`: the vector comes back
+            // empty, every share reads 0, and the winner collects the whole
+            // `available_share` as dust. That is what the per-position
+            // implementation did, and callers depend on the exact value.
+            let (weights, denominator) = weight_vector(distribution, total_payouts);
+            let base_share = share_at(@weights, denominator, 1, available_share);
+            let total = sum_shares(@weights, denominator, available_share);
+            if total > available_share {
+                base_share
+            } else {
+                base_share + (available_share - total)
+            }
+        },
+        Distribution::Geometric(_) |
+        Distribution::Tiered(_) => panic!(
+            "Distribution: no basis-point form; use payout::calculate_payout",
+        ),
+        Distribution::Uniform |
+        Distribution::Custom(_) => {
+            let base_share = calculate_share(
+                distribution, payout_index, total_payouts, available_share,
+            );
+            base_share + calculate_dust(distribution, total_payouts, available_share)
+        },
     }
 }
 
-/// Calculate linear decreasing distribution with weight
-/// First place gets most, decreasing linearly to last payout
-/// Formula: share = 1 + (positionValue - 1) * (weight / 10)
-/// where positionValue = n - payout_index + 1 (n for 1st, n-1 for 2nd, ... 1 for last)
-/// Weight is scaled by 10 (e.g., 10 = 1.0, 25 = 2.5, 100 = 10.0)
-/// Returns share in basis points
-fn calculate_linear_share(
-    payout_index: u32, total_payouts: u32, available_share: u16, weight: u16,
-) -> u16 {
-    // For linear distribution:
-    // positionValue = total_payouts - payout_index + 1
-    // share = 1 + (positionValue - 1) * (weight / 10)
-    //
-    // Examples with weight = 10 (1.0):
-    // - 1st place (index 1): positionValue = n, share = 1 + (n-1) * 1.0 = n
-    // - 2nd place (index 2): positionValue = n-1, share = 1 + (n-2) * 1.0 = n-1
-    // - Last place (index n): positionValue = 1, share = 1 + 0 * 1.0 = 1
+/// Unnormalized per-position weights for the weighted distributions, in payout
+/// order (element 0 = payout index 1), together with their sum.
+///
+/// Both weighted distributions share the same shape — a raw weight per
+/// position, normalized by the sum of all of them — and the sum is what makes
+/// a single share cost O(n). Materializing the vector once lets every caller
+/// (single share, total, dust) pay that O(n) exactly once instead of per
+/// position.
+///
+/// Weights are accumulated ascending (position 1 → n) and computed with the
+/// same expressions as before this was hoisted, so the fixed-point results are
+/// bit-identical to the per-share implementations they replaced.
+///
+/// Linear:      weight = 1 + (n - p) * (weight/10)
+/// Exponential: weight = ((n - (p-1)) / n) ^ (weight/10)
+///
+/// Weight is scaled by 10 (e.g., 10 = 1.0, 25 = 2.5, 100 = 10.0).
+fn weight_vector(distribution: Distribution, total_payouts: u32) -> (Array<Fixed>, Fixed) {
+    let mut weights: Array<Fixed> = array![];
+    let mut denominator = FixedTrait::ZERO();
 
     let n: u32 = total_payouts;
-
-    // Calculate positionValue = n - payout_index + 1
-    let position_value: u32 = n - payout_index + 1;
-
-    // Calculate share = 1 + (position_value - 1) * (weight / 10)
-    // Using fixed-point to handle fractional weights
-    let weight_fp = FixedTrait::new((weight.into() * ONE) / 10, false);
-    let position_minus_one_fp = FixedTrait::new_unscaled((position_value - 1).into(), false);
-    let one_fp = FixedTrait::new_unscaled(1, false);
-
-    // share_value = 1 + (position_value - 1) * (weight / 10)
-    let share_value_fp = one_fp + (position_minus_one_fp * weight_fp);
-
-    // Calculate total shares for all positions
-    let mut total_shares_fp = FixedTrait::ZERO();
-    let mut pos: u32 = 1;
-    loop {
-        if pos > n {
-            break;
-        }
-        let pos_value: u32 = n - pos + 1;
-        let pos_minus_one_fp = FixedTrait::new_unscaled((pos_value - 1).into(), false);
-        let pos_share_fp = one_fp + (pos_minus_one_fp * weight_fp);
-        total_shares_fp = total_shares_fp + pos_share_fp;
-        pos += 1;
+    match distribution {
+        Distribution::Linear(weight) => {
+            // positionValue = n - p + 1, so share = 1 + (positionValue - 1) * (weight / 10)
+            //
+            // Examples with weight = 10 (1.0):
+            // - 1st place (p = 1): positionValue = n, weight = 1 + (n-1) * 1.0 = n
+            // - 2nd place (p = 2): positionValue = n-1, weight = 1 + (n-2) * 1.0 = n-1
+            // - Last place (p = n): positionValue = 1, weight = 1 + 0 * 1.0 = 1
+            let weight_fp = FixedTrait::new((weight.into() * ONE) / 10, false);
+            let one_fp = FixedTrait::new_unscaled(1, false);
+            let mut p: u32 = 1;
+            loop {
+                if p > n {
+                    break;
+                }
+                let pos_minus_one_fp = FixedTrait::new_unscaled((n - p).into(), false);
+                let w = one_fp + (pos_minus_one_fp * weight_fp);
+                denominator = denominator + w;
+                weights.append(w);
+                p += 1;
+            }
+        },
+        Distribution::Exponential(weight) => {
+            // For payout index p (1-indexed), (1 - (p-1)/n)^(weight/10) —
+            // (p-1) so that payout index 1 (the winner) keeps full weight.
+            let weight_fp = FixedTrait::new((weight.into() * ONE) / 10, false);
+            let n_u64: u64 = n.into();
+            let denominator_fp = FixedTrait::new_unscaled(n_u64, false);
+            let mut p: u32 = 1;
+            loop {
+                if p > n {
+                    break;
+                }
+                let pi: u64 = (p - 1).into();
+                let num_fp = FixedTrait::new_unscaled(n_u64 - pi, false);
+                let base_fp = num_fp / denominator_fp;
+                let w = base_fp.pow(weight_fp);
+                denominator = denominator + w;
+                weights.append(w);
+                p += 1;
+            }
+        },
+        // Uniform and Custom are not normalized against a weight sum — they
+        // have their own O(1) share functions and never reach here.
+        Distribution::Geometric(_) |
+        Distribution::Tiered(_) => panic!(
+            "Distribution: no basis-point form; use payout::calculate_payout",
+        ),
+        Distribution::Uniform | Distribution::Custom(_) => {},
     }
 
-    // Calculate this position's share: (share_value / total_shares) * available_share
-    let ratio_fp = share_value_fp / total_shares_fp;
-    let available_fp = FixedTrait::new_unscaled(available_share.into(), false);
-    let final_share_fp = ratio_fp * available_fp;
-
-    // Convert back to u16
-    let share_u64: u64 = final_share_fp.try_into().unwrap_or(0);
-    share_u64.try_into().unwrap_or(0)
+    (weights, denominator)
 }
 
-/// Calculate exponential distribution using the formula:
-/// raw_share = available * (1 - (i-1)/positions)^(weight/10)
-/// Weight is scaled by 10 (e.g., 10 = 1.0, 25 = 2.5, 100 = 10.0)
-/// Then normalize all shares to sum to available_share
-/// Returns share in basis points
-fn calculate_exponential_share(
-    payout_index: u32, total_payouts: u32, available_share: u16, weight: u16,
+/// One position's share in basis points, read off a prebuilt weight vector.
+/// `payout_index` is 1-indexed. Returns 0 when out of range.
+fn share_at(
+    weights: @Array<Fixed>, denominator: Fixed, payout_index: u32, available_share: u16,
 ) -> u16 {
-    // For payout_index i (1-indexed), calculate (1 - (i-1)/n)^(weight/10)
-    // where i-1 because payout_index 1 (winner) should get full weight
-    let i: u64 = (payout_index - 1).into();
-    let n: u64 = total_payouts.into();
-
-    // Convert weight to fixed-point: weight / 10
-    let weight_fp = FixedTrait::new((weight.into() * ONE) / 10, false); // (weight * ONE) / 10
-
-    // Calculate base = (1 - i/n) = (n - i) / n in fixed-point
-    let numerator_fp = FixedTrait::new_unscaled(n - i, false);
-    let denominator_fp = FixedTrait::new_unscaled(n, false);
-    let base_fp = numerator_fp / denominator_fp;
-
-    // Calculate base^(weight/10) using Cubit's pow
-    let raw_share_fp = base_fp.pow(weight_fp);
-
-    // Now we need to normalize: calculate total of all raw shares
-    let mut total_raw_fp = FixedTrait::ZERO();
-    let mut p: u32 = 1;
-    loop {
-        if p > total_payouts {
-            break;
-        }
-        let pi: u64 = (p - 1).into();
-        let num_fp = FixedTrait::new_unscaled(n - pi, false);
-        let base_p_fp = num_fp / denominator_fp;
-        total_raw_fp = total_raw_fp + base_p_fp.pow(weight_fp);
-        p += 1;
+    if payout_index == 0 || payout_index > weights.len() || denominator == FixedTrait::ZERO() {
+        return 0;
     }
 
-    // Calculate this payout's share of available_share
-    let ratio_fp = raw_share_fp / total_raw_fp;
+    let weight_fp: Fixed = *weights.at(payout_index - 1);
+    let ratio_fp = weight_fp / denominator;
     let available_fp = FixedTrait::new_unscaled(available_share.into(), false);
     let share_fp = ratio_fp * available_fp;
 
-    // Convert back to u16
     let share_u64: u64 = share_fp.try_into().unwrap_or(0);
     share_u64.try_into().unwrap_or(0)
+}
+
+/// Sum of every position's share, truncation included — i.e. what actually
+/// gets paid out, which is `available_share` minus the dust.
+fn sum_shares(weights: @Array<Fixed>, denominator: Fixed, available_share: u16) -> u16 {
+    let mut total: u16 = 0;
+    let mut p: u32 = 1;
+    let len = weights.len();
+    loop {
+        if p > len {
+            break;
+        }
+        total += share_at(weights, denominator, p, available_share);
+        p += 1;
+    }
+    total
 }
 
 /// Calculate uniform distribution - all payouts get equal share

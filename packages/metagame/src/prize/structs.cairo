@@ -16,6 +16,7 @@ use starknet::storage_access::StorePacking;
 mod nz128 {
     pub const TWO_POW_8: NonZero<u128> = 0x100;
     pub const TWO_POW_16: NonZero<u128> = 0x10000;
+    pub const TWO_POW_32: NonZero<u128> = 0x100000000;
 }
 
 // Payout type constants for storage
@@ -24,9 +25,12 @@ pub const PAYOUT_TYPE_LINEAR: u8 = 1;
 pub const PAYOUT_TYPE_EXPONENTIAL: u8 = 2;
 pub const PAYOUT_TYPE_UNIFORM: u8 = 3;
 pub const PAYOUT_TYPE_CUSTOM: u8 = 4;
+pub const PAYOUT_TYPE_GEOMETRIC: u8 = 5;
+pub const PAYOUT_TYPE_TIERED: u8 = 6;
 
 /// Internal packed representation for ERC20 data storage
-/// Layout: [amount: 128 bits][payout_type: 8 bits][param: 16 bits][count: 32 bits] = 184 bits
+/// Layout: [amount: 128 bits][payout_type: 8][param: 16][count: 32][param2: 16][param3: 16]
+/// = 216 bits. param2/param3 carry Tiered's head_count and head_share_bps; 0 otherwise.
 /// This is used internally by StorePacking and not exposed in the API
 #[derive(Copy, Drop)]
 struct PackedERC20Data {
@@ -34,6 +38,8 @@ struct PackedERC20Data {
     payout_type: u8,
     param: u16,
     count: u32,
+    param2: u16,
+    param3: u16,
 }
 
 /// u128-aligned StorePacking for PackedERC20Data.
@@ -53,7 +59,9 @@ impl PackedERC20DataPacking of StorePacking<PackedERC20Data, felt252> {
 
         let high: u128 = value.payout_type.into()
             + value.param.into() * 0x100_u128 // shift 8
-            + value.count.into() * 0x1000000_u128; // shift 24
+            + value.count.into() * 0x1000000_u128 // shift 24
+            + value.param2.into() * 0x100000000000000_u128 // shift 56
+            + value.param3.into() * 0x1000000000000000000_u128; // shift 72
 
         let packed = u256 { low, high };
         packed.try_into().unwrap()
@@ -66,13 +74,17 @@ impl PackedERC20DataPacking of StorePacking<PackedERC20Data, felt252> {
 
         let high = packed.high;
         let (hi, payout_type) = DivRem::div_rem(high, nz128::TWO_POW_8);
-        let (count, param) = DivRem::div_rem(hi, nz128::TWO_POW_16);
+        let (hi2, param) = DivRem::div_rem(hi, nz128::TWO_POW_16);
+        let (hi3, count) = DivRem::div_rem(hi2, nz128::TWO_POW_32);
+        let (param3, param2) = DivRem::div_rem(hi3, nz128::TWO_POW_16);
 
         PackedERC20Data {
             amount,
             payout_type: payout_type.try_into().unwrap(),
             param: param.try_into().unwrap(),
             count: count.try_into().unwrap(),
+            param2: param2.try_into().unwrap(),
+            param3: param3.try_into().unwrap(),
         }
     }
 }
@@ -115,22 +127,41 @@ fn pack_token_type(token_type: TokenTypeData) -> PackedTokenTypeData {
     match token_type {
         TokenTypeData::erc20(erc20_data) => {
             // Convert ERC20Data to packed format
-            let (payout_type, param) = match erc20_data.distribution {
-                Option::None => (PAYOUT_TYPE_POSITION, 0_u16),
+            let (payout_type, param, param2, param3) = match erc20_data.distribution {
+                Option::None => (PAYOUT_TYPE_POSITION, 0_u16, 0_u16, 0_u16),
                 Option::Some(dist) => {
                     match dist {
                         game_components_utilities::distribution::structs::Distribution::Linear(w) => (
-                            PAYOUT_TYPE_LINEAR, w,
+                            PAYOUT_TYPE_LINEAR, w, 0_u16, 0_u16,
                         ),
                         game_components_utilities::distribution::structs::Distribution::Exponential(w) => (
-                            PAYOUT_TYPE_EXPONENTIAL, w,
+                            PAYOUT_TYPE_EXPONENTIAL, w, 0_u16, 0_u16,
                         ),
                         game_components_utilities::distribution::structs::Distribution::Uniform => (
-                            PAYOUT_TYPE_UNIFORM, 0_u16,
+                            PAYOUT_TYPE_UNIFORM, 0_u16, 0_u16, 0_u16,
                         ),
                         game_components_utilities::distribution::structs::Distribution::Custom(_) => (
-                            PAYOUT_TYPE_CUSTOM, 0_u16,
+                            PAYOUT_TYPE_CUSTOM, 0_u16, 0_u16, 0_u16,
                         ),
+                        game_components_utilities::distribution::structs::Distribution::Geometric((
+                            a, b,
+                        )) => {
+                            // Bound owned at the pack site — see the
+                            // entry-fee store twin for the rationale.
+                            assert!(
+                                a <= 255 && b <= 255,
+                                "Prize: geometric ratio terms must fit 8 bits",
+                            );
+                            (PAYOUT_TYPE_GEOMETRIC, a * 256 + b, 0_u16, 0_u16)
+                        },
+                        game_components_utilities::distribution::structs::Distribution::Tiered(cfg) => {
+                            let (a, b) = cfg.head_ratio;
+                            assert!(
+                                a <= 255 && b <= 255,
+                                "Prize: geometric ratio terms must fit 8 bits",
+                            );
+                            (PAYOUT_TYPE_TIERED, a * 256 + b, cfg.head_count, cfg.head_share_bps)
+                        },
                     }
                 },
             };
@@ -138,7 +169,9 @@ fn pack_token_type(token_type: TokenTypeData) -> PackedTokenTypeData {
                 Option::Some(c) => c,
                 Option::None => 0_u32,
             };
-            let packed = PackedERC20Data { amount: erc20_data.amount, payout_type, param, count };
+            let packed = PackedERC20Data {
+                amount: erc20_data.amount, payout_type, param, count, param2, param3,
+            };
             PackedTokenTypeData::erc20(PackedERC20DataPacking::pack(packed))
         },
         TokenTypeData::erc721(erc721_data) => PackedTokenTypeData::erc721(erc721_data),
@@ -169,6 +202,22 @@ fn unpack_token_type(packed_token_type: PackedTokenTypeData) -> TokenTypeData {
             } else if packed.payout_type == PAYOUT_TYPE_UNIFORM {
                 Option::Some(
                     game_components_utilities::distribution::structs::Distribution::Uniform,
+                )
+            } else if packed.payout_type == PAYOUT_TYPE_GEOMETRIC {
+                Option::Some(
+                    game_components_utilities::distribution::structs::Distribution::Geometric(
+                        (packed.param / 256, packed.param % 256),
+                    ),
+                )
+            } else if packed.payout_type == PAYOUT_TYPE_TIERED {
+                Option::Some(
+                    game_components_utilities::distribution::structs::Distribution::Tiered(
+                        game_components_utilities::distribution::structs::TieredConfig {
+                            head_ratio: (packed.param / 256, packed.param % 256),
+                            head_count: packed.param2,
+                            head_share_bps: packed.param3,
+                        },
+                    ),
                 )
             } else {
                 Option::Some(
@@ -240,7 +289,7 @@ mod packed_erc20_data_tests {
     fn build_packed_erc20(
         amount: u128, payout_type: u8, param: u16, count: u32,
     ) -> PackedERC20Data {
-        PackedERC20Data { amount, payout_type, param, count }
+        PackedERC20Data { amount, payout_type, param, count, param2: 0, param3: 0 }
     }
 
     fn assert_roundtrip(data: PackedERC20Data) {
@@ -250,6 +299,21 @@ mod packed_erc20_data_tests {
         assert!(unpacked.payout_type == data.payout_type, "payout_type mismatch");
         assert!(unpacked.param == data.param, "param mismatch");
         assert!(unpacked.count == data.count, "count mismatch");
+        assert!(unpacked.param2 == data.param2, "param2 mismatch");
+        assert!(unpacked.param3 == data.param3, "param3 mismatch");
+    }
+
+    #[test]
+    fn test_tiered_params_roundtrip_in_the_widened_slots() {
+        let data = PackedERC20Data {
+            amount: 0xffffffffffffffffffffffffffffffff, // u128::MAX alongside full params
+            payout_type: 6,
+            param: 10 * 256 + 7,
+            count: 10000,
+            param2: 39,
+            param3: 8000,
+        };
+        assert_roundtrip(data);
     }
 
     // -------------------------------------------------------------------------
