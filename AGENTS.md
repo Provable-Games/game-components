@@ -131,20 +131,22 @@ When adding a new module to a group package, update **both** files:
      after_n_builds: 15 # ← Must equal total module count in matrix
    ```
 
-### Current Matrix (16 modules)
+### Current Matrix (18 modules)
 
 | Group Package | Module | Runner | Fuzzer Runs |
 |---------------|--------|--------|-------------|
 | `embeddable_game_standard` | `token` | `ubuntu-latest-32` | 32 |
-| `embeddable_game_standard` | `minigame` | `ubuntu-latest-32` | 32 |
-| `embeddable_game_standard` | `metagame` | `ubuntu-latest-32` | 256 |
-| `embeddable_game_standard` | `registry` | `ubuntu-latest-32` | 256 |
+| `embeddable_game_standard` | `minigame` | `ubuntu-latest-8` | 32 |
+| `embeddable_game_standard` | `metagame` | `ubuntu-latest-8` | 32 |
+| `embeddable_game_standard` | `registry` | `ubuntu-latest-8` | 32 |
+| `embeddable_game_standard` | `token_lite` | `ubuntu-latest-8` | 32 |
 | `metagame` | `leaderboard` | `ubuntu-latest-4` | 256 |
 | `metagame` | `registration` | `ubuntu-latest-4` | 256 |
 | `metagame` | `entry_requirement` | `ubuntu-latest-4` | 256 |
 | `metagame` | `entry_fee` | `ubuntu-latest-4` | 256 |
 | `metagame` | `prize` | `ubuntu-latest-4` | 256 |
 | `metagame` | `ticket_booth` | `ubuntu-latest-4` | 256 |
+| `metagame` | `merkledrop` | `ubuntu-latest-4` | 256 |
 | `economy` | `tokenomics` | `ubuntu-latest-4` | 256 |
 | `utilities` | `math` | `ubuntu-latest-4` | 256 |
 | `utilities` | `distribution` | `ubuntu-latest-4` | 256 |
