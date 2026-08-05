@@ -66,7 +66,7 @@
 //! law cannot express — a winner share that does not thin out as the field
 //! grows — and that is the trade.
 
-use crate::distribution::structs::Distribution;
+use crate::distribution::structs::{BASIS_POINTS, Distribution};
 
 /// Highest supported integer exponent for `Exponential`.
 ///
@@ -130,6 +130,21 @@ pub fn supports_exact_payout(distribution: Distribution) -> bool {
         // `a` and `b` are capped at 255 so both survive the single-u16 param
         // slot the packed storage gives a distribution (`a * 256 + b`).
         Distribution::Geometric((a, b)) => a > b && b > 0 && a <= 255,
+        // Head ratio rules are Geometric's. The share must leave both tiers
+        // something to pay — at 0 the head is unclaimable, at BASIS_POINTS
+        // the tail is, and the single-curve variants cover those shapes.
+        // Field-size rules (head_count within geometric reach, paid places
+        // beyond the head) are checked in `calculate_payout`, which knows the
+        // paid-place count.
+        Distribution::Tiered(cfg) => {
+            let (a, b) = cfg.head_ratio;
+            a > b
+                && b > 0
+                && a <= 255
+                && cfg.head_count > 0
+                && cfg.head_share_bps > 0
+                && cfg.head_share_bps < BASIS_POINTS
+        },
         _ => true,
     }
 }
@@ -214,6 +229,12 @@ pub(crate) fn payout_weight(
         )) => {
             int_pow(a.into(), total_payouts - payout_index) * int_pow(b.into(), payout_index - 1)
         },
+        // Tiered is two pools, not one weight family — a single W(p)/sum(W)
+        // ratio cannot express "the head takes exactly head_share_bps".
+        // `calculate_payout` settles it before reaching the weight helpers.
+        Distribution::Tiered(_) => panic!(
+            "Distribution: Tiered is settled by calculate_payout, not weights",
+        ),
     }
 }
 
@@ -254,6 +275,9 @@ pub(crate) fn payout_weight_sum(distribution: Distribution, total_payouts: u32) 
             let bv: u256 = b.into();
             (int_pow(av, total_payouts) - int_pow(bv, total_payouts)) / (av - bv)
         },
+        Distribution::Tiered(_) => panic!(
+            "Distribution: Tiered is settled by calculate_payout, not weights",
+        ),
         Distribution::Custom(shares) => {
             // Sum only the positions that actually get paid. `payout_weight`
             // returns 0 for an index past `total_payouts` (and past the array),
@@ -329,6 +353,34 @@ pub fn calculate_payout(
 
     if payout_index == 0 || payout_index > total_payouts || total_amount == 0 {
         return 0;
+    }
+
+    // Tiered is two pools with independent maths, settled here rather than
+    // through the single-family weight helpers below.
+    if let Distribution::Tiered(cfg) = distribution {
+        let (a, b) = cfg.head_ratio;
+        let m: u32 = cfg.head_count.into();
+        // The geometric reach bound applies to the head, not the field —
+        // that is exactly what lets the head stay steep on a 10,000-place
+        // tournament.
+        assert!(
+            m <= max_geometric_payouts(a),
+            "Distribution: tiered head reaches at most {} places; use a coarser ratio",
+            max_geometric_payouts(a),
+        );
+        assert!(
+            total_payouts > m, "Distribution: tiered needs more paid places than its head covers",
+        );
+
+        let head_pool: u256 = total_amount * cfg.head_share_bps.into() / BASIS_POINTS.into();
+        if payout_index <= m {
+            let head = Distribution::Geometric((a, b));
+            return head_pool * payout_weight(head, payout_index, m) / payout_weight_sum(head, m);
+        }
+        // Every tail place takes an equal floor-division slice of what the
+        // head left. Truncation is per tier, so the total shortfall stays
+        // under one unit per paid position.
+        return (total_amount - head_pool) / (total_payouts - m).into();
     }
 
     let denominator = payout_weight_sum(distribution, total_payouts);

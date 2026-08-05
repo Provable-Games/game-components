@@ -16,7 +16,7 @@ use crate::distribution::payout::{
     MAX_EXACT_EXPONENT, calculate_payout, max_geometric_payouts, payout_weight, payout_weight_sum,
     supports_exact_payout,
 };
-use crate::distribution::structs::{BASIS_POINTS, Distribution};
+use crate::distribution::structs::{BASIS_POINTS, Distribution, TieredConfig};
 
 /// 1000 tokens at 18 decimals — an ordinary prize pool.
 const POOL: u256 = 1000_000000000000000000;
@@ -366,5 +366,122 @@ fn bench_payout_geometric_n39_pos1() {
 fn bench_payout_geometric_n39_pos_last() {
     let dist = Distribution::Geometric((10, 7));
     let share = calculate_payout(dist, 39, 39, 1_000_000_000_000_000_000);
+    assert!(share > 0, "last-place share");
+}
+
+// ==================== Tiered ====================
+//
+// The variant that exists for very large fields: a geometric head with a real
+// first prize, and a flat tail that still pays every remaining place. No
+// single curve can do both — steep enough for the head zeroes the tail, flat
+// enough for the tail erases the head.
+
+fn flagship_tiered() -> Distribution {
+    // Top 39 places on a 70% geometric decay take 80% of the pool; the other
+    // places split 20% evenly.
+    Distribution::Tiered(TieredConfig { head_ratio: (10, 7), head_count: 39, head_share_bps: 8000 })
+}
+
+#[test]
+fn test_tiered_pays_a_headline_first_prize_over_ten_thousand_places() {
+    let pool: u256 = 1_000_000_000_000_000_000;
+    let n: u32 = 10000;
+    let dist = flagship_tiered();
+
+    // First place takes 24% of the whole pool — a single curve tops out at
+    // ~0.06% (Exponential k=5) over the same field.
+    assert!(calculate_payout(dist, 1, n, pool) == 240000218290681776, "first place");
+    assert!(calculate_payout(dist, 2, n, pool) == 168000152803477243, "second place");
+    // The last head place still clears its geometric slice...
+    assert!(calculate_payout(dist, 39, n, pool) == 311843831108, "head boundary");
+    // ...and every tail place gets an identical, non-zero share of the rest.
+    let tail = calculate_payout(dist, 40, n, pool);
+    assert!(tail == 20078305391024, "first tail place");
+    assert!(calculate_payout(dist, 10000, n, pool) == tail, "last place matches");
+}
+
+#[test]
+fn test_tiered_conserves_the_pool() {
+    let pool: u256 = 1_000_000_000_000_000_000;
+    let n: u32 = 10000;
+    let dist = flagship_tiered();
+
+    // Head positions summed directly; the identical tail slices multiplied.
+    let mut total: u256 = 0;
+    let mut p: u32 = 1;
+    while p <= 39 {
+        total += calculate_payout(dist, p, n, pool);
+        p += 1;
+    }
+    total += calculate_payout(dist, 40, n, pool) * (n - 39).into();
+
+    assert!(total <= pool, "never overpays");
+    assert!(pool - total < n.into(), "shortfall under one unit per position, got {}", pool - total);
+}
+
+#[test]
+fn test_tiered_shape_guards() {
+    // The head follows Geometric's ratio rules; the share must leave both
+    // tiers something to pay.
+    let ok = TieredConfig { head_ratio: (10, 7), head_count: 39, head_share_bps: 8000 };
+    assert!(supports_exact_payout(Distribution::Tiered(ok)), "valid config");
+
+    let inverted = TieredConfig { head_ratio: (7, 10), head_count: 10, head_share_bps: 8000 };
+    assert!(!supports_exact_payout(Distribution::Tiered(inverted)), "inverted ratio");
+
+    let all_to_head = TieredConfig { head_ratio: (10, 7), head_count: 10, head_share_bps: 10000 };
+    assert!(!supports_exact_payout(Distribution::Tiered(all_to_head)), "tail would be zero");
+
+    let nothing_to_head = TieredConfig { head_ratio: (10, 7), head_count: 10, head_share_bps: 0 };
+    assert!(!supports_exact_payout(Distribution::Tiered(nothing_to_head)), "head would be zero");
+
+    let empty_head = TieredConfig { head_ratio: (10, 7), head_count: 0, head_share_bps: 8000 };
+    assert!(!supports_exact_payout(Distribution::Tiered(empty_head)), "headless");
+}
+
+#[test]
+#[should_panic(expected: "tiered head reaches at most 39 places")]
+fn test_tiered_head_beyond_geometric_reach_is_refused() {
+    let dist = Distribution::Tiered(
+        TieredConfig { head_ratio: (10, 7), head_count: 40, head_share_bps: 8000 },
+    );
+    calculate_payout(dist, 1, 10000, 1_000_000_000_000_000_000);
+}
+
+#[test]
+#[should_panic(expected: "tiered needs more paid places than its head covers")]
+fn test_tiered_field_must_extend_past_the_head() {
+    let dist = Distribution::Tiered(
+        TieredConfig { head_ratio: (10, 7), head_count: 39, head_share_bps: 8000 },
+    );
+    calculate_payout(dist, 1, 39, 1_000_000_000_000_000_000);
+}
+
+#[test]
+fn test_tiered_small_field_hand_check() {
+    // n=10, head = top 3 on (2,1) with 60% of a 10,000 pool.
+    // Head weights 4/2/1 of 7: 6000*4/7=3428, 6000*2/7=1714, 6000*1/7=857.
+    // Tail: 4000 / 7 places = 571 each.
+    let dist = Distribution::Tiered(
+        TieredConfig { head_ratio: (2, 1), head_count: 3, head_share_bps: 6000 },
+    );
+    assert!(calculate_payout(dist, 1, 10, 10000) == 3428, "p1");
+    assert!(calculate_payout(dist, 2, 10, 10000) == 1714, "p2");
+    assert!(calculate_payout(dist, 3, 10, 10000) == 857, "p3");
+    assert!(calculate_payout(dist, 4, 10, 10000) == 571, "p4");
+    assert!(calculate_payout(dist, 10, 10, 10000) == 571, "p10");
+    assert!(calculate_payout(dist, 11, 10, 10000) == 0, "out of range");
+}
+
+// Cost: two O(1) tiers.
+#[test]
+fn bench_payout_tiered_n10000_pos1() {
+    let share = calculate_payout(flagship_tiered(), 1, 10000, 1_000_000_000_000_000_000);
+    assert!(share > 0, "winner share");
+}
+
+#[test]
+fn bench_payout_tiered_n10000_pos_last() {
+    let share = calculate_payout(flagship_tiered(), 10000, 10000, 1_000_000_000_000_000_000);
     assert!(share > 0, "last-place share");
 }

@@ -9,7 +9,7 @@ use game_components_utilities::distribution::packed_shares::{
 };
 use game_components_utilities::distribution::structs::{
     DIST_TYPE_CUSTOM, DIST_TYPE_EXPONENTIAL, DIST_TYPE_GEOMETRIC, DIST_TYPE_LINEAR,
-    DIST_TYPE_UNIFORM, PackedDistribution,
+    DIST_TYPE_TIERED, DIST_TYPE_UNIFORM, PackedDistribution, TieredConfig,
 };
 use starknet::ContractAddress;
 use crate::entry_fee::store::Store;
@@ -98,6 +98,21 @@ pub impl EntryFeeStoreImpl<T, +Store<T>, +Drop<T>> of EntryFeeStoreTrait<T> {
             (Option::Some(Distribution::Exponential(packed_dist.dist_param)), packed_dist.positions)
         } else if packed_dist.dist_type == DIST_TYPE_UNIFORM {
             (Option::Some(Distribution::Uniform), packed_dist.positions)
+        } else if packed_dist.dist_type == DIST_TYPE_TIERED {
+            (
+                Option::Some(
+                    Distribution::Tiered(
+                        TieredConfig {
+                            head_ratio: (
+                                packed_dist.dist_param / 256, packed_dist.dist_param % 256,
+                            ),
+                            head_count: packed_dist.dist_param2,
+                            head_share_bps: packed_dist.dist_param3,
+                        },
+                    ),
+                ),
+                packed_dist.positions,
+            )
         } else if packed_dist.dist_type == DIST_TYPE_GEOMETRIC {
             (
                 Option::Some(
@@ -225,14 +240,20 @@ pub impl EntryFeeStoreImpl<T, +Store<T>, +Drop<T>> of EntryFeeStoreTrait<T> {
 
         // Persist the distribution config (shape + paid-places count), and
         // for Custom, the shares array in packed out-of-band storage.
-        let (dist_type, dist_param) = match config.distribution {
-            Option::None => (DIST_TYPE_LINEAR, 0_u16),
+        let (dist_type, dist_param, dist_param2, dist_param3) = match config.distribution {
+            Option::None => (DIST_TYPE_LINEAR, 0_u16, 0_u16, 0_u16),
             Option::Some(dist) => match dist {
-                Distribution::Linear(w) => (DIST_TYPE_LINEAR, *w),
-                Distribution::Exponential(w) => (DIST_TYPE_EXPONENTIAL, *w),
-                Distribution::Uniform => (DIST_TYPE_UNIFORM, 0_u16),
-                Distribution::Custom(_) => (DIST_TYPE_CUSTOM, 0_u16),
-                Distribution::Geometric((a, b)) => (DIST_TYPE_GEOMETRIC, *a * 256 + *b),
+                Distribution::Linear(w) => (DIST_TYPE_LINEAR, *w, 0_u16, 0_u16),
+                Distribution::Exponential(w) => (DIST_TYPE_EXPONENTIAL, *w, 0_u16, 0_u16),
+                Distribution::Uniform => (DIST_TYPE_UNIFORM, 0_u16, 0_u16, 0_u16),
+                Distribution::Custom(_) => (DIST_TYPE_CUSTOM, 0_u16, 0_u16, 0_u16),
+                Distribution::Geometric((
+                    a, b,
+                )) => (DIST_TYPE_GEOMETRIC, *a * 256 + *b, 0_u16, 0_u16),
+                Distribution::Tiered(cfg) => {
+                    let (a, b) = *cfg.head_ratio;
+                    (DIST_TYPE_TIERED, a * 256 + b, *cfg.head_count, *cfg.head_share_bps)
+                },
             },
         };
         // For Custom, paid places are defined by the shares array length;
@@ -245,7 +266,11 @@ pub impl EntryFeeStoreImpl<T, +Store<T>, +Drop<T>> of EntryFeeStoreTrait<T> {
             Option::None => 0_u32,
         };
 
-        self.set_distribution(context_id, PackedDistribution { dist_type, dist_param, positions });
+        self
+            .set_distribution(
+                context_id,
+                PackedDistribution { dist_type, dist_param, positions, dist_param2, dist_param3 },
+            );
 
         if let Option::Some(dist) = config.distribution {
             if let Distribution::Custom(shares) = dist {

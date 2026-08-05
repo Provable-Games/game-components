@@ -23,4 +23,36 @@ pub enum Distribution {
     /// this anywhere earlier would silently reinterpret every stored and
     /// indexed distribution.
     Geometric: (u16, u16),
+    /// Two tiers: a geometric head over the first `head_count` places taking
+    /// `head_share_bps` of the pool, and the remaining places splitting the
+    /// rest evenly.
+    ///
+    /// This is the only family here that works for a very large field. A
+    /// single curve cannot: anything steep enough to give first place a real
+    /// share rounds its tail to nothing, and anything flat enough to pay the
+    /// tail gives first place nothing. Over 10,000 places the best a single
+    /// curve can do for first place is ~0.06% (`Exponential` k=5); a
+    /// `Geometric` head of 39 on (10, 7) taking 80% pays first place 24%,
+    /// while every one of the other 9,961 places still receives its slice of
+    /// the remaining 20%.
+    ///
+    /// The geometric reach bound applies to `head_count`, not the field, so
+    /// the head is always well inside it. Requires a fixed paid-places count
+    /// strictly greater than `head_count`.
+    Tiered: TieredConfig,
+}
+
+/// Configuration for `Distribution::Tiered`.
+#[derive(Drop, Copy, Serde, PartialEq)]
+pub struct TieredConfig {
+    /// Geometric decay `(a, b)` for the head: each place gets `b / a` of the
+    /// one above. Same semantics and validity rules as `Geometric`.
+    pub head_ratio: (u16, u16),
+    /// How many places the head covers. Must be under the paid-places count
+    /// and within `max_geometric_payouts(a)`.
+    pub head_count: u16,
+    /// The head's slice of the pool, in basis points. Strictly between 0 and
+    /// 10000 — at either extreme one of the tiers would round to an
+    /// unclaimable zero, and the single-curve variants cover those shapes.
+    pub head_share_bps: u16,
 }
