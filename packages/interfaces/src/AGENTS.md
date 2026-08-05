@@ -160,6 +160,23 @@ The tool outputs the extended function selectors and the final XOR'd interface I
 - For single-function interfaces, the ID equals the single extended function selector
 - Always update the EFS comment above the constant to match the tool's output
 
+### Methods excluded from `IMINIGAME_TOKEN_ID`
+
+`IMinigameToken::refresh_metadata` and `refresh_metadata_batch` are **not** part of
+the `IMINIGAME_TOKEN_ID` derivation. Omit both from the stripped input file or the
+constant will not reproduce.
+
+The ID is registered on-chain by every deployed token contract. Rederiving it to
+cover two additive, optional methods would make `supports_interface(IMINIGAME_TOKEN_ID)`
+return false on all of them and break interface discovery for every existing
+consumer — a breaking change across the ecosystem in exchange for nothing a caller
+can act on. The ID identifies the original surface, which those contracts all still
+implement in full.
+
+Apply the same reasoning to future additive methods: extend the trait, leave the ID
+alone, and note the exclusion here. Change the ID only for a genuinely breaking
+change to the existing surface.
+
 ## Dependencies
 
 None - this is a leaf package with no internal dependencies. Uses only:

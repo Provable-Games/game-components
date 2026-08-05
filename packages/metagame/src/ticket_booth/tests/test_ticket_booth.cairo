@@ -1200,9 +1200,13 @@ mod MockMinigameTokenForTicketBooth {
 
         fn update_game(ref self: ContractState, token_id: felt252) {}
 
+        fn refresh_metadata(ref self: ContractState, token_id: felt252) {}
+
         fn update_player_name(ref self: ContractState, token_id: felt252, name: felt252) {}
 
         fn update_game_batch(ref self: ContractState, token_ids: Span<felt252>) {}
+
+        fn refresh_metadata_batch(ref self: ContractState, token_ids: Span<felt252>) {}
 
         fn update_player_name_batch(ref self: ContractState, updates: Span<PlayerNameUpdate>) {}
     }
