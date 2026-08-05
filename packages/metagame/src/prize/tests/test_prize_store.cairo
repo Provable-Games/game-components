@@ -29,6 +29,7 @@ trait IPrizeMockFull<TContractState> {
     fn assert_prize_exists(self: @TContractState, prize_id: u64);
     fn assert_prize_not_claimed(self: @TContractState, context_id: u64, prize_type: PrizeType);
     fn get_custom_shares(self: @TContractState, prize_id: u64) -> Array<u16>;
+    fn get_custom_share_at(self: @TContractState, prize_id: u64, position: u32) -> u16;
     fn get_extension_address(
         self: @TContractState, context_id: u64, prize_id: u64,
     ) -> ContractAddress;
@@ -391,7 +392,15 @@ fn test_add_prize_custom_distribution_round_trip_through_packed_storage() {
     assert!(*reconstructed.at(15) == 1600, "first share of second slot preserved");
     assert!(*reconstructed.at(16) == 1700, "last share preserved");
 
-    // get_prize itself walks the Custom branch in get_token_record.
+    // Any position reads in one storage access, without rebuilding the curve.
+    assert!(mock.get_custom_share_at(prize_id, 1) == 100, "share at position 1");
+    assert!(mock.get_custom_share_at(prize_id, 15) == 1500, "last of the first slot");
+    assert!(mock.get_custom_share_at(prize_id, 16) == 1600, "first of the second slot");
+    assert!(mock.get_custom_share_at(prize_id, 17) == 1700, "share at the last position");
+
+    // `get_prize` reports the *shape* with an empty span and does not rebuild
+    // the curve: it runs on every claim, where only one share is wanted.
+    // Callers that need the whole array ask for it (above).
     let record = mock.get_prize(prize_id);
     match record.prize {
         Prize::Token(token_payload) => {
@@ -399,7 +408,7 @@ fn test_add_prize_custom_distribution_round_trip_through_packed_storage() {
                 TokenTypeData::erc20(data) => {
                     match data.distribution {
                         Option::Some(Distribution::Custom(reread)) => {
-                            assert!(reread.len() == 17, "get_prize should restore all shares");
+                            assert!(reread.len() == 0, "get_prize must not rebuild the curve");
                         },
                         _ => panic!("expected Custom distribution"),
                     }

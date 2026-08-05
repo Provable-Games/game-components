@@ -263,6 +263,17 @@ pub mod PrizeComponent {
             PrizeStoreTrait::get_custom_shares(self, prize_id)
         }
 
+        /// One custom share by 1-indexed position — a single storage read.
+        ///
+        /// `_get_prize` deliberately returns Custom with an empty span, so a
+        /// claim settling one position reads its share through here instead of
+        /// paying to rebuild the whole curve.
+        fn _get_custom_share_at(
+            self: @ComponentState<TContractState>, prize_id: u64, position: u32,
+        ) -> u16 {
+            PrizeStoreTrait::get_custom_share_at(self, prize_id, position)
+        }
+
         /// Store a token-prize record (converts to StoredPrize for storage).
         /// Extension prizes are not persisted via this path.
         fn set_token_record(
