@@ -8,8 +8,8 @@ use game_components_utilities::distribution::packed_shares::{
     calculate_slot_position,
 };
 use game_components_utilities::distribution::structs::{
-    DIST_TYPE_CUSTOM, DIST_TYPE_EXPONENTIAL, DIST_TYPE_LINEAR, DIST_TYPE_UNIFORM,
-    PackedDistribution,
+    DIST_TYPE_CUSTOM, DIST_TYPE_EXPONENTIAL, DIST_TYPE_GEOMETRIC, DIST_TYPE_LINEAR,
+    DIST_TYPE_UNIFORM, PackedDistribution,
 };
 use starknet::ContractAddress;
 use crate::entry_fee::store::Store;
@@ -98,6 +98,15 @@ pub impl EntryFeeStoreImpl<T, +Store<T>, +Drop<T>> of EntryFeeStoreTrait<T> {
             (Option::Some(Distribution::Exponential(packed_dist.dist_param)), packed_dist.positions)
         } else if packed_dist.dist_type == DIST_TYPE_UNIFORM {
             (Option::Some(Distribution::Uniform), packed_dist.positions)
+        } else if packed_dist.dist_type == DIST_TYPE_GEOMETRIC {
+            (
+                Option::Some(
+                    Distribution::Geometric(
+                        (packed_dist.dist_param / 256, packed_dist.dist_param % 256),
+                    ),
+                ),
+                packed_dist.positions,
+            )
         } else {
             // DIST_TYPE_CUSTOM — return with empty shares span. Loading the
             // full array is O(N/15) storage reads and is only needed for UI
@@ -223,6 +232,7 @@ pub impl EntryFeeStoreImpl<T, +Store<T>, +Drop<T>> of EntryFeeStoreTrait<T> {
                 Distribution::Exponential(w) => (DIST_TYPE_EXPONENTIAL, *w),
                 Distribution::Uniform => (DIST_TYPE_UNIFORM, 0_u16),
                 Distribution::Custom(_) => (DIST_TYPE_CUSTOM, 0_u16),
+                Distribution::Geometric((a, b)) => (DIST_TYPE_GEOMETRIC, *a * 256 + *b),
             },
         };
         // For Custom, paid places are defined by the shares array length;

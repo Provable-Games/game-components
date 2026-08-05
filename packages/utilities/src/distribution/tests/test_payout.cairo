@@ -13,7 +13,8 @@
 
 use crate::distribution::calculator::calculate_share;
 use crate::distribution::payout::{
-    MAX_EXACT_EXPONENT, calculate_payout, payout_weight, payout_weight_sum, supports_exact_payout,
+    MAX_EXACT_EXPONENT, calculate_payout, max_geometric_payouts, payout_weight, payout_weight_sum,
+    supports_exact_payout,
 };
 use crate::distribution::structs::{BASIS_POINTS, Distribution};
 
@@ -270,4 +271,100 @@ fn test_custom_truncated_to_fewer_places_still_pays_the_whole_pool() {
     // Conservation: the shortfall is rounding, not a truncated tail.
     assert!(first + second <= 1000, "never overpays");
     assert!(1000 - (first + second) < 2, "shortfall under one unit per paid place");
+}
+
+// ==================== Geometric ====================
+//
+// The property that motivates the variant: a geometric curve's shape does not
+// depend on the size of the field. `Exponential` cannot do this — as a power
+// law its winner share falls off as roughly (k+1)/n.
+
+#[test]
+fn test_geometric_ratio_holds_between_adjacent_positions() {
+    let dist = Distribution::Geometric((10, 7));
+    let pool: u256 = 1_000_000_000_000_000_000;
+    let first = calculate_payout(dist, 1, 10, pool);
+    let second = calculate_payout(dist, 2, 10, pool);
+    assert!(first == 308720592627384808, "winner share, got {}", first);
+    assert!(second == 216104414839169366, "runner-up share, got {}", second);
+    // Each place takes 7/10 of the one above. Both sides are independently
+    // truncated from the exact ratio, so they can differ by a unit — comparing
+    // `second` against `first * 7 / 10` re-truncates an already-truncated
+    // value and is off by one here.
+    let expected = first * 7 / 10;
+    let drift = if second > expected {
+        second - expected
+    } else {
+        expected - second
+    };
+    assert!(drift <= 1, "adjacent ratio is b/a to within a unit, drifted {}", drift);
+}
+
+#[test]
+fn test_geometric_winner_share_is_independent_of_field_size() {
+    let dist = Distribution::Geometric((10, 7));
+    let pool: u256 = 1_000_000_000_000_000_000;
+    // 1 - b/a = 30%, whether the field is 10 places or 39.
+    let small = calculate_payout(dist, 1, 10, pool);
+    let large = calculate_payout(dist, 1, 39, pool);
+    assert!(small > 308_000_000_000_000_000 && small < 309_000_000_000_000_000, "~30.9% at n=10");
+    assert!(large > 299_000_000_000_000_000 && large < 301_000_000_000_000_000, "~30.0% at n=39");
+}
+
+#[test]
+fn test_geometric_conserves_the_pool() {
+    let dist = Distribution::Geometric((3, 2));
+    let pool: u256 = 1_000_000_000_000_000_000;
+    let n: u32 = 50;
+    let mut total: u256 = 0;
+    let mut p: u32 = 1;
+    while p <= n {
+        let amount = calculate_payout(dist, p, n, pool);
+        assert!(amount > 0, "position {} must be payable", p);
+        total += amount;
+        p += 1;
+    }
+    assert!(total <= pool, "never overpays");
+    assert!(pool - total < n.into(), "shortfall under one unit per position");
+}
+
+#[test]
+fn test_max_geometric_payouts_matches_the_documented_reach() {
+    assert!(max_geometric_payouts(2) == 129, "50% decay reaches 129 places");
+    assert!(max_geometric_payouts(3) == 81, "2/3 decay reaches 81");
+    assert!(max_geometric_payouts(7) == 46, "5/7 decay reaches 46");
+    assert!(max_geometric_payouts(10) == 39, "7/10 decay reaches 39");
+}
+
+#[test]
+#[should_panic(expected: "geometric ratio reaches at most 39 places")]
+fn test_geometric_beyond_reach_is_refused_not_overflowed() {
+    let dist = Distribution::Geometric((10, 7));
+    calculate_payout(dist, 1, 40, 1_000_000_000_000_000_000);
+}
+
+#[test]
+fn test_geometric_shape_guards() {
+    // b must be under a (otherwise the curve is flat or inverted), non-zero,
+    // and both must survive the single-u16 packed param slot.
+    assert!(supports_exact_payout(Distribution::Geometric((10, 7))), "valid ratio");
+    assert!(!supports_exact_payout(Distribution::Geometric((7, 10))), "inverted");
+    assert!(!supports_exact_payout(Distribution::Geometric((10, 10))), "flat");
+    assert!(!supports_exact_payout(Distribution::Geometric((10, 0))), "zero tail");
+    assert!(!supports_exact_payout(Distribution::Geometric((256, 7))), "exceeds the u8 slot");
+}
+
+// Cost: flat, like every other exact curve.
+#[test]
+fn bench_payout_geometric_n39_pos1() {
+    let dist = Distribution::Geometric((10, 7));
+    let share = calculate_payout(dist, 1, 39, 1_000_000_000_000_000_000);
+    assert!(share > 0, "winner share");
+}
+
+#[test]
+fn bench_payout_geometric_n39_pos_last() {
+    let dist = Distribution::Geometric((10, 7));
+    let share = calculate_payout(dist, 39, 39, 1_000_000_000_000_000_000);
+    assert!(share > 0, "last-place share");
 }

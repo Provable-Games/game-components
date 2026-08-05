@@ -24,6 +24,7 @@ pub const PAYOUT_TYPE_LINEAR: u8 = 1;
 pub const PAYOUT_TYPE_EXPONENTIAL: u8 = 2;
 pub const PAYOUT_TYPE_UNIFORM: u8 = 3;
 pub const PAYOUT_TYPE_CUSTOM: u8 = 4;
+pub const PAYOUT_TYPE_GEOMETRIC: u8 = 5;
 
 /// Internal packed representation for ERC20 data storage
 /// Layout: [amount: 128 bits][payout_type: 8 bits][param: 16 bits][count: 32 bits] = 184 bits
@@ -131,6 +132,9 @@ fn pack_token_type(token_type: TokenTypeData) -> PackedTokenTypeData {
                         game_components_utilities::distribution::structs::Distribution::Custom(_) => (
                             PAYOUT_TYPE_CUSTOM, 0_u16,
                         ),
+                        game_components_utilities::distribution::structs::Distribution::Geometric((
+                            a, b,
+                        )) => (PAYOUT_TYPE_GEOMETRIC, a * 256 + b),
                     }
                 },
             };
@@ -169,6 +173,12 @@ fn unpack_token_type(packed_token_type: PackedTokenTypeData) -> TokenTypeData {
             } else if packed.payout_type == PAYOUT_TYPE_UNIFORM {
                 Option::Some(
                     game_components_utilities::distribution::structs::Distribution::Uniform,
+                )
+            } else if packed.payout_type == PAYOUT_TYPE_GEOMETRIC {
+                Option::Some(
+                    game_components_utilities::distribution::structs::Distribution::Geometric(
+                        (packed.param / 256, packed.param % 256),
+                    ),
                 )
             } else {
                 Option::Some(

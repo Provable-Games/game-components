@@ -15,6 +15,10 @@ pub const DIST_TYPE_LINEAR: u8 = 0;
 pub const DIST_TYPE_EXPONENTIAL: u8 = 1;
 pub const DIST_TYPE_UNIFORM: u8 = 2;
 pub const DIST_TYPE_CUSTOM: u8 = 3;
+/// `Geometric(a, b)` packs both ratio terms into the single u16 param slot as
+/// `a * 256 + b`, which is why `supports_exact_payout` caps them at 255. That
+/// keeps the packed layout — one u8 tag plus one u16 param — unchanged.
+pub const DIST_TYPE_GEOMETRIC: u8 = 4;
 
 // Constants for PackedDistribution bit-packing.
 const TWO_POW_8: u128 = 0x100; // 2^8

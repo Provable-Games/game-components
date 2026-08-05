@@ -41,6 +41,7 @@
 //! | `Exponential(w)`  | `(n - p + 1)^k`     | `sum_{j=1..n} j^k` (Faulhaber)|
 //! | `Uniform`         | `1`                 | `n`                          |
 //! | `Custom(shares)`  | `shares[p-1]`       | `sum(shares[0..n])`          |
+//! | `Geometric(a,b)`  | `a^(n-p) * b^(p-1)` | `(a^n - b^n) / (a - b)`      |
 //!
 //! `Custom`'s sum is bounded by the paid-place count, not the array length —
 //! a caller may pay fewer places than the stored curve describes, and weight
@@ -52,10 +53,18 @@
 //! ## Naming note
 //!
 //! `Exponential` is a power law, not an exponential: `W(p)` is polynomial in
-//! the position, `(n-p+1)^k`, not `r^p`. That is a happy accident — a power
-//! law has an exact closed-form sum (Faulhaber) in integers, whereas a true
-//! geometric decay needs `r^n` in rationals and overflows or needs fixed
-//! point. The existing curve shape is the one that computes cheaply.
+//! the position, `(n-p+1)^k`, not `r^p`. A power law has an exact closed-form
+//! sum (Faulhaber) in integers, and its exponent is a small constant, so it is
+//! the cheapest curve here by a wide margin.
+//!
+//! True geometric decay is `Geometric(a, b)`. Kept as a *rational* ratio it
+//! also has an exact integer closed form, `(a^n - b^n) / (a - b)`, so it needs
+//! no fixed point — but its exponent scales with the field rather than being
+//! bounded by `MAX_EXACT_EXPONENT`, so it costs O(log n) large-u256
+//! multiplications where the power law costs a handful of small ones. Measured
+//! at a 39-place field: ~3.4M l2_gas against ~230k. It buys a shape the power
+//! law cannot express — a winner share that does not thin out as the field
+//! grows — and that is the trade.
 
 use crate::distribution::structs::Distribution;
 
@@ -66,6 +75,42 @@ use crate::distribution::structs::Distribution;
 /// place a million times last place); the cap keeps `W(p) * total_amount`
 /// clear of u256 overflow for any realistic pool.
 pub const MAX_EXACT_EXPONENT: u32 = 5;
+
+/// The largest paid-place count a `Geometric(a, b)` curve can represent.
+///
+/// The heaviest weight is `a^(n-1)`, and `calculate_payout` multiplies it by
+/// the pool. Pools are `u128`, so keeping `a^(n-1)` within `2^128` guarantees
+/// the product fits `u256` for *any* pool — no pool-size caveat to carry
+/// around at the call site.
+///
+/// The bound tightens as the ratio gets finer, because a finer ratio needs a
+/// bigger base:
+///
+/// | ratio   | decay | max places |
+/// | ------- | ----- | ---------- |
+/// | `(2,1)` | 50%   | 129        |
+/// | `(3,2)` | 67%   | 81         |
+/// | `(7,5)` | 71%   | 46         |
+/// | `(10,7)`| 70%   | 39         |
+///
+/// A host wanting more places picks a coarser ratio for the same decay —
+/// `(3,2)` and `(10,7)` are both roughly a third off per place, but `(3,2)`
+/// reaches twice as far.
+pub fn max_geometric_payouts(a: u16) -> u32 {
+    if a < 2 {
+        return 0;
+    }
+    let limit: u256 = 0x100000000000000000000000000000000; // 2^128
+    let base: u256 = a.into();
+    let mut acc: u256 = 1;
+    let mut n: u32 = 1;
+    // acc == a^(n-1); grow while the next step stays inside the bound.
+    while acc <= limit / base {
+        acc = acc * base;
+        n += 1;
+    }
+    n
+}
 
 /// Whether `calculate_payout` can compute this distribution exactly.
 ///
@@ -79,6 +124,12 @@ pub fn supports_exact_payout(distribution: Distribution) -> bool {
             let w: u32 = weight.into();
             w % 10 == 0 && w != 0 && (w / 10) <= MAX_EXACT_EXPONENT
         },
+        // Shape only. Whether the *field* fits is `max_geometric_payouts`,
+        // which needs the paid-place count and so is checked in
+        // `calculate_payout`.
+        // `a` and `b` are capped at 255 so both survive the single-u16 param
+        // slot the packed storage gives a distribution (`a * 256 + b`).
+        Distribution::Geometric((a, b)) => a > b && b > 0 && a <= 255,
         _ => true,
     }
 }
@@ -104,12 +155,25 @@ fn power_sum(k: u32, n: u256) -> u256 {
     }
 }
 
+/// Exponentiation by squaring — O(log e) multiplications.
+///
+/// `Exponential` only ever raises to k <= 5, where the naive loop was fine.
+/// `Geometric` raises to `n - p`, which scales with the field, so a linear
+/// loop would make the "flat cost regardless of field size" property false:
+/// measured 6.9M l2_gas for a 39-place geometric winner before this, against
+/// ~230k for the power law.
 fn int_pow(base: u256, exponent: u32) -> u256 {
     let mut acc: u256 = 1;
-    let mut i: u32 = 0;
-    while i < exponent {
-        acc = acc * base;
-        i += 1;
+    let mut b: u256 = base;
+    let mut e: u32 = exponent;
+    while e > 0 {
+        if e % 2 == 1 {
+            acc = acc * b;
+        }
+        e = e / 2;
+        if e > 0 {
+            b = b * b;
+        }
     }
     acc
 }
@@ -142,6 +206,14 @@ pub(crate) fn payout_weight(
                 share.into()
             }
         },
+        // W(p) = a^(n-p) * b^(p-1) — the ratio between adjacent positions is
+        // a constant b/a, which is what makes the curve's shape independent
+        // of n.
+        Distribution::Geometric((
+            a, b,
+        )) => {
+            int_pow(a.into(), total_payouts - payout_index) * int_pow(b.into(), payout_index - 1)
+        },
     }
 }
 
@@ -173,6 +245,15 @@ pub(crate) fn payout_weight_sum(distribution: Distribution, total_payouts: u32) 
             power_sum(k, n)
         },
         Distribution::Uniform => n,
+        // sum_{p=1..n} a^(n-p) b^(p-1) = (a^n - b^n) / (a - b), exact in
+        // integers because the numerator is divisible by (a - b).
+        Distribution::Geometric((
+            a, b,
+        )) => {
+            let av: u256 = a.into();
+            let bv: u256 = b.into();
+            (int_pow(av, total_payouts) - int_pow(bv, total_payouts)) / (av - bv)
+        },
         Distribution::Custom(shares) => {
             // Sum only the positions that actually get paid. `payout_weight`
             // returns 0 for an index past `total_payouts` (and past the array),
@@ -237,6 +318,14 @@ pub fn calculate_payout(
         supports_exact_payout(distribution),
         "Distribution: weight has no exact payout form; use the basis-point path",
     );
+
+    if let Distribution::Geometric((a, _)) = distribution {
+        assert!(
+            total_payouts <= max_geometric_payouts(a),
+            "Distribution: geometric ratio reaches at most {} places; use a coarser ratio",
+            max_geometric_payouts(a),
+        );
+    }
 
     if payout_index == 0 || payout_index > total_payouts || total_amount == 0 {
         return 0;

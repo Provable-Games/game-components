@@ -32,6 +32,9 @@ pub fn calculate_share(
         },
         Distribution::Uniform => calculate_uniform_share(total_payouts, available_share),
         Distribution::Custom(shares) => calculate_custom_share(payout_index, shares),
+        Distribution::Geometric(_) => panic!(
+            "Distribution: Geometric has no basis-point form; use payout::calculate_payout",
+        ),
     }
 }
 
@@ -56,6 +59,9 @@ pub fn calculate_total(
             let (weights, denominator) = weight_vector(distribution, total_payouts);
             sum_shares(@weights, denominator, available_share)
         },
+        Distribution::Geometric(_) => panic!(
+            "Distribution: Geometric has no basis-point form; use payout::calculate_payout",
+        ),
         Distribution::Uniform |
         Distribution::Custom(_) => {
             let mut total: u16 = 0;
@@ -126,6 +132,9 @@ pub fn calculate_share_with_dust(
                 base_share + (available_share - total)
             }
         },
+        Distribution::Geometric(_) => panic!(
+            "Distribution: Geometric has no basis-point form; use payout::calculate_payout",
+        ),
         Distribution::Uniform |
         Distribution::Custom(_) => {
             let base_share = calculate_share(
@@ -202,6 +211,9 @@ fn weight_vector(distribution: Distribution, total_payouts: u32) -> (Array<Fixed
         },
         // Uniform and Custom are not normalized against a weight sum — they
         // have their own O(1) share functions and never reach here.
+        Distribution::Geometric(_) => panic!(
+            "Distribution: Geometric has no basis-point form; use payout::calculate_payout",
+        ),
         Distribution::Uniform | Distribution::Custom(_) => {},
     }
 
