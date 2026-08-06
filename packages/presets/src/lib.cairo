@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 
+pub mod autonomous_buyback;
+pub mod leaderboard;
 /// # Game Components Presets
 ///
 /// Ready-to-deploy contracts built with game components.
@@ -11,8 +13,7 @@
 /// - **AutonomousBuyback**: Autonomous token buyback via Ekubo TWAMM
 /// - **StreamToken**: ERC20 token with built-in TWAMM distribution
 
-pub mod autonomous_buyback;
-pub mod leaderboard;
+pub mod minigame_token_lite;
 pub mod stream_token;
 
 pub use autonomous_buyback::AutonomousBuyback;

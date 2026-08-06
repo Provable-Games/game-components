@@ -434,9 +434,18 @@ pub mod CoreTokenLiteComponent {
         +ERC721Component::ERC721HooksTrait<TContractState>,
     > of InternalTrait<TContractState> {
         fn initializer(ref self: ComponentState<TContractState>, game_address: ContractAddress) {
-            assert!(!game_address.is_zero(), "MinigameTokenLite: Game address is zero");
-            self.game_address.write(game_address);
+            self.register_interfaces();
+            self.bind_game(game_address);
+        }
 
+        /// Registers the SRC5 interface ids without binding a game — the first
+        /// half of a two-phase initialization for deployments where the game
+        /// contract needs the token address in ITS constructor (mutual
+        /// constructor dependency): deploy the token with interfaces only,
+        /// deploy the game pointing at the token (its SRC5 check passes), then
+        /// `bind_game`. An unbound token cannot mint: `mint` requires the
+        /// caller-supplied game address to equal the stored one, which is zero.
+        fn register_interfaces(ref self: ComponentState<TContractState>) {
             let mut contract = self.get_contract_mut();
             let mut src5_component = SRC5::get_component_mut(ref contract);
             src5_component.register_interface(IMINIGAME_TOKEN_LITE_ID);
@@ -447,6 +456,15 @@ pub mod CoreTokenLiteComponent {
             // refresh_metadata, game_registry_address); anything else reverts
             // with ENTRYPOINT_NOT_FOUND rather than misbehaving silently.
             src5_component.register_interface(IMINIGAME_TOKEN_ID);
+        }
+
+        /// Binds the single game, exactly once. The binding is immutable
+        /// thereafter — the game address is the token's trust anchor, and
+        /// every mint and playability check is defined against it.
+        fn bind_game(ref self: ComponentState<TContractState>, game_address: ContractAddress) {
+            assert!(!game_address.is_zero(), "MinigameTokenLite: Game address is zero");
+            assert!(self.game_address.read().is_zero(), "MinigameTokenLite: Game is already bound");
+            self.game_address.write(game_address);
         }
 
         /// Lifecycle-window check only — there is deliberately no token-side
