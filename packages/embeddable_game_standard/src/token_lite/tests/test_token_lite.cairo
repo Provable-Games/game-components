@@ -653,6 +653,71 @@ fn test_update_player_name_rejects_non_owner() {
 }
 
 // ================================================================================================
+// MINIGAME LITE HELPERS (minigame::lite::pre_action / post_action)
+// ================================================================================================
+//
+// The helpers are free functions that run in the calling contract's execution
+// context: `get_caller_address()` inside `pre_action` is whoever called the
+// game contract. The tests model that by cheating the caller of the test
+// contract itself (`snforge_std::test_address()`), which plays the game's role.
+
+#[test]
+fn test_lite_pre_action_passes_for_owner_caller() {
+    let (token, _, _) = deploy_token_lite();
+    let token_id = mint_basic(
+        token, Option::None, Option::None, Option::None, Option::None, ALICE(), false, 0,
+    );
+    snforge_std::start_cheat_caller_address(snforge_std::test_address(), ALICE());
+    crate::minigame::lite::pre_action(token.contract_address, token_id);
+}
+
+#[test]
+#[should_panic(expected: "MinigameTokenLite: Address is not owner of token")]
+fn test_lite_pre_action_rejects_non_owner_caller() {
+    let (token, _, _) = deploy_token_lite();
+    let token_id = mint_basic(
+        token, Option::None, Option::None, Option::None, Option::None, ALICE(), false, 0,
+    );
+    snforge_std::start_cheat_caller_address(snforge_std::test_address(), BOB());
+    crate::minigame::lite::pre_action(token.contract_address, token_id);
+}
+
+#[test]
+#[should_panic(expected: "MinigameTokenLite: Token is not playable - game has expired")]
+fn test_lite_pre_action_rejects_expired_token() {
+    let (token, _, _) = deploy_token_lite();
+    start_cheat_block_timestamp(token.contract_address, 1000);
+    let token_id = mint_basic(
+        token, Option::None, Option::None, Option::None, Option::Some(2000), ALICE(), false, 0,
+    );
+    start_cheat_block_timestamp(token.contract_address, 2000);
+    snforge_std::start_cheat_caller_address(snforge_std::test_address(), ALICE());
+    crate::minigame::lite::pre_action(token.contract_address, token_id);
+}
+
+#[test]
+fn test_lite_post_action_emits_refresh() {
+    let (token, _, _) = deploy_token_lite();
+    let token_id = mint_basic(
+        token, Option::None, Option::None, Option::None, Option::None, ALICE(), false, 0,
+    );
+
+    let mut spy = spy_events();
+    crate::minigame::lite::post_action(token.contract_address, token_id);
+    spy
+        .assert_emitted(
+            @array![
+                (
+                    token.contract_address,
+                    CoreTokenLiteComponent::Event::MetadataUpdate(
+                        CoreTokenLiteComponent::MetadataUpdate { token_id: token_id.into() },
+                    ),
+                ),
+            ],
+        );
+}
+
+// ================================================================================================
 // PACKING PARITY HELPERS
 // ================================================================================================
 

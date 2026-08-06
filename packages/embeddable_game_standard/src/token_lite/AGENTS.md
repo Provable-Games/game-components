@@ -38,6 +38,16 @@ Not present (reverts with ENTRYPOINT_NOT_FOUND): `update_game`, all other
 `*_batch` views, `mint_batch_recipients`, objectives/settings/context/
 renderer/skills/enumerable surfaces.
 
+## Game-side helpers
+
+`minigame::lite` provides call-site twins of the full-token helpers so game
+code keeps its familiar shape — the module path carries the semantic shift:
+
+- `lite::pre_action(token_address, token_id)` → one `assert_owner_and_playable`
+  call (replaces the full-token `assert_token_ownership` + `pre_action` pair)
+- `lite::post_action(token_address, token_id)` → `refresh_metadata` only
+  (there is no `update_game` to run)
+
 ## Composition
 
 Requires: `ERC721Component`, `SRC5Component`, an `OptionalMinter` impl
