@@ -2,3 +2,4 @@ pub mod full_token_contract;
 pub mod minigame_registry_contract;
 pub mod minimal_optimized_example;
 pub mod single_game_token_contract;
+pub mod token_lite_contract;

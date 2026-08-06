@@ -1,3 +1,4 @@
+use game_components_test_common::mocks::minigame_mock::IMinigameMockInitDispatcherTrait;
 use openzeppelin_interfaces::erc721::{ERC721ABIDispatcher, ERC721ABIDispatcherTrait};
 use openzeppelin_interfaces::introspection::{ISRC5Dispatcher, ISRC5DispatcherTrait};
 use snforge_std::{
@@ -9,7 +10,9 @@ use crate::token::extensions::minter::interface::{
     IMinigameTokenMinterDispatcher, IMinigameTokenMinterDispatcherTrait,
 };
 use crate::token::interface::IMINIGAME_TOKEN_ID;
-use crate::token::structs::{unpack_game_id, unpack_objective_id, unpack_token_id};
+use crate::token::structs::{
+    MintBatchRecipient, unpack_game_id, unpack_objective_id, unpack_salt, unpack_token_id,
+};
 use crate::token_lite::interface::{
     IMINIGAME_TOKEN_LITE_ID, IMinigameTokenLiteDispatcher, IMinigameTokenLiteDispatcherTrait,
 };
@@ -35,9 +38,9 @@ fn MINTER() -> ContractAddress {
     addr('MINTER')
 }
 
-fn deploy_token_lite() -> (
-    IMinigameTokenLiteDispatcher, ERC721ABIDispatcher, IMinigameTokenMinterDispatcher,
-) {
+fn deploy_token_lite_for_game(
+    game_address: ContractAddress,
+) -> (IMinigameTokenLiteDispatcher, ERC721ABIDispatcher, IMinigameTokenMinterDispatcher) {
     let contract = declare("TokenLiteContract").unwrap().contract_class();
     let mut calldata: Array<felt252> = array![];
     let name: ByteArray = "LiteToken";
@@ -46,13 +49,19 @@ fn deploy_token_lite() -> (
     name.serialize(ref calldata);
     symbol.serialize(ref calldata);
     base_uri.serialize(ref calldata);
-    GAME().serialize(ref calldata);
+    game_address.serialize(ref calldata);
     let (contract_address, _) = contract.deploy(@calldata).unwrap();
     (
         IMinigameTokenLiteDispatcher { contract_address },
         ERC721ABIDispatcher { contract_address },
         IMinigameTokenMinterDispatcher { contract_address },
     )
+}
+
+fn deploy_token_lite() -> (
+    IMinigameTokenLiteDispatcher, ERC721ABIDispatcher, IMinigameTokenMinterDispatcher,
+) {
+    deploy_token_lite_for_game(GAME())
 }
 
 /// Mint with lifecycle only — every unsupported parameter at its required
@@ -653,6 +662,119 @@ fn test_update_player_name_rejects_non_owner() {
 }
 
 // ================================================================================================
+// BATCH MINT
+// ================================================================================================
+
+fn batch_neutral(
+    token: IMinigameTokenLiteDispatcher, recipients: Array<MintBatchRecipient>, salt: u16,
+) -> Array<felt252> {
+    token
+        .mint_batch_recipients(
+            GAME(),
+            Option::Some('bench'),
+            Option::Some(5),
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            recipients,
+            false,
+            false,
+            salt,
+            0,
+        )
+}
+
+#[test]
+fn test_mint_batch_recipients_counts_owners_and_salts() {
+    let (token, erc721, _) = deploy_token_lite();
+    start_cheat_block_timestamp(token.contract_address, 1000);
+
+    cheat_caller_address(token.contract_address, MINTER(), CheatSpan::TargetCalls(1));
+    let ids = batch_neutral(
+        token,
+        array![
+            MintBatchRecipient { to: ALICE(), count: 2 },
+            MintBatchRecipient { to: BOB(), count: 1 },
+        ],
+        7,
+    );
+
+    assert!(ids.len() == 3, "Should mint 3 tokens");
+    let id_a = *ids.at(0);
+    let id_b = *ids.at(1);
+    let id_c = *ids.at(2);
+    assert!(id_a != id_b && id_b != id_c && id_a != id_c, "Token ids must be distinct");
+    assert!(erc721.owner_of(id_a.into()) == ALICE(), "First token to ALICE");
+    assert!(erc721.owner_of(id_b.into()) == ALICE(), "Second token to ALICE");
+    assert!(erc721.owner_of(id_c.into()) == BOB(), "Third token to BOB");
+
+    // Global salt counter across the batch, minter registered once
+    assert!(unpack_salt(id_a) == 7 && unpack_salt(id_b) == 8 && unpack_salt(id_c) == 9, "salts");
+    let mut i: u32 = 0;
+    while i < ids.len() {
+        let id = *ids.at(i);
+        assert!(token.minted_by(id) == 1, "All share minter id 1");
+        assert!(token.settings_id(id) == 5, "Shared settings id");
+        assert!(token.player_name(id) == 'bench', "Shared player name");
+        i += 1;
+    }
+}
+
+#[test]
+#[should_panic(
+    expected: "MinigameTokenLite: salt overflow (salt + total tokens - 1 must be <= 1023)",
+)]
+fn test_mint_batch_recipients_rejects_salt_overflow() {
+    let (token, _, _) = deploy_token_lite();
+    batch_neutral(token, array![MintBatchRecipient { to: ALICE(), count: 4 }], 1021);
+}
+
+#[test]
+#[should_panic(expected: "MinigameTokenLite: recipients array cannot be empty")]
+fn test_mint_batch_recipients_rejects_empty() {
+    let (token, _, _) = deploy_token_lite();
+    batch_neutral(token, array![], 0);
+}
+
+#[test]
+#[should_panic(expected: "MinigameTokenLite: per-recipient count must be > 0")]
+fn test_mint_batch_recipients_rejects_zero_count() {
+    let (token, _, _) = deploy_token_lite();
+    batch_neutral(token, array![MintBatchRecipient { to: ALICE(), count: 0 }], 0);
+}
+
+#[test]
+#[should_panic(expected: "MinigameTokenLite: context not supported")]
+fn test_mint_batch_recipients_rejects_context() {
+    let (token, _, _) = deploy_token_lite();
+    let context = crate::token::structs::GameContextDetails {
+        name: "ctx", description: "ctx", id: Option::None, context: array![].span(),
+    };
+    token
+        .mint_batch_recipients(
+            GAME(),
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::Some(context),
+            Option::None,
+            Option::None,
+            Option::None,
+            array![MintBatchRecipient { to: ALICE(), count: 1 }],
+            false,
+            false,
+            0,
+            0,
+        );
+}
+
+// ================================================================================================
 // MINIGAME LITE HELPERS (minigame::lite::pre_action / post_action)
 // ================================================================================================
 //
@@ -715,6 +837,81 @@ fn test_lite_post_action_emits_refresh() {
                 ),
             ],
         );
+}
+
+// ================================================================================================
+// GAME-SIDE INTEGRATION (MinigameComponent + metagame assert_game_registered)
+// ================================================================================================
+
+fn deploy_initialized_minigame_mock(token_address: ContractAddress) -> ContractAddress {
+    let contract = declare("minigame_mock").unwrap().contract_class();
+    let (game_address, _) = contract.deploy(@array![]).unwrap();
+    game_components_test_common::mocks::minigame_mock::IMinigameMockInitDispatcher {
+        contract_address: game_address,
+    }
+        .initializer(
+            ALICE(),
+            "Game",
+            "d",
+            "dev",
+            "pub",
+            "genre",
+            "img",
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            token_address,
+            Option::None,
+        );
+    game_address
+}
+
+/// End-to-end: MinigameComponent::initializer SRC5-checks the token for
+/// IMINIGAME_TOKEN_ID and queries game_registry_address(); the lite token's
+/// legacy-id registration and zero-registry shim must satisfy both, and the
+/// metagame lib must then treat the mutual game <-> token pairing as
+/// registered.
+#[test]
+fn test_minigame_initializer_and_game_registered_with_lite_token() {
+    let game_class = declare("minigame_mock").unwrap().contract_class();
+    let (game_address, _) = game_class.deploy(@array![]).unwrap();
+    let (token, _, _) = deploy_token_lite_for_game(game_address);
+    game_components_test_common::mocks::minigame_mock::IMinigameMockInitDispatcher {
+        contract_address: game_address,
+    }
+        .initializer(
+            ALICE(),
+            "Game",
+            "d",
+            "dev",
+            "pub",
+            "genre",
+            "img",
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            token.contract_address,
+            Option::None,
+        );
+
+    crate::metagame::metagame::assert_game_registered(game_address);
+}
+
+#[test]
+#[should_panic(expected: "Game is not registered")]
+fn test_assert_game_registered_rejects_game_not_paired_with_lite_token() {
+    let game_class = declare("minigame_mock").unwrap().contract_class();
+    let (game_a, _) = game_class.deploy(@array![]).unwrap();
+    let (token, _, _) = deploy_token_lite_for_game(game_a);
+
+    // A second game pointing at the same lite token: the token's one
+    // configured game is game_a, so game_b must be rejected.
+    let game_b = deploy_initialized_minigame_mock(token.contract_address);
+    crate::metagame::metagame::assert_game_registered(game_b);
 }
 
 // ================================================================================================

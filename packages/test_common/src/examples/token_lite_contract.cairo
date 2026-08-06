@@ -2,6 +2,9 @@
 // minter tracking, and a soulbound transfer guard. No registry, no enumerable,
 // no objectives/context/skills/renderer extensions, no mutable token state.
 //
+// Lives in test_common so downstream consumers (e.g. tournament platforms) can
+// declare it from their own test suites via `build-external-contracts`.
+//
 // A production deployment would additionally override `token_uri` to call its
 // game renderer contract (one stored address, one call) and add
 // Ownable/Upgradeable — omitted here to keep the example focused on the
@@ -10,12 +13,12 @@
 #[starknet::contract]
 pub mod TokenLiteContract {
     use core::num::traits::Zero;
+    use game_components_embeddable_game_standard::token::extensions::minter::minter::MinterComponent;
+    use game_components_embeddable_game_standard::token::structs::unpack_soulbound;
+    use game_components_embeddable_game_standard::token_lite::token_lite_component::CoreTokenLiteComponent;
     use openzeppelin_introspection::src5::SRC5Component;
     use openzeppelin_token::erc721::ERC721Component;
     use starknet::ContractAddress;
-    use crate::token::extensions::minter::minter::MinterComponent;
-    use crate::token::structs::unpack_soulbound;
-    use crate::token_lite::token_lite_component::CoreTokenLiteComponent;
 
     component!(path: ERC721Component, storage: erc721, event: ERC721Event);
     component!(path: SRC5Component, storage: src5, event: SRC5Event);

@@ -1,3 +1,4 @@
+use core::num::traits::Zero;
 use game_components_embeddable_game_standard::metagame::extensions::context::structs::GameContextDetails;
 use game_components_embeddable_game_standard::minigame::interface::{
     IMinigameDispatcher, IMinigameDispatcherTrait,
@@ -13,8 +14,14 @@ use crate::metagame::structs::MintMetagameParams;
 
 /// Asserts that a game is registered in the minigame token contract
 ///
+/// For registry-backed (multi-game) tokens this asks the registry. For tokens
+/// with no registry — single-game full tokens and lite tokens both report a
+/// zero `game_registry_address()` — "registered" means the pairing is mutual:
+/// the game names this token, and the token's one configured game is this
+/// game. Previously this path dispatched to the zero address and reverted
+/// with CONTRACT_NOT_DEPLOYED for any single-game token.
+///
 /// # Arguments
-/// * `minigame_token_address` - The address of the minigame token contract
 /// * `game_address` - The address of the game contract to check
 pub fn assert_game_registered(game_address: ContractAddress) {
     let minigame_dispatcher = IMinigameDispatcher { contract_address: game_address };
@@ -23,6 +30,10 @@ pub fn assert_game_registered(game_address: ContractAddress) {
         contract_address: minigame_token_address,
     };
     let minigame_registry_address = minigame_token_dispatcher.game_registry_address();
+    if minigame_registry_address.is_zero() {
+        assert!(minigame_token_dispatcher.game_address() == game_address, "Game is not registered");
+        return;
+    }
     let minigame_registry_dispatcher = IMinigameRegistryDispatcher {
         contract_address: minigame_registry_address,
     };

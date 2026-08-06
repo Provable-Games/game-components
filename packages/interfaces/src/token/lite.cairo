@@ -22,7 +22,7 @@
 //   emit) is the only post-action hook a game needs.
 use starknet::ContractAddress;
 use crate::structs::metagame::GameContextDetails;
-use crate::structs::token::TokenMetadata;
+use crate::structs::token::{MintBatchRecipient, TokenMetadata};
 
 /// SNIP-5 interface ID derived via src5_rs: XOR of extended function selectors.
 ///
@@ -31,7 +31,7 @@ use crate::structs::token::TokenMetadata;
 /// against a stripped copy of this trait (see packages/interfaces/src/AGENTS.md)
 /// to rederive.
 pub const IMINIGAME_TOKEN_LITE_ID: felt252 =
-    0x3ea3d599077fbe09ddbe82ff33c1abc87aef52d8609d8bf3508fdba8dd92056;
+    0x2dc0909ee1d6854df56adcced7d2cd9c3ce2f8d5aa788a754f0ffde901fd5e7;
 
 #[starknet::interface]
 pub trait IMinigameTokenLite<TState> {
@@ -77,6 +77,28 @@ pub trait IMinigameTokenLite<TState> {
         salt: u16,
         metadata: u16,
     ) -> felt252;
+    /// Batch mint with per-recipient counts. Signature-compatible with
+    /// `IMinigameToken::mint_batch_recipients`; the same unsupported-parameter
+    /// rules as `mint` apply, and salt is a single global counter across the
+    /// batch (`salt + sum(counts) - 1 <= 0x3FF`).
+    fn mint_batch_recipients(
+        ref self: TState,
+        game_address: ContractAddress,
+        player_name: Option<felt252>,
+        settings_id: Option<u32>,
+        start: Option<u64>,
+        end: Option<u64>,
+        objective_id: Option<u32>,
+        context: Option<GameContextDetails>,
+        client_url: Option<ByteArray>,
+        renderer_address: Option<ContractAddress>,
+        skills_address: Option<ContractAddress>,
+        recipients: Array<MintBatchRecipient>,
+        soulbound: bool,
+        paymaster: bool,
+        salt: u16,
+        metadata: u16,
+    ) -> Array<felt252>;
     /// Emits an ERC-4906 `MetadataUpdate` for `token_id` — see
     /// `IMinigameToken::refresh_metadata` for the spam/existence trade-offs;
     /// identical semantics here.

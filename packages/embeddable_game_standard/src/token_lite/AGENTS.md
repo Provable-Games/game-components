@@ -17,7 +17,7 @@ game-over / objective-completion authority in the game contract itself.
 
 ## Interface (IMinigameTokenLite)
 
-**Interface ID:** `IMINIGAME_TOKEN_LITE_ID = 0x3ea3d599077fbe09ddbe82ff33c1abc87aef52d8609d8bf3508fdba8dd92056`
+**Interface ID:** `IMINIGAME_TOKEN_LITE_ID = 0x2dc0909ee1d6854df56adcced7d2cd9c3ce2f8d5aa788a754f0ffde901fd5e7`
 
 Defined in `packages/interfaces/src/token/lite.cairo`. The initializer also
 registers `IMINIGAME_TOKEN_ID` so `MinigameComponent::initializer` (which
@@ -27,6 +27,7 @@ token; `game_registry_address()` always returns zero.
 | Method | Cost | Notes |
 | --- | --- | --- |
 | `mint(...)` | 1 minter-map read (warm), optional name write, ERC721 mint | Same 15-arg signature as the full token |
+| `mint_batch_recipients(...)` | batch work hoisted; per token: pack + optional name write + ERC721 mint | ABI-compatible with the full token; same global salt counter (`salt + sum(counts) - 1 <= 0x3FF`) |
 | `assert_owner_and_playable(token_id, expected_owner)` | 1 storage read (owner) | Combined guard — replaces `owner_of` + `assert_is_playable` (two calls) with one |
 | `is_playable` / `assert_is_playable` | 0 storage reads | Lifecycle window only — no game_over latch |
 | `token_metadata`, `settings_id`, `minted_by`, `is_soulbound` | 0 storage reads | Pure unpack of the token id |
@@ -34,9 +35,8 @@ token; `game_registry_address()` always returns zero.
 | `refresh_metadata(_batch)` | event only | Same advisory/no-existence-check semantics as the full token |
 | `update_player_name` | owner-gated write | |
 
-Not present (reverts with ENTRYPOINT_NOT_FOUND): `update_game`, all other
-`*_batch` views, `mint_batch_recipients`, objectives/settings/context/
-renderer/skills/enumerable surfaces.
+Not present (reverts with ENTRYPOINT_NOT_FOUND): `update_game`, all batch
+views, objectives/settings/context/renderer/skills/enumerable surfaces.
 
 ## Game-side helpers
 
@@ -55,7 +55,13 @@ Requires: `ERC721Component`, `SRC5Component`, an `OptionalMinter` impl
 consumers), and an `ERC721HooksTrait` (enforce soulbound in `before_update`
 via `unpack_soulbound` — pure, no storage).
 
-See `tests/examples/token_lite_contract.cairo` for a full wiring example.
+See `test_common/src/examples/token_lite_contract.cairo` for a full wiring
+example — it lives in the test_common package so downstream consumers can
+declare `TokenLiteContract` in their own suites via `build-external-contracts`.
+
+For metagames: `metagame::metagame::assert_game_registered` accepts
+registry-less tokens (zero `game_registry_address()`) by asserting the mutual
+game ↔ token pairing instead of dispatching to the registry.
 
 ## Testing
 

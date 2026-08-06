@@ -39,8 +39,9 @@ pub mod CoreTokenLiteComponent {
     use starknet::{ContractAddress, get_block_timestamp, get_caller_address, get_tx_info};
     use crate::token::interface::IMINIGAME_TOKEN_ID;
     use crate::token::structs::{
-        GameContextDetails, TokenMetadata, TokenMutableState, extract_tx_hash_bits, pack_token_id,
-        to_token_metadata, unpack_minted_by, unpack_settings_id, unpack_soulbound, unpack_token_id,
+        GameContextDetails, MintBatchRecipient, TokenMetadata, TokenMutableState,
+        extract_tx_hash_bits, pack_token_id, to_token_metadata, unpack_minted_by,
+        unpack_settings_id, unpack_soulbound, unpack_token_id,
     };
     use crate::token::token::{LifecycleTrait, token_state};
     use crate::token::traits::OptionalMinter;
@@ -245,6 +246,144 @@ pub mod CoreTokenLiteComponent {
             erc721_component.mint(to, final_token_id.into());
 
             final_token_id
+        }
+
+        /// Batch mint identical tokens to one or more recipients with per-recipient
+        /// counts. ABI-compatible with `IMinigameToken::mint_batch_recipients` so
+        /// batch-minting metagames (tournaments, brackets) work unchanged against a
+        /// lite deployment; the same unsupported-parameter rules as `mint` apply.
+        ///
+        /// Salt is a single global counter across the batch (`salt + i` for
+        /// `i in 0..sum(counts)`), identical to the full token: token ids do not
+        /// encode the recipient, so salts must be globally unique within the tx —
+        /// `salt + sum(counts) - 1 <= 0x3FF` (10-bit field).
+        ///
+        /// Versus calling `mint` per token, the lifecycle math, tx-info read, game
+        /// check and minter registration are hoisted and paid once for the batch.
+        fn mint_batch_recipients(
+            ref self: ComponentState<TContractState>,
+            game_address: ContractAddress,
+            player_name: Option<felt252>,
+            settings_id: Option<u32>,
+            start: Option<u64>,
+            end: Option<u64>,
+            objective_id: Option<u32>,
+            context: Option<GameContextDetails>,
+            client_url: Option<ByteArray>,
+            renderer_address: Option<ContractAddress>,
+            skills_address: Option<ContractAddress>,
+            recipients: Array<MintBatchRecipient>,
+            soulbound: bool,
+            paymaster: bool,
+            salt: u16,
+            metadata: u16,
+        ) -> Array<felt252> {
+            assert!(objective_id.is_none(), "MinigameTokenLite: objectives not supported");
+            assert!(context.is_none(), "MinigameTokenLite: context not supported");
+            assert!(client_url.is_none(), "MinigameTokenLite: client_url not supported");
+            assert!(
+                renderer_address.is_none(), "MinigameTokenLite: per-token renderer not supported",
+            );
+            assert!(skills_address.is_none(), "MinigameTokenLite: skills not supported");
+            assert!(!paymaster, "MinigameTokenLite: paymaster flag not supported");
+            assert!(metadata == 0, "MinigameTokenLite: metadata field not supported");
+            assert!(
+                game_address == self.game_address.read(),
+                "MinigameTokenLite: Game address does not match configured game",
+            );
+
+            let recipient_count = recipients.len();
+            assert!(recipient_count > 0, "MinigameTokenLite: recipients array cannot be empty");
+
+            // Sum per-recipient counts and bound the global salt counter.
+            let mut total_tokens: u32 = 0;
+            let mut sum_idx: u32 = 0;
+            while sum_idx < recipient_count {
+                let r: @MintBatchRecipient = recipients.at(sum_idx);
+                let c: u16 = *r.count;
+                assert!(c > 0, "MinigameTokenLite: per-recipient count must be > 0");
+                total_tokens += c.into();
+                sum_idx += 1;
+            }
+            let max_salt: u32 = salt.into() + total_tokens - 1;
+            assert!(
+                max_salt <= 0x3FF,
+                "MinigameTokenLite: salt overflow (salt + total tokens - 1 must be <= 1023)",
+            );
+
+            // Hoisted per-batch work: lifecycle math (same rules and rationale as
+            // `mint`), tx-hash bits, minter registration.
+            let caller = get_caller_address();
+            let current_time = get_block_timestamp();
+
+            let lifecycle = token_state::create_lifecycle_with_defaults(start, end);
+            lifecycle.validate();
+            assert!(
+                lifecycle.end == 0
+                    || (lifecycle.end > current_time && lifecycle.end > lifecycle.start),
+                "MinigameTokenLite: Lifecycle end must be in the future and after start",
+            );
+            let effective_start = if lifecycle.start > current_time {
+                lifecycle.start
+            } else {
+                current_time
+            };
+            let start_delay: u32 = (effective_start - current_time).try_into().unwrap();
+            let end_delay: u32 = if lifecycle.end > effective_start {
+                (lifecycle.end - effective_start).try_into().unwrap()
+            } else {
+                0
+            };
+
+            let tx_hash_bits = extract_tx_hash_bits(get_tx_info().unbox().transaction_hash);
+
+            let mut contract_self = self.get_contract_mut();
+            let minted_by = MinterOpt::add_minter(ref contract_self, caller);
+            let validated_settings_id = settings_id.unwrap_or(0);
+
+            // Per-token work: pack, optional name write, ERC721 mint.
+            let mut token_ids: Array<felt252> = ArrayTrait::new();
+            let mut salt_offset: u16 = 0;
+            let mut r_idx: u32 = 0;
+            while r_idx < recipient_count {
+                let r: @MintBatchRecipient = recipients.at(r_idx);
+                let to: ContractAddress = *r.to;
+                let count: u16 = *r.count;
+
+                let mut k: u16 = 0;
+                while k < count {
+                    let final_token_id = pack_token_id(
+                        0, // game_id: always 0 — single game
+                        minted_by,
+                        validated_settings_id,
+                        current_time,
+                        start_delay,
+                        end_delay,
+                        0, // objective_id
+                        soulbound,
+                        false, // has_context
+                        false, // paymaster
+                        tx_hash_bits,
+                        salt + salt_offset,
+                        0 // metadata
+                    );
+
+                    if let Option::Some(name) = player_name {
+                        self.token_player_names.entry(final_token_id).write(name);
+                    }
+
+                    let mut contract = self.get_contract_mut();
+                    let mut erc721_component = ERC721::get_component_mut(ref contract);
+                    erc721_component.mint(to, final_token_id.into());
+
+                    token_ids.append(final_token_id);
+                    salt_offset += 1;
+                    k += 1;
+                }
+                r_idx += 1;
+            }
+
+            token_ids
         }
 
         /// Emits an ERC-4906 `MetadataUpdate` without touching state. Same
