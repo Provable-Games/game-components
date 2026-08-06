@@ -1,11 +1,19 @@
 use game_components_embeddable_game_standard::token::extensions::objectives::interface::{
-    IMinigameTokenObjectivesDispatcher, IMinigameTokenObjectivesDispatcherTrait,
+    IMINIGAME_TOKEN_OBJECTIVES_ID, IMinigameTokenObjectivesDispatcher,
+    IMinigameTokenObjectivesDispatcherTrait,
 };
+use openzeppelin_interfaces::introspection::{ISRC5Dispatcher, ISRC5DispatcherTrait};
 use starknet::ContractAddress;
 use crate::minigame::extensions::objectives::structs::GameObjectiveDetails;
 
 
-/// Creates an objective in the minigame token contract
+/// Announces a created objective to the minigame token contract, when it has
+/// an objectives surface.
+///
+/// Same rationale as `settings::libs::create_settings`: the token-side call is
+/// an indexer announcement, the game remains the source of truth, and lite
+/// tokens (no objectives surface, no `IMINIGAME_TOKEN_OBJECTIVES_ID`
+/// registration) skip the announcement instead of reverting.
 ///
 /// # Arguments
 /// * `minigame_token_address` - The address of the minigame token contract
@@ -20,6 +28,10 @@ pub fn create_objective(
     objective_id: u32,
     objective_details: GameObjectiveDetails,
 ) {
+    let token_src5 = ISRC5Dispatcher { contract_address: minigame_token_address };
+    if !token_src5.supports_interface(IMINIGAME_TOKEN_OBJECTIVES_ID) {
+        return;
+    }
     let minigame_token_dispatcher = IMinigameTokenObjectivesDispatcher {
         contract_address: minigame_token_address,
     };

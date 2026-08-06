@@ -116,6 +116,8 @@ fn test_create_settings_basic() {
     let settings_id: u32 = 1;
 
     // Mock create_settings call (returns unit)
+    mock_call(token_address, selector!("supports_interface"), true, 1);
+    mock_call(token_address, selector!("supports_interface"), true, 1);
     mock_call(token_address, selector!("create_settings"), (), 1);
 
     libs::create_settings(
@@ -136,6 +138,8 @@ fn test_create_settings_with_settings_data() {
     let game_address = GAME_ADDRESS();
     let creator_address = CREATOR();
 
+    mock_call(token_address, selector!("supports_interface"), true, 1);
+    mock_call(token_address, selector!("supports_interface"), true, 1);
     mock_call(token_address, selector!("create_settings"), (), 1);
 
     let settings = array![GameSetting { name: 'speed', value: 'fast' }].span();
@@ -158,6 +162,8 @@ fn test_create_settings_multiple_settings() {
     let game_address = GAME_ADDRESS();
     let creator_address = CREATOR();
 
+    mock_call(token_address, selector!("supports_interface"), true, 1);
+    mock_call(token_address, selector!("supports_interface"), true, 1);
     mock_call(token_address, selector!("create_settings"), (), 1);
 
     let settings = array![
@@ -182,6 +188,8 @@ fn test_create_settings_empty_name() {
     let game_address = GAME_ADDRESS();
     let creator_address = CREATOR();
 
+    mock_call(token_address, selector!("supports_interface"), true, 1);
+    mock_call(token_address, selector!("supports_interface"), true, 1);
     mock_call(token_address, selector!("create_settings"), (), 1);
 
     libs::create_settings(
@@ -203,6 +211,8 @@ fn test_create_settings_empty_description() {
     let game_address = GAME_ADDRESS();
     let creator_address = CREATOR();
 
+    mock_call(token_address, selector!("supports_interface"), true, 1);
+    mock_call(token_address, selector!("supports_interface"), true, 1);
     mock_call(token_address, selector!("create_settings"), (), 1);
 
     libs::create_settings(
@@ -224,6 +234,8 @@ fn test_create_settings_long_name() {
     let game_address = GAME_ADDRESS();
     let creator_address = CREATOR();
 
+    mock_call(token_address, selector!("supports_interface"), true, 1);
+    mock_call(token_address, selector!("supports_interface"), true, 1);
     mock_call(token_address, selector!("create_settings"), (), 1);
 
     let long_name: ByteArray =
@@ -247,6 +259,8 @@ fn test_create_settings_long_description() {
     let game_address = GAME_ADDRESS();
     let creator_address = CREATOR();
 
+    mock_call(token_address, selector!("supports_interface"), true, 1);
+    mock_call(token_address, selector!("supports_interface"), true, 1);
     mock_call(token_address, selector!("create_settings"), (), 1);
 
     let long_desc: ByteArray =
@@ -270,6 +284,8 @@ fn test_create_settings_max_id() {
     let game_address = GAME_ADDRESS();
     let creator_address = CREATOR();
 
+    mock_call(token_address, selector!("supports_interface"), true, 1);
+    mock_call(token_address, selector!("supports_interface"), true, 1);
     mock_call(token_address, selector!("create_settings"), (), 1);
 
     libs::create_settings(
@@ -290,6 +306,8 @@ fn test_create_settings_zero_id() {
     let game_address = GAME_ADDRESS();
     let creator_address = CREATOR();
 
+    mock_call(token_address, selector!("supports_interface"), true, 1);
+    mock_call(token_address, selector!("supports_interface"), true, 1);
     mock_call(token_address, selector!("create_settings"), (), 1);
 
     libs::create_settings(
@@ -310,6 +328,8 @@ fn test_create_settings_many_items() {
     let game_address = GAME_ADDRESS();
     let creator_address = CREATOR();
 
+    mock_call(token_address, selector!("supports_interface"), true, 1);
+    mock_call(token_address, selector!("supports_interface"), true, 1);
     mock_call(token_address, selector!("create_settings"), (), 1);
 
     // Create 20 settings items
@@ -349,6 +369,8 @@ fn test_create_then_get_settings() {
     let settings_id: u32 = 10;
 
     // Mock create_settings call
+    mock_call(token_address, selector!("supports_interface"), true, 1);
+    mock_call(token_address, selector!("supports_interface"), true, 1);
     mock_call(token_address, selector!("create_settings"), (), 1);
 
     libs::create_settings(
@@ -379,6 +401,7 @@ fn test_multiple_games_settings() {
     let creator = CREATOR();
 
     // Mock multiple create_settings calls
+    mock_call(token_address, selector!("supports_interface"), true, 10);
     mock_call(token_address, selector!("create_settings"), (), 10);
 
     // Game 1 creates settings
@@ -450,6 +473,8 @@ fn test_create_settings_fuzz_id(settings_id: u32) {
     let game_address = GAME_ADDRESS();
     let creator_address = CREATOR();
 
+    mock_call(token_address, selector!("supports_interface"), true, 1);
+    mock_call(token_address, selector!("supports_interface"), true, 1);
     mock_call(token_address, selector!("create_settings"), (), 1);
 
     libs::create_settings(

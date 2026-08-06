@@ -1,9 +1,11 @@
 use game_components_embeddable_game_standard::token::extensions::settings::interface::{
-    IMinigameTokenSettingsDispatcher, IMinigameTokenSettingsDispatcherTrait,
+    IMINIGAME_TOKEN_SETTINGS_ID, IMinigameTokenSettingsDispatcher,
+    IMinigameTokenSettingsDispatcherTrait,
 };
 use game_components_embeddable_game_standard::token::interface::{
     IMinigameTokenDispatcher, IMinigameTokenDispatcherTrait,
 };
+use openzeppelin_interfaces::introspection::{ISRC5Dispatcher, ISRC5DispatcherTrait};
 use starknet::ContractAddress;
 use crate::minigame::extensions::settings::structs::GameSettingDetails;
 
@@ -22,7 +24,17 @@ pub fn get_settings_id(minigame_token_address: ContractAddress, token_id: felt25
     minigame_token_dispatcher.settings_id(token_id)
 }
 
-/// Creates settings in the minigame token contract
+/// Announces created settings to the minigame token contract, when it has a
+/// settings surface.
+///
+/// The token-side `create_settings` stores nothing — it validates and emits a
+/// `SettingsCreated` event for indexers. The game contract remains the source
+/// of truth for what settings exist (`settings_exist` answers from the game).
+/// Lite tokens have no settings surface at all and do not register
+/// `IMINIGAME_TOKEN_SETTINGS_ID`, so the announcement is skipped for them
+/// instead of reverting with ENTRYPOINT_NOT_FOUND — which would otherwise
+/// brick settings creation (and constructors that create default settings)
+/// for every game wired to a lite token.
 ///
 /// # Arguments
 /// * `minigame_token_address` - The address of the minigame token contract
@@ -37,6 +49,10 @@ pub fn create_settings(
     settings_id: u32,
     settings_details: GameSettingDetails,
 ) {
+    let token_src5 = ISRC5Dispatcher { contract_address: minigame_token_address };
+    if !token_src5.supports_interface(IMINIGAME_TOKEN_SETTINGS_ID) {
+        return;
+    }
     let minigame_token_dispatcher = IMinigameTokenSettingsDispatcher {
         contract_address: minigame_token_address,
     };

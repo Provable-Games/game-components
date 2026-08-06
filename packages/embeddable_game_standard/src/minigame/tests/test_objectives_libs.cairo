@@ -43,6 +43,8 @@ fn test_create_objective_valid_parameters() {
     let objective_id: u32 = 1;
 
     // Mock create_objective call
+    mock_call(token_address, selector!("supports_interface"), true, 1);
+    mock_call(token_address, selector!("supports_interface"), true, 1);
     mock_call(token_address, selector!("create_objective"), (), 1);
 
     let objectives = array![GameObjective { name: 'First Blood', value: 'Get the first kill' }];
@@ -64,6 +66,8 @@ fn test_create_objective_empty_name() {
     let game_address = GAME_ADDRESS();
     let creator_address = CREATOR();
 
+    mock_call(token_address, selector!("supports_interface"), true, 1);
+    mock_call(token_address, selector!("supports_interface"), true, 1);
     mock_call(token_address, selector!("create_objective"), (), 1);
 
     let objectives = array![GameObjective { name: 'Objective 1', value: 'Some description' }];
@@ -83,6 +87,8 @@ fn test_create_objective_empty_description() {
     let game_address = GAME_ADDRESS();
     let creator_address = CREATOR();
 
+    mock_call(token_address, selector!("supports_interface"), true, 1);
+    mock_call(token_address, selector!("supports_interface"), true, 1);
     mock_call(token_address, selector!("create_objective"), (), 1);
 
     let objectives = array![GameObjective { name: 'Empty Desc Objective', value: 'value' }];
@@ -102,6 +108,8 @@ fn test_create_objective_max_objective_id() {
     let game_address = GAME_ADDRESS();
     let creator_address = CREATOR();
 
+    mock_call(token_address, selector!("supports_interface"), true, 1);
+    mock_call(token_address, selector!("supports_interface"), true, 1);
     mock_call(token_address, selector!("create_objective"), (), 1);
 
     let objectives = array![GameObjective { name: 'Max ID Objective', value: 'Testing boundary' }];
@@ -121,6 +129,8 @@ fn test_create_objective_zero_objective_id() {
     let game_address = GAME_ADDRESS();
     let creator_address = CREATOR();
 
+    mock_call(token_address, selector!("supports_interface"), true, 1);
+    mock_call(token_address, selector!("supports_interface"), true, 1);
     mock_call(token_address, selector!("create_objective"), (), 1);
 
     let objectives = array![GameObjective { name: 'Zero ID Objective', value: 'Testing zero' }];
@@ -140,6 +150,8 @@ fn test_create_objective_long_name() {
     let game_address = GAME_ADDRESS();
     let creator_address = CREATOR();
 
+    mock_call(token_address, selector!("supports_interface"), true, 1);
+    mock_call(token_address, selector!("supports_interface"), true, 1);
     mock_call(token_address, selector!("create_objective"), (), 1);
 
     let long_name: ByteArray =
@@ -162,6 +174,8 @@ fn test_create_objective_long_description() {
     let game_address = GAME_ADDRESS();
     let creator_address = CREATOR();
 
+    mock_call(token_address, selector!("supports_interface"), true, 1);
+    mock_call(token_address, selector!("supports_interface"), true, 1);
     mock_call(token_address, selector!("create_objective"), (), 1);
 
     let long_description: ByteArray =
@@ -184,6 +198,8 @@ fn test_create_objective_special_chars_name() {
     let game_address = GAME_ADDRESS();
     let creator_address = CREATOR();
 
+    mock_call(token_address, selector!("supports_interface"), true, 1);
+    mock_call(token_address, selector!("supports_interface"), true, 1);
     mock_call(token_address, selector!("create_objective"), (), 1);
 
     let objectives = array![
@@ -205,6 +221,8 @@ fn test_create_objective_complex_content() {
     let game_address = GAME_ADDRESS();
     let creator_address = CREATOR();
 
+    mock_call(token_address, selector!("supports_interface"), true, 1);
+    mock_call(token_address, selector!("supports_interface"), true, 1);
     mock_call(token_address, selector!("create_objective"), (), 1);
 
     let objectives = array![GameObjective { name: 'complex_description', value: 'complex_value' }];
@@ -224,6 +242,8 @@ fn test_create_objective_multiple_in_span() {
     let game_address = GAME_ADDRESS();
     let creator_address = CREATOR();
 
+    mock_call(token_address, selector!("supports_interface"), true, 1);
+    mock_call(token_address, selector!("supports_interface"), true, 1);
     mock_call(token_address, selector!("create_objective"), (), 1);
 
     let objectives = array![
@@ -253,6 +273,8 @@ fn test_game_objective_details_struct_construction() {
     let game_address = GAME_ADDRESS();
     let creator_address = CREATOR();
 
+    mock_call(token_address, selector!("supports_interface"), true, 1);
+    mock_call(token_address, selector!("supports_interface"), true, 1);
     mock_call(token_address, selector!("create_objective"), (), 1);
 
     let name: ByteArray = "Complex Objective";
@@ -279,6 +301,7 @@ fn test_create_multiple_objectives_sequentially() {
     let creator_address = CREATOR();
 
     // Mock multiple create_objective calls
+    mock_call(token_address, selector!("supports_interface"), true, 10);
     mock_call(token_address, selector!("create_objective"), (), 10);
 
     let obj1 = array![GameObjective { name: 'Obj 1', value: 'Desc 1' }];
@@ -318,6 +341,7 @@ fn test_create_objectives_different_games() {
     let game2: ContractAddress = 'GAME2'.try_into().unwrap();
     let creator = CREATOR();
 
+    mock_call(token_address, selector!("supports_interface"), true, 10);
     mock_call(token_address, selector!("create_objective"), (), 10);
 
     let obj1 = array![GameObjective { name: 'Game 1 Objective', value: 'From game 1' }];
@@ -348,6 +372,7 @@ fn test_create_objectives_different_creators() {
     let creator1 = CREATOR();
     let creator2 = ALICE();
 
+    mock_call(token_address, selector!("supports_interface"), true, 10);
     mock_call(token_address, selector!("create_objective"), (), 10);
 
     let obj1 = array![GameObjective { name: 'Creator 1 Objective', value: 'From creator 1' }];
@@ -380,6 +405,8 @@ fn test_all_params_passed_through() {
     let name: ByteArray = "Test Objective";
     let description: ByteArray = "Test Description";
 
+    mock_call(token_address, selector!("supports_interface"), true, 1);
+    mock_call(token_address, selector!("supports_interface"), true, 1);
     mock_call(token_address, selector!("create_objective"), (), 1);
 
     let objectives = array![GameObjective { name: 'Sub', value: 'Value' }];
@@ -403,6 +430,8 @@ fn test_create_objective_both_empty() {
     let game_address = GAME_ADDRESS();
     let creator_address = CREATOR();
 
+    mock_call(token_address, selector!("supports_interface"), true, 1);
+    mock_call(token_address, selector!("supports_interface"), true, 1);
     mock_call(token_address, selector!("create_objective"), (), 1);
 
     let objectives = array![GameObjective { name: '', value: '' }];
@@ -422,6 +451,8 @@ fn test_create_objective_very_long_strings() {
     let game_address = GAME_ADDRESS();
     let creator_address = CREATOR();
 
+    mock_call(token_address, selector!("supports_interface"), true, 1);
+    mock_call(token_address, selector!("supports_interface"), true, 1);
     mock_call(token_address, selector!("create_objective"), (), 1);
 
     let long_name: ByteArray =
@@ -446,6 +477,7 @@ fn test_create_objectives_consecutive_ids() {
     let game_address = GAME_ADDRESS();
     let creator_address = CREATOR();
 
+    mock_call(token_address, selector!("supports_interface"), true, 100);
     mock_call(token_address, selector!("create_objective"), (), 100);
 
     let objectives = array![GameObjective { name: 'Objective', value: 'Value' }];
@@ -473,6 +505,7 @@ fn test_create_objectives_boundary_ids() {
     let game_address = GAME_ADDRESS();
     let creator_address = CREATOR();
 
+    mock_call(token_address, selector!("supports_interface"), true, 10);
     mock_call(token_address, selector!("create_objective"), (), 10);
 
     let objectives = array![GameObjective { name: 'Boundary', value: 'Value' }];
@@ -517,6 +550,8 @@ fn test_create_objective_empty_span() {
     let game_address = GAME_ADDRESS();
     let creator_address = CREATOR();
 
+    mock_call(token_address, selector!("supports_interface"), true, 1);
+    mock_call(token_address, selector!("supports_interface"), true, 1);
     mock_call(token_address, selector!("create_objective"), (), 1);
 
     let objectives: Array<GameObjective> = array![];
@@ -541,6 +576,8 @@ fn test_create_objective_fuzz_ids(objective_id: u32) {
     let game_address = GAME_ADDRESS();
     let creator_address = CREATOR();
 
+    mock_call(token_address, selector!("supports_interface"), true, 1);
+    mock_call(token_address, selector!("supports_interface"), true, 1);
     mock_call(token_address, selector!("create_objective"), (), 1);
 
     let objectives = array![GameObjective { name: 'Fuzz Test', value: 'Fuzz Value' }];
@@ -561,6 +598,8 @@ fn test_create_objective_fuzz_content(seed: felt252) {
     let game_address = GAME_ADDRESS();
     let creator_address = CREATOR();
 
+    mock_call(token_address, selector!("supports_interface"), true, 1);
+    mock_call(token_address, selector!("supports_interface"), true, 1);
     mock_call(token_address, selector!("create_objective"), (), 1);
 
     let objective_id: u32 = (seed.try_into().unwrap_or(0_u128) % 1000000).try_into().unwrap();
@@ -586,6 +625,7 @@ fn test_create_objectives_sparse_ids() {
     let game_address = GAME_ADDRESS();
     let creator_address = CREATOR();
 
+    mock_call(token_address, selector!("supports_interface"), true, 5);
     mock_call(token_address, selector!("create_objective"), (), 5);
 
     let objectives = array![GameObjective { name: 'Sparse', value: 'value' }];
@@ -627,6 +667,8 @@ fn test_create_objective_spaces_only() {
     let game_address = GAME_ADDRESS();
     let creator_address = CREATOR();
 
+    mock_call(token_address, selector!("supports_interface"), true, 1);
+    mock_call(token_address, selector!("supports_interface"), true, 1);
     mock_call(token_address, selector!("create_objective"), (), 1);
 
     let objectives = array![GameObjective { name: '     ', value: 'Normal value' }];
@@ -647,7 +689,9 @@ fn test_create_objective_different_tokens() {
     let game_address = GAME_ADDRESS();
     let creator_address = CREATOR();
 
+    mock_call(token1, selector!("supports_interface"), true, 1);
     mock_call(token1, selector!("create_objective"), (), 1);
+    mock_call(token2, selector!("supports_interface"), true, 1);
     mock_call(token2, selector!("create_objective"), (), 1);
 
     let obj1 = array![GameObjective { name: 'Token 1 Obj', value: 'v1' }];
