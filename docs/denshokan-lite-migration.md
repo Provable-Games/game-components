@@ -104,6 +104,19 @@ The library-class pattern (already used by budokan's rewards class) dissolved th
 | One-address, 3 boundaries | 4,602,400 | 4,995,280 | 4,840,320 ❌ |
 | **One-address, 2 boundaries (final)** | 4,602,400 | **4,995,280 (−6.0%)** | **4,440,320 (−5.1%)** |
 
+**Per-action estimates for the other entrypoints.** Method: the harness's cumulative benches yield a per-action execution delta, and adding each stack's measured protocol overhead (on-chain attack minus harness attack: 1,805,666 for #149, 1,834,426 for the final stack) reproduces the measured attack numbers exactly — so the same anchor gives reliable estimates for the actions we benched but didn't send on-chain:
+
+| Action (total tx L2 gas) | #149 stack | One-address final | Δ |
+|---|---|---|---|
+| start_game *(measured)* | 5,315,280 | 4,995,280 | −320k (−6.0%) |
+| attack *(measured)* | 4,680,320 | 4,440,320 | −240k (−5.1%) |
+| explore | ~4,342,000 | ~4,094,000 | ~−250k (−5.7%) |
+| surrender | ~3,113,000 | ~3,019,000 | ~−95k (−3.0%) |
+| select_stat_upgrades | ~3,787,000 | ~3,868,000 | ≈ break-even¹ |
+| flee / equip / drop_items / buy_items | *not benchmarked* | | structurally the same call pattern; expect flee ≈ attack-class, equip/drop ≈ stat-upgrades-class, buy_items between |
+
+¹ The architectural saving is a roughly constant *absolute* amount per action (removed token/settings calls vs. the session boundary's adventurer+bag payload). Heavy actions (attack, explore) net −5–6%; the lightest action (stat upgrades) is where the fixed boundary payload roughly cancels the removed calls. Two effects bias this table *against* the final stack: the #149 harness numbers use a mock token that deliberately under-charges the real token calls by ~60–100k/action (true #149 costs are higher, so true deltas are better across the board, pulling stat upgrades to neutral-or-better), and light actions are exactly the ones that gain most from client-side batching, since their cost is dominated by the ~1.8M protocol overhead.
+
 **Harness, full architecture span (origin/main → final):** attack −15.3%, start_game −14.7%, 13-action game −9.7% — understated, because the harness mock charged a fraction of real denshokan costs and the original also paid the ~6.73M keeper latch per game that no longer exists.
 
 **Per beast-mode game (75 actions):** ~388M gas → ~343M ≈ **$0.40 → ~$0.35 (−12%)**. At 75 actions the per-action cost is 94% of the game, and ~2M of every action transaction is protocol overhead (validation, fee transfer, calldata) that no contract architecture can remove — ~44% of the game's total. **Next lever: client-side action batching** (multicall across actions, trivial now that everything is one address): ~$0.28 at 2 actions/tx, ~$0.25 at 3.
