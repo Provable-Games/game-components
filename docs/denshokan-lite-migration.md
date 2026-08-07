@@ -53,6 +53,8 @@ The audits that preceded the changes established the key fact that made everythi
 
 **Measured (component benches):** per-action guard pair 449k → 271k (−40%); post-action sync 1,648k → 186k against mocks — against the real contract the sync path (6.73M) is deleted outright; warm mint −22%.
 
+**Final decision — self-binding only.** The lite component originally supported two deployment shapes: embedded in the game contract (one-address) and as a separate token contract paired to a game. Once Phase 4's measurements showed the separate shape strictly worse on gas, supporting it only kept dead machinery alive, so the component was committed to self-binding: the game contract IS the token. The `game_address` storage slot, `bind_game`, the two-phase `register_interfaces` init, the `MinigameTokenLite` preset, and the `minigame::lite::{pre_action, post_action}` cross-contract helpers were all deleted (the game calls the component internally); `game_address()` now returns the contract's own address, and the ecosystem pairing check in `assert_game_registered` simplified to an address equality (`token_address == game_address`), saving a cross-contract call at tournament creation. The `IMinigameTokenLite` ABI and `IMINIGAME_TOKEN_LITE_ID` are unchanged — `mint`'s `game_address` parameter survives for ABI parity (it must equal the contract's own address, same error string as before).
+
 ## Phase 2 — SDM integration (`super-death-mountain` #149)
 
 | Change | For |

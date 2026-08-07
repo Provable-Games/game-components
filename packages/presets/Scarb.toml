@@ -14,7 +14,6 @@ starknet.workspace = true
 openzeppelin_token.workspace = true
 openzeppelin_introspection.workspace = true
 openzeppelin_access.workspace = true
-openzeppelin_upgrades.workspace = true
 openzeppelin_interfaces.workspace = true
 ekubo.workspace = true
 

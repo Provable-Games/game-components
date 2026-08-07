@@ -1,5 +1,7 @@
-// Gas benchmarks: CoreTokenLiteComponent vs the full CoreTokenComponent in its
-// deployed-denshokan configuration (multi-game registry + all extensions).
+// Gas benchmarks: CoreTokenLiteComponent (self-bound in the one-address
+// LiteGameMock — game and token are the same contract) vs the full
+// CoreTokenComponent in its deployed-denshokan configuration (multi-game
+// registry + all extensions).
 //
 // Method: paired tests. Each `*_baseline` test performs setup only; each op
 // test repeats the measured operation 10 times on top of the same setup.
@@ -50,9 +52,10 @@ fn deploy_mock_game() -> ContractAddress {
     contract_address
 }
 
+/// One-address shape: the LiteGameMock contract is both the game and the
+/// token, so the returned "game" address is the token contract itself.
 fn setup_lite() -> (IMinigameTokenLiteDispatcher, ERC721ABIDispatcher, ContractAddress) {
-    let game = deploy_mock_game();
-    let contract = declare("TokenLiteContract").unwrap().contract_class();
+    let contract = declare("LiteGameMock").unwrap().contract_class();
     let mut calldata: Array<felt252> = array![];
     let name: ByteArray = "LiteToken";
     let symbol: ByteArray = "LITE";
@@ -60,13 +63,12 @@ fn setup_lite() -> (IMinigameTokenLiteDispatcher, ERC721ABIDispatcher, ContractA
     name.serialize(ref calldata);
     symbol.serialize(ref calldata);
     base_uri.serialize(ref calldata);
-    game.serialize(ref calldata);
     let (contract_address, _) = contract.deploy(@calldata).unwrap();
     start_cheat_block_timestamp(contract_address, START_TIME);
     (
         IMinigameTokenLiteDispatcher { contract_address },
         ERC721ABIDispatcher { contract_address },
-        game,
+        contract_address,
     )
 }
 

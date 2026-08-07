@@ -1,10 +1,11 @@
 // Lite token interface — single-game, no mutable token state.
 //
-// Gas-optimized subset of `IMinigameToken` for deployments that embed exactly one
-// game and let the game contract remain the sole authority on game-over /
-// objective completion. The token stores no per-token mutable state: everything
-// except `player_name` is unpacked from the token id itself, so every view is
-// pure felt arithmetic plus at most one storage read.
+// Gas-optimized subset of `IMinigameToken` for one-address deployments: the
+// implementing component is embedded IN the game contract, so the game and the
+// token are always the same contract, and the game contract remains the sole
+// authority on game-over / objective completion. The token stores no per-token
+// mutable state: everything except `player_name` is unpacked from the token id
+// itself, so every view is pure felt arithmetic plus at most one storage read.
 //
 // `mint` keeps the exact `IMinigameToken::mint` signature (same selector, same
 // calldata layout) so existing call sites and the `minigame::mint` helper work
@@ -48,6 +49,9 @@ pub trait IMinigameTokenLite<TState> {
     fn minted_by(self: @TState, token_id: felt252) -> felt252;
     fn minted_by_address(self: @TState, token_id: felt252) -> ContractAddress;
     fn is_soulbound(self: @TState, token_id: felt252) -> bool;
+    /// Returns this contract's own address — the token IS the game contract
+    /// (self-binding is the only supported shape). Kept as a view so ecosystem
+    /// consumers can keep resolving the game ↔ token pairing generically.
     fn game_address(self: @TState) -> ContractAddress;
     /// Always returns the zero address — the lite token has no registry. Kept
     /// so `MinigameComponent::initializer`, which unconditionally queries the
@@ -56,7 +60,9 @@ pub trait IMinigameTokenLite<TState> {
     fn game_registry_address(self: @TState) -> ContractAddress;
 
     /// Signature-compatible with `IMinigameToken::mint`. `game_address` must be
-    /// the single configured game; `objective_id`, `context`, `client_url`,
+    /// the token contract's own address (the game IS the token) — the parameter
+    /// survives for ABI parity and to catch caller misconfiguration;
+    /// `objective_id`, `context`, `client_url`,
     /// `renderer_address`, `skills_address` must be `None`, `paymaster` must be
     /// `false`, and `metadata` must be `0`.
     fn mint(

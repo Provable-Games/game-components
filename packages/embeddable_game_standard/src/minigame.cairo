@@ -1,6 +1,5 @@
 pub mod extensions;
 pub mod interface;
-pub mod lite;
 pub mod minigame;
 pub mod minigame_component;
 pub mod structs;

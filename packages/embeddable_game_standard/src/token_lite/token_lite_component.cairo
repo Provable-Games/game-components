@@ -6,17 +6,25 @@
 /// client urls, and that keep game-over / objective completion authority in
 /// the game contract itself.
 ///
+/// **Self-binding only (one-address architecture):** this component is
+/// embedded IN the game contract — the game contract IS the token. A
+/// separate-token deployment shape existed briefly and was removed after
+/// measurements showed it strictly worse on gas; with self-binding the
+/// game/token mutual-pairing story is trivial (self == self) and the
+/// `game_address()` view — which returns the contract's own address — is the
+/// honest advertisement of that to ecosystem consumers.
+///
 /// What is deliberately gone, and why it is safe to remove:
-/// * **Registry** — one game, stored once in `game_address`. No
-///   `game_id_from_address` on mint, no `game_address_from_id` anywhere.
+/// * **Registry** — one game: this contract. No `game_id_from_address` on
+///   mint, no `game_address_from_id` anywhere, no stored game address at all.
 /// * **Mutable token state** — no `game_over`/`completed_objective` latch.
 ///   The game contract is the sole authority; playability here is the
 ///   lifecycle window only, which lives packed inside the token id, so
 ///   `is_playable` costs zero storage reads.
 /// * **`update_game` + metagame callbacks** — nothing to sync and nobody to
 ///   notify. `refresh_metadata` (ERC-4906) is the only post-action hook.
-/// * **SRC5 round-trips** — the game address is trusted at initialization;
-///   mint performs no `supports_interface` calls.
+/// * **SRC5 round-trips** — the game is this contract; mint performs no
+///   `supports_interface` calls.
 /// * **Settings/objective validation on mint** — minters pass an
 ///   admin-configured `settings_id`; the game validates it at play time.
 ///
@@ -36,7 +44,9 @@ pub mod CoreTokenLiteComponent {
     use starknet::storage::{
         Map, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess,
     };
-    use starknet::{ContractAddress, get_block_timestamp, get_caller_address, get_tx_info};
+    use starknet::{
+        ContractAddress, get_block_timestamp, get_caller_address, get_contract_address, get_tx_info,
+    };
     use crate::token::interface::IMINIGAME_TOKEN_ID;
     use crate::token::structs::{
         GameContextDetails, MintBatchRecipient, TokenMetadata, TokenMutableState,
@@ -48,7 +58,6 @@ pub mod CoreTokenLiteComponent {
 
     #[storage]
     pub struct Storage {
-        game_address: ContractAddress,
         token_player_names: Map<felt252, felt252>,
     }
 
@@ -142,7 +151,9 @@ pub mod CoreTokenLiteComponent {
         }
 
         fn game_address(self: @ComponentState<TContractState>) -> ContractAddress {
-            self.game_address.read()
+            // The token IS the game contract (one-address architecture). Kept
+            // as a view so ecosystem consumers can still resolve the pairing.
+            get_contract_address()
         }
 
         fn game_registry_address(self: @ComponentState<TContractState>) -> ContractAddress {
@@ -182,10 +193,11 @@ pub mod CoreTokenLiteComponent {
             assert!(!paymaster, "MinigameTokenLite: paymaster flag not supported");
             assert!(metadata == 0, "MinigameTokenLite: metadata field not supported");
 
-            // Single game — no SRC5 probe, no registry resolution. The
-            // parameter is kept (and checked) purely for call-site parity.
+            // Single game — this contract. No SRC5 probe, no registry
+            // resolution. The parameter is kept for ABI parity and still
+            // catches caller misconfiguration (pointing at the wrong game).
             assert!(
-                game_address == self.game_address.read(),
+                game_address == get_contract_address(),
                 "MinigameTokenLite: Game address does not match configured game",
             );
 
@@ -288,7 +300,7 @@ pub mod CoreTokenLiteComponent {
             assert!(!paymaster, "MinigameTokenLite: paymaster flag not supported");
             assert!(metadata == 0, "MinigameTokenLite: metadata field not supported");
             assert!(
-                game_address == self.game_address.read(),
+                game_address == get_contract_address(),
                 "MinigameTokenLite: Game address does not match configured game",
             );
 
@@ -433,38 +445,20 @@ pub mod CoreTokenLiteComponent {
         +Drop<TContractState>,
         +ERC721Component::ERC721HooksTrait<TContractState>,
     > of InternalTrait<TContractState> {
-        fn initializer(ref self: ComponentState<TContractState>, game_address: ContractAddress) {
-            self.register_interfaces();
-            self.bind_game(game_address);
-        }
-
-        /// Registers the SRC5 interface ids without binding a game — the first
-        /// half of a two-phase initialization for deployments where the game
-        /// contract needs the token address in ITS constructor (mutual
-        /// constructor dependency): deploy the token with interfaces only,
-        /// deploy the game pointing at the token (its SRC5 check passes), then
-        /// `bind_game`. An unbound token cannot mint: `mint` requires the
-        /// caller-supplied game address to equal the stored one, which is zero.
-        fn register_interfaces(ref self: ComponentState<TContractState>) {
+        /// Registers the SRC5 interface ids. There is no game argument — the
+        /// component is self-bound: the embedding contract is the game.
+        fn initializer(ref self: ComponentState<TContractState>) {
             let mut contract = self.get_contract_mut();
             let mut src5_component = SRC5::get_component_mut(ref contract);
             src5_component.register_interface(IMINIGAME_TOKEN_LITE_ID);
-            // Also advertise the full-token id: MinigameComponent::initializer
-            // hard-asserts it before wiring a game to its token. The lite
-            // token implements the subset of IMinigameToken that game-side
-            // components actually call (mint, assert_is_playable, player_name,
-            // refresh_metadata, game_registry_address); anything else reverts
-            // with ENTRYPOINT_NOT_FOUND rather than misbehaving silently.
+            // Also advertise the full-token id: ecosystem consumers (e.g.
+            // metagames) hard-assert it before wiring against a token. The
+            // lite token implements the subset of IMinigameToken that
+            // game-side components actually call (mint, assert_is_playable,
+            // player_name, refresh_metadata, game_registry_address); anything
+            // else reverts with ENTRYPOINT_NOT_FOUND rather than misbehaving
+            // silently.
             src5_component.register_interface(IMINIGAME_TOKEN_ID);
-        }
-
-        /// Binds the single game, exactly once. The binding is immutable
-        /// thereafter — the game address is the token's trust anchor, and
-        /// every mint and playability check is defined against it.
-        fn bind_game(ref self: ComponentState<TContractState>, game_address: ContractAddress) {
-            assert!(!game_address.is_zero(), "MinigameTokenLite: Game address is zero");
-            assert!(self.game_address.read().is_zero(), "MinigameTokenLite: Game is already bound");
-            self.game_address.write(game_address);
         }
 
         /// Lifecycle-window check only — there is deliberately no token-side

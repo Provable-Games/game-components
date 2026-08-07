@@ -9,7 +9,7 @@ Single source of truth for all game component interface definitions. Other packa
 | `metagame` | `IMetagame`, `IMetagameContext`, `IMetagameCallback` | Game management, context extensions |
 | `minigame` | `IMinigame`, `IMinigameTokenData`, `IMinigameSettings`, `IMinigameObjectives` | Game logic, score/game_over queries |
 | `token` | `IMinigameToken`, `IMinigameTokenMinter`, `IMinigameTokenObjectives`, `IMinigameTokenSettings`, `IMinigameTokenRenderer` | ERC721 token with extensions |
-| `token/lite` | `IMinigameTokenLite` | Single-game gas-optimized token (no registry, no mutable state) |
+| `token/lite` | `IMinigameTokenLite` | Gas-optimized token embedded in the game contract itself (self-bound, no registry, no mutable state) |
 | `registry` | `IMinigameRegistry` | Game registration and metadata lookup |
 | `leaderboard` | `ILeaderboard`, `ILeaderboardAdmin`, `IGameDetails` | Tournament scoring and rankings |
 | `tokenomics/buyback` | `IBuyback`, `IBuybackAdmin` | Autonomous buyback via Ekubo TWAMM |

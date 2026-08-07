@@ -13,7 +13,6 @@ pub mod leaderboard;
 /// - **AutonomousBuyback**: Autonomous token buyback via Ekubo TWAMM
 /// - **StreamToken**: ERC20 token with built-in TWAMM distribution
 
-pub mod minigame_token_lite;
 pub mod stream_token;
 
 pub use autonomous_buyback::AutonomousBuyback;
