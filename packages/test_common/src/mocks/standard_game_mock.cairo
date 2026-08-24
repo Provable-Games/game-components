@@ -50,6 +50,7 @@ pub mod StandardGameMock {
     };
     use game_components_embeddable_game_standard::token::minigame_token_component::MinigameTokenComponent;
     use game_components_embeddable_game_standard::token::packing::unpack_soulbound;
+    use openzeppelin_access::ownable::OwnableComponent;
     use openzeppelin_introspection::src5::SRC5Component;
     use openzeppelin_introspection::src5::SRC5Component::InternalTrait as SRC5InternalTrait;
     use openzeppelin_token::erc721::ERC721Component;
@@ -62,6 +63,9 @@ pub mod StandardGameMock {
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
     component!(path: MinigameTokenComponent, storage: minigame_token, event: MinigameTokenEvent);
     component!(path: SettingsComponent, storage: settings, event: SettingsEvent);
+    // Required by the token component's CreatorImpl (hard HasComponent bound):
+    // the creator surface is administered by the contract owner.
+    component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);
 
     #[storage]
     struct Storage {
@@ -73,6 +77,8 @@ pub mod StandardGameMock {
         minigame_token: MinigameTokenComponent::Storage,
         #[substorage(v0)]
         settings: SettingsComponent::Storage,
+        #[substorage(v0)]
+        ownable: OwnableComponent::Storage,
         // Game state — the game contract is the sole authority on score and
         // game-over; the standard token holds no mutable state.
         scores: Map<felt252, u64>,
@@ -96,6 +102,8 @@ pub mod StandardGameMock {
         MinigameTokenEvent: MinigameTokenComponent::Event,
         #[flat]
         SettingsEvent: SettingsComponent::Event,
+        #[flat]
+        OwnableEvent: OwnableComponent::Event,
     }
 
     #[abi(embed_v0)]
@@ -107,14 +115,20 @@ pub mod StandardGameMock {
     #[abi(embed_v0)]
     impl MinigameTokenImpl =
         MinigameTokenComponent::MinigameTokenImpl<ContractState>;
-    // The minter registry is absorbed into the token component — one embed.
+    // The minter registry and creator surface are absorbed into the token
+    // component — plain embeds, no separate components.
     #[abi(embed_v0)]
     impl MinterImpl = MinigameTokenComponent::MinterImpl<ContractState>;
+    #[abi(embed_v0)]
+    impl CreatorImpl = MinigameTokenComponent::CreatorImpl<ContractState>;
+    #[abi(embed_v0)]
+    impl OwnableImpl = OwnableComponent::OwnableImpl<ContractState>;
 
     impl ERC721InternalImpl = ERC721Component::InternalImpl<ContractState>;
     impl SRC5InternalImpl = SRC5Component::InternalImpl<ContractState>;
     impl MinigameTokenInternalImpl = MinigameTokenComponent::InternalImpl<ContractState>;
     impl SettingsInternalImpl = SettingsComponent::InternalImpl<ContractState>;
+    impl OwnableInternalImpl = OwnableComponent::InternalImpl<ContractState>;
 
     impl ERC721HooksImpl of ERC721Component::ERC721HooksTrait<ContractState> {
         fn before_update(
@@ -144,12 +158,21 @@ pub mod StandardGameMock {
 
     #[constructor]
     fn constructor(
-        ref self: ContractState, name: ByteArray, symbol: ByteArray, base_uri: ByteArray,
+        ref self: ContractState,
+        name: ByteArray,
+        symbol: ByteArray,
+        base_uri: ByteArray,
+        game_creator: ContractAddress,
+        owner: ContractAddress,
     ) {
         self.erc721.initializer(name, symbol, base_uri);
+        // The owner administers the creator surface (assert_only_owner gate).
+        self.ownable.initializer(owner);
         // Self-binding: no game argument — this contract IS the game. Also
-        // registers the absorbed minter registry's IMINIGAME_TOKEN_MINTER_ID.
-        self.minigame_token.initializer();
+        // registers the absorbed minter registry's IMINIGAME_TOKEN_MINTER_ID
+        // and the creator surface's IMINIGAME_TOKEN_CREATOR_ID (creator set
+        // here; license/fee left to the ecosystem defaults).
+        self.minigame_token.initializer(game_creator, Option::None, Option::None);
         // Registers IMINIGAME_SETTINGS_ID (mirrors minigame_mock).
         self.settings.initializer();
         self.src5.register_interface(IMINIGAME_ID);

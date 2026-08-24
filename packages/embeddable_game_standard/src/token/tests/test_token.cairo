@@ -1,4 +1,8 @@
 use game_components_interfaces::structs::metagame::{GameContext, GameContextDetails};
+use game_components_interfaces::token::creator::{
+    DEFAULT_GAME_FEE_BPS, FEE_DENOMINATOR, GameCreatorInfo, IMINIGAME_TOKEN_CREATOR_ID,
+    IMinigameTokenCreatorDispatcher, IMinigameTokenCreatorDispatcherTrait, default_license,
+};
 use game_components_interfaces::token::minter::{
     IMinigameTokenMinterDispatcher, IMinigameTokenMinterDispatcherTrait,
 };
@@ -41,6 +45,14 @@ fn MINTER() -> ContractAddress {
     addr('MINTER')
 }
 
+fn GAME_CREATOR() -> ContractAddress {
+    addr('GAME_CREATOR')
+}
+
+fn OWNER() -> ContractAddress {
+    addr('OWNER')
+}
+
 /// Deploys ONE contract that is both the game and the token — the only
 /// supported shape: the component is self-binding.
 fn deploy_token() -> (
@@ -54,6 +66,8 @@ fn deploy_token() -> (
     name.serialize(ref calldata);
     symbol.serialize(ref calldata);
     base_uri.serialize(ref calldata);
+    GAME_CREATOR().serialize(ref calldata);
+    OWNER().serialize(ref calldata);
     let (contract_address, _) = contract.deploy(@calldata).unwrap();
     (
         IMinigameTokenDispatcher { contract_address },
@@ -885,4 +899,95 @@ fn test_mint_batch_shares_restored_fields_and_url() {
         assert!(token.client_url(id) == "https://play.example/batch", "url written per token");
         i += 1;
     }
+}
+
+// ================================================================================================
+// CREATOR SURFACE (owner-administered payout identity)
+// ================================================================================================
+
+fn creator_of(token: IMinigameTokenDispatcher) -> IMinigameTokenCreatorDispatcher {
+    IMinigameTokenCreatorDispatcher { contract_address: token.contract_address }
+}
+
+#[test]
+fn test_creator_registered_with_defaults() {
+    let (token, _, _) = deploy_token();
+    let creator = creator_of(token);
+
+    let src5 = ISRC5Dispatcher { contract_address: token.contract_address };
+    assert!(
+        src5.supports_interface(IMINIGAME_TOKEN_CREATOR_ID),
+        "Should register the creator interface id",
+    );
+
+    assert!(creator.game_creator_address() == GAME_CREATOR(), "Creator address mismatch");
+    let info = creator.game_creator_info();
+    let expected = GameCreatorInfo {
+        creator: GAME_CREATOR(), license: default_license(), fee_numerator: DEFAULT_GAME_FEE_BPS,
+    };
+    assert!(info == expected, "Info should carry the ecosystem defaults");
+}
+
+#[test]
+fn test_owner_rotates_creator_and_sets_fee() {
+    let (token, _, _) = deploy_token();
+    let creator = creator_of(token);
+
+    cheat_caller_address(token.contract_address, OWNER(), CheatSpan::TargetCalls(2));
+    creator.set_game_creator_address(BOB());
+    creator.set_game_fee("Custom license", 1000);
+
+    let info = creator.game_creator_info();
+    assert!(info.creator == BOB(), "Rotation should take effect");
+    assert!(info.license == "Custom license", "License should update");
+    assert!(info.fee_numerator == 1000, "Fee should update");
+}
+
+#[test]
+#[should_panic(expected: 'Caller is not the owner')]
+fn test_creator_itself_cannot_rotate() {
+    // The stored creator is a payout sink, not an admin: only the contract
+    // owner rotates it.
+    let (token, _, _) = deploy_token();
+    cheat_caller_address(token.contract_address, GAME_CREATOR(), CheatSpan::TargetCalls(1));
+    creator_of(token).set_game_creator_address(BOB());
+}
+
+#[test]
+#[should_panic(expected: 'Caller is not the owner')]
+fn test_non_owner_cannot_set_fee() {
+    let (token, _, _) = deploy_token();
+    cheat_caller_address(token.contract_address, ALICE(), CheatSpan::TargetCalls(1));
+    creator_of(token).set_game_fee("hijack", 0);
+}
+
+#[test]
+#[should_panic(expected: "MinigameToken: Creator cannot be zero")]
+fn test_rotation_to_zero_rejected() {
+    let (token, _, _) = deploy_token();
+    cheat_caller_address(token.contract_address, OWNER(), CheatSpan::TargetCalls(1));
+    creator_of(token).set_game_creator_address(addr(0));
+}
+
+#[test]
+#[should_panic(expected: "MinigameToken: Fee numerator exceeds denominator")]
+fn test_fee_above_denominator_rejected() {
+    let (token, _, _) = deploy_token();
+    cheat_caller_address(token.contract_address, OWNER(), CheatSpan::TargetCalls(1));
+    creator_of(token).set_game_fee("too greedy", FEE_DENOMINATOR + 1);
+}
+
+#[test]
+fn test_zero_creator_deploy_rejected() {
+    let contract = declare("StandardGameMock").unwrap().contract_class();
+    let mut calldata: Array<felt252> = array![];
+    let name: ByteArray = "StandardToken";
+    let symbol: ByteArray = "STD";
+    let base_uri: ByteArray = "https://token.test/";
+    name.serialize(ref calldata);
+    symbol.serialize(ref calldata);
+    base_uri.serialize(ref calldata);
+    addr(0).serialize(ref calldata);
+    OWNER().serialize(ref calldata);
+    assert!(contract.deploy(@calldata).is_err(), "Zero creator must fail the constructor");
 }

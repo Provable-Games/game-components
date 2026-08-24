@@ -9,6 +9,7 @@ Single source of truth for all game component interface definitions. Other packa
 | `metagame` | `IMetagame`, `IMetagameContext`, `IMetagameCallback` | Game management, context extensions |
 | `minigame` | `IMinigame`, `IMinigameTokenData`, `IMinigameSettings`, `IMinigameObjectives` | Game logic, score/game_over queries |
 | `token` (`token/core`) | `IMinigameToken` | THE minigame token standard: gas-optimized token embedded in the game contract itself (self-bound, no registry, no mutable state), plus the `IMinigameTokenMinter` surface |
+| `token/creator` | `IMinigameTokenCreator` | Creator payout identity + fee terms on the standard token (replaces the registry's `game_fee_info`); setters gated on the game contract's Ownable owner |
 | `token/legacy` | `IMinigameTokenLegacy`, `IMinigameTokenMinter`, `IMinigameTokenObjectives`, `IMinigameTokenSettings`, `IMinigameTokenRenderer` | Original multi-game ERC721 token with extensions (kept for deployed denshokan) |
 | `registry` | `IMinigameRegistry` | Game registration and metadata lookup |
 | `leaderboard` | `ILeaderboard`, `ILeaderboardAdmin`, `IGameDetails` | Tournament scoring and rankings |
@@ -36,6 +37,7 @@ pub const IMINIGAME_OBJECTIVES_ID: felt252 = 0x...;
 pub const IMINIGAME_TOKEN_ID: felt252 = 0x...;
 pub const IMINIGAME_TOKEN_LEGACY_ID: felt252 = 0x...;
 pub const IMINIGAME_TOKEN_MINTER_ID: felt252 = 0x...;
+pub const IMINIGAME_TOKEN_CREATOR_ID: felt252 = 0x...;
 pub const IMINIGAME_REGISTRY_ID: felt252 = 0x...;
 pub const ILEADERBOARD_ID: felt252 = 0x...;
 ```

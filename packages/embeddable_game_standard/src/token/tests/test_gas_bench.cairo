@@ -68,6 +68,10 @@ fn setup_standard() -> (IMinigameTokenDispatcher, ERC721ABIDispatcher, ContractA
     name.serialize(ref calldata);
     symbol.serialize(ref calldata);
     base_uri.serialize(ref calldata);
+    let game_creator: starknet::ContractAddress = 'GAME_CREATOR'.try_into().unwrap();
+    game_creator.serialize(ref calldata);
+    let owner: starknet::ContractAddress = 'OWNER'.try_into().unwrap();
+    owner.serialize(ref calldata);
     let (contract_address, _) = contract.deploy(@calldata).unwrap();
     start_cheat_block_timestamp(contract_address, START_TIME);
     (

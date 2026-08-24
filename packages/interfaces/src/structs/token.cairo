@@ -3,6 +3,17 @@
 use starknet::ContractAddress;
 use super::metagame::GameContextDetails;
 
+/// Creator identity + monetization terms of a self-bound standard token.
+/// Replaces the retired registry's `GameFeeInfo` lookup: the payee and fee
+/// live on the game/token contract itself (see `token::creator`).
+#[derive(Drop, Serde, Clone, PartialEq)]
+pub struct GameCreatorInfo {
+    pub creator: ContractAddress,
+    pub license: ByteArray,
+    /// Fee in basis points (against `FEE_DENOMINATOR` = 10_000)
+    pub fee_numerator: u16,
+}
+
 #[derive(Copy, Drop, Serde)]
 pub struct Lifecycle {
     pub start: u64,

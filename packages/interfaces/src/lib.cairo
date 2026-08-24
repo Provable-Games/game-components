@@ -99,17 +99,18 @@ pub use registry::{
 
 // Structs
 pub use structs::{
-    GameContext, GameContextDetails, GameDetail, GameFeeInfo, GameMetadata, GameObjective,
-    GameObjectiveDetails, GameSetting, GameSettingDetails, LeaderboardConfig, LeaderboardEntry,
-    LeaderboardResult, LeaderboardStoreConfig, Lifecycle, MintBatchRecipient, MintGameParams,
-    MintParams, PlayerNameUpdate, TokenMetadata,
+    GameContext, GameContextDetails, GameCreatorInfo, GameDetail, GameFeeInfo, GameMetadata,
+    GameObjective, GameObjectiveDetails, GameSetting, GameSettingDetails, LeaderboardConfig,
+    LeaderboardEntry, LeaderboardResult, LeaderboardStoreConfig, Lifecycle, MintBatchRecipient,
+    MintGameParams, MintParams, PlayerNameUpdate, TokenMetadata,
 };
 
 // Token
 pub use token::{
-    IMINIGAME_TOKEN_CONTEXT_ID, IMINIGAME_TOKEN_ID, IMINIGAME_TOKEN_LEGACY_ID,
-    IMINIGAME_TOKEN_MINTER_ID, IMINIGAME_TOKEN_OBJECTIVES_ID, IMINIGAME_TOKEN_RENDERER_ID,
-    IMINIGAME_TOKEN_SETTINGS_ID, IMinigameToken, IMinigameTokenDispatcher,
+    IMINIGAME_TOKEN_CONTEXT_ID, IMINIGAME_TOKEN_CREATOR_ID, IMINIGAME_TOKEN_ID,
+    IMINIGAME_TOKEN_LEGACY_ID, IMINIGAME_TOKEN_MINTER_ID, IMINIGAME_TOKEN_OBJECTIVES_ID,
+    IMINIGAME_TOKEN_RENDERER_ID, IMINIGAME_TOKEN_SETTINGS_ID, IMinigameToken, IMinigameTokenCreator,
+    IMinigameTokenCreatorDispatcher, IMinigameTokenCreatorDispatcherTrait, IMinigameTokenDispatcher,
     IMinigameTokenDispatcherTrait, IMinigameTokenLegacy, IMinigameTokenLegacyDispatcher,
     IMinigameTokenLegacyDispatcherTrait, IMinigameTokenMinter, IMinigameTokenMinterDispatcher,
     IMinigameTokenMinterDispatcherTrait, IMinigameTokenObjectives,
