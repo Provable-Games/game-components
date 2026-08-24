@@ -2182,3 +2182,95 @@ mod legacy_single_game_token {
         libs::assert_game_registered(game);
     }
 }
+
+// =============================================================================
+// HOSTILE GAME POINTING AT SOMEONE ELSE'S STANDARD TOKEN
+// =============================================================================
+//
+// A standard token is self-bound, so `token_address() == game_address` IS its
+// registration check. Any path that trusts a game's `token_address()` must
+// enforce it: otherwise a contract that merely implements `token_address()`
+// can name a standard token it does not own and have the metagame mint on it
+// or pay its creator — at a fee rate the attacker controls.
+
+#[cfg(test)]
+mod hostile_game_paths {
+    use game_components_testing::constants::{ALICE, BOB, OWNER};
+    use snforge_std::{ContractClassTrait, DeclareResultTrait, declare, mock_call};
+    use starknet::ContractAddress;
+    use crate::metagame::metagame as libs;
+
+    fn deploy_standard_game(game_creator: ContractAddress) -> ContractAddress {
+        let contract = declare("StandardGameMock").unwrap().contract_class();
+        let mut calldata: Array<felt252> = array![];
+        let name: ByteArray = "StandardToken";
+        let symbol: ByteArray = "STD";
+        let base_uri: ByteArray = "https://token.test/";
+        name.serialize(ref calldata);
+        symbol.serialize(ref calldata);
+        base_uri.serialize(ref calldata);
+        game_creator.serialize(ref calldata);
+        OWNER().serialize(ref calldata);
+        let (contract_address, _) = contract.deploy(@calldata).unwrap();
+        contract_address
+    }
+
+    /// A hostile "game" that reports a victim's standard token as its own.
+    fn hostile_game_pointing_at(victim_token: ContractAddress) -> ContractAddress {
+        let hostile: ContractAddress = 0xBAD.try_into().unwrap();
+        mock_call(hostile, selector!("token_address"), victim_token, 10);
+        hostile
+    }
+
+    #[test]
+    #[should_panic(expected: "Game is not registered")]
+    fn test_mint_rejects_game_pointing_at_foreign_standard_token() {
+        let victim = deploy_standard_game(ALICE());
+        let hostile = hostile_game_pointing_at(victim);
+
+        libs::mint(
+            hostile,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            BOB(),
+            false,
+            false,
+            0,
+            0,
+        );
+    }
+
+    /// Fee terms must not be readable through a game that does not own the token.
+    #[test]
+    #[should_panic(expected: "Game is not registered")]
+    fn test_get_game_fee_info_rejects_foreign_standard_token() {
+        let victim = deploy_standard_game(ALICE());
+        let hostile = hostile_game_pointing_at(victim);
+        libs::get_game_fee_info(hostile);
+    }
+
+    /// The payee must not be redirectable to a foreign token's creator.
+    #[test]
+    #[should_panic(expected: "Game is not registered")]
+    fn test_get_game_creator_address_rejects_foreign_standard_token() {
+        let victim = deploy_standard_game(ALICE());
+        let hostile = hostile_game_pointing_at(victim);
+        libs::get_game_creator_address(hostile);
+    }
+
+    /// The self-bound game itself still works through all three paths.
+    #[test]
+    fn test_self_bound_game_still_passes_every_path() {
+        let game = deploy_standard_game(ALICE());
+        libs::assert_game_registered(game);
+        assert!(libs::get_game_creator_address(game) == ALICE(), "payee should be the creator");
+        assert!(libs::get_game_fee_info(game).fee_numerator == 500, "default fee is 500 bps");
+    }
+}

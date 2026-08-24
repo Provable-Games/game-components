@@ -60,6 +60,14 @@ pub fn assert_game_registered(game_address: ContractAddress) {
     assert!(game_exists, "Game is not registered");
 }
 
+/// The standard token's registration check: it is self-bound, so the game must
+/// BE its token. Every path that trusts a game's `token_address()` must apply
+/// this — otherwise a hostile contract can name a standard token it does not
+/// own and have the metagame mint on it or pay its creator.
+fn assert_self_bound(token_address: ContractAddress, game_address: ContractAddress) {
+    assert!(token_address == game_address, "Game is not registered");
+}
+
 /// True when `token_address` is a self-bound standard token (SRC5
 /// `IMINIGAME_TOKEN_ID`) rather than a legacy multi-game token.
 fn is_standard_token(token_address: ContractAddress) -> bool {
@@ -150,8 +158,9 @@ pub fn mint(
     let minigame_token_address = minigame_dispatcher.token_address();
     // A standard token is self-bound and carries a different mint ABI;
     // `assert_game_registered` accepts these games, so this path must be able
-    // to mint for them too.
+    // to mint for them too — under the same pairing check.
     if is_standard_token(minigame_token_address) {
+        assert_self_bound(minigame_token_address, game_address);
         return mint_standard_token(
             minigame_token_address,
             player_name,
@@ -268,6 +277,8 @@ pub fn get_game_fee_info(game_address: ContractAddress) -> GameFeeInfo {
     let minigame_dispatcher = IMinigameDispatcher { contract_address: game_address };
     let minigame_token_address = minigame_dispatcher.token_address();
     if supports_creator_surface(minigame_token_address) {
+        // The creator surface belongs to the self-bound standard token.
+        assert_self_bound(minigame_token_address, game_address);
         let info = IMinigameTokenCreatorDispatcher { contract_address: minigame_token_address }
             .game_creator_info();
         return GameFeeInfo { license: info.license, fee_numerator: info.fee_numerator };
@@ -299,6 +310,8 @@ pub fn get_game_creator_address(game_address: ContractAddress) -> ContractAddres
     let minigame_dispatcher = IMinigameDispatcher { contract_address: game_address };
     let token_address = minigame_dispatcher.token_address();
     if supports_creator_surface(token_address) {
+        // Same pairing check: a hostile game must not redirect the payee.
+        assert_self_bound(token_address, game_address);
         return IMinigameTokenCreatorDispatcher { contract_address: token_address }
             .game_creator_address();
     }
