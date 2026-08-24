@@ -3,17 +3,20 @@ use openzeppelin_interfaces::introspection::{ISRC5Dispatcher, ISRC5DispatcherTra
 use snforge_std::{
     CheatSpan, ContractClassTrait, DeclareResultTrait, EventSpyAssertionsTrait,
     cheat_caller_address, declare, mock_call, spy_events, start_cheat_block_timestamp,
+    start_cheat_transaction_hash,
 };
 use starknet::ContractAddress;
 use crate::token::extensions::minter::interface::{
     IMinigameTokenMinterDispatcher, IMinigameTokenMinterDispatcherTrait,
 };
 use crate::token::interface::IMINIGAME_TOKEN_ID;
-use crate::token::structs::{
-    MintBatchRecipient, unpack_game_id, unpack_objective_id, unpack_salt, unpack_token_id,
-};
+use crate::token::structs::MintBatchRecipient;
 use crate::token_lite::interface::{
     IMINIGAME_TOKEN_LITE_ID, IMinigameTokenLiteDispatcher, IMinigameTokenLiteDispatcherTrait,
+};
+use crate::token_lite::packing::{
+    unpack_end_delay, unpack_lite_token_id, unpack_minted_at, unpack_minted_by, unpack_salt,
+    unpack_settings_id, unpack_soulbound, unpack_start_delay, unpack_tx_hash,
 };
 use crate::token_lite::token_lite_component::CoreTokenLiteComponent;
 
@@ -130,18 +133,20 @@ fn test_mint_packs_expected_fields() {
         7,
     );
 
-    let packed = unpack_token_id(token_id);
-    assert!(packed.game_id == 0, "game_id must be 0 for single game");
+    let packed = unpack_lite_token_id(token_id);
     assert!(packed.settings_id == 42, "settings_id mismatch");
     assert!(packed.minted_at == 1000, "minted_at mismatch");
     assert!(packed.start_delay == 1000, "start_delay mismatch");
     assert!(packed.end_delay == 1000, "end_delay mismatch");
-    assert!(packed.objective_id == 0, "objective_id must be 0");
     assert!(packed.soulbound, "soulbound flag should be set");
-    assert!(!packed.has_context, "has_context must be 0");
-    assert!(!packed.paymaster, "paymaster must be 0");
+    assert!(packed.minted_by == 1, "First minter should pack id 1");
     assert!(packed.salt == 7, "salt mismatch");
-    assert!(packed.metadata == 0, "metadata must be 0");
+
+    // Reserved region (high bits 26-122) is component-owned and must be
+    // provably zero on every minted id: only tx_hash(10) + salt(16) occupy
+    // the high half.
+    let raw: u256 = token_id.into();
+    assert!(raw.high / 0x4000000 == 0, "reserved bits must be zero"); // 2^26
 
     // Views resolve from the packed id / minter map
     assert!(token.settings_id(token_id) == 42, "settings_id view mismatch");
@@ -720,11 +725,24 @@ fn test_mint_batch_recipients_counts_owners_and_salts() {
 
 #[test]
 #[should_panic(
-    expected: "MinigameTokenLite: salt overflow (salt + total tokens - 1 must be <= 1023)",
+    expected: "MinigameTokenLite: salt overflow (salt + total tokens - 1 must be <= 65535)",
 )]
 fn test_mint_batch_recipients_rejects_salt_overflow() {
     let (token, _, _) = deploy_token_lite();
-    batch_neutral(token, array![MintBatchRecipient { to: ALICE(), count: 4 }], 1021);
+    // 65533 + 4 - 1 = 65536 > 0xFFFF — one past the 16-bit salt field.
+    batch_neutral(token, array![MintBatchRecipient { to: ALICE(), count: 4 }], 65533);
+}
+
+#[test]
+fn test_mint_batch_recipients_salt_at_16_bit_boundary() {
+    let (token, _, _) = deploy_token_lite();
+    start_cheat_block_timestamp(token.contract_address, 1000);
+    // 65533 + 3 - 1 = 65535 == 0xFFFF — exactly fills the widened 16-bit
+    // field (would have overflowed the full token's 10-bit salt long ago).
+    let ids = batch_neutral(token, array![MintBatchRecipient { to: ALICE(), count: 3 }], 65533);
+    assert!(ids.len() == 3, "Should mint 3 tokens");
+    assert!(unpack_salt(*ids.at(0)) == 65533, "first salt");
+    assert!(unpack_salt(*ids.at(2)) == 0xFFFF, "last salt fills the 16-bit field");
 }
 
 #[test]
@@ -799,22 +817,89 @@ fn test_assert_game_registered_rejects_game_not_paired_with_lite_token() {
 }
 
 // ================================================================================================
-// PACKING PARITY HELPERS
+// LITE PACKING — LAYOUT AND HELPERS
 // ================================================================================================
 
 #[test]
 fn test_helper_unpackers_agree_with_full_unpack() {
     let (token, _, _) = deploy_token_lite();
     start_cheat_block_timestamp(token.contract_address, 1234);
+    cheat_caller_address(token.contract_address, MINTER(), CheatSpan::TargetCalls(1));
     let token_id = mint_basic(
         token, Option::None, Option::Some(9), Option::None, Option::Some(9999), ALICE(), true, 3,
     );
 
-    // The lite token reuses the canonical 251-bit layout, so the standalone
-    // helper unpackers (what game/dungeon contracts use on their side) must
-    // agree with the full unpack.
-    let packed = unpack_token_id(token_id);
-    assert!(unpack_game_id(token_id) == packed.game_id, "game_id helper mismatch");
-    assert!(unpack_objective_id(token_id) == packed.objective_id, "objective helper mismatch");
-    assert!(packed.game_id == 0 && packed.objective_id == 0, "lite invariants");
+    // Token ids use the lite-native 251-bit layout, so the standalone helper
+    // unpackers (what game/dungeon contracts use on their side) must agree
+    // with the full unpack.
+    let packed = unpack_lite_token_id(token_id);
+    assert!(unpack_minted_at(token_id) == packed.minted_at, "minted_at helper mismatch");
+    assert!(unpack_start_delay(token_id) == packed.start_delay, "start_delay helper mismatch");
+    assert!(unpack_end_delay(token_id) == packed.end_delay, "end_delay helper mismatch");
+    assert!(unpack_settings_id(token_id) == packed.settings_id, "settings_id helper mismatch");
+    assert!(unpack_minted_by(token_id) == packed.minted_by, "minted_by helper mismatch");
+    assert!(unpack_soulbound(token_id) == packed.soulbound, "soulbound helper mismatch");
+    assert!(unpack_tx_hash(token_id) == packed.tx_hash, "tx_hash helper mismatch");
+    assert!(unpack_salt(token_id) == packed.salt, "salt helper mismatch");
+    assert!(packed.minted_at == 1234 && packed.settings_id == 9, "field values");
+    assert!(packed.soulbound && packed.salt == 3 && packed.minted_by == 1, "field values");
+}
+
+/// Bit-exact layout proof: with every input pinned (including the tx hash),
+/// the minted id must equal the arithmetic reconstruction of the documented
+/// lite layout — low: minted_at | start_delay<<35 | end_delay<<60 |
+/// settings_id<<85 | minted_by<<101 | soulbound<<127; high: tx_hash | salt<<10;
+/// reserved bits [26-122] of the high half all zero.
+#[test]
+fn test_lite_layout_bit_positions_exact() {
+    let (token, _, _) = deploy_token_lite();
+    start_cheat_block_timestamp(token.contract_address, 1000);
+    start_cheat_transaction_hash(token.contract_address, 0x123456789abcdef);
+    cheat_caller_address(token.contract_address, MINTER(), CheatSpan::TargetCalls(1));
+
+    let token_id = mint_basic(
+        token,
+        Option::None,
+        Option::Some(0xABCD),
+        Option::Some(2000),
+        Option::Some(5000),
+        ALICE(),
+        true,
+        0x1234,
+    );
+
+    // minted_at=1000, start_delay=1000, end_delay=3000, settings_id=0xABCD,
+    // minted_by=1 (first minter), soulbound=1, tx_hash=0x1ef (last 10 bits
+    // of 0x...cdef), salt=0x1234.
+    let expected_low: u128 = 1000
+        + 1000 * 0x800000000 // start_delay << 35
+        + 3000 * 0x1000000000000000 // end_delay << 60
+        + 0xABCD * 0x2000000000000000000000 // settings_id << 85
+        + 1 * 0x20000000000000000000000000 // minted_by << 101
+        + 0x80000000000000000000000000000000; // soulbound << 127
+    let expected_high: u128 = 0x1ef + 0x1234 * 0x400; // tx_hash | salt << 10
+    let expected: felt252 = u256 { low: expected_low, high: expected_high }.try_into().unwrap();
+    assert!(token_id == expected, "lite layout bit positions must match the documented table");
+}
+
+#[test]
+fn test_mint_accepts_settings_id_at_16_bit_boundary() {
+    let (token, _, _) = deploy_token_lite();
+    start_cheat_block_timestamp(token.contract_address, 1000);
+    let token_id = mint_basic(
+        token, Option::None, Option::Some(0xFFFF), Option::None, Option::None, ALICE(), false, 0,
+    );
+    assert!(token.settings_id(token_id) == 0xFFFF, "boundary settings_id roundtrip");
+}
+
+#[test]
+#[should_panic(expected: "LitePackedTokenId: settings_id exceeds 16-bit limit")]
+fn test_mint_rejects_settings_id_over_16_bits() {
+    let (token, _, _) = deploy_token_lite();
+    start_cheat_block_timestamp(token.contract_address, 1000);
+    // 0x10000 fit the full token's 30-bit field but exceeds the lite 16-bit
+    // field — must now be rejected at mint.
+    mint_basic(
+        token, Option::None, Option::Some(0x10000), Option::None, Option::None, ALICE(), false, 0,
+    );
 }

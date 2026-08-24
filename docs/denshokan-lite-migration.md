@@ -94,6 +94,25 @@ The library-class pattern (already used by budokan's rewards class) dissolved th
 
 **The fix (boundary collapse):** `GameSession` now owns the entire action body — load, settings reads, `uses_vrf`, the seal write (strictly before dispatch, preserving the security invariant), the single subsystem library call, write-back, and events — all in the shared storage context. GameCore's entrypoints reduced to: internal guard → **one** session library call → internal refresh. 864/864 tests, zero test changes needed. Final CASM: GameCore 61,877, GameSession 70,263 (limit 81,920).
 
+## Phase 5 — lite-native token-id layout (`game-components`, this branch)
+
+Phase 1 kept the full token's 251-bit id layout bit-identical (zeros in the dead fields) to avoid touching call sites during the migration. With no lite deployment on mainnet yet, that compatibility shim was retired before first release: the lite token now has its **own** layout in `token_lite/packing.cairo` (`pack_lite_token_id`, `unpack_lite_token_id`, per-field helpers — same DivRem-chain style as `token::structs`, which stays untouched and keeps serving legacy denshokan). The dead fields (`game_id`, `objective_id`, `has_context`, `paymaster`, `metadata`) are gone from the id; `settings_id` and `salt` widen to 16 bits each; every remaining spare bit is consolidated into one component-owned reserved region.
+
+Low u128 (128 bits): `minted_at(35) | start_delay(25) | end_delay(25) | settings_id(16) | minted_by(26) | soulbound(1)`
+
+High u128 (123 bits): `tx_hash(10) | salt(16) | reserved(97, always zero)`
+
+| Bits (low) | Field | Bits (high) | Field |
+|---|---|---|---|
+| 0–34 | minted_at (unix s) | 0–9 | tx_hash (last 10 bits) |
+| 35–59 | start_delay | 10–25 | salt (16-bit multicall counter) |
+| 60–84 | end_delay (0 = immortal) | 26–122 | reserved — component-owned, ALWAYS zero |
+| 85–100 | settings_id (≤ 0xFFFF, ABI stays `Option<u32>`) | | |
+| 101–126 | minted_by (26-bit minter id) | | |
+| 127 | soulbound | | |
+
+The reserved region has no pack parameter and no public unpack accessor; future protocol- or game-facing fields are carved from it later, and because every lite id provably decodes it as 0, such carve-outs are non-breaking by construction. The `IMinigameTokenLite` ABI and `IMINIGAME_TOKEN_LITE_ID` are unchanged (the batch salt bound rises to `salt + sum(counts) - 1 <= 0xFFFF`, and `settings_id > 0xFFFF` is now rejected at mint). **The indexer must branch its token-id decode by contract generation:** ids from legacy denshokan decode with the full layout, ids from lite (one-address) contracts with this one.
+
 ---
 
 ## Final measured results

@@ -7,6 +7,14 @@
 // mutable state: everything except `player_name` is unpacked from the token id
 // itself, so every view is pure felt arithmetic plus at most one storage read.
 //
+// Token ids use the lite-native 251-bit layout (see
+// `game_components_embeddable_game_standard::token_lite::packing`), NOT the
+// full token's layout: it drops the fields the lite token never writes, widens
+// settings_id and salt to 16 bits each, and consolidates all spare bits into
+// one component-owned, always-zero reserved region in the high half from which
+// future fields are carved. Indexers must branch their token-id decoder by
+// contract generation.
+//
 // `mint` keeps the exact `IMinigameToken::mint` signature (same selector, same
 // calldata layout) so existing call sites and the `minigame::mint` helper work
 // unchanged against a lite deployment. Parameters the lite token does not
@@ -64,7 +72,9 @@ pub trait IMinigameTokenLite<TState> {
     /// survives for ABI parity and to catch caller misconfiguration;
     /// `objective_id`, `context`, `client_url`,
     /// `renderer_address`, `skills_address` must be `None`, `paymaster` must be
-    /// `false`, and `metadata` must be `0`.
+    /// `false`, and `metadata` must be `0`. `settings_id` keeps its `Option<u32>`
+    /// ABI type for compat, but the value must fit the lite layout's 16-bit
+    /// field (`<= 0xFFFF`) or the mint reverts.
     fn mint(
         ref self: TState,
         game_address: ContractAddress,
@@ -86,7 +96,8 @@ pub trait IMinigameTokenLite<TState> {
     /// Batch mint with per-recipient counts. Signature-compatible with
     /// `IMinigameToken::mint_batch_recipients`; the same unsupported-parameter
     /// rules as `mint` apply, and salt is a single global counter across the
-    /// batch (`salt + sum(counts) - 1 <= 0x3FF`).
+    /// batch (`salt + sum(counts) - 1 <= 0xFFFF` — the lite layout's 16-bit
+    /// salt field).
     fn mint_batch_recipients(
         ref self: TState,
         game_address: ContractAddress,

@@ -1,4 +1,5 @@
 pub mod interface;
+pub mod packing;
 
 // The deployable merged game+token mock (LiteGameMock) lives in the
 // test_common package so downstream consumers can declare it via

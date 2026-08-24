@@ -4,7 +4,8 @@
 //
 // The contract wires:
 // * ERC721 + SRC5 + CoreTokenLiteComponent + MinterComponent, with the
-//   soulbound transfer guard in `before_update` (pure `unpack_soulbound`).
+//   soulbound transfer guard in `before_update` (pure `unpack_soulbound`
+//   from the lite-native `token_lite::packing` layout).
 // * `IMinigame` views that all return the contract's own address, plus
 //   `mint_game`/`mint_game_batch` delegating to the embedded lite token.
 // * `IMinigameTokenData` from local maps, with test setters `set_score` /
@@ -39,7 +40,7 @@ pub mod LiteGameMock {
     use game_components_embeddable_game_standard::minigame::minigame as minigame_libs;
     use game_components_embeddable_game_standard::minigame::structs::MintGameParams;
     use game_components_embeddable_game_standard::token::extensions::minter::minter::MinterComponent;
-    use game_components_embeddable_game_standard::token::structs::unpack_soulbound;
+    use game_components_embeddable_game_standard::token_lite::packing::unpack_soulbound;
     use game_components_embeddable_game_standard::token_lite::token_lite_component::CoreTokenLiteComponent;
     use openzeppelin_introspection::src5::SRC5Component;
     use openzeppelin_introspection::src5::SRC5Component::InternalTrait as SRC5InternalTrait;

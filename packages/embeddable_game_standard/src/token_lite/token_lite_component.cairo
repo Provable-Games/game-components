@@ -28,11 +28,14 @@
 /// * **Settings/objective validation on mint** — minters pass an
 ///   admin-configured `settings_id`; the game validates it at play time.
 ///
-/// What is kept bit-identical: the 251-bit `pack_token_id` layout. Existing
-/// integrations unpack `settings_id`/`minted_by`/lifecycle from the id and
-/// indexers decode it; the lite token writes zeros into `game_id`,
-/// `objective_id`, `has_context`, `paymaster` and `metadata` rather than
-/// reshuffling bits.
+/// Token ids use the lite-native 251-bit layout in `token_lite::packing` —
+/// NOT the full token's `token::structs::pack_token_id` layout (which stays
+/// untouched, serving legacy denshokan). The lite layout drops the fields the
+/// lite token never writes (game_id, objective_id, has_context, paymaster,
+/// metadata), widens `settings_id` to 16 bits and `salt` to 16 bits, and
+/// consolidates every spare bit into one component-owned, always-zero
+/// reserved region in the high half. Indexers must branch their token-id
+/// decoder by contract generation.
 #[starknet::component]
 pub mod CoreTokenLiteComponent {
     use core::num::traits::Zero;
@@ -48,13 +51,13 @@ pub mod CoreTokenLiteComponent {
         ContractAddress, get_block_timestamp, get_caller_address, get_contract_address, get_tx_info,
     };
     use crate::token::interface::IMINIGAME_TOKEN_ID;
-    use crate::token::structs::{
-        GameContextDetails, MintBatchRecipient, TokenMetadata, TokenMutableState,
-        extract_tx_hash_bits, pack_token_id, to_token_metadata, unpack_minted_by,
-        unpack_settings_id, unpack_soulbound, unpack_token_id,
-    };
+    use crate::token::structs::{GameContextDetails, MintBatchRecipient, TokenMetadata};
     use crate::token::token::{LifecycleTrait, token_state};
     use crate::token::traits::OptionalMinter;
+    use crate::token_lite::packing::{
+        extract_tx_hash_bits, pack_lite_token_id, to_token_metadata, unpack_lite_token_id,
+        unpack_minted_by, unpack_settings_id, unpack_soulbound,
+    };
 
     #[storage]
     pub struct Storage {
@@ -87,13 +90,10 @@ pub mod CoreTokenLiteComponent {
         fn token_metadata(
             self: @ComponentState<TContractState>, token_id: felt252,
         ) -> TokenMetadata {
-            let packed = unpack_token_id(token_id);
             // No mutable state exists; the game contract is authoritative for
-            // game_over / objective completion.
-            let empty_state = TokenMutableState {
-                game_over: false, completed_objective: false, completed_at: 0,
-            };
-            to_token_metadata(packed, empty_state)
+            // game_over / objective completion — the returned metadata reports
+            // game_over/completed_objective/completed_at as false/0 always.
+            to_token_metadata(unpack_lite_token_id(token_id))
         }
 
         fn is_playable(self: @ComponentState<TContractState>, token_id: felt252) -> bool {
@@ -233,20 +233,18 @@ pub mod CoreTokenLiteComponent {
             let mut contract_self = self.get_contract_mut();
             let minted_by = MinterOpt::add_minter(ref contract_self, caller);
 
-            let final_token_id = pack_token_id(
-                0, // game_id: always 0 — single game
-                minted_by,
-                settings_id.unwrap_or(0),
+            // settings_id keeps its Option<u32> ABI type for compat; the pack
+            // asserts the value fits the lite layout's 16-bit field. Likewise
+            // minted_by (u64 from OptionalMinter::add_minter) must fit 26 bits.
+            let final_token_id = pack_lite_token_id(
                 current_time,
                 start_delay,
                 end_delay,
-                0, // objective_id
+                settings_id.unwrap_or(0),
+                minted_by,
                 soulbound,
-                false, // has_context
-                false, // paymaster
                 tx_hash_bits,
                 salt,
-                0 // metadata
             );
 
             if let Option::Some(name) = player_name {
@@ -266,9 +264,9 @@ pub mod CoreTokenLiteComponent {
         /// lite deployment; the same unsupported-parameter rules as `mint` apply.
         ///
         /// Salt is a single global counter across the batch (`salt + i` for
-        /// `i in 0..sum(counts)`), identical to the full token: token ids do not
-        /// encode the recipient, so salts must be globally unique within the tx —
-        /// `salt + sum(counts) - 1 <= 0x3FF` (10-bit field).
+        /// `i in 0..sum(counts)`): token ids do not encode the recipient, so
+        /// salts must be globally unique within the tx —
+        /// `salt + sum(counts) - 1 <= 0xFFFF` (the lite layout's 16-bit field).
         ///
         /// Versus calling `mint` per token, the lifecycle math, tx-info read, game
         /// check and minter registration are hoisted and paid once for the batch.
@@ -319,8 +317,8 @@ pub mod CoreTokenLiteComponent {
             }
             let max_salt: u32 = salt.into() + total_tokens - 1;
             assert!(
-                max_salt <= 0x3FF,
-                "MinigameTokenLite: salt overflow (salt + total tokens - 1 must be <= 1023)",
+                max_salt <= 0xFFFF,
+                "MinigameTokenLite: salt overflow (salt + total tokens - 1 must be <= 65535)",
             );
 
             // Hoisted per-batch work: lifecycle math (same rules and rationale as
@@ -364,20 +362,15 @@ pub mod CoreTokenLiteComponent {
 
                 let mut k: u16 = 0;
                 while k < count {
-                    let final_token_id = pack_token_id(
-                        0, // game_id: always 0 — single game
-                        minted_by,
-                        validated_settings_id,
+                    let final_token_id = pack_lite_token_id(
                         current_time,
                         start_delay,
                         end_delay,
-                        0, // objective_id
+                        validated_settings_id,
+                        minted_by,
                         soulbound,
-                        false, // has_context
-                        false, // paymaster
                         tx_hash_bits,
                         salt + salt_offset,
-                        0 // metadata
                     );
 
                     if let Option::Some(name) = player_name {
@@ -465,11 +458,7 @@ pub mod CoreTokenLiteComponent {
         /// game_over / completed_objective state to consult. Games gate dead
         /// runs themselves; they are the source of truth.
         fn assert_lifecycle_open(self: @ComponentState<TContractState>, token_id: felt252) {
-            let packed = unpack_token_id(token_id);
-            let empty_state = TokenMutableState {
-                game_over: false, completed_objective: false, completed_at: 0,
-            };
-            let metadata = to_token_metadata(packed, empty_state);
+            let metadata = to_token_metadata(unpack_lite_token_id(token_id));
             let current_time = get_block_timestamp();
             let lifecycle = metadata.lifecycle;
             assert!(
