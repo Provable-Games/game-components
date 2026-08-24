@@ -10,7 +10,7 @@ use crate::metagame::interface::{IMETAGAME_ID, IMetagameDispatcher, IMetagameDis
 trait IMockMetagame<TContractState> {
     fn mint(
         ref self: TContractState,
-        game_address: Option<ContractAddress>,
+        game_address: ContractAddress,
         player_name: Option<felt252>,
         settings_id: Option<u32>,
         start: Option<u64>,
@@ -52,7 +52,6 @@ fn test_initialization_with_both_addresses() {
     let dispatcher = IMetagameDispatcher { contract_address };
 
     // Verify addresses are stored correctly
-    assert!(dispatcher.default_token_address() == token_address, "Token address mismatch");
     assert!(dispatcher.context_address() == context_address, "Context address mismatch");
 
     // Verify SRC5 interface registration
@@ -81,36 +80,11 @@ fn test_initialization_with_token_only() {
     let dispatcher = IMetagameDispatcher { contract_address };
 
     // Verify token address is stored and context is zero
-    assert!(dispatcher.default_token_address() == token_address, "Token address mismatch");
     assert!(dispatcher.context_address().is_zero(), "Context address should be zero");
 
     // Verify SRC5 interface registration
     let src5_dispatcher = ISRC5Dispatcher { contract_address };
     assert!(src5_dispatcher.supports_interface(IMETAGAME_ID), "Should support IMetagame interface");
-}
-
-// Test T002.1: minigame_token_address returns correct value after init
-#[test]
-fn test_minigame_token_address_view() {
-    let token_address: ContractAddress = 0xABC.try_into().unwrap();
-    let context_address: ContractAddress = 0xDEF.try_into().unwrap();
-
-    // Mock supports_interface for both addresses
-    mock_call(token_address, selector!("supports_interface"), true, 10);
-    mock_call(context_address, selector!("supports_interface"), true, 10);
-
-    // Deploy with both addresses
-    let contract = declare("MockMetagameContract").unwrap().contract_class();
-    let mut calldata = array![];
-    calldata.append(0); // Some(context_address)
-    calldata.append(context_address.into());
-    calldata.append(token_address.into());
-
-    let (contract_address, _) = contract.deploy(@calldata).unwrap();
-    let dispatcher = IMetagameDispatcher { contract_address };
-
-    // Verify minigame_token_address returns correct value
-    assert!(dispatcher.default_token_address() == token_address, "Token address mismatch");
 }
 
 // Test T002.2: context_address returns correct value when set
@@ -172,13 +146,16 @@ fn test_mint_minimal() {
     calldata.append(token_address.into());
 
     let (metagame_address, _) = metagame_contract.deploy(@calldata).unwrap();
+    // Every mint now names its game; the game resolves to the mock token.
+    let game_address: ContractAddress = 0x6A3E.try_into().unwrap();
+    mock_call(game_address, selector!("token_address"), token_address, 20);
     let dispatcher = IMockMetagameDispatcher { contract_address: metagame_address };
 
     // Mint with minimal parameters (only to address)
     let to_address = 0x1234.try_into().unwrap();
     let token_id = dispatcher
         .mint(
-            Option::None, // game_address
+            game_address,
             Option::None, // player_name
             Option::None, // settings_id
             Option::None, // start
@@ -215,6 +192,9 @@ fn test_mint_with_all_parameters() {
     calldata.append(token_address.into());
 
     let (metagame_address, _) = metagame_contract.deploy(@calldata).unwrap();
+    // Every mint now names its game; the game resolves to the mock token.
+    let game_address: ContractAddress = 0x6A3E.try_into().unwrap();
+    mock_call(game_address, selector!("token_address"), token_address, 20);
     let dispatcher = IMockMetagameDispatcher { contract_address: metagame_address };
 
     // Mint with all parameters (except context and game_address which require special setup)
@@ -223,7 +203,7 @@ fn test_mint_with_all_parameters() {
 
     let token_id = dispatcher
         .mint(
-            Option::None, // Use default token path (game_address requires deployed game contract)
+            game_address,
             Option::Some('Player One'),
             Option::Some(1), // settings_id
             Option::Some(1000), // start
@@ -264,6 +244,9 @@ fn test_mint_with_context_provider_set() {
     calldata.append(token_address.into());
 
     let (metagame_address, _) = metagame_contract.deploy(@calldata).unwrap();
+    // Every mint now names its game; the game resolves to the mock token.
+    let game_address: ContractAddress = 0x6A3E.try_into().unwrap();
+    mock_call(game_address, selector!("token_address"), token_address, 20);
     let dispatcher = IMockMetagameDispatcher { contract_address: metagame_address };
     use crate::metagame::extensions::context::structs::GameContext;
     let context = GameContextDetails {
@@ -280,7 +263,7 @@ fn test_mint_with_context_provider_set() {
     let to_address = 0x5678.try_into().unwrap();
     let token_id = dispatcher
         .mint(
-            Option::None,
+            game_address,
             Option::None,
             Option::None,
             Option::None,
@@ -316,6 +299,9 @@ fn test_mint_with_context_no_provider() {
     calldata.append(token_address.into());
 
     let (metagame_address, _) = metagame_contract.deploy(@calldata).unwrap();
+    // Every mint now names its game; the game resolves to the mock token.
+    let game_address: ContractAddress = 0x6A3E.try_into().unwrap();
+    mock_call(game_address, selector!("token_address"), token_address, 20);
     let dispatcher = IMockMetagameDispatcher { contract_address: metagame_address };
 
     // Mint with context - this should succeed because the token contract handles context
@@ -329,7 +315,7 @@ fn test_mint_with_context_no_provider() {
     let to_address: ContractAddress = 0x1234.try_into().unwrap();
     let token_id = dispatcher
         .mint(
-            Option::None,
+            game_address,
             Option::None,
             Option::None,
             Option::None,
@@ -364,12 +350,15 @@ fn test_mint_with_objective_id() {
     calldata.append(token_address.into());
 
     let (metagame_address, _) = metagame_contract.deploy(@calldata).unwrap();
+    // Every mint now names its game; the game resolves to the mock token.
+    let game_address: ContractAddress = 0x6A3E.try_into().unwrap();
+    mock_call(game_address, selector!("token_address"), token_address, 20);
     let dispatcher = IMockMetagameDispatcher { contract_address: metagame_address };
 
     let to_address = 0x1234.try_into().unwrap();
     let token_id = dispatcher
         .mint(
-            Option::None,
+            game_address,
             Option::None,
             Option::None,
             Option::None,
@@ -403,6 +392,9 @@ fn test_mint_with_instant_game() {
     calldata.append(token_address.into());
 
     let (metagame_address, _) = metagame_contract.deploy(@calldata).unwrap();
+    // Every mint now names its game; the game resolves to the mock token.
+    let game_address: ContractAddress = 0x6A3E.try_into().unwrap();
+    mock_call(game_address, selector!("token_address"), token_address, 20);
     let dispatcher = IMockMetagameDispatcher { contract_address: metagame_address };
 
     // Mint with start = end (instant game)
@@ -411,7 +403,7 @@ fn test_mint_with_instant_game() {
 
     let token_id = dispatcher
         .mint(
-            Option::None,
+            game_address,
             Option::None,
             Option::None,
             Option::Some(timestamp), // start
@@ -474,7 +466,7 @@ mod MockMetagameContract {
         context_address: Option<ContractAddress>,
         minigame_token_address: ContractAddress,
     ) {
-        self.metagame.initializer(context_address, minigame_token_address);
+        self.metagame.initializer(context_address);
     }
 
     // Expose mint function for testing
@@ -482,7 +474,7 @@ mod MockMetagameContract {
     impl MockMetagameImpl of super::IMockMetagame<ContractState> {
         fn mint(
             ref self: ContractState,
-            game_address: Option<ContractAddress>,
+            game_address: ContractAddress,
             player_name: Option<felt252>,
             settings_id: Option<u32>,
             start: Option<u64>,
@@ -988,6 +980,9 @@ fn test_mint_with_renderer_address() {
     calldata.append(token_address.into());
 
     let (metagame_address, _) = metagame_contract.deploy(@calldata).unwrap();
+    // Every mint now names its game; the game resolves to the mock token.
+    let game_address: ContractAddress = 0x6A3E.try_into().unwrap();
+    mock_call(game_address, selector!("token_address"), token_address, 20);
     let dispatcher = IMockMetagameDispatcher { contract_address: metagame_address };
 
     let renderer_address: ContractAddress = 0xBEEF.try_into().unwrap();
@@ -995,7 +990,7 @@ fn test_mint_with_renderer_address() {
 
     let token_id = dispatcher
         .mint(
-            Option::None,
+            game_address,
             Option::None,
             Option::None,
             Option::None,
@@ -1027,13 +1022,16 @@ fn test_mint_with_settings_id() {
     calldata.append(token_address.into());
 
     let (metagame_address, _) = metagame_contract.deploy(@calldata).unwrap();
+    // Every mint now names its game; the game resolves to the mock token.
+    let game_address: ContractAddress = 0x6A3E.try_into().unwrap();
+    mock_call(game_address, selector!("token_address"), token_address, 20);
     let dispatcher = IMockMetagameDispatcher { contract_address: metagame_address };
 
     let to_address: ContractAddress = 0x1234.try_into().unwrap();
 
     let token_id = dispatcher
         .mint(
-            Option::None,
+            game_address,
             Option::None,
             Option::Some(42), // settings_id
             Option::None,
@@ -1065,13 +1063,16 @@ fn test_mint_multiple_sequential() {
     calldata.append(token_address.into());
 
     let (metagame_address, _) = metagame_contract.deploy(@calldata).unwrap();
+    // Every mint now names its game; the game resolves to the mock token.
+    let game_address: ContractAddress = 0x6A3E.try_into().unwrap();
+    mock_call(game_address, selector!("token_address"), token_address, 20);
     let dispatcher = IMockMetagameDispatcher { contract_address: metagame_address };
 
     let to_address: ContractAddress = 0x1234.try_into().unwrap();
 
     let token_id_1 = dispatcher
         .mint(
-            Option::None,
+            game_address,
             Option::Some('Player1'),
             Option::None,
             Option::None,
@@ -1090,7 +1091,7 @@ fn test_mint_multiple_sequential() {
 
     let token_id_2 = dispatcher
         .mint(
-            Option::None,
+            game_address,
             Option::Some('Player2'),
             Option::None,
             Option::None,
@@ -1109,7 +1110,7 @@ fn test_mint_multiple_sequential() {
 
     let token_id_3 = dispatcher
         .mint(
-            Option::None,
+            game_address,
             Option::Some('Player3'),
             Option::None,
             Option::None,
@@ -1143,13 +1144,16 @@ fn test_mint_batch_through_component() {
     calldata.append(token_address.into());
 
     let (metagame_address, _) = metagame_contract.deploy(@calldata).unwrap();
+    // Every mint now names its game; the game resolves to the mock token.
+    let game_address: ContractAddress = 0x6A3E.try_into().unwrap();
+    mock_call(game_address, selector!("token_address"), token_address, 20);
     let dispatcher = IMockMetagameWithBatchDispatcher { contract_address: metagame_address };
 
     let to_address: ContractAddress = 0x1234.try_into().unwrap();
 
     let mints = array![
         crate::metagame::structs::MintMetagameParams {
-            game_address: Option::None,
+            game_address,
             player_name: Option::Some('BatchPlayer1'),
             settings_id: Option::None,
             start: Option::None,
@@ -1166,7 +1170,7 @@ fn test_mint_batch_through_component() {
             metadata: 0,
         },
         crate::metagame::structs::MintMetagameParams {
-            game_address: Option::None,
+            game_address,
             player_name: Option::Some('BatchPlayer2'),
             settings_id: Option::None,
             start: Option::None,
@@ -1236,7 +1240,7 @@ mod MockMetagameContractForErrors {
         context_address: Option<ContractAddress>,
         minigame_token_address: ContractAddress,
     ) {
-        self.metagame.initializer(context_address, minigame_token_address);
+        self.metagame.initializer(context_address);
     }
 }
 
@@ -1245,7 +1249,7 @@ mod MockMetagameContractForErrors {
 trait IMockMetagameWithBatch<TContractState> {
     fn mint(
         ref self: TContractState,
-        game_address: Option<ContractAddress>,
+        game_address: ContractAddress,
         player_name: Option<felt252>,
         settings_id: Option<u32>,
         start: Option<u64>,
@@ -1309,14 +1313,14 @@ mod MockMetagameContractWithBatch {
         context_address: Option<ContractAddress>,
         minigame_token_address: ContractAddress,
     ) {
-        self.metagame.initializer(context_address, minigame_token_address);
+        self.metagame.initializer(context_address);
     }
 
     #[abi(embed_v0)]
     impl MockMetagameWithBatchImpl of super::IMockMetagameWithBatch<ContractState> {
         fn mint(
             ref self: ContractState,
-            game_address: Option<ContractAddress>,
+            game_address: ContractAddress,
             player_name: Option<felt252>,
             settings_id: Option<u32>,
             start: Option<u64>,

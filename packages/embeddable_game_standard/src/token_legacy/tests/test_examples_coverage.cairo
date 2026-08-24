@@ -100,7 +100,7 @@ fn test_optimized_contract_context_operations() {
     let token_id = test_contracts
         .metagame_mock
         .mint_game(
-            Option::Some(test_contracts.minigame.contract_address),
+            test_contracts.minigame.contract_address,
             Option::Some('ContextPlayer'),
             Option::None, // settings_id
             Option::None, // start

@@ -266,7 +266,7 @@ mod TokenMockMetagameWithContext {
         context_address: Option<ContractAddress>,
         minigame_token_address: ContractAddress,
     ) {
-        self.metagame.initializer(context_address, minigame_token_address);
+        self.metagame.initializer(context_address);
     }
 }
 
@@ -626,7 +626,7 @@ fn test_update_game_triggers_game_action_callback() {
     let token_id = test_contracts
         .metagame_mock
         .mint_game(
-            Option::Some(test_contracts.minigame.contract_address),
+            test_contracts.minigame.contract_address,
             Option::Some('Player1'),
             Option::None,
             Option::None,
@@ -668,7 +668,7 @@ fn test_update_game_triggers_game_over_callback() {
     let token_id = test_contracts
         .metagame_mock
         .mint_game(
-            Option::Some(test_contracts.minigame.contract_address),
+            test_contracts.minigame.contract_address,
             Option::Some('Player2'),
             Option::None,
             Option::None,
@@ -707,7 +707,7 @@ fn test_update_game_no_game_over_callback_without_transition() {
     let token_id = test_contracts
         .metagame_mock
         .mint_game(
-            Option::Some(test_contracts.minigame.contract_address),
+            test_contracts.minigame.contract_address,
             Option::Some('Player3'),
             Option::None,
             Option::None,
@@ -750,7 +750,7 @@ fn test_update_game_triggers_objective_complete_callback() {
     let token_id = test_contracts
         .metagame_mock
         .mint_game(
-            Option::Some(test_contracts.minigame.contract_address),
+            test_contracts.minigame.contract_address,
             Option::Some('Player4'),
             Option::None,
             Option::None,

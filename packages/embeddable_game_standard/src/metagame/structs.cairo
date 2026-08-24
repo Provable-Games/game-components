@@ -4,7 +4,7 @@ use starknet::ContractAddress;
 /// Parameters for minting a token in batch operations through metagame
 #[derive(Drop, Serde)]
 pub struct MintMetagameParams {
-    pub game_address: Option<ContractAddress>,
+    pub game_address: ContractAddress,
     pub player_name: Option<felt252>,
     pub settings_id: Option<u32>,
     pub start: Option<u64>,

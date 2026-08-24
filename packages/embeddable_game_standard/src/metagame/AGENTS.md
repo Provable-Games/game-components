@@ -7,10 +7,12 @@ High-level game management component for token delegation and minting coordinati
 ```cairo
 #[storage]
 pub struct Storage {
-    context_address: ContractAddress,        // Optional IMetagameContext
-    default_token_address: ContractAddress,  // Required MinigameToken
+    context_address: ContractAddress,  // Optional IMetagameContext
 }
 ```
+
+There is no metagame-wide default token: every game brings its own, so the
+token is resolved from `game_address` on each mint.
 
 ## Interfaces
 
@@ -19,15 +21,17 @@ pub struct Storage {
 | Method | Returns | Description |
 |--------|---------|-------------|
 | `context_address()` | `ContractAddress` | Optional context contract (tournaments/events) |
-| `default_token_address()` | `ContractAddress` | Default MinigameToken for minting |
 
-**Interface ID**: `0x0260d5160a283a03815f6c3799926c7bdbec5f22e759f992fb8faf172243ab20`
+**Interface ID**: `0x1363c8de5144122290d663c4c7a10d09518fbe76475610a7027ea4770b9c179`
+
+Removing `default_token_address()` changed the id — consumers probing the
+previous value must update.
 
 ### InternalTrait (Component internals)
 
 | Method | Description |
 |--------|-------------|
-| `initializer(context_address, default_token_address)` | Initialize with optional context |
+| `initializer(context_address)` | Initialize with optional context |
 | `mint(game_address, player_name, settings_id, ...)` | Mint single token |
 | `mint_batch(mints: Array<MintMetagameParams>)` | Batch mint tokens |
 | `assert_game_registered(game_address)` | Validate game registration |
@@ -83,21 +87,31 @@ mod MyMetagame {
 
 ```
 Metagame
-  |-- default_token_address --> MinigameToken (REQUIRED)
   |-- context_address --------> IMetagameContext (OPTIONAL)
+  `-- per-mint: game_address --> IMinigame.token_address() --> the game's token
 ```
+
+Both token generations are served, branched on SRC5: a token supporting
+`IMINIGAME_TOKEN_ID` is a self-bound standard token, otherwise it is treated as
+a legacy registry-backed token. This applies to `assert_game_registered`,
+`mint`/`mint_batch` and `get_game_fee_info`/`pay_game_fee`.
 
 ## Initialization Requirements
 
-- `default_token_address` MUST support `IMINIGAME_TOKEN_LEGACY_ID` (the legacy multi-game token)
-- `context_address` (if provided) MUST support `IMETAGAME_CONTEXT_ID`
-- Both addresses validated via SRC5 introspection on init
+- `context_address` (if provided) MUST support `IMETAGAME_CONTEXT_ID`, validated via SRC5 on init
+
+## Callback extension
+
+`MetagameCallbackComponent::initializer(token_address)` binds the LEGACY token
+allowed to call back. Callbacks fire from `update_game()`, which the standard
+self-bound token does not have — so the callback extension is legacy-only and
+owns its token binding rather than reading one off `MetagameComponent`.
 
 ## MintMetagameParams
 
 ```cairo
 pub struct MintMetagameParams {
-    pub game_address: Option<ContractAddress>,
+    pub game_address: ContractAddress,
     pub player_name: Option<felt252>,
     pub settings_id: Option<u32>,
     pub start: Option<u64>,

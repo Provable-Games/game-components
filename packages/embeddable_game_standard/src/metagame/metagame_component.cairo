@@ -6,8 +6,6 @@ pub mod MetagameComponent {
     use core::num::traits::Zero;
     use game_components_embeddable_game_standard::metagame::extensions::context::interface::IMETAGAME_CONTEXT_ID;
     use game_components_embeddable_game_standard::metagame::extensions::context::structs::GameContextDetails;
-    use game_components_embeddable_game_standard::token_legacy::interface::IMINIGAME_TOKEN_LEGACY_ID;
-    use game_components_interfaces::token::core::IMINIGAME_TOKEN_ID;
     use openzeppelin_interfaces::erc20::{IERC20Dispatcher, IERC20DispatcherTrait};
     use openzeppelin_interfaces::introspection::{ISRC5Dispatcher, ISRC5DispatcherTrait};
     use openzeppelin_introspection::src5::SRC5Component;
@@ -23,7 +21,6 @@ pub mod MetagameComponent {
     #[storage]
     pub struct Storage {
         context_address: ContractAddress,
-        default_token_address: ContractAddress,
     }
 
     #[embeddable_as(MetagameImpl)]
@@ -36,10 +33,6 @@ pub mod MetagameComponent {
         fn context_address(self: @ComponentState<TContractState>) -> ContractAddress {
             self.context_address.read()
         }
-
-        fn default_token_address(self: @ComponentState<TContractState>) -> ContractAddress {
-            self.default_token_address.read()
-        }
     }
 
     #[generate_trait]
@@ -50,9 +43,7 @@ pub mod MetagameComponent {
         +Drop<TContractState>,
     > of InternalTrait<TContractState> {
         fn initializer(
-            ref self: ComponentState<TContractState>,
-            context_address: Option<ContractAddress>,
-            default_token_address: ContractAddress,
+            ref self: ComponentState<TContractState>, context_address: Option<ContractAddress>,
         ) {
             self.register_src5_interfaces();
             match context_address {
@@ -69,16 +60,6 @@ pub mod MetagameComponent {
                 },
                 Option::None => {},
             }
-            assert!(!default_token_address.is_zero(), "Metagame: Default token address is zero");
-            // Either token generation is a valid default: a legacy
-            // (registry-backed) token, or a self-bound standard token.
-            let minigame_dispatcher = ISRC5Dispatcher { contract_address: default_token_address };
-            assert!(
-                minigame_dispatcher.supports_interface(IMINIGAME_TOKEN_LEGACY_ID)
-                    || minigame_dispatcher.supports_interface(IMINIGAME_TOKEN_ID),
-                "Metagame: Default token contract supports neither IMinigameToken nor IMinigameTokenLegacy",
-            );
-            self.default_token_address.write(default_token_address);
         }
 
         fn register_src5_interfaces(ref self: ComponentState<TContractState>) {
@@ -94,7 +75,7 @@ pub mod MetagameComponent {
 
         fn mint(
             ref self: ComponentState<TContractState>,
-            game_address: Option<ContractAddress>,
+            game_address: ContractAddress,
             player_name: Option<felt252>,
             settings_id: Option<u32>,
             start: Option<u64>,
@@ -111,7 +92,6 @@ pub mod MetagameComponent {
             metadata: u16,
         ) -> felt252 {
             libs::mint(
-                self.default_token_address.read(),
                 game_address,
                 player_name,
                 settings_id,
@@ -133,7 +113,7 @@ pub mod MetagameComponent {
         fn mint_batch(
             ref self: ComponentState<TContractState>, mints: Array<MintMetagameParams>,
         ) -> Array<felt252> {
-            libs::mint_batch(self.default_token_address.read(), mints)
+            libs::mint_batch(mints)
         }
 
         /// Reads fee from registry, calculates amount, transfers via ERC20

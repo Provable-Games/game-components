@@ -61,12 +61,12 @@ fn sample_context() -> GameContextDetails {
 
 // LIB-MINT-01: Mint with only required params
 #[test]
-fn test_mint_default_token_minimal() {
+fn test_mint_through_game_minimal() {
     let token_address = deploy_mock_minigame_token();
+    let game_address = deploy_mock_minigame(token_address);
 
     let token_id = libs::mint(
-        token_address,
-        Option::None, // game_address
+        game_address,
         Option::None, // player_name
         Option::None, // settings_id
         Option::None, // start
@@ -88,12 +88,12 @@ fn test_mint_default_token_minimal() {
 
 // LIB-MINT-02: Mint with player name
 #[test]
-fn test_mint_default_token_with_player_name() {
+fn test_mint_through_game_with_player_name() {
     let token_address = deploy_mock_minigame_token();
+    let game_address = deploy_mock_minigame(token_address);
 
     let token_id = libs::mint(
-        token_address,
-        Option::None,
+        game_address,
         Option::Some('Player1'),
         Option::None,
         Option::None,
@@ -117,12 +117,12 @@ fn test_mint_default_token_with_player_name() {
 
 // LIB-MINT-03: Mint with settings_id
 #[test]
-fn test_mint_default_token_with_settings() {
+fn test_mint_through_game_with_settings() {
     let token_address = deploy_mock_minigame_token();
+    let game_address = deploy_mock_minigame(token_address);
 
     let token_id = libs::mint(
-        token_address,
-        Option::None,
+        game_address,
         Option::None,
         Option::Some(42),
         Option::None,
@@ -144,12 +144,12 @@ fn test_mint_default_token_with_settings() {
 
 // LIB-MINT-04: Mint with lifecycle (start/end)
 #[test]
-fn test_mint_default_token_with_lifecycle() {
+fn test_mint_through_game_with_lifecycle() {
     let token_address = deploy_mock_minigame_token();
+    let game_address = deploy_mock_minigame(token_address);
 
     let token_id = libs::mint(
-        token_address,
-        Option::None,
+        game_address,
         Option::None,
         Option::None,
         Option::Some(1000),
@@ -174,12 +174,12 @@ fn test_mint_default_token_with_lifecycle() {
 
 // LIB-MINT-05: Mint with objective_id
 #[test]
-fn test_mint_default_token_with_objective() {
+fn test_mint_through_game_with_objective() {
     let token_address = deploy_mock_minigame_token();
+    let game_address = deploy_mock_minigame(token_address);
 
     let token_id = libs::mint(
-        token_address,
-        Option::None,
+        game_address,
         Option::None,
         Option::None,
         Option::None,
@@ -201,13 +201,13 @@ fn test_mint_default_token_with_objective() {
 
 // LIB-MINT-06: Mint with context
 #[test]
-fn test_mint_default_token_with_context() {
+fn test_mint_through_game_with_context() {
     let token_address = deploy_mock_minigame_token();
+    let game_address = deploy_mock_minigame(token_address);
     let context = sample_context();
 
     let token_id = libs::mint(
-        token_address,
-        Option::None,
+        game_address,
         Option::None,
         Option::None,
         Option::None,
@@ -229,12 +229,12 @@ fn test_mint_default_token_with_context() {
 
 // LIB-MINT-07: Mint with client URL
 #[test]
-fn test_mint_default_token_with_client_url() {
+fn test_mint_through_game_with_client_url() {
     let token_address = deploy_mock_minigame_token();
+    let game_address = deploy_mock_minigame(token_address);
 
     let token_id = libs::mint(
-        token_address,
-        Option::None,
+        game_address,
         Option::None,
         Option::None,
         Option::None,
@@ -256,13 +256,13 @@ fn test_mint_default_token_with_client_url() {
 
 // LIB-MINT-08: Mint with renderer address
 #[test]
-fn test_mint_default_token_with_renderer() {
+fn test_mint_through_game_with_renderer() {
     let token_address = deploy_mock_minigame_token();
+    let game_address = deploy_mock_minigame(token_address);
     let renderer: ContractAddress = 0xBEEF.try_into().unwrap();
 
     let token_id = libs::mint(
-        token_address,
-        Option::None,
+        game_address,
         Option::None,
         Option::None,
         Option::None,
@@ -284,12 +284,12 @@ fn test_mint_default_token_with_renderer() {
 
 // LIB-MINT-09: Mint soulbound token
 #[test]
-fn test_mint_default_token_soulbound() {
+fn test_mint_through_game_soulbound() {
     let token_address = deploy_mock_minigame_token();
+    let game_address = deploy_mock_minigame(token_address);
 
     let token_id = libs::mint(
-        token_address,
-        Option::None,
+        game_address,
         Option::None,
         Option::None,
         Option::None,
@@ -311,14 +311,14 @@ fn test_mint_default_token_soulbound() {
 
 // LIB-MINT-10: Mint with all parameters
 #[test]
-fn test_mint_default_token_all_params() {
+fn test_mint_through_game_all_params() {
     let token_address = deploy_mock_minigame_token();
+    let game_address = deploy_mock_minigame(token_address);
     let renderer: ContractAddress = 0xBEEF.try_into().unwrap();
     let context = sample_context();
 
     let token_id = libs::mint(
-        token_address,
-        Option::None, // game_address (using default token path)
+        game_address,
         Option::Some('FullPlayer'),
         Option::Some(99),
         Option::Some(1000),
@@ -353,8 +353,7 @@ fn test_mint_game_token_routes_through_game() {
     let game_address = deploy_mock_minigame(token_address);
 
     let token_id = libs::mint(
-        token_address, // default_token_address (not used when game_address is provided)
-        Option::Some(game_address),
+        game_address,
         Option::Some('GamePlayer'),
         Option::None,
         Option::None,
@@ -386,8 +385,7 @@ fn test_mint_game_token_preserves_params() {
     let context = sample_context();
 
     let token_id = libs::mint(
-        token_address,
-        Option::Some(game_address),
+        game_address,
         Option::Some('GamePlayer2'),
         Option::Some(42),
         Option::Some(500),
@@ -420,10 +418,10 @@ fn test_mint_game_token_preserves_params() {
 #[test]
 fn test_mint_instant_game() {
     let token_address = deploy_mock_minigame_token();
+    let game_address = deploy_mock_minigame(token_address);
 
     let token_id = libs::mint(
-        token_address,
-        Option::None,
+        game_address,
         Option::None,
         Option::None,
         Option::Some(100),
@@ -455,9 +453,10 @@ fn test_mint_instant_game() {
 #[test]
 fn test_mint_batch_empty_array() {
     let token_address = deploy_mock_minigame_token();
+    let game_address = deploy_mock_minigame(token_address);
 
     let mints: Array<MintMetagameParams> = array![];
-    let token_ids = libs::mint_batch(token_address, mints);
+    let token_ids = libs::mint_batch(mints);
 
     assert!(token_ids.len() == 0, "Empty batch should return empty array");
 }
@@ -466,10 +465,11 @@ fn test_mint_batch_empty_array() {
 #[test]
 fn test_mint_batch_single_mint() {
     let token_address = deploy_mock_minigame_token();
+    let game_address = deploy_mock_minigame(token_address);
 
     let mints = array![
         MintMetagameParams {
-            game_address: Option::None,
+            game_address,
             player_name: Option::Some('BatchPlayer1'),
             settings_id: Option::None,
             start: Option::None,
@@ -487,7 +487,7 @@ fn test_mint_batch_single_mint() {
         },
     ];
 
-    let token_ids = libs::mint_batch(token_address, mints);
+    let token_ids = libs::mint_batch(mints);
 
     assert!(token_ids.len() == 1, "Should return 1 token ID");
     assert!(*token_ids.at(0) == 1.into(), "First token ID should be 1");
@@ -497,10 +497,11 @@ fn test_mint_batch_single_mint() {
 #[test]
 fn test_mint_batch_multiple_mints() {
     let token_address = deploy_mock_minigame_token();
+    let game_address = deploy_mock_minigame(token_address);
 
     let mints = array![
         MintMetagameParams {
-            game_address: Option::None,
+            game_address,
             player_name: Option::Some('Player1'),
             settings_id: Option::None,
             start: Option::None,
@@ -517,7 +518,7 @@ fn test_mint_batch_multiple_mints() {
             metadata: 0,
         },
         MintMetagameParams {
-            game_address: Option::None,
+            game_address,
             player_name: Option::Some('Player2'),
             settings_id: Option::None,
             start: Option::None,
@@ -534,7 +535,7 @@ fn test_mint_batch_multiple_mints() {
             metadata: 0,
         },
         MintMetagameParams {
-            game_address: Option::None,
+            game_address,
             player_name: Option::Some('Player3'),
             settings_id: Option::None,
             start: Option::None,
@@ -552,7 +553,7 @@ fn test_mint_batch_multiple_mints() {
         },
     ];
 
-    let token_ids = libs::mint_batch(token_address, mints);
+    let token_ids = libs::mint_batch(mints);
 
     assert!(token_ids.len() == 3, "Should return 3 token IDs");
     assert!(*token_ids.at(0) == 1.into(), "First token ID should be 1");
@@ -564,10 +565,11 @@ fn test_mint_batch_multiple_mints() {
 #[test]
 fn test_mint_batch_preserves_order() {
     let token_address = deploy_mock_minigame_token();
+    let game_address = deploy_mock_minigame(token_address);
 
     let mints = array![
         MintMetagameParams {
-            game_address: Option::None,
+            game_address,
             player_name: Option::Some('First'),
             settings_id: Option::None,
             start: Option::Some(100),
@@ -584,7 +586,7 @@ fn test_mint_batch_preserves_order() {
             metadata: 0,
         },
         MintMetagameParams {
-            game_address: Option::None,
+            game_address,
             player_name: Option::Some('Second'),
             settings_id: Option::None,
             start: Option::Some(200),
@@ -602,7 +604,7 @@ fn test_mint_batch_preserves_order() {
         },
     ];
 
-    let token_ids = libs::mint_batch(token_address, mints);
+    let token_ids = libs::mint_batch(mints);
 
     let token_dispatcher = IMinigameTokenLegacyDispatcher { contract_address: token_address };
 
@@ -619,11 +621,12 @@ fn test_mint_batch_preserves_order() {
 #[test]
 fn test_mint_batch_with_context() {
     let token_address = deploy_mock_minigame_token();
+    let game_address = deploy_mock_minigame(token_address);
     let context = sample_context();
 
     let mints = array![
         MintMetagameParams {
-            game_address: Option::None,
+            game_address,
             player_name: Option::Some('ContextPlayer'),
             settings_id: Option::None,
             start: Option::None,
@@ -641,7 +644,7 @@ fn test_mint_batch_with_context() {
         },
     ];
 
-    let token_ids = libs::mint_batch(token_address, mints);
+    let token_ids = libs::mint_batch(mints);
 
     assert!(token_ids.len() == 1, "Should mint token with context");
 }
@@ -650,10 +653,11 @@ fn test_mint_batch_with_context() {
 #[test]
 fn test_mint_batch_with_client_url() {
     let token_address = deploy_mock_minigame_token();
+    let game_address = deploy_mock_minigame(token_address);
 
     let mints = array![
         MintMetagameParams {
-            game_address: Option::None,
+            game_address,
             player_name: Option::None,
             settings_id: Option::None,
             start: Option::None,
@@ -671,7 +675,7 @@ fn test_mint_batch_with_client_url() {
         },
     ];
 
-    let token_ids = libs::mint_batch(token_address, mints);
+    let token_ids = libs::mint_batch(mints);
 
     assert!(token_ids.len() == 1, "Should mint token with client URL");
 }
@@ -685,10 +689,10 @@ fn test_mint_batch_with_client_url() {
 #[fuzzer(runs: 100)]
 fn test_fuzz_mint_player_names(player_name: felt252) {
     let token_address = deploy_mock_minigame_token();
+    let game_address = deploy_mock_minigame(token_address);
 
     let token_id = libs::mint(
-        token_address,
-        Option::None,
+        game_address,
         Option::Some(player_name),
         Option::None,
         Option::None,
@@ -717,10 +721,10 @@ fn test_fuzz_mint_player_names(player_name: felt252) {
 #[fuzzer(runs: 100)]
 fn test_fuzz_mint_settings_ids(settings_id: u32) {
     let token_address = deploy_mock_minigame_token();
+    let game_address = deploy_mock_minigame(token_address);
 
     let token_id = libs::mint(
-        token_address,
-        Option::None,
+        game_address,
         Option::None,
         Option::Some(settings_id),
         Option::None,
@@ -745,10 +749,10 @@ fn test_fuzz_mint_settings_ids(settings_id: u32) {
 #[fuzzer(runs: 100)]
 fn test_fuzz_mint_objective_ids(objective_id: u32) {
     let token_address = deploy_mock_minigame_token();
+    let game_address = deploy_mock_minigame(token_address);
 
     let token_id = libs::mint(
-        token_address,
-        Option::None,
+        game_address,
         Option::None,
         Option::None,
         Option::None,
@@ -1415,10 +1419,11 @@ fn test_assert_game_registered_fails_for_unregistered() {
 fn test_mint_batch_mixed_game_addresses() {
     let token_address = deploy_mock_minigame_token();
     let game_address = deploy_mock_minigame(token_address);
+    let game_address = deploy_mock_minigame(token_address);
 
     let mints = array![
         MintMetagameParams {
-            game_address: Option::Some(game_address),
+            game_address: game_address,
             player_name: Option::Some('WithGame'),
             settings_id: Option::None,
             start: Option::None,
@@ -1435,7 +1440,7 @@ fn test_mint_batch_mixed_game_addresses() {
             metadata: 0,
         },
         MintMetagameParams {
-            game_address: Option::None,
+            game_address,
             player_name: Option::Some('NoGame'),
             settings_id: Option::None,
             start: Option::None,
@@ -1453,7 +1458,7 @@ fn test_mint_batch_mixed_game_addresses() {
         },
     ];
 
-    let token_ids = libs::mint_batch(token_address, mints);
+    let token_ids = libs::mint_batch(mints);
 
     assert!(token_ids.len() == 2, "Should return 2 token IDs");
 
@@ -1469,11 +1474,12 @@ fn test_mint_batch_mixed_game_addresses() {
 #[test]
 fn test_mint_batch_different_recipients() {
     let token_address = deploy_mock_minigame_token();
+    let game_address = deploy_mock_minigame(token_address);
     let carol: ContractAddress = 0xCAFE.try_into().unwrap();
 
     let mints = array![
         MintMetagameParams {
-            game_address: Option::None,
+            game_address,
             player_name: Option::Some('Alice'),
             settings_id: Option::None,
             start: Option::None,
@@ -1490,7 +1496,7 @@ fn test_mint_batch_different_recipients() {
             metadata: 0,
         },
         MintMetagameParams {
-            game_address: Option::None,
+            game_address,
             player_name: Option::Some('Bob'),
             settings_id: Option::None,
             start: Option::None,
@@ -1507,7 +1513,7 @@ fn test_mint_batch_different_recipients() {
             metadata: 0,
         },
         MintMetagameParams {
-            game_address: Option::None,
+            game_address,
             player_name: Option::Some('Carol'),
             settings_id: Option::None,
             start: Option::None,
@@ -1525,7 +1531,7 @@ fn test_mint_batch_different_recipients() {
         },
     ];
 
-    let token_ids = libs::mint_batch(token_address, mints);
+    let token_ids = libs::mint_batch(mints);
 
     assert!(token_ids.len() == 3, "Should mint 3 tokens");
     assert!(*token_ids.at(0) == 1.into(), "First ID should be 1");
@@ -1537,10 +1543,11 @@ fn test_mint_batch_different_recipients() {
 #[test]
 fn test_mint_batch_mixed_soulbound() {
     let token_address = deploy_mock_minigame_token();
+    let game_address = deploy_mock_minigame(token_address);
 
     let mints = array![
         MintMetagameParams {
-            game_address: Option::None,
+            game_address,
             player_name: Option::Some('Transferable'),
             settings_id: Option::None,
             start: Option::None,
@@ -1557,7 +1564,7 @@ fn test_mint_batch_mixed_soulbound() {
             metadata: 0,
         },
         MintMetagameParams {
-            game_address: Option::None,
+            game_address,
             player_name: Option::Some('Soulbound'),
             settings_id: Option::None,
             start: Option::None,
@@ -1575,7 +1582,7 @@ fn test_mint_batch_mixed_soulbound() {
         },
     ];
 
-    let token_ids = libs::mint_batch(token_address, mints);
+    let token_ids = libs::mint_batch(mints);
     assert!(token_ids.len() == 2, "Should mint 2 tokens with mixed soulbound");
 }
 
@@ -1583,6 +1590,7 @@ fn test_mint_batch_mixed_soulbound() {
 #[test]
 fn test_mint_batch_large_batch() {
     let token_address = deploy_mock_minigame_token();
+    let game_address = deploy_mock_minigame(token_address);
 
     let mut mints: Array<MintMetagameParams> = array![];
     let mut i: u32 = 0;
@@ -1593,7 +1601,7 @@ fn test_mint_batch_large_batch() {
         mints
             .append(
                 MintMetagameParams {
-                    game_address: Option::None,
+                    game_address,
                     player_name: Option::None,
                     settings_id: Option::Some(i),
                     start: Option::None,
@@ -1613,7 +1621,7 @@ fn test_mint_batch_large_batch() {
         i += 1;
     }
 
-    let token_ids = libs::mint_batch(token_address, mints);
+    let token_ids = libs::mint_batch(mints);
 
     assert!(token_ids.len() == 50, "Should mint 50 tokens");
     assert!(*token_ids.at(0) == 1.into(), "First ID should be 1");
@@ -1995,8 +2003,7 @@ mod standard_token_paths {
         let game = deploy_standard_game(ALICE());
 
         let token_id = libs::mint(
-            game, // default token (unused on this branch)
-            Option::Some(game),
+            game,
             Option::Some('player'),
             Option::None,
             Option::None,
@@ -2037,7 +2044,6 @@ mod standard_token_paths {
             Option::None,
             Option::None,
             Option::None,
-            Option::None,
             BOB(),
             false,
             false,
@@ -2056,7 +2062,6 @@ mod standard_token_paths {
         let game = deploy_standard_game(ALICE());
         libs::mint(
             game,
-            Option::Some(game),
             Option::None,
             Option::None,
             Option::None,
@@ -2080,7 +2085,6 @@ mod standard_token_paths {
         let game = deploy_standard_game(ALICE());
         libs::mint(
             game,
-            Option::Some(game),
             Option::None,
             Option::None,
             Option::None,
@@ -2115,7 +2119,9 @@ mod standard_token_paths {
     #[test]
     fn test_get_game_creator_address_is_the_declared_payee() {
         let game = deploy_standard_game(ALICE());
-        assert!(libs::get_game_creator_address(game) == ALICE(), "payee is not the declared creator");
+        assert!(
+            libs::get_game_creator_address(game) == ALICE(), "payee is not the declared creator",
+        );
     }
 }
 
@@ -2134,8 +2140,8 @@ mod legacy_single_game_token {
     use game_components_testing::constants::{ALICE, BOB};
     use snforge_std::mock_call;
     use starknet::ContractAddress;
-    use super::{deploy_mock_minigame_for_registry, deploy_mock_token_with_registry};
     use crate::metagame::metagame as libs;
+    use super::{deploy_mock_minigame_for_registry, deploy_mock_token_with_registry};
 
     #[test]
     fn test_assert_game_registered_accepts_paired_single_game_token() {

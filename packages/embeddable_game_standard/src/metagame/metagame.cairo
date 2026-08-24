@@ -50,9 +50,7 @@ pub fn assert_game_registered(game_address: ContractAddress) {
     };
     let minigame_registry_address = minigame_token_dispatcher.game_registry_address();
     if minigame_registry_address.is_zero() {
-        assert!(
-            minigame_token_dispatcher.game_address() == game_address, "Game is not registered",
-        );
+        assert!(minigame_token_dispatcher.game_address() == game_address, "Game is not registered");
         return;
     }
     let minigame_registry_dispatcher = IMinigameRegistryDispatcher {
@@ -91,10 +89,7 @@ fn mint_standard_token(
     salt: u16,
     metadata: u16,
 ) -> felt252 {
-    assert!(
-        renderer_address.is_none(),
-        "Metagame: standard tokens have no per-token renderer",
-    );
+    assert!(renderer_address.is_none(), "Metagame: standard tokens have no per-token renderer");
     assert!(skills_address.is_none(), "Metagame: standard tokens have no per-token skills");
     IMinigameTokenDispatcher { contract_address: token_address }
         .mint(
@@ -113,10 +108,12 @@ fn mint_standard_token(
         )
 }
 
-/// Mints a game token through the minigame token contract
+/// Mints a game token through the game's own token contract.
+///
+/// Every game brings its own token — the token is resolved from
+/// `game_address` on every mint, so there is no metagame-wide default token.
 ///
 /// # Arguments
-/// * `minigame_token_address` - The address of the minigame token contract
 /// * `game_address` - The address of the game contract minting the token
 /// * `player_name` - Optional player name
 /// * `settings_id` - Optional settings ID
@@ -133,8 +130,7 @@ fn mint_standard_token(
 /// # Returns
 /// * `u64` - The minted token ID
 pub fn mint(
-    default_token_address: ContractAddress,
-    game_address: Option<ContractAddress>,
+    game_address: ContractAddress,
     player_name: Option<felt252>,
     settings_id: Option<u32>,
     start: Option<u64>,
@@ -150,117 +146,63 @@ pub fn mint(
     salt: u16,
     metadata: u16,
 ) -> felt252 {
-    match game_address {
-        // If the game address is provided, mint a token through the token contract the game
-        // supports (could include its own game registry)
-        Option::Some(game_address) => {
-            let minigame_dispatcher = IMinigameDispatcher { contract_address: game_address };
-            let minigame_token_address = minigame_dispatcher.token_address();
-            // A standard token is self-bound and carries a different mint ABI;
-            // `assert_game_registered` accepts these games, so this path must
-            // be able to mint for them too.
-            if is_standard_token(minigame_token_address) {
-                return mint_standard_token(
-                    minigame_token_address,
-                    player_name,
-                    settings_id,
-                    start,
-                    end,
-                    objective_id,
-                    context,
-                    client_url,
-                    renderer_address,
-                    skills_address,
-                    to,
-                    soulbound,
-                    paymaster,
-                    salt,
-                    metadata,
-                );
-            }
-            let minigame_token_dispatcher = IMinigameTokenLegacyDispatcher {
-                contract_address: minigame_token_address,
-            };
-            minigame_token_dispatcher
-                .mint(
-                    game_address,
-                    player_name,
-                    settings_id,
-                    start,
-                    end,
-                    objective_id,
-                    context,
-                    client_url,
-                    renderer_address,
-                    skills_address,
-                    to,
-                    soulbound,
-                    paymaster,
-                    salt,
-                    metadata,
-                )
-        },
-        // If no game address is provided, mint a token through the default token contract (blank
-        // game)
-        Option::None => {
-            // The default token may itself be a standard (self-bound) token:
-            // there is no blank-game concept there, the mint simply belongs to
-            // that token's own game.
-            if is_standard_token(default_token_address) {
-                return mint_standard_token(
-                    default_token_address,
-                    player_name,
-                    settings_id,
-                    start,
-                    end,
-                    objective_id,
-                    context,
-                    client_url,
-                    renderer_address,
-                    skills_address,
-                    to,
-                    soulbound,
-                    paymaster,
-                    salt,
-                    metadata,
-                );
-            }
-            let minigame_token_dispatcher = IMinigameTokenLegacyDispatcher {
-                contract_address: default_token_address,
-            };
-            minigame_token_dispatcher
-                .mint(
-                    core::num::traits::Zero::zero(),
-                    player_name,
-                    settings_id,
-                    start,
-                    end,
-                    objective_id,
-                    context,
-                    client_url,
-                    renderer_address,
-                    skills_address,
-                    to,
-                    soulbound,
-                    paymaster,
-                    salt,
-                    metadata,
-                )
-        },
+    let minigame_dispatcher = IMinigameDispatcher { contract_address: game_address };
+    let minigame_token_address = minigame_dispatcher.token_address();
+    // A standard token is self-bound and carries a different mint ABI;
+    // `assert_game_registered` accepts these games, so this path must be able
+    // to mint for them too.
+    if is_standard_token(minigame_token_address) {
+        return mint_standard_token(
+            minigame_token_address,
+            player_name,
+            settings_id,
+            start,
+            end,
+            objective_id,
+            context,
+            client_url,
+            renderer_address,
+            skills_address,
+            to,
+            soulbound,
+            paymaster,
+            salt,
+            metadata,
+        );
     }
+    let minigame_token_dispatcher = IMinigameTokenLegacyDispatcher {
+        contract_address: minigame_token_address,
+    };
+    minigame_token_dispatcher
+        .mint(
+            game_address,
+            player_name,
+            settings_id,
+            start,
+            end,
+            objective_id,
+            context,
+            client_url,
+            renderer_address,
+            skills_address,
+            to,
+            soulbound,
+            paymaster,
+            salt,
+            metadata,
+        )
 }
 
-/// Mints multiple game tokens in batch through minigame token contracts
+/// Mints multiple game tokens in batch through their games' token contracts
+///
+/// Each entry names its own game; the token is resolved per mint.
 ///
 /// # Arguments
-/// * `default_token_address` - The default token address for minting when no game_address is
-/// provided * `mints` - Array of mint parameters for each token
+/// * `mints` - Array of mint parameters for each token
 ///
 /// # Returns
 /// * `Array<felt252>` - Array of minted token IDs
-pub fn mint_batch(
-    default_token_address: ContractAddress, mints: Array<MintMetagameParams>,
-) -> Array<felt252> {
+pub fn mint_batch(mints: Array<MintMetagameParams>) -> Array<felt252> {
     let mut token_ids = array![];
     let mut index = 0;
 
@@ -283,7 +225,6 @@ pub fn mint_batch(
         };
 
         let token_id = mint(
-            default_token_address,
             *mint_param.game_address,
             *mint_param.player_name,
             *mint_param.settings_id,

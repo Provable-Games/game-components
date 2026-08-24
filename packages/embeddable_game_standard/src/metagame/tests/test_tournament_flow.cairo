@@ -66,7 +66,7 @@ fn test_tournament_flow() {
     start_cheat_caller_address(metagame_address, player1);
     let p1_g1_token = metagame_dispatcher
         .mint(
-            Option::Some(game1_address),
+            game1_address,
             Option::Some('Player1'),
             Option::None,
             Option::Some(1000),
@@ -85,7 +85,7 @@ fn test_tournament_flow() {
 
     let p1_g2_token = metagame_dispatcher
         .mint(
-            Option::Some(game2_address),
+            game2_address,
             Option::Some('Player1'),
             Option::None,
             Option::Some(1000),
@@ -107,7 +107,7 @@ fn test_tournament_flow() {
     start_cheat_caller_address(metagame_address, player2);
     let p2_g1_token = metagame_dispatcher
         .mint(
-            Option::Some(game1_address),
+            game1_address,
             Option::Some('Player2'),
             Option::None,
             Option::Some(1000),
@@ -126,7 +126,7 @@ fn test_tournament_flow() {
 
     let p2_g2_token = metagame_dispatcher
         .mint(
-            Option::Some(game2_address),
+            game2_address,
             Option::Some('Player2'),
             Option::None,
             Option::Some(1000),
@@ -145,7 +145,7 @@ fn test_tournament_flow() {
 
     let p2_g3_token = metagame_dispatcher
         .mint(
-            Option::Some(game3_address),
+            game3_address,
             Option::Some('Player2'),
             Option::None,
             Option::Some(1000),
@@ -255,7 +255,7 @@ mod MockMetagameWithContext {
         context_address: Option<ContractAddress>,
         minigame_token_address: ContractAddress,
     ) {
-        self.metagame.initializer(context_address, minigame_token_address);
+        self.metagame.initializer(context_address);
     }
 
     // Expose mint function for testing
@@ -263,7 +263,7 @@ mod MockMetagameWithContext {
     impl MockMetagameImpl of super::IMockMetagame<ContractState> {
         fn mint(
             ref self: ContractState,
-            game_address: Option<ContractAddress>,
+            game_address: ContractAddress,
             player_name: Option<felt252>,
             settings_id: Option<u32>,
             start: Option<u64>,
@@ -307,7 +307,7 @@ mod MockMetagameWithContext {
 trait IMockMetagame<TContractState> {
     fn mint(
         ref self: TContractState,
-        game_address: Option<ContractAddress>,
+        game_address: ContractAddress,
         player_name: Option<felt252>,
         settings_id: Option<u32>,
         start: Option<u64>,

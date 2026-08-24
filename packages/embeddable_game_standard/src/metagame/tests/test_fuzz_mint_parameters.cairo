@@ -10,7 +10,7 @@ use crate::metagame::extensions::context::structs::GameContextDetails;
 trait IMockMetagame<TContractState> {
     fn mint(
         ref self: TContractState,
-        game_address: Option<ContractAddress>,
+        game_address: ContractAddress,
         player_name: Option<felt252>,
         settings_id: Option<u32>,
         start: Option<u64>,
@@ -132,7 +132,7 @@ fn test_fuzz_player_names() {
         // Mint with this player name
         let token_id = metagame_dispatcher
             .mint(
-                Option::Some(minigame_address),
+                minigame_address,
                 Option::Some(name),
                 Option::None,
                 Option::None,
@@ -190,7 +190,7 @@ fn test_property_token_id_monotonicity() {
 
         let token_id = metagame_dispatcher
             .mint(
-                Option::Some(minigame_address),
+                minigame_address,
                 Option::None,
                 Option::None,
                 Option::None,
@@ -231,7 +231,7 @@ fn try_mint_with_lifecycle(
 
     let token_id = dispatcher
         .mint(
-            Option::Some(game_address),
+            game_address,
             Option::None,
             Option::None,
             Option::Some(start),
@@ -289,7 +289,7 @@ mod MockMetagameFuzz {
         context_address: Option<ContractAddress>,
         minigame_token_address: ContractAddress,
     ) {
-        self.metagame.initializer(context_address, minigame_token_address);
+        self.metagame.initializer(context_address);
     }
 
     // Expose mint function for testing
@@ -297,7 +297,7 @@ mod MockMetagameFuzz {
     impl MockMetagameImpl of super::IMockMetagame<ContractState> {
         fn mint(
             ref self: ContractState,
-            game_address: Option<ContractAddress>,
+            game_address: ContractAddress,
             player_name: Option<felt252>,
             settings_id: Option<u32>,
             start: Option<u64>,

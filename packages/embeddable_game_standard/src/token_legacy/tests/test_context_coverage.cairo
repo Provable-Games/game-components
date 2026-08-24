@@ -49,7 +49,7 @@ fn test_context_through_metagame() {
     let token_id = test_contracts
         .metagame_mock
         .mint_game(
-            Option::Some(test_contracts.minigame.contract_address),
+            test_contracts.minigame.contract_address,
             Option::Some('ContextualPlayer'),
             Option::None, // No settings_id
             Option::Some(1000), // start
@@ -90,7 +90,7 @@ fn test_multiple_context_mints() {
         let token_id = test_contracts
             .metagame_mock
             .mint_game(
-                Option::Some(test_contracts.minigame.contract_address),
+                test_contracts.minigame.contract_address,
                 Option::Some(name.clone()),
                 Option::None,
                 Option::None,
@@ -131,7 +131,7 @@ fn test_context_with_game_lifecycle() {
     let token_id = test_contracts
         .metagame_mock
         .mint_game(
-            Option::Some(test_contracts.minigame.contract_address),
+            test_contracts.minigame.contract_address,
             Option::Some('TimedPlayer'),
             Option::None,
             Option::Some(start_time),
@@ -162,7 +162,7 @@ fn test_context_with_soulbound() {
     let token_id = test_contracts
         .metagame_mock
         .mint_game(
-            Option::Some(test_contracts.minigame.contract_address),
+            test_contracts.minigame.contract_address,
             Option::Some('SoulboundPlayer'),
             Option::None,
             Option::None,
@@ -193,7 +193,7 @@ fn test_context_extension_edge_cases() {
     let token_id1 = test_contracts
         .metagame_mock
         .mint_game(
-            Option::Some(test_contracts.minigame.contract_address),
+            test_contracts.minigame.contract_address,
             Option::None, // No player name
             Option::None,
             Option::None,
@@ -213,7 +213,7 @@ fn test_context_extension_edge_cases() {
     let token_id2 = test_contracts
         .metagame_mock
         .mint_game(
-            Option::Some(test_contracts.minigame.contract_address),
+            test_contracts.minigame.contract_address,
             Option::Some('FullPlayer'),
             Option::None, // No settings
             Option::Some(1000), // start

@@ -31,7 +31,7 @@ fn test_context_through_metagame_mint() {
     let token_id = test_contracts
         .metagame_mock
         .mint_game(
-            Option::Some(test_contracts.minigame.contract_address),
+            test_contracts.minigame.contract_address,
             Option::Some('ContextPlayer'),
             Option::None,
             Option::None,
@@ -103,7 +103,7 @@ fn test_context_with_lifecycle_combination() {
     let token_id = test_contracts
         .metagame_mock
         .mint_game(
-            Option::Some(test_contracts.minigame.contract_address),
+            test_contracts.minigame.contract_address,
             Option::Some('TimedContextPlayer'),
             Option::None,
             Option::Some(start_time),
@@ -135,7 +135,7 @@ fn test_context_with_soulbound_combination() {
     let token_id = test_contracts
         .metagame_mock
         .mint_game(
-            Option::Some(test_contracts.minigame.contract_address),
+            test_contracts.minigame.contract_address,
             Option::Some('SoulboundContextPlayer'),
             Option::None,
             Option::None,
@@ -167,7 +167,7 @@ fn test_context_with_renderer_combination() {
     let token_id = test_contracts
         .metagame_mock
         .mint_game(
-            Option::Some(test_contracts.minigame.contract_address),
+            test_contracts.minigame.contract_address,
             Option::Some('RendererContextPlayer'),
             Option::None,
             Option::None,
@@ -205,7 +205,7 @@ fn test_batch_mint_with_context() {
     let token_id1 = test_contracts
         .metagame_mock
         .mint_game(
-            Option::Some(test_contracts.minigame.contract_address),
+            test_contracts.minigame.contract_address,
             Option::Some('Player1'),
             Option::None,
             Option::None,
@@ -224,7 +224,7 @@ fn test_batch_mint_with_context() {
     let token_id2 = test_contracts
         .metagame_mock
         .mint_game(
-            Option::Some(test_contracts.minigame.contract_address),
+            test_contracts.minigame.contract_address,
             Option::Some('Player2'),
             Option::None,
             Option::None,
@@ -285,7 +285,7 @@ fn test_context_with_empty_player_name() {
     let token_id = test_contracts
         .metagame_mock
         .mint_game(
-            Option::Some(test_contracts.minigame.contract_address),
+            test_contracts.minigame.contract_address,
             Option::None, // No player name
             Option::None,
             Option::None,
@@ -318,7 +318,7 @@ fn test_context_with_all_parameters() {
     let token_id = test_contracts
         .metagame_mock
         .mint_game(
-            Option::Some(test_contracts.minigame.contract_address),
+            test_contracts.minigame.contract_address,
             Option::Some('FullPlayer'),
             Option::None, // settings
             Option::Some(1000), // start
@@ -381,7 +381,7 @@ fn test_has_context_flag_in_metadata() {
     let token_id2 = test_contracts
         .metagame_mock
         .mint_game(
-            Option::Some(test_contracts.minigame.contract_address),
+            test_contracts.minigame.contract_address,
             Option::None,
             Option::None,
             Option::None,
@@ -418,7 +418,7 @@ fn test_event_spy_captures_context_events() {
     let _token_id = test_contracts
         .metagame_mock
         .mint_game(
-            Option::Some(test_contracts.minigame.contract_address),
+            test_contracts.minigame.contract_address,
             Option::Some('EventTestPlayer'),
             Option::None,
             Option::None,
@@ -459,7 +459,7 @@ fn test_fuzz_context_with_various_token_ids(mint_count: u8) {
         let token_id = test_contracts
             .metagame_mock
             .mint_game(
-                Option::Some(test_contracts.minigame.contract_address),
+                test_contracts.minigame.contract_address,
                 Option::Some('FuzzPlayer'),
                 Option::None,
                 Option::None,
@@ -496,7 +496,7 @@ fn test_context_with_registry_game() {
     let token_id = test_contracts
         .metagame_mock
         .mint_game(
-            Option::Some(test_contracts.minigame.contract_address),
+            test_contracts.minigame.contract_address,
             Option::Some('RegistryPlayer'),
             Option::None,
             Option::None,
@@ -531,7 +531,7 @@ fn test_multiple_context_mints_unique_data() {
     let token_id1 = test_contracts
         .metagame_mock
         .mint_game(
-            Option::Some(test_contracts.minigame.contract_address),
+            test_contracts.minigame.contract_address,
             Option::Some('Alice'),
             Option::None,
             Option::Some(100),
@@ -551,7 +551,7 @@ fn test_multiple_context_mints_unique_data() {
     let token_id2 = test_contracts
         .metagame_mock
         .mint_game(
-            Option::Some(test_contracts.minigame.contract_address),
+            test_contracts.minigame.contract_address,
             Option::Some('Bob'),
             Option::None,
             Option::Some(300),

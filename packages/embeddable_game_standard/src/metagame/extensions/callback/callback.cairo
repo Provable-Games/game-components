@@ -6,24 +6,32 @@
 //
 // Uses the hooks pattern: the component provides infrastructure and SRC5
 // registration, while implementations define actual callback behavior via traits.
+//
+// Callbacks are a LEGACY-token concept: they fire from `update_game()`, which
+// the standard self-bound token does not have. The component therefore stores
+// its own legacy token address rather than reading one off MetagameComponent,
+// which no longer carries a metagame-wide default token.
 
 #[starknet::component]
 pub mod MetagameCallbackComponent {
+    use core::num::traits::Zero;
     use openzeppelin_introspection::src5::SRC5Component;
     use openzeppelin_introspection::src5::SRC5Component::InternalTrait as SRC5InternalTrait;
-    use starknet::get_caller_address;
+    use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
+    use starknet::{ContractAddress, get_caller_address};
     use crate::metagame::extensions::callback::interface::{
         IMETAGAME_CALLBACK_ID, IMetagameCallback,
     };
-    use crate::metagame::metagame_component::MetagameComponent;
-    use crate::metagame::metagame_component::MetagameComponent::MetagameImpl;
 
     // ==========================================================================
     // STORAGE
     // ==========================================================================
 
     #[storage]
-    pub struct Storage {}
+    pub struct Storage {
+        /// The legacy token contract allowed to invoke these callbacks.
+        token_address: ContractAddress,
+    }
 
     // ==========================================================================
     // HOOKS TRAIT
@@ -59,7 +67,6 @@ pub mod MetagameCallbackComponent {
         +HasComponent<TContractState>,
         +Drop<TContractState>,
         +MetagameCallbackHooksTrait<TContractState>,
-        impl Metagame: MetagameComponent::HasComponent<TContractState>,
         impl SRC5: SRC5Component::HasComponent<TContractState>,
     > of IMetagameCallback<ComponentState<TContractState>> {
         fn on_game_action(ref self: ComponentState<TContractState>, token_id: u256, score: u64) {
@@ -92,22 +99,27 @@ pub mod MetagameCallbackComponent {
         TContractState,
         +HasComponent<TContractState>,
         impl SRC5: SRC5Component::HasComponent<TContractState>,
-        impl Metagame: MetagameComponent::HasComponent<TContractState>,
         +Drop<TContractState>,
     > of InternalTrait<TContractState> {
-        /// Initializes the component by registering the SRC5 interface.
+        /// Initializes the component by registering the SRC5 interface and
+        /// binding the legacy token allowed to call back.
         /// Should be called in the contract's constructor.
-        fn initializer(ref self: ComponentState<TContractState>) {
+        fn initializer(ref self: ComponentState<TContractState>, token_address: ContractAddress) {
+            assert!(!token_address.is_zero(), "MetagameCallback: token address is zero");
+            self.token_address.write(token_address);
             let mut src5_component = get_dep_component_mut!(ref self, SRC5);
             src5_component.register_interface(IMETAGAME_CALLBACK_ID);
         }
 
-        /// Asserts that the caller is the token contract registered in MetagameComponent.
+        /// The legacy token contract bound at initialization.
+        fn token_address(self: @ComponentState<TContractState>) -> ContractAddress {
+            self.token_address.read()
+        }
+
+        /// Asserts that the caller is the bound token contract.
         fn assert_only_token(self: @ComponentState<TContractState>) {
-            let metagame = get_dep_component!(self, Metagame);
-            let token_address = metagame.default_token_address();
             assert!(
-                get_caller_address() == token_address,
+                get_caller_address() == self.token_address.read(),
                 "MetagameCallback: caller is not the token contract",
             );
         }

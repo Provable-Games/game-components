@@ -38,11 +38,10 @@ fn TOKEN_ADDRESS() -> ContractAddress {
 
 fn deploy_callback_contract() -> (ContractAddress, IMetagameCallbackDispatcher, ContractAddress) {
     let token_address = TOKEN_ADDRESS();
-    // Mock supports_interface so MetagameComponent::initializer passes SRC5 check
     mock_call(token_address, selector!("supports_interface"), true, 100);
 
     let contract = declare("MockCallbackContract").unwrap().contract_class();
-    // Constructor args: Option::None for context_address, then default_token_address
+    // Constructor args: Option::None for context_address, then the callback's token
     let mut calldata = array![];
     calldata.append(1); // Option::None
     calldata.append(token_address.into());
@@ -507,8 +506,8 @@ mod MockCallbackContract {
         context_address: Option<ContractAddress>,
         default_token_address: ContractAddress,
     ) {
-        self.metagame.initializer(context_address, default_token_address);
-        self.callback.initializer();
+        self.metagame.initializer(context_address);
+        self.callback.initializer(default_token_address);
     }
 
     // View functions for test assertions
@@ -596,7 +595,21 @@ mod MockEmptyCallbackContract {
         context_address: Option<ContractAddress>,
         default_token_address: ContractAddress,
     ) {
-        self.metagame.initializer(context_address, default_token_address);
-        self.callback.initializer();
+        self.metagame.initializer(context_address);
+        self.callback.initializer(default_token_address);
     }
+}
+
+
+// The callback's token binding is its own — a zero address would leave
+// `assert_only_token` gating on nothing.
+#[test]
+fn test_callback_initializer_rejects_zero_token() {
+    let contract = declare("MockCallbackContract").unwrap().contract_class();
+    let mut calldata = array![];
+    calldata.append(1); // Option::None context_address
+    calldata.append(0); // zero token address
+    // The constructor panic surfaces as a deploy error, so assert on the
+    // Result rather than unwrapping it.
+    assert!(contract.deploy(@calldata).is_err(), "zero token address must be rejected");
 }
