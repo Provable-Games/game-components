@@ -56,7 +56,7 @@ fn sample_context() -> GameContextDetails {
 }
 
 // =============================================================================
-// MINT TESTS - DEFAULT TOKEN PATH (game_address = None)
+// MINT TESTS - GAME PATH (the token is resolved from game_address)
 // =============================================================================
 
 // LIB-MINT-01: Mint with only required params
@@ -452,9 +452,6 @@ fn test_mint_instant_game() {
 // LIB-BATCH-01: Empty batch
 #[test]
 fn test_mint_batch_empty_array() {
-    let token_address = deploy_mock_minigame_token();
-    let game_address = deploy_mock_minigame(token_address);
-
     let mints: Array<MintMetagameParams> = array![];
     let token_ids = libs::mint_batch(mints);
 
@@ -1418,13 +1415,13 @@ fn test_assert_game_registered_fails_for_unregistered() {
 #[test]
 fn test_mint_batch_mixed_game_addresses() {
     let token_address = deploy_mock_minigame_token();
-    let game_address = deploy_mock_minigame(token_address);
-    let game_address = deploy_mock_minigame(token_address);
+    let game_a = deploy_mock_minigame(token_address);
+    let game_b = deploy_mock_minigame(token_address);
 
     let mints = array![
         MintMetagameParams {
-            game_address: game_address,
-            player_name: Option::Some('WithGame'),
+            game_address: game_a,
+            player_name: Option::Some('GameA'),
             settings_id: Option::None,
             start: Option::None,
             end: Option::None,
@@ -1440,8 +1437,8 @@ fn test_mint_batch_mixed_game_addresses() {
             metadata: 0,
         },
         MintMetagameParams {
-            game_address,
-            player_name: Option::Some('NoGame'),
+            game_address: game_b,
+            player_name: Option::Some('GameB'),
             settings_id: Option::None,
             start: Option::None,
             end: Option::None,
@@ -1463,11 +1460,19 @@ fn test_mint_batch_mixed_game_addresses() {
     assert!(token_ids.len() == 2, "Should return 2 token IDs");
 
     let token_dispatcher = IMinigameTokenLegacyDispatcher { contract_address: token_address };
-    let first_game_addr = token_dispatcher.token_game_address(*token_ids.at(0));
-    assert!(first_game_addr == game_address, "First token should have game address");
-
-    let second_name = token_dispatcher.player_name(*token_ids.at(1));
-    assert!(second_name == 'NoGame', "Second token should have NoGame name");
+    // Each entry mints against its own game.
+    assert!(
+        token_dispatcher.token_game_address(*token_ids.at(0)) == game_a,
+        "First token should carry game A",
+    );
+    assert!(
+        token_dispatcher.token_game_address(*token_ids.at(1)) == game_b,
+        "Second token should carry game B",
+    );
+    assert!(
+        token_dispatcher.player_name(*token_ids.at(1)) == 'GameB',
+        "Second token should have GameB name",
+    );
 }
 
 // LIB-BATCH-09: Batch with different recipients
@@ -2027,10 +2032,9 @@ mod standard_token_paths {
         assert!(token.player_name(token_id) == 'player', "player name not stored");
     }
 
-    /// With no game address the default token is used directly — a standard
-    /// token has no blank-game concept, the mint belongs to its own game.
+    /// Minimal mint through a standard game — every optional param None.
     #[test]
-    fn test_mint_defaults_to_standard_token() {
+    fn test_mint_standard_token_minimal() {
         let game = deploy_standard_game(ALICE());
 
         let token_id = libs::mint(
