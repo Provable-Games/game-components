@@ -6,7 +6,7 @@ pub mod MetagameComponent {
     use core::num::traits::Zero;
     use game_components_embeddable_game_standard::metagame::extensions::context::interface::IMETAGAME_CONTEXT_ID;
     use game_components_embeddable_game_standard::metagame::extensions::context::structs::GameContextDetails;
-    use game_components_embeddable_game_standard::token::interface::IMINIGAME_TOKEN_ID;
+    use game_components_embeddable_game_standard::token_legacy::interface::IMINIGAME_TOKEN_LEGACY_ID;
     use openzeppelin_interfaces::erc20::{IERC20Dispatcher, IERC20DispatcherTrait};
     use openzeppelin_interfaces::erc721::{IERC721Dispatcher, IERC721DispatcherTrait};
     use openzeppelin_interfaces::introspection::{ISRC5Dispatcher, ISRC5DispatcherTrait};
@@ -21,7 +21,9 @@ pub mod MetagameComponent {
     use crate::metagame::structs::MintMetagameParams;
     use crate::minigame::interface::{IMinigameDispatcher, IMinigameDispatcherTrait};
     use crate::registry::interface::{IMinigameRegistryDispatcher, IMinigameRegistryDispatcherTrait};
-    use crate::token::interface::{IMinigameTokenDispatcher, IMinigameTokenDispatcherTrait};
+    use crate::token_legacy::interface::{
+        IMinigameTokenLegacyDispatcher, IMinigameTokenLegacyDispatcherTrait,
+    };
 
     #[storage]
     pub struct Storage {
@@ -75,8 +77,8 @@ pub mod MetagameComponent {
             assert!(!default_token_address.is_zero(), "Metagame: Default token address is zero");
             let minigame_dispatcher = ISRC5Dispatcher { contract_address: default_token_address };
             assert!(
-                minigame_dispatcher.supports_interface(IMINIGAME_TOKEN_ID),
-                "Metagame: Default token contract does not support IMinigameToken",
+                minigame_dispatcher.supports_interface(IMINIGAME_TOKEN_LEGACY_ID),
+                "Metagame: Default token contract does not support IMinigameTokenLegacy",
             );
             self.default_token_address.write(default_token_address);
         }
@@ -153,7 +155,9 @@ pub mod MetagameComponent {
             // Get the creator token owner (fee recipient)
             let minigame_dispatcher = IMinigameDispatcher { contract_address: game_address };
             let token_address = minigame_dispatcher.token_address();
-            let token_dispatcher = IMinigameTokenDispatcher { contract_address: token_address };
+            let token_dispatcher = IMinigameTokenLegacyDispatcher {
+                contract_address: token_address,
+            };
             let registry_address = token_dispatcher.game_registry_address();
             let registry_dispatcher = IMinigameRegistryDispatcher {
                 contract_address: registry_address,

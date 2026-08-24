@@ -1,4 +1,4 @@
-use game_components_embeddable_game_standard::token::extensions::objectives::interface::{
+use game_components_embeddable_game_standard::token_legacy::extensions::objectives::interface::{
     IMINIGAME_TOKEN_OBJECTIVES_ID, IMinigameTokenObjectivesDispatcher,
     IMinigameTokenObjectivesDispatcherTrait,
 };
@@ -11,8 +11,8 @@ use crate::minigame::extensions::objectives::structs::GameObjectiveDetails;
 /// an objectives surface.
 ///
 /// Same rationale as `settings::libs::create_settings`: the token-side call is
-/// an indexer announcement, the game remains the source of truth, and lite
-/// tokens (no objectives surface, no `IMINIGAME_TOKEN_OBJECTIVES_ID`
+/// an indexer announcement, the game remains the source of truth, and
+/// standard tokens (no objectives surface, no `IMINIGAME_TOKEN_OBJECTIVES_ID`
 /// registration) skip the announcement instead of reverting.
 ///
 /// # Arguments

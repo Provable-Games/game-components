@@ -3,8 +3,8 @@
 // =============================================================================
 // Tests for library functions: assert_game_registered, mint, mint_batch
 
-use game_components_embeddable_game_standard::token::interface::{
-    IMinigameTokenDispatcher, IMinigameTokenDispatcherTrait,
+use game_components_embeddable_game_standard::token_legacy::interface::{
+    IMinigameTokenLegacyDispatcher, IMinigameTokenLegacyDispatcherTrait,
 };
 use game_components_testing::constants::{ALICE, BOB};
 use snforge_std::{ContractClassTrait, DeclareResultTrait, declare, mock_call};
@@ -110,7 +110,7 @@ fn test_mint_default_token_with_player_name() {
         0,
     );
 
-    let token_dispatcher = IMinigameTokenDispatcher { contract_address: token_address };
+    let token_dispatcher = IMinigameTokenLegacyDispatcher { contract_address: token_address };
     let player_name = token_dispatcher.player_name(token_id);
     assert!(player_name == 'Player1', "Player name mismatch");
 }
@@ -166,7 +166,7 @@ fn test_mint_default_token_with_lifecycle() {
         0,
     );
 
-    let token_dispatcher = IMinigameTokenDispatcher { contract_address: token_address };
+    let token_dispatcher = IMinigameTokenLegacyDispatcher { contract_address: token_address };
     let metadata = token_dispatcher.token_metadata(token_id);
     assert!(metadata.lifecycle.start == 1000, "Start time mismatch");
     assert!(metadata.lifecycle.end == 2000, "End time mismatch");
@@ -337,7 +337,7 @@ fn test_mint_default_token_all_params() {
 
     assert!(token_id != 0, "Token should be minted with all params");
 
-    let token_dispatcher = IMinigameTokenDispatcher { contract_address: token_address };
+    let token_dispatcher = IMinigameTokenLegacyDispatcher { contract_address: token_address };
     let player_name = token_dispatcher.player_name(token_id);
     assert!(player_name == 'FullPlayer', "Player name mismatch");
 }
@@ -373,7 +373,7 @@ fn test_mint_game_token_routes_through_game() {
 
     assert!(token_id != 0, "Token should be minted through game");
 
-    let token_dispatcher = IMinigameTokenDispatcher { contract_address: token_address };
+    let token_dispatcher = IMinigameTokenLegacyDispatcher { contract_address: token_address };
     let player_name = token_dispatcher.player_name(token_id);
     assert!(player_name == 'GamePlayer', "Player name should be preserved");
 }
@@ -406,7 +406,7 @@ fn test_mint_game_token_preserves_params() {
 
     assert!(token_id != 0, "Token should be minted with all params through game");
 
-    let token_dispatcher = IMinigameTokenDispatcher { contract_address: token_address };
+    let token_dispatcher = IMinigameTokenLegacyDispatcher { contract_address: token_address };
     let metadata = token_dispatcher.token_metadata(token_id);
     assert!(metadata.lifecycle.start == 500, "Start time should be preserved");
     assert!(metadata.lifecycle.end == 1500, "End time should be preserved");
@@ -442,7 +442,7 @@ fn test_mint_instant_game() {
 
     assert!(token_id != 0, "Instant game token should be minted");
 
-    let token_dispatcher = IMinigameTokenDispatcher { contract_address: token_address };
+    let token_dispatcher = IMinigameTokenLegacyDispatcher { contract_address: token_address };
     let metadata = token_dispatcher.token_metadata(token_id);
     assert!(metadata.lifecycle.start == metadata.lifecycle.end, "Start should equal end");
 }
@@ -604,7 +604,7 @@ fn test_mint_batch_preserves_order() {
 
     let token_ids = libs::mint_batch(token_address, mints);
 
-    let token_dispatcher = IMinigameTokenDispatcher { contract_address: token_address };
+    let token_dispatcher = IMinigameTokenLegacyDispatcher { contract_address: token_address };
 
     // Verify first token
     let first_name = token_dispatcher.player_name(*token_ids.at(0));
@@ -707,7 +707,7 @@ fn test_fuzz_mint_player_names(player_name: felt252) {
 
     assert!(token_id != 0, "Token should be minted");
 
-    let token_dispatcher = IMinigameTokenDispatcher { contract_address: token_address };
+    let token_dispatcher = IMinigameTokenLegacyDispatcher { contract_address: token_address };
     let retrieved_name = token_dispatcher.player_name(token_id);
     assert!(retrieved_name == player_name, "Player name should be preserved");
 }
@@ -777,10 +777,10 @@ fn test_fuzz_mint_objective_ids(objective_id: u32) {
 mod MockMinigameTokenForLibs {
     use core::num::traits::Zero;
     use game_components_embeddable_game_standard::metagame::extensions::context::structs::GameContextDetails;
-    use game_components_embeddable_game_standard::token::interface::{
-        IMINIGAME_TOKEN_ID, IMinigameToken,
+    use game_components_embeddable_game_standard::token_legacy::interface::{
+        IMINIGAME_TOKEN_LEGACY_ID, IMinigameTokenLegacy,
     };
-    use game_components_embeddable_game_standard::token::structs::{
+    use game_components_embeddable_game_standard::token_legacy::structs::{
         Lifecycle, MintBatchRecipient, PlayerNameUpdate, TokenFullState, TokenMetadata,
         TokenMutableState,
     };
@@ -807,7 +807,7 @@ mod MockMinigameTokenForLibs {
     }
 
     #[abi(embed_v0)]
-    impl MinigameTokenImpl of IMinigameToken<ContractState> {
+    impl MinigameTokenImpl of IMinigameTokenLegacy<ContractState> {
         fn token_metadata(self: @ContractState, token_id: felt252) -> TokenMetadata {
             TokenMetadata {
                 game_id: 0,
@@ -1105,7 +1105,7 @@ mod MockMinigameTokenForLibs {
     #[abi(embed_v0)]
     impl SRC5Impl of ISRC5<ContractState> {
         fn supports_interface(self: @ContractState, interface_id: felt252) -> bool {
-            interface_id == IMINIGAME_TOKEN_ID
+            interface_id == IMINIGAME_TOKEN_LEGACY_ID
                 || interface_id == openzeppelin_interfaces::introspection::ISRC5_ID
         }
     }
@@ -1380,7 +1380,7 @@ fn test_assert_game_registered_success() {
     let registry_address: ContractAddress = 0x333.try_into().unwrap();
 
     mock_call(game_address, selector!("token_address"), token_address, 1);
-    // Not a lite token: the SRC5 probe for IMINIGAME_TOKEN_LITE_ID answers
+    // Not a standard token: the SRC5 probe for IMINIGAME_TOKEN_ID answers
     // false, so the check falls through to the registry path.
     mock_call(token_address, selector!("supports_interface"), false, 1);
     mock_call(token_address, selector!("game_registry_address"), registry_address, 1);
@@ -1398,7 +1398,7 @@ fn test_assert_game_registered_fails_for_unregistered() {
     let registry_address: ContractAddress = 0x666.try_into().unwrap();
 
     mock_call(game_address, selector!("token_address"), token_address, 1);
-    // Not a lite token — falls through to the registry path.
+    // Not a standard token — falls through to the registry path.
     mock_call(token_address, selector!("supports_interface"), false, 1);
     mock_call(token_address, selector!("game_registry_address"), registry_address, 1);
     mock_call(registry_address, selector!("is_game_registered"), false, 1);
@@ -1457,7 +1457,7 @@ fn test_mint_batch_mixed_game_addresses() {
 
     assert!(token_ids.len() == 2, "Should return 2 token IDs");
 
-    let token_dispatcher = IMinigameTokenDispatcher { contract_address: token_address };
+    let token_dispatcher = IMinigameTokenLegacyDispatcher { contract_address: token_address };
     let first_game_addr = token_dispatcher.token_game_address(*token_ids.at(0));
     assert!(first_game_addr == game_address, "First token should have game address");
 
@@ -1629,10 +1629,10 @@ fn test_mint_batch_large_batch() {
 mod MockMinigameTokenWithRegistry {
     use core::num::traits::Zero;
     use game_components_embeddable_game_standard::metagame::extensions::context::structs::GameContextDetails;
-    use game_components_embeddable_game_standard::token::interface::{
-        IMINIGAME_TOKEN_ID, IMinigameToken,
+    use game_components_embeddable_game_standard::token_legacy::interface::{
+        IMINIGAME_TOKEN_LEGACY_ID, IMinigameTokenLegacy,
     };
-    use game_components_embeddable_game_standard::token::structs::{
+    use game_components_embeddable_game_standard::token_legacy::structs::{
         Lifecycle, MintBatchRecipient, PlayerNameUpdate, TokenFullState, TokenMetadata,
         TokenMutableState,
     };
@@ -1660,7 +1660,7 @@ mod MockMinigameTokenWithRegistry {
     }
 
     #[abi(embed_v0)]
-    impl MinigameTokenImpl of IMinigameToken<ContractState> {
+    impl MinigameTokenImpl of IMinigameTokenLegacy<ContractState> {
         fn token_metadata(self: @ContractState, token_id: felt252) -> TokenMetadata {
             TokenMetadata {
                 game_id: 0,
@@ -1937,7 +1937,7 @@ mod MockMinigameTokenWithRegistry {
     #[abi(embed_v0)]
     impl SRC5Impl of ISRC5<ContractState> {
         fn supports_interface(self: @ContractState, interface_id: felt252) -> bool {
-            interface_id == IMINIGAME_TOKEN_ID
+            interface_id == IMINIGAME_TOKEN_LEGACY_ID
                 || interface_id == openzeppelin_interfaces::introspection::ISRC5_ID
         }
     }

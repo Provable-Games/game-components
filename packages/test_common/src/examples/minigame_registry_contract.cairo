@@ -7,7 +7,7 @@ pub use game_components_embeddable_game_standard::registry::interface::{
 pub mod MinigameRegistryContract {
     use core::num::traits::Zero;
     use game_components_embeddable_game_standard::minigame::interface::IMINIGAME_ID;
-    use game_components_embeddable_game_standard::token::interface::{
+    use game_components_embeddable_game_standard::token_legacy::interface::{
         ITokenEventRelayerDispatcher, ITokenEventRelayerDispatcherTrait,
     };
     use openzeppelin_interfaces::introspection::{ISRC5Dispatcher, ISRC5DispatcherTrait};
@@ -18,7 +18,7 @@ pub mod MinigameRegistryContract {
     };
     use starknet::{ContractAddress, get_caller_address};
     // use
-    // game_components_embeddable_game_standard::token::extensions::multi_game::interface::{IMinigameTokenMultiGame};
+    // game_components_embeddable_game_standard::token_legacy::extensions::multi_game::interface::{IMinigameTokenMultiGame};
     use super::{GameFeeInfo, GameMetadata};
     use super::{IMINIGAME_REGISTRY_ID, IMinigameRegistry};
 

@@ -163,7 +163,7 @@ jobs:
         include:
           # Embeddable Game Standard
           - package: game_components_embeddable_game_standard
-            module: token
+            module: token_legacy
             runner: ubuntu-latest-32
             fuzzer_runs: 32
           - package: game_components_embeddable_game_standard
@@ -179,7 +179,7 @@ jobs:
             runner: ubuntu-latest-8
             fuzzer_runs: 32
           - package: game_components_embeddable_game_standard
-            module: token_lite
+            module: token
             runner: ubuntu-latest-8
             fuzzer_runs: 32
           # Metagame

@@ -1,10 +1,9 @@
-pub mod extensions;
 pub mod interface;
-pub mod noop_traits;
-pub mod structs;
+pub mod minigame_token_component;
+pub mod packing;
 
+// The deployable merged game+token mock (StandardGameMock) lives in the
+// test_common package so downstream consumers can declare it via
+// build-external-contracts.
 #[cfg(test)]
 mod tests;
-pub mod token;
-pub mod token_component;
-pub mod traits;

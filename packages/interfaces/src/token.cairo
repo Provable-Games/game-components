@@ -2,7 +2,7 @@
 
 pub mod context;
 pub mod core;
-pub mod lite;
+pub mod legacy;
 pub mod minter;
 pub mod objectives;
 pub mod renderer;
@@ -14,9 +14,9 @@ pub use context::IMINIGAME_TOKEN_CONTEXT_ID;
 pub use core::{
     IMINIGAME_TOKEN_ID, IMinigameToken, IMinigameTokenDispatcher, IMinigameTokenDispatcherTrait,
 };
-pub use lite::{
-    IMINIGAME_TOKEN_LITE_ID, IMinigameTokenLite, IMinigameTokenLiteDispatcher,
-    IMinigameTokenLiteDispatcherTrait,
+pub use legacy::{
+    IMINIGAME_TOKEN_LEGACY_ID, IMinigameTokenLegacy, IMinigameTokenLegacyDispatcher,
+    IMinigameTokenLegacyDispatcherTrait,
 };
 pub use minter::{
     IMINIGAME_TOKEN_MINTER_ID, IMinigameTokenMinter, IMinigameTokenMinterDispatcher,

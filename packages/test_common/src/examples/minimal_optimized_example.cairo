@@ -2,11 +2,11 @@
 // This demonstrates the optimal configurable direct components architecture
 
 // Import the optimal components - use actual package paths
-use game_components_embeddable_game_standard::token::extensions::minter::minter::MinterComponent;
-use game_components_embeddable_game_standard::token::noop_traits::{
+use game_components_embeddable_game_standard::token_legacy::extensions::minter::minter::MinterComponent;
+use game_components_embeddable_game_standard::token_legacy::noop_traits::{
     NoOpContext, NoOpObjectives, NoOpRenderer, NoOpSettings, NoOpSkills, NoOpSoulbound,
 };
-use game_components_embeddable_game_standard::token::token_component::CoreTokenComponent;
+use game_components_embeddable_game_standard::token_legacy::token_component::CoreTokenComponent;
 use openzeppelin_interfaces::erc2981::IERC2981;
 use openzeppelin_introspection::src5::SRC5Component;
 use openzeppelin_token::common::erc2981::erc2981::{DefaultConfig, ERC2981Component};

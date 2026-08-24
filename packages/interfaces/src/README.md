@@ -8,7 +8,8 @@ Centralized interface and struct definitions for all game components. Other pack
 |--------|------------|---------|
 | `metagame` | `IMetagame`, `IMetagameContext`, `IMetagameCallback` | Game management, context extensions |
 | `minigame` | `IMinigame`, `IMinigameTokenData`, `IMinigameSettings`, `IMinigameObjectives` | Game logic, score/game_over queries |
-| `token` | `IMinigameToken`, `IMinigameTokenMinter`, `IMinigameTokenObjectives`, `IMinigameTokenSettings`, `IMinigameTokenRenderer` | ERC721 token with extensions |
+| `token` (`token/core`) | `IMinigameToken` | THE minigame token standard: self-bound token embedded in the game contract (plus the `IMinigameTokenMinter` surface) |
+| `token/legacy` | `IMinigameTokenLegacy`, `IMinigameTokenMinter`, `IMinigameTokenObjectives`, `IMinigameTokenSettings`, `IMinigameTokenRenderer` | Original multi-game ERC721 token with extensions (kept for deployed denshokan) |
 | `registry` | `IMinigameRegistry` | Game registration and metadata lookup |
 | `leaderboard` | `ILeaderboard`, `ILeaderboardAdmin`, `IGameDetails` | Tournament scoring and rankings |
 | `tokenomics/buyback` | `IBuyback`, `IBuybackAdmin` | Autonomous buyback via Ekubo TWAMM |
@@ -33,6 +34,7 @@ pub const IMINIGAME_ID: felt252 = 0x...;
 pub const IMINIGAME_SETTINGS_ID: felt252 = 0x...;
 pub const IMINIGAME_OBJECTIVES_ID: felt252 = 0x...;
 pub const IMINIGAME_TOKEN_ID: felt252 = 0x...;
+pub const IMINIGAME_TOKEN_LEGACY_ID: felt252 = 0x...;
 pub const IMINIGAME_TOKEN_MINTER_ID: felt252 = 0x...;
 pub const IMINIGAME_REGISTRY_ID: felt252 = 0x...;
 pub const ILEADERBOARD_ID: felt252 = 0x...;

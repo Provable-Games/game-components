@@ -1,5 +1,5 @@
-use game_components_embeddable_game_standard::token::interface::{
-    IMinigameTokenDispatcher, IMinigameTokenDispatcherTrait,
+use game_components_embeddable_game_standard::token_legacy::interface::{
+    IMinigameTokenLegacyDispatcher, IMinigameTokenLegacyDispatcherTrait,
 };
 use snforge_std::{ContractClassTrait, DeclareResultTrait, declare};
 use starknet::ContractAddress;
@@ -47,7 +47,7 @@ fn test_fuzz_mint_parameters() {
     let (metagame_address, _) = metagame_contract.deploy(@calldata).unwrap();
 
     let metagame_dispatcher = IMockMetagameDispatcher { contract_address: metagame_address };
-    let token_dispatcher = IMinigameTokenDispatcher { contract_address: token_address };
+    let token_dispatcher = IMinigameTokenLegacyDispatcher { contract_address: token_address };
 
     // Fuzz test different timestamp combinations
     let test_cases = array![
@@ -107,7 +107,7 @@ fn test_fuzz_player_names() {
     let (metagame_address, _) = metagame_contract.deploy(@calldata).unwrap();
 
     let metagame_dispatcher = IMockMetagameDispatcher { contract_address: metagame_address };
-    let token_dispatcher = IMinigameTokenDispatcher { contract_address: token_address };
+    let token_dispatcher = IMinigameTokenLegacyDispatcher { contract_address: token_address };
 
     // Test various player names as felt252 shortstrings (max 31 chars)
     let test_names: Array<felt252> = array![
@@ -476,10 +476,10 @@ mod MockMinigameFuzz {
 mod MockMinigameTokenFuzz {
     use core::num::traits::Zero;
     use game_components_embeddable_game_standard::metagame::extensions::context::structs::GameContextDetails;
-    use game_components_embeddable_game_standard::token::interface::{
-        IMINIGAME_TOKEN_ID, IMinigameToken,
+    use game_components_embeddable_game_standard::token_legacy::interface::{
+        IMINIGAME_TOKEN_LEGACY_ID, IMinigameTokenLegacy,
     };
-    use game_components_embeddable_game_standard::token::structs::{
+    use game_components_embeddable_game_standard::token_legacy::structs::{
         Lifecycle, MintBatchRecipient, PlayerNameUpdate, TokenFullState, TokenMetadata,
         TokenMutableState,
     };
@@ -507,7 +507,7 @@ mod MockMinigameTokenFuzz {
     }
 
     #[abi(embed_v0)]
-    impl MinigameTokenImpl of IMinigameToken<ContractState> {
+    impl MinigameTokenImpl of IMinigameTokenLegacy<ContractState> {
         fn token_metadata(self: @ContractState, token_id: felt252) -> TokenMetadata {
             TokenMetadata {
                 game_id: 0,
@@ -825,7 +825,7 @@ mod MockMinigameTokenFuzz {
     #[abi(embed_v0)]
     impl SRC5Impl of ISRC5<ContractState> {
         fn supports_interface(self: @ContractState, interface_id: felt252) -> bool {
-            interface_id == IMINIGAME_TOKEN_ID
+            interface_id == IMINIGAME_TOKEN_LEGACY_ID
                 || interface_id == openzeppelin_interfaces::introspection::ISRC5_ID
         }
     }

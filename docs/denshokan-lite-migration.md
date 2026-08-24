@@ -170,3 +170,40 @@ With the layout compat shim retired, the ABI compat shim went with it — before
 3. Deploy per network. Note: Sepolia (Starknet 0.14.3) accepts Sierra ≤1.7 — SDM's 2.20 toolchain output is rejected there; #150 currently pins `starknet = 2.16.1` (reviewer decision needed on repo toolchain).
 
 **Open follow-ups:** client-side action batching (the biggest remaining per-game lever); `IMinigameCreator` game-declared fee surface; negative-path tests for the lite pairing check; indexer/SDK migration for budokan v2's slimmed ABI and the one-address event source; a production `token_uri` (the renderer contract is wired but `create_metadata` has a pre-existing u64 truncation for packed ids); rewrite of SDM's `scripts/deploy*.sh` for the 3-step flow; decision on where game metadata (name/image/genre) lives now that the registry is gone.
+
+---
+
+## The lite token is the standard
+
+As the final step of this migration, the repo renamed the lite token to be THE
+minigame token standard and demoted the original full token to an explicit
+"legacy" naming. This is a **source-level rename only**: every interface-id
+VALUE and selector is unchanged — deployed contracts registered them on-chain
+and they are frozen forever. Downstream repos should migrate names using this
+map:
+
+| Old name (pre-rename) | New standard name | Legacy name |
+| --- | --- | --- |
+| `IMinigameTokenLite` (+`Dispatcher`/`DispatcherTrait`) | `IMinigameToken` (+`Dispatcher`/`DispatcherTrait`) | — |
+| `IMINIGAME_TOKEN_LITE_ID` (= `0x15951d…7aea`) | `IMINIGAME_TOKEN_ID` (same value) | — |
+| `IMinigameToken` (original full trait) | — | `IMinigameTokenLegacy` |
+| `IMINIGAME_TOKEN_ID` (original, = `0x246f61…9906`) | — | `IMINIGAME_TOKEN_LEGACY_ID` (same value) |
+| `game_components_interfaces::token::lite` | `game_components_interfaces::token::core` | — |
+| `game_components_interfaces::token::core` (original) | — | `game_components_interfaces::token::legacy` |
+| `embeddable_game_standard::token_lite` module | `embeddable_game_standard::token` | — |
+| `embeddable_game_standard::token` module (original) | — | `embeddable_game_standard::token_legacy` (all names inside unchanged: `CoreTokenComponent`, `structs::PackedTokenId`, …) |
+| `CoreTokenLiteComponent` (+`CoreTokenLiteImpl`) | `MinigameTokenComponent` (+`MinigameTokenImpl`) | — |
+| `token_lite::packing::{LitePackedTokenId, pack_lite_token_id, unpack_lite_token_id}` | `token::packing::{PackedTokenId, pack_token_id, unpack_token_id}` | — |
+| Error prefixes `"MinigameTokenLite: …"` / `"LitePackedTokenId: …"` | `"MinigameToken: …"` / `"PackedTokenId: …"` | — |
+| `LiteGameMock` (`test_common::mocks::lite_game_mock`) | `StandardGameMock` (`test_common::mocks::standard_game_mock`) | — |
+
+Additionally, **the minter is standard, not optional**: the legacy
+`MinterComponent`'s substance (storage under the same variable names,
+`IMinigameTokenMinter` impl, `MinterRegistryUpdate` event,
+`IMINIGAME_TOKEN_MINTER_ID` registration) is absorbed directly into
+`MinigameTokenComponent`. Embedders drop the separate
+`component!(MinterComponent…)` wiring and embed
+`MinigameTokenComponent::MinterImpl` instead; the `OptionalMinter` indirection
+remains only in `token_legacy`. `IMinigameTokenMinter` and its id are
+unchanged, and the standard token's SRC5 id was NOT rederived (its trait did
+not change).

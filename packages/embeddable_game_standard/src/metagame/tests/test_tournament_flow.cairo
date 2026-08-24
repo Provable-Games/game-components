@@ -1,5 +1,5 @@
-use game_components_embeddable_game_standard::token::interface::{
-    IMinigameTokenDispatcher, IMinigameTokenDispatcherTrait,
+use game_components_embeddable_game_standard::token_legacy::interface::{
+    IMinigameTokenLegacyDispatcher, IMinigameTokenLegacyDispatcherTrait,
 };
 use snforge_std::{
     ContractClassTrait, DeclareResultTrait, declare, start_cheat_caller_address,
@@ -165,7 +165,7 @@ fn test_tournament_flow() {
 
     // 9. Verify all tokens have context
     let context_dispatcher = IMetagameContextDispatcher { contract_address: context_address };
-    let token_dispatcher = IMinigameTokenDispatcher { contract_address: token_address };
+    let token_dispatcher = IMinigameTokenLegacyDispatcher { contract_address: token_address };
 
     // Store contexts in mock (in real scenario, this would be done during mint)
     let context_setter = IContextSetterDispatcher { contract_address: context_address };
@@ -422,10 +422,10 @@ mod MockContextProvider {
 #[starknet::contract]
 mod MockTokenContract {
     use core::num::traits::Zero;
-    use game_components_embeddable_game_standard::token::interface::{
-        IMINIGAME_TOKEN_ID, IMinigameToken,
+    use game_components_embeddable_game_standard::token_legacy::interface::{
+        IMINIGAME_TOKEN_LEGACY_ID, IMinigameTokenLegacy,
     };
-    use game_components_embeddable_game_standard::token::structs::{
+    use game_components_embeddable_game_standard::token_legacy::structs::{
         Lifecycle, MintBatchRecipient, PlayerNameUpdate, TokenFullState, TokenMetadata,
         TokenMutableState,
     };
@@ -454,7 +454,7 @@ mod MockTokenContract {
     }
 
     #[abi(embed_v0)]
-    impl MinigameTokenImpl of IMinigameToken<ContractState> {
+    impl MinigameTokenImpl of IMinigameTokenLegacy<ContractState> {
         fn token_metadata(self: @ContractState, token_id: felt252) -> TokenMetadata {
             TokenMetadata {
                 game_id: 0,
@@ -772,7 +772,7 @@ mod MockTokenContract {
     #[abi(embed_v0)]
     impl SRC5Impl of ISRC5<ContractState> {
         fn supports_interface(self: @ContractState, interface_id: felt252) -> bool {
-            interface_id == IMINIGAME_TOKEN_ID
+            interface_id == IMINIGAME_TOKEN_LEGACY_ID
                 || interface_id == openzeppelin_interfaces::introspection::ISRC5_ID
         }
     }

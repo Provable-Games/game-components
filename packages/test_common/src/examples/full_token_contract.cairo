@@ -13,14 +13,14 @@ use game_components_embeddable_game_standard::minigame::structs::GameDetail;
 use game_components_embeddable_game_standard::registry::interface::{
     IMinigameRegistryDispatcher, IMinigameRegistryDispatcherTrait,
 };
-use game_components_embeddable_game_standard::token::extensions::context::context::ContextComponent;
-use game_components_embeddable_game_standard::token::extensions::minter::minter::MinterComponent;
-use game_components_embeddable_game_standard::token::extensions::objectives::objectives::ObjectivesComponent;
-use game_components_embeddable_game_standard::token::extensions::renderer::renderer::RendererComponent;
-use game_components_embeddable_game_standard::token::extensions::settings::settings::SettingsComponent;
-use game_components_embeddable_game_standard::token::extensions::skills::skills::SkillsComponent;
-use game_components_embeddable_game_standard::token::structs::TokenMetadata;
-use game_components_embeddable_game_standard::token::token_component::CoreTokenComponent;
+use game_components_embeddable_game_standard::token_legacy::extensions::context::context::ContextComponent;
+use game_components_embeddable_game_standard::token_legacy::extensions::minter::minter::MinterComponent;
+use game_components_embeddable_game_standard::token_legacy::extensions::objectives::objectives::ObjectivesComponent;
+use game_components_embeddable_game_standard::token_legacy::extensions::renderer::renderer::RendererComponent;
+use game_components_embeddable_game_standard::token_legacy::extensions::settings::settings::SettingsComponent;
+use game_components_embeddable_game_standard::token_legacy::extensions::skills::skills::SkillsComponent;
+use game_components_embeddable_game_standard::token_legacy::structs::TokenMetadata;
+use game_components_embeddable_game_standard::token_legacy::token_component::CoreTokenComponent;
 use game_components_utilities::renderer::metadata::create_custom_metadata;
 use game_components_utilities::renderer::svg::create_default_svg;
 use openzeppelin_interfaces::erc2981::IERC2981;

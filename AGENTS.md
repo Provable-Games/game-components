@@ -45,7 +45,8 @@ The workspace is organized into **group packages**, each containing multiple mod
 packages/
 ├── embeddable_game_standard/    # Core game standard components
 │   ├── src/
-│   │   ├── token/               # ERC721 game token with compile-time feature flags
+│   │   ├── token/               # THE minigame token standard (self-bound ERC721, absorbed minter)
+│   │   ├── token_legacy/        # Original multi-game ERC721 token (kept for deployed denshokan)
 │   │   ├── minigame/            # Individual game logic foundation
 │   │   ├── metagame/            # High-level game coordination & context
 │   │   └── registry/            # Game registration and discovery
@@ -123,7 +124,7 @@ When adding a new module to a group package, update **both** files:
          fuzzer_runs: 256
    ```
 
-   For memory-intensive modules (like `token` or `minigame`), assign a larger runner (e.g., `ubuntu-latest-4` or `ubuntu-latest-32`).
+   For memory-intensive modules (like `token_legacy` or `minigame`), assign a larger runner (e.g., `ubuntu-latest-4` or `ubuntu-latest-32`).
 
 2. **`codecov.yml`** - Update the build count:
    ```yaml
@@ -135,11 +136,11 @@ When adding a new module to a group package, update **both** files:
 
 | Group Package | Module | Runner | Fuzzer Runs |
 |---------------|--------|--------|-------------|
-| `embeddable_game_standard` | `token` | `ubuntu-latest-32` | 32 |
+| `embeddable_game_standard` | `token_legacy` | `ubuntu-latest-32` | 32 |
 | `embeddable_game_standard` | `minigame` | `ubuntu-latest-8` | 32 |
 | `embeddable_game_standard` | `metagame` | `ubuntu-latest-8` | 32 |
 | `embeddable_game_standard` | `registry` | `ubuntu-latest-8` | 32 |
-| `embeddable_game_standard` | `token_lite` | `ubuntu-latest-8` | 32 |
+| `embeddable_game_standard` | `token` | `ubuntu-latest-8` | 32 |
 | `metagame` | `leaderboard` | `ubuntu-latest-4` | 256 |
 | `metagame` | `registration` | `ubuntu-latest-4` | 256 |
 | `metagame` | `entry_requirement` | `ubuntu-latest-4` | 256 |

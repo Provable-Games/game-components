@@ -3,8 +3,8 @@ use game_components_embeddable_game_standard::metagame::extensions::context::str
 use game_components_embeddable_game_standard::registry::interface::{
     IMinigameRegistryDispatcher, IMinigameRegistryDispatcherTrait,
 };
-use game_components_embeddable_game_standard::token::interface::{
-    IMinigameTokenDispatcher, IMinigameTokenDispatcherTrait,
+use game_components_embeddable_game_standard::token_legacy::interface::{
+    IMinigameTokenLegacyDispatcher, IMinigameTokenLegacyDispatcherTrait,
 };
 use openzeppelin_interfaces::erc721::{IERC721Dispatcher, IERC721DispatcherTrait};
 use starknet::ContractAddress;
@@ -25,7 +25,7 @@ pub fn pre_action(minigame_token_address: ContractAddress, token_id: felt252) {
 /// * `minigame_token_address` - The address of the minigame token contract
 /// * `token_id` - The game token ID to update
 pub fn post_action(minigame_token_address: ContractAddress, token_id: felt252) {
-    let minigame_token_dispatcher = IMinigameTokenDispatcher {
+    let minigame_token_dispatcher = IMinigameTokenLegacyDispatcher {
         contract_address: minigame_token_address,
     };
     minigame_token_dispatcher.update_game(token_id);
@@ -61,7 +61,7 @@ pub fn assert_token_ownership(minigame_token_address: ContractAddress, token_id:
 /// * `minigame_token_address` - The address of the minigame token contract
 /// * `token_id` - The token ID to check playability for
 pub fn assert_game_token_playable(minigame_token_address: ContractAddress, token_id: felt252) {
-    let minigame_token_dispatcher = IMinigameTokenDispatcher {
+    let minigame_token_dispatcher = IMinigameTokenLegacyDispatcher {
         contract_address: minigame_token_address,
     };
     minigame_token_dispatcher.assert_is_playable(token_id);
@@ -159,7 +159,7 @@ pub fn mint(
     salt: u16,
     metadata: u16,
 ) -> felt252 {
-    let minigame_token_dispatcher = IMinigameTokenDispatcher {
+    let minigame_token_dispatcher = IMinigameTokenLegacyDispatcher {
         contract_address: minigame_token_address,
     };
     minigame_token_dispatcher
@@ -196,7 +196,7 @@ pub fn mint_batch(
     game_address: ContractAddress,
     mints: Array<MintGameParams>,
 ) -> Array<felt252> {
-    let minigame_token_dispatcher = IMinigameTokenDispatcher {
+    let minigame_token_dispatcher = IMinigameTokenLegacyDispatcher {
         contract_address: minigame_token_address,
     };
 
@@ -249,7 +249,7 @@ pub fn mint_batch(
 /// # Returns
 /// * `felt252` - The player name
 pub fn get_player_name(minigame_token_address: ContractAddress, token_id: felt252) -> felt252 {
-    let minigame_token_dispatcher = IMinigameTokenDispatcher {
+    let minigame_token_dispatcher = IMinigameTokenLegacyDispatcher {
         contract_address: minigame_token_address,
     };
     minigame_token_dispatcher.player_name(token_id)

@@ -108,7 +108,7 @@ Metagame
 
 ## Initialization Requirements
 
-- `default_token_address` MUST support `IMINIGAME_TOKEN_ID`
+- `default_token_address` MUST support `IMINIGAME_TOKEN_LEGACY_ID` (the legacy multi-game token)
 - `context_address` (if provided) MUST support `IMETAGAME_CONTEXT_ID`
 - Both addresses validated via SRC5 introspection on init
 

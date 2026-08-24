@@ -2,7 +2,7 @@
 /// the felt252-optimized enumerable extension.
 #[starknet::contract]
 pub mod EnumerableMock {
-    use game_components_embeddable_game_standard::token::extensions::enumerable::enumerable::EnumerableComponent;
+    use game_components_embeddable_game_standard::token_legacy::extensions::enumerable::enumerable::EnumerableComponent;
     use openzeppelin_introspection::src5::SRC5Component;
     use openzeppelin_token::erc721::ERC721Component;
     use starknet::ContractAddress;

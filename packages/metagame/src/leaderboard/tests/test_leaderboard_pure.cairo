@@ -1,5 +1,5 @@
 // Pure leaderboard library tests
-use game_components_embeddable_game_standard::token::structs::pack_token_id;
+use game_components_embeddable_game_standard::token_legacy::structs::pack_token_id;
 use game_components_interfaces::leaderboard::LeaderboardResult;
 use game_components_metagame::leaderboard::leaderboard::leaderboard;
 

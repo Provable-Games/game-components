@@ -1000,7 +1000,7 @@ mod MockMinigameTokenForTicketBooth {
         Lifecycle, MintBatchRecipient, PlayerNameUpdate, TokenFullState, TokenMetadata,
         TokenMutableState,
     };
-    use game_components_interfaces::token::{IMINIGAME_TOKEN_ID, IMinigameToken};
+    use game_components_interfaces::token::{IMINIGAME_TOKEN_LEGACY_ID, IMinigameTokenLegacy};
     use openzeppelin_interfaces::introspection::ISRC5;
     use starknet::ContractAddress;
     use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
@@ -1016,7 +1016,7 @@ mod MockMinigameTokenForTicketBooth {
     }
 
     #[abi(embed_v0)]
-    impl MinigameTokenImpl of IMinigameToken<ContractState> {
+    impl MinigameTokenImpl of IMinigameTokenLegacy<ContractState> {
         fn token_metadata(self: @ContractState, token_id: felt252) -> TokenMetadata {
             TokenMetadata {
                 game_id: 0,
@@ -1214,7 +1214,7 @@ mod MockMinigameTokenForTicketBooth {
     #[abi(embed_v0)]
     impl SRC5Impl of ISRC5<ContractState> {
         fn supports_interface(self: @ContractState, interface_id: felt252) -> bool {
-            interface_id == IMINIGAME_TOKEN_ID
+            interface_id == IMINIGAME_TOKEN_LEGACY_ID
                 || interface_id == openzeppelin_interfaces::introspection::ISRC5_ID
         }
     }

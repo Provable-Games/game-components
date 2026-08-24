@@ -1,9 +1,9 @@
-use game_components_embeddable_game_standard::token::extensions::settings::interface::{
+use game_components_embeddable_game_standard::token_legacy::extensions::settings::interface::{
     IMINIGAME_TOKEN_SETTINGS_ID, IMinigameTokenSettingsDispatcher,
     IMinigameTokenSettingsDispatcherTrait,
 };
-use game_components_embeddable_game_standard::token::interface::{
-    IMinigameTokenDispatcher, IMinigameTokenDispatcherTrait,
+use game_components_embeddable_game_standard::token_legacy::interface::{
+    IMinigameTokenLegacyDispatcher, IMinigameTokenLegacyDispatcherTrait,
 };
 use openzeppelin_interfaces::introspection::{ISRC5Dispatcher, ISRC5DispatcherTrait};
 use starknet::ContractAddress;
@@ -18,7 +18,7 @@ use crate::minigame::extensions::settings::structs::GameSettingDetails;
 /// # Returns
 /// * `u32` - The settings ID
 pub fn get_settings_id(minigame_token_address: ContractAddress, token_id: felt252) -> u32 {
-    let minigame_token_dispatcher = IMinigameTokenDispatcher {
+    let minigame_token_dispatcher = IMinigameTokenLegacyDispatcher {
         contract_address: minigame_token_address,
     };
     minigame_token_dispatcher.settings_id(token_id)
@@ -30,11 +30,11 @@ pub fn get_settings_id(minigame_token_address: ContractAddress, token_id: felt25
 /// The token-side `create_settings` stores nothing — it validates and emits a
 /// `SettingsCreated` event for indexers. The game contract remains the source
 /// of truth for what settings exist (`settings_exist` answers from the game).
-/// Lite tokens have no settings surface at all and do not register
+/// Standard tokens have no settings surface at all and do not register
 /// `IMINIGAME_TOKEN_SETTINGS_ID`, so the announcement is skipped for them
 /// instead of reverting with ENTRYPOINT_NOT_FOUND — which would otherwise
 /// brick settings creation (and constructors that create default settings)
-/// for every game wired to a lite token.
+/// for every game wired to a standard token.
 ///
 /// # Arguments
 /// * `minigame_token_address` - The address of the minigame token contract

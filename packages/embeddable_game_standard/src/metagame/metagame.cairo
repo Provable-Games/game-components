@@ -6,10 +6,10 @@ use game_components_embeddable_game_standard::minigame::interface::{
 use game_components_embeddable_game_standard::registry::interface::{
     FEE_DENOMINATOR, GameFeeInfo, IMinigameRegistryDispatcher, IMinigameRegistryDispatcherTrait,
 };
-use game_components_embeddable_game_standard::token::interface::{
-    IMinigameTokenDispatcher, IMinigameTokenDispatcherTrait,
+use game_components_embeddable_game_standard::token_legacy::interface::{
+    IMinigameTokenLegacyDispatcher, IMinigameTokenLegacyDispatcherTrait,
 };
-use game_components_interfaces::token::lite::IMINIGAME_TOKEN_LITE_ID;
+use game_components_interfaces::token::core::IMINIGAME_TOKEN_ID;
 use openzeppelin_interfaces::introspection::{ISRC5Dispatcher, ISRC5DispatcherTrait};
 use starknet::ContractAddress;
 use crate::metagame::structs::MintMetagameParams;
@@ -17,12 +17,12 @@ use crate::metagame::structs::MintMetagameParams;
 /// Asserts that a game is registered in the minigame token contract
 ///
 /// The token is probed via SRC5 first: a token supporting
-/// `IMINIGAME_TOKEN_LITE_ID` is a self-bound lite token (the game contract IS
-/// the token — lite tokens expose no registry/game-address views), so
+/// `IMINIGAME_TOKEN_ID` is a self-bound standard token (the game contract IS
+/// the token — standard tokens expose no registry/game-address views), so
 /// "registered" reduces to a plain address equality: the game's
-/// `token_address()` must be the game itself. Otherwise the token is a full
+/// `token_address()` must be the game itself. Otherwise the token is a legacy
 /// token: registry-backed (multi-game) tokens ask the registry, and a zero
-/// `game_registry_address()` (single-game full token) again means the mutual
+/// `game_registry_address()` (single-game legacy token) again means the mutual
 /// pairing is the check.
 ///
 /// # Arguments
@@ -31,11 +31,11 @@ pub fn assert_game_registered(game_address: ContractAddress) {
     let minigame_dispatcher = IMinigameDispatcher { contract_address: game_address };
     let minigame_token_address = minigame_dispatcher.token_address();
     let token_src5_dispatcher = ISRC5Dispatcher { contract_address: minigame_token_address };
-    if token_src5_dispatcher.supports_interface(IMINIGAME_TOKEN_LITE_ID) {
+    if token_src5_dispatcher.supports_interface(IMINIGAME_TOKEN_ID) {
         assert!(minigame_token_address == game_address, "Game is not registered");
         return;
     }
-    let minigame_token_dispatcher = IMinigameTokenDispatcher {
+    let minigame_token_dispatcher = IMinigameTokenLegacyDispatcher {
         contract_address: minigame_token_address,
     };
     let minigame_registry_address = minigame_token_dispatcher.game_registry_address();
@@ -93,7 +93,7 @@ pub fn mint(
         Option::Some(game_address) => {
             let minigame_dispatcher = IMinigameDispatcher { contract_address: game_address };
             let minigame_token_address = minigame_dispatcher.token_address();
-            let minigame_token_dispatcher = IMinigameTokenDispatcher {
+            let minigame_token_dispatcher = IMinigameTokenLegacyDispatcher {
                 contract_address: minigame_token_address,
             };
             minigame_token_dispatcher
@@ -118,7 +118,7 @@ pub fn mint(
         // If no game address is provided, mint a token through the default token contract (blank
         // game)
         Option::None => {
-            let minigame_token_dispatcher = IMinigameTokenDispatcher {
+            let minigame_token_dispatcher = IMinigameTokenLegacyDispatcher {
                 contract_address: default_token_address,
             };
             minigame_token_dispatcher
@@ -215,7 +215,7 @@ pub fn calculate_game_fee(revenue: u128, fee_numerator: u16) -> u128 {
 pub fn get_game_fee_info(game_address: ContractAddress) -> GameFeeInfo {
     let minigame_dispatcher = IMinigameDispatcher { contract_address: game_address };
     let minigame_token_address = minigame_dispatcher.token_address();
-    let minigame_token_dispatcher = IMinigameTokenDispatcher {
+    let minigame_token_dispatcher = IMinigameTokenLegacyDispatcher {
         contract_address: minigame_token_address,
     };
     let minigame_registry_address = minigame_token_dispatcher.game_registry_address();
