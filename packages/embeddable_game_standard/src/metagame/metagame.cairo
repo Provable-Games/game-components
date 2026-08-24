@@ -9,24 +9,32 @@ use game_components_embeddable_game_standard::registry::interface::{
 use game_components_embeddable_game_standard::token::interface::{
     IMinigameTokenDispatcher, IMinigameTokenDispatcherTrait,
 };
+use game_components_interfaces::token::lite::IMINIGAME_TOKEN_LITE_ID;
+use openzeppelin_interfaces::introspection::{ISRC5Dispatcher, ISRC5DispatcherTrait};
 use starknet::ContractAddress;
 use crate::metagame::structs::MintMetagameParams;
 
 /// Asserts that a game is registered in the minigame token contract
 ///
-/// For registry-backed (multi-game) tokens this asks the registry. For tokens
-/// with no registry — a zero `game_registry_address()` — "registered" means
-/// the pairing is mutual, and self-bound lite tokens (the game contract IS the
-/// token) make that a plain address equality: the game's `token_address()`
-/// must be the game itself. This saves a cross-contract `game_address()` read
-/// at tournament creation. Previously this path dispatched to the zero
-/// address and reverted with CONTRACT_NOT_DEPLOYED for any single-game token.
+/// The token is probed via SRC5 first: a token supporting
+/// `IMINIGAME_TOKEN_LITE_ID` is a self-bound lite token (the game contract IS
+/// the token — lite tokens expose no registry/game-address views), so
+/// "registered" reduces to a plain address equality: the game's
+/// `token_address()` must be the game itself. Otherwise the token is a full
+/// token: registry-backed (multi-game) tokens ask the registry, and a zero
+/// `game_registry_address()` (single-game full token) again means the mutual
+/// pairing is the check.
 ///
 /// # Arguments
 /// * `game_address` - The address of the game contract to check
 pub fn assert_game_registered(game_address: ContractAddress) {
     let minigame_dispatcher = IMinigameDispatcher { contract_address: game_address };
     let minigame_token_address = minigame_dispatcher.token_address();
+    let token_src5_dispatcher = ISRC5Dispatcher { contract_address: minigame_token_address };
+    if token_src5_dispatcher.supports_interface(IMINIGAME_TOKEN_LITE_ID) {
+        assert!(minigame_token_address == game_address, "Game is not registered");
+        return;
+    }
     let minigame_token_dispatcher = IMinigameTokenDispatcher {
         contract_address: minigame_token_address,
     };

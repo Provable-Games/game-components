@@ -10,31 +10,27 @@
 /// embedded IN the game contract — the game contract IS the token. A
 /// separate-token deployment shape existed briefly and was removed after
 /// measurements showed it strictly worse on gas; with self-binding the
-/// game/token mutual-pairing story is trivial (self == self) and the
-/// `game_address()` view — which returns the contract's own address — is the
-/// honest advertisement of that to ecosystem consumers.
+/// game/token mutual-pairing story is trivial (self == self), advertised to
+/// ecosystem consumers via SRC5 (`IMINIGAME_TOKEN_LITE_ID`) rather than
+/// through address-resolution views.
 ///
-/// What is deliberately gone, and why it is safe to remove:
-/// * **Registry** — one game: this contract. No `game_id_from_address` on
-///   mint, no `game_address_from_id` anywhere, no stored game address at all.
-/// * **Mutable token state** — no `game_over`/`completed_objective` latch.
-///   The game contract is the sole authority; playability here is the
-///   lifecycle window only, which lives packed inside the token id, so
-///   `is_playable` costs zero storage reads.
-/// * **`update_game` + metagame callbacks** — nothing to sync and nobody to
-///   notify. `refresh_metadata` (ERC-4906) is the only post-action hook.
-/// * **SRC5 round-trips** — the game is this contract; mint performs no
-///   `supports_interface` calls.
-/// * **Settings/objective validation on mint** — minters pass an
-///   admin-configured `settings_id`; the game validates it at play time.
+/// The external ABI is `IMinigameTokenLite`: dead MACHINERY and compat shims
+/// are deleted, CAPABILITY (writes) and cheap client-facing read views stay.
+/// What is gone, and why:
+/// * **Registry / game-address views** — one game: this contract. Consumers
+///   SRC5-probe the lite id; there is nothing to resolve.
+/// * **Guards (`assert_is_playable`, `assert_owner_and_playable`)** — the
+///   embedding game's own pre-action checks, now `InternalTrait` calls with
+///   zero syscalls. Clients read `is_playable`.
+/// * **`refresh_metadata_batch`** — a multicall of singles.
+/// * **Mutable token state** — no `game_over`/`completed_objective` latch,
+///   no `update_game`, no metagame callbacks. `refresh_metadata` (ERC-4906)
+///   is the only post-action hook; `player_name` is the only per-token
+///   storage (owner-renameable via `update_player_name`).
 ///
 /// Token ids use the lite-native 251-bit layout in `token_lite::packing` —
 /// NOT the full token's `token::structs::pack_token_id` layout (which stays
-/// untouched, serving legacy denshokan). The lite layout drops the fields the
-/// lite token never writes (game_id, objective_id, has_context, paymaster,
-/// metadata), widens `settings_id` to 16 bits and `salt` to 16 bits, and
-/// consolidates every spare bit into one component-owned, always-zero
-/// reserved region in the high half. Indexers must branch their token-id
+/// untouched, serving legacy denshokan). Indexers must branch their token-id
 /// decoder by contract generation.
 #[starknet::component]
 pub mod CoreTokenLiteComponent {
@@ -47,11 +43,8 @@ pub mod CoreTokenLiteComponent {
     use starknet::storage::{
         Map, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess,
     };
-    use starknet::{
-        ContractAddress, get_block_timestamp, get_caller_address, get_contract_address, get_tx_info,
-    };
-    use crate::token::interface::IMINIGAME_TOKEN_ID;
-    use crate::token::structs::{GameContextDetails, MintBatchRecipient, TokenMetadata};
+    use starknet::{ContractAddress, get_block_timestamp, get_caller_address, get_tx_info};
+    use crate::token::structs::{MintBatchRecipient, TokenMetadata};
     use crate::token::token::{LifecycleTrait, token_state};
     use crate::token::traits::OptionalMinter;
     use crate::token_lite::packing::{
@@ -101,30 +94,6 @@ pub mod CoreTokenLiteComponent {
             metadata.lifecycle.is_playable(get_block_timestamp())
         }
 
-        fn assert_is_playable(self: @ComponentState<TContractState>, token_id: felt252) {
-            self.assert_lifecycle_open(token_id);
-        }
-
-        fn assert_owner_and_playable(
-            self: @ComponentState<TContractState>,
-            token_id: felt252,
-            expected_owner: ContractAddress,
-        ) {
-            assert!(!expected_owner.is_zero(), "MinigameTokenLite: Expected owner cannot be zero");
-            let contract = self.get_contract();
-            let erc721_component = ERC721::get_component(contract);
-            // _owner_of returns zero for a nonexistent token, which can never
-            // equal the asserted-non-zero expected_owner — so this also
-            // guarantees existence.
-            let token_owner = erc721_component._owner_of(token_id.into());
-            assert!(
-                token_owner == expected_owner,
-                "MinigameTokenLite: Address is not owner of token {}",
-                token_id,
-            );
-            self.assert_lifecycle_open(token_id);
-        }
-
         fn settings_id(self: @ComponentState<TContractState>, token_id: felt252) -> u32 {
             unpack_settings_id(token_id)
         }
@@ -150,57 +119,16 @@ pub mod CoreTokenLiteComponent {
             unpack_soulbound(token_id)
         }
 
-        fn game_address(self: @ComponentState<TContractState>) -> ContractAddress {
-            // The token IS the game contract (one-address architecture). Kept
-            // as a view so ecosystem consumers can still resolve the pairing.
-            get_contract_address()
-        }
-
-        fn game_registry_address(self: @ComponentState<TContractState>) -> ContractAddress {
-            // Compat shim: MinigameComponent::initializer queries this before
-            // deciding whether to register with a registry. Zero = no registry.
-            Zero::zero()
-        }
-
         fn mint(
             ref self: ComponentState<TContractState>,
-            game_address: ContractAddress,
             player_name: Option<felt252>,
             settings_id: Option<u32>,
             start: Option<u64>,
             end: Option<u64>,
-            objective_id: Option<u32>,
-            context: Option<GameContextDetails>,
-            client_url: Option<ByteArray>,
-            renderer_address: Option<ContractAddress>,
-            skills_address: Option<ContractAddress>,
             to: ContractAddress,
             soulbound: bool,
-            paymaster: bool,
             salt: u16,
-            metadata: u16,
         ) -> felt252 {
-            // The signature matches IMinigameToken::mint so existing call
-            // sites work unchanged, but unsupported features must not be
-            // silently dropped — reject them loudly.
-            assert!(objective_id.is_none(), "MinigameTokenLite: objectives not supported");
-            assert!(context.is_none(), "MinigameTokenLite: context not supported");
-            assert!(client_url.is_none(), "MinigameTokenLite: client_url not supported");
-            assert!(
-                renderer_address.is_none(), "MinigameTokenLite: per-token renderer not supported",
-            );
-            assert!(skills_address.is_none(), "MinigameTokenLite: skills not supported");
-            assert!(!paymaster, "MinigameTokenLite: paymaster flag not supported");
-            assert!(metadata == 0, "MinigameTokenLite: metadata field not supported");
-
-            // Single game — this contract. No SRC5 probe, no registry
-            // resolution. The parameter is kept for ABI parity and still
-            // catches caller misconfiguration (pointing at the wrong game).
-            assert!(
-                game_address == get_contract_address(),
-                "MinigameTokenLite: Game address does not match configured game",
-            );
-
             let caller = get_caller_address();
             let current_time = get_block_timestamp();
 
@@ -233,7 +161,7 @@ pub mod CoreTokenLiteComponent {
             let mut contract_self = self.get_contract_mut();
             let minted_by = MinterOpt::add_minter(ref contract_self, caller);
 
-            // settings_id keeps its Option<u32> ABI type for compat; the pack
+            // settings_id keeps its Option<u32> call-site type; the pack
             // asserts the value fits the lite layout's 16-bit field. Likewise
             // minted_by (u64 from OptionalMinter::add_minter) must fit 26 bits.
             let final_token_id = pack_lite_token_id(
@@ -258,50 +186,26 @@ pub mod CoreTokenLiteComponent {
             final_token_id
         }
 
-        /// Batch mint identical tokens to one or more recipients with per-recipient
-        /// counts. ABI-compatible with `IMinigameToken::mint_batch_recipients` so
-        /// batch-minting metagames (tournaments, brackets) work unchanged against a
-        /// lite deployment; the same unsupported-parameter rules as `mint` apply.
+        /// Batch mint identical tokens to one or more recipients with
+        /// per-recipient counts.
         ///
         /// Salt is a single global counter across the batch (`salt + i` for
         /// `i in 0..sum(counts)`): token ids do not encode the recipient, so
         /// salts must be globally unique within the tx —
         /// `salt + sum(counts) - 1 <= 0xFFFF` (the lite layout's 16-bit field).
         ///
-        /// Versus calling `mint` per token, the lifecycle math, tx-info read, game
-        /// check and minter registration are hoisted and paid once for the batch.
+        /// Versus calling `mint` per token, the lifecycle math, tx-info read
+        /// and minter registration are hoisted and paid once for the batch.
         fn mint_batch_recipients(
             ref self: ComponentState<TContractState>,
-            game_address: ContractAddress,
             player_name: Option<felt252>,
             settings_id: Option<u32>,
             start: Option<u64>,
             end: Option<u64>,
-            objective_id: Option<u32>,
-            context: Option<GameContextDetails>,
-            client_url: Option<ByteArray>,
-            renderer_address: Option<ContractAddress>,
-            skills_address: Option<ContractAddress>,
             recipients: Array<MintBatchRecipient>,
             soulbound: bool,
-            paymaster: bool,
             salt: u16,
-            metadata: u16,
         ) -> Array<felt252> {
-            assert!(objective_id.is_none(), "MinigameTokenLite: objectives not supported");
-            assert!(context.is_none(), "MinigameTokenLite: context not supported");
-            assert!(client_url.is_none(), "MinigameTokenLite: client_url not supported");
-            assert!(
-                renderer_address.is_none(), "MinigameTokenLite: per-token renderer not supported",
-            );
-            assert!(skills_address.is_none(), "MinigameTokenLite: skills not supported");
-            assert!(!paymaster, "MinigameTokenLite: paymaster flag not supported");
-            assert!(metadata == 0, "MinigameTokenLite: metadata field not supported");
-            assert!(
-                game_address == get_contract_address(),
-                "MinigameTokenLite: Game address does not match configured game",
-            );
-
             let recipient_count = recipients.len();
             assert!(recipient_count > 0, "MinigameTokenLite: recipients array cannot be empty");
 
@@ -401,17 +305,6 @@ pub mod CoreTokenLiteComponent {
             self.emit(MetadataUpdate { token_id: token_id.into() });
         }
 
-        fn refresh_metadata_batch(
-            ref self: ComponentState<TContractState>, token_ids: Span<felt252>,
-        ) {
-            assert!(token_ids.len() > 0, "MinigameTokenLite: token_ids array cannot be empty");
-            let mut i: u32 = 0;
-            while i < token_ids.len() {
-                self.emit(MetadataUpdate { token_id: (*token_ids.at(i)).into() });
-                i += 1;
-            }
-        }
-
         fn update_player_name(
             ref self: ComponentState<TContractState>, token_id: felt252, name: felt252,
         ) {
@@ -438,20 +331,38 @@ pub mod CoreTokenLiteComponent {
         +Drop<TContractState>,
         +ERC721Component::ERC721HooksTrait<TContractState>,
     > of InternalTrait<TContractState> {
-        /// Registers the SRC5 interface ids. There is no game argument — the
-        /// component is self-bound: the embedding contract is the game.
+        /// Registers the SRC5 interface id. There is no game argument — the
+        /// component is self-bound: the embedding contract is the game. Only
+        /// the lite id is registered; SRC5 is honest about the surface (a
+        /// lite token does NOT implement `IMinigameToken`).
         fn initializer(ref self: ComponentState<TContractState>) {
             let mut contract = self.get_contract_mut();
             let mut src5_component = SRC5::get_component_mut(ref contract);
             src5_component.register_interface(IMINIGAME_TOKEN_LITE_ID);
-            // Also advertise the full-token id: ecosystem consumers (e.g.
-            // metagames) hard-assert it before wiring against a token. The
-            // lite token implements the subset of IMinigameToken that
-            // game-side components actually call (mint, assert_is_playable,
-            // player_name, refresh_metadata, game_registry_address); anything
-            // else reverts with ENTRYPOINT_NOT_FOUND rather than misbehaving
-            // silently.
-            src5_component.register_interface(IMINIGAME_TOKEN_ID);
+        }
+
+        /// Combined ownership + playability guard for the embedding game's
+        /// own entrypoints: internal call, zero syscalls. `expected_owner` is
+        /// the game contract's caller (must be non-zero); panics unless it
+        /// owns the token and the lifecycle window is open.
+        fn assert_owner_and_playable(
+            self: @ComponentState<TContractState>,
+            token_id: felt252,
+            expected_owner: ContractAddress,
+        ) {
+            assert!(!expected_owner.is_zero(), "MinigameTokenLite: Expected owner cannot be zero");
+            let contract = self.get_contract();
+            let erc721_component = ERC721::get_component(contract);
+            // _owner_of returns zero for a nonexistent token, which can never
+            // equal the asserted-non-zero expected_owner — so this also
+            // guarantees existence.
+            let token_owner = erc721_component._owner_of(token_id.into());
+            assert!(
+                token_owner == expected_owner,
+                "MinigameTokenLite: Address is not owner of token {}",
+                token_id,
+            );
+            self.assert_lifecycle_open(token_id);
         }
 
         /// Lifecycle-window check only — there is deliberately no token-side

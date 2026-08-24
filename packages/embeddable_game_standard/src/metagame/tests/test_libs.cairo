@@ -1380,6 +1380,9 @@ fn test_assert_game_registered_success() {
     let registry_address: ContractAddress = 0x333.try_into().unwrap();
 
     mock_call(game_address, selector!("token_address"), token_address, 1);
+    // Not a lite token: the SRC5 probe for IMINIGAME_TOKEN_LITE_ID answers
+    // false, so the check falls through to the registry path.
+    mock_call(token_address, selector!("supports_interface"), false, 1);
     mock_call(token_address, selector!("game_registry_address"), registry_address, 1);
     mock_call(registry_address, selector!("is_game_registered"), true, 1);
 
@@ -1395,6 +1398,8 @@ fn test_assert_game_registered_fails_for_unregistered() {
     let registry_address: ContractAddress = 0x666.try_into().unwrap();
 
     mock_call(game_address, selector!("token_address"), token_address, 1);
+    // Not a lite token — falls through to the registry path.
+    mock_call(token_address, selector!("supports_interface"), false, 1);
     mock_call(token_address, selector!("game_registry_address"), registry_address, 1);
     mock_call(registry_address, selector!("is_game_registered"), false, 1);
 

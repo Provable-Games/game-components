@@ -17,6 +17,9 @@
 //   denshokan does, adding two storage writes per mint and per transfer on
 //   top of the full-token numbers.
 
+use game_components_test_common::mocks::lite_game_mock::{
+    ILiteGameMockDispatcher, ILiteGameMockDispatcherTrait,
+};
 use openzeppelin_interfaces::erc721::{ERC721ABIDispatcher, ERC721ABIDispatcherTrait};
 use snforge_std::{
     CheatSpan, ContractClassTrait, DeclareResultTrait, cheat_caller_address, declare,
@@ -133,24 +136,18 @@ fn setup_full() -> (IMinigameTokenDispatcher, ERC721ABIDispatcher, ContractAddre
     )
 }
 
-fn mint_lite(token: IMinigameTokenLiteDispatcher, game: ContractAddress, salt: u16) -> felt252 {
+fn mint_lite(token: IMinigameTokenLiteDispatcher, _game: ContractAddress, salt: u16) -> felt252 {
+    // Trimmed 7-arg lite mint — no game address (self-bound), none of the
+    // full token's dead parameters.
     token
         .mint(
-            game,
             Option::Some('bench'),
             Option::None,
             Option::Some(START_TIME),
             Option::Some(END_TIME),
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
             ALICE(),
             false,
-            false,
             salt,
-            0,
         )
 }
 
@@ -227,16 +224,19 @@ fn bench_full_mint_x10() {
 
 // ================================================================================================
 // PER-ACTION GUARD — full: owner_of + assert_is_playable (2 calls, as
-// death-mountain's game_core does today) vs lite: assert_owner_and_playable (1)
+// death-mountain's game_core does today) vs lite: assert_owner_and_playable —
+// an internal call in the real one-address shape, exercised here through the
+// game mock's single external entrypoint (1 call)
 // ================================================================================================
 
 #[test]
 fn bench_lite_guard_x10() {
     let (token, _, game) = setup_lite();
     let token_id = mint_lite(token, game, 0);
+    let game_mock = ILiteGameMockDispatcher { contract_address: token.contract_address };
     let mut i: u32 = 0;
     while i < 10 {
-        token.assert_owner_and_playable(token_id, ALICE());
+        game_mock.assert_owner_and_playable(token_id, ALICE());
         i += 1;
     }
 }

@@ -111,7 +111,23 @@ High u128 (123 bits): `tx_hash(10) | salt(16) | reserved(97, always zero)`
 | 101–126 | minted_by (26-bit minter id) | | |
 | 127 | soulbound | | |
 
-The reserved region has no pack parameter and no public unpack accessor; future protocol- or game-facing fields are carved from it later, and because every lite id provably decodes it as 0, such carve-outs are non-breaking by construction. The `IMinigameTokenLite` ABI and `IMINIGAME_TOKEN_LITE_ID` are unchanged (the batch salt bound rises to `salt + sum(counts) - 1 <= 0xFFFF`, and `settings_id > 0xFFFF` is now rejected at mint). **The indexer must branch its token-id decode by contract generation:** ids from legacy denshokan decode with the full layout, ids from lite (one-address) contracts with this one.
+The reserved region has no pack parameter and no public unpack accessor; future protocol- or game-facing fields are carved from it later, and because every lite id provably decodes it as 0, such carve-outs are non-breaking by construction. The batch salt bound rises to `salt + sum(counts) - 1 <= 0xFFFF`, and `settings_id > 0xFFFF` is now rejected at mint. **The indexer must branch its token-id decode by contract generation:** ids from legacy denshokan decode with the full layout, ids from lite (one-address) contracts with this one.
+
+### The ABI strip (same branch, deliberate break)
+
+With the layout compat shim retired, the ABI compat shim went with it — before first release, on the principle: **delete dead machinery and compat shims; keep capability (writes) and cheap client-facing read views.** The `IMinigameTokenLite` trait is now its own surface, not an `IMinigameToken` mirror:
+
+| Change | Detail |
+|---|---|
+| `mint` trimmed to 7 args | `mint(player_name, settings_id, start, end, to, soulbound, salt)` — the dead full-token params (`game_address`, `objective_id`, `context`, `client_url`, `renderer_address`, `skills_address`, `paymaster`, `metadata`) are gone **along with their reject-asserts**; `mint_batch_recipients` trims identically (recipients array in place of `to`) |
+| Compat views deleted | `game_address` (was: returns self) and `game_registry_address` (was: returns zero) — consumers now SRC5-probe `IMINIGAME_TOKEN_LITE_ID` instead of resolving addresses; `metagame::assert_game_registered` probes the lite id first and falls through to the unchanged full-token registry path |
+| Guards moved internal | `assert_is_playable` and `assert_owner_and_playable` left the ABI — they are the embedding game's own pre-action checks (`InternalTrait`, zero syscalls). Clients read `is_playable` |
+| `refresh_metadata_batch` deleted | A multicall of singles |
+| Read views + rename kept | `token_metadata`, `is_playable`, `settings_id`, `minted_by`, `minted_by_address`, `is_soulbound`, `player_name` (near-zero-cost client/RPC conveniences) and `update_player_name` (owner-gated capability) stay with identical semantics |
+| Legacy id registration dropped | `initializer()` registers ONLY `IMINIGAME_TOKEN_LITE_ID` — SRC5 is honest; `supports_interface(IMINIGAME_TOKEN_ID)` is now false on lite tokens |
+| New interface id | `IMINIGAME_TOKEN_LITE_ID = 0x2ec4714e0b5610e5cffd262be7c69b721a6865f9a8ce7e1094c8211f3beaa37` (rederived over the new surface minus `refresh_metadata`, per the refresh-exclusion convention) |
+
+**Downstream:** SDM dungeons/GameCore and budokan v2 migrate their mint call sites to the 7-arg shape (drop the game-address argument and the eight `None`/`false`/`0` fillers), GameCore's guard becomes the component-internal call, and anything that asserted the full-token id or called `game_registry_address()` on a lite token switches to the lite-id SRC5 probe.
 
 ---
 

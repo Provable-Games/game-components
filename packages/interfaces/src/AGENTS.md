@@ -179,6 +179,10 @@ Apply the same reasoning to future additive methods: extend the trait, leave the
 alone, and note the exclusion here. Change the ID only for a genuinely breaking
 change to the existing surface.
 
+The same refresh exclusion applies to `IMINIGAME_TOKEN_LITE_ID`: it is derived
+over `IMinigameTokenLite` minus `refresh_metadata` (the per-selector breakdown
+is kept in the doc comment above the constant in `token/lite.cairo`).
+
 ## Dependencies
 
 None - this is a leaf package with no internal dependencies. Uses only:

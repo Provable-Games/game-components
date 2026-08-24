@@ -1,3 +1,6 @@
+use game_components_test_common::mocks::lite_game_mock::{
+    ILiteGameMockDispatcher, ILiteGameMockDispatcherTrait,
+};
 use openzeppelin_interfaces::erc721::{ERC721ABIDispatcher, ERC721ABIDispatcherTrait};
 use openzeppelin_interfaces::introspection::{ISRC5Dispatcher, ISRC5DispatcherTrait};
 use snforge_std::{
@@ -57,9 +60,16 @@ fn deploy_token_lite() -> (
     )
 }
 
-/// Mint with lifecycle only — every unsupported parameter at its required
-/// neutral value, mirroring how death-mountain-style dungeons call mint. The
-/// "game address" is the token's own address (self-bound).
+/// The embedding game's view of the same contract — used to exercise the
+/// component's internal pre-action guard (`assert_owner_and_playable` moved
+/// off the external ABI; the mock re-exposes it the way a real game consumes
+/// it inside its entrypoints).
+fn game_of(token: IMinigameTokenLiteDispatcher) -> ILiteGameMockDispatcher {
+    ILiteGameMockDispatcher { contract_address: token.contract_address }
+}
+
+/// Mint with the trimmed 7-arg shape — no game address (the token IS the
+/// game), none of the full token's dead parameters.
 fn mint_basic(
     token: IMinigameTokenLiteDispatcher,
     player_name: Option<felt252>,
@@ -70,24 +80,7 @@ fn mint_basic(
     soulbound: bool,
     salt: u16,
 ) -> felt252 {
-    token
-        .mint(
-            token.contract_address,
-            player_name,
-            settings_id,
-            start,
-            end,
-            Option::None, // objective_id
-            Option::None, // context
-            Option::None, // client_url
-            Option::None, // renderer_address
-            Option::None, // skills_address
-            to,
-            soulbound,
-            false, // paymaster
-            salt,
-            0 // metadata
-        )
+    token.mint(player_name, settings_id, start, end, to, soulbound, salt)
 }
 
 // ================================================================================================
@@ -98,18 +91,14 @@ fn mint_basic(
 fn test_deployment_and_interfaces() {
     let (token, erc721, _) = deploy_token_lite();
 
-    assert!(
-        token.game_address() == token.contract_address,
-        "game_address must be the contract itself (self-bound)",
-    );
-    assert!(token.game_registry_address() == addr(0), "Registry address should always be zero");
     assert!(erc721.name() == "LiteToken", "Name mismatch");
     assert!(erc721.symbol() == "LITE", "Symbol mismatch");
 
     let src5 = ISRC5Dispatcher { contract_address: token.contract_address };
     assert!(src5.supports_interface(IMINIGAME_TOKEN_LITE_ID), "Should register lite interface id");
-    // Legacy id registered so MinigameComponent::initializer accepts a lite token
-    assert!(src5.supports_interface(IMINIGAME_TOKEN_ID), "Should register full token id");
+    // SRC5 is honest: a lite token does NOT implement IMinigameToken and no
+    // longer advertises the legacy full-token id.
+    assert!(!src5.supports_interface(IMINIGAME_TOKEN_ID), "Must NOT advertise the full token id");
 }
 
 // ================================================================================================
@@ -224,203 +213,8 @@ fn test_mint_unique_ids_by_salt_and_minter() {
 }
 
 // ================================================================================================
-// MINT — REJECTED PARAMETERS
+// MINT — LIFECYCLE VALIDATION
 // ================================================================================================
-
-#[test]
-#[should_panic(expected: "MinigameTokenLite: objectives not supported")]
-fn test_mint_rejects_objective_id() {
-    let (token, _, _) = deploy_token_lite();
-    token
-        .mint(
-            token.contract_address,
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::Some(1),
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            ALICE(),
-            false,
-            false,
-            0,
-            0,
-        );
-}
-
-#[test]
-#[should_panic(expected: "MinigameTokenLite: context not supported")]
-fn test_mint_rejects_context() {
-    let (token, _, _) = deploy_token_lite();
-    let context = crate::token::structs::GameContextDetails {
-        name: "ctx", description: "ctx", id: Option::None, context: array![].span(),
-    };
-    token
-        .mint(
-            token.contract_address,
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::Some(context),
-            Option::None,
-            Option::None,
-            Option::None,
-            ALICE(),
-            false,
-            false,
-            0,
-            0,
-        );
-}
-
-#[test]
-#[should_panic(expected: "MinigameTokenLite: client_url not supported")]
-fn test_mint_rejects_client_url() {
-    let (token, _, _) = deploy_token_lite();
-    token
-        .mint(
-            token.contract_address,
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::Some("https://x.test"),
-            Option::None,
-            Option::None,
-            ALICE(),
-            false,
-            false,
-            0,
-            0,
-        );
-}
-
-#[test]
-#[should_panic(expected: "MinigameTokenLite: per-token renderer not supported")]
-fn test_mint_rejects_renderer() {
-    let (token, _, _) = deploy_token_lite();
-    token
-        .mint(
-            token.contract_address,
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::Some(addr('RENDERER')),
-            Option::None,
-            ALICE(),
-            false,
-            false,
-            0,
-            0,
-        );
-}
-
-#[test]
-#[should_panic(expected: "MinigameTokenLite: skills not supported")]
-fn test_mint_rejects_skills() {
-    let (token, _, _) = deploy_token_lite();
-    token
-        .mint(
-            token.contract_address,
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::Some(addr('SKILLS')),
-            ALICE(),
-            false,
-            false,
-            0,
-            0,
-        );
-}
-
-#[test]
-#[should_panic(expected: "MinigameTokenLite: paymaster flag not supported")]
-fn test_mint_rejects_paymaster() {
-    let (token, _, _) = deploy_token_lite();
-    token
-        .mint(
-            token.contract_address,
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            ALICE(),
-            false,
-            true,
-            0,
-            0,
-        );
-}
-
-#[test]
-#[should_panic(expected: "MinigameTokenLite: metadata field not supported")]
-fn test_mint_rejects_metadata() {
-    let (token, _, _) = deploy_token_lite();
-    token
-        .mint(
-            token.contract_address,
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            ALICE(),
-            false,
-            false,
-            0,
-            5,
-        );
-}
-
-#[test]
-#[should_panic(expected: "MinigameTokenLite: Game address does not match configured game")]
-fn test_mint_rejects_wrong_game_address() {
-    let (token, _, _) = deploy_token_lite();
-    token
-        .mint(
-            addr('OTHER_GAME'),
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            ALICE(),
-            false,
-            false,
-            0,
-            0,
-        );
-}
 
 #[test]
 #[should_panic(expected: "MinigameTokenLite: Lifecycle end must be in the future and after start")]
@@ -456,6 +250,7 @@ fn test_mint_rejects_start_after_end() {
 #[test]
 fn test_playability_follows_lifecycle_window() {
     let (token, _, _) = deploy_token_lite();
+    let game = game_of(token);
     start_cheat_block_timestamp(token.contract_address, 1000);
 
     let token_id = mint_basic(
@@ -473,8 +268,8 @@ fn test_playability_follows_lifecycle_window() {
 
     start_cheat_block_timestamp(token.contract_address, 2000);
     assert!(token.is_playable(token_id), "Playable at window start");
-    token.assert_is_playable(token_id);
-    token.assert_owner_and_playable(token_id, ALICE());
+    // The embedding game's internal pre-action guard agrees with the view
+    game.assert_owner_and_playable(token_id, ALICE());
 
     start_cheat_block_timestamp(token.contract_address, 3000);
     assert!(!token.is_playable(token_id), "Expired at window end");
@@ -491,21 +286,25 @@ fn test_immortal_token_always_playable() {
     assert!(token.is_playable(token_id), "No end means playable forever");
 }
 
+// ================================================================================================
+// INTERNAL GUARD (assert_owner_and_playable — via the embedding game mock)
+// ================================================================================================
+
 #[test]
 #[should_panic(expected: "MinigameTokenLite: Token is not playable - game has expired")]
-fn test_assert_is_playable_panics_after_expiry() {
+fn test_guard_panics_after_expiry() {
     let (token, _, _) = deploy_token_lite();
     start_cheat_block_timestamp(token.contract_address, 1000);
     let token_id = mint_basic(
         token, Option::None, Option::None, Option::None, Option::Some(2000), ALICE(), false, 0,
     );
     start_cheat_block_timestamp(token.contract_address, 2000);
-    token.assert_is_playable(token_id);
+    game_of(token).assert_owner_and_playable(token_id, ALICE());
 }
 
 #[test]
 #[should_panic(expected: "MinigameTokenLite: Token is not playable - game has not started")]
-fn test_assert_is_playable_panics_before_start() {
+fn test_guard_panics_before_start() {
     let (token, _, _) = deploy_token_lite();
     start_cheat_block_timestamp(token.contract_address, 1000);
     let token_id = mint_basic(
@@ -518,34 +317,34 @@ fn test_assert_is_playable_panics_before_start() {
         false,
         0,
     );
-    token.assert_is_playable(token_id);
+    game_of(token).assert_owner_and_playable(token_id, ALICE());
 }
 
 #[test]
 #[should_panic(expected: "MinigameTokenLite: Address is not owner of token")]
-fn test_assert_owner_and_playable_rejects_wrong_owner() {
+fn test_guard_rejects_wrong_owner() {
     let (token, _, _) = deploy_token_lite();
     let token_id = mint_basic(
         token, Option::None, Option::None, Option::None, Option::None, ALICE(), false, 0,
     );
-    token.assert_owner_and_playable(token_id, BOB());
+    game_of(token).assert_owner_and_playable(token_id, BOB());
 }
 
 #[test]
 #[should_panic(expected: "MinigameTokenLite: Address is not owner of token")]
-fn test_assert_owner_and_playable_rejects_nonexistent_token() {
+fn test_guard_rejects_nonexistent_token() {
     let (token, _, _) = deploy_token_lite();
-    token.assert_owner_and_playable(12345, ALICE());
+    game_of(token).assert_owner_and_playable(12345, ALICE());
 }
 
 #[test]
 #[should_panic(expected: "MinigameTokenLite: Expected owner cannot be zero")]
-fn test_assert_owner_and_playable_rejects_zero_owner() {
+fn test_guard_rejects_zero_owner() {
     let (token, _, _) = deploy_token_lite();
     let token_id = mint_basic(
         token, Option::None, Option::None, Option::None, Option::None, ALICE(), false, 0,
     );
-    token.assert_owner_and_playable(token_id, addr(0));
+    game_of(token).assert_owner_and_playable(token_id, addr(0));
 }
 
 // ================================================================================================
@@ -601,44 +400,6 @@ fn test_refresh_metadata_emits_event() {
 }
 
 #[test]
-fn test_refresh_metadata_batch_emits_events() {
-    let (token, _, _) = deploy_token_lite();
-    let id_a = mint_basic(
-        token, Option::None, Option::None, Option::None, Option::None, ALICE(), false, 0,
-    );
-    let id_b = mint_basic(
-        token, Option::None, Option::None, Option::None, Option::None, ALICE(), false, 1,
-    );
-
-    let mut spy = spy_events();
-    token.refresh_metadata_batch(array![id_a, id_b].span());
-    spy
-        .assert_emitted(
-            @array![
-                (
-                    token.contract_address,
-                    CoreTokenLiteComponent::Event::MetadataUpdate(
-                        CoreTokenLiteComponent::MetadataUpdate { token_id: id_a.into() },
-                    ),
-                ),
-                (
-                    token.contract_address,
-                    CoreTokenLiteComponent::Event::MetadataUpdate(
-                        CoreTokenLiteComponent::MetadataUpdate { token_id: id_b.into() },
-                    ),
-                ),
-            ],
-        );
-}
-
-#[test]
-#[should_panic(expected: "MinigameTokenLite: token_ids array cannot be empty")]
-fn test_refresh_metadata_batch_rejects_empty() {
-    let (token, _, _) = deploy_token_lite();
-    token.refresh_metadata_batch(array![].span());
-}
-
-#[test]
 fn test_update_player_name_by_owner() {
     let (token, _, _) = deploy_token_lite();
     let token_id = mint_basic(
@@ -669,21 +430,13 @@ fn batch_neutral(
 ) -> Array<felt252> {
     token
         .mint_batch_recipients(
-            token.contract_address,
             Option::Some('bench'),
             Option::Some(5),
             Option::None,
             Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
             recipients,
             false,
-            false,
             salt,
-            0,
         )
 }
 
@@ -759,51 +512,27 @@ fn test_mint_batch_recipients_rejects_zero_count() {
     batch_neutral(token, array![MintBatchRecipient { to: ALICE(), count: 0 }], 0);
 }
 
-#[test]
-#[should_panic(expected: "MinigameTokenLite: context not supported")]
-fn test_mint_batch_recipients_rejects_context() {
-    let (token, _, _) = deploy_token_lite();
-    let context = crate::token::structs::GameContextDetails {
-        name: "ctx", description: "ctx", id: Option::None, context: array![].span(),
-    };
-    token
-        .mint_batch_recipients(
-            token.contract_address,
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::Some(context),
-            Option::None,
-            Option::None,
-            Option::None,
-            array![MintBatchRecipient { to: ALICE(), count: 1 }],
-            false,
-            false,
-            0,
-            0,
-        );
-}
-
 // ================================================================================================
 // ECOSYSTEM INTEGRATION (metagame assert_game_registered)
 // ================================================================================================
 
-/// Positive path: a self-bound lite deployment IS its own game. Its
-/// `token_address()` returns itself and `game_registry_address()` is zero, so
-/// the registry-less branch reduces to a trivially-true address equality.
+/// Positive path: `assert_game_registered` now probes the token's SRC5 for
+/// `IMINIGAME_TOKEN_LITE_ID` first (lite tokens expose no registry views). A
+/// self-bound lite deployment IS its own game: `token_address()` returns
+/// itself, the lite id matches, and the check reduces to a trivially-true
+/// address equality.
 #[test]
 fn test_assert_game_registered_accepts_self_bound_lite_game() {
     let (token, _, _) = deploy_token_lite();
     crate::metagame::metagame::assert_game_registered(token.contract_address);
 }
 
-/// Negative path: a game whose `token_address()` points at some OTHER
-/// registry-less token is not a valid pairing — self-binding means the only
-/// accepted answer is the game's own address. A second LiteGameMock cannot
-/// express this misconfiguration (it always returns itself), so the fake game
-/// is a mocked address pointing at a real lite deployment.
+/// Negative path: a game whose `token_address()` points at some OTHER lite
+/// token is not a valid pairing — self-binding means the only accepted answer
+/// is the game's own address. A second LiteGameMock cannot express this
+/// misconfiguration (it always returns itself), so the fake game is a mocked
+/// address pointing at a real lite deployment: the SRC5 probe finds the lite
+/// id for real, then the address equality fake_game == token fails.
 #[test]
 #[should_panic(expected: "Game is not registered")]
 fn test_assert_game_registered_rejects_game_not_paired_with_lite_token() {
@@ -811,8 +540,6 @@ fn test_assert_game_registered_rejects_game_not_paired_with_lite_token() {
 
     let fake_game = addr('FAKE_GAME');
     mock_call(fake_game, selector!("token_address"), token.contract_address, 1);
-    // token.game_registry_address() answers zero for real; the address
-    // equality fake_game == token then fails.
     crate::metagame::metagame::assert_game_registered(fake_game);
 }
 

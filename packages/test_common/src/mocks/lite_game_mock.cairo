@@ -23,6 +23,11 @@ pub trait ILiteGameMock<TContractState> {
     fn create_settings_difficulty(
         ref self: TContractState, name: ByteArray, description: ByteArray, difficulty: u8,
     );
+    /// Test-only exposure of the component's internal pre-action guard —
+    /// the way a real game consumes it inside its own entrypoints.
+    fn assert_owner_and_playable(
+        self: @TContractState, token_id: felt252, expected_owner: starknet::ContractAddress,
+    );
 }
 
 #[starknet::contract]
@@ -37,9 +42,11 @@ pub mod LiteGameMock {
     use game_components_embeddable_game_standard::minigame::interface::{
         IMINIGAME_ID, IMinigame, IMinigameTokenData,
     };
-    use game_components_embeddable_game_standard::minigame::minigame as minigame_libs;
     use game_components_embeddable_game_standard::minigame::structs::MintGameParams;
     use game_components_embeddable_game_standard::token::extensions::minter::minter::MinterComponent;
+    use game_components_embeddable_game_standard::token_lite::interface::{
+        IMinigameTokenLiteDispatcher, IMinigameTokenLiteDispatcherTrait,
+    };
     use game_components_embeddable_game_standard::token_lite::packing::unpack_soulbound;
     use game_components_embeddable_game_standard::token_lite::token_lite_component::CoreTokenLiteComponent;
     use openzeppelin_introspection::src5::SRC5Component;
@@ -171,6 +178,10 @@ pub mod LiteGameMock {
             get_contract_address()
         }
 
+        /// `IMinigame::mint_game` keeps the full 15-arg trait shape; the lite
+        /// mint takes only the supported subset, so the parameters the lite
+        /// token dropped must be neutral — rejected here rather than silently
+        /// discarded.
         fn mint_game(
             self: @ContractState,
             player_name: Option<felt252>,
@@ -188,28 +199,46 @@ pub mod LiteGameMock {
             salt: u16,
             metadata: u16,
         ) -> felt252 {
-            minigame_libs::mint(
-                get_contract_address(),
-                get_contract_address(),
-                player_name,
-                settings_id,
-                start,
-                end,
-                objective_id,
-                context,
-                client_url,
-                renderer_address,
-                skills_address,
-                to,
-                soulbound,
-                paymaster,
-                salt,
-                metadata,
-            )
+            assert!(objective_id.is_none(), "LiteGameMock: objectives not supported");
+            assert!(context.is_none(), "LiteGameMock: context not supported");
+            assert!(client_url.is_none(), "LiteGameMock: client_url not supported");
+            assert!(renderer_address.is_none(), "LiteGameMock: renderer not supported");
+            assert!(skills_address.is_none(), "LiteGameMock: skills not supported");
+            assert!(!paymaster, "LiteGameMock: paymaster not supported");
+            assert!(metadata == 0, "LiteGameMock: metadata not supported");
+            let token = IMinigameTokenLiteDispatcher { contract_address: get_contract_address() };
+            token.mint(player_name, settings_id, start, end, to, soulbound, salt)
         }
 
         fn mint_game_batch(self: @ContractState, mints: Array<MintGameParams>) -> Array<felt252> {
-            minigame_libs::mint_batch(get_contract_address(), get_contract_address(), mints)
+            let token = IMinigameTokenLiteDispatcher { contract_address: get_contract_address() };
+            let mut token_ids: Array<felt252> = array![];
+            let mut index: u32 = 0;
+            while index < mints.len() {
+                let m = mints.at(index);
+                assert!(m.objective_id.is_none(), "LiteGameMock: objectives not supported");
+                assert!(m.context.is_none(), "LiteGameMock: context not supported");
+                assert!(m.client_url.is_none(), "LiteGameMock: client_url not supported");
+                assert!(m.renderer_address.is_none(), "LiteGameMock: renderer not supported");
+                assert!(m.skills_address.is_none(), "LiteGameMock: skills not supported");
+                assert!(!*m.paymaster, "LiteGameMock: paymaster not supported");
+                assert!(*m.metadata == 0, "LiteGameMock: metadata not supported");
+                token_ids
+                    .append(
+                        token
+                            .mint(
+                                *m.player_name,
+                                *m.settings_id,
+                                *m.start,
+                                *m.end,
+                                *m.to,
+                                *m.soulbound,
+                                *m.salt,
+                            ),
+                    );
+                index += 1;
+            }
+            token_ids
         }
     }
 
@@ -271,6 +300,14 @@ pub mod LiteGameMock {
         fn end_game(ref self: ContractState, token_id: felt252, score: u64) {
             self.scores.entry(token_id).write(score);
             self.game_over.entry(token_id).write(true);
+        }
+
+        /// Exposes the component's internal pre-action guard for tests —
+        /// mirrors how a real game calls it inside its own entrypoints.
+        fn assert_owner_and_playable(
+            self: @ContractState, token_id: felt252, expected_owner: ContractAddress,
+        ) {
+            self.core_token_lite.assert_owner_and_playable(token_id, expected_owner);
         }
 
         fn create_settings_difficulty(
