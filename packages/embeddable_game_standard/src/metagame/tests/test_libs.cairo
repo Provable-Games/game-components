@@ -1942,3 +1942,233 @@ mod MockMinigameTokenWithRegistry {
         }
     }
 }
+
+// =============================================================================
+// STANDARD (SELF-BOUND) TOKEN PATHS
+// =============================================================================
+//
+// `assert_game_registered` accepts a self-bound standard token, so every
+// downstream lib path must be able to serve one too. These run against the
+// real merged game+token contract (`StandardGameMock`), not a mock ABI.
+
+#[cfg(test)]
+mod standard_token_paths {
+    use game_components_embeddable_game_standard::token::interface::{
+        IMinigameTokenDispatcher, IMinigameTokenDispatcherTrait,
+    };
+    use game_components_interfaces::token::creator::{
+        IMinigameTokenCreatorDispatcher, IMinigameTokenCreatorDispatcherTrait,
+    };
+    use game_components_testing::constants::{ALICE, BOB, OWNER};
+    use openzeppelin_interfaces::erc721::{IERC721Dispatcher, IERC721DispatcherTrait};
+    use snforge_std::{ContractClassTrait, DeclareResultTrait, declare};
+    use starknet::ContractAddress;
+    use crate::metagame::metagame as libs;
+
+    /// One contract that is both the game and the standard token.
+    fn deploy_standard_game(game_creator: ContractAddress) -> ContractAddress {
+        let contract = declare("StandardGameMock").unwrap().contract_class();
+        let mut calldata: Array<felt252> = array![];
+        let name: ByteArray = "StandardToken";
+        let symbol: ByteArray = "STD";
+        let base_uri: ByteArray = "https://token.test/";
+        name.serialize(ref calldata);
+        symbol.serialize(ref calldata);
+        base_uri.serialize(ref calldata);
+        game_creator.serialize(ref calldata);
+        OWNER().serialize(ref calldata);
+        let (contract_address, _) = contract.deploy(@calldata).unwrap();
+        contract_address
+    }
+
+    /// The self-bound pairing is what "registered" means for a standard token.
+    #[test]
+    fn test_assert_game_registered_accepts_standard_token() {
+        let game = deploy_standard_game(ALICE());
+        libs::assert_game_registered(game);
+    }
+
+    /// Regression: the gate accepted standard tokens while `mint` still spoke
+    /// the legacy 15-arg ABI, so every accepted game reverted at mint.
+    #[test]
+    fn test_mint_through_standard_token() {
+        let game = deploy_standard_game(ALICE());
+
+        let token_id = libs::mint(
+            game, // default token (unused on this branch)
+            Option::Some(game),
+            Option::Some('player'),
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None, // renderer — unsupported, must be None
+            Option::None, // skills — unsupported, must be None
+            BOB(),
+            false,
+            false,
+            0,
+            0,
+        );
+
+        assert!(token_id != 0, "mint returned a zero token id");
+        let erc721 = IERC721Dispatcher { contract_address: game };
+        assert!(erc721.owner_of(token_id.into()) == BOB(), "token not minted to recipient");
+        let token = IMinigameTokenDispatcher { contract_address: game };
+        assert!(token.player_name(token_id) == 'player', "player name not stored");
+    }
+
+    /// With no game address the default token is used directly — a standard
+    /// token has no blank-game concept, the mint belongs to its own game.
+    #[test]
+    fn test_mint_defaults_to_standard_token() {
+        let game = deploy_standard_game(ALICE());
+
+        let token_id = libs::mint(
+            game,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            BOB(),
+            false,
+            false,
+            0,
+            0,
+        );
+
+        let erc721 = IERC721Dispatcher { contract_address: game };
+        assert!(erc721.owner_of(token_id.into()) == BOB(), "token not minted to recipient");
+    }
+
+    /// Unsupported params are rejected loudly, never silently dropped.
+    #[test]
+    #[should_panic(expected: "Metagame: standard tokens have no per-token renderer")]
+    fn test_mint_rejects_renderer_on_standard_token() {
+        let game = deploy_standard_game(ALICE());
+        libs::mint(
+            game,
+            Option::Some(game),
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::Some(BOB()),
+            Option::None,
+            BOB(),
+            false,
+            false,
+            0,
+            0,
+        );
+    }
+
+    #[test]
+    #[should_panic(expected: "Metagame: standard tokens have no per-token skills")]
+    fn test_mint_rejects_skills_on_standard_token() {
+        let game = deploy_standard_game(ALICE());
+        libs::mint(
+            game,
+            Option::Some(game),
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::Some(BOB()),
+            BOB(),
+            false,
+            false,
+            0,
+            0,
+        );
+    }
+
+    /// The creator surface replaces the registry's fee role — previously this
+    /// reverted on the missing `game_registry_address()` entrypoint.
+    #[test]
+    fn test_get_game_fee_info_reads_creator_surface() {
+        let game = deploy_standard_game(ALICE());
+        let fee_info = libs::get_game_fee_info(game);
+        let declared = IMinigameTokenCreatorDispatcher { contract_address: game };
+        assert!(
+            fee_info.fee_numerator == declared.game_creator_info().fee_numerator,
+            "fee numerator does not match the token's declared fee",
+        );
+    }
+
+    /// The payee is named directly, not resolved through a registry NFT owner.
+    #[test]
+    fn test_get_game_creator_address_is_the_declared_payee() {
+        let game = deploy_standard_game(ALICE());
+        assert!(libs::get_game_creator_address(game) == ALICE(), "payee is not the declared creator");
+    }
+}
+
+// =============================================================================
+// SINGLE-GAME LEGACY TOKEN (ZERO REGISTRY)
+// =============================================================================
+//
+// A legacy token is a SEPARATE contract from its game, so with no registry the
+// pairing is the token's own `game_address()` view — not an address equality
+// against the token itself. This shape previously dispatched into address 0
+// and reverted with CONTRACT_NOT_DEPLOYED.
+
+#[cfg(test)]
+mod legacy_single_game_token {
+    use core::num::traits::Zero;
+    use game_components_testing::constants::{ALICE, BOB};
+    use snforge_std::mock_call;
+    use starknet::ContractAddress;
+    use super::{deploy_mock_minigame_for_registry, deploy_mock_token_with_registry};
+    use crate::metagame::metagame as libs;
+
+    #[test]
+    fn test_assert_game_registered_accepts_paired_single_game_token() {
+        let zero_registry: ContractAddress = Zero::zero();
+        let token = deploy_mock_token_with_registry(zero_registry);
+        let game = deploy_mock_minigame_for_registry(token);
+        // The token names its paired game — that is the pairing to check.
+        mock_call(token, selector!("game_address"), game, 1);
+
+        libs::assert_game_registered(game);
+    }
+
+    #[test]
+    #[should_panic(expected: "Game is not registered")]
+    fn test_assert_game_registered_rejects_mispaired_single_game_token() {
+        let zero_registry: ContractAddress = Zero::zero();
+        let token = deploy_mock_token_with_registry(zero_registry);
+        let game = deploy_mock_minigame_for_registry(token);
+        // The token is bound to a different game.
+        mock_call(token, selector!("game_address"), ALICE(), 1);
+
+        libs::assert_game_registered(game);
+    }
+
+    #[test]
+    #[should_panic(expected: "Game is not registered")]
+    fn test_assert_game_registered_rejects_unbound_single_game_token() {
+        let zero_registry: ContractAddress = Zero::zero();
+        let token = deploy_mock_token_with_registry(zero_registry);
+        let game = deploy_mock_minigame_for_registry(token);
+        // A token that names no game at all must not pass.
+        mock_call(token, selector!("game_address"), BOB(), 1);
+
+        libs::assert_game_registered(game);
+    }
+}

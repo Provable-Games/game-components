@@ -7,8 +7,8 @@ pub mod MetagameComponent {
     use game_components_embeddable_game_standard::metagame::extensions::context::interface::IMETAGAME_CONTEXT_ID;
     use game_components_embeddable_game_standard::metagame::extensions::context::structs::GameContextDetails;
     use game_components_embeddable_game_standard::token_legacy::interface::IMINIGAME_TOKEN_LEGACY_ID;
+    use game_components_interfaces::token::core::IMINIGAME_TOKEN_ID;
     use openzeppelin_interfaces::erc20::{IERC20Dispatcher, IERC20DispatcherTrait};
-    use openzeppelin_interfaces::erc721::{IERC721Dispatcher, IERC721DispatcherTrait};
     use openzeppelin_interfaces::introspection::{ISRC5Dispatcher, ISRC5DispatcherTrait};
     use openzeppelin_introspection::src5::SRC5Component;
     use openzeppelin_introspection::src5::SRC5Component::{
@@ -19,11 +19,6 @@ pub mod MetagameComponent {
     use crate::metagame::interface::{IMETAGAME_ID, IMetagame};
     use crate::metagame::metagame as libs;
     use crate::metagame::structs::MintMetagameParams;
-    use crate::minigame::interface::{IMinigameDispatcher, IMinigameDispatcherTrait};
-    use crate::registry::interface::{IMinigameRegistryDispatcher, IMinigameRegistryDispatcherTrait};
-    use crate::token_legacy::interface::{
-        IMinigameTokenLegacyDispatcher, IMinigameTokenLegacyDispatcherTrait,
-    };
 
     #[storage]
     pub struct Storage {
@@ -75,10 +70,13 @@ pub mod MetagameComponent {
                 Option::None => {},
             }
             assert!(!default_token_address.is_zero(), "Metagame: Default token address is zero");
+            // Either token generation is a valid default: a legacy
+            // (registry-backed) token, or a self-bound standard token.
             let minigame_dispatcher = ISRC5Dispatcher { contract_address: default_token_address };
             assert!(
-                minigame_dispatcher.supports_interface(IMINIGAME_TOKEN_LEGACY_ID),
-                "Metagame: Default token contract does not support IMinigameTokenLegacy",
+                minigame_dispatcher.supports_interface(IMINIGAME_TOKEN_LEGACY_ID)
+                    || minigame_dispatcher.supports_interface(IMINIGAME_TOKEN_ID),
+                "Metagame: Default token contract supports neither IMinigameToken nor IMinigameTokenLegacy",
             );
             self.default_token_address.write(default_token_address);
         }
@@ -152,21 +150,10 @@ pub mod MetagameComponent {
                 return 0;
             }
 
-            // Get the creator token owner (fee recipient)
-            let minigame_dispatcher = IMinigameDispatcher { contract_address: game_address };
-            let token_address = minigame_dispatcher.token_address();
-            let token_dispatcher = IMinigameTokenLegacyDispatcher {
-                contract_address: token_address,
-            };
-            let registry_address = token_dispatcher.game_registry_address();
-            let registry_dispatcher = IMinigameRegistryDispatcher {
-                contract_address: registry_address,
-            };
-            let game_id = registry_dispatcher.game_id_from_address(game_address);
-
-            // Get creator token owner via ERC721 owner_of
-            let erc721 = IERC721Dispatcher { contract_address: registry_address };
-            let recipient = erc721.owner_of(game_id.into());
+            // Resolve the fee recipient: standard tokens name the payee
+            // directly, legacy registry tokens go through the registry NFT's
+            // current owner.
+            let recipient = libs::get_game_creator_address(game_address);
 
             // Transfer fee
             let erc20 = IERC20Dispatcher { contract_address: payment_token };

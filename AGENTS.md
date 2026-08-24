@@ -80,8 +80,39 @@ Each module has its own `AGENTS.md` with detailed documentation inside its `src/
 
 ## Architecture Overview
 
+There are two token generations. New work targets the **standard** token; the
+**legacy** token is kept for deployed denshokan.
+
+### Standard (`token/`) — self-bound, one address
+
 ```
-Metagame ──→ MinigameToken (ERC721) ──→ Minigame
+Metagame ──→ Game contract (IS the ERC721 token)
+  │                 ├── Settings (optional)
+  │                 └── Objectives (optional)
+  └── Context (optional)
+```
+
+`MinigameTokenComponent` is embedded IN the game contract, so the game and the
+token are the same address. There is no registry, no `game_address` resolution
+and no mutable token state.
+
+**Game Lifecycle**: Setup → Mint → Play → `refresh_metadata()` (ERC-4906)
+
+There is no `update_game()` and no `IMetagameCallback`: nothing to sync. The
+game contract is the authority on game-over and objective completion, gating
+its own entrypoints with the component's internal `assert_owner_and_playable`.
+Consumers identify a standard token by SRC5 (`IMINIGAME_TOKEN_ID`); the
+creator/fee identity the registry used to hold lives on the token itself
+(`IMINIGAME_TOKEN_CREATOR_ID`).
+
+`MinigameComponent` is **legacy-only** — it asserts `IMINIGAME_TOKEN_LEGACY_ID`
+and calls `game_registry_address()`. A standard-token game embeds the token
+component directly instead (see `test_common::mocks::standard_game_mock`).
+
+### Legacy (`token_legacy/`) — separate token contract, registry-backed
+
+```
+Metagame ──→ MinigameTokenLegacy (ERC721) ──→ Minigame
   │  ▲               │                      │
   │  │               └── Registry            ├── Settings (optional)
   │  │                                       └── Objectives (optional)
@@ -92,6 +123,9 @@ Metagame ──→ MinigameToken (ERC721) ──→ Minigame
 **Game Lifecycle**: Setup → Mint → Play → Sync (`update_game()`) → Complete (`game_over()`)
 
 When `update_game()` is called, the token checks if the minter implements `IMetagameCallback` (via SRC5) and dispatches score/game_over/objective callbacks automatically.
+
+The `metagame` lib and `MetagameComponent` serve **both** generations, branching
+on SRC5.
 
 ## Key Patterns
 
