@@ -465,8 +465,6 @@ mod MockCallbackContract {
         MetagameCallbackComponent::MetagameCallbackImpl<ContractState>;
     impl CallbackInternalImpl = MetagameCallbackComponent::InternalImpl<ContractState>;
 
-    #[abi(embed_v0)]
-    impl MetagameImpl = MetagameComponent::MetagameImpl<ContractState>;
     impl MetagameInternalImpl = MetagameComponent::InternalImpl<ContractState>;
 
     #[abi(embed_v0)]
@@ -506,7 +504,6 @@ mod MockCallbackContract {
         context_address: Option<ContractAddress>,
         default_token_address: ContractAddress,
     ) {
-        self.metagame.initializer(context_address);
         self.callback.initializer(default_token_address);
     }
 
@@ -561,8 +558,6 @@ mod MockEmptyCallbackContract {
         MetagameCallbackComponent::MetagameCallbackImpl<ContractState>;
     impl CallbackInternalImpl = MetagameCallbackComponent::InternalImpl<ContractState>;
 
-    #[abi(embed_v0)]
-    impl MetagameImpl = MetagameComponent::MetagameImpl<ContractState>;
     impl MetagameInternalImpl = MetagameComponent::InternalImpl<ContractState>;
 
     #[abi(embed_v0)]
@@ -595,7 +590,6 @@ mod MockEmptyCallbackContract {
         context_address: Option<ContractAddress>,
         default_token_address: ContractAddress,
     ) {
-        self.metagame.initializer(context_address);
         self.callback.initializer(default_token_address);
     }
 }

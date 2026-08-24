@@ -1,72 +1,30 @@
+/// Metagame Component
 ///
-/// Game Component
+/// Self-binding, like `MinigameTokenComponent`: the embedding contract IS the
+/// metagame. It holds no addresses — no default token (each game brings its
+/// own, resolved per mint) and no context address (a metagame that provides
+/// context embeds `ContextComponent` itself, which registers
+/// `IMETAGAME_CONTEXT_ID` on this same contract).
 ///
+/// With no addresses left to expose, there is no `IMetagame` ABI: the
+/// component is a set of internal helpers over `metagame::metagame` (`libs`),
+/// each branching on SRC5 to serve both token generations.
 #[starknet::component]
 pub mod MetagameComponent {
-    use core::num::traits::Zero;
-    use game_components_embeddable_game_standard::metagame::extensions::context::interface::IMETAGAME_CONTEXT_ID;
     use game_components_embeddable_game_standard::metagame::extensions::context::structs::GameContextDetails;
     use openzeppelin_interfaces::erc20::{IERC20Dispatcher, IERC20DispatcherTrait};
-    use openzeppelin_interfaces::introspection::{ISRC5Dispatcher, ISRC5DispatcherTrait};
-    use openzeppelin_introspection::src5::SRC5Component;
-    use openzeppelin_introspection::src5::SRC5Component::{
-        InternalTrait as SRC5InternalTrait, SRC5Impl,
-    };
     use starknet::contract_address::ContractAddress;
-    use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
-    use crate::metagame::interface::{IMETAGAME_ID, IMetagame};
     use crate::metagame::metagame as libs;
     use crate::metagame::structs::MintMetagameParams;
 
+    /// Self-bound: no addresses to hold.
     #[storage]
-    pub struct Storage {
-        context_address: ContractAddress,
-    }
-
-    #[embeddable_as(MetagameImpl)]
-    impl Metagame<
-        TContractState,
-        +HasComponent<TContractState>,
-        impl SRC5: SRC5Component::HasComponent<TContractState>,
-        +Drop<TContractState>,
-    > of IMetagame<ComponentState<TContractState>> {
-        fn context_address(self: @ComponentState<TContractState>) -> ContractAddress {
-            self.context_address.read()
-        }
-    }
+    pub struct Storage {}
 
     #[generate_trait]
     pub impl InternalImpl<
-        TContractState,
-        +HasComponent<TContractState>,
-        impl SRC5: SRC5Component::HasComponent<TContractState>,
-        +Drop<TContractState>,
+        TContractState, +HasComponent<TContractState>, +Drop<TContractState>,
     > of InternalTrait<TContractState> {
-        fn initializer(
-            ref self: ComponentState<TContractState>, context_address: Option<ContractAddress>,
-        ) {
-            self.register_src5_interfaces();
-            match context_address {
-                Option::Some(context_address) => {
-                    assert!(!context_address.is_zero(), "Metagame: Context address is zero");
-                    let context_src5_dispatcher = ISRC5Dispatcher {
-                        contract_address: context_address,
-                    };
-                    assert!(
-                        context_src5_dispatcher.supports_interface(IMETAGAME_CONTEXT_ID),
-                        "Metagame: Context contract does not support IMetagameContext",
-                    );
-                    self.context_address.write(context_address);
-                },
-                Option::None => {},
-            }
-        }
-
-        fn register_src5_interfaces(ref self: ComponentState<TContractState>) {
-            let mut src5_component = get_dep_component_mut!(ref self, SRC5);
-            src5_component.register_interface(IMETAGAME_ID);
-        }
-
         fn assert_game_registered(
             ref self: ComponentState<TContractState>, game_address: ContractAddress,
         ) {

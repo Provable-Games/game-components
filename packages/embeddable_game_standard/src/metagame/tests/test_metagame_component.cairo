@@ -3,7 +3,6 @@ use openzeppelin_interfaces::introspection::{ISRC5Dispatcher, ISRC5DispatcherTra
 use snforge_std::{ContractClassTrait, DeclareResultTrait, declare, mock_call};
 use starknet::ContractAddress;
 use crate::metagame::extensions::context::structs::GameContextDetails;
-use crate::metagame::interface::{IMETAGAME_ID, IMetagameDispatcher, IMetagameDispatcherTrait};
 
 // Interface for testing mint function
 #[starknet::interface]
@@ -28,109 +27,9 @@ trait IMockMetagame<TContractState> {
     ) -> felt252;
 }
 
-// Test T001.1: Initialize with both token and context addresses
-#[test]
-fn test_initialization_with_both_addresses() {
-    let token_address: ContractAddress = 0x123.try_into().unwrap();
-    let context_address: ContractAddress = 0x456.try_into().unwrap();
-
-    // Mock supports_interface for both addresses
-    mock_call(token_address, selector!("supports_interface"), true, 10);
-    mock_call(context_address, selector!("supports_interface"), true, 10);
-
-    // Deploy the MockMetagameContract
-    let contract = declare("MockMetagameContract").unwrap().contract_class();
-    // Serialize Option::Some(context_address) and minigame_token_address
-    let mut calldata = array![];
-    // Option::Some variant (index 0 for Some)
-    calldata.append(0);
-    calldata.append(context_address.into());
-    calldata.append(token_address.into());
-
-    let (contract_address, _) = contract.deploy(@calldata).unwrap();
-
-    let dispatcher = IMetagameDispatcher { contract_address };
-
-    // Verify addresses are stored correctly
-    assert!(dispatcher.context_address() == context_address, "Context address mismatch");
-
-    // Verify SRC5 interface registration
-    let src5_dispatcher = ISRC5Dispatcher { contract_address };
-    assert!(src5_dispatcher.supports_interface(IMETAGAME_ID), "Should support IMetagame interface");
-}
-
-// Test T001.2: Initialize with token address only (context = None)
-#[test]
-fn test_initialization_with_token_only() {
-    let token_address: ContractAddress = 0x789.try_into().unwrap();
-
-    // Mock supports_interface for token address
-    mock_call(token_address, selector!("supports_interface"), true, 10);
-
-    // Deploy with None for context_address
-    let contract = declare("MockMetagameContract").unwrap().contract_class();
-    // Serialize Option::None and minigame_token_address
-    let mut calldata = array![];
-    // Option::None variant (index 1 for None)
-    calldata.append(1);
-    calldata.append(token_address.into());
-
-    let (contract_address, _) = contract.deploy(@calldata).unwrap();
-
-    let dispatcher = IMetagameDispatcher { contract_address };
-
-    // Verify token address is stored and context is zero
-    assert!(dispatcher.context_address().is_zero(), "Context address should be zero");
-
-    // Verify SRC5 interface registration
-    let src5_dispatcher = ISRC5Dispatcher { contract_address };
-    assert!(src5_dispatcher.supports_interface(IMETAGAME_ID), "Should support IMetagame interface");
-}
-
-// Test T002.2: context_address returns correct value when set
-#[test]
-fn test_context_address_view_when_set() {
-    let token_address: ContractAddress = 0x111.try_into().unwrap();
-    let context_address: ContractAddress = 0x222.try_into().unwrap();
-
-    // Mock supports_interface for both addresses
-    mock_call(token_address, selector!("supports_interface"), true, 10);
-    mock_call(context_address, selector!("supports_interface"), true, 10);
-
-    // Deploy with both addresses
-    let contract = declare("MockMetagameContract").unwrap().contract_class();
-    let mut calldata = array![];
-    calldata.append(0); // Some(context_address)
-    calldata.append(context_address.into());
-    calldata.append(token_address.into());
-
-    let (contract_address, _) = contract.deploy(@calldata).unwrap();
-    let dispatcher = IMetagameDispatcher { contract_address };
-
-    // Verify context_address returns correct value
-    assert!(dispatcher.context_address() == context_address, "Context address mismatch");
-}
-
-// Test T002.3: context_address returns zero when None passed
-#[test]
-fn test_context_address_view_when_none() {
-    let token_address: ContractAddress = 0x333.try_into().unwrap();
-
-    // Mock supports_interface for token address
-    mock_call(token_address, selector!("supports_interface"), true, 10);
-
-    // Deploy with None for context_address
-    let contract = declare("MockMetagameContract").unwrap().contract_class();
-    let mut calldata = array![];
-    calldata.append(1); // None
-    calldata.append(token_address.into());
-
-    let (contract_address, _) = contract.deploy(@calldata).unwrap();
-    let dispatcher = IMetagameDispatcher { contract_address };
-
-    // Verify context_address returns zero
-    assert!(dispatcher.context_address().is_zero(), "Context address should be zero");
-}
+// The IMetagame ABI was removed with self-binding — there are no addresses to
+// initialize or read back, so the former T001/T002 view tests have no subject.
+// Coverage of what remains lives in the mint/fee tests below.
 
 // Test MG-U-04: Mint minimal (to address only)
 #[test]
@@ -435,8 +334,6 @@ mod MockMetagameContract {
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
 
     // Embed the implementations
-    #[abi(embed_v0)]
-    impl MetagameImpl = MetagameComponent::MetagameImpl<ContractState>;
     impl MetagameInternalImpl = MetagameComponent::InternalImpl<ContractState>;
 
     #[abi(embed_v0)]
@@ -465,9 +362,7 @@ mod MockMetagameContract {
         ref self: ContractState,
         context_address: Option<ContractAddress>,
         minigame_token_address: ContractAddress,
-    ) {
-        self.metagame.initializer(context_address);
-    }
+    ) {}
 
     // Expose mint function for testing
     #[abi(embed_v0)]
@@ -1209,8 +1104,6 @@ mod MockMetagameContractForErrors {
     component!(path: MetagameComponent, storage: metagame, event: MetagameEvent);
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
 
-    #[abi(embed_v0)]
-    impl MetagameImpl = MetagameComponent::MetagameImpl<ContractState>;
     impl MetagameInternalImpl = MetagameComponent::InternalImpl<ContractState>;
 
     #[abi(embed_v0)]
@@ -1239,9 +1132,7 @@ mod MockMetagameContractForErrors {
         ref self: ContractState,
         context_address: Option<ContractAddress>,
         minigame_token_address: ContractAddress,
-    ) {
-        self.metagame.initializer(context_address);
-    }
+    ) {}
 }
 
 // Interface for batch testing
@@ -1282,8 +1173,6 @@ mod MockMetagameContractWithBatch {
     component!(path: MetagameComponent, storage: metagame, event: MetagameEvent);
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
 
-    #[abi(embed_v0)]
-    impl MetagameImpl = MetagameComponent::MetagameImpl<ContractState>;
     impl MetagameInternalImpl = MetagameComponent::InternalImpl<ContractState>;
 
     #[abi(embed_v0)]
@@ -1312,9 +1201,7 @@ mod MockMetagameContractWithBatch {
         ref self: ContractState,
         context_address: Option<ContractAddress>,
         minigame_token_address: ContractAddress,
-    ) {
-        self.metagame.initializer(context_address);
-    }
+    ) {}
 
     #[abi(embed_v0)]
     impl MockMetagameWithBatchImpl of super::IMockMetagameWithBatch<ContractState> {

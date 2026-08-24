@@ -6,32 +6,36 @@ High-level game management component for token delegation and minting coordinati
 
 ```cairo
 #[storage]
-pub struct Storage {
-    context_address: ContractAddress,  // Optional IMetagameContext
-}
+pub struct Storage {}  // Self-bound: no addresses to hold
 ```
 
-There is no metagame-wide default token: every game brings its own, so the
-token is resolved from `game_address` on each mint.
+The component is **self-binding**, like `MinigameTokenComponent`: the embedding
+contract IS the metagame. It stores no addresses.
+
+- **No default token** — every game brings its own, resolved from
+  `game_address` on each mint.
+- **No context address** — a metagame that provides context embeds
+  `ContextComponent` itself, which registers `IMETAGAME_CONTEXT_ID` on this
+  same contract. Nothing ever resolved a provider through a stored address:
+  the legacy token takes context as a mint parameter.
 
 ## Interfaces
 
-### IMetagame (Read-only)
+### IMetagame — REMOVED
 
-| Method | Returns | Description |
-|--------|---------|-------------|
-| `context_address()` | `ContractAddress` | Optional context contract (tournaments/events) |
+With no addresses to expose, the trait had no methods left, so `IMetagame` and
+`IMETAGAME_ID` are gone (an SRC5 id cannot be derived from an empty selector
+set, and nothing probed the old
+`0x7997c74299c045696726f0f7f0165f85817acbb0964e23ff77e11e34eff6f2`).
 
-**Interface ID**: `0x1363c8de5144122290d663c4c7a10d09518fbe76475610a7027ea4770b9c179`
-
-Removing `default_token_address()` changed the id — consumers probing the
-previous value must update.
+Discover a metagame through the surfaces that still carry meaning:
+`IMETAGAME_CONTEXT_ID` for a context provider, `IMETAGAME_CALLBACK_ID` for a
+legacy callback receiver. The component now exposes internals only.
 
 ### InternalTrait (Component internals)
 
 | Method | Description |
 |--------|-------------|
-| `initializer(context_address)` | Initialize with optional context |
 | `mint(game_address, player_name, settings_id, ...)` | Mint single token |
 | `mint_batch(mints: Array<MintMetagameParams>)` | Batch mint tokens |
 | `assert_game_registered(game_address)` | Validate game registration |
@@ -86,9 +90,9 @@ mod MyMetagame {
 ## Relationships
 
 ```
-Metagame
-  |-- context_address --------> IMetagameContext (OPTIONAL)
-  `-- per-mint: game_address --> IMinigame.token_address() --> the game's token
+Metagame (self-bound: this contract)
+  |-- embeds ContextComponent ---> IMETAGAME_CONTEXT_ID on this address (OPTIONAL)
+  `-- per-mint: game_address ----> IMinigame.token_address() --> the game's token
 ```
 
 Both token generations are served, branched on SRC5: a token supporting
@@ -98,7 +102,9 @@ a legacy registry-backed token. This applies to `assert_game_registered`,
 
 ## Initialization Requirements
 
-- `context_address` (if provided) MUST support `IMETAGAME_CONTEXT_ID`, validated via SRC5 on init
+None — the component has no `initializer`. A metagame that provides context
+calls `ContextComponent::initializer()` on itself; a legacy callback receiver
+calls `MetagameCallbackComponent::initializer(token_address)`.
 
 ## Callback extension
 

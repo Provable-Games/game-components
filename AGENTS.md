@@ -125,7 +125,10 @@ Metagame ──→ MinigameTokenLegacy (ERC721) ──→ Minigame
 When `update_game()` is called, the token checks if the minter implements `IMetagameCallback` (via SRC5) and dispatches score/game_over/objective callbacks automatically.
 
 The `metagame` lib and `MetagameComponent` serve **both** generations, branching
-on SRC5.
+on SRC5. `MetagameComponent` is itself **self-bound** — it stores no addresses
+and exposes no ABI (`IMetagame`/`IMETAGAME_ID` were removed): the embedding
+contract IS the metagame, each game's token is resolved per mint, and a
+metagame that provides context embeds `ContextComponent` on its own address.
 
 ## Key Patterns
 

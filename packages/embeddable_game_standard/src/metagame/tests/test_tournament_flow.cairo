@@ -228,8 +228,6 @@ mod MockMetagameWithContext {
     component!(path: MetagameComponent, storage: metagame, event: MetagameEvent);
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
 
-    #[abi(embed_v0)]
-    impl MetagameImpl = MetagameComponent::MetagameImpl<ContractState>;
     impl MetagameInternalImpl = MetagameComponent::InternalImpl<ContractState>;
 
     #[storage]
@@ -254,9 +252,7 @@ mod MockMetagameWithContext {
         ref self: ContractState,
         context_address: Option<ContractAddress>,
         minigame_token_address: ContractAddress,
-    ) {
-        self.metagame.initializer(context_address);
-    }
+    ) {}
 
     // Expose mint function for testing
     #[abi(embed_v0)]

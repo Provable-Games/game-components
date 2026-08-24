@@ -235,8 +235,6 @@ mod TokenMockMetagameWithContext {
     component!(path: MetagameComponent, storage: metagame, event: MetagameEvent);
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
 
-    #[abi(embed_v0)]
-    impl MetagameImpl = MetagameComponent::MetagameImpl<ContractState>;
     impl MetagameInternalImpl = MetagameComponent::InternalImpl<ContractState>;
 
     #[abi(embed_v0)]
@@ -265,9 +263,7 @@ mod TokenMockMetagameWithContext {
         ref self: ContractState,
         context_address: Option<ContractAddress>,
         minigame_token_address: ContractAddress,
-    ) {
-        self.metagame.initializer(context_address);
-    }
+    ) {}
 }
 
 // ================================================================================================

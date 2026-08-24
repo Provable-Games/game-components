@@ -84,8 +84,6 @@ pub mod metagame_mock {
         }
     }
 
-    #[abi(embed_v0)]
-    impl MetagameImpl = MetagameComponent::MetagameImpl<ContractState>;
     impl MetagameInternalImpl = MetagameComponent::InternalImpl<ContractState>;
     impl ContextInternalImpl = ContextComponent::InternalImpl<ContractState>;
 
@@ -256,7 +254,6 @@ pub mod metagame_mock {
             supports_context: bool,
         ) {
             // Initialize the metagame component
-            self.metagame.initializer(context_address);
 
             // Initialize local storage
             self.token_counter.write(0);

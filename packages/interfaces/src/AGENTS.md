@@ -29,7 +29,6 @@ Single source of truth for all game component interface definitions. Other packa
 ## Interface ID Constants
 
 ```cairo
-pub const IMETAGAME_ID: felt252 = 0x...;
 pub const IMETAGAME_CONTEXT_ID: felt252 = 0x...;
 pub const IMINIGAME_ID: felt252 = 0x...;
 pub const IMINIGAME_SETTINGS_ID: felt252 = 0x...;

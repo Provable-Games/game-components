@@ -14,5 +14,3 @@ pub use context::{
     IMetagameContextSVGDispatcher, IMetagameContextSVGDispatcherTrait,
 };
 
-// Re-export commonly used items at top level
-pub use core::{IMETAGAME_ID, IMetagame, IMetagameDispatcher, IMetagameDispatcherTrait};

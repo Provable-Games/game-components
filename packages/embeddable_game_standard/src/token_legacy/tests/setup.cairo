@@ -1,4 +1,3 @@
-use game_components_embeddable_game_standard::metagame::interface::IMetagameDispatcher;
 use game_components_embeddable_game_standard::minigame::interface::IMinigameDispatcher;
 use game_components_embeddable_game_standard::registry::interface::IMinigameRegistryDispatcher;
 
@@ -68,14 +67,13 @@ pub fn deploy_basic_mock_game() -> (IMinigameDispatcher, IMockGameDispatcher) {
 
 /// Deploy metagame_mock contract
 pub fn deploy_mock_metagame_contract() -> (
-    IMetagameDispatcher, IMetagameMockInitDispatcher, IMetagameMockDispatcher,
+    ContractAddress, IMetagameMockInitDispatcher, IMetagameMockDispatcher,
 ) {
     let contract = declare("metagame_mock").unwrap().contract_class();
     let (contract_address, _) = contract.deploy(@array![]).unwrap();
-    let metagame_dispatcher = IMetagameDispatcher { contract_address };
     let metagame_init_dispatcher = IMetagameMockInitDispatcher { contract_address };
     let metagame_mock_dispatcher = IMetagameMockDispatcher { contract_address };
-    (metagame_dispatcher, metagame_init_dispatcher, metagame_mock_dispatcher)
+    (contract_address, metagame_init_dispatcher, metagame_mock_dispatcher)
 }
 
 /// Deploy MinigameRegistryContract with default parameters
@@ -124,7 +122,7 @@ pub fn deploy_mock_context_provider() -> ContractAddress {
 /// Deploy MockMetagameWithContext contract
 pub fn deploy_mock_metagame_with_context(
     context_address: Option<ContractAddress>, minigame_token_address: ContractAddress,
-) -> IMetagameDispatcher {
+) -> ContractAddress {
     let contract = declare("TokenMockMetagameWithContext").unwrap().contract_class();
 
     let mut constructor_calldata = array![];
@@ -143,7 +141,7 @@ pub fn deploy_mock_metagame_with_context(
     constructor_calldata.append(minigame_token_address.into());
 
     let (contract_address, _) = contract.deploy(@constructor_calldata).unwrap();
-    IMetagameDispatcher { contract_address }
+    contract_address
 }
 
 /// Deploy standalone MockGame contract (returns just the address)

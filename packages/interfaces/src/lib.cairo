@@ -55,12 +55,11 @@ pub use leaderboard::{
 // Re-export commonly used items at top level for convenience
 // Metagame
 pub use metagame::{
-    IMETAGAME_CALLBACK_ID, IMETAGAME_CONTEXT_ID, IMETAGAME_ID, IMetagame, IMetagameCallback,
-    IMetagameCallbackDispatcher, IMetagameCallbackDispatcherTrait, IMetagameContext,
-    IMetagameContextDetails, IMetagameContextDetailsDispatcher,
-    IMetagameContextDetailsDispatcherTrait, IMetagameContextDispatcher,
-    IMetagameContextDispatcherTrait, IMetagameContextSVG, IMetagameContextSVGDispatcher,
-    IMetagameContextSVGDispatcherTrait, IMetagameDispatcher, IMetagameDispatcherTrait,
+    IMETAGAME_CALLBACK_ID, IMETAGAME_CONTEXT_ID, IMetagameCallback, IMetagameCallbackDispatcher,
+    IMetagameCallbackDispatcherTrait, IMetagameContext, IMetagameContextDetails,
+    IMetagameContextDetailsDispatcher, IMetagameContextDetailsDispatcherTrait,
+    IMetagameContextDispatcher, IMetagameContextDispatcherTrait, IMetagameContextSVG,
+    IMetagameContextSVGDispatcher, IMetagameContextSVGDispatcherTrait,
 };
 
 // Minigame
