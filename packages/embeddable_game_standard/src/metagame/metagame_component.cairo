@@ -93,9 +93,12 @@ pub mod MetagameComponent {
             // current owner.
             let recipient = libs::get_game_creator_address(game_address);
 
-            // Transfer fee
+            // Transfer fee. ERC20s that signal failure by returning false
+            // instead of reverting must not be reported as a paid fee.
             let erc20 = IERC20Dispatcher { contract_address: payment_token };
-            erc20.transfer(recipient, fee_amount.into());
+            assert!(
+                erc20.transfer(recipient, fee_amount.into()), "Metagame: game fee transfer failed",
+            );
 
             fee_amount
         }
