@@ -1654,3 +1654,64 @@ fn test_set_token_config_rejects_min_duration_gt_max_duration() {
     admin_dispatcher.set_token_config(sell_token, Option::Some(invalid_config));
     stop_cheat_caller_address(contract);
 }
+
+// ============================================================================
+// Strict Per-Token Config Mode (require_token_config)
+// ============================================================================
+
+#[test]
+#[should_panic(expected: 'No config for token')]
+fn test_require_token_config_blocks_unconfigured_token() {
+    let buyback_token = deploy_mock_erc20("Buyback", "BUY");
+    let sell_token = deploy_mock_erc20("Sell", "SELL");
+    let contract = setup_buyback_contract(buyback_token);
+    let dispatcher = IBuybackDispatcher { contract_address: contract };
+    let admin_dispatcher = IBuybackAdminDispatcher { contract_address: contract };
+
+    start_cheat_caller_address(contract, OWNER());
+    admin_dispatcher.set_require_token_config(true);
+    stop_cheat_caller_address(contract);
+
+    // No per-token config exists: strict mode must refuse the global fallback
+    dispatcher.get_effective_config(sell_token);
+}
+
+#[test]
+fn test_require_token_config_allows_configured_token_and_toggles_off() {
+    let buyback_token = deploy_mock_erc20("Buyback", "BUY");
+    let sell_token = deploy_mock_erc20("Sell", "SELL");
+    let unconfigured = deploy_mock_erc20("Other", "OTH");
+    let contract = setup_buyback_contract(buyback_token);
+    let dispatcher = IBuybackDispatcher { contract_address: contract };
+    let admin_dispatcher = IBuybackAdminDispatcher { contract_address: contract };
+
+    start_cheat_caller_address(contract, OWNER());
+    admin_dispatcher.set_require_token_config(true);
+    admin_dispatcher
+        .set_token_config(
+            sell_token, Option::Some(defaults::token_config_with(buyback_token, TREASURY())),
+        );
+    stop_cheat_caller_address(contract);
+
+    // Explicitly-configured token trades under strict mode
+    let config = dispatcher.get_effective_config(sell_token);
+    assert(config.buy_token == buyback_token, 'Wrong buy token');
+
+    // Toggling strict mode off restores the historic global fallback
+    start_cheat_caller_address(contract, OWNER());
+    admin_dispatcher.set_require_token_config(false);
+    stop_cheat_caller_address(contract);
+    let fallback = dispatcher.get_effective_config(unconfigured);
+    assert(fallback.buy_token == buyback_token, 'Fallback should work again');
+}
+
+#[test]
+#[should_panic(expected: 'Caller is not the owner')]
+fn test_non_owner_cannot_set_require_token_config() {
+    let buyback_token = deploy_mock_erc20("Buyback", "BUY");
+    let contract = setup_buyback_contract(buyback_token);
+    let admin_dispatcher = IBuybackAdminDispatcher { contract_address: contract };
+
+    start_cheat_caller_address(contract, USER1());
+    admin_dispatcher.set_require_token_config(true);
+}

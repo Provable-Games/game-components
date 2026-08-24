@@ -57,6 +57,11 @@ pub mod AutonomousBuyback {
             self.buyback.set_global_config(config);
         }
 
+        fn set_require_token_config(ref self: ContractState, required: bool) {
+            self.ownable.assert_only_owner();
+            self.buyback.set_require_token_config(required);
+        }
+
         fn set_token_config(
             ref self: ContractState,
             sell_token: ContractAddress,

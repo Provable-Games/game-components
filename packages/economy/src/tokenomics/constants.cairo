@@ -33,6 +33,7 @@ pub mod Errors {
     pub const NO_BUY_TOKEN_TO_SWEEP: felt252 = 'No buy token to sweep';
 
     // Config consistency errors
+    pub const NO_CONFIG_FOR_TOKEN: felt252 = 'No config for token';
     pub const BUY_TOKEN_MISMATCH: felt252 = 'Buy token mismatch';
     pub const FEE_MISMATCH: felt252 = 'Fee mismatch';
     pub const MIN_DELAY_GT_MAX_DELAY: felt252 = 'min_delay > max_delay';
