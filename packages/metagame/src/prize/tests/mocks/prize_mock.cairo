@@ -131,6 +131,12 @@ pub mod PrizeMock {
         self.prize._get_custom_shares(prize_id)
     }
 
+    /// One custom share by 1-indexed position, without rebuilding the array
+    #[external(v0)]
+    fn get_custom_share_at(self: @ContractState, prize_id: u64, position: u32) -> u16 {
+        self.prize._get_custom_share_at(prize_id, position)
+    }
+
     /// Get extension address for a context and prize
     #[external(v0)]
     fn get_extension_address(

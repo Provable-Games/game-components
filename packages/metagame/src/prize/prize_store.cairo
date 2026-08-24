@@ -16,8 +16,16 @@ pub trait PrizeStoreTrait<T> {
     /// are routed via the component's `resolve_prize` before this is
     /// called and never reach the store bridge.
     fn get_token_record(self: @T, prize_id: u64) -> PrizeRecord;
-    /// Get custom shares for a prize (reconstructs from packed storage)
+    /// Get custom shares for a prize (reconstructs from packed storage).
+    ///
+    /// O(count/15) storage reads. Only view surfaces need the whole curve —
+    /// a claim wants exactly one share, so it calls `get_custom_share_at`.
     fn get_custom_shares(self: @T, prize_id: u64) -> Array<u16>;
+    /// One share by 1-indexed position, without rebuilding the array.
+    ///
+    /// Mirrors `EntryFeeStoreTrait::get_custom_share_at`. Shares are packed
+    /// 15 to a felt, so this is a single storage read at any position.
+    fn get_custom_share_at(self: @T, prize_id: u64, position: u32) -> u16;
     /// Store a token prize. Takes the host-assigned context + sponsor
     /// alongside the variant payload; converts to StoredPrize for
     /// storage.
@@ -67,10 +75,19 @@ pub impl PrizeStoreImpl<T, +Store<T>, +Drop<T>> of PrizeStoreTrait<T> {
                             Option::Some(dist) => {
                                 match dist {
                                     game_components_utilities::distribution::structs::Distribution::Custom(_) => {
-                                        let shares = self.get_custom_shares(prize_id);
+                                        // Return the shape with an empty span
+                                        // rather than rebuilding the curve.
+                                        // Loading it is O(count/15) storage
+                                        // reads on a path that runs on every
+                                        // claim, and a claim needs exactly one
+                                        // share — `get_custom_share_at`.
+                                        // View surfaces call
+                                        // `get_custom_shares` explicitly.
+                                        // Mirrors the entry-fee store, which
+                                        // has always done this.
                                         Option::Some(
                                             game_components_utilities::distribution::structs::Distribution::Custom(
-                                                shares.span(),
+                                                array![].span(),
                                             ),
                                         )
                                     },
@@ -97,6 +114,13 @@ pub impl PrizeStoreImpl<T, +Store<T>, +Drop<T>> of PrizeStoreTrait<T> {
         };
         record.prize = Prize::Token(new_payload);
         record
+    }
+
+    fn get_custom_share_at(self: @T, prize_id: u64, position: u32) -> u16 {
+        let index: u32 = position - 1;
+        let slot_index: u8 = (index / CUSTOM_SHARES_PER_SLOT.into()).try_into().unwrap();
+        let index_in_slot: u8 = (index % CUSTOM_SHARES_PER_SLOT.into()).try_into().unwrap();
+        Store::get_custom_shares_packed(self, prize_id, slot_index).get_share(index_in_slot)
     }
 
     fn get_custom_shares(self: @T, prize_id: u64) -> Array<u16> {
