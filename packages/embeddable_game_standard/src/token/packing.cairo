@@ -45,8 +45,19 @@
 // - salt: Client-provided value for multicall scenarios. Client must increment
 //   salt for each mint within the same transaction to avoid collisions.
 //
-// All DivRem operations use native u128_safe_divmod Sierra hints for ~64% gas
-// savings compared to u256 mask+divide unpacking.
+// CODEC (shared with SDM next-death-mountain's model packing — same method):
+// - PACK is pure felt252 arithmetic: a valid token id occupies at most 251
+//   bits, so every term and partial sum is below the Stark prime and native
+//   felt add/mul is exact — no u128 multiplications, no u256 assembly.
+// - UNPACK splits each u128 half ONCE at a field-aligned boundary so that the
+//   resulting words fit u64, then extracts every field with cheap u64 DivRem:
+//   * low splits at bit 60 (start_delay|end_delay boundary): the bottom word
+//     (minted_at + start_delay) fits u64; one more u128 DivRem at end_delay
+//     brings the 43-bit top (settings_id + minted_by + soulbound) into u64.
+//   * high splits at bit 58: metadata (65 bits) is the quotient and stays
+//     u128 (it is returned as u128 anyway); the 58-bit remainder word
+//     (tx_hash + salt + paymaster + has_context + objective_id) fits u64.
+//   Full unpack: 3 u128 + 6 u64 DivRems (was 10 u128 DivRems).
 
 use game_components_interfaces::structs::token::{Lifecycle, TokenMetadata};
 // Shared with the legacy token: extracting the last 10 bits of the tx hash is
@@ -70,17 +81,49 @@ pub struct PackedTokenId {
     pub metadata: u128 // 65 bits - inert data the game interprets
 }
 
-/// NonZero<u128> constants for DivRem-based unpacking.
-/// Each constant is a power of 2 matching a field width.
-/// DivRem extracts field (remainder) and shifts (quotient) in one operation.
+/// NonZero<u128> constants — used only for the per-half word splits and the
+/// helpers that shift a field to the bottom of a u128 in one DivRem.
 mod nz128 {
-    pub const TWO_POW_1: NonZero<u128> = 0x2;
     pub const TWO_POW_10: NonZero<u128> = 0x400;
-    pub const TWO_POW_16: NonZero<u128> = 0x10000;
     pub const TWO_POW_25: NonZero<u128> = 0x2000000;
-    pub const TWO_POW_26: NonZero<u128> = 0x4000000;
-    pub const TWO_POW_30: NonZero<u128> = 0x40000000;
     pub const TWO_POW_35: NonZero<u128> = 0x800000000;
+    pub const TWO_POW_58: NonZero<u128> = 0x400000000000000;
+    pub const TWO_POW_60: NonZero<u128> = 0x1000000000000000;
+    pub const TWO_POW_85: NonZero<u128> = 0x2000000000000000000000;
+    pub const TWO_POW_101: NonZero<u128> = 0x20000000000000000000000000;
+    pub const TWO_POW_127: NonZero<u128> = 0x80000000000000000000000000000000;
+}
+
+/// NonZero<u64> constants — every field extraction after the word splits runs
+/// on u64 operands (u64 DivRem is markedly cheaper than u128 DivRem).
+mod nz64 {
+    pub const TWO_POW_1: NonZero<u64> = 0x2;
+    pub const TWO_POW_10: NonZero<u64> = 0x400;
+    pub const TWO_POW_16: NonZero<u64> = 0x10000;
+    pub const TWO_POW_26: NonZero<u64> = 0x4000000;
+    pub const TWO_POW_27: NonZero<u64> = 0x8000000;
+    pub const TWO_POW_28: NonZero<u64> = 0x10000000;
+    pub const TWO_POW_35: NonZero<u64> = 0x800000000;
+}
+
+/// felt252 shift constants for the pure-felt pack. Low-half fields shift by
+/// their bit offset; high-half fields shift by their offset WITHIN the high
+/// word and the assembled high word shifts by SHIFT_128 at the end.
+mod felt_shift {
+    // Low half offsets
+    pub const SHIFT_35: felt252 = 0x800000000; // start_delay
+    pub const SHIFT_60: felt252 = 0x1000000000000000; // end_delay
+    pub const SHIFT_85: felt252 = 0x2000000000000000000000; // settings_id
+    pub const SHIFT_101: felt252 = 0x20000000000000000000000000; // minted_by
+    pub const SHIFT_127: felt252 = 0x80000000000000000000000000000000; // soulbound
+    // High half offsets (within the high word)
+    pub const SHIFT_10: felt252 = 0x400; // salt
+    pub const SHIFT_26: felt252 = 0x4000000; // paymaster
+    pub const SHIFT_27: felt252 = 0x8000000; // has_context
+    pub const SHIFT_28: felt252 = 0x10000000; // objective_id
+    pub const SHIFT_58: felt252 = 0x400000000000000; // metadata
+    // Low/high boundary
+    pub const SHIFT_128: felt252 = 0x100000000000000000000000000000000;
 }
 
 /// Packs token metadata into a felt252 token_id using the standard
@@ -114,84 +157,89 @@ pub fn pack_token_id(
     assert!(objective_id <= 0x3FFFFFFF, "PackedTokenId: objective_id exceeds 30-bit limit");
     assert!(metadata <= 0x1FFFFFFFFFFFFFFFF, "PackedTokenId: metadata exceeds 65-bit limit");
 
-    // Low u128: minted_at(35) + start_delay(25) + end_delay(25) + settings_id(16)
-    //           + minted_by(26) + soulbound(1) = 128 bits
-    let soulbound_u128: u128 = if soulbound {
+    // Pure felt252 packing (SDM method): the asserts above bound every field,
+    // so the total occupies at most 251 bits and every term and partial sum
+    // is below the Stark field prime — native felt arithmetic is exact.
+    let soulbound_f: felt252 = if soulbound {
+        1
+    } else {
+        0
+    };
+    let paymaster_f: felt252 = if paymaster {
+        1
+    } else {
+        0
+    };
+    let has_context_f: felt252 = if has_context {
         1
     } else {
         0
     };
 
-    let low: u128 = Into::<u64, u128>::into(minted_at)
-        + Into::<u32, u128>::into(start_delay) * 0x800000000_u128 // shift 35
-        + Into::<u32, u128>::into(end_delay) * 0x1000000000000000_u128 // shift 60
-        + Into::<u32, u128>::into(settings_id) * 0x2000000000000000000000_u128 // shift 85
-        + Into::<u64, u128>::into(minted_by) * 0x20000000000000000000000000_u128 // shift 101
-        + soulbound_u128 * 0x80000000000000000000000000000000_u128; // shift 127
+    // Low u128: minted_at(35) + start_delay(25) + end_delay(25) + settings_id(16)
+    //           + minted_by(26) + soulbound(1) = 128 bits
+    let low: felt252 = minted_at.into()
+        + start_delay.into() * felt_shift::SHIFT_35
+        + end_delay.into() * felt_shift::SHIFT_60
+        + settings_id.into() * felt_shift::SHIFT_85
+        + minted_by.into() * felt_shift::SHIFT_101
+        + soulbound_f * felt_shift::SHIFT_127;
 
     // High u128: tx_hash(10) + salt(16) + paymaster(1) + has_context(1)
     //            + objective_id(30) + metadata(65) = 123 bits — fully
     //            allocated, no reserved region. salt is a u16 written into a
     //            16-bit field, so unlike the legacy token's 10-bit salt it
     //            needs no mask.
-    let paymaster_u128: u128 = if paymaster {
-        1
-    } else {
-        0
-    };
-    let has_context_u128: u128 = if has_context {
-        1
-    } else {
-        0
-    };
+    let high: felt252 = Into::<u16, felt252>::into(tx_hash & 0x3FF)
+        + salt.into() * felt_shift::SHIFT_10
+        + paymaster_f * felt_shift::SHIFT_26
+        + has_context_f * felt_shift::SHIFT_27
+        + objective_id.into() * felt_shift::SHIFT_28
+        + metadata.into() * felt_shift::SHIFT_58;
 
-    let high: u128 = Into::<u16, u128>::into(tx_hash & 0x3FF)
-        + Into::<u16, u128>::into(salt) * 0x400_u128 // shift 10
-        + paymaster_u128 * 0x4000000_u128 // shift 26
-        + has_context_u128 * 0x8000000_u128 // shift 27
-        + Into::<u32, u128>::into(objective_id) * 0x10000000_u128 // shift 28
-        + metadata * 0x400000000000000_u128; // shift 58
-
-    let packed = u256 { low, high };
-    packed.try_into().unwrap()
+    low + high * felt_shift::SHIFT_128
 }
 
-/// Unpacks a token_id into its component fields using DivRem chains on
-/// each u128 half. metadata is the topmost high field, so it falls out as the
-/// final quotient.
+/// Unpacks a token_id into its component fields (SDM word-split method):
+/// each u128 half is split once at a field-aligned boundary so the resulting
+/// words fit u64, and every field extraction runs as a cheap u64 DivRem.
 #[inline(always)]
 pub fn unpack_token_id(token_id: felt252) -> PackedTokenId {
     let packed: u256 = token_id.into();
-    let low = packed.low;
-    let high = packed.high;
 
-    // Unpack low u128: minted_at(35) | start_delay(25) | end_delay(25)
-    //                  | settings_id(16) | minted_by(26) | soulbound(1)
-    let (hi, minted_at) = DivRem::div_rem(low, nz128::TWO_POW_35);
-    let (hi, start_delay) = DivRem::div_rem(hi, nz128::TWO_POW_25);
-    let (hi, end_delay) = DivRem::div_rem(hi, nz128::TWO_POW_25);
-    let (hi, settings_id) = DivRem::div_rem(hi, nz128::TWO_POW_16);
-    let (soulbound_u128, minted_by) = DivRem::div_rem(hi, nz128::TWO_POW_26);
+    // Low half — split at bit 60 (the start_delay|end_delay boundary): the
+    // bottom word (minted_at + start_delay, 60 bits) fits u64; one more u128
+    // DivRem peels end_delay and leaves a 43-bit top word
+    // (settings_id + minted_by + soulbound) that also fits u64.
+    let (low_rest, low_word) = DivRem::div_rem(packed.low, nz128::TWO_POW_60);
+    let low_word: u64 = low_word.try_into().unwrap();
+    let (start_delay, minted_at) = DivRem::div_rem(low_word, nz64::TWO_POW_35);
+    let (low_top, end_delay) = DivRem::div_rem(low_rest, nz128::TWO_POW_25);
+    let low_top: u64 = low_top.try_into().unwrap();
+    let (rest, settings_id) = DivRem::div_rem(low_top, nz64::TWO_POW_16);
+    let (soulbound_u64, minted_by) = DivRem::div_rem(rest, nz64::TWO_POW_26);
 
-    // Unpack high u128: tx_hash(10) | salt(16) | paymaster(1) | has_context(1)
-    //                   | objective_id(30) | metadata(65, final quotient)
-    let (hi, tx_hash) = DivRem::div_rem(high, nz128::TWO_POW_10);
-    let (hi, salt) = DivRem::div_rem(hi, nz128::TWO_POW_16);
-    let (hi, paymaster_u128) = DivRem::div_rem(hi, nz128::TWO_POW_1);
-    let (hi, has_context_u128) = DivRem::div_rem(hi, nz128::TWO_POW_1);
-    let (metadata, objective_id) = DivRem::div_rem(hi, nz128::TWO_POW_30);
+    // High half — split at bit 58: metadata (65 bits) is the quotient and
+    // stays u128; the 58-bit remainder word
+    // (tx_hash + salt + paymaster + has_context + objective_id) fits u64.
+    let (metadata, high_word) = DivRem::div_rem(packed.high, nz128::TWO_POW_58);
+    let high_word: u64 = high_word.try_into().unwrap();
+    let (rest, tx_hash) = DivRem::div_rem(high_word, nz64::TWO_POW_10);
+    let (rest, salt) = DivRem::div_rem(rest, nz64::TWO_POW_16);
+    let (rest, paymaster_u64) = DivRem::div_rem(rest, nz64::TWO_POW_1);
+    let (objective_id, has_context_u64) = DivRem::div_rem(rest, nz64::TWO_POW_1);
 
     PackedTokenId {
-        minted_at: minted_at.try_into().unwrap(),
+        minted_at,
         start_delay: start_delay.try_into().unwrap(),
         end_delay: end_delay.try_into().unwrap(),
         settings_id: settings_id.try_into().unwrap(),
-        minted_by: minted_by.try_into().unwrap(),
-        soulbound: soulbound_u128 == 1,
+        minted_by,
+        soulbound: soulbound_u64 == 1,
         tx_hash: tx_hash.try_into().unwrap(),
         salt: salt.try_into().unwrap(),
-        paymaster: paymaster_u128 == 1,
-        has_context: has_context_u128 == 1,
+        paymaster: paymaster_u64 == 1,
+        has_context: has_context_u64 == 1,
         objective_id: objective_id.try_into().unwrap(),
         metadata,
     }
@@ -209,8 +257,10 @@ pub fn unpack_minted_at(token_id: felt252) -> u64 {
 #[inline(always)]
 pub fn unpack_start_delay(token_id: felt252) -> u32 {
     let packed: u256 = token_id.into();
-    let (hi, _) = DivRem::div_rem(packed.low, nz128::TWO_POW_35);
-    let (_, start_delay) = DivRem::div_rem(hi, nz128::TWO_POW_25);
+    // Bottom word (60 bits) fits u64; start_delay is its quotient at bit 35.
+    let (_, low_word) = DivRem::div_rem(packed.low, nz128::TWO_POW_60);
+    let low_word: u64 = low_word.try_into().unwrap();
+    let (start_delay, _) = DivRem::div_rem(low_word, nz64::TWO_POW_35);
     start_delay.try_into().unwrap()
 }
 
@@ -218,9 +268,9 @@ pub fn unpack_start_delay(token_id: felt252) -> u32 {
 #[inline(always)]
 pub fn unpack_end_delay(token_id: felt252) -> u32 {
     let packed: u256 = token_id.into();
-    let (hi, _) = DivRem::div_rem(packed.low, nz128::TWO_POW_35);
-    let (hi, _) = DivRem::div_rem(hi, nz128::TWO_POW_25);
-    let (_, end_delay) = DivRem::div_rem(hi, nz128::TWO_POW_25);
+    // end_delay sits at bits 60-84: shift to bottom, then take 25 bits.
+    let (rest, _) = DivRem::div_rem(packed.low, nz128::TWO_POW_60);
+    let (_, end_delay) = DivRem::div_rem(rest, nz128::TWO_POW_25);
     end_delay.try_into().unwrap()
 }
 
@@ -228,10 +278,11 @@ pub fn unpack_end_delay(token_id: felt252) -> u32 {
 #[inline(always)]
 pub fn unpack_settings_id(token_id: felt252) -> u32 {
     let packed: u256 = token_id.into();
-    let (hi, _) = DivRem::div_rem(packed.low, nz128::TWO_POW_35);
-    let (hi, _) = DivRem::div_rem(hi, nz128::TWO_POW_25);
-    let (hi, _) = DivRem::div_rem(hi, nz128::TWO_POW_25);
-    let (_, settings_id) = DivRem::div_rem(hi, nz128::TWO_POW_16);
+    // Everything above bit 85 is 43 bits — fits u64; settings_id is its
+    // bottom 16 bits.
+    let (top, _) = DivRem::div_rem(packed.low, nz128::TWO_POW_85);
+    let top: u64 = top.try_into().unwrap();
+    let (_, settings_id) = DivRem::div_rem(top, nz64::TWO_POW_16);
     settings_id.try_into().unwrap()
 }
 
@@ -239,23 +290,20 @@ pub fn unpack_settings_id(token_id: felt252) -> u32 {
 #[inline(always)]
 pub fn unpack_minted_by(token_id: felt252) -> u64 {
     let packed: u256 = token_id.into();
-    let (hi, _) = DivRem::div_rem(packed.low, nz128::TWO_POW_35);
-    let (hi, _) = DivRem::div_rem(hi, nz128::TWO_POW_25);
-    let (hi, _) = DivRem::div_rem(hi, nz128::TWO_POW_25);
-    let (hi, _) = DivRem::div_rem(hi, nz128::TWO_POW_16);
-    let (_, minted_by) = DivRem::div_rem(hi, nz128::TWO_POW_26);
-    minted_by.try_into().unwrap()
+    // Everything above bit 101 is 27 bits — fits u64; minted_by is its
+    // bottom 26 bits.
+    let (top, _) = DivRem::div_rem(packed.low, nz128::TWO_POW_101);
+    let top: u64 = top.try_into().unwrap();
+    let (_, minted_by) = DivRem::div_rem(top, nz64::TWO_POW_26);
+    minted_by
 }
 
 /// Helper to unpack the soulbound flag from a token_id
 #[inline(always)]
 pub fn unpack_soulbound(token_id: felt252) -> bool {
     let packed: u256 = token_id.into();
-    let (hi, _) = DivRem::div_rem(packed.low, nz128::TWO_POW_35);
-    let (hi, _) = DivRem::div_rem(hi, nz128::TWO_POW_25);
-    let (hi, _) = DivRem::div_rem(hi, nz128::TWO_POW_25);
-    let (hi, _) = DivRem::div_rem(hi, nz128::TWO_POW_16);
-    let (soulbound_u128, _) = DivRem::div_rem(hi, nz128::TWO_POW_26);
+    // soulbound is the top bit of the low half — a single quotient.
+    let (soulbound_u128, _) = DivRem::div_rem(packed.low, nz128::TWO_POW_127);
     soulbound_u128 == 1
 }
 
@@ -271,8 +319,11 @@ pub fn unpack_tx_hash(token_id: felt252) -> u16 {
 #[inline(always)]
 pub fn unpack_salt(token_id: felt252) -> u16 {
     let packed: u256 = token_id.into();
-    let (hi, _) = DivRem::div_rem(packed.high, nz128::TWO_POW_10);
-    let (_, salt) = DivRem::div_rem(hi, nz128::TWO_POW_16);
+    // The 58-bit high word fits u64; salt sits above tx_hash's 10 bits.
+    let (_, high_word) = DivRem::div_rem(packed.high, nz128::TWO_POW_58);
+    let high_word: u64 = high_word.try_into().unwrap();
+    let (rest, _) = DivRem::div_rem(high_word, nz64::TWO_POW_10);
+    let (_, salt) = DivRem::div_rem(rest, nz64::TWO_POW_16);
     salt.try_into().unwrap()
 }
 
@@ -280,10 +331,11 @@ pub fn unpack_salt(token_id: felt252) -> u16 {
 #[inline(always)]
 pub fn unpack_paymaster(token_id: felt252) -> bool {
     let packed: u256 = token_id.into();
-    let (hi, _) = DivRem::div_rem(packed.high, nz128::TWO_POW_10);
-    let (hi, _) = DivRem::div_rem(hi, nz128::TWO_POW_16);
-    let (_, paymaster_u128) = DivRem::div_rem(hi, nz128::TWO_POW_1);
-    paymaster_u128 == 1
+    let (_, high_word) = DivRem::div_rem(packed.high, nz128::TWO_POW_58);
+    let high_word: u64 = high_word.try_into().unwrap();
+    let (rest, _) = DivRem::div_rem(high_word, nz64::TWO_POW_26);
+    let (_, paymaster_u64) = DivRem::div_rem(rest, nz64::TWO_POW_1);
+    paymaster_u64 == 1
 }
 
 /// Helper to unpack the has_context flag from a token_id. The context
@@ -292,11 +344,11 @@ pub fn unpack_paymaster(token_id: felt252) -> bool {
 #[inline(always)]
 pub fn unpack_has_context(token_id: felt252) -> bool {
     let packed: u256 = token_id.into();
-    let (hi, _) = DivRem::div_rem(packed.high, nz128::TWO_POW_10);
-    let (hi, _) = DivRem::div_rem(hi, nz128::TWO_POW_16);
-    let (hi, _) = DivRem::div_rem(hi, nz128::TWO_POW_1);
-    let (_, has_context_u128) = DivRem::div_rem(hi, nz128::TWO_POW_1);
-    has_context_u128 == 1
+    let (_, high_word) = DivRem::div_rem(packed.high, nz128::TWO_POW_58);
+    let high_word: u64 = high_word.try_into().unwrap();
+    let (rest, _) = DivRem::div_rem(high_word, nz64::TWO_POW_27);
+    let (_, has_context_u64) = DivRem::div_rem(rest, nz64::TWO_POW_1);
+    has_context_u64 == 1
 }
 
 /// Helper to unpack objective_id from a token_id (inert data the game
@@ -304,24 +356,19 @@ pub fn unpack_has_context(token_id: felt252) -> bool {
 #[inline(always)]
 pub fn unpack_objective_id(token_id: felt252) -> u32 {
     let packed: u256 = token_id.into();
-    let (hi, _) = DivRem::div_rem(packed.high, nz128::TWO_POW_10);
-    let (hi, _) = DivRem::div_rem(hi, nz128::TWO_POW_16);
-    let (hi, _) = DivRem::div_rem(hi, nz128::TWO_POW_1);
-    let (hi, _) = DivRem::div_rem(hi, nz128::TWO_POW_1);
-    let (_, objective_id) = DivRem::div_rem(hi, nz128::TWO_POW_30);
+    // objective_id is the top field of the 58-bit high word — a quotient.
+    let (_, high_word) = DivRem::div_rem(packed.high, nz128::TWO_POW_58);
+    let high_word: u64 = high_word.try_into().unwrap();
+    let (objective_id, _) = DivRem::div_rem(high_word, nz64::TWO_POW_28);
     objective_id.try_into().unwrap()
 }
 
 /// Helper to unpack the 65-bit metadata field from a token_id (inert
-/// data the game interprets). Topmost high field — the final quotient.
+/// data the game interprets). Topmost high field — a single quotient.
 #[inline(always)]
 pub fn unpack_metadata(token_id: felt252) -> u128 {
     let packed: u256 = token_id.into();
-    let (hi, _) = DivRem::div_rem(packed.high, nz128::TWO_POW_10);
-    let (hi, _) = DivRem::div_rem(hi, nz128::TWO_POW_16);
-    let (hi, _) = DivRem::div_rem(hi, nz128::TWO_POW_1);
-    let (hi, _) = DivRem::div_rem(hi, nz128::TWO_POW_1);
-    let (metadata, _) = DivRem::div_rem(hi, nz128::TWO_POW_30);
+    let (metadata, _) = DivRem::div_rem(packed.high, nz128::TWO_POW_58);
     metadata
 }
 
