@@ -6,8 +6,8 @@
 // boundary). This layout is OWNED by the lite token and is deliberately NOT the
 // full token's `token::structs::pack_token_id` layout — the full layout serves
 // legacy denshokan and keeps its bit positions untouched; the lite token drops
-// the fields it never writes (game_id, objective_id, has_context, paymaster,
-// metadata) and widens the ones it actually uses (settings_id, salt).
+// the fields it never writes (game_id) and widens the ones it uses beyond the
+// full token's widths (settings_id 16, salt 16, metadata 65).
 // Indexers must branch their decoder by contract generation.
 //
 // Low u128 (128 bits):
@@ -25,17 +25,18 @@
 // |-----------|------------------|----------|--------------------------------|
 // | 0-9       | tx_hash          | 10 bits  | last 10 bits of tx hash        |
 // | 10-25     | salt             | 16 bits  | 65,536 tokens per tx (multicall)|
-// | 26-122    | reserved         | 97 bits  | component-owned, ALWAYS zero   |
+// | 26        | paymaster        | 1 bit    | bool                           |
+// | 27        | has_context      | 1 bit    | bool                           |
+// | 28-57     | objective_id     | 30 bits  | 1,073,741,823 objectives       |
+// | 58-122    | metadata         | 65 bits  | game-interpreted inert data    |
 // Total: 128 + 123 = 251 bits (max for felt252)
 //
 // Max value: (2^123 - 1) * 2^128 + (2^128 - 1) = 2^251 - 1 < P (Stark prime)
 //
-// RESERVED REGION CONTRACT: bits [26-122] of the high half are owned by the
-// component and are ALWAYS packed as zero — there is no pack parameter and no
-// public unpack accessor for them. Future fields (protocol- or game-facing)
-// are carved from this region later; because every id minted under this layout
-// provably decodes the region as 0, any future field decodes as 0 ("absent")
-// on all existing ids, making such carve-outs non-breaking by construction.
+// The high half is fully allocated — there is no reserved region: every spare
+// bit was merged into the single writable `metadata` field, in line with the
+// original layout's single-field design. A future protocol-owned field would
+// require a new contract generation (accepted trade-off).
 //
 // COLLISION PROTECTION:
 // - tx_hash: Last 10 bits of starknet transaction hash. Since tx_hash includes
@@ -53,8 +54,6 @@ use game_components_interfaces::structs::token::{Lifecycle, TokenMetadata};
 pub use crate::token::structs::extract_tx_hash_bits;
 
 /// Data structure representing the lite packed token ID fields (for convenience).
-/// The reserved region (high bits 26-122) is deliberately absent — it is
-/// component-owned, always zero, and has no accessor.
 #[derive(Copy, Drop, Serde)]
 pub struct LitePackedTokenId {
     pub minted_at: u64, // 35 bits
@@ -64,17 +63,23 @@ pub struct LitePackedTokenId {
     pub minted_by: u64, // 26 bits
     pub soulbound: bool, // 1 bit
     pub tx_hash: u16, // 10 bits - last 10 bits of transaction hash for collision protection
-    pub salt: u16 // 16 bits - client-provided salt for multicall collision protection
+    pub salt: u16, // 16 bits - client-provided salt for multicall collision protection
+    pub paymaster: bool, // 1 bit
+    pub has_context: bool, // 1 bit - context data itself is NOT stored (full-token parity)
+    pub objective_id: u32, // 30 bits - inert data the game interprets
+    pub metadata: u128 // 65 bits - inert data the game interprets
 }
 
 /// NonZero<u128> constants for DivRem-based unpacking.
 /// Each constant is a power of 2 matching a field width.
 /// DivRem extracts field (remainder) and shifts (quotient) in one operation.
 mod nz128 {
+    pub const TWO_POW_1: NonZero<u128> = 0x2;
     pub const TWO_POW_10: NonZero<u128> = 0x400;
     pub const TWO_POW_16: NonZero<u128> = 0x10000;
     pub const TWO_POW_25: NonZero<u128> = 0x2000000;
     pub const TWO_POW_26: NonZero<u128> = 0x4000000;
+    pub const TWO_POW_30: NonZero<u128> = 0x40000000;
     pub const TWO_POW_35: NonZero<u128> = 0x800000000;
 }
 
@@ -83,7 +88,8 @@ mod nz128 {
 ///
 /// Low u128: minted_at(35) | start_delay(25) | end_delay(25) | settings_id(16)
 ///           | minted_by(26) | soulbound(1) = 128 bits
-/// High u128: tx_hash(10) | salt(16) | reserved(97, always zero) = 123 bits
+/// High u128: tx_hash(10) | salt(16) | paymaster(1) | has_context(1)
+///            | objective_id(30) | metadata(65) = 123 bits (fully allocated)
 #[inline(always)]
 pub fn pack_lite_token_id(
     minted_at: u64,
@@ -94,6 +100,10 @@ pub fn pack_lite_token_id(
     soulbound: bool,
     tx_hash: u16,
     salt: u16,
+    paymaster: bool,
+    has_context: bool,
+    objective_id: u32,
+    metadata: u128,
 ) -> felt252 {
     // Validate all fields fit within their bit allocations
     assert!(minted_at <= 0x7FFFFFFFF, "LitePackedTokenId: minted_at exceeds 35-bit limit");
@@ -101,6 +111,8 @@ pub fn pack_lite_token_id(
     assert!(end_delay <= 0x1FFFFFF, "LitePackedTokenId: end_delay exceeds 25-bit limit");
     assert!(settings_id <= 0xFFFF, "LitePackedTokenId: settings_id exceeds 16-bit limit");
     assert!(minted_by <= 0x3FFFFFF, "LitePackedTokenId: minted_by exceeds 26-bit limit");
+    assert!(objective_id <= 0x3FFFFFFF, "LitePackedTokenId: objective_id exceeds 30-bit limit");
+    assert!(metadata <= 0x1FFFFFFFFFFFFFFFF, "LitePackedTokenId: metadata exceeds 65-bit limit");
 
     // Low u128: minted_at(35) + start_delay(25) + end_delay(25) + settings_id(16)
     //           + minted_by(26) + soulbound(1) = 128 bits
@@ -117,18 +129,36 @@ pub fn pack_lite_token_id(
         + Into::<u64, u128>::into(minted_by) * 0x20000000000000000000000000_u128 // shift 101
         + soulbound_u128 * 0x80000000000000000000000000000000_u128; // shift 127
 
-    // High u128: tx_hash(10) + salt(16) = 26 bits; bits 26-122 (reserved) are
-    // never written — always zero. salt is a u16 written into a 16-bit field,
-    // so unlike the full token's 10-bit salt it needs no mask.
+    // High u128: tx_hash(10) + salt(16) + paymaster(1) + has_context(1)
+    //            + objective_id(30) + metadata(65) = 123 bits — fully
+    //            allocated, no reserved region. salt is a u16 written into a
+    //            16-bit field, so unlike the full token's 10-bit salt it
+    //            needs no mask.
+    let paymaster_u128: u128 = if paymaster {
+        1
+    } else {
+        0
+    };
+    let has_context_u128: u128 = if has_context {
+        1
+    } else {
+        0
+    };
+
     let high: u128 = Into::<u16, u128>::into(tx_hash & 0x3FF)
-        + Into::<u16, u128>::into(salt) * 0x400_u128; // shift 10
+        + Into::<u16, u128>::into(salt) * 0x400_u128 // shift 10
+        + paymaster_u128 * 0x4000000_u128 // shift 26
+        + has_context_u128 * 0x8000000_u128 // shift 27
+        + Into::<u32, u128>::into(objective_id) * 0x10000000_u128 // shift 28
+        + metadata * 0x400000000000000_u128; // shift 58
 
     let packed = u256 { low, high };
     packed.try_into().unwrap()
 }
 
-/// Unpacks a lite token_id into its component fields using DivRem chains on each
-/// u128 half. The reserved region (high quotient past salt) is discarded.
+/// Unpacks a lite token_id into its component fields using DivRem chains on
+/// each u128 half. metadata is the topmost high field, so it falls out as the
+/// final quotient.
 #[inline(always)]
 pub fn unpack_lite_token_id(token_id: felt252) -> LitePackedTokenId {
     let packed: u256 = token_id.into();
@@ -143,9 +173,13 @@ pub fn unpack_lite_token_id(token_id: felt252) -> LitePackedTokenId {
     let (hi, settings_id) = DivRem::div_rem(hi, nz128::TWO_POW_16);
     let (soulbound_u128, minted_by) = DivRem::div_rem(hi, nz128::TWO_POW_26);
 
-    // Unpack high u128: tx_hash(10) | salt(16) | reserved(97, dropped)
+    // Unpack high u128: tx_hash(10) | salt(16) | paymaster(1) | has_context(1)
+    //                   | objective_id(30) | metadata(65, final quotient)
     let (hi, tx_hash) = DivRem::div_rem(high, nz128::TWO_POW_10);
-    let (_, salt) = DivRem::div_rem(hi, nz128::TWO_POW_16);
+    let (hi, salt) = DivRem::div_rem(hi, nz128::TWO_POW_16);
+    let (hi, paymaster_u128) = DivRem::div_rem(hi, nz128::TWO_POW_1);
+    let (hi, has_context_u128) = DivRem::div_rem(hi, nz128::TWO_POW_1);
+    let (metadata, objective_id) = DivRem::div_rem(hi, nz128::TWO_POW_30);
 
     LitePackedTokenId {
         minted_at: minted_at.try_into().unwrap(),
@@ -156,6 +190,10 @@ pub fn unpack_lite_token_id(token_id: felt252) -> LitePackedTokenId {
         soulbound: soulbound_u128 == 1,
         tx_hash: tx_hash.try_into().unwrap(),
         salt: salt.try_into().unwrap(),
+        paymaster: paymaster_u128 == 1,
+        has_context: has_context_u128 == 1,
+        objective_id: objective_id.try_into().unwrap(),
+        metadata,
     }
 }
 
@@ -238,13 +276,68 @@ pub fn unpack_salt(token_id: felt252) -> u16 {
     salt.try_into().unwrap()
 }
 
+/// Helper to unpack the paymaster flag from a lite token_id
+#[inline(always)]
+pub fn unpack_paymaster(token_id: felt252) -> bool {
+    let packed: u256 = token_id.into();
+    let (hi, _) = DivRem::div_rem(packed.high, nz128::TWO_POW_10);
+    let (hi, _) = DivRem::div_rem(hi, nz128::TWO_POW_16);
+    let (_, paymaster_u128) = DivRem::div_rem(hi, nz128::TWO_POW_1);
+    paymaster_u128 == 1
+}
+
+/// Helper to unpack the has_context flag from a lite token_id. The context
+/// data itself is NOT stored on the token (full-token parity) — only this bit
+/// records that context was supplied at mint.
+#[inline(always)]
+pub fn unpack_has_context(token_id: felt252) -> bool {
+    let packed: u256 = token_id.into();
+    let (hi, _) = DivRem::div_rem(packed.high, nz128::TWO_POW_10);
+    let (hi, _) = DivRem::div_rem(hi, nz128::TWO_POW_16);
+    let (hi, _) = DivRem::div_rem(hi, nz128::TWO_POW_1);
+    let (_, has_context_u128) = DivRem::div_rem(hi, nz128::TWO_POW_1);
+    has_context_u128 == 1
+}
+
+/// Helper to unpack objective_id from a lite token_id (inert data the game
+/// interprets — the lite token has no completion machinery)
+#[inline(always)]
+pub fn unpack_objective_id(token_id: felt252) -> u32 {
+    let packed: u256 = token_id.into();
+    let (hi, _) = DivRem::div_rem(packed.high, nz128::TWO_POW_10);
+    let (hi, _) = DivRem::div_rem(hi, nz128::TWO_POW_16);
+    let (hi, _) = DivRem::div_rem(hi, nz128::TWO_POW_1);
+    let (hi, _) = DivRem::div_rem(hi, nz128::TWO_POW_1);
+    let (_, objective_id) = DivRem::div_rem(hi, nz128::TWO_POW_30);
+    objective_id.try_into().unwrap()
+}
+
+/// Helper to unpack the 65-bit metadata field from a lite token_id (inert
+/// data the game interprets). Topmost high field — the final quotient.
+#[inline(always)]
+pub fn unpack_metadata(token_id: felt252) -> u128 {
+    let packed: u256 = token_id.into();
+    let (hi, _) = DivRem::div_rem(packed.high, nz128::TWO_POW_10);
+    let (hi, _) = DivRem::div_rem(hi, nz128::TWO_POW_16);
+    let (hi, _) = DivRem::div_rem(hi, nz128::TWO_POW_1);
+    let (hi, _) = DivRem::div_rem(hi, nz128::TWO_POW_1);
+    let (metadata, _) = DivRem::div_rem(hi, nz128::TWO_POW_30);
+    metadata
+}
+
 /// Convert LitePackedTokenId to the shared TokenMetadata struct.
 ///
-/// The lite token has no mutable state and never writes the full token's
-/// extension fields, so `game_id`, `objective_id`, `has_context`, `paymaster`,
-/// `metadata`, `game_over`, `completed_objective` and `completed_at` are all
-/// zeroed. The lifecycle is reconstructed from minted_at + delays with the same
-/// rule as the full token: end_delay == 0 means "no expiration" (end == 0).
+/// The lite token has no mutable state and never resolves a game id, so
+/// `game_id`, `game_over`, `completed_objective` and `completed_at` are all
+/// zeroed (the game contract is authoritative — `completed_objective` stays
+/// always-false even when an objective_id is packed). The lifecycle is
+/// reconstructed from minted_at + delays with the same rule as the full
+/// token: end_delay == 0 means "no expiration" (end == 0).
+///
+/// `metadata` is 0 here, NOT a truncation of the packed value: the shared
+/// struct's `metadata` field is `u16` (the deployed full token's ABI, which
+/// cannot change), while the lite id packs 65 bits. Read the real value via
+/// `IMinigameTokenLite::mint_metadata` / `unpack_metadata`.
 #[inline(always)]
 pub fn to_token_metadata(packed: LitePackedTokenId) -> TokenMetadata {
     TokenMetadata {
@@ -264,9 +357,9 @@ pub fn to_token_metadata(packed: LitePackedTokenId) -> TokenMetadata {
         game_over: false,
         completed_objective: false,
         completed_at: 0,
-        has_context: false,
-        objective_id: 0,
-        paymaster: false,
+        has_context: packed.has_context,
+        objective_id: packed.objective_id,
+        paymaster: packed.paymaster,
         metadata: 0,
     }
 }

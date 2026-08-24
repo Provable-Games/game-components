@@ -16,9 +16,10 @@ two-phase init, a standalone preset, game-side call helpers).
 | Rule | Consequence |
 | --- | --- |
 | Self-bound: the embedding contract is the game | No stored game address, no registry, no `game_id` resolution, no SRC5 probes on mint; there is no game_address view or mint parameter at all — consumers identify a lite token by SRC5 (`IMINIGAME_TOKEN_LITE_ID`) |
-| No mutable token state | No `update_game`, no metagame callbacks; `is_playable` = lifecycle window only, zero storage reads. `player_name` is the only per-token storage (owner-renameable) |
+| No mutable token state | No `update_game`, no metagame callbacks; `is_playable` = lifecycle window only, zero storage reads. `player_name` (owner-renameable) and the mint-time `client_url` are the only per-token storage |
 | Token id layout is lite-native | `token_lite::packing::pack_lite_token_id` (251-bit) — its OWN layout, not the full token's (`token::structs` stays untouched, serving legacy denshokan). Indexers must branch their decoder by contract generation |
-| Strip principle: machinery deleted, capability + read views kept | The ABI is NOT `IMinigameToken`-compatible: the full token's dead mint params (game_address, objective, context, client_url, renderer, skills, paymaster, metadata) are gone along with their reject-asserts, and the compat views (`game_address`, `game_registry_address`) with them. Cheap client-facing read views (`token_metadata`, `is_playable`, `settings_id`, `minted_by`, `is_soulbound`, …) stay |
+| Strip principle: machinery deleted, capability + read views kept | The ABI is NOT `IMinigameToken`-compatible: the full token's `game_address`, `renderer_address` and `skills_address` mint params are gone, and the compat views (`game_address`, `game_registry_address`) with them. Cheap client-facing read views (`token_metadata`, `is_playable`, `settings_id`, `minted_by`, `is_soulbound`, …) stay |
+| Restored mint params keep their original full-token behaviors | `objective_id` (30-bit packed, INERT data the game interprets — no completion machinery; `completed_objective` stays always-false), `context` (sets the has_context bit only; the data is NOT stored — full-token parity), `client_url` (storage-backed, `client_url` view, empty default), `paymaster` (packed bit), `metadata` (u128 param packed into a 65-bit field, read via `mint_metadata` — the shared `TokenMetadata.metadata: u16` cannot hold it and stays 0, never truncated) |
 | Game contract is the authority | Games gate dead/finished runs themselves (internal `assert_owner_and_playable`) and call `refresh_metadata` (ERC-4906) after actions |
 
 ## Token ID Layout (lite-native, 251 bits)
@@ -40,23 +41,23 @@ Low u128 (128 bits):
 
 High u128 (123 bits):
 
-| Bits   | Field    | Size | Notes                                     |
-| ------ | -------- | ---- | ----------------------------------------- |
-| 0-9    | tx_hash  | 10   | last 10 bits of tx hash                   |
-| 10-25  | salt     | 16   | per-tx multicall counter (65,536 per tx)  |
-| 26-122 | reserved | 97   | component-owned, ALWAYS packed as zero    |
+| Bits   | Field        | Size | Notes                                        |
+| ------ | ------------ | ---- | -------------------------------------------- |
+| 0-9    | tx_hash      | 10   | last 10 bits of tx hash                      |
+| 10-25  | salt         | 16   | per-tx multicall counter (65,536 per tx)     |
+| 26     | paymaster    | 1    | bool                                         |
+| 27     | has_context  | 1    | bool; the context data itself is NOT stored  |
+| 28-57  | objective_id | 30   | inert data the game interprets               |
+| 58-122 | metadata     | 65   | inert data the game interprets; u128 param, must be ≤ 2^65−1 |
 
-**Reserved-region ownership contract:** bits [26-122] of the high half belong
-to the component. They are always packed as zero — there is no pack parameter
-and no public unpack accessor. Future fields (protocol- or game-facing) are
-carved from this region later; since every id minted under this layout
-provably decodes the region as 0, any future field reads as 0 ("absent") on
-all existing ids, making carve-outs non-breaking by construction. Do not stamp
-data into these bits from outside the component.
+The high half is **fully allocated — there is no reserved region**: every
+spare bit was merged into the single writable `metadata` field, in line with
+the original layout's single-field design. A future protocol-owned field would
+require a new contract generation (accepted trade-off).
 
 ## Interface (IMinigameTokenLite)
 
-**Interface ID:** `IMINIGAME_TOKEN_LITE_ID = 0x2ec4714e0b5610e5cffd262be7c69b721a6865f9a8ce7e1094c8211f3beaa37`
+**Interface ID:** `IMINIGAME_TOKEN_LITE_ID = 0x15951d6d145a5a13c454bd75f0787e43e531a80a4bfb42a01fc4859e6fb7aea`
 (derived over the trait minus `refresh_metadata`, mirroring the refresh
 exclusion from `IMINIGAME_TOKEN_ID`)
 
@@ -68,11 +69,11 @@ registry/game-address views.
 
 | Method | Cost | Notes |
 | --- | --- | --- |
-| `mint(player_name, settings_id, start, end, to, soulbound, salt)` | 1 minter-map read (warm), optional name write, ERC721 mint | Trimmed 7-arg shape — no game address (self-bound), none of the full token's dead params |
-| `mint_batch_recipients(player_name, settings_id, start, end, recipients, soulbound, salt)` | batch work hoisted; per token: pack + optional name write + ERC721 mint | Global salt counter over the lite 16-bit field (`salt + sum(counts) - 1 <= 0xFFFF`) |
+| `mint(player_name, settings_id, start, end, objective_id, context, client_url, to, soulbound, paymaster, salt, metadata)` | 1 minter-map read (warm), optional name/url writes, ERC721 mint | 12-arg shape — no game address (self-bound), no renderer/skills. objective/paymaster/metadata pack into the id; context sets the has_context bit only; client_url written when Some |
+| `mint_batch_recipients(player_name, settings_id, start, end, objective_id, context, client_url, recipients, soulbound, paymaster, salt, metadata)` | batch work hoisted; per token: pack + optional name/url writes + ERC721 mint | Global salt counter over the lite 16-bit field (`salt + sum(counts) - 1 <= 0xFFFF`); packed fields (incl. the has_context bit) shared across the batch, client_url written per token |
 | `is_playable` | 0 storage reads | Lifecycle window only — no game_over latch |
-| `token_metadata`, `settings_id`, `minted_by`, `is_soulbound` | 0 storage reads | Pure unpack of the token id — kept as client/RPC conveniences (also derivable from the documented id layout) |
-| `player_name`, `minted_by_address` | 1 storage read | |
+| `token_metadata`, `settings_id`, `minted_by`, `is_soulbound`, `objective_id`, `mint_metadata` | 0 storage reads | Pure unpack of the token id — kept as client/RPC conveniences (also derivable from the documented id layout). `token_metadata`'s u16 `metadata` field is always 0 (65 bits cannot fit; use `mint_metadata`) |
+| `player_name`, `minted_by_address`, `client_url` | 1 storage read | |
 | `refresh_metadata` | event only | Same advisory/no-existence-check semantics as the full token |
 | `update_player_name` | owner-gated write | Emits `MetadataUpdate` |
 
@@ -87,7 +88,8 @@ capability and read views stay):
 * `refresh_metadata_batch` — a multicall of singles.
 
 Not present (reverts with ENTRYPOINT_NOT_FOUND): `update_game`, all batch
-views, objectives/settings/context/renderer/skills/enumerable surfaces.
+views, the objectives/settings/context creation and renderer/skills/enumerable
+surfaces.
 
 ## Composition
 

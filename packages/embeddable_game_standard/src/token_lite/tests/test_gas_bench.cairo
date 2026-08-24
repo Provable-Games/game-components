@@ -137,17 +137,23 @@ fn setup_full() -> (IMinigameTokenDispatcher, ERC721ABIDispatcher, ContractAddre
 }
 
 fn mint_lite(token: IMinigameTokenLiteDispatcher, _game: ContractAddress, salt: u16) -> felt252 {
-    // Trimmed 7-arg lite mint — no game address (self-bound), none of the
-    // full token's dead parameters.
+    // Lite mint — no game address (self-bound); the restored full-token
+    // params (objective/context/client_url/paymaster/metadata) neutral, to
+    // stay comparable with the full-token bench call below.
     token
         .mint(
             Option::Some('bench'),
             Option::None,
             Option::Some(START_TIME),
             Option::Some(END_TIME),
+            Option::None,
+            Option::None,
+            Option::None,
             ALICE(),
             false,
+            false,
             salt,
+            0,
         )
 }
 

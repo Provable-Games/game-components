@@ -2,8 +2,8 @@
 ///
 /// Single-game, storage-minimal variant of `CoreTokenComponent`, built for
 /// deployments (e.g. death-mountain-style dungeons) that never used the
-/// multi-game registry, objectives, context, skills, per-token renderers or
-/// client urls, and that keep game-over / objective completion authority in
+/// multi-game registry, objective-completion machinery, skills or per-token
+/// renderers, and that keep game-over / objective completion authority in
 /// the game contract itself.
 ///
 /// **Self-binding only (one-address architecture):** this component is
@@ -25,8 +25,15 @@
 /// * **`refresh_metadata_batch`** — a multicall of singles.
 /// * **Mutable token state** — no `game_over`/`completed_objective` latch,
 ///   no `update_game`, no metagame callbacks. `refresh_metadata` (ERC-4906)
-///   is the only post-action hook; `player_name` is the only per-token
-///   storage (owner-renameable via `update_player_name`).
+///   is the only post-action hook; `player_name` (owner-renameable via
+///   `update_player_name`) and the mint-time `client_url` are the only
+///   per-token storage.
+///
+/// Mint parameters carry their original full-token behaviors: `objective_id`,
+/// `paymaster` and the (65-bit, u128) `metadata` are packed into the id as
+/// inert data the game interprets; `context` sets the id's has_context bit
+/// only (the data is NOT stored — full-token parity); `client_url` is
+/// storage-backed with a `client_url` view.
 ///
 /// Token ids use the lite-native 251-bit layout in `token_lite::packing` —
 /// NOT the full token's `token::structs::pack_token_id` layout (which stays
@@ -35,6 +42,7 @@
 #[starknet::component]
 pub mod CoreTokenLiteComponent {
     use core::num::traits::Zero;
+    use game_components_interfaces::structs::metagame::GameContextDetails;
     use game_components_interfaces::token::lite::{IMINIGAME_TOKEN_LITE_ID, IMinigameTokenLite};
     use openzeppelin_introspection::src5::SRC5Component;
     use openzeppelin_introspection::src5::SRC5Component::InternalTrait as SRC5InternalTrait;
@@ -49,12 +57,14 @@ pub mod CoreTokenLiteComponent {
     use crate::token::traits::OptionalMinter;
     use crate::token_lite::packing::{
         extract_tx_hash_bits, pack_lite_token_id, to_token_metadata, unpack_lite_token_id,
-        unpack_minted_by, unpack_settings_id, unpack_soulbound,
+        unpack_metadata, unpack_minted_by, unpack_objective_id, unpack_settings_id,
+        unpack_soulbound,
     };
 
     #[storage]
     pub struct Storage {
         token_player_names: Map<felt252, felt252>,
+        token_client_url: Map<felt252, ByteArray>,
     }
 
     #[event]
@@ -86,6 +96,8 @@ pub mod CoreTokenLiteComponent {
             // No mutable state exists; the game contract is authoritative for
             // game_over / objective completion — the returned metadata reports
             // game_over/completed_objective/completed_at as false/0 always.
+            // Its u16 `metadata` field is 0 (never a truncation): the lite id
+            // packs 65 bits — read them via `mint_metadata`.
             to_token_metadata(unpack_lite_token_id(token_id))
         }
 
@@ -119,15 +131,32 @@ pub mod CoreTokenLiteComponent {
             unpack_soulbound(token_id)
         }
 
+        fn objective_id(self: @ComponentState<TContractState>, token_id: felt252) -> u32 {
+            unpack_objective_id(token_id)
+        }
+
+        fn client_url(self: @ComponentState<TContractState>, token_id: felt252) -> ByteArray {
+            self.token_client_url.entry(token_id).read()
+        }
+
+        fn mint_metadata(self: @ComponentState<TContractState>, token_id: felt252) -> u128 {
+            unpack_metadata(token_id)
+        }
+
         fn mint(
             ref self: ComponentState<TContractState>,
             player_name: Option<felt252>,
             settings_id: Option<u32>,
             start: Option<u64>,
             end: Option<u64>,
+            objective_id: Option<u32>,
+            context: Option<GameContextDetails>,
+            client_url: Option<ByteArray>,
             to: ContractAddress,
             soulbound: bool,
+            paymaster: bool,
             salt: u16,
+            metadata: u128,
         ) -> felt252 {
             let caller = get_caller_address();
             let current_time = get_block_timestamp();
@@ -163,7 +192,10 @@ pub mod CoreTokenLiteComponent {
 
             // settings_id keeps its Option<u32> call-site type; the pack
             // asserts the value fits the lite layout's 16-bit field. Likewise
-            // minted_by (u64 from OptionalMinter::add_minter) must fit 26 bits.
+            // minted_by (u64 from OptionalMinter::add_minter) must fit 26
+            // bits, objective_id 30 bits and metadata 65 bits. context sets
+            // the has_context bit only — the data itself is NOT stored
+            // (full-token parity: its context hook was a documented no-op).
             let final_token_id = pack_lite_token_id(
                 current_time,
                 start_delay,
@@ -173,10 +205,17 @@ pub mod CoreTokenLiteComponent {
                 soulbound,
                 tx_hash_bits,
                 salt,
+                paymaster,
+                context.is_some(),
+                objective_id.unwrap_or(0),
+                metadata,
             );
 
             if let Option::Some(name) = player_name {
                 self.token_player_names.entry(final_token_id).write(name);
+            }
+            if let Option::Some(url) = client_url {
+                self.token_client_url.entry(final_token_id).write(url);
             }
 
             let mut contract = self.get_contract_mut();
@@ -202,9 +241,14 @@ pub mod CoreTokenLiteComponent {
             settings_id: Option<u32>,
             start: Option<u64>,
             end: Option<u64>,
+            objective_id: Option<u32>,
+            context: Option<GameContextDetails>,
+            client_url: Option<ByteArray>,
             recipients: Array<MintBatchRecipient>,
             soulbound: bool,
+            paymaster: bool,
             salt: u16,
+            metadata: u128,
         ) -> Array<felt252> {
             let recipient_count = recipients.len();
             assert!(recipient_count > 0, "MinigameTokenLite: recipients array cannot be empty");
@@ -254,8 +298,12 @@ pub mod CoreTokenLiteComponent {
             let mut contract_self = self.get_contract_mut();
             let minted_by = MinterOpt::add_minter(ref contract_self, caller);
             let validated_settings_id = settings_id.unwrap_or(0);
+            let validated_objective_id = objective_id.unwrap_or(0);
+            // Shared has_context bit for all minted tokens; the context data
+            // itself is NOT stored (full-token parity).
+            let has_context = context.is_some();
 
-            // Per-token work: pack, optional name write, ERC721 mint.
+            // Per-token work: pack, optional name/url writes, ERC721 mint.
             let mut token_ids: Array<felt252> = ArrayTrait::new();
             let mut salt_offset: u16 = 0;
             let mut r_idx: u32 = 0;
@@ -275,10 +323,20 @@ pub mod CoreTokenLiteComponent {
                         soulbound,
                         tx_hash_bits,
                         salt + salt_offset,
+                        paymaster,
+                        has_context,
+                        validated_objective_id,
+                        metadata,
                     );
 
                     if let Option::Some(name) = player_name {
                         self.token_player_names.entry(final_token_id).write(name);
+                    }
+                    match @client_url {
+                        Option::Some(url) => {
+                            self.token_client_url.entry(final_token_id).write(url.clone());
+                        },
+                        Option::None => {},
                     }
 
                     let mut contract = self.get_contract_mut();

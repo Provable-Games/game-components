@@ -178,10 +178,13 @@ pub mod LiteGameMock {
             get_contract_address()
         }
 
-        /// `IMinigame::mint_game` keeps the full 15-arg trait shape; the lite
-        /// mint takes only the supported subset, so the parameters the lite
-        /// token dropped must be neutral — rejected here rather than silently
-        /// discarded.
+        /// `IMinigame::mint_game` keeps the full 15-arg trait shape. The lite
+        /// mint now carries objective/context/client_url/paymaster/metadata
+        /// with their original full-token behaviors, so those forward
+        /// naturally (the standard trait's u16 metadata widens into the lite
+        /// u128 field via `.into()`); only renderer/skills — which the lite
+        /// token has no surface for — must be neutral, rejected here rather
+        /// than silently discarded.
         fn mint_game(
             self: @ContractState,
             player_name: Option<felt252>,
@@ -199,15 +202,24 @@ pub mod LiteGameMock {
             salt: u16,
             metadata: u16,
         ) -> felt252 {
-            assert!(objective_id.is_none(), "LiteGameMock: objectives not supported");
-            assert!(context.is_none(), "LiteGameMock: context not supported");
-            assert!(client_url.is_none(), "LiteGameMock: client_url not supported");
             assert!(renderer_address.is_none(), "LiteGameMock: renderer not supported");
             assert!(skills_address.is_none(), "LiteGameMock: skills not supported");
-            assert!(!paymaster, "LiteGameMock: paymaster not supported");
-            assert!(metadata == 0, "LiteGameMock: metadata not supported");
             let token = IMinigameTokenLiteDispatcher { contract_address: get_contract_address() };
-            token.mint(player_name, settings_id, start, end, to, soulbound, salt)
+            token
+                .mint(
+                    player_name,
+                    settings_id,
+                    start,
+                    end,
+                    objective_id,
+                    context,
+                    client_url,
+                    to,
+                    soulbound,
+                    paymaster,
+                    salt,
+                    metadata.into(),
+                )
         }
 
         fn mint_game_batch(self: @ContractState, mints: Array<MintGameParams>) -> Array<felt252> {
@@ -216,13 +228,16 @@ pub mod LiteGameMock {
             let mut index: u32 = 0;
             while index < mints.len() {
                 let m = mints.at(index);
-                assert!(m.objective_id.is_none(), "LiteGameMock: objectives not supported");
-                assert!(m.context.is_none(), "LiteGameMock: context not supported");
-                assert!(m.client_url.is_none(), "LiteGameMock: client_url not supported");
                 assert!(m.renderer_address.is_none(), "LiteGameMock: renderer not supported");
                 assert!(m.skills_address.is_none(), "LiteGameMock: skills not supported");
-                assert!(!*m.paymaster, "LiteGameMock: paymaster not supported");
-                assert!(*m.metadata == 0, "LiteGameMock: metadata not supported");
+                let context = match m.context {
+                    Option::Some(c) => Option::Some(c.clone()),
+                    Option::None => Option::None,
+                };
+                let client_url = match m.client_url {
+                    Option::Some(u) => Option::Some(u.clone()),
+                    Option::None => Option::None,
+                };
                 token_ids
                     .append(
                         token
@@ -231,9 +246,14 @@ pub mod LiteGameMock {
                                 *m.settings_id,
                                 *m.start,
                                 *m.end,
+                                *m.objective_id,
+                                context,
+                                client_url,
                                 *m.to,
                                 *m.soulbound,
+                                *m.paymaster,
                                 *m.salt,
+                                (*m.metadata).into(),
                             ),
                     );
                 index += 1;

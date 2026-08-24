@@ -96,22 +96,22 @@ The library-class pattern (already used by budokan's rewards class) dissolved th
 
 ## Phase 5 — lite-native token-id layout (`game-components`, this branch)
 
-Phase 1 kept the full token's 251-bit id layout bit-identical (zeros in the dead fields) to avoid touching call sites during the migration. With no lite deployment on mainnet yet, that compatibility shim was retired before first release: the lite token now has its **own** layout in `token_lite/packing.cairo` (`pack_lite_token_id`, `unpack_lite_token_id`, per-field helpers — same DivRem-chain style as `token::structs`, which stays untouched and keeps serving legacy denshokan). The dead fields (`game_id`, `objective_id`, `has_context`, `paymaster`, `metadata`) are gone from the id; `settings_id` and `salt` widen to 16 bits each; every remaining spare bit is consolidated into one component-owned reserved region.
+Phase 1 kept the full token's 251-bit id layout bit-identical (zeros in the dead fields) to avoid touching call sites during the migration. With no lite deployment on mainnet yet, that compatibility shim was retired before first release: the lite token now has its **own** layout in `token_lite/packing.cairo` (`pack_lite_token_id`, `unpack_lite_token_id`, per-field helpers — same DivRem-chain style as `token::structs`, which stays untouched and keeps serving legacy denshokan). The one truly dead field (`game_id` — self-bound, always this contract) is gone from the id; `settings_id` and `salt` widen to 16 bits each; `metadata` widens from the full token's 16 bits to a 65-bit field absorbing every remaining spare bit.
 
 Low u128 (128 bits): `minted_at(35) | start_delay(25) | end_delay(25) | settings_id(16) | minted_by(26) | soulbound(1)`
 
-High u128 (123 bits): `tx_hash(10) | salt(16) | reserved(97, always zero)`
+High u128 (123 bits): `tx_hash(10) | salt(16) | paymaster(1) | has_context(1) | objective_id(30) | metadata(65)`
 
 | Bits (low) | Field | Bits (high) | Field |
 |---|---|---|---|
 | 0–34 | minted_at (unix s) | 0–9 | tx_hash (last 10 bits) |
 | 35–59 | start_delay | 10–25 | salt (16-bit multicall counter) |
-| 60–84 | end_delay (0 = immortal) | 26–122 | reserved — component-owned, ALWAYS zero |
-| 85–100 | settings_id (≤ 0xFFFF, ABI stays `Option<u32>`) | | |
-| 101–126 | minted_by (26-bit minter id) | | |
-| 127 | soulbound | | |
+| 60–84 | end_delay (0 = immortal) | 26 | paymaster |
+| 85–100 | settings_id (≤ 0xFFFF, ABI stays `Option<u32>`) | 27 | has_context (context data NOT stored) |
+| 101–126 | minted_by (26-bit minter id) | 28–57 | objective_id (inert, game-interpreted) |
+| 127 | soulbound | 58–122 | metadata (65-bit, u128 param ≤ 2^65−1) |
 
-The reserved region has no pack parameter and no public unpack accessor; future protocol- or game-facing fields are carved from it later, and because every lite id provably decodes it as 0, such carve-outs are non-breaking by construction. The batch salt bound rises to `salt + sum(counts) - 1 <= 0xFFFF`, and `settings_id > 0xFFFF` is now rejected at mint. **The indexer must branch its token-id decode by contract generation:** ids from legacy denshokan decode with the full layout, ids from lite (one-address) contracts with this one.
+The high half is **fully allocated — there is no reserved region**: the spare bits were merged into the single writable `metadata` field, in line with the original layout's single-field design. A future protocol-owned field would require a new contract generation — an accepted trade-off. The batch salt bound rises to `salt + sum(counts) - 1 <= 0xFFFF`, and `settings_id > 0xFFFF`, `objective_id > 2^30−1` and `metadata > 2^65−1` are rejected at mint. **The indexer must branch its token-id decode by contract generation:** ids from legacy denshokan decode with the full layout, ids from lite (one-address) contracts with this one.
 
 ### The ABI strip (same branch, deliberate break)
 
@@ -119,15 +119,16 @@ With the layout compat shim retired, the ABI compat shim went with it — before
 
 | Change | Detail |
 |---|---|
-| `mint` trimmed to 7 args | `mint(player_name, settings_id, start, end, to, soulbound, salt)` — the dead full-token params (`game_address`, `objective_id`, `context`, `client_url`, `renderer_address`, `skills_address`, `paymaster`, `metadata`) are gone **along with their reject-asserts**; `mint_batch_recipients` trims identically (recipients array in place of `to`) |
+| `mint` reshaped to 12 args | `mint(player_name, settings_id, start, end, objective_id, context, client_url, to, soulbound, paymaster, salt, metadata)` — no `game_address` (self-bound) and no `renderer_address`/`skills_address` (no per-token renderer/skills surface); `mint_batch_recipients` matches (recipients array in place of `to`) |
+| Restored params keep their original full-token behaviors | `objective_id` → packed field, INERT data the game interprets (no completion machinery — `completed_objective` stays always-false); `context` → sets the id's has_context bit only, the data is NOT stored (full-token parity: its context hook was a documented no-op); `client_url` → storage-backed with a `client_url` view (empty default); `paymaster` → packed bit; `metadata` → u128 param packed into the 65-bit field, read via the `mint_metadata` view — the shared `TokenMetadata.metadata: u16` (deployed full-token ABI) cannot hold it and stays 0, never truncated |
 | Compat views deleted | `game_address` (was: returns self) and `game_registry_address` (was: returns zero) — consumers now SRC5-probe `IMINIGAME_TOKEN_LITE_ID` instead of resolving addresses; `metagame::assert_game_registered` probes the lite id first and falls through to the unchanged full-token registry path |
 | Guards moved internal | `assert_is_playable` and `assert_owner_and_playable` left the ABI — they are the embedding game's own pre-action checks (`InternalTrait`, zero syscalls). Clients read `is_playable` |
 | `refresh_metadata_batch` deleted | A multicall of singles |
-| Read views + rename kept | `token_metadata`, `is_playable`, `settings_id`, `minted_by`, `minted_by_address`, `is_soulbound`, `player_name` (near-zero-cost client/RPC conveniences) and `update_player_name` (owner-gated capability) stay with identical semantics |
+| Read views + rename kept | `token_metadata`, `is_playable`, `settings_id`, `minted_by`, `minted_by_address`, `is_soulbound`, `objective_id`, `client_url`, `mint_metadata`, `player_name` (near-zero-cost client/RPC conveniences) and `update_player_name` (owner-gated capability) stay |
 | Legacy id registration dropped | `initializer()` registers ONLY `IMINIGAME_TOKEN_LITE_ID` — SRC5 is honest; `supports_interface(IMINIGAME_TOKEN_ID)` is now false on lite tokens |
-| New interface id | `IMINIGAME_TOKEN_LITE_ID = 0x2ec4714e0b5610e5cffd262be7c69b721a6865f9a8ce7e1094c8211f3beaa37` (rederived over the new surface minus `refresh_metadata`, per the refresh-exclusion convention) |
+| New interface id | `IMINIGAME_TOKEN_LITE_ID = 0x15951d6d145a5a13c454bd75f0787e43e531a80a4bfb42a01fc4859e6fb7aea` (rederived over the 14-function surface minus `refresh_metadata`, per the refresh-exclusion convention) |
 
-**Downstream:** SDM dungeons/GameCore and budokan v2 migrate their mint call sites to the 7-arg shape (drop the game-address argument and the eight `None`/`false`/`0` fillers), GameCore's guard becomes the component-internal call, and anything that asserted the full-token id or called `game_registry_address()` on a lite token switches to the lite-id SRC5 probe.
+**Downstream:** SDM dungeons/GameCore and budokan v2 migrate their mint call sites to the 12-arg shape (drop the game-address, renderer and skills arguments; the remaining params keep their full-token positions and meanings — pass `None`/`false`/`0` where unused, noting `metadata` is now `u128`), GameCore's guard becomes the component-internal call, and anything that asserted the full-token id or called `game_registry_address()` on a lite token switches to the lite-id SRC5 probe.
 
 ---
 

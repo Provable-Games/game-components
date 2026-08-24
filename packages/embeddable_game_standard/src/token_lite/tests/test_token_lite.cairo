@@ -1,3 +1,4 @@
+use game_components_interfaces::structs::metagame::{GameContext, GameContextDetails};
 use game_components_test_common::mocks::lite_game_mock::{
     ILiteGameMockDispatcher, ILiteGameMockDispatcherTrait,
 };
@@ -18,8 +19,9 @@ use crate::token_lite::interface::{
     IMINIGAME_TOKEN_LITE_ID, IMinigameTokenLiteDispatcher, IMinigameTokenLiteDispatcherTrait,
 };
 use crate::token_lite::packing::{
-    unpack_end_delay, unpack_lite_token_id, unpack_minted_at, unpack_minted_by, unpack_salt,
-    unpack_settings_id, unpack_soulbound, unpack_start_delay, unpack_tx_hash,
+    unpack_end_delay, unpack_has_context, unpack_lite_token_id, unpack_metadata, unpack_minted_at,
+    unpack_minted_by, unpack_objective_id, unpack_paymaster, unpack_salt, unpack_settings_id,
+    unpack_soulbound, unpack_start_delay, unpack_tx_hash,
 };
 use crate::token_lite::token_lite_component::CoreTokenLiteComponent;
 
@@ -68,8 +70,9 @@ fn game_of(token: IMinigameTokenLiteDispatcher) -> ILiteGameMockDispatcher {
     ILiteGameMockDispatcher { contract_address: token.contract_address }
 }
 
-/// Mint with the trimmed 7-arg shape — no game address (the token IS the
-/// game), none of the full token's dead parameters.
+/// Mint with the restored 12-arg shape, neutral values for the params a test
+/// is not exercising (no objective/context/client_url, no paymaster, zero
+/// metadata). There is still no game address — the token IS the game.
 fn mint_basic(
     token: IMinigameTokenLiteDispatcher,
     player_name: Option<felt252>,
@@ -80,7 +83,30 @@ fn mint_basic(
     soulbound: bool,
     salt: u16,
 ) -> felt252 {
-    token.mint(player_name, settings_id, start, end, to, soulbound, salt)
+    token
+        .mint(
+            player_name,
+            settings_id,
+            start,
+            end,
+            Option::None,
+            Option::None,
+            Option::None,
+            to,
+            soulbound,
+            false,
+            salt,
+            0,
+        )
+}
+
+fn sample_context() -> GameContextDetails {
+    GameContextDetails {
+        name: "Tournament",
+        description: "A test tournament",
+        id: Option::Some(7),
+        context: array![GameContext { name: 'round', value: 1 }].span(),
+    }
 }
 
 // ================================================================================================
@@ -131,11 +157,10 @@ fn test_mint_packs_expected_fields() {
     assert!(packed.minted_by == 1, "First minter should pack id 1");
     assert!(packed.salt == 7, "salt mismatch");
 
-    // Reserved region (high bits 26-122) is component-owned and must be
-    // provably zero on every minted id: only tx_hash(10) + salt(16) occupy
-    // the high half.
+    // The high half is fully allocated (no reserved region); with the
+    // restored params neutral, everything above salt's top bit must be zero.
     let raw: u256 = token_id.into();
-    assert!(raw.high / 0x4000000 == 0, "reserved bits must be zero"); // 2^26
+    assert!(raw.high / 0x4000000 == 0, "neutral restored fields must decode as zero"); // 2^26
 
     // Views resolve from the packed id / minter map
     assert!(token.settings_id(token_id) == 42, "settings_id view mismatch");
@@ -167,6 +192,14 @@ fn test_mint_defaults_and_metadata_view() {
     assert!(!metadata.game_over, "game_over must always be false");
     assert!(!metadata.completed_objective, "completed_objective must always be false");
     assert!(metadata.completed_at == 0, "completed_at must always be 0");
+    // Neutral restored params decode as absent
+    assert!(metadata.objective_id == 0, "objective_id defaults to 0");
+    assert!(!metadata.has_context, "has_context defaults to false");
+    assert!(!metadata.paymaster, "paymaster defaults to false");
+    assert!(metadata.metadata == 0, "u16 metadata field is always 0 (see mint_metadata)");
+    assert!(token.objective_id(token_id) == 0, "objective_id view defaults to 0");
+    assert!(token.mint_metadata(token_id) == 0, "mint_metadata defaults to 0");
+    assert!(token.client_url(token_id) == "", "client_url defaults to empty");
     assert!(token.player_name(token_id) == 0, "No player name set");
 }
 
@@ -434,9 +467,14 @@ fn batch_neutral(
             Option::Some(5),
             Option::None,
             Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
             recipients,
             false,
+            false,
             salt,
+            0,
         )
 }
 
@@ -568,6 +606,10 @@ fn test_helper_unpackers_agree_with_full_unpack() {
     assert!(unpack_soulbound(token_id) == packed.soulbound, "soulbound helper mismatch");
     assert!(unpack_tx_hash(token_id) == packed.tx_hash, "tx_hash helper mismatch");
     assert!(unpack_salt(token_id) == packed.salt, "salt helper mismatch");
+    assert!(unpack_paymaster(token_id) == packed.paymaster, "paymaster helper mismatch");
+    assert!(unpack_has_context(token_id) == packed.has_context, "has_context helper mismatch");
+    assert!(unpack_objective_id(token_id) == packed.objective_id, "objective_id helper mismatch");
+    assert!(unpack_metadata(token_id) == packed.metadata, "metadata helper mismatch");
     assert!(packed.minted_at == 1234 && packed.settings_id == 9, "field values");
     assert!(packed.soulbound && packed.salt == 3 && packed.minted_by == 1, "field values");
 }
@@ -575,8 +617,9 @@ fn test_helper_unpackers_agree_with_full_unpack() {
 /// Bit-exact layout proof: with every input pinned (including the tx hash),
 /// the minted id must equal the arithmetic reconstruction of the documented
 /// lite layout — low: minted_at | start_delay<<35 | end_delay<<60 |
-/// settings_id<<85 | minted_by<<101 | soulbound<<127; high: tx_hash | salt<<10;
-/// reserved bits [26-122] of the high half all zero.
+/// settings_id<<85 | minted_by<<101 | soulbound<<127; high: tx_hash |
+/// salt<<10 | paymaster<<26 | has_context<<27 | objective_id<<28 |
+/// metadata<<58. The high half is fully allocated — no reserved region.
 #[test]
 fn test_lite_layout_bit_positions_exact() {
     let (token, _, _) = deploy_token_lite();
@@ -584,27 +627,38 @@ fn test_lite_layout_bit_positions_exact() {
     start_cheat_transaction_hash(token.contract_address, 0x123456789abcdef);
     cheat_caller_address(token.contract_address, MINTER(), CheatSpan::TargetCalls(1));
 
-    let token_id = mint_basic(
-        token,
-        Option::None,
-        Option::Some(0xABCD),
-        Option::Some(2000),
-        Option::Some(5000),
-        ALICE(),
-        true,
-        0x1234,
-    );
+    let token_id = token
+        .mint(
+            Option::None,
+            Option::Some(0xABCD),
+            Option::Some(2000),
+            Option::Some(5000),
+            Option::Some(0x1ABCDE),
+            Option::Some(sample_context()),
+            Option::None,
+            ALICE(),
+            true,
+            true,
+            0x1234,
+            0x123456789ABCD,
+        );
 
     // minted_at=1000, start_delay=1000, end_delay=3000, settings_id=0xABCD,
     // minted_by=1 (first minter), soulbound=1, tx_hash=0x1ef (last 10 bits
-    // of 0x...cdef), salt=0x1234.
+    // of 0x...cdef), salt=0x1234, paymaster=1, has_context=1 (context
+    // supplied), objective_id=0x1ABCDE, metadata=0x123456789ABCD.
     let expected_low: u128 = 1000
         + 1000 * 0x800000000 // start_delay << 35
         + 3000 * 0x1000000000000000 // end_delay << 60
         + 0xABCD * 0x2000000000000000000000 // settings_id << 85
         + 1 * 0x20000000000000000000000000 // minted_by << 101
         + 0x80000000000000000000000000000000; // soulbound << 127
-    let expected_high: u128 = 0x1ef + 0x1234 * 0x400; // tx_hash | salt << 10
+    let expected_high: u128 = 0x1ef
+        + 0x1234 * 0x400 // salt << 10
+        + 0x4000000 // paymaster << 26
+        + 0x8000000 // has_context << 27
+        + 0x1ABCDE * 0x10000000 // objective_id << 28
+        + 0x123456789ABCD * 0x400000000000000; // metadata << 58
     let expected: felt252 = u256 { low: expected_low, high: expected_high }.try_into().unwrap();
     assert!(token_id == expected, "lite layout bit positions must match the documented table");
 }
@@ -629,4 +683,203 @@ fn test_mint_rejects_settings_id_over_16_bits() {
     mint_basic(
         token, Option::None, Option::Some(0x10000), Option::None, Option::None, ALICE(), false, 0,
     );
+}
+
+// ================================================================================================
+// RESTORED MINT PARAMS — objective_id / context / client_url / paymaster / metadata
+// ================================================================================================
+
+/// Mint helper that exercises exactly the restored params, neutral elsewhere.
+fn mint_restored(
+    token: IMinigameTokenLiteDispatcher,
+    objective_id: Option<u32>,
+    context: Option<GameContextDetails>,
+    client_url: Option<ByteArray>,
+    paymaster: bool,
+    salt: u16,
+    metadata: u128,
+) -> felt252 {
+    token
+        .mint(
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            objective_id,
+            context,
+            client_url,
+            ALICE(),
+            false,
+            paymaster,
+            salt,
+            metadata,
+        )
+}
+
+/// The restored packed fields roundtrip through mint: id bits, standalone
+/// helpers, ABI views and the shared TokenMetadata struct all agree.
+#[test]
+fn test_mint_restored_fields_roundtrip() {
+    let (token, _, _) = deploy_token_lite();
+    start_cheat_block_timestamp(token.contract_address, 1000);
+
+    let token_id = mint_restored(
+        token,
+        Option::Some(123456),
+        Option::Some(sample_context()),
+        Option::None,
+        true,
+        0,
+        0xDEADBEEFCAFE,
+    );
+
+    let packed = unpack_lite_token_id(token_id);
+    assert!(packed.objective_id == 123456, "objective_id pack mismatch");
+    assert!(packed.has_context, "has_context bit should be set");
+    assert!(packed.paymaster, "paymaster bit should be set");
+    assert!(packed.metadata == 0xDEADBEEFCAFE, "metadata pack mismatch");
+
+    // ABI views
+    assert!(token.objective_id(token_id) == 123456, "objective_id view mismatch");
+    assert!(token.mint_metadata(token_id) == 0xDEADBEEFCAFE, "mint_metadata view mismatch");
+
+    // Shared TokenMetadata struct: objective_id/has_context/paymaster are
+    // populated from the id; the u16 metadata field CANNOT hold the 65-bit
+    // value and stays 0 (never truncated) — mint_metadata is the real view.
+    // objective_id is inert data the game interprets: the lite token has no
+    // completion machinery, so completed_objective stays false.
+    let md = token.token_metadata(token_id);
+    assert!(md.objective_id == 123456, "TokenMetadata.objective_id mismatch");
+    assert!(md.has_context, "TokenMetadata.has_context mismatch");
+    assert!(md.paymaster, "TokenMetadata.paymaster mismatch");
+    assert!(md.metadata == 0, "TokenMetadata.metadata must be 0, not a truncation");
+    assert!(!md.completed_objective, "completed_objective stays always-false");
+}
+
+#[test]
+fn test_mint_accepts_field_boundaries() {
+    let (token, _, _) = deploy_token_lite();
+    start_cheat_block_timestamp(token.contract_address, 1000);
+
+    // Every restored field at its maximum: objective_id 2^30-1, metadata
+    // 2^65-1 (filling the high half's topmost bit — the layout has no
+    // reserved region), both flag bits set, salt filling its 16 bits.
+    let token_id = mint_restored(
+        token,
+        Option::Some(0x3FFFFFFF),
+        Option::Some(sample_context()),
+        Option::None,
+        true,
+        0xFFFF,
+        0x1FFFFFFFFFFFFFFFF,
+    );
+    assert!(token.objective_id(token_id) == 0x3FFFFFFF, "boundary objective_id roundtrip");
+    assert!(token.mint_metadata(token_id) == 0x1FFFFFFFFFFFFFFFF, "boundary metadata roundtrip");
+
+    // metadata is the topmost high field: with it maxed, the quotient above
+    // objective_id's top bit must be exactly the metadata value — nothing
+    // sits above it.
+    let raw: u256 = token_id.into();
+    assert!(
+        raw.high / 0x400000000000000 == 0x1FFFFFFFFFFFFFFFF,
+        "metadata occupies the entire top of the high half",
+    ); // 2^58
+}
+
+#[test]
+#[should_panic(expected: "LitePackedTokenId: objective_id exceeds 30-bit limit")]
+fn test_mint_rejects_objective_id_over_30_bits() {
+    let (token, _, _) = deploy_token_lite();
+    start_cheat_block_timestamp(token.contract_address, 1000);
+    // 2^30 — one past the 30-bit field.
+    mint_restored(token, Option::Some(0x40000000), Option::None, Option::None, false, 0, 0);
+}
+
+#[test]
+#[should_panic(expected: "LitePackedTokenId: metadata exceeds 65-bit limit")]
+fn test_mint_rejects_metadata_over_65_bits() {
+    let (token, _, _) = deploy_token_lite();
+    start_cheat_block_timestamp(token.contract_address, 1000);
+    // 2^65 — one past the 65-bit field.
+    mint_restored(token, Option::None, Option::None, Option::None, false, 0, 0x20000000000000000);
+}
+
+/// client_url is storage-backed exactly as on the full token: written when
+/// Some, readable via the view, empty ByteArray default when absent.
+#[test]
+fn test_client_url_stored_and_empty_default() {
+    let (token, _, _) = deploy_token_lite();
+    start_cheat_block_timestamp(token.contract_address, 1000);
+
+    let with_url = mint_restored(
+        token, Option::None, Option::None, Option::Some("https://play.example/game"), false, 0, 0,
+    );
+    assert!(token.client_url(with_url) == "https://play.example/game", "client_url view mismatch");
+
+    let without_url = mint_restored(token, Option::None, Option::None, Option::None, false, 1, 0);
+    assert!(token.client_url(without_url) == "", "client_url should default to empty");
+}
+
+/// context sets the id's has_context bit only — the data itself is NOT stored
+/// (full-token parity: its context hook was a documented no-op and token_uri
+/// sourced context from the minter at render time).
+#[test]
+fn test_context_sets_has_context_bit_without_storage() {
+    let (token, _, _) = deploy_token_lite();
+    start_cheat_block_timestamp(token.contract_address, 1000);
+
+    let with_context = mint_restored(
+        token, Option::None, Option::Some(sample_context()), Option::None, false, 0, 0,
+    );
+    assert!(unpack_has_context(with_context), "has_context bit must be set");
+    assert!(token.token_metadata(with_context).has_context, "metadata view agrees");
+    // Nothing context-shaped was persisted: the only storage-backed views
+    // stay at their defaults.
+    assert!(token.client_url(with_context) == "", "no context data lands in storage");
+    assert!(token.player_name(with_context) == 0, "no context data lands in storage");
+
+    let without_context = mint_restored(
+        token, Option::None, Option::None, Option::None, false, 1, 0,
+    );
+    assert!(!unpack_has_context(without_context), "has_context bit must be clear");
+}
+
+/// Batch mints share the packed fields (has_context bit, objective, paymaster,
+/// metadata) across all tokens, and the client_url — when Some — is written
+/// per token.
+#[test]
+fn test_mint_batch_shares_restored_fields_and_url() {
+    let (token, _, _) = deploy_token_lite();
+    start_cheat_block_timestamp(token.contract_address, 1000);
+
+    let ids = token
+        .mint_batch_recipients(
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::Some(77),
+            Option::Some(sample_context()),
+            Option::Some("https://play.example/batch"),
+            array![
+                MintBatchRecipient { to: ALICE(), count: 2 },
+                MintBatchRecipient { to: BOB(), count: 1 },
+            ],
+            false,
+            true,
+            0,
+            42,
+        );
+
+    assert!(ids.len() == 3, "Should mint 3 tokens");
+    let mut i: u32 = 0;
+    while i < ids.len() {
+        let id = *ids.at(i);
+        assert!(unpack_has_context(id), "shared has_context bit");
+        assert!(unpack_paymaster(id), "shared paymaster bit");
+        assert!(token.objective_id(id) == 77, "shared objective_id");
+        assert!(token.mint_metadata(id) == 42, "shared metadata");
+        assert!(token.client_url(id) == "https://play.example/batch", "url written per token");
+        i += 1;
+    }
 }
