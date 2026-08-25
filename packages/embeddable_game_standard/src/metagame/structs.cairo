@@ -18,5 +18,8 @@ pub struct MintMetagameParams {
     pub soulbound: bool,
     pub paymaster: bool,
     pub salt: u16,
-    pub metadata: u16,
+    /// Inert data the game interprets. `u128` to reach the standard token's
+    /// 65-bit field; a legacy mint asserts the value fits its u16 field
+    /// rather than truncating.
+    pub metadata: u128,
 }

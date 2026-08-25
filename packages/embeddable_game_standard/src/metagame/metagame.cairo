@@ -96,7 +96,7 @@ fn mint_standard_token(
     soulbound: bool,
     paymaster: bool,
     salt: u16,
-    metadata: u16,
+    metadata: u128,
 ) -> felt252 {
     assert!(renderer_address.is_none(), "Metagame: standard tokens have no per-token renderer");
     assert!(skills_address.is_none(), "Metagame: standard tokens have no per-token skills");
@@ -113,7 +113,7 @@ fn mint_standard_token(
             soulbound,
             paymaster,
             salt,
-            metadata.into(),
+            metadata,
         )
 }
 
@@ -153,7 +153,7 @@ pub fn mint(
     soulbound: bool,
     paymaster: bool,
     salt: u16,
-    metadata: u16,
+    metadata: u128,
 ) -> felt252 {
     let minigame_dispatcher = IMinigameDispatcher { contract_address: game_address };
     let minigame_token_address = minigame_dispatcher.token_address();
@@ -180,6 +180,8 @@ pub fn mint(
             metadata,
         );
     }
+    // Legacy token: narrower metadata field — reject rather than truncate.
+    let legacy_metadata: u16 = metadata.try_into().expect('Metagame: metadata exceeds u16');
     let minigame_token_dispatcher = IMinigameTokenLegacyDispatcher {
         contract_address: minigame_token_address,
     };
@@ -199,7 +201,7 @@ pub fn mint(
             soulbound,
             paymaster,
             salt,
-            metadata,
+            legacy_metadata,
         )
 }
 

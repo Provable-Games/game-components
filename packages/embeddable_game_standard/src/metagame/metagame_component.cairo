@@ -48,7 +48,7 @@ pub mod MetagameComponent {
             soulbound: bool,
             paymaster: bool,
             salt: u16,
-            metadata: u16,
+            metadata: u128,
         ) -> felt252 {
             libs::mint(
                 game_address,

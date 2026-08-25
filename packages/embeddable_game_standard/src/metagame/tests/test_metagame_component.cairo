@@ -22,7 +22,7 @@ trait IMockMetagame<TContractState> {
         soulbound: bool,
         paymaster: bool,
         salt: u16,
-        metadata: u16,
+        metadata: u128,
     ) -> felt252;
 }
 
@@ -382,7 +382,7 @@ mod MockMetagameContract {
             soulbound: bool,
             paymaster: bool,
             salt: u16,
-            metadata: u16,
+            metadata: u128,
         ) -> felt252 {
             self
                 .metagame
@@ -1153,7 +1153,7 @@ trait IMockMetagameWithBatch<TContractState> {
         soulbound: bool,
         paymaster: bool,
         salt: u16,
-        metadata: u16,
+        metadata: u128,
     ) -> felt252;
 
     fn mint_batch(
@@ -1220,7 +1220,7 @@ mod MockMetagameContractWithBatch {
             soulbound: bool,
             paymaster: bool,
             salt: u16,
-            metadata: u16,
+            metadata: u128,
         ) -> felt252 {
             self
                 .metagame

@@ -49,10 +49,11 @@ time; `mint_batch_recipients` hoists the batch-invariant work and runs a single
 global salt counter. Reach for `mint_batch` only when entries genuinely name
 different games.
 
-`mint_batch_recipients` takes `metadata: u128` to reach the standard token's
-65-bit field. The legacy token's field is `u16`, so the legacy path asserts the
-value fits rather than truncating it. (`mint` still takes `metadata: u16` — a
-known inconsistency, widening it is a further breaking change.)
+Every mint path takes `metadata: u128`, reaching the standard token's 65-bit
+field. The legacy token's field is `u16`, so a legacy mint asserts the value
+fits (`Metagame: metadata exceeds u16`) rather than truncating it silently —
+identically on the single and batch paths, so the two never disagree about what
+a legacy token accepts.
 
 ## Extensions
 
@@ -149,7 +150,7 @@ pub struct MintMetagameParams {
     pub soulbound: bool,
     pub paymaster: bool,
     pub salt: u16,
-    pub metadata: u16,
+    pub metadata: u128,
 }
 ```
 

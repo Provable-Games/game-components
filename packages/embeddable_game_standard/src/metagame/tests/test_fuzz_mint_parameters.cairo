@@ -24,7 +24,7 @@ trait IMockMetagame<TContractState> {
         soulbound: bool,
         paymaster: bool,
         salt: u16,
-        metadata: u16,
+        metadata: u128,
     ) -> felt252;
 }
 
@@ -307,7 +307,7 @@ mod MockMetagameFuzz {
             soulbound: bool,
             paymaster: bool,
             salt: u16,
-            metadata: u16,
+            metadata: u128,
         ) -> felt252 {
             self
                 .metagame

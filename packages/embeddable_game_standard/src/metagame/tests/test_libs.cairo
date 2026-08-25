@@ -2074,6 +2074,36 @@ mod standard_token_paths {
         assert!(token.player_name(token_id) == 'player', "player name not stored");
     }
 
+    /// `metadata` is u128 so the single-mint path reaches the same 65-bit field
+    /// the batch path does — a u16 here would silently narrow a consumer that
+    /// threads a wider value through.
+    #[test]
+    fn test_mint_carries_wide_metadata() {
+        let game = deploy_standard_game(ALICE());
+        let wide: u128 = 0x100000000;
+
+        let token_id = libs::mint(
+            game,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            BOB(),
+            false,
+            false,
+            0,
+            wide,
+        );
+
+        let token = IMinigameTokenDispatcher { contract_address: game };
+        assert!(token.mint_metadata(token_id) == wide, "wide metadata lost on the single mint");
+    }
+
     /// Minimal mint through a standard game — every optional param None.
     #[test]
     fn test_mint_standard_token_minimal() {

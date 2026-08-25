@@ -316,6 +316,33 @@ fn test_batch_recipients_rejects_wide_metadata_on_legacy_token() {
     );
 }
 
+/// The single-mint path narrows the same way the batch path does — the two
+/// must not disagree about what a legacy token accepts.
+#[test]
+#[should_panic(expected: ('Metagame: metadata exceeds u16',))]
+fn test_mint_rejects_wide_metadata_on_legacy_token() {
+    let token_address = deploy_legacy_token();
+    let game_address = deploy_legacy_game(token_address);
+
+    libs::mint(
+        game_address,
+        Option::None,
+        Option::None,
+        Option::None,
+        Option::None,
+        Option::None,
+        Option::None,
+        Option::None,
+        Option::None,
+        Option::None,
+        BOB(),
+        false,
+        false,
+        0,
+        0x100000000,
+    );
+}
+
 /// A metadata value that does fit u16 passes through to the legacy token.
 #[test]
 fn test_batch_recipients_accepts_narrow_metadata_on_legacy_token() {

@@ -17,7 +17,7 @@ pub trait IMetagameMock<TContractState> {
         soulbound: bool,
         paymaster: bool,
         salt: u16,
-        metadata: u16,
+        metadata: u128,
     ) -> felt252;
 }
 
@@ -181,7 +181,7 @@ pub mod metagame_mock {
             soulbound: bool,
             paymaster: bool,
             salt: u16,
-            metadata: u16,
+            metadata: u128,
         ) -> felt252 {
             let context = array![GameContext { name: 'Test Context 1', value: 'Test Context' }]
                 .span();
