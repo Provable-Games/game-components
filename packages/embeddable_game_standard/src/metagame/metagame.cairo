@@ -65,7 +65,7 @@ pub fn assert_game_registered(game_address: ContractAddress) {
 /// The standard token's registration check: it is self-bound, so the game must
 /// BE its token. Every path that trusts a game's `token_address()` must apply
 /// this — otherwise a hostile contract can name a standard token it does not
-/// own and have the metagame mint on it or pay its creator.
+/// own and have the metagame mint on it or pay its fee recipient.
 fn assert_self_bound(token_address: ContractAddress, game_address: ContractAddress) {
     assert!(token_address == game_address, "Game is not registered");
 }
@@ -396,14 +396,14 @@ pub fn calculate_game_fee(revenue: u128, fee_numerator: u16) -> u128 {
 
 /// Resolves game fee info.
 ///
-/// Standard tokens carry the creator identity the registry used to hold, so a
-/// token advertising `IMINIGAME_TOKEN_GAME_FEE_ID` answers directly. Legacy
-/// tokens keep the game_address → token → registry → game_fee_info walk.
+/// Standard tokens carry the fee terms the registry used to hold, so a token
+/// advertising `IMINIGAME_TOKEN_GAME_FEE_ID` answers directly. Legacy tokens
+/// keep the game_address → token → registry → game_fee_info walk.
 pub fn get_game_fee_info(game_address: ContractAddress) -> GameFeeInfo {
     let minigame_dispatcher = IMinigameDispatcher { contract_address: game_address };
     let minigame_token_address = minigame_dispatcher.token_address();
     if supports_game_fee_surface(minigame_token_address) {
-        // The creator surface belongs to the self-bound standard token.
+        // The game-fee surface belongs to the self-bound standard token.
         assert_self_bound(minigame_token_address, game_address);
         let info = IMinigameTokenGameFeeDispatcher { contract_address: minigame_token_address }
             .game_fee_terms();
@@ -414,7 +414,7 @@ pub fn get_game_fee_info(game_address: ContractAddress) -> GameFeeInfo {
     };
     let minigame_registry_address = minigame_token_dispatcher.game_registry_address();
     if minigame_registry_address.is_zero() {
-        // Single-game legacy token: no registry to ask and no creator surface,
+        // Single-game legacy token: no registry to ask and no game-fee surface,
         // so the game declares no fee anywhere. "Declares nothing" and
         // "declares zero" mean the same thing — nobody is owed anything — so
         // answer zero rather than reverting. This keeps the fee question total:
@@ -432,14 +432,14 @@ pub fn get_game_fee_info(game_address: ContractAddress) -> GameFeeInfo {
     minigame_registry_dispatcher.game_fee_info(game_id)
 }
 
-/// True when the token exposes the standard creator surface
+/// True when the token exposes the standard game-fee surface
 /// (`IMINIGAME_TOKEN_GAME_FEE_ID`) that replaced the registry's fee/payee role.
 pub fn supports_game_fee_surface(token_address: ContractAddress) -> bool {
     ISRC5Dispatcher { contract_address: token_address }
         .supports_interface(IMINIGAME_TOKEN_GAME_FEE_ID)
 }
 
-/// Resolves the address that should receive a game's creator fee.
+/// Resolves the address that should receive a game's fee.
 ///
 /// Standard tokens name the payee directly (`game_fee_recipient`). Legacy
 /// registry tokens keep the old indirection: the payee is whoever currently

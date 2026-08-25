@@ -2021,7 +2021,7 @@ mod standard_token_paths {
     use crate::metagame::metagame as libs;
 
     /// One contract that is both the game and the standard token.
-    fn deploy_standard_game(game_creator: ContractAddress) -> ContractAddress {
+    fn deploy_standard_game(game_fee_recipient: ContractAddress) -> ContractAddress {
         let contract = declare("StandardGameMock").unwrap().contract_class();
         let mut calldata: Array<felt252> = array![];
         let name: ByteArray = "StandardToken";
@@ -2030,7 +2030,7 @@ mod standard_token_paths {
         name.serialize(ref calldata);
         symbol.serialize(ref calldata);
         base_uri.serialize(ref calldata);
-        game_creator.serialize(ref calldata);
+        game_fee_recipient.serialize(ref calldata);
         OWNER().serialize(ref calldata);
         let (contract_address, _) = contract.deploy(@calldata).unwrap();
         contract_address
@@ -2178,10 +2178,10 @@ mod standard_token_paths {
         );
     }
 
-    /// The creator surface replaces the registry's fee role — previously this
+    /// The game-fee surface replaces the registry's fee role — previously this
     /// reverted on the missing `game_registry_address()` entrypoint.
     #[test]
-    fn test_get_game_fee_info_reads_creator_surface() {
+    fn test_get_game_fee_info_reads_game_fee_surface() {
         let game = deploy_standard_game(ALICE());
         let fee_info = libs::get_game_fee_info(game);
         let declared = IMinigameTokenGameFeeDispatcher { contract_address: game };
@@ -2195,7 +2195,10 @@ mod standard_token_paths {
     #[test]
     fn test_get_game_fee_recipient_is_the_declared_payee() {
         let game = deploy_standard_game(ALICE());
-        assert!(libs::get_game_fee_recipient(game) == ALICE(), "payee is not the declared creator");
+        assert!(
+            libs::get_game_fee_recipient(game) == ALICE(),
+            "payee is not the declared fee recipient",
+        );
     }
 }
 
@@ -2302,7 +2305,7 @@ mod legacy_single_game_token {
 // registration check. Any path that trusts a game's `token_address()` must
 // enforce it: otherwise a contract that merely implements `token_address()`
 // can name a standard token it does not own and have the metagame mint on it
-// or pay its creator — at a fee rate the attacker controls.
+// or pay its fee recipient — at a fee rate the attacker controls.
 
 #[cfg(test)]
 mod hostile_game_paths {
@@ -2311,7 +2314,7 @@ mod hostile_game_paths {
     use starknet::ContractAddress;
     use crate::metagame::metagame as libs;
 
-    fn deploy_standard_game(game_creator: ContractAddress) -> ContractAddress {
+    fn deploy_standard_game(game_fee_recipient: ContractAddress) -> ContractAddress {
         let contract = declare("StandardGameMock").unwrap().contract_class();
         let mut calldata: Array<felt252> = array![];
         let name: ByteArray = "StandardToken";
@@ -2320,7 +2323,7 @@ mod hostile_game_paths {
         name.serialize(ref calldata);
         symbol.serialize(ref calldata);
         base_uri.serialize(ref calldata);
-        game_creator.serialize(ref calldata);
+        game_fee_recipient.serialize(ref calldata);
         OWNER().serialize(ref calldata);
         let (contract_address, _) = contract.deploy(@calldata).unwrap();
         contract_address
@@ -2367,7 +2370,7 @@ mod hostile_game_paths {
         libs::get_game_fee_info(hostile);
     }
 
-    /// The payee must not be redirectable to a foreign token's creator.
+    /// The payee must not be redirectable to a foreign token's fee recipient.
     #[test]
     #[should_panic(expected: "Game is not registered")]
     fn test_get_game_fee_recipient_rejects_foreign_standard_token() {
@@ -2381,7 +2384,7 @@ mod hostile_game_paths {
     fn test_self_bound_game_still_passes_every_path() {
         let game = deploy_standard_game(ALICE());
         libs::assert_game_registered(game);
-        assert!(libs::get_game_fee_recipient(game) == ALICE(), "payee should be the creator");
+        assert!(libs::get_game_fee_recipient(game) == ALICE(), "payee should be the recipient");
         assert!(libs::get_game_fee_info(game).fee_numerator == 500, "default fee is 500 bps");
     }
 }

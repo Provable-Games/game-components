@@ -116,8 +116,11 @@ pub mod MetagameComponent {
             )
         }
 
-        /// Reads fee from registry, calculates amount, transfers via ERC20
-        /// to the game's creator token owner. Returns fee amount (0 if no fee).
+        /// Resolves the game's fee terms and pays them via ERC20. Returns the
+        /// amount paid, 0 if the game charges nothing — a game that declares no
+        /// fee at all answers zero too, so this short-circuits before it ever
+        /// needs a recipient. Terms and recipient come from the token's game-fee
+        /// surface for standard tokens, from the registry for legacy ones.
         fn pay_game_fee(
             ref self: ComponentState<TContractState>,
             game_address: ContractAddress,

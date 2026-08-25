@@ -1308,7 +1308,7 @@ pub mod MockFeePayer {
     }
 }
 
-/// Deploys a standard game (creator surface, default 500 bps fee) plus the
+/// Deploys a standard game (game-fee surface, default 500 bps fee) plus the
 /// fee-paying metagame.
 fn deploy_fee_fixture() -> (ContractAddress, ContractAddress) {
     let game = declare("StandardGameMock").unwrap().contract_class();
@@ -1319,7 +1319,7 @@ fn deploy_fee_fixture() -> (ContractAddress, ContractAddress) {
     name.serialize(ref calldata);
     symbol.serialize(ref calldata);
     base_uri.serialize(ref calldata);
-    ALICE().serialize(ref calldata); // game creator = fee payee
+    ALICE().serialize(ref calldata); // game fee recipient = payee
     OWNER().serialize(ref calldata);
     let (game_address, _) = game.deploy(@calldata).unwrap();
 

@@ -40,7 +40,7 @@ legacy callback receiver. The component now exposes internals only.
 | `mint_batch(mints: Array<MintMetagameParams>)` | Many tokens, **one call per token**; each entry may name a different game |
 | `mint_batch_recipients(game_address, ..., recipients, ..., metadata: u128)` | Many tokens for **ONE** game in a **single dispatch**, via the token's own batch entrypoint |
 | `assert_game_registered(game_address)` | Validate game registration |
-| `get_game_fee_info(game_address)` / `pay_game_fee(...)` | Resolve fee terms / pay the game creator |
+| `get_game_fee_info(game_address)` / `get_game_fee_recipient(...)` / `pay_game_fee(...)` | Resolve a game's fee terms and recipient, and pay them |
 
 **Choosing between the batch calls:** if the batch shares a game — a tournament
 entry, say — use `mint_batch_recipients`. `mint_batch` costs one cross-contract
