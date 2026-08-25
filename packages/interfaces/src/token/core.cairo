@@ -148,7 +148,7 @@ pub trait IMinigameToken<TState> {
 
 /// Combined mixin ABI: the full external surface of the standard token —
 /// `IMinigameToken` + the absorbed minter (`IMinigameTokenMinter`) + the
-/// creator surface (`IMinigameTokenCreator`) — as ONE embeddable trait,
+/// game-fee surface (`IMinigameTokenGameFee`) — as ONE embeddable trait,
 /// mirroring OpenZeppelin's ERC20ABI / MixinImpl pattern.
 ///
 /// The component's `initializer` registers all three SRC5 ids
@@ -156,7 +156,7 @@ pub trait IMinigameToken<TState> {
 /// (instead of the three impls separately) guarantees the advertised ids can
 /// never diverge from the exposed entrypoints. NOT used for SRC5 id
 /// derivation — the ids remain `IMINIGAME_TOKEN_ID`,
-/// `IMINIGAME_TOKEN_MINTER_ID` and `IMINIGAME_TOKEN_CREATOR_ID`.
+/// `IMINIGAME_TOKEN_MINTER_ID` and `IMINIGAME_TOKEN_GAME_FEE_ID`.
 #[starknet::interface]
 pub trait MinigameTokenABI<TState> {
     // IMinigameToken
@@ -209,9 +209,9 @@ pub trait MinigameTokenABI<TState> {
     fn minter_exists(self: @TState, minter_address: ContractAddress) -> bool;
     fn total_minters(self: @TState) -> u64;
 
-    // IMinigameTokenCreator (creator payout identity)
-    fn game_creator_info(self: @TState) -> crate::structs::token::GameCreatorInfo;
-    fn game_creator_address(self: @TState) -> ContractAddress;
-    fn set_game_creator_address(ref self: TState, new_creator: ContractAddress);
+    // IMinigameTokenGameFee (game fee recipient + terms)
+    fn game_fee_terms(self: @TState) -> crate::structs::token::GameFeeTerms;
+    fn game_fee_recipient(self: @TState) -> ContractAddress;
+    fn set_game_fee_recipient(ref self: TState, new_recipient: ContractAddress);
     fn set_game_fee(ref self: TState, license: ByteArray, fee_numerator: u16);
 }

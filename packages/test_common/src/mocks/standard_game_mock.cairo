@@ -63,8 +63,8 @@ pub mod StandardGameMock {
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
     component!(path: MinigameTokenComponent, storage: minigame_token, event: MinigameTokenEvent);
     component!(path: SettingsComponent, storage: settings, event: SettingsEvent);
-    // Required by the token component's CreatorImpl (hard HasComponent bound):
-    // the creator surface is administered by the contract owner.
+    // Required by the token component's GameFeeImpl (hard HasComponent bound):
+    // the game-fee surface is administered by the contract owner.
     component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);
 
     #[storage]
@@ -113,7 +113,7 @@ pub mod StandardGameMock {
     #[abi(embed_v0)]
     impl SRC5Impl = SRC5Component::SRC5Impl<ContractState>;
     // One embed for the full standard surface (token + absorbed minter +
-    // creator) — the mixin keeps the SRC5 ids registered by the initializer
+    // game fee) — the mixin keeps the SRC5 ids registered by the initializer
     // honest by construction.
     #[abi(embed_v0)]
     impl MinigameTokenMixinImpl =
@@ -159,17 +159,17 @@ pub mod StandardGameMock {
         name: ByteArray,
         symbol: ByteArray,
         base_uri: ByteArray,
-        game_creator: ContractAddress,
+        game_fee_recipient: ContractAddress,
         owner: ContractAddress,
     ) {
         self.erc721.initializer(name, symbol, base_uri);
-        // The owner administers the creator surface (assert_only_owner gate).
+        // The owner administers the game-fee surface (assert_only_owner gate).
         self.ownable.initializer(owner);
         // Self-binding: no game argument — this contract IS the game. Also
         // registers the absorbed minter registry's IMINIGAME_TOKEN_MINTER_ID
-        // and the creator surface's IMINIGAME_TOKEN_CREATOR_ID (creator set
+        // and the game-fee surface's IMINIGAME_TOKEN_GAME_FEE_ID (recipient set
         // here; license/fee left to the ecosystem defaults).
-        self.minigame_token.initializer(game_creator, Option::None, Option::None);
+        self.minigame_token.initializer(game_fee_recipient, Option::None, Option::None);
         // Registers IMINIGAME_SETTINGS_ID (mirrors minigame_mock).
         self.settings.initializer();
         self.src5.register_interface(IMINIGAME_ID);

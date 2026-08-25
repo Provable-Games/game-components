@@ -2011,8 +2011,8 @@ mod standard_token_paths {
     use game_components_embeddable_game_standard::token::interface::{
         IMinigameTokenDispatcher, IMinigameTokenDispatcherTrait,
     };
-    use game_components_interfaces::token::creator::{
-        IMinigameTokenCreatorDispatcher, IMinigameTokenCreatorDispatcherTrait,
+    use game_components_interfaces::token::game_fee::{
+        IMinigameTokenGameFeeDispatcher, IMinigameTokenGameFeeDispatcherTrait,
     };
     use game_components_testing::constants::{ALICE, BOB, OWNER};
     use openzeppelin_interfaces::erc721::{IERC721Dispatcher, IERC721DispatcherTrait};
@@ -2184,20 +2184,18 @@ mod standard_token_paths {
     fn test_get_game_fee_info_reads_creator_surface() {
         let game = deploy_standard_game(ALICE());
         let fee_info = libs::get_game_fee_info(game);
-        let declared = IMinigameTokenCreatorDispatcher { contract_address: game };
+        let declared = IMinigameTokenGameFeeDispatcher { contract_address: game };
         assert!(
-            fee_info.fee_numerator == declared.game_creator_info().fee_numerator,
+            fee_info.fee_numerator == declared.game_fee_terms().fee_numerator,
             "fee numerator does not match the token's declared fee",
         );
     }
 
     /// The payee is named directly, not resolved through a registry NFT owner.
     #[test]
-    fn test_get_game_creator_address_is_the_declared_payee() {
+    fn test_get_game_fee_recipient_is_the_declared_payee() {
         let game = deploy_standard_game(ALICE());
-        assert!(
-            libs::get_game_creator_address(game) == ALICE(), "payee is not the declared creator",
-        );
+        assert!(libs::get_game_fee_recipient(game) == ALICE(), "payee is not the declared creator");
     }
 }
 
@@ -2263,12 +2261,12 @@ mod legacy_single_game_token {
     /// asking for one that was never declared is a caller bug, not a state.
     #[test]
     #[should_panic(expected: "Metagame: game declares no fee recipient")]
-    fn test_get_game_creator_address_rejects_undeclared_payee() {
+    fn test_get_game_fee_recipient_rejects_undeclared_payee() {
         let zero_registry: ContractAddress = Zero::zero();
         let token = deploy_mock_token_with_registry(zero_registry);
         let game = deploy_mock_minigame_for_registry(token);
 
-        libs::get_game_creator_address(game);
+        libs::get_game_fee_recipient(game);
     }
 
     #[test]
@@ -2372,10 +2370,10 @@ mod hostile_game_paths {
     /// The payee must not be redirectable to a foreign token's creator.
     #[test]
     #[should_panic(expected: "Game is not registered")]
-    fn test_get_game_creator_address_rejects_foreign_standard_token() {
+    fn test_get_game_fee_recipient_rejects_foreign_standard_token() {
         let victim = deploy_standard_game(ALICE());
         let hostile = hostile_game_pointing_at(victim);
-        libs::get_game_creator_address(hostile);
+        libs::get_game_fee_recipient(hostile);
     }
 
     /// The self-bound game itself still works through all three paths.
@@ -2383,7 +2381,7 @@ mod hostile_game_paths {
     fn test_self_bound_game_still_passes_every_path() {
         let game = deploy_standard_game(ALICE());
         libs::assert_game_registered(game);
-        assert!(libs::get_game_creator_address(game) == ALICE(), "payee should be the creator");
+        assert!(libs::get_game_fee_recipient(game) == ALICE(), "payee should be the creator");
         assert!(libs::get_game_fee_info(game).fee_numerator == 500, "default fee is 500 bps");
     }
 }

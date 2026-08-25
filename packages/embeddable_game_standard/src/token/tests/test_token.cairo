@@ -1,7 +1,7 @@
 use game_components_interfaces::structs::metagame::{GameContext, GameContextDetails};
-use game_components_interfaces::token::creator::{
-    DEFAULT_GAME_FEE_BPS, FEE_DENOMINATOR, GameCreatorInfo, IMINIGAME_TOKEN_CREATOR_ID,
-    IMinigameTokenCreatorDispatcher, IMinigameTokenCreatorDispatcherTrait, default_license,
+use game_components_interfaces::token::game_fee::{
+    DEFAULT_GAME_FEE_BPS, FEE_DENOMINATOR, GameFeeTerms, IMINIGAME_TOKEN_GAME_FEE_ID,
+    IMinigameTokenGameFeeDispatcher, IMinigameTokenGameFeeDispatcherTrait, default_license,
 };
 use game_components_interfaces::token::minter::{
     IMinigameTokenMinterDispatcher, IMinigameTokenMinterDispatcherTrait,
@@ -45,8 +45,8 @@ fn MINTER() -> ContractAddress {
     addr('MINTER')
 }
 
-fn GAME_CREATOR() -> ContractAddress {
-    addr('GAME_CREATOR')
+fn FEE_RECIPIENT() -> ContractAddress {
+    addr('FEE_RECIPIENT')
 }
 
 fn OWNER() -> ContractAddress {
@@ -66,7 +66,7 @@ fn deploy_token() -> (
     name.serialize(ref calldata);
     symbol.serialize(ref calldata);
     base_uri.serialize(ref calldata);
-    GAME_CREATOR().serialize(ref calldata);
+    FEE_RECIPIENT().serialize(ref calldata);
     OWNER().serialize(ref calldata);
     let (contract_address, _) = contract.deploy(@calldata).unwrap();
     (
@@ -905,52 +905,52 @@ fn test_mint_batch_shares_restored_fields_and_url() {
 // CREATOR SURFACE (owner-administered payout identity)
 // ================================================================================================
 
-fn creator_of(token: IMinigameTokenDispatcher) -> IMinigameTokenCreatorDispatcher {
-    IMinigameTokenCreatorDispatcher { contract_address: token.contract_address }
+fn game_fee_of(token: IMinigameTokenDispatcher) -> IMinigameTokenGameFeeDispatcher {
+    IMinigameTokenGameFeeDispatcher { contract_address: token.contract_address }
 }
 
 #[test]
-fn test_creator_registered_with_defaults() {
+fn test_game_fee_registered_with_defaults() {
     let (token, _, _) = deploy_token();
-    let creator = creator_of(token);
+    let game_fee = game_fee_of(token);
 
     let src5 = ISRC5Dispatcher { contract_address: token.contract_address };
     assert!(
-        src5.supports_interface(IMINIGAME_TOKEN_CREATOR_ID),
-        "Should register the creator interface id",
+        src5.supports_interface(IMINIGAME_TOKEN_GAME_FEE_ID),
+        "Should register the game-fee interface id",
     );
 
-    assert!(creator.game_creator_address() == GAME_CREATOR(), "Creator address mismatch");
-    let info = creator.game_creator_info();
-    let expected = GameCreatorInfo {
-        creator: GAME_CREATOR(), license: default_license(), fee_numerator: DEFAULT_GAME_FEE_BPS,
+    assert!(game_fee.game_fee_recipient() == FEE_RECIPIENT(), "Recipient address mismatch");
+    let info = game_fee.game_fee_terms();
+    let expected = GameFeeTerms {
+        recipient: FEE_RECIPIENT(), license: default_license(), fee_numerator: DEFAULT_GAME_FEE_BPS,
     };
     assert!(info == expected, "Info should carry the ecosystem defaults");
 }
 
 #[test]
-fn test_owner_rotates_creator_and_sets_fee() {
+fn test_owner_rotates_recipient_and_sets_fee() {
     let (token, _, _) = deploy_token();
-    let creator = creator_of(token);
+    let game_fee = game_fee_of(token);
 
     cheat_caller_address(token.contract_address, OWNER(), CheatSpan::TargetCalls(2));
-    creator.set_game_creator_address(BOB());
-    creator.set_game_fee("Custom license", 1000);
+    game_fee.set_game_fee_recipient(BOB());
+    game_fee.set_game_fee("Custom license", 1000);
 
-    let info = creator.game_creator_info();
-    assert!(info.creator == BOB(), "Rotation should take effect");
+    let info = game_fee.game_fee_terms();
+    assert!(info.recipient == BOB(), "Rotation should take effect");
     assert!(info.license == "Custom license", "License should update");
     assert!(info.fee_numerator == 1000, "Fee should update");
 }
 
 #[test]
 #[should_panic(expected: 'Caller is not the owner')]
-fn test_creator_itself_cannot_rotate() {
-    // The stored creator is a payout sink, not an admin: only the contract
+fn test_recipient_itself_cannot_rotate() {
+    // The stored recipient is a payout sink, not an admin: only the contract
     // owner rotates it.
     let (token, _, _) = deploy_token();
-    cheat_caller_address(token.contract_address, GAME_CREATOR(), CheatSpan::TargetCalls(1));
-    creator_of(token).set_game_creator_address(BOB());
+    cheat_caller_address(token.contract_address, FEE_RECIPIENT(), CheatSpan::TargetCalls(1));
+    game_fee_of(token).set_game_fee_recipient(BOB());
 }
 
 #[test]
@@ -958,15 +958,15 @@ fn test_creator_itself_cannot_rotate() {
 fn test_non_owner_cannot_set_fee() {
     let (token, _, _) = deploy_token();
     cheat_caller_address(token.contract_address, ALICE(), CheatSpan::TargetCalls(1));
-    creator_of(token).set_game_fee("hijack", 0);
+    game_fee_of(token).set_game_fee("hijack", 0);
 }
 
 #[test]
-#[should_panic(expected: "MinigameToken: Creator cannot be zero")]
+#[should_panic(expected: "MinigameToken: Fee recipient cannot be zero")]
 fn test_rotation_to_zero_rejected() {
     let (token, _, _) = deploy_token();
     cheat_caller_address(token.contract_address, OWNER(), CheatSpan::TargetCalls(1));
-    creator_of(token).set_game_creator_address(addr(0));
+    game_fee_of(token).set_game_fee_recipient(addr(0));
 }
 
 #[test]
@@ -974,11 +974,11 @@ fn test_rotation_to_zero_rejected() {
 fn test_fee_above_denominator_rejected() {
     let (token, _, _) = deploy_token();
     cheat_caller_address(token.contract_address, OWNER(), CheatSpan::TargetCalls(1));
-    creator_of(token).set_game_fee("too greedy", FEE_DENOMINATOR + 1);
+    game_fee_of(token).set_game_fee("too greedy", FEE_DENOMINATOR + 1);
 }
 
 #[test]
-fn test_zero_creator_deploy_rejected() {
+fn test_zero_recipient_deploy_rejected() {
     let contract = declare("StandardGameMock").unwrap().contract_class();
     let mut calldata: Array<felt252> = array![];
     let name: ByteArray = "StandardToken";
@@ -989,5 +989,5 @@ fn test_zero_creator_deploy_rejected() {
     base_uri.serialize(ref calldata);
     addr(0).serialize(ref calldata);
     OWNER().serialize(ref calldata);
-    assert!(contract.deploy(@calldata).is_err(), "Zero creator must fail the constructor");
+    assert!(contract.deploy(@calldata).is_err(), "Zero recipient must fail the constructor");
 }

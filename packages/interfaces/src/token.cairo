@@ -2,7 +2,7 @@
 
 pub mod context;
 pub mod core;
-pub mod creator;
+pub mod game_fee;
 pub mod legacy;
 pub mod minter;
 pub mod objectives;
@@ -16,9 +16,9 @@ pub use core::{
     IMINIGAME_TOKEN_ID, IMinigameToken, IMinigameTokenDispatcher, IMinigameTokenDispatcherTrait,
     MinigameTokenABI, MinigameTokenABIDispatcher, MinigameTokenABIDispatcherTrait,
 };
-pub use creator::{
-    IMINIGAME_TOKEN_CREATOR_ID, IMinigameTokenCreator, IMinigameTokenCreatorDispatcher,
-    IMinigameTokenCreatorDispatcherTrait,
+pub use game_fee::{
+    IMINIGAME_TOKEN_GAME_FEE_ID, IMinigameTokenGameFee, IMinigameTokenGameFeeDispatcher,
+    IMinigameTokenGameFeeDispatcherTrait,
 };
 pub use legacy::{
     IMINIGAME_TOKEN_LEGACY_ID, IMinigameTokenLegacy, IMinigameTokenLegacyDispatcher,

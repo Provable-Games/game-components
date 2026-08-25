@@ -133,7 +133,7 @@ pub mod MetagameComponent {
             // Resolve the fee recipient: standard tokens name the payee
             // directly, legacy registry tokens go through the registry NFT's
             // current owner.
-            let recipient = libs::get_game_creator_address(game_address);
+            let recipient = libs::get_game_fee_recipient(game_address);
 
             // Transfer fee. ERC20s that signal failure by returning false
             // instead of reverting must not be reported as a paid fee.

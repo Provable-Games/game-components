@@ -52,9 +52,9 @@ pub mod MinigameTokenComponent {
     use game_components_interfaces::token::core::{
         IMINIGAME_TOKEN_ID, IMinigameToken, MinigameTokenABI,
     };
-    use game_components_interfaces::token::creator::{
-        DEFAULT_GAME_FEE_BPS, FEE_DENOMINATOR, GameCreatorInfo, IMINIGAME_TOKEN_CREATOR_ID,
-        IMinigameTokenCreator, default_license,
+    use game_components_interfaces::token::game_fee::{
+        DEFAULT_GAME_FEE_BPS, FEE_DENOMINATOR, GameFeeTerms, IMINIGAME_TOKEN_GAME_FEE_ID,
+        IMinigameTokenGameFee, default_license,
     };
     use game_components_interfaces::token::minter::{
         IMINIGAME_TOKEN_MINTER_ID, IMinigameTokenMinter,
@@ -87,13 +87,13 @@ pub mod MinigameTokenComponent {
         minter_counter: u64,
         minter_addresses: Map<u64, ContractAddress>,
         minter_id_by_address: Map<ContractAddress, u64>,
-        // Creator identity + monetization terms. Replaces the retired
+        // Game fee recipient + monetization terms. Replaces the retired
         // registry's game_fee_info lookup: with no registry, the payee and
         // fee live on the game contract itself, set at initialization and
         // administered (rotation, fee changes) by the contract's OZ owner.
-        game_creator: ContractAddress,
-        game_creator_license: ByteArray,
-        game_creator_fee_numerator: u16,
+        game_fee_recipient: ContractAddress,
+        game_fee_license: ByteArray,
+        game_fee_numerator: u16,
     }
 
     #[event]
@@ -101,7 +101,7 @@ pub mod MinigameTokenComponent {
     pub enum Event {
         MetadataUpdate: MetadataUpdate,
         MinterRegistryUpdate: MinterRegistryUpdate,
-        GameCreatorUpdate: GameCreatorUpdate,
+        GameFeeRecipientUpdate: GameFeeRecipientUpdate,
         GameFeeUpdate: GameFeeUpdate,
     }
 
@@ -121,11 +121,11 @@ pub mod MinigameTokenComponent {
         pub minter_address: ContractAddress,
     }
 
-    /// Emitted when the creator identity is set or rotated.
+    /// Emitted when the game fee recipient is set or rotated.
     #[derive(Drop, starknet::Event)]
-    pub struct GameCreatorUpdate {
+    pub struct GameFeeRecipientUpdate {
         #[key]
-        pub creator: ContractAddress,
+        pub recipient: ContractAddress,
     }
 
     /// Emitted when the license / fee terms change.
@@ -461,40 +461,40 @@ pub mod MinigameTokenComponent {
         }
     }
 
-    /// Creator identity is standard, not optional: with the registry retired,
+    /// The game-fee surface is standard, not optional: with the registry retired,
     /// this surface is the only place a monetization platform can resolve a
-    /// game's payee and minimum fee. The stored creator is a payout sink; the
+    /// game's payee and minimum fee. The stored recipient is a payout sink; the
     /// game contract's OZ OWNER administers it — both setters are gated with
     /// `assert_only_owner`, and the `OwnableComponent::HasComponent` bound
     /// makes that a compile-time requirement: every contract embedding this
     /// impl MUST also embed `OwnableComponent`.
-    #[embeddable_as(CreatorImpl)]
-    pub impl Creator<
+    #[embeddable_as(GameFeeImpl)]
+    pub impl GameFee<
         TContractState,
         +HasComponent<TContractState>,
         impl Own: OwnableComponent::HasComponent<TContractState>,
         +Drop<TContractState>,
-    > of IMinigameTokenCreator<ComponentState<TContractState>> {
-        fn game_creator_info(self: @ComponentState<TContractState>) -> GameCreatorInfo {
-            GameCreatorInfo {
-                creator: self.game_creator.read(),
-                license: self.game_creator_license.read(),
-                fee_numerator: self.game_creator_fee_numerator.read(),
+    > of IMinigameTokenGameFee<ComponentState<TContractState>> {
+        fn game_fee_terms(self: @ComponentState<TContractState>) -> GameFeeTerms {
+            GameFeeTerms {
+                recipient: self.game_fee_recipient.read(),
+                license: self.game_fee_license.read(),
+                fee_numerator: self.game_fee_numerator.read(),
             }
         }
 
-        fn game_creator_address(self: @ComponentState<TContractState>) -> ContractAddress {
-            self.game_creator.read()
+        fn game_fee_recipient(self: @ComponentState<TContractState>) -> ContractAddress {
+            self.game_fee_recipient.read()
         }
 
-        fn set_game_creator_address(
-            ref self: ComponentState<TContractState>, new_creator: ContractAddress,
+        fn set_game_fee_recipient(
+            ref self: ComponentState<TContractState>, new_recipient: ContractAddress,
         ) {
             Own::get_component(self.get_contract()).assert_only_owner();
             // Rotation must never brick the payee.
-            assert!(!new_creator.is_zero(), "MinigameToken: Creator cannot be zero");
-            self.game_creator.write(new_creator);
-            self.emit(GameCreatorUpdate { creator: new_creator });
+            assert!(!new_recipient.is_zero(), "MinigameToken: Fee recipient cannot be zero");
+            self.game_fee_recipient.write(new_recipient);
+            self.emit(GameFeeRecipientUpdate { recipient: new_recipient });
         }
 
         fn set_game_fee(
@@ -505,17 +505,17 @@ pub mod MinigameTokenComponent {
                 fee_numerator <= FEE_DENOMINATOR,
                 "MinigameToken: Fee numerator exceeds denominator",
             );
-            self.game_creator_license.write(license.clone());
-            self.game_creator_fee_numerator.write(fee_numerator);
+            self.game_fee_license.write(license.clone());
+            self.game_fee_numerator.write(fee_numerator);
             self.emit(GameFeeUpdate { license, fee_numerator });
         }
     }
 
     /// One-embed mixin over the full standard surface (token + absorbed
-    /// minter + creator), mirroring OZ's ERC20MixinImpl pattern. The
+    /// minter + game fee), mirroring OZ's ERC20MixinImpl pattern. The
     /// initializer registers all three SRC5 ids unconditionally, so embedding
     /// this single impl — rather than MinigameTokenImpl / MinterImpl /
-    /// CreatorImpl separately — makes it impossible for the advertised ids to
+    /// GameFeeImpl separately — makes it impossible for the advertised ids to
     /// diverge from the exposed entrypoints (honest SRC5 by construction).
     /// The separate impls remain exported for contracts that wire them
     /// individually.
@@ -655,22 +655,22 @@ pub mod MinigameTokenComponent {
             Minter::total_minters(self)
         }
 
-        // IMinigameTokenCreator
-        fn game_creator_info(self: @ComponentState<TContractState>) -> GameCreatorInfo {
-            Creator::game_creator_info(self)
+        // IMinigameTokenGameFee
+        fn game_fee_terms(self: @ComponentState<TContractState>) -> GameFeeTerms {
+            GameFee::game_fee_terms(self)
         }
-        fn game_creator_address(self: @ComponentState<TContractState>) -> ContractAddress {
-            Creator::game_creator_address(self)
+        fn game_fee_recipient(self: @ComponentState<TContractState>) -> ContractAddress {
+            GameFee::game_fee_recipient(self)
         }
-        fn set_game_creator_address(
-            ref self: ComponentState<TContractState>, new_creator: ContractAddress,
+        fn set_game_fee_recipient(
+            ref self: ComponentState<TContractState>, new_recipient: ContractAddress,
         ) {
-            Creator::set_game_creator_address(ref self, new_creator)
+            GameFee::set_game_fee_recipient(ref self, new_recipient)
         }
         fn set_game_fee(
             ref self: ComponentState<TContractState>, license: ByteArray, fee_numerator: u16,
         ) {
-            Creator::set_game_fee(ref self, license, fee_numerator)
+            GameFee::set_game_fee(ref self, license, fee_numerator)
         }
     }
 
@@ -704,10 +704,10 @@ pub mod MinigameTokenComponent {
             minter_id
         }
 
-        /// Stores the creator identity and registers the SRC5 interface ids:
+        /// Stores the game fee recipient + terms and registers the SRC5 ids:
         /// `IMINIGAME_TOKEN_ID`, the absorbed minter's
-        /// `IMINIGAME_TOKEN_MINTER_ID` and the creator surface's
-        /// `IMINIGAME_TOKEN_CREATOR_ID`. There is no game argument — the
+        /// `IMINIGAME_TOKEN_MINTER_ID` and the game-fee surface's
+        /// `IMINIGAME_TOKEN_GAME_FEE_ID`. There is no game argument — the
         /// component is self-bound: the embedding contract is the game. The
         /// legacy id is NOT registered; SRC5 is honest about the surface
         /// (this token does NOT implement `IMinigameTokenLegacy`).
@@ -715,7 +715,7 @@ pub mod MinigameTokenComponent {
         /// INVARIANT the embedder must uphold: all three ids are registered
         /// UNCONDITIONALLY, so the contract must expose all three surfaces —
         /// embed `MinigameTokenMixinImpl` (one line, guaranteed), or embed
-        /// `MinigameTokenImpl` + `MinterImpl` + `CreatorImpl` all together.
+        /// `MinigameTokenImpl` + `MinterImpl` + `GameFeeImpl` all together.
         /// A partial wiring that still calls this initializer advertises
         /// entrypoints it does not have, and probe-then-dispatch consumers
         /// (e.g. metagame's fee resolution) will revert against it. Note the
@@ -723,28 +723,28 @@ pub mod MinigameTokenComponent {
         /// deploy — an integration test that exercises fee payment is what
         /// catches a partial wiring before production does.
         ///
-        /// `game_creator` must be non-zero (it is the monetization payee);
+        /// `game_fee_recipient` must be non-zero (it is the monetization payee);
         /// `license`/`fee_numerator` default to the ecosystem terms
         /// (`default_license()`, `DEFAULT_GAME_FEE_BPS` = 500 bps) when None —
         /// matching what the retired registry granted games that declared
         /// nothing.
         fn initializer(
             ref self: ComponentState<TContractState>,
-            game_creator: ContractAddress,
+            game_fee_recipient: ContractAddress,
             license: Option<ByteArray>,
             fee_numerator: Option<u16>,
         ) {
-            assert!(!game_creator.is_zero(), "MinigameToken: Creator cannot be zero");
+            assert!(!game_fee_recipient.is_zero(), "MinigameToken: Fee recipient cannot be zero");
             let fee = fee_numerator.unwrap_or(DEFAULT_GAME_FEE_BPS);
             assert!(fee <= FEE_DENOMINATOR, "MinigameToken: Fee numerator exceeds denominator");
-            self.game_creator.write(game_creator);
+            self.game_fee_recipient.write(game_fee_recipient);
             let license_value = match license {
                 Option::Some(l) => l,
                 Option::None => default_license(),
             };
-            self.game_creator_license.write(license_value);
-            self.game_creator_fee_numerator.write(fee);
-            self.emit(GameCreatorUpdate { creator: game_creator });
+            self.game_fee_license.write(license_value);
+            self.game_fee_numerator.write(fee);
+            self.emit(GameFeeRecipientUpdate { recipient: game_fee_recipient });
 
             let mut contract = self.get_contract_mut();
             let mut src5_component = SRC5::get_component_mut(ref contract);
@@ -752,7 +752,7 @@ pub mod MinigameTokenComponent {
             // The absorbed minter registry keeps its own discovery id
             // (matching what the legacy MinterComponent::initializer did).
             src5_component.register_interface(IMINIGAME_TOKEN_MINTER_ID);
-            src5_component.register_interface(IMINIGAME_TOKEN_CREATOR_ID);
+            src5_component.register_interface(IMINIGAME_TOKEN_GAME_FEE_ID);
         }
 
         /// Combined ownership + playability guard for the embedding game's

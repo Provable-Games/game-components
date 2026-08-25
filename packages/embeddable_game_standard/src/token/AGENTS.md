@@ -23,7 +23,7 @@ two-phase init, a standalone preset, game-side call helpers).
 | Strip principle: machinery deleted, capability + read views kept | The ABI is NOT `IMinigameTokenLegacy`-compatible: the legacy token's `game_address`, `renderer_address` and `skills_address` mint params are gone, and the compat views (`game_address`, `game_registry_address`) with them. Cheap client-facing read views (`token_metadata`, `is_playable`, `settings_id`, `minted_by`, `is_soulbound`, …) stay |
 | Restored mint params keep their original legacy-token behaviors | `objective_id` (30-bit packed, INERT data the game interprets — no completion machinery; `completed_objective` stays always-false), `context` (sets the has_context bit only; the data is NOT stored — legacy-token parity), `client_url` (storage-backed, `client_url` view, empty default), `paymaster` (packed bit), `metadata` (u128 param packed into a 65-bit field, read via `mint_metadata` — the shared `TokenMetadata.metadata: u16` cannot hold it and stays 0, never truncated) |
 | The minter is standard, not optional | The minter registry is absorbed into `MinigameTokenComponent`: same storage variable names, same `IMinigameTokenMinter` surface (`MinterImpl`, `IMINIGAME_TOKEN_MINTER_ID`), same `MinterRegistryUpdate` event as the legacy `MinterComponent`. `OptionalMinter` indirection remains only in `token_legacy` |
-| Creator identity is standard, not optional | The registry's `game_fee_info` role moves onto the token: `game_creator` (payout sink), license and fee (bps, default 500) are set in the initializer and served via `CreatorImpl` (`IMinigameTokenCreator`, `IMINIGAME_TOKEN_CREATOR_ID`). Setters are gated on the game contract's OZ Ownable OWNER (`assert_only_owner`, hard `OwnableComponent::HasComponent` bound) — the stored creator is a payee, not an admin. Monetization platforms resolve the payee LIVE at claim time |
+| The game-fee surface is standard, not optional | The registry's `game_fee_info` role moves onto the token: `game_fee_recipient` (payout sink), license and fee (bps, default 500) are set in the initializer and served via `GameFeeImpl` (`IMinigameTokenGameFee`, `IMINIGAME_TOKEN_GAME_FEE_ID`). Setters are gated on the game contract's OZ Ownable OWNER (`assert_only_owner`, hard `OwnableComponent::HasComponent` bound) — the stored recipient is a payee, not an admin. Monetization platforms resolve the payee LIVE at claim time |
 | Game contract is the authority | Games gate dead/finished runs themselves (internal `assert_owner_and_playable`) and call `refresh_metadata` (ERC-4906) after actions |
 
 ## Token ID Layout (standard, 251 bits)
@@ -66,11 +66,11 @@ require a new contract generation (accepted trade-off).
 exclusion from `IMINIGAME_TOKEN_LEGACY_ID`)
 
 Defined in `packages/interfaces/src/token/core.cairo`.
-`initializer(game_creator, license, fee_numerator)` stores the creator
-identity (creator must be non-zero; `license`/`fee_numerator` default to
+`initializer(game_fee_recipient, license, fee_numerator)` stores the game-fee
+terms (recipient must be non-zero; `license`/`fee_numerator` default to
 `default_license()` / `DEFAULT_GAME_FEE_BPS` when None) and registers
 `IMINIGAME_TOKEN_ID`, the absorbed minter's `IMINIGAME_TOKEN_MINTER_ID` and
-the creator surface's `IMINIGAME_TOKEN_CREATOR_ID` — and nothing else: SRC5
+the game-fee surface's `IMINIGAME_TOKEN_GAME_FEE_ID` — and nothing else: SRC5
 is honest, a standard token does not implement `IMinigameTokenLegacy` and
 does not advertise the legacy id. Consumers branch on `IMINIGAME_TOKEN_ID`
 instead of resolving registry/game-address views.
@@ -89,11 +89,13 @@ The absorbed minter registry additionally exposes the unchanged
 `IMinigameTokenMinter` surface (`get_minter_address`, `get_minter_id`,
 `minter_exists`, `total_minters`) via `MinigameTokenComponent::MinterImpl`.
 
-The creator surface (`MinigameTokenComponent::CreatorImpl`,
-`IMINIGAME_TOKEN_CREATOR_ID = 0x21531ca59c09f4a8554a0c390d8054188d27b19148c9039f0279f2b66a86de7`)
-exposes `game_creator_info` / `game_creator_address` (reads) and
-`set_game_creator_address` / `set_game_fee` (owner-gated writes; rotation to
-zero rejected, fee capped at `FEE_DENOMINATOR`).
+The game-fee surface (`MinigameTokenComponent::GameFeeImpl`,
+`IMINIGAME_TOKEN_GAME_FEE_ID = 0x171bf98e08ae98315df3e68477e24275ef5755111c1984db851c344b3907bb0`)
+exposes `game_fee_terms` / `game_fee_recipient` (reads) and
+`set_game_fee_recipient` / `set_game_fee` (owner-gated writes; rotation to
+zero rejected, fee capped at `FEE_DENOMINATOR`). Renamed from the creator
+surface — function renames change extended selectors, so the retired
+`IMINIGAME_TOKEN_CREATOR_ID` value is dead (no deployment registers it).
 
 Deleted from the ABI (strip principle — dead machinery and compat shims go,
 capability and read views stay):
@@ -116,12 +118,12 @@ exposes the full standard surface (`MinigameTokenABI` = token + absorbed
 minter + creator) in a single `#[abi(embed_v0)]` line — since the initializer
 registers all three SRC5 ids unconditionally, the mixin keeps the advertised
 ids honest by construction. The separate impls (`MinigameTokenImpl`,
-`MinterImpl`, `CreatorImpl`) remain exported; a contract wiring them
+`MinterImpl`, `GameFeeImpl`) remain exported; a contract wiring them
 individually MUST embed all three or its SRC5 answers lie.
 
 Requires: `ERC721Component`, `SRC5Component`, `OwnableComponent` (hard
-`HasComponent` bound on `CreatorImpl` and the mixin — the owner administers
-the creator surface), and an `ERC721HooksTrait`
+`HasComponent` bound on `GameFeeImpl` and the mixin — the owner administers
+the game-fee surface), and an `ERC721HooksTrait`
 (enforce soulbound in `before_update` via `token::packing::unpack_soulbound`
 — pure, no storage; NOT the legacy token's `unpack_soulbound`, which reads a
 different bit position). No separate minter component: the registry is

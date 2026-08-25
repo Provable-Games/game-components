@@ -14,9 +14,9 @@ use game_components_interfaces::structs::token::MintBatchRecipient;
 use game_components_interfaces::token::core::{
     IMINIGAME_TOKEN_ID, IMinigameTokenDispatcher, IMinigameTokenDispatcherTrait,
 };
-use game_components_interfaces::token::creator::{
-    IMINIGAME_TOKEN_CREATOR_ID, IMinigameTokenCreatorDispatcher,
-    IMinigameTokenCreatorDispatcherTrait,
+use game_components_interfaces::token::game_fee::{
+    IMINIGAME_TOKEN_GAME_FEE_ID, IMinigameTokenGameFeeDispatcher,
+    IMinigameTokenGameFeeDispatcherTrait,
 };
 use openzeppelin_interfaces::erc721::{IERC721Dispatcher, IERC721DispatcherTrait};
 use openzeppelin_interfaces::introspection::{ISRC5Dispatcher, ISRC5DispatcherTrait};
@@ -397,16 +397,16 @@ pub fn calculate_game_fee(revenue: u128, fee_numerator: u16) -> u128 {
 /// Resolves game fee info.
 ///
 /// Standard tokens carry the creator identity the registry used to hold, so a
-/// token advertising `IMINIGAME_TOKEN_CREATOR_ID` answers directly. Legacy
+/// token advertising `IMINIGAME_TOKEN_GAME_FEE_ID` answers directly. Legacy
 /// tokens keep the game_address → token → registry → game_fee_info walk.
 pub fn get_game_fee_info(game_address: ContractAddress) -> GameFeeInfo {
     let minigame_dispatcher = IMinigameDispatcher { contract_address: game_address };
     let minigame_token_address = minigame_dispatcher.token_address();
-    if supports_creator_surface(minigame_token_address) {
+    if supports_game_fee_surface(minigame_token_address) {
         // The creator surface belongs to the self-bound standard token.
         assert_self_bound(minigame_token_address, game_address);
-        let info = IMinigameTokenCreatorDispatcher { contract_address: minigame_token_address }
-            .game_creator_info();
+        let info = IMinigameTokenGameFeeDispatcher { contract_address: minigame_token_address }
+            .game_fee_terms();
         return GameFeeInfo { license: info.license, fee_numerator: info.fee_numerator };
     }
     let minigame_token_dispatcher = IMinigameTokenLegacyDispatcher {
@@ -433,25 +433,25 @@ pub fn get_game_fee_info(game_address: ContractAddress) -> GameFeeInfo {
 }
 
 /// True when the token exposes the standard creator surface
-/// (`IMINIGAME_TOKEN_CREATOR_ID`) that replaced the registry's fee/payee role.
-pub fn supports_creator_surface(token_address: ContractAddress) -> bool {
+/// (`IMINIGAME_TOKEN_GAME_FEE_ID`) that replaced the registry's fee/payee role.
+pub fn supports_game_fee_surface(token_address: ContractAddress) -> bool {
     ISRC5Dispatcher { contract_address: token_address }
-        .supports_interface(IMINIGAME_TOKEN_CREATOR_ID)
+        .supports_interface(IMINIGAME_TOKEN_GAME_FEE_ID)
 }
 
 /// Resolves the address that should receive a game's creator fee.
 ///
-/// Standard tokens name the payee directly (`game_creator_address`). Legacy
+/// Standard tokens name the payee directly (`game_fee_recipient`). Legacy
 /// registry tokens keep the old indirection: the payee is whoever currently
 /// owns the game's registry NFT.
-pub fn get_game_creator_address(game_address: ContractAddress) -> ContractAddress {
+pub fn get_game_fee_recipient(game_address: ContractAddress) -> ContractAddress {
     let minigame_dispatcher = IMinigameDispatcher { contract_address: game_address };
     let token_address = minigame_dispatcher.token_address();
-    if supports_creator_surface(token_address) {
+    if supports_game_fee_surface(token_address) {
         // Same pairing check: a hostile game must not redirect the payee.
         assert_self_bound(token_address, game_address);
-        return IMinigameTokenCreatorDispatcher { contract_address: token_address }
-            .game_creator_address();
+        return IMinigameTokenGameFeeDispatcher { contract_address: token_address }
+            .game_fee_recipient();
     }
     let token_dispatcher = IMinigameTokenLegacyDispatcher { contract_address: token_address };
     let registry_address = token_dispatcher.game_registry_address();
