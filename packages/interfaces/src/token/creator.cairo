@@ -8,8 +8,21 @@
 // only), and discoverable via SRC5 so monetization platforms (e.g. Budokan)
 // can resolve the payee and minimum fee live at claim time.
 use starknet::ContractAddress;
-pub use crate::registry::{DEFAULT_GAME_FEE_BPS, FEE_DENOMINATOR, default_license};
+pub use crate::registry::{DEFAULT_GAME_FEE_BPS, FEE_DENOMINATOR};
 pub use crate::structs::token::GameCreatorInfo;
+
+/// Default license text for the STANDARD token's creator surface.
+///
+/// Deliberately fee-amount-free: the authoritative fee is the on-chain
+/// `fee_numerator` (owner-rotatable via `set_game_fee`), so a number baked
+/// into the text would go stale on the first fee change. The text points
+/// consumers at the on-chain declaration instead and resolves both rate and
+/// payee at time of payment. The legacy registry keeps its own v1.0 text
+/// (`registry::default_license`) — that string is what deployed denshokan
+/// carries and stays frozen.
+pub fn default_license() -> ByteArray {
+    "Embeddable Game Standard License v1.1. Monetization of this game requires payment of the game fee this contract declares on-chain, at the rate and to the game creator address in effect at the time of payment (game_creator_info). Non-monetized integration, indexing, and display of this game are unrestricted."
+}
 
 /// SNIP-5 interface ID derived via src5_rs: XOR of extended function selectors
 /// - game_creator_info()->(ContractAddress,(Array<bytes31>,felt252,usize),u16)
