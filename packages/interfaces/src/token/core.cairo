@@ -145,3 +145,73 @@ pub trait IMinigameToken<TState> {
     /// Owner-gated rename; emits `MetadataUpdate`.
     fn update_player_name(ref self: TState, token_id: felt252, name: felt252);
 }
+
+/// Combined mixin ABI: the full external surface of the standard token —
+/// `IMinigameToken` + the absorbed minter (`IMinigameTokenMinter`) + the
+/// creator surface (`IMinigameTokenCreator`) — as ONE embeddable trait,
+/// mirroring OpenZeppelin's ERC20ABI / MixinImpl pattern.
+///
+/// The component's `initializer` registers all three SRC5 ids
+/// unconditionally; embedding `MinigameTokenComponent::MinigameTokenMixinImpl`
+/// (instead of the three impls separately) guarantees the advertised ids can
+/// never diverge from the exposed entrypoints. NOT used for SRC5 id
+/// derivation — the ids remain `IMINIGAME_TOKEN_ID`,
+/// `IMINIGAME_TOKEN_MINTER_ID` and `IMINIGAME_TOKEN_CREATOR_ID`.
+#[starknet::interface]
+pub trait MinigameTokenABI<TState> {
+    // IMinigameToken
+    fn token_metadata(self: @TState, token_id: felt252) -> TokenMetadata;
+    fn is_playable(self: @TState, token_id: felt252) -> bool;
+    fn settings_id(self: @TState, token_id: felt252) -> u32;
+    fn player_name(self: @TState, token_id: felt252) -> felt252;
+    fn minted_by(self: @TState, token_id: felt252) -> felt252;
+    fn minted_by_address(self: @TState, token_id: felt252) -> ContractAddress;
+    fn is_soulbound(self: @TState, token_id: felt252) -> bool;
+    fn objective_id(self: @TState, token_id: felt252) -> u32;
+    fn client_url(self: @TState, token_id: felt252) -> ByteArray;
+    fn mint_metadata(self: @TState, token_id: felt252) -> u128;
+    fn mint(
+        ref self: TState,
+        player_name: Option<felt252>,
+        settings_id: Option<u32>,
+        start: Option<u64>,
+        end: Option<u64>,
+        objective_id: Option<u32>,
+        context: Option<GameContextDetails>,
+        client_url: Option<ByteArray>,
+        to: ContractAddress,
+        soulbound: bool,
+        paymaster: bool,
+        salt: u16,
+        metadata: u128,
+    ) -> felt252;
+    fn mint_batch_recipients(
+        ref self: TState,
+        player_name: Option<felt252>,
+        settings_id: Option<u32>,
+        start: Option<u64>,
+        end: Option<u64>,
+        objective_id: Option<u32>,
+        context: Option<GameContextDetails>,
+        client_url: Option<ByteArray>,
+        recipients: Array<MintBatchRecipient>,
+        soulbound: bool,
+        paymaster: bool,
+        salt: u16,
+        metadata: u128,
+    ) -> Array<felt252>;
+    fn refresh_metadata(ref self: TState, token_id: felt252);
+    fn update_player_name(ref self: TState, token_id: felt252, name: felt252);
+
+    // IMinigameTokenMinter (absorbed minter registry)
+    fn get_minter_address(self: @TState, minter_id: u64) -> ContractAddress;
+    fn get_minter_id(self: @TState, minter_address: ContractAddress) -> u64;
+    fn minter_exists(self: @TState, minter_address: ContractAddress) -> bool;
+    fn total_minters(self: @TState) -> u64;
+
+    // IMinigameTokenCreator (creator payout identity)
+    fn game_creator_info(self: @TState) -> crate::structs::token::GameCreatorInfo;
+    fn game_creator_address(self: @TState) -> ContractAddress;
+    fn set_game_creator_address(ref self: TState, new_creator: ContractAddress);
+    fn set_game_fee(ref self: TState, license: ByteArray, fee_numerator: u16);
+}

@@ -14,6 +14,7 @@ pub use context::IMINIGAME_TOKEN_CONTEXT_ID;
 // Re-export commonly used items at top level
 pub use core::{
     IMINIGAME_TOKEN_ID, IMinigameToken, IMinigameTokenDispatcher, IMinigameTokenDispatcherTrait,
+    MinigameTokenABI, MinigameTokenABIDispatcher, MinigameTokenABIDispatcherTrait,
 };
 pub use creator::{
     IMINIGAME_TOKEN_CREATOR_ID, IMinigameTokenCreator, IMinigameTokenCreatorDispatcher,

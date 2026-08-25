@@ -111,9 +111,17 @@ surfaces.
 
 ## Composition
 
+**Preferred wiring: one embed.** `MinigameTokenComponent::MinigameTokenMixinImpl`
+exposes the full standard surface (`MinigameTokenABI` = token + absorbed
+minter + creator) in a single `#[abi(embed_v0)]` line — since the initializer
+registers all three SRC5 ids unconditionally, the mixin keeps the advertised
+ids honest by construction. The separate impls (`MinigameTokenImpl`,
+`MinterImpl`, `CreatorImpl`) remain exported; a contract wiring them
+individually MUST embed all three or its SRC5 answers lie.
+
 Requires: `ERC721Component`, `SRC5Component`, `OwnableComponent` (hard
-`HasComponent` bound on `CreatorImpl` — the owner administers the creator
-surface), and an `ERC721HooksTrait`
+`HasComponent` bound on `CreatorImpl` and the mixin — the owner administers
+the creator surface), and an `ERC721HooksTrait`
 (enforce soulbound in `before_update` via `token::packing::unpack_soulbound`
 — pure, no storage; NOT the legacy token's `unpack_soulbound`, which reads a
 different bit position). No separate minter component: the registry is

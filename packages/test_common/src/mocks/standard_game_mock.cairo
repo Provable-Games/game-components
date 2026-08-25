@@ -112,15 +112,12 @@ pub mod StandardGameMock {
     impl ERC721MetadataImpl = ERC721Component::ERC721MetadataImpl<ContractState>;
     #[abi(embed_v0)]
     impl SRC5Impl = SRC5Component::SRC5Impl<ContractState>;
+    // One embed for the full standard surface (token + absorbed minter +
+    // creator) — the mixin keeps the SRC5 ids registered by the initializer
+    // honest by construction.
     #[abi(embed_v0)]
-    impl MinigameTokenImpl =
-        MinigameTokenComponent::MinigameTokenImpl<ContractState>;
-    // The minter registry and creator surface are absorbed into the token
-    // component — plain embeds, no separate components.
-    #[abi(embed_v0)]
-    impl MinterImpl = MinigameTokenComponent::MinterImpl<ContractState>;
-    #[abi(embed_v0)]
-    impl CreatorImpl = MinigameTokenComponent::CreatorImpl<ContractState>;
+    impl MinigameTokenMixinImpl =
+        MinigameTokenComponent::MinigameTokenMixinImpl<ContractState>;
     #[abi(embed_v0)]
     impl OwnableImpl = OwnableComponent::OwnableImpl<ContractState>;
 

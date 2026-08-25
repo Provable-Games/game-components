@@ -49,7 +49,9 @@
 pub mod MinigameTokenComponent {
     use core::num::traits::Zero;
     use game_components_interfaces::structs::metagame::GameContextDetails;
-    use game_components_interfaces::token::core::{IMINIGAME_TOKEN_ID, IMinigameToken};
+    use game_components_interfaces::token::core::{
+        IMINIGAME_TOKEN_ID, IMinigameToken, MinigameTokenABI,
+    };
     use game_components_interfaces::token::creator::{
         DEFAULT_GAME_FEE_BPS, FEE_DENOMINATOR, GameCreatorInfo, IMINIGAME_TOKEN_CREATOR_ID,
         IMinigameTokenCreator, default_license,
@@ -506,6 +508,169 @@ pub mod MinigameTokenComponent {
             self.game_creator_license.write(license.clone());
             self.game_creator_fee_numerator.write(fee_numerator);
             self.emit(GameFeeUpdate { license, fee_numerator });
+        }
+    }
+
+    /// One-embed mixin over the full standard surface (token + absorbed
+    /// minter + creator), mirroring OZ's ERC20MixinImpl pattern. The
+    /// initializer registers all three SRC5 ids unconditionally, so embedding
+    /// this single impl — rather than MinigameTokenImpl / MinterImpl /
+    /// CreatorImpl separately — makes it impossible for the advertised ids to
+    /// diverge from the exposed entrypoints (honest SRC5 by construction).
+    /// The separate impls remain exported for contracts that wire them
+    /// individually.
+    #[embeddable_as(MinigameTokenMixinImpl)]
+    pub impl MinigameTokenMixin<
+        TContractState,
+        +HasComponent<TContractState>,
+        impl SRC5: SRC5Component::HasComponent<TContractState>,
+        impl ERC721: ERC721Component::HasComponent<TContractState>,
+        impl Own: OwnableComponent::HasComponent<TContractState>,
+        +Drop<TContractState>,
+        +ERC721Component::ERC721HooksTrait<TContractState>,
+    > of MinigameTokenABI<ComponentState<TContractState>> {
+        // IMinigameToken
+        fn token_metadata(
+            self: @ComponentState<TContractState>, token_id: felt252,
+        ) -> TokenMetadata {
+            MinigameToken::token_metadata(self, token_id)
+        }
+        fn is_playable(self: @ComponentState<TContractState>, token_id: felt252) -> bool {
+            MinigameToken::is_playable(self, token_id)
+        }
+        fn settings_id(self: @ComponentState<TContractState>, token_id: felt252) -> u32 {
+            MinigameToken::settings_id(self, token_id)
+        }
+        fn player_name(self: @ComponentState<TContractState>, token_id: felt252) -> felt252 {
+            MinigameToken::player_name(self, token_id)
+        }
+        fn minted_by(self: @ComponentState<TContractState>, token_id: felt252) -> felt252 {
+            MinigameToken::minted_by(self, token_id)
+        }
+        fn minted_by_address(
+            self: @ComponentState<TContractState>, token_id: felt252,
+        ) -> ContractAddress {
+            MinigameToken::minted_by_address(self, token_id)
+        }
+        fn is_soulbound(self: @ComponentState<TContractState>, token_id: felt252) -> bool {
+            MinigameToken::is_soulbound(self, token_id)
+        }
+        fn objective_id(self: @ComponentState<TContractState>, token_id: felt252) -> u32 {
+            MinigameToken::objective_id(self, token_id)
+        }
+        fn client_url(self: @ComponentState<TContractState>, token_id: felt252) -> ByteArray {
+            MinigameToken::client_url(self, token_id)
+        }
+        fn mint_metadata(self: @ComponentState<TContractState>, token_id: felt252) -> u128 {
+            MinigameToken::mint_metadata(self, token_id)
+        }
+        fn mint(
+            ref self: ComponentState<TContractState>,
+            player_name: Option<felt252>,
+            settings_id: Option<u32>,
+            start: Option<u64>,
+            end: Option<u64>,
+            objective_id: Option<u32>,
+            context: Option<GameContextDetails>,
+            client_url: Option<ByteArray>,
+            to: ContractAddress,
+            soulbound: bool,
+            paymaster: bool,
+            salt: u16,
+            metadata: u128,
+        ) -> felt252 {
+            MinigameToken::mint(
+                ref self,
+                player_name,
+                settings_id,
+                start,
+                end,
+                objective_id,
+                context,
+                client_url,
+                to,
+                soulbound,
+                paymaster,
+                salt,
+                metadata,
+            )
+        }
+        fn mint_batch_recipients(
+            ref self: ComponentState<TContractState>,
+            player_name: Option<felt252>,
+            settings_id: Option<u32>,
+            start: Option<u64>,
+            end: Option<u64>,
+            objective_id: Option<u32>,
+            context: Option<GameContextDetails>,
+            client_url: Option<ByteArray>,
+            recipients: Array<MintBatchRecipient>,
+            soulbound: bool,
+            paymaster: bool,
+            salt: u16,
+            metadata: u128,
+        ) -> Array<felt252> {
+            MinigameToken::mint_batch_recipients(
+                ref self,
+                player_name,
+                settings_id,
+                start,
+                end,
+                objective_id,
+                context,
+                client_url,
+                recipients,
+                soulbound,
+                paymaster,
+                salt,
+                metadata,
+            )
+        }
+        fn refresh_metadata(ref self: ComponentState<TContractState>, token_id: felt252) {
+            MinigameToken::refresh_metadata(ref self, token_id)
+        }
+        fn update_player_name(
+            ref self: ComponentState<TContractState>, token_id: felt252, name: felt252,
+        ) {
+            MinigameToken::update_player_name(ref self, token_id, name)
+        }
+
+        // IMinigameTokenMinter
+        fn get_minter_address(
+            self: @ComponentState<TContractState>, minter_id: u64,
+        ) -> ContractAddress {
+            Minter::get_minter_address(self, minter_id)
+        }
+        fn get_minter_id(
+            self: @ComponentState<TContractState>, minter_address: ContractAddress,
+        ) -> u64 {
+            Minter::get_minter_id(self, minter_address)
+        }
+        fn minter_exists(
+            self: @ComponentState<TContractState>, minter_address: ContractAddress,
+        ) -> bool {
+            Minter::minter_exists(self, minter_address)
+        }
+        fn total_minters(self: @ComponentState<TContractState>) -> u64 {
+            Minter::total_minters(self)
+        }
+
+        // IMinigameTokenCreator
+        fn game_creator_info(self: @ComponentState<TContractState>) -> GameCreatorInfo {
+            Creator::game_creator_info(self)
+        }
+        fn game_creator_address(self: @ComponentState<TContractState>) -> ContractAddress {
+            Creator::game_creator_address(self)
+        }
+        fn set_game_creator_address(
+            ref self: ComponentState<TContractState>, new_creator: ContractAddress,
+        ) {
+            Creator::set_game_creator_address(ref self, new_creator)
+        }
+        fn set_game_fee(
+            ref self: ComponentState<TContractState>, license: ByteArray, fee_numerator: u16,
+        ) {
+            Creator::set_game_fee(ref self, license, fee_numerator)
         }
     }
 
