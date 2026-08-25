@@ -712,6 +712,14 @@ pub mod MinigameTokenComponent {
         /// legacy id is NOT registered; SRC5 is honest about the surface
         /// (this token does NOT implement `IMinigameTokenLegacy`).
         ///
+        /// INVARIANT the embedder must uphold: all three ids are registered
+        /// UNCONDITIONALLY, so the contract must expose all three surfaces —
+        /// embed `MinigameTokenMixinImpl` (one line, guaranteed), or embed
+        /// `MinigameTokenImpl` + `MinterImpl` + `CreatorImpl` all together.
+        /// A partial wiring that still calls this initializer advertises
+        /// entrypoints it does not have, and probe-then-dispatch consumers
+        /// (e.g. metagame's fee resolution) will revert against it.
+        ///
         /// `game_creator` must be non-zero (it is the monetization payee);
         /// `license`/`fee_numerator` default to the ecosystem terms
         /// (`default_license()`, `DEFAULT_GAME_FEE_BPS` = 500 bps) when None —
