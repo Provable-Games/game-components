@@ -75,6 +75,28 @@ fn is_standard_token(token_address: ContractAddress) -> bool {
     ISRC5Dispatcher { contract_address: token_address }.supports_interface(IMINIGAME_TOKEN_ID)
 }
 
+/// Rejects a game whose token is not itself, on the way into a legacy mint.
+///
+/// The mint paths discriminate on `token_address() == game_address` rather
+/// than by probing SRC5, because self-boundness IS what makes a token
+/// standard: a legacy token is structurally a separate contract from its
+/// game. Address equality answers the same question for free, and these are
+/// the hot paths — a probe there costs a cross-contract call on every mint,
+/// which for a tournament metagame is every entry.
+///
+/// The probe still has to happen somewhere, or a game naming a standard token
+/// it does not own would fall into the legacy branch and fail on a missing
+/// entrypoint instead of saying what is wrong. So it happens here, on the
+/// branch that is already not self-bound — legacy mints pay for it, standard
+/// mints no longer do, and the panic is unchanged either way.
+fn assert_not_a_foreign_standard_token(
+    token_address: ContractAddress, game_address: ContractAddress,
+) {
+    if is_standard_token(token_address) {
+        assert_self_bound(token_address, game_address);
+    }
+}
+
 /// Mints on a self-bound standard token.
 ///
 /// The standard `mint` has no game address (the token IS the game) and no
@@ -159,9 +181,21 @@ pub fn mint(
     let minigame_token_address = minigame_dispatcher.token_address();
     // A standard token is self-bound and carries a different mint ABI;
     // `assert_game_registered` accepts these games, so this path must be able
-    // to mint for them too — under the same pairing check.
-    if is_standard_token(minigame_token_address) {
-        assert_self_bound(minigame_token_address, game_address);
+    // to mint for them too — under the same pairing check, which here IS the
+    // discriminator rather than a follow-up to one.
+    //
+    // Reading self-boundness as "standard" assumes no LEGACY token is ever
+    // self-bound. That is a description of deployed reality — a legacy token
+    // is a separate contract from its game — and not an invariant anything
+    // enforces, so state it rather than leave it implicit. A self-bound legacy
+    // token would take this branch and fail loudly on the standard mint's
+    // missing entrypoint, and `assert_game_registered`'s zero-registry branch
+    // would still admit it (`token.game_address() == game_address` can hold
+    // when the two are the same contract), so the two disagree about exactly
+    // that shape. Accepted knowingly: the failure is a revert at first mint,
+    // never silent, and the alternative is the per-mint probe this exists to
+    // remove.
+    if minigame_token_address == game_address {
         return mint_standard_token(
             minigame_token_address,
             player_name,
@@ -180,6 +214,8 @@ pub fn mint(
             metadata,
         );
     }
+    assert_not_a_foreign_standard_token(minigame_token_address, game_address);
+
     // Legacy token: narrower metadata field — reject rather than truncate.
     let legacy_metadata: u16 = metadata.try_into().expect('Metagame: metadata exceeds u16');
     let minigame_token_dispatcher = IMinigameTokenLegacyDispatcher {
@@ -246,8 +282,8 @@ pub fn mint_batch_recipients(
     let minigame_dispatcher = IMinigameDispatcher { contract_address: game_address };
     let minigame_token_address = minigame_dispatcher.token_address();
 
-    if is_standard_token(minigame_token_address) {
-        assert_self_bound(minigame_token_address, game_address);
+    // Same discriminator, and the same assumption, as `mint` — see there.
+    if minigame_token_address == game_address {
         assert!(renderer_address.is_none(), "Metagame: standard tokens have no per-token renderer");
         assert!(skills_address.is_none(), "Metagame: standard tokens have no per-token skills");
         return IMinigameTokenDispatcher { contract_address: minigame_token_address }
@@ -266,6 +302,8 @@ pub fn mint_batch_recipients(
                 metadata,
             );
     }
+
+    assert_not_a_foreign_standard_token(minigame_token_address, game_address);
 
     // Legacy token: narrower metadata field — reject rather than truncate.
     let legacy_metadata: u16 = metadata.try_into().expect('Metagame: metadata exceeds u16');
