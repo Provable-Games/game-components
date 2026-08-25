@@ -210,7 +210,7 @@ pub mod StandardGameMock {
             soulbound: bool,
             paymaster: bool,
             salt: u16,
-            metadata: u16,
+            metadata: u128,
         ) -> felt252 {
             assert!(renderer_address.is_none(), "StandardGameMock: renderer not supported");
             assert!(skills_address.is_none(), "StandardGameMock: skills not supported");
@@ -263,7 +263,7 @@ pub mod StandardGameMock {
                                 *m.soulbound,
                                 *m.paymaster,
                                 *m.salt,
-                                (*m.metadata).into(),
+                                *m.metadata,
                             ),
                     );
                 index += 1;

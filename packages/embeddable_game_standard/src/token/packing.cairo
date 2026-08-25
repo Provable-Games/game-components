@@ -6,7 +6,7 @@
 // boundary). This layout is OWNED by the standard token and is deliberately NOT the
 // legacy token's `token_legacy::structs::pack_token_id` layout — the legacy layout serves
 // legacy denshokan and keeps its bit positions untouched; the standard token drops
-// the fields it never writes (game_id) and widens the ones it uses beyond the
+// the fields it never writes and widens the ones it uses beyond the
 // legacy token's widths (settings_id 16, salt 16, metadata 65).
 // Indexers must branch their decoder by contract generation.
 //
@@ -380,21 +380,18 @@ pub fn unpack_metadata(token_id: felt252) -> u128 {
 
 /// Convert PackedTokenId to the shared TokenMetadata struct.
 ///
-/// The standard token has no mutable state and never resolves a game id, so
-/// `game_id`, `game_over`, `completed_objective` and `completed_at` are all
-/// zeroed (the game contract is authoritative — `completed_objective` stays
-/// always-false even when an objective_id is packed). The lifecycle is
-/// reconstructed from minted_at + delays with the same rule as the legacy
-/// token: end_delay == 0 means "no expiration" (end == 0).
+/// Every packed field round-trips exactly, `metadata` included — the struct
+/// field is 65 bits wide, matching the id layout, so what is read back is
+/// what was minted.
 ///
-/// `metadata` is 0 here, NOT a truncation of the packed value: the shared
-/// struct's `metadata` field is `u16` (the deployed legacy token's ABI, which
-/// cannot change), while the id packs 65 bits. Read the real value via
-/// `IMinigameToken::mint_metadata` / `unpack_metadata`.
+/// `game_over`, `completed_objective` and `completed_at` are zeroed: the
+/// standard token holds no mutable state and the game contract is
+/// authoritative, so `completed_objective` stays always-false even when an
+/// objective_id is packed. The lifecycle is reconstructed from minted_at +
+/// delays: end_delay == 0 means "no expiration" (end == 0).
 #[inline(always)]
 pub fn to_token_metadata(packed: PackedTokenId) -> TokenMetadata {
     TokenMetadata {
-        game_id: 0,
         minted_at: packed.minted_at,
         settings_id: packed.settings_id,
         lifecycle: Lifecycle {
@@ -413,6 +410,6 @@ pub fn to_token_metadata(packed: PackedTokenId) -> TokenMetadata {
         has_context: packed.has_context,
         objective_id: packed.objective_id,
         paymaster: packed.paymaster,
-        metadata: 0,
+        metadata: packed.metadata,
     }
 }

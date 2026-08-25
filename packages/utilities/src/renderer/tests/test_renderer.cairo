@@ -58,7 +58,6 @@ fn default_game_metadata() -> GameMetadata {
 
 fn default_token_metadata() -> TokenMetadata {
     TokenMetadata {
-        game_id: 1,
         settings_id: 1,
         minted_at: 1640995200, // 2022-01-01
         minted_by: 123,
@@ -384,11 +383,11 @@ fn test_default_svg_special_color() {
 
 #[test]
 #[fuzzer(runs: 50)]
-fn test_default_svg_fuzz(score: u64, game_id: u64) {
+fn test_default_svg_fuzz(score: u64, metadata: u128) {
     start_cheat_block_timestamp_global(1656763200);
     let game_metadata = default_game_metadata();
     let mut token_metadata = default_token_metadata();
-    token_metadata.game_id = game_id;
+    token_metadata.metadata = metadata;
     let result = create_default_svg(
         game_metadata,
         token_metadata,
@@ -1480,7 +1479,6 @@ fn test_custom_metadata_all_features_combined() {
 
 fn stress_token_metadata() -> TokenMetadata {
     let mut token_metadata = default_token_metadata();
-    token_metadata.game_id = 18446744073709551615; // max u64
     token_metadata.settings_id = 4294967295; // max u32
     token_metadata.minted_at = 18446744073709551615;
     token_metadata.minted_by = 18446744073709551615;
@@ -1491,7 +1489,8 @@ fn stress_token_metadata() -> TokenMetadata {
     token_metadata.has_context = true;
     token_metadata.objective_id = 4294967295;
     token_metadata.paymaster = true;
-    token_metadata.metadata = 65535; // max u16
+    // Max 65-bit value the id layout can hold.
+    token_metadata.metadata = 36893488147419103231;
     token_metadata
 }
 

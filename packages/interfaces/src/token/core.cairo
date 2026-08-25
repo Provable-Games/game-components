@@ -59,7 +59,7 @@ use crate::structs::token::{MintBatchRecipient, TokenMetadata};
 /// refresh-function exclusion from `IMINIGAME_TOKEN_LEGACY_ID`. Run `src5_rs parse`
 /// against a stripped copy of this trait (see packages/interfaces/src/AGENTS.md)
 /// to rederive:
-/// token_metadata: 0x1ebdf5dc7aab5a2b9bd68eb3a453bfb8025371633679db9d0d918cf87f92dd0
+/// token_metadata: 0x2b0dd558353cb20e7f4ab7c3f1d2bc5ba7dbc4814f2f019e5910cd952338601
 /// is_playable: 0x2fbc9e87d82f279727e61c9ebc25269905fd28fb8137aeead5f417ac4cc66de
 /// settings_id: 0x2c1ab8f675f7da818ca288b9feb48811492444b5e6d822b3d1fe07728d1b714
 /// player_name: 0x2cf33209d5df54b50609fc29863a6b916471ac903c3d15acbe89210cac085aa
@@ -73,7 +73,7 @@ use crate::structs::token::{MintBatchRecipient, TokenMetadata};
 /// mint_batch_recipients: 0x144515c9b8cf0aa7bfe3e5c932f6d346730b53fa1515dd46a808bf5e055cbfe
 /// update_player_name: 0x1f68f6ce969c632201a916c0ec4432e7edf5340a2b7a71172b820d22c2e9481
 pub const IMINIGAME_TOKEN_ID: felt252 =
-    0x15951d6d145a5a13c454bd75f0787e43e531a80a4bfb42a01fc4859e6fb7aea;
+    0x20253de95bcdb23620c88405a5f97da040b91de832ad98a34b45c4f3331d13b;
 
 #[starknet::interface]
 pub trait IMinigameToken<TState> {
@@ -92,8 +92,8 @@ pub trait IMinigameToken<TState> {
     fn objective_id(self: @TState, token_id: felt252) -> u32;
     /// Stored client url from mint; empty ByteArray when none was supplied.
     fn client_url(self: @TState, token_id: felt252) -> ByteArray;
-    /// The 65-bit packed mint metadata field — the value the u16 `metadata`
-    /// field of `token_metadata` cannot hold.
+    /// The packed 65-bit mint metadata. Same value as
+    /// `token_metadata(token_id).metadata`, as a single-field read.
     fn mint_metadata(self: @TState, token_id: felt252) -> u128;
 
     /// Mints to `to` and returns the packed token id. The game is this

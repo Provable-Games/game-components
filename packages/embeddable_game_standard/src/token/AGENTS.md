@@ -61,7 +61,7 @@ require a new contract generation (accepted trade-off).
 
 ## Interface (IMinigameToken)
 
-**Interface ID:** `IMINIGAME_TOKEN_ID = 0x15951d6d145a5a13c454bd75f0787e43e531a80a4bfb42a01fc4859e6fb7aea`
+**Interface ID:** `IMINIGAME_TOKEN_ID = 0x20253de95bcdb23620c88405a5f97da040b91de832ad98a34b45c4f3331d13b`
 (derived over the trait minus `refresh_metadata`, mirroring the refresh
 exclusion from `IMINIGAME_TOKEN_LEGACY_ID`)
 
