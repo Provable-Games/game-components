@@ -45,11 +45,9 @@ The workspace is organized into **group packages**, each containing multiple mod
 packages/
 ├── embeddable_game_standard/    # Core game standard components
 │   ├── src/
-│   │   ├── token/               # THE minigame token standard (self-bound ERC721, absorbed minter)
-│   │   ├── token_legacy/        # Original multi-game ERC721 token (kept for deployed denshokan)
-│   │   ├── minigame/            # Individual game logic foundation
-│   │   ├── metagame/            # High-level game coordination & context
-│   │   └── registry/            # Game registration and discovery
+│   │   ├── token/               # THE minigame token standard (self-bound ERC721, absorbed minter + game fee)
+│   │   ├── minigame/            # IMinigame surface + settings/objectives extensions
+│   │   └── metagame/            # High-level game coordination & context
 │   └── Scarb.toml
 ├── metagame/                    # Metagame extension components
 │   ├── src/
@@ -80,10 +78,8 @@ Each module has its own `AGENTS.md` with detailed documentation inside its `src/
 
 ## Architecture Overview
 
-There are two token generations. New work targets the **standard** token; the
-**legacy** token is kept for deployed denshokan.
-
-### Standard (`token/`) — self-bound, one address
+One token generation. The token IS the game: `MinigameTokenComponent` is
+embedded in the game contract, so both live at one address.
 
 ```
 Metagame ──→ Game contract (IS the ERC721 token)
@@ -92,43 +88,33 @@ Metagame ──→ Game contract (IS the ERC721 token)
   └── Context (optional)
 ```
 
-`MinigameTokenComponent` is embedded IN the game contract, so the game and the
-token are the same address. There is no registry, no `game_address` resolution
-and no mutable token state.
-
 **Game Lifecycle**: Setup → Mint → Play → `refresh_metadata()` (ERC-4906)
 
-There is no `update_game()` and no `IMetagameCallback`: nothing to sync. The
-game contract is the authority on game-over and objective completion, gating
-its own entrypoints with the component's internal `assert_owner_and_playable`.
-Consumers identify a standard token by SRC5 (`IMINIGAME_TOKEN_ID`); the
-creator/fee identity the registry used to hold lives on the token itself
-(`IMINIGAME_TOKEN_CREATOR_ID`).
+There is no registry, no `game_address` resolution, and no mutable token
+state — so nothing to sync and no `update_game()`. The game contract is the
+authority on game-over and objective completion, gating its own entrypoints
+with the component's internal `assert_owner_and_playable`. Consumers identify a
+token by SRC5 (`IMINIGAME_TOKEN_ID`), and a game declares its fee terms and
+payee on the token itself (`IMINIGAME_TOKEN_GAME_FEE_ID`).
 
-`MinigameComponent` is **legacy-only** — it asserts `IMINIGAME_TOKEN_LEGACY_ID`
-and calls `game_registry_address()`. A standard-token game embeds the token
-component directly instead (see `test_common::mocks::standard_game_mock`).
-
-### Legacy (`token_legacy/`) — separate token contract, registry-backed
-
-```
-Metagame ──→ MinigameTokenLegacy (ERC721) ──→ Minigame
-  │  ▲               │                      │
-  │  │               └── Registry            ├── Settings (optional)
-  │  │                                       └── Objectives (optional)
-  │  └── IMetagameCallback (on_game_action, on_game_over, on_objective_complete)
-  └── Context (optional)
-```
-
-**Game Lifecycle**: Setup → Mint → Play → Sync (`update_game()`) → Complete (`game_over()`)
-
-When `update_game()` is called, the token checks if the minter implements `IMetagameCallback` (via SRC5) and dispatches score/game_over/objective callbacks automatically.
-
-The `metagame` lib and `MetagameComponent` serve **both** generations, branching
-on SRC5. `MetagameComponent` is itself **self-bound** — it stores no addresses
-and exposes no ABI (`IMetagame`/`IMETAGAME_ID` were removed): the embedding
-contract IS the metagame, each game's token is resolved per mint, and a
+`MetagameComponent` is self-bound the same way: no stored addresses, no ABI
+(`IMetagame`/`IMETAGAME_ID` do not exist). The embedding contract IS the
+metagame; each game's token is resolved from `game_address` per mint, and a
 metagame that provides context embeds `ContextComponent` on its own address.
+Registration reduces to one address equality — `game.token_address() == game`.
+
+### The retired generation
+
+A registry-backed generation preceded this one: a separate multi-game ERC721
+(`token_legacy`), a `registry` for game discovery and fee terms, a
+`MinigameComponent` that registered games into it, and `IMetagameCallback` for
+`update_game()` score/game-over callbacks. All of it was removed after the last
+deployment using it was retired.
+
+Deployed contracts from that generation still exist on-chain and still register
+their interface ids. **To build against them, pin `v2.0.0` or earlier** — that
+tag is the last release containing the registry generation. Indexers must also
+branch their token-id decoder by contract generation: the layouts differ.
 
 ## Key Patterns
 
@@ -161,22 +147,20 @@ When adding a new module to a group package, update **both** files:
          fuzzer_runs: 256
    ```
 
-   For memory-intensive modules (like `token_legacy` or `minigame`), assign a larger runner (e.g., `ubuntu-latest-4` or `ubuntu-latest-32`).
+   For memory-intensive modules (like `minigame`), assign a larger runner (e.g., `ubuntu-latest-4` or `ubuntu-latest-8`).
 
 2. **`codecov.yml`** - Update the build count:
    ```yaml
    notify:
-     after_n_builds: 15 # ← Must equal total module count in matrix
+     after_n_builds: 16 # ← Must equal total module count in matrix
    ```
 
-### Current Matrix (18 modules)
+### Current Matrix (16 modules)
 
 | Group Package | Module | Runner | Fuzzer Runs |
 |---------------|--------|--------|-------------|
-| `embeddable_game_standard` | `token_legacy` | `ubuntu-latest-32` | 32 |
 | `embeddable_game_standard` | `minigame` | `ubuntu-latest-8` | 32 |
 | `embeddable_game_standard` | `metagame` | `ubuntu-latest-8` | 32 |
-| `embeddable_game_standard` | `registry` | `ubuntu-latest-8` | 32 |
 | `embeddable_game_standard` | `token` | `ubuntu-latest-8` | 32 |
 | `metagame` | `leaderboard` | `ubuntu-latest-4` | 256 |
 | `metagame` | `registration` | `ubuntu-latest-4` | 256 |

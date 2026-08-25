@@ -49,6 +49,7 @@
 pub mod MinigameTokenComponent {
     use core::num::traits::Zero;
     use game_components_interfaces::structs::metagame::GameContextDetails;
+    use game_components_interfaces::structs::token::{MintBatchRecipient, TokenMetadata};
     use game_components_interfaces::token::core::{
         IMINIGAME_TOKEN_ID, IMinigameToken, MinigameTokenABI,
     };
@@ -69,12 +70,11 @@ pub mod MinigameTokenComponent {
         Map, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess,
     };
     use starknet::{ContractAddress, get_block_timestamp, get_caller_address, get_tx_info};
+    use crate::token::lifecycle::{LifecycleTrait, create_lifecycle_with_defaults};
     use crate::token::packing::{
         extract_tx_hash_bits, pack_token_id, to_token_metadata, unpack_metadata, unpack_minted_by,
         unpack_objective_id, unpack_settings_id, unpack_soulbound, unpack_token_id,
     };
-    use crate::token_legacy::structs::{MintBatchRecipient, TokenMetadata};
-    use crate::token_legacy::token::{LifecycleTrait, token_state};
 
     #[storage]
     pub struct Storage {
@@ -219,7 +219,7 @@ pub mod MinigameTokenComponent {
             // means "no expiration", so a past window must not collapse into
             // an immortal token), and a start at or before now clamps to now
             // so the packed delays reconstruct the caller's intended end.
-            let lifecycle = token_state::create_lifecycle_with_defaults(start, end);
+            let lifecycle = create_lifecycle_with_defaults(start, end);
             lifecycle.validate();
             assert!(
                 lifecycle.end == 0
@@ -326,7 +326,7 @@ pub mod MinigameTokenComponent {
             let caller = get_caller_address();
             let current_time = get_block_timestamp();
 
-            let lifecycle = token_state::create_lifecycle_with_defaults(start, end);
+            let lifecycle = create_lifecycle_with_defaults(start, end);
             lifecycle.validate();
             assert!(
                 lifecycle.end == 0

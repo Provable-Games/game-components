@@ -39,17 +39,6 @@ fn deploy_standard_game() -> ContractAddress {
     contract_address
 }
 
-fn deploy_legacy_token() -> ContractAddress {
-    let contract = declare("MockMinigameTokenForLibs").unwrap().contract_class();
-    let (address, _) = contract.deploy(@array![]).unwrap();
-    address
-}
-
-fn deploy_legacy_game(token_address: ContractAddress) -> ContractAddress {
-    let contract = declare("MockMinigameForLibs").unwrap().contract_class();
-    let (address, _) = contract.deploy(@array![token_address.into()]).unwrap();
-    address
-}
 
 /// Two recipients, three tokens total — exercises per-recipient counts.
 fn two_recipients() -> Array<MintBatchRecipient> {
@@ -186,7 +175,7 @@ fn test_batch_recipients_rejects_foreign_standard_token() {
 
 /// Unsupported params are rejected loudly, never silently dropped.
 #[test]
-#[should_panic(expected: "Metagame: standard tokens have no per-token renderer")]
+#[should_panic(expected: "Metagame: tokens have no per-token renderer")]
 fn test_batch_recipients_rejects_renderer_on_standard_token() {
     let game = deploy_standard_game();
     libs::mint_batch_recipients(
@@ -209,7 +198,7 @@ fn test_batch_recipients_rejects_renderer_on_standard_token() {
 }
 
 #[test]
-#[should_panic(expected: "Metagame: standard tokens have no per-token skills")]
+#[should_panic(expected: "Metagame: tokens have no per-token skills")]
 fn test_batch_recipients_rejects_skills_on_standard_token() {
     let game = deploy_standard_game();
     libs::mint_batch_recipients(
@@ -229,143 +218,4 @@ fn test_batch_recipients_rejects_skills_on_standard_token() {
         0,
         0,
     );
-}
-
-// =============================================================================
-// LEGACY TOKEN
-// =============================================================================
-
-/// Legacy tokens are served too, through their own batch entrypoint.
-#[test]
-fn test_batch_recipients_through_legacy_token() {
-    let token_address = deploy_legacy_token();
-    let game_address = deploy_legacy_game(token_address);
-
-    let token_ids = libs::mint_batch_recipients(
-        game_address,
-        Option::None,
-        Option::None,
-        Option::None,
-        Option::None,
-        Option::None,
-        Option::None,
-        Option::None,
-        Option::None,
-        Option::None,
-        two_recipients(),
-        false,
-        false,
-        0,
-        0,
-    );
-
-    assert!(token_ids.len() == 3, "expected 3 tokens, got {}", token_ids.len());
-}
-
-/// Legacy keeps its renderer/skills params — they are only unsupported on the
-/// standard token, so the legacy path must still accept them.
-#[test]
-fn test_batch_recipients_accepts_renderer_on_legacy_token() {
-    let token_address = deploy_legacy_token();
-    let game_address = deploy_legacy_game(token_address);
-
-    let token_ids = libs::mint_batch_recipients(
-        game_address,
-        Option::None,
-        Option::None,
-        Option::None,
-        Option::None,
-        Option::None,
-        Option::None,
-        Option::None,
-        Option::Some(BOB()),
-        Option::None,
-        one_recipient(),
-        false,
-        false,
-        0,
-        0,
-    );
-
-    assert!(token_ids.len() == 1, "legacy batch should accept a renderer");
-}
-
-/// The legacy metadata field is u16 — reject rather than silently truncate.
-#[test]
-#[should_panic(expected: ('Metagame: metadata exceeds u16',))]
-fn test_batch_recipients_rejects_wide_metadata_on_legacy_token() {
-    let token_address = deploy_legacy_token();
-    let game_address = deploy_legacy_game(token_address);
-
-    libs::mint_batch_recipients(
-        game_address,
-        Option::None,
-        Option::None,
-        Option::None,
-        Option::None,
-        Option::None,
-        Option::None,
-        Option::None,
-        Option::None,
-        Option::None,
-        one_recipient(),
-        false,
-        false,
-        0,
-        0x100000000,
-    );
-}
-
-/// The single-mint path narrows the same way the batch path does — the two
-/// must not disagree about what a legacy token accepts.
-#[test]
-#[should_panic(expected: ('Metagame: metadata exceeds u16',))]
-fn test_mint_rejects_wide_metadata_on_legacy_token() {
-    let token_address = deploy_legacy_token();
-    let game_address = deploy_legacy_game(token_address);
-
-    libs::mint(
-        game_address,
-        Option::None,
-        Option::None,
-        Option::None,
-        Option::None,
-        Option::None,
-        Option::None,
-        Option::None,
-        Option::None,
-        Option::None,
-        BOB(),
-        false,
-        false,
-        0,
-        0x100000000,
-    );
-}
-
-/// A metadata value that does fit u16 passes through to the legacy token.
-#[test]
-fn test_batch_recipients_accepts_narrow_metadata_on_legacy_token() {
-    let token_address = deploy_legacy_token();
-    let game_address = deploy_legacy_game(token_address);
-
-    let token_ids = libs::mint_batch_recipients(
-        game_address,
-        Option::None,
-        Option::None,
-        Option::None,
-        Option::None,
-        Option::None,
-        Option::None,
-        Option::None,
-        Option::None,
-        Option::None,
-        one_recipient(),
-        false,
-        false,
-        0,
-        0xFFFF,
-    );
-
-    assert!(token_ids.len() == 1, "u16-fitting metadata should pass through");
 }

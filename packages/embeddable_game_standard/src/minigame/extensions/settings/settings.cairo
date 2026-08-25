@@ -5,12 +5,11 @@
 pub mod SettingsComponent {
     use openzeppelin_introspection::src5::SRC5Component;
     use openzeppelin_introspection::src5::SRC5Component::InternalTrait as SRC5InternalTrait;
-    use starknet::{ContractAddress, get_caller_address};
+    use starknet::ContractAddress;
     use crate::minigame::extensions::settings::interface::{
         IMINIGAME_SETTINGS_ID, IMinigameSettings,
     };
     use crate::minigame::extensions::settings::libs;
-    use crate::minigame::extensions::settings::structs::GameSettingDetails;
 
     #[storage]
     pub struct Storage {}
@@ -38,22 +37,6 @@ pub mod SettingsComponent {
         fn register_settings_interface(ref self: ComponentState<TContractState>) {
             let mut src5_component = get_dep_component_mut!(ref self, SRC5);
             src5_component.register_interface(IMINIGAME_SETTINGS_ID);
-        }
-
-        fn create_settings(
-            self: @ComponentState<TContractState>,
-            game_address: ContractAddress,
-            settings_id: u32,
-            settings_details: GameSettingDetails,
-            minigame_token_address: ContractAddress,
-        ) {
-            libs::create_settings(
-                minigame_token_address,
-                game_address,
-                get_caller_address(),
-                settings_id,
-                settings_details,
-            );
         }
     }
 }

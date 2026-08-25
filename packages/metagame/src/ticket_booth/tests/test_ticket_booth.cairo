@@ -80,12 +80,10 @@ fn deploy_mock_erc20() -> ContractAddress {
 
 fn deploy_ticket_booth(
     opening_time: u64,
-    denshokan_address: ContractAddress,
-    game_token_address: ContractAddress,
     payment_token: ContractAddress,
     cost_to_play: u128,
     ticket_receiver_address: ContractAddress,
-    game_address: Option<ContractAddress>,
+    game_address: ContractAddress,
     settings_id: Option<u32>,
     start_time: Option<u64>,
     expiration_time: Option<u64>,
@@ -95,22 +93,11 @@ fn deploy_ticket_booth(
 
     let mut calldata = array![];
     calldata.append(opening_time.into());
-    calldata.append(denshokan_address.into());
-    calldata.append(game_token_address.into());
     calldata.append(payment_token.into());
     calldata.append(cost_to_play.into());
     calldata.append(ticket_receiver_address.into());
 
-    // game_address: Option<ContractAddress>
-    match game_address {
-        Option::Some(addr) => {
-            calldata.append(0); // Some variant
-            calldata.append(addr.into());
-        },
-        Option::None => {
-            calldata.append(1); // None variant
-        },
-    }
+    calldata.append(game_address.into());
 
     // settings_id: Option<u32>
     match settings_id {
@@ -188,12 +175,10 @@ fn deploy_basic_ticket_booth() -> (ContractAddress, ITicketBoothDispatcher) {
 
     deploy_ticket_booth(
         DEFAULT_OPENING_TIME,
-        DENSHOKAN_ADDRESS(),
-        game_token,
         payment_token,
         DEFAULT_COST,
         TICKET_RECEIVER(),
-        Option::None,
+        game_token,
         Option::None,
         Option::None,
         Option::None,
@@ -213,12 +198,10 @@ fn test_initialize_with_valid_parameters() {
 
     let (_, dispatcher) = deploy_ticket_booth(
         DEFAULT_OPENING_TIME,
-        DENSHOKAN_ADDRESS(),
-        game_token,
         payment_token,
         DEFAULT_COST,
         TICKET_RECEIVER(),
-        Option::Some(GAME_ADDRESS()),
+        game_token,
         Option::Some(42),
         Option::Some(500),
         Option::Some(DEFAULT_EXPIRATION_DURATION),
@@ -245,12 +228,10 @@ fn test_initialize_with_all_optional_params() {
 
     let (_, dispatcher) = deploy_ticket_booth(
         DEFAULT_OPENING_TIME,
-        DENSHOKAN_ADDRESS(),
-        game_token,
         payment_token,
         DEFAULT_COST,
         TICKET_RECEIVER(),
-        Option::Some(GAME_ADDRESS()),
+        game_token,
         Option::Some(99),
         Option::Some(1000),
         Option::Some(86400),
@@ -270,12 +251,10 @@ fn test_initialize_with_none_optional_params() {
 
     let (_, dispatcher) = deploy_ticket_booth(
         DEFAULT_OPENING_TIME,
-        DENSHOKAN_ADDRESS(),
-        game_token,
         payment_token,
         DEFAULT_COST,
         TICKET_RECEIVER(),
-        Option::None,
+        game_token,
         Option::None,
         Option::None,
         Option::None,
@@ -295,12 +274,10 @@ fn test_initialize_with_zero_opening_time() {
 
     let (_, dispatcher) = deploy_ticket_booth(
         0, // Immediately open
-        DENSHOKAN_ADDRESS(),
-        game_token,
         payment_token,
         DEFAULT_COST,
         TICKET_RECEIVER(),
-        Option::None,
+        game_token,
         Option::None,
         Option::None,
         Option::None,
@@ -325,12 +302,10 @@ fn test_initialize_with_golden_passes() {
 
     let (_, dispatcher) = deploy_ticket_booth(
         DEFAULT_OPENING_TIME,
-        DENSHOKAN_ADDRESS(),
-        game_token,
         payment_token,
         DEFAULT_COST,
         TICKET_RECEIVER(),
-        Option::None,
+        game_token,
         Option::None,
         Option::None,
         Option::None,
@@ -357,12 +332,10 @@ fn test_payment_token_view() {
 
     let (_, dispatcher) = deploy_ticket_booth(
         DEFAULT_OPENING_TIME,
-        DENSHOKAN_ADDRESS(),
-        game_token,
         payment_token,
         DEFAULT_COST,
         TICKET_RECEIVER(),
-        Option::None,
+        game_token,
         Option::None,
         Option::None,
         Option::None,
@@ -416,12 +389,10 @@ fn test_get_golden_pass_configured() {
 
     let (_, dispatcher) = deploy_ticket_booth(
         DEFAULT_OPENING_TIME,
-        DENSHOKAN_ADDRESS(),
-        game_token,
         payment_token,
         DEFAULT_COST,
         TICKET_RECEIVER(),
-        Option::None,
+        game_token,
         Option::None,
         Option::None,
         Option::None,
@@ -457,12 +428,10 @@ fn test_golden_pass_last_used_never_used() {
 
     let (_, dispatcher) = deploy_ticket_booth(
         DEFAULT_OPENING_TIME,
-        DENSHOKAN_ADDRESS(),
-        game_token,
         payment_token,
         DEFAULT_COST,
         TICKET_RECEIVER(),
-        Option::None,
+        game_token,
         Option::None,
         Option::None,
         Option::None,
@@ -504,12 +473,10 @@ fn test_is_golden_pass_usable_cooldown_not_elapsed() {
 
     let (address, dispatcher) = deploy_ticket_booth(
         DEFAULT_OPENING_TIME,
-        DENSHOKAN_ADDRESS(),
-        game_token,
         payment_token,
         DEFAULT_COST,
         TICKET_RECEIVER(),
-        Option::None,
+        game_token,
         Option::None,
         Option::None,
         Option::None,
@@ -542,12 +509,10 @@ fn test_is_golden_pass_usable_cooldown_elapsed() {
 
     let (address, dispatcher) = deploy_ticket_booth(
         DEFAULT_OPENING_TIME,
-        DENSHOKAN_ADDRESS(),
-        game_token,
         payment_token,
         DEFAULT_COST,
         TICKET_RECEIVER(),
-        Option::None,
+        game_token,
         Option::None,
         Option::None,
         Option::None,
@@ -580,12 +545,10 @@ fn test_is_golden_pass_usable_pass_expired() {
 
     let (address, dispatcher) = deploy_ticket_booth(
         DEFAULT_OPENING_TIME,
-        DENSHOKAN_ADDRESS(),
-        game_token,
         payment_token,
         DEFAULT_COST,
         TICKET_RECEIVER(),
-        Option::None,
+        game_token,
         Option::None,
         Option::None,
         Option::None,
@@ -650,12 +613,10 @@ fn test_buy_game_golden_pass_not_owner() {
 
     let (address, dispatcher) = deploy_ticket_booth(
         DEFAULT_OPENING_TIME,
-        DENSHOKAN_ADDRESS(),
-        game_token,
         payment_token,
         DEFAULT_COST,
         TICKET_RECEIVER(),
-        Option::None,
+        game_token,
         Option::None,
         Option::None,
         Option::None,
@@ -692,12 +653,10 @@ fn test_buy_game_golden_pass_on_cooldown() {
 
     let (address, dispatcher) = deploy_ticket_booth(
         DEFAULT_OPENING_TIME,
-        DENSHOKAN_ADDRESS(),
-        game_token,
         payment_token,
         DEFAULT_COST,
         TICKET_RECEIVER(),
-        Option::None,
+        game_token,
         Option::None,
         Option::None,
         Option::None,
@@ -734,12 +693,10 @@ fn test_fuzz_cost_to_play(cost: u128) {
 
     let (_, dispatcher) = deploy_ticket_booth(
         DEFAULT_OPENING_TIME,
-        DENSHOKAN_ADDRESS(),
-        game_token,
         payment_token,
         cost,
         TICKET_RECEIVER(),
-        Option::None,
+        game_token,
         Option::None,
         Option::None,
         Option::None,
@@ -758,12 +715,10 @@ fn test_fuzz_opening_time(opening_time: u64) {
 
     let (_, dispatcher) = deploy_ticket_booth(
         opening_time,
-        DENSHOKAN_ADDRESS(),
-        game_token,
         payment_token,
         DEFAULT_COST,
         TICKET_RECEIVER(),
-        Option::None,
+        game_token,
         Option::None,
         Option::None,
         Option::None,
@@ -806,12 +761,10 @@ mod MockTicketBoothContract {
     fn constructor(
         ref self: ContractState,
         opening_time: u64,
-        denshokan_address: ContractAddress,
-        game_token_address: ContractAddress,
         payment_token: ContractAddress,
         cost_to_play: u128,
         ticket_receiver_address: ContractAddress,
-        game_address: Option<ContractAddress>,
+        game_address: ContractAddress,
         settings_id: Option<u32>,
         start_time: Option<u64>,
         expiration_time: Option<u64>,
@@ -821,8 +774,6 @@ mod MockTicketBoothContract {
             .ticket_booth
             .initializer(
                 opening_time,
-                denshokan_address,
-                game_token_address,
                 payment_token,
                 cost_to_play,
                 ticket_receiver_address,
@@ -992,18 +943,18 @@ mod MockERC721ForTicketBooth {
 }
 
 // Mock MinigameToken for ticket booth
+// Minimal self-bound game+token for the ticket booth: one contract that is
+// both the game and its token, which is what `mint` now resolves and mints at.
 #[starknet::contract]
 mod MockMinigameTokenForTicketBooth {
-    use core::num::traits::Zero;
+    use game_components_interfaces::minigame::{IMINIGAME_ID, IMinigame};
     use game_components_interfaces::structs::metagame::GameContextDetails;
-    use game_components_interfaces::structs::token::{
-        Lifecycle, MintBatchRecipient, PlayerNameUpdate, TokenFullState, TokenMetadata,
-        TokenMutableState,
-    };
-    use game_components_interfaces::token::{IMINIGAME_TOKEN_LEGACY_ID, IMinigameTokenLegacy};
+    use game_components_interfaces::structs::minigame::MintGameParams;
+    use game_components_interfaces::structs::token::{Lifecycle, MintBatchRecipient, TokenMetadata};
+    use game_components_interfaces::token::core::{IMINIGAME_TOKEN_ID, IMinigameToken};
     use openzeppelin_interfaces::introspection::ISRC5;
-    use starknet::ContractAddress;
     use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
+    use starknet::{ContractAddress, get_contract_address};
 
     #[storage]
     struct Storage {
@@ -1015,147 +966,38 @@ mod MockMinigameTokenForTicketBooth {
         self.next_token_id.write(1);
     }
 
+    fn blank_metadata() -> TokenMetadata {
+        TokenMetadata {
+            game_id: 0,
+            minted_at: 0,
+            settings_id: 0,
+            lifecycle: Lifecycle { start: 0, end: 0 },
+            minted_by: 0,
+            soulbound: false,
+            game_over: false,
+            completed_objective: false,
+            completed_at: 0,
+            has_context: false,
+            objective_id: 0,
+            paymaster: false,
+            metadata: 0,
+        }
+    }
+
+    /// Self-bound: every address this game advertises is itself.
     #[abi(embed_v0)]
-    impl MinigameTokenImpl of IMinigameTokenLegacy<ContractState> {
-        fn token_metadata(self: @ContractState, token_id: felt252) -> TokenMetadata {
-            TokenMetadata {
-                game_id: 0,
-                minted_at: 0,
-                settings_id: 0,
-                lifecycle: Lifecycle { start: 0, end: 0 },
-                minted_by: 0,
-                soulbound: false,
-                game_over: false,
-                completed_objective: false,
-                completed_at: 0,
-                has_context: false,
-                objective_id: 0,
-                paymaster: false,
-                metadata: 0,
-            }
+    impl MinigameImpl of IMinigame<ContractState> {
+        fn token_address(self: @ContractState) -> ContractAddress {
+            get_contract_address()
         }
-
-        fn is_playable(self: @ContractState, token_id: felt252) -> bool {
-            true
+        fn settings_address(self: @ContractState) -> ContractAddress {
+            get_contract_address()
         }
-
-        fn assert_is_playable(self: @ContractState, token_id: felt252) {}
-
-        fn settings_id(self: @ContractState, token_id: felt252) -> u32 {
-            0
+        fn objectives_address(self: @ContractState) -> ContractAddress {
+            get_contract_address()
         }
-
-        fn player_name(self: @ContractState, token_id: felt252) -> felt252 {
-            0
-        }
-
-        fn objective_id(self: @ContractState, token_id: felt252) -> u32 {
-            0
-        }
-
-        fn minted_by(self: @ContractState, token_id: felt252) -> felt252 {
-            0
-        }
-
-        fn minted_by_address(self: @ContractState, token_id: felt252) -> ContractAddress {
-            0.try_into().unwrap()
-        }
-
-        fn game_address(self: @ContractState) -> ContractAddress {
-            Zero::zero()
-        }
-
-        fn game_registry_address(self: @ContractState) -> ContractAddress {
-            Zero::zero()
-        }
-
-        fn is_soulbound(self: @ContractState, token_id: felt252) -> bool {
-            false
-        }
-
-        fn renderer_address(self: @ContractState, token_id: felt252) -> ContractAddress {
-            Zero::zero()
-        }
-
-        fn token_game_address(self: @ContractState, token_id: felt252) -> ContractAddress {
-            Zero::zero()
-        }
-
-        fn token_mutable_state(self: @ContractState, token_id: felt252) -> TokenMutableState {
-            TokenMutableState { game_over: false, completed_objective: false, completed_at: 0 }
-        }
-
-        fn client_url(self: @ContractState, token_id: felt252) -> ByteArray {
-            ""
-        }
-
-        fn skills_address(self: @ContractState, token_id: felt252) -> ContractAddress {
-            0.try_into().unwrap()
-        }
-
-        fn token_metadata_batch(
-            self: @ContractState, token_ids: Span<felt252>,
-        ) -> Array<TokenMetadata> {
-            array![]
-        }
-
-        fn is_playable_batch(self: @ContractState, token_ids: Span<felt252>) -> Array<bool> {
-            array![]
-        }
-
-        fn settings_id_batch(self: @ContractState, token_ids: Span<felt252>) -> Array<u32> {
-            array![]
-        }
-
-        fn player_name_batch(self: @ContractState, token_ids: Span<felt252>) -> Array<felt252> {
-            array![]
-        }
-
-        fn objective_id_batch(self: @ContractState, token_ids: Span<felt252>) -> Array<u32> {
-            array![]
-        }
-
-        fn minted_by_batch(self: @ContractState, token_ids: Span<felt252>) -> Array<felt252> {
-            array![]
-        }
-
-        fn minted_by_address_batch(
-            self: @ContractState, token_ids: Span<felt252>,
-        ) -> Array<ContractAddress> {
-            array![]
-        }
-
-        fn is_soulbound_batch(self: @ContractState, token_ids: Span<felt252>) -> Array<bool> {
-            array![]
-        }
-
-        fn renderer_address_batch(
-            self: @ContractState, token_ids: Span<felt252>,
-        ) -> Array<ContractAddress> {
-            array![]
-        }
-
-        fn token_game_address_batch(
-            self: @ContractState, token_ids: Span<felt252>,
-        ) -> Array<ContractAddress> {
-            array![]
-        }
-
-        fn token_mutable_state_batch(
-            self: @ContractState, token_ids: Span<felt252>,
-        ) -> Array<TokenMutableState> {
-            array![]
-        }
-
-        fn token_full_state_batch(
-            self: @ContractState, token_ids: Span<felt252>,
-        ) -> Array<TokenFullState> {
-            array![]
-        }
-
-        fn mint(
-            ref self: ContractState,
-            game_address: ContractAddress,
+        fn mint_game(
+            self: @ContractState,
             player_name: Option<felt252>,
             settings_id: Option<u32>,
             start: Option<u64>,
@@ -1171,15 +1013,53 @@ mod MockMinigameTokenForTicketBooth {
             salt: u16,
             metadata: u16,
         ) -> felt252 {
-            let token_id_u64 = self.next_token_id.read();
-            self.next_token_id.write(token_id_u64 + 1);
-            let token_id: felt252 = token_id_u64.into();
-            token_id
+            self.next_token_id.read().into()
         }
+        fn mint_game_batch(self: @ContractState, mints: Array<MintGameParams>) -> Array<felt252> {
+            let mut ids = array![];
+            let mut i = 0;
+            while i < mints.len() {
+                ids.append((self.next_token_id.read() + i.into()).into());
+                i += 1;
+            }
+            ids
+        }
+    }
 
-        fn mint_batch_recipients(
+    #[abi(embed_v0)]
+    impl MinigameTokenImpl of IMinigameToken<ContractState> {
+        fn token_metadata(self: @ContractState, token_id: felt252) -> TokenMetadata {
+            blank_metadata()
+        }
+        fn is_playable(self: @ContractState, token_id: felt252) -> bool {
+            true
+        }
+        fn settings_id(self: @ContractState, token_id: felt252) -> u32 {
+            0
+        }
+        fn player_name(self: @ContractState, token_id: felt252) -> felt252 {
+            0
+        }
+        fn minted_by(self: @ContractState, token_id: felt252) -> felt252 {
+            0
+        }
+        fn minted_by_address(self: @ContractState, token_id: felt252) -> ContractAddress {
+            get_contract_address()
+        }
+        fn is_soulbound(self: @ContractState, token_id: felt252) -> bool {
+            false
+        }
+        fn objective_id(self: @ContractState, token_id: felt252) -> u32 {
+            0
+        }
+        fn client_url(self: @ContractState, token_id: felt252) -> ByteArray {
+            ""
+        }
+        fn mint_metadata(self: @ContractState, token_id: felt252) -> u128 {
+            0
+        }
+        fn mint(
             ref self: ContractState,
-            game_address: ContractAddress,
             player_name: Option<felt252>,
             settings_id: Option<u32>,
             start: Option<u64>,
@@ -1187,34 +1067,55 @@ mod MockMinigameTokenForTicketBooth {
             objective_id: Option<u32>,
             context: Option<GameContextDetails>,
             client_url: Option<ByteArray>,
-            renderer_address: Option<ContractAddress>,
-            skills_address: Option<ContractAddress>,
+            to: ContractAddress,
+            soulbound: bool,
+            paymaster: bool,
+            salt: u16,
+            metadata: u128,
+        ) -> felt252 {
+            let id = self.next_token_id.read();
+            self.next_token_id.write(id + 1);
+            id.into()
+        }
+        fn mint_batch_recipients(
+            ref self: ContractState,
+            player_name: Option<felt252>,
+            settings_id: Option<u32>,
+            start: Option<u64>,
+            end: Option<u64>,
+            objective_id: Option<u32>,
+            context: Option<GameContextDetails>,
+            client_url: Option<ByteArray>,
             recipients: Array<MintBatchRecipient>,
             soulbound: bool,
             paymaster: bool,
             salt: u16,
-            metadata: u16,
+            metadata: u128,
         ) -> Array<felt252> {
-            panic!("not implemented")
+            let mut ids = array![];
+            let mut i = 0;
+            while i < recipients.len() {
+                let r = *recipients.at(i);
+                let mut n: u16 = 0;
+                while n < r.count {
+                    let id = self.next_token_id.read();
+                    self.next_token_id.write(id + 1);
+                    ids.append(id.into());
+                    n += 1;
+                }
+                i += 1;
+            }
+            ids
         }
-
-        fn update_game(ref self: ContractState, token_id: felt252) {}
-
         fn refresh_metadata(ref self: ContractState, token_id: felt252) {}
-
         fn update_player_name(ref self: ContractState, token_id: felt252, name: felt252) {}
-
-        fn update_game_batch(ref self: ContractState, token_ids: Span<felt252>) {}
-
-        fn refresh_metadata_batch(ref self: ContractState, token_ids: Span<felt252>) {}
-
-        fn update_player_name_batch(ref self: ContractState, updates: Span<PlayerNameUpdate>) {}
     }
 
     #[abi(embed_v0)]
     impl SRC5Impl of ISRC5<ContractState> {
         fn supports_interface(self: @ContractState, interface_id: felt252) -> bool {
-            interface_id == IMINIGAME_TOKEN_LEGACY_ID
+            interface_id == IMINIGAME_TOKEN_ID
+                || interface_id == IMINIGAME_ID
                 || interface_id == openzeppelin_interfaces::introspection::ISRC5_ID
         }
     }
@@ -1337,12 +1238,10 @@ fn test_buy_game_ticket_zero_receiver_burn_fallback() {
 
     let (address, dispatcher) = deploy_ticket_booth(
         DEFAULT_OPENING_TIME,
-        game_token, // Use deployed mock as denshokan since buy_game mints via this address
-        game_token,
         payment_token,
         DEFAULT_COST,
         zero_receiver, // Zero receiver triggers burn path
-        Option::None,
+        game_token, // the game IS its token — mint target
         Option::None,
         Option::None,
         Option::None,
@@ -1384,12 +1283,10 @@ fn test_golden_pass_fixed_expiration() {
 
     let (_, dispatcher) = deploy_ticket_booth(
         DEFAULT_OPENING_TIME,
-        DENSHOKAN_ADDRESS(),
-        game_token,
         payment_token,
         DEFAULT_COST,
         TICKET_RECEIVER(),
-        Option::None,
+        game_token,
         Option::None,
         Option::None,
         Option::None,
@@ -1424,12 +1321,10 @@ fn test_golden_pass_dynamic_expiration() {
 
     let (_, dispatcher) = deploy_ticket_booth(
         DEFAULT_OPENING_TIME,
-        DENSHOKAN_ADDRESS(),
-        game_token,
         payment_token,
         DEFAULT_COST,
         TICKET_RECEIVER(),
-        Option::None,
+        game_token,
         Option::None,
         Option::None,
         Option::None,
@@ -1469,12 +1364,10 @@ fn test_multiple_golden_passes_configuration() {
 
     let (_, dispatcher) = deploy_ticket_booth(
         DEFAULT_OPENING_TIME,
-        DENSHOKAN_ADDRESS(),
-        game_token,
         payment_token,
         DEFAULT_COST,
         TICKET_RECEIVER(),
-        Option::None,
+        game_token,
         Option::None,
         Option::None,
         Option::None,
@@ -1519,12 +1412,10 @@ fn test_buy_game_golden_pass_expired() {
     // Set opening time to 1000 (DEFAULT_OPENING_TIME)
     let (address, dispatcher) = deploy_ticket_booth(
         DEFAULT_OPENING_TIME, // 1000
-        DENSHOKAN_ADDRESS(),
-        game_token,
         payment_token,
         DEFAULT_COST,
         TICKET_RECEIVER(),
-        Option::None,
+        game_token,
         Option::None,
         Option::None,
         Option::None,

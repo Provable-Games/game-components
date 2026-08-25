@@ -3,164 +3,63 @@ use game_components_embeddable_game_standard::metagame::extensions::context::str
 use game_components_embeddable_game_standard::minigame::interface::{
     IMinigameDispatcher, IMinigameDispatcherTrait,
 };
-use game_components_embeddable_game_standard::registry::interface::{
-    FEE_DENOMINATOR, GameFeeInfo, IMinigameRegistryDispatcher, IMinigameRegistryDispatcherTrait,
-    default_license,
-};
-use game_components_embeddable_game_standard::token_legacy::interface::{
-    IMinigameTokenLegacyDispatcher, IMinigameTokenLegacyDispatcherTrait,
-};
-use game_components_interfaces::structs::token::MintBatchRecipient;
+use game_components_interfaces::structs::token::{GameFeeTerms, MintBatchRecipient};
 use game_components_interfaces::token::core::{
-    IMINIGAME_TOKEN_ID, IMinigameTokenDispatcher, IMinigameTokenDispatcherTrait,
+    IMinigameTokenDispatcher, IMinigameTokenDispatcherTrait,
 };
 use game_components_interfaces::token::game_fee::{
-    IMINIGAME_TOKEN_GAME_FEE_ID, IMinigameTokenGameFeeDispatcher,
-    IMinigameTokenGameFeeDispatcherTrait,
+    FEE_DENOMINATOR, IMINIGAME_TOKEN_GAME_FEE_ID, IMinigameTokenGameFeeDispatcher,
+    IMinigameTokenGameFeeDispatcherTrait, default_license,
 };
-use openzeppelin_interfaces::erc721::{IERC721Dispatcher, IERC721DispatcherTrait};
 use openzeppelin_interfaces::introspection::{ISRC5Dispatcher, ISRC5DispatcherTrait};
 use starknet::ContractAddress;
 use crate::metagame::structs::MintMetagameParams;
 
-/// Asserts that a game is registered in the minigame token contract
+/// The token standard is self-bound: the game contract IS its token. So a
+/// game's registration reduces to an address equality, and every path that
+/// trusts a game's `token_address()` must apply it — otherwise a contract that
+/// merely implements `token_address()` could name a token it does not own and
+/// have a metagame mint on it or pay its fee recipient.
 ///
-/// The token is probed via SRC5 first: a token supporting
-/// `IMINIGAME_TOKEN_ID` is a self-bound standard token (the game contract IS
-/// the token — standard tokens expose no registry/game-address views), so
-/// "registered" reduces to a plain address equality: the game's
-/// `token_address()` must be the game itself. Otherwise the token is a legacy
-/// token: registry-backed (multi-game) tokens ask the registry, while a zero
-/// `game_registry_address()` marks a single-game legacy token, whose paired
-/// game is named by its own `game_address()` view — a legacy token is a
-/// SEPARATE contract from its game, so the pairing there is
-/// `token.game_address() == game_address`, not an address equality against
-/// the token itself.
-///
-/// # Arguments
-/// * `game_address` - The address of the game contract to check
-pub fn assert_game_registered(game_address: ContractAddress) {
-    let minigame_dispatcher = IMinigameDispatcher { contract_address: game_address };
-    let minigame_token_address = minigame_dispatcher.token_address();
-    let token_src5_dispatcher = ISRC5Dispatcher { contract_address: minigame_token_address };
-    if token_src5_dispatcher.supports_interface(IMINIGAME_TOKEN_ID) {
-        assert!(minigame_token_address == game_address, "Game is not registered");
-        return;
-    }
-    let minigame_token_dispatcher = IMinigameTokenLegacyDispatcher {
-        contract_address: minigame_token_address,
-    };
-    let minigame_registry_address = minigame_token_dispatcher.game_registry_address();
-    if minigame_registry_address.is_zero() {
-        assert!(minigame_token_dispatcher.game_address() == game_address, "Game is not registered");
-        return;
-    }
-    let minigame_registry_dispatcher = IMinigameRegistryDispatcher {
-        contract_address: minigame_registry_address,
-    };
-    let game_exists = minigame_registry_dispatcher.is_game_registered(game_address);
-    assert!(game_exists, "Game is not registered");
-}
-
-/// The standard token's registration check: it is self-bound, so the game must
-/// BE its token. Every path that trusts a game's `token_address()` must apply
-/// this — otherwise a hostile contract can name a standard token it does not
-/// own and have the metagame mint on it or pay its fee recipient.
+/// This used to be one branch of a three-way walk that also served
+/// registry-backed and single-game legacy tokens. That generation is retired;
+/// what remains is the check that was always doing the real work.
 fn assert_self_bound(token_address: ContractAddress, game_address: ContractAddress) {
     assert!(token_address == game_address, "Game is not registered");
 }
 
-/// True when `token_address` is a self-bound standard token (SRC5
-/// `IMINIGAME_TOKEN_ID`) rather than a legacy multi-game token.
-fn is_standard_token(token_address: ContractAddress) -> bool {
-    ISRC5Dispatcher { contract_address: token_address }.supports_interface(IMINIGAME_TOKEN_ID)
-}
-
-/// Rejects a game whose token is not itself, on the way into a legacy mint.
-///
-/// The mint paths discriminate on `token_address() == game_address` rather
-/// than by probing SRC5, because self-boundness IS what makes a token
-/// standard: a legacy token is structurally a separate contract from its
-/// game. Address equality answers the same question for free, and these are
-/// the hot paths — a probe there costs a cross-contract call on every mint,
-/// which for a tournament metagame is every entry.
-///
-/// The probe still has to happen somewhere, or a game naming a standard token
-/// it does not own would fall into the legacy branch and fail on a missing
-/// entrypoint instead of saying what is wrong. So it happens here, on the
-/// branch that is already not self-bound — legacy mints pay for it, standard
-/// mints no longer do, and the panic is unchanged either way.
-fn assert_not_a_foreign_standard_token(
-    token_address: ContractAddress, game_address: ContractAddress,
+/// Per-token renderers and skills belonged to the retired generation. Reject
+/// them where they are still passed rather than dropping them quietly — a
+/// caller that asked for a custom renderer must not be told the mint honoured
+/// it.
+fn assert_no_retired_extensions(
+    renderer_address: Option<ContractAddress>, skills_address: Option<ContractAddress>,
 ) {
-    if is_standard_token(token_address) {
-        assert_self_bound(token_address, game_address);
-    }
+    assert!(renderer_address.is_none(), "Metagame: tokens have no per-token renderer");
+    assert!(skills_address.is_none(), "Metagame: tokens have no per-token skills");
 }
 
-/// Mints on a self-bound standard token.
+/// Asserts that `game_address` is a game whose token is itself.
 ///
-/// The standard `mint` has no game address (the token IS the game) and no
-/// per-token renderer/skills. Those two parameters are rejected loudly rather
-/// than silently dropped — a caller that asked for a custom renderer must not
-/// be told the mint honoured it.
-fn mint_standard_token(
-    token_address: ContractAddress,
-    player_name: Option<felt252>,
-    settings_id: Option<u32>,
-    start: Option<u64>,
-    end: Option<u64>,
-    objective_id: Option<u32>,
-    context: Option<GameContextDetails>,
-    client_url: Option<ByteArray>,
-    renderer_address: Option<ContractAddress>,
-    skills_address: Option<ContractAddress>,
-    to: ContractAddress,
-    soulbound: bool,
-    paymaster: bool,
-    salt: u16,
-    metadata: u128,
-) -> felt252 {
-    assert!(renderer_address.is_none(), "Metagame: standard tokens have no per-token renderer");
-    assert!(skills_address.is_none(), "Metagame: standard tokens have no per-token skills");
-    IMinigameTokenDispatcher { contract_address: token_address }
-        .mint(
-            player_name,
-            settings_id,
-            start,
-            end,
-            objective_id,
-            context,
-            client_url,
-            to,
-            soulbound,
-            paymaster,
-            salt,
-            metadata,
-        )
+/// # Arguments
+/// * `game_address` - The address of the game contract to check
+pub fn assert_game_registered(game_address: ContractAddress) {
+    let minigame_token_address = IMinigameDispatcher { contract_address: game_address }
+        .token_address();
+    assert_self_bound(minigame_token_address, game_address);
 }
 
 /// Mints a game token through the game's own token contract.
 ///
-/// Every game brings its own token — the token is resolved from
-/// `game_address` on every mint, so there is no metagame-wide default token.
+/// Every game brings its own token — it is resolved from `game_address` on
+/// every mint, so there is no metagame-wide default token.
 ///
 /// # Arguments
 /// * `game_address` - The address of the game contract minting the token
-/// * `player_name` - Optional player name
-/// * `settings_id` - Optional settings ID
-/// * `start` - Optional start time
-/// * `end` - Optional end time
-/// * `objective_id` - Optional objective ID
-/// * `context` - Optional context data
-/// * `client_url` - Optional client URL
-/// * `renderer_address` - Optional renderer contract address
-/// * `skills_address` - Optional skills contract address
 /// * `to` - Address to mint the token to
-/// * `soulbound` - Whether the token should be soulbound
 ///
 /// # Returns
-/// * `u64` - The minted token ID
+/// * `felt252` - The minted token id
 pub fn mint(
     game_address: ContractAddress,
     player_name: Option<felt252>,
@@ -178,27 +77,13 @@ pub fn mint(
     salt: u16,
     metadata: u128,
 ) -> felt252 {
-    let minigame_dispatcher = IMinigameDispatcher { contract_address: game_address };
-    let minigame_token_address = minigame_dispatcher.token_address();
-    // A standard token is self-bound and carries a different mint ABI;
-    // `assert_game_registered` accepts these games, so this path must be able
-    // to mint for them too — under the same pairing check, which here IS the
-    // discriminator rather than a follow-up to one.
-    //
-    // Reading self-boundness as "standard" assumes no LEGACY token is ever
-    // self-bound. That is a description of deployed reality — a legacy token
-    // is a separate contract from its game — and not an invariant anything
-    // enforces, so state it rather than leave it implicit. A self-bound legacy
-    // token would take this branch and fail loudly on the standard mint's
-    // missing entrypoint, and `assert_game_registered`'s zero-registry branch
-    // would still admit it (`token.game_address() == game_address` can hold
-    // when the two are the same contract), so the two disagree about exactly
-    // that shape. Accepted knowingly: the failure is a revert at first mint,
-    // never silent, and the alternative is the per-mint probe this exists to
-    // remove.
-    if minigame_token_address == game_address {
-        return mint_standard_token(
-            minigame_token_address,
+    let minigame_token_address = IMinigameDispatcher { contract_address: game_address }
+        .token_address();
+    assert_self_bound(minigame_token_address, game_address);
+    assert_no_retired_extensions(renderer_address, skills_address);
+
+    IMinigameTokenDispatcher { contract_address: minigame_token_address }
+        .mint(
             player_name,
             settings_id,
             start,
@@ -206,39 +91,11 @@ pub fn mint(
             objective_id,
             context,
             client_url,
-            renderer_address,
-            skills_address,
             to,
             soulbound,
             paymaster,
             salt,
             metadata,
-        );
-    }
-    assert_not_a_foreign_standard_token(minigame_token_address, game_address);
-
-    // Legacy token: narrower metadata field — reject rather than truncate.
-    let legacy_metadata: u16 = metadata.try_into().expect('Metagame: metadata exceeds u16');
-    let minigame_token_dispatcher = IMinigameTokenLegacyDispatcher {
-        contract_address: minigame_token_address,
-    };
-    minigame_token_dispatcher
-        .mint(
-            game_address,
-            player_name,
-            settings_id,
-            start,
-            end,
-            objective_id,
-            context,
-            client_url,
-            renderer_address,
-            skills_address,
-            to,
-            soulbound,
-            paymaster,
-            salt,
-            legacy_metadata,
         )
 }
 
@@ -252,10 +109,6 @@ pub fn mint(
 /// global salt counter across the batch. For a many-recipient single-game mint
 /// — a tournament entry — that is the difference between N dispatches and one,
 /// with the `context` array re-serialised N times versus once.
-///
-/// Both token generations are served. `metadata` is `u128` to reach the
-/// standard token's 65-bit field; the legacy token's field is `u16`, so a
-/// legacy mint asserts the value fits rather than truncating it silently.
 ///
 /// # Arguments
 /// * `game_address` - The game whose token mints; the token is resolved from it
@@ -280,37 +133,13 @@ pub fn mint_batch_recipients(
     salt: u16,
     metadata: u128,
 ) -> Array<felt252> {
-    let minigame_dispatcher = IMinigameDispatcher { contract_address: game_address };
-    let minigame_token_address = minigame_dispatcher.token_address();
+    let minigame_token_address = IMinigameDispatcher { contract_address: game_address }
+        .token_address();
+    assert_self_bound(minigame_token_address, game_address);
+    assert_no_retired_extensions(renderer_address, skills_address);
 
-    // Same discriminator, and the same assumption, as `mint` — see there.
-    if minigame_token_address == game_address {
-        assert!(renderer_address.is_none(), "Metagame: standard tokens have no per-token renderer");
-        assert!(skills_address.is_none(), "Metagame: standard tokens have no per-token skills");
-        return IMinigameTokenDispatcher { contract_address: minigame_token_address }
-            .mint_batch_recipients(
-                player_name,
-                settings_id,
-                start,
-                end,
-                objective_id,
-                context,
-                client_url,
-                recipients,
-                soulbound,
-                paymaster,
-                salt,
-                metadata,
-            );
-    }
-
-    assert_not_a_foreign_standard_token(minigame_token_address, game_address);
-
-    // Legacy token: narrower metadata field — reject rather than truncate.
-    let legacy_metadata: u16 = metadata.try_into().expect('Metagame: metadata exceeds u16');
-    IMinigameTokenLegacyDispatcher { contract_address: minigame_token_address }
+    IMinigameTokenDispatcher { contract_address: minigame_token_address }
         .mint_batch_recipients(
-            game_address,
             player_name,
             settings_id,
             start,
@@ -318,19 +147,19 @@ pub fn mint_batch_recipients(
             objective_id,
             context,
             client_url,
-            renderer_address,
-            skills_address,
             recipients,
             soulbound,
             paymaster,
             salt,
-            legacy_metadata,
+            metadata,
         )
 }
 
 /// Mints multiple game tokens in batch through their games' token contracts
 ///
-/// Each entry names its own game; the token is resolved per mint.
+/// Each entry names its own game; the token is resolved per mint. When a batch
+/// shares one game, prefer `mint_batch_recipients` — this costs one
+/// cross-contract dispatch per token.
 ///
 /// # Arguments
 /// * `mints` - Array of mint parameters for each token
@@ -394,74 +223,36 @@ pub fn calculate_game_fee(revenue: u128, fee_numerator: u16) -> u128 {
     result.try_into().unwrap()
 }
 
-/// Resolves game fee info.
-///
-/// Standard tokens carry the fee terms the registry used to hold, so a token
-/// advertising `IMINIGAME_TOKEN_GAME_FEE_ID` answers directly. Legacy tokens
-/// keep the game_address → token → registry → game_fee_info walk.
-pub fn get_game_fee_info(game_address: ContractAddress) -> GameFeeInfo {
-    let minigame_dispatcher = IMinigameDispatcher { contract_address: game_address };
-    let minigame_token_address = minigame_dispatcher.token_address();
-    if supports_game_fee_surface(minigame_token_address) {
-        // The game-fee surface belongs to the self-bound standard token.
-        assert_self_bound(minigame_token_address, game_address);
-        let info = IMinigameTokenGameFeeDispatcher { contract_address: minigame_token_address }
-            .game_fee_terms();
-        return GameFeeInfo { license: info.license, fee_numerator: info.fee_numerator };
-    }
-    let minigame_token_dispatcher = IMinigameTokenLegacyDispatcher {
-        contract_address: minigame_token_address,
-    };
-    let minigame_registry_address = minigame_token_dispatcher.game_registry_address();
-    if minigame_registry_address.is_zero() {
-        // Single-game legacy token: no registry to ask and no game-fee surface,
-        // so the game declares no fee anywhere. "Declares nothing" and
-        // "declares zero" mean the same thing — nobody is owed anything — so
-        // answer zero rather than reverting. This keeps the fee question total:
-        // `calculate_game_fee` returns 0 and `pay_game_fee` exits before
-        // transferring, so no caller has to pre-check.
-        //
-        // `assert_game_registered` admits this shape; without this guard the
-        // walk below dispatched at address 0 and reverted.
-        return GameFeeInfo { license: default_license(), fee_numerator: 0 };
-    }
-    let minigame_registry_dispatcher = IMinigameRegistryDispatcher {
-        contract_address: minigame_registry_address,
-    };
-    let game_id = minigame_registry_dispatcher.game_id_from_address(game_address);
-    minigame_registry_dispatcher.game_fee_info(game_id)
-}
-
-/// True when the token exposes the standard game-fee surface
-/// (`IMINIGAME_TOKEN_GAME_FEE_ID`) that replaced the registry's fee/payee role.
+/// True when the token exposes the game-fee surface
+/// (`IMINIGAME_TOKEN_GAME_FEE_ID`).
 pub fn supports_game_fee_surface(token_address: ContractAddress) -> bool {
     ISRC5Dispatcher { contract_address: token_address }
         .supports_interface(IMINIGAME_TOKEN_GAME_FEE_ID)
 }
 
-/// Resolves the address that should receive a game's fee.
+/// A game's fee terms — rate, license and recipient — read from its token's
+/// game-fee surface.
 ///
-/// Standard tokens name the payee directly (`game_fee_recipient`). Legacy
-/// registry tokens keep the old indirection: the payee is whoever currently
-/// owns the game's registry NFT.
-pub fn get_game_fee_recipient(game_address: ContractAddress) -> ContractAddress {
-    let minigame_dispatcher = IMinigameDispatcher { contract_address: game_address };
-    let token_address = minigame_dispatcher.token_address();
-    if supports_game_fee_surface(token_address) {
-        // Same pairing check: a hostile game must not redirect the payee.
-        assert_self_bound(token_address, game_address);
-        return IMinigameTokenGameFeeDispatcher { contract_address: token_address }
-            .game_fee_recipient();
+/// A game whose token does not advertise the surface declares no terms at all,
+/// which is the same answer as declaring zero: nobody is owed anything.
+/// Answering rather than reverting keeps the fee question total, so
+/// `calculate_game_fee` returns 0, `pay_game_fee` exits before transferring,
+/// and no caller has to pre-check. The recipient is zero in that case and is
+/// never reached, because a zero fee never gets that far.
+///
+/// This replaces the old `get_game_fee_info` / `get_game_fee_recipient` pair.
+/// Those were two separate resolutions because the retired generation answered
+/// the two questions in different places — terms from the registry, payee from
+/// the registry NFT's owner. One surface now answers both in one call.
+pub fn get_game_fee_terms(game_address: ContractAddress) -> GameFeeTerms {
+    let minigame_token_address = IMinigameDispatcher { contract_address: game_address }
+        .token_address();
+    assert_self_bound(minigame_token_address, game_address);
+
+    if !supports_game_fee_surface(minigame_token_address) {
+        return GameFeeTerms {
+            recipient: Zero::zero(), license: default_license(), fee_numerator: 0,
+        };
     }
-    let token_dispatcher = IMinigameTokenLegacyDispatcher { contract_address: token_address };
-    let registry_address = token_dispatcher.game_registry_address();
-    // Unlike the fee, an absent PAYEE is not a benign zero. Reaching here means
-    // a caller is trying to pay a game that never named anyone, and paying the
-    // zero address would burn the funds. `get_game_fee_info` returns 0 for this
-    // shape, so `pay_game_fee` exits before reaching this — arriving anyway is
-    // a caller bug worth surfacing.
-    assert!(!registry_address.is_zero(), "Metagame: game declares no fee recipient");
-    let registry_dispatcher = IMinigameRegistryDispatcher { contract_address: registry_address };
-    let game_id = registry_dispatcher.game_id_from_address(game_address);
-    IERC721Dispatcher { contract_address: registry_address }.owner_of(game_id.into())
+    IMinigameTokenGameFeeDispatcher { contract_address: minigame_token_address }.game_fee_terms()
 }

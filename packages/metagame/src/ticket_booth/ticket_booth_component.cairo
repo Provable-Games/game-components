@@ -13,7 +13,7 @@
 #[starknet::component]
 pub mod TicketBoothComponent {
     use core::num::traits::Zero;
-    use game_components_embeddable_game_standard::minigame::minigame::mint;
+    use game_components_embeddable_game_standard::metagame::metagame::mint;
     use openzeppelin_interfaces::erc20::{IERC20Dispatcher, IERC20DispatcherTrait};
     use openzeppelin_interfaces::erc721::{IERC721Dispatcher, IERC721DispatcherTrait};
     use starknet::contract_address::ContractAddress;
@@ -33,8 +33,6 @@ pub mod TicketBoothComponent {
     #[storage]
     pub struct Storage {
         opening_time: u64,
-        denshokan_address: ContractAddress,
-        game_token_address: ContractAddress,
         game_address: ContractAddress,
         payment_token: ContractAddress,
         cost_to_play: u128,
@@ -262,31 +260,24 @@ pub mod TicketBoothComponent {
         fn initializer(
             ref self: ComponentState<TContractState>,
             opening_time: u64,
-            denshokan_address: ContractAddress,
-            game_token_address: ContractAddress,
             payment_token: ContractAddress,
             cost_to_play: u128,
             ticket_receiver_address: ContractAddress,
-            game_address: Option<ContractAddress>,
+            game_address: ContractAddress,
             settings_id: Option<u32>,
             start_time: Option<u64>,
             expiration_time: Option<u64>,
             golden_passes: Option<Span<(ContractAddress, GoldenPass)>>,
         ) {
             // Validate required parameters
-            assert!(!denshokan_address.is_zero(), "Denshokan address cannot be zero");
-            assert!(!game_token_address.is_zero(), "Game token address cannot be zero");
+            // The game contract IS its token, so this is the mint target.
+            assert!(!game_address.is_zero(), "Game address cannot be zero");
             assert!(cost_to_play > 0_u128, "Cost to play must be greater than zero");
 
             self.opening_time.write(opening_time);
-            self.denshokan_address.write(denshokan_address);
-            self.game_token_address.write(game_token_address);
             self.payment_token.write(payment_token);
             self.cost_to_play.write(cost_to_play);
-            match game_address {
-                Option::Some(addr) => self.game_address.write(addr),
-                Option::None => self.game_address.write(0.try_into().unwrap()),
-            }
+            self.game_address.write(game_address);
             self.settings_id.write(settings_id);
             self.start_time.write(start_time);
             self.expiration_time.write(expiration_time);
@@ -397,7 +388,6 @@ pub mod TicketBoothComponent {
             expiration: Option<u64>,
         ) -> felt252 {
             mint(
-                self.denshokan_address.read(),
                 self.game_address.read(),
                 player_name,
                 self.settings_id.read(),
@@ -426,7 +416,6 @@ pub mod TicketBoothComponent {
             salt: u16,
         ) -> felt252 {
             mint(
-                self.denshokan_address.read(),
                 self.game_address.read(),
                 player_name,
                 self.settings_id.read(),

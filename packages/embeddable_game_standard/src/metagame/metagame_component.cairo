@@ -127,16 +127,15 @@ pub mod MetagameComponent {
             payment_token: ContractAddress,
             revenue: u128,
         ) -> u128 {
-            let fee_info = libs::get_game_fee_info(game_address);
-            let fee_amount = libs::calculate_game_fee(revenue, fee_info.fee_numerator);
+            // One resolution answers both questions. This was two calls while
+            // the retired generation answered terms and payee in different
+            // places; the game-fee surface returns them together.
+            let terms = libs::get_game_fee_terms(game_address);
+            let fee_amount = libs::calculate_game_fee(revenue, terms.fee_numerator);
             if fee_amount == 0 {
                 return 0;
             }
-
-            // Resolve the fee recipient: standard tokens name the payee
-            // directly, legacy registry tokens go through the registry NFT's
-            // current owner.
-            let recipient = libs::get_game_fee_recipient(game_address);
+            let recipient = terms.recipient;
 
             // Transfer fee. ERC20s that signal failure by returning false
             // instead of reverting must not be reported as a paid fee.

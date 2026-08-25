@@ -1,17 +1,17 @@
-# Minigame Component
+# Minigame Module
 
-Individual game logic foundation. Each game contract embeds this component and MUST implement `IMinigameTokenData` trait to provide score and game state.
+The interfaces a game contract implements, plus two optional extensions. There
+is no `MinigameComponent`: a game embeds `MinigameTokenComponent` directly and
+IS its own token.
 
-## Storage
+## What lives here
 
-```cairo
-#[storage]
-pub struct Storage {
-    token_address: ContractAddress,      // Required MinigameToken
-    settings_address: ContractAddress,   // Optional IMinigameSettings
-    objectives_address: ContractAddress, // Optional IMinigameObjectives
-}
-```
+| Path | Purpose |
+|------|---------|
+| `interface.cairo` | `IMinigame`, `IMinigameTokenData`, `IMinigameDetails`, `IMinigameTokenUri` |
+| `structs.cairo` | `MintGameParams` |
+| `extensions/settings/` | `SettingsComponent` — settings presets |
+| `extensions/objectives/` | `ObjectivesComponent` — achievement tracking |
 
 ## Interfaces
 
@@ -19,13 +19,17 @@ pub struct Storage {
 
 | Method | Returns | Description |
 |--------|---------|-------------|
-| `token_address()` | `ContractAddress` | Associated MinigameToken |
+| `token_address()` | `ContractAddress` | The game's token — for a self-bound game, **its own address** |
 | `settings_address()` | `ContractAddress` | Optional settings contract |
 | `objectives_address()` | `ContractAddress` | Optional objectives contract |
-| `mint_game(player_name, settings_id, ...)` | `u64` | Mint single game token |
-| `mint_game_batch(mints)` | `Array<u64>` | Batch mint game tokens |
+| `mint_game(player_name, settings_id, ...)` | `felt252` | Mint single game token |
+| `mint_game_batch(mints)` | `Array<felt252>` | Batch mint game tokens |
 
 **Interface ID**: `0x02c0f9265d397c10970f24822e4b57cac7d8895f8c449b7c9caaa26910499704`
+
+`token_address()` returning the contract's own address is what makes a game
+discoverable as self-bound: `metagame::assert_game_registered` is exactly that
+equality check, and consumers rely on it rather than resolving a registry.
 
 ### IMinigameTokenData (MUST IMPLEMENT)
 
@@ -36,6 +40,9 @@ pub struct Storage {
 | `score_batch(token_ids)` | `Array<u32>` | Batch scores |
 | `game_over_batch(token_ids)` | `Array<bool>` | Batch game states |
 
+The game is the sole authority here — the token holds no `game_over` latch and
+never calls back to ask. Nothing syncs state between them.
+
 ### IMinigameDetails (Optional)
 
 | Method | Returns | Description |
@@ -44,22 +51,9 @@ pub struct Storage {
 | `token_description(token_id)` | `ByteArray` | Token description |
 | `game_details(token_id)` | `Span<GameDetail>` | Key-value game details |
 
-### InternalTrait (Component internals)
-
-| Method | Description |
-|--------|-------------|
-| `initializer(creator, name, description, ...)` | Initialize and register game |
-| `pre_action(token_id)` | Call before game actions |
-| `post_action(token_id)` | Call after game actions |
-| `get_player_name(token_id)` | Get player name from token |
-| `require_owned_token(token_id)` | Assert caller owns token |
-| `assert_game_token_playable(token_id)` | Assert token is playable |
-
 ## Extensions
 
 ### Settings (`extensions/settings/`)
-
-Game configuration presets.
 
 | Interface | Methods |
 |-----------|---------|
@@ -69,9 +63,13 @@ Game configuration presets.
 
 **Interface ID**: `0x0379f4343538c65a38349fb1318328629dd950d3624101aeaac1b4bd45a39eff`
 
-### Objectives (`extensions/objectives/`)
+`SettingsComponent` registers the interface id and exposes
+`get_settings_id(token_id, token_address)`. It no longer announces created
+settings to the token: that announcement dispatched to a token-side settings
+surface that only the retired generation had, and the game is the source of
+truth for which settings exist.
 
-Achievement tracking.
+### Objectives (`extensions/objectives/`)
 
 | Interface | Methods |
 |-----------|---------|
@@ -81,62 +79,48 @@ Achievement tracking.
 
 **Interface ID**: `0x0213cfcf73543e549f00c7cad49cf27a1e544d71315ff981930aaf77ac0709bd`
 
-## Component Embedding
+`ObjectivesComponent` registers the interface id. Objective IDs pack into the
+token id as inert data the game interprets — the token has no completion
+machinery, so `completed_objective` on `token_metadata` is always false.
+
+## Building a game
+
+The game contract embeds the TOKEN component; there is no separate game
+component to embed. See `test_common::mocks::standard_game_mock` for the full
+wiring — ERC721 + SRC5 + Ownable + `MinigameTokenComponent` (via
+`MinigameTokenMixinImpl`) + optionally `SettingsComponent`.
 
 ```cairo
 #[starknet::contract]
 mod MyGame {
-    component!(path: MinigameComponent, storage: minigame, event: MinigameEvent);
-    component!(path: SRC5Component, storage: src5, event: SRC5Event);
+    component!(path: MinigameTokenComponent, storage: minigame_token, event: MinigameTokenEvent);
+    // ERC721, SRC5, Ownable also required — Ownable administers the game-fee surface.
 
-    #[storage]
-    struct Storage {
-        #[substorage(v0)]
-        minigame: MinigameComponent::Storage,
-        #[substorage(v0)]
-        src5: SRC5Component::Storage,
-        // Game-specific storage
-        game_data: Map<u64, GameState>,
-    }
-
-    // REQUIRED: Implement IMinigameTokenData
+    // REQUIRED: the game answers for its own state.
     impl MinigameTokenDataImpl of IMinigameTokenData<ContractState> {
-        fn score(self: @ContractState, token_id: u64) -> u32 {
-            self.game_data.read(token_id).score
-        }
-        fn game_over(self: @ContractState, token_id: u64) -> bool {
-            self.game_data.read(token_id).is_finished
-        }
-        // ... batch methods
+        fn score(self: @ContractState, token_id: felt252) -> u32 { ... }
+        fn game_over(self: @ContractState, token_id: felt252) -> bool { ... }
     }
 
-    #[abi(embed_v0)]
-    impl MinigameImpl = MinigameComponent::MinigameImpl<ContractState>;
+    // Self-bound: every address this game advertises is itself.
+    impl MinigameImpl of IMinigame<ContractState> {
+        fn token_address(self: @ContractState) -> ContractAddress { get_contract_address() }
+    }
 }
-```
-
-## Relationships
-
-```
-Minigame
-  |-- token_address -------> MinigameToken (REQUIRED)
-  |-- settings_address ----> IMinigameSettings (OPTIONAL)
-  |-- objectives_address --> IMinigameObjectives (OPTIONAL)
 ```
 
 ## Game Lifecycle
 
-1. **Init**: Deploy with `token_address`, optional `settings_address`/`objectives_address`
-2. **Mint**: Call `mint_game()` to create playable token
-3. **Validate**: Use `assert_game_token_playable(token_id)` before actions
-4. **Play**: Update game state, `pre_action()`/`post_action()` hooks
-5. **Complete**: Return `true` from `game_over()` when finished
+1. **Init**: `MinigameTokenComponent::initializer(game_fee_recipient, license, fee_numerator)`
+2. **Mint**: `mint_game()` — the token is this contract
+3. **Guard**: `assert_owner_and_playable(token_id, caller)` before actions — internal, zero syscalls
+4. **Play**: update game state, then `refresh_metadata(token_id)` (ERC-4906)
+5. **Complete**: return `true` from `game_over()` when finished
 
-## Critical Requirements
+## Retired
 
-Games MUST implement `IMinigameTokenData`:
-- `score(token_id)` - Return current score
-- `game_over(token_id)` - Return true when game ends
-- Batch versions for multi-token queries
-
-Token validates game supports `IMINIGAME_ID` via SRC5 on registration.
+`MinigameComponent` and the `minigame::minigame` lib (`pre_action`,
+`post_action`, `register_game`, `update_game`) were removed with the
+registry-backed generation. They existed to register a game into a registry and
+to sync mutable token state — neither exists now. To build against that
+generation, pin `v2.0.0` or earlier.

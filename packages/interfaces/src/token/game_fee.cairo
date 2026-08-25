@@ -1,25 +1,30 @@
 // Token game-fee extension interface
 //
-// The registry used to carry a game's monetization terms (the payee was the
-// registry NFT's owner; the fee came from `GameFeeInfo`). With the self-bound
-// standard token there is no registry, so the terms live on the token
-// standard itself: the GAME FEE RECIPIENT (a payout sink), license text and
-// fee rate — set at initialization, administered by the game contract's OZ
-// Ownable OWNER, and discoverable via SRC5 so monetization platforms
-// (e.g. Budokan) can resolve the payee and minimum fee live at claim time.
+// A game's monetization terms live on the token itself: the GAME FEE
+// RECIPIENT (a payout sink), license text and fee rate — set at
+// initialization, administered by the game contract's OZ Ownable OWNER, and
+// discoverable via SRC5 so monetization platforms (e.g. Budokan) can resolve
+// the payee and minimum fee live at claim time.
+//
+// These terms and the fee constants below used to belong to the registry,
+// which resolved the payee through its own NFT's owner. The registry is gone;
+// this surface is where a game declares what it charges and who is paid.
 use starknet::ContractAddress;
-pub use crate::registry::{DEFAULT_GAME_FEE_BPS, FEE_DENOMINATOR};
 pub use crate::structs::token::GameFeeTerms;
 
-/// Default license text for the STANDARD token's game-fee surface.
+/// Default game fee in basis points (500 = 5%).
+pub const DEFAULT_GAME_FEE_BPS: u16 = 500;
+
+/// Fee denominator for basis points (10_000 = 100%).
+pub const FEE_DENOMINATOR: u16 = 10_000;
+
+/// Default license text for the game-fee surface.
 ///
 /// Deliberately fee-amount-free: the authoritative fee is the on-chain
 /// `fee_numerator` (owner-rotatable via `set_game_fee`), so a number baked
 /// into the text would go stale on the first fee change. The text points
 /// consumers at the on-chain declaration instead and resolves both rate and
-/// payee at time of payment. The legacy registry keeps its own v1.0 text
-/// (`registry::default_license`) — that string is what deployed denshokan
-/// carries and stays frozen.
+/// payee at time of payment.
 pub fn default_license() -> ByteArray {
     "Embeddable Game Standard License v1.1. Monetization of this game requires payment of the game fee this contract declares on-chain, at the rate and to the game fee recipient in effect at the time of payment (game_fee_terms). Non-monetized integration, indexing, and display of this game are unrestricted."
 }

@@ -1,16 +1,16 @@
 // Pure leaderboard library tests
-use game_components_embeddable_game_standard::token_legacy::structs::pack_token_id;
+use game_components_embeddable_game_standard::token::packing::pack_token_id;
 use game_components_interfaces::leaderboard::LeaderboardResult;
 use game_components_metagame::leaderboard::leaderboard::leaderboard;
 
 /// Helper to create a packed token ID with a specific minted_at timestamp.
 fn make_token(minted_at: u64) -> felt252 {
-    pack_token_id(1, 1, 0, minted_at, 0, 0, 0, false, false, false, 0, 0, 0)
+    pack_token_id(minted_at, 0, 0, 0, 0, false, 0, 0, false, false, 0, 0)
 }
 
 /// Helper to create a packed token ID with specific minted_at and salt.
 fn make_token_with_salt(minted_at: u64, salt: u16) -> felt252 {
-    pack_token_id(1, 1, 0, minted_at, 0, 0, 0, false, false, false, 0, salt, 0)
+    pack_token_id(minted_at, 0, 0, 0, 0, false, 0, salt, false, false, 0, 0)
 }
 
 // ── is_better_score ──

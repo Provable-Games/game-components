@@ -1,0 +1,441 @@
+<title>What Still Ships</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=Public+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+
+<style>
+  :root {
+    --ground:      #F7F8FA;
+    --surface:     #FFFFFF;
+    --ink:         #161A22;
+    --ink-soft:    #39424F;
+    --muted:       #5A6472;
+    --rule:        #DDE2E9;
+    --rule-soft:   #EAEEF3;
+    --accent:      #2F5D8C;
+    --accent-soft: #E8EEF6;
+    --remove:      #9B4A3A;
+    --remove-soft: #F6EAE7;
+    --keep:        #3F6B54;
+    --keep-soft:   #E9F0EC;
+    --hold:        #7A6435;
+    --hold-soft:   #F4EFE2;
+
+    --f-display: "Newsreader", Georgia, "Times New Roman", serif;
+    --f-body:    "Public Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --f-mono:    "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground:      #12151B;
+      --surface:     #191D25;
+      --ink:         #E8EBF0;
+      --ink-soft:    #C2C9D4;
+      --muted:       #8B95A4;
+      --rule:        #2C333E;
+      --rule-soft:   #232932;
+      --accent:      #7FA9D6;
+      --accent-soft: #1D2836;
+      --remove:      #D08C7C;
+      --remove-soft: #2E2220;
+      --keep:        #86B39A;
+      --keep-soft:   #1E2823;
+      --hold:        #C4AB74;
+      --hold-soft:   #2A2519;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground:      #12151B;
+    --surface:     #191D25;
+    --ink:         #E8EBF0;
+    --ink-soft:    #C2C9D4;
+    --muted:       #8B95A4;
+    --rule:        #2C333E;
+    --rule-soft:   #232932;
+    --accent:      #7FA9D6;
+    --accent-soft: #1D2836;
+    --remove:      #D08C7C;
+    --remove-soft: #2E2220;
+    --keep:        #86B39A;
+    --keep-soft:   #1E2823;
+    --hold:        #C4AB74;
+    --hold-soft:   #2A2519;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--f-body);
+    font-size: 16px;
+    line-height: 1.65;
+    margin: 0;
+    padding: 0 24px 96px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap { max-width: 780px; margin: 0 auto; }
+
+  /* ---- masthead ---- */
+  .masthead {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 64px 0 28px;
+    border-bottom: 2px solid var(--ink);
+  }
+  .eyebrow {
+    font-family: var(--f-mono);
+    font-size: 11.5px;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  h1 {
+    font-family: var(--f-display);
+    font-size: clamp(38px, 6.5vw, 56px);
+    font-weight: 500;
+    line-height: 1.06;
+    letter-spacing: -0.02em;
+    margin: 0;
+    text-wrap: balance;
+  }
+  .standfirst {
+    font-family: var(--f-display);
+    font-size: 20px;
+    font-style: italic;
+    line-height: 1.5;
+    color: var(--ink-soft);
+    margin: 0;
+    max-width: 60ch;
+  }
+  .provenance {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 18px;
+    font-family: var(--f-mono);
+    font-size: 12px;
+    color: var(--muted);
+    padding-top: 4px;
+  }
+  .provenance b { color: var(--ink-soft); font-weight: 500; }
+
+  /* ---- sections ---- */
+  section { padding-top: 52px; }
+  h2 {
+    font-family: var(--f-display);
+    font-size: 27px;
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+    margin: 0 0 6px;
+    text-wrap: balance;
+  }
+  h3 {
+    font-family: var(--f-body);
+    font-size: 15px;
+    font-weight: 600;
+    margin: 30px 0 8px;
+    letter-spacing: -0.005em;
+  }
+  p { margin: 0 0 16px; max-width: 66ch; }
+  .lede { color: var(--ink-soft); }
+  a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 2px; }
+  code {
+    font-family: var(--f-mono);
+    font-size: 0.875em;
+    background: var(--rule-soft);
+    padding: 0.1em 0.36em;
+    border-radius: 3px;
+  }
+  strong { font-weight: 600; }
+
+  /* ---- the finding callout ---- */
+  .finding {
+    background: var(--accent-soft);
+    border-left: 3px solid var(--accent);
+    padding: 22px 26px;
+    margin: 26px 0 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .finding p { margin: 0; max-width: 62ch; }
+  .finding .rule-line {
+    font-family: var(--f-display);
+    font-size: 21px;
+    line-height: 1.35;
+    color: var(--ink);
+  }
+
+  /* ---- verdict rows ---- */
+  .ledger {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    background: var(--rule);
+    border: 1px solid var(--rule);
+    margin-top: 22px;
+  }
+  .row {
+    background: var(--surface);
+    display: grid;
+    grid-template-columns: 4px minmax(0, 1fr) auto;
+    align-items: start;
+    gap: 0 18px;
+    padding: 0;
+  }
+  .stripe { align-self: stretch; }
+  .row-body { padding: 15px 0 15px 4px; min-width: 0; }
+  .row-meta { padding: 15px 18px 15px 0; text-align: right; white-space: nowrap; }
+
+  .row-name {
+    font-family: var(--f-mono);
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--ink);
+  }
+  .row-note {
+    font-size: 13.5px;
+    color: var(--muted);
+    line-height: 1.5;
+    margin-top: 3px;
+    max-width: 54ch;
+  }
+  .lines {
+    font-family: var(--f-mono);
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink-soft);
+  }
+  .lines span { color: var(--muted); font-size: 11px; }
+
+  .chip {
+    display: inline-block;
+    font-family: var(--f-mono);
+    font-size: 10.5px;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    padding: 2.5px 7px;
+    border-radius: 3px;
+    margin-bottom: 5px;
+  }
+  .c-remove { background: var(--remove-soft); color: var(--remove); }
+  .c-keep   { background: var(--keep-soft);   color: var(--keep); }
+  .c-hold   { background: var(--hold-soft);   color: var(--hold); }
+
+  .s-remove { background: var(--remove); }
+  .s-keep   { background: var(--keep); }
+  .s-hold   { background: var(--hold); }
+
+  /* ---- evidence list ---- */
+  .evidence {
+    list-style: none;
+    padding: 0;
+    margin: 14px 0 0;
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    max-width: 62ch;
+  }
+  .evidence li {
+    display: grid;
+    grid-template-columns: 132px 1fr;
+    gap: 14px;
+    font-size: 14.5px;
+    align-items: baseline;
+  }
+  .evidence dt, .evidence .k {
+    font-family: var(--f-mono);
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+  }
+  .evidence .v { color: var(--ink-soft); }
+
+  /* ---- question block ---- */
+  .question {
+    border: 1px solid var(--rule);
+    border-top: 3px solid var(--hold);
+    background: var(--surface);
+    padding: 24px 26px;
+    margin-top: 24px;
+  }
+  .question h3 { margin-top: 0; }
+  .question p:last-child { margin-bottom: 0; }
+
+  /* ---- method ---- */
+  .method {
+    border-top: 1px solid var(--rule);
+    margin-top: 56px;
+    padding-top: 22px;
+    font-size: 14px;
+    color: var(--muted);
+  }
+  .method p { max-width: 68ch; margin-bottom: 12px; }
+  .method h3 { color: var(--ink-soft); margin-top: 0; }
+
+  @media (max-width: 620px) {
+    .row { grid-template-columns: 4px minmax(0, 1fr); }
+    .row-meta { grid-column: 2; text-align: left; padding: 0 18px 15px 4px; }
+    .evidence li { grid-template-columns: 1fr; gap: 2px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+</style>
+
+<div class="wrap">
+
+  <header class="masthead">
+    <div class="eyebrow">Removal audit · game-components</div>
+    <h1>What Still Ships</h1>
+    <p class="standfirst">Which modules are genuinely dead, which are simply unconsumed, and the one question that gates the largest deletion.</p>
+    <div class="provenance">
+      <span>Against <b>9ad9a33</b></span>
+      <span>tag <b>v2.0.0</b></span>
+      <span>Scope: <b>in-repo + budokan</b></span>
+    </div>
+  </header>
+
+  <section>
+    <h2>The distinction that reframes this</h2>
+    <p class="lede">The obvious method — find modules nothing imports, delete them — gives the wrong answer here, and would have deleted working product.</p>
+    <p>game-components is a <strong>library</strong>. Its components exist to be embedded by game developers downstream, not called from within this repo. So "no in-repo consumer" is the normal state for a healthy module, not evidence of death.</p>
+
+    <div class="finding">
+      <p class="rule-line">The discriminator isn't consumers. It's whether anyone is still maintaining it.</p>
+      <p>A module with tests and a CI matrix entry is a shipped product waiting for its first embedder. A module with neither is an abandoned draft. One of these is worth keeping; the other never finished being written.</p>
+    </div>
+
+    <p style="margin-top:24px">Applied to the three modules with no consumer anywhere, that separates cleanly — and only one of them is actually dead.</p>
+
+    <div class="ledger">
+      <div class="row">
+        <div class="stripe s-keep"></div>
+        <div class="row-body">
+          <span class="chip c-keep">Shipped</span>
+          <div class="row-name">metagame::ticket_booth</div>
+          <div class="row-note">No consumer in-repo or in budokan — but 37 tests and a CI matrix entry. This is finished work awaiting an embedder.</div>
+        </div>
+        <div class="row-meta"><div class="lines">37 <span>tests</span></div></div>
+      </div>
+      <div class="row">
+        <div class="stripe s-keep"></div>
+        <div class="row-body">
+          <span class="chip c-keep">Shipped</span>
+          <div class="row-name">metagame::merkledrop</div>
+          <div class="row-note">Same shape: unconsumed, but tested and in CI.</div>
+        </div>
+        <div class="row-meta"><div class="lines">11 <span>tests</span></div></div>
+      </div>
+      <div class="row">
+        <div class="stripe s-remove"></div>
+        <div class="row-body">
+          <span class="chip c-remove">Remove</span>
+          <div class="row-name">metagame::gpp</div>
+          <div class="row-note">Zero tests. Absent from every CI matrix and from codecov. No consumer in-repo, in budokan, or in the interfaces beyond its own declaration.</div>
+        </div>
+        <div class="row-meta"><div class="lines">681 <span>lines · 0 tests</span></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>gpp is the one clear deletion</h2>
+    <p>Guaranteed prize pool management. It arrived complete in a single commit and has not been touched since — no follow-up, no test pass, no CI wiring, no embedder.</p>
+
+    <ul class="evidence">
+      <li><span class="k">Origin</span><span class="v"><code>42fe1c2</code> — "feat: add GppComponent for guaranteed prize pool management" (#95)</span></li>
+      <li><span class="k">Commits since</span><span class="v">None. The module has never been modified.</span></li>
+      <li><span class="k">Tests</span><span class="v">0 across all three files</span></li>
+      <li><span class="k">CI</span><span class="v">Not in <code>pr-ci.yml</code>, <code>main-ci.yml</code>, or <code>codecov.yml</code></span></li>
+      <li><span class="k">Consumers</span><span class="v">None found in-repo or in budokan (either branch)</span></li>
+      <li><span class="k">Footprint</span><span class="v">681 lines across <code>gpp_component</code>, <code>store</code>, <code>structs</code>, plus <code>interfaces/src/gpp.cairo</code></span></li>
+    </ul>
+
+    <p style="margin-top:20px">Worth noting it <em>does</em> compile — it's declared in <code>lib.cairo</code>, so <code>scarb build</code> covers it. It has simply never been tested by anything. That's a CI gap as much as a dead-code finding: if you keep it, it needs a matrix entry and tests; if the feature isn't happening, it should go.</p>
+    <p><strong>This one is safe to delete now</strong> and doesn't depend on anything else in this document.</p>
+  </section>
+
+  <section>
+    <h2>The registry cluster is one unit, not three</h2>
+    <p class="lede">The original ask was "remove the registry". It can't be removed alone — it's load-bearing for two other modules, and they stand or fall together.</p>
+
+    <div class="ledger">
+      <div class="row">
+        <div class="stripe s-hold"></div>
+        <div class="row-body">
+          <span class="chip c-hold">Blocked</span>
+          <div class="row-name">embeddable_game_standard::registry</div>
+          <div class="row-note">Serves token_legacy. Also still owns <code>GameFeeInfo</code> and <code>FEE_DENOMINATOR</code>, which the <em>standard</em> generation uses.</div>
+        </div>
+        <div class="row-meta"><div class="lines">5,324 <span>lines</span></div></div>
+      </div>
+      <div class="row">
+        <div class="stripe s-hold"></div>
+        <div class="row-body">
+          <span class="chip c-hold">Blocked</span>
+          <div class="row-name">embeddable_game_standard::minigame</div>
+          <div class="row-note">Legacy-only by design — asserts <code>IMINIGAME_TOKEN_LEGACY_ID</code> and calls <code>register_game</code>. A standard-token game embeds the token component directly.</div>
+        </div>
+        <div class="row-meta"><div class="lines">7,576 <span>lines</span></div></div>
+      </div>
+      <div class="row">
+        <div class="stripe s-hold"></div>
+        <div class="row-body">
+          <span class="chip c-hold">Blocked</span>
+          <div class="row-name">embeddable_game_standard::token_legacy</div>
+          <div class="row-note">Preserved deliberately for deployed denshokan. Carries seven extensions the standard token has none of: context, enumerable, minter, objectives, renderer, settings, skills.</div>
+        </div>
+        <div class="row-meta"><div class="lines">26,384 <span>lines</span></div></div>
+      </div>
+    </div>
+
+    <p style="margin-top:22px">Pull registry out and the other two stop compiling. So the decision on the table isn't "delete registry" — it's <strong>"retire the legacy generation, ~39,300 lines"</strong>.</p>
+    <p>No current consumer touches any of it. Budokan v2 removed the registry entirely — its five apparent references are all comments. SDM is standard-native. Inside this repo, the only thing keeping the cluster alive is the legacy generation itself.</p>
+
+    <div class="question">
+      <h3>The question that gates it</h3>
+      <p>Is deployed denshokan still live, and does anything still need to build against it?</p>
+      <p style="margin-bottom:0">That isn't answerable from the code. <code>token_legacy</code> exists specifically to serve a deployment, and its interface id (<code>IMINIGAME_TOKEN_LEGACY_ID</code>) is frozen because a live contract registers it on chain. If the answer is no, all 39,300 lines go together. If the answer is yes, none of them do.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>One coupling to break either way</h2>
+    <p><code>GameFeeInfo</code>, <code>FEE_DENOMINATOR</code> and <code>DEFAULT_GAME_FEE_BPS</code> live in the <em>registry's</em> interface — and the standard generation depends on all three:</p>
+
+    <ul class="evidence">
+      <li><span class="k">Standard token</span><span class="v"><code>token/game_fee.cairo</code> re-exports <code>DEFAULT_GAME_FEE_BPS</code> and <code>FEE_DENOMINATOR</code> straight from <code>registry</code></span></li>
+      <li><span class="k">Token component</span><span class="v"><code>minigame_token_component</code> uses both for its initializer's fee validation</span></li>
+      <li><span class="k">Metagame</span><span class="v"><code>metagame.cairo</code> returns <code>GameFeeInfo</code> and divides by <code>FEE_DENOMINATOR</code></span></li>
+    </ul>
+
+    <p style="margin-top:20px">These three symbols are generation-neutral — a fee denominator isn't a registry concept. Moving them to their own module is correct whether or not the registry ever goes, and it's a hard prerequisite for removing it. Everything else in the registry interface (<code>IMinigameRegistry</code>, <code>GameMetadata</code>, the v1.0 <code>default_license</code>) is genuinely registry-specific and stays.</p>
+  </section>
+
+  <section>
+    <h2>Recommended order</h2>
+    <p>Three steps, increasing in both size and required certainty:</p>
+    <ul class="evidence">
+      <li><span class="k">Now</span><span class="v">Decouple the three fee symbols. Small, correct regardless, unblocks everything below.</span></li>
+      <li><span class="k">Now</span><span class="v">Delete <code>gpp</code> — or wire it into CI with tests if the feature is still wanted. Independent of the rest.</span></li>
+      <li><span class="k">Gated</span><span class="v">Retire the legacy cluster, once the denshokan question has an answer. Own PR, not folded into anything else.</span></li>
+    </ul>
+  </section>
+
+  <div class="method">
+    <h3>Method and limits</h3>
+    <p>Consumers were traced by symbol across <code>packages/</code> excluding each module's own tree, and across budokan on both <code>main</code> and <code>feat/budokan-v2-lite</code>. Test counts are <code>#[test]</code> markers; CI membership is presence in the workflow matrices and <code>codecov.yml</code>. Line counts are total <code>.cairo</code> lines including tests.</p>
+    <p><strong>Not examined:</strong> the <code>utilities</code> and <code>economy</code> packages, the <code>presets</code> package beyond confirming budokan doesn't consume it, and consumers outside this repo and budokan — notably SDM, which was checked only for the registry question. A module absent from this document has not been cleared; it has not been looked at.</p>
+    <p style="margin-bottom:0">Everything asserted here was verified against <code>9ad9a33</code> at the time of writing. The <code>gpp</code> and coupling findings are stable; consumer claims about budokan reflect its branches as of this commit and should be re-checked if that work moves.</p>
+  </div>
+
+</div>
