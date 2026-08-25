@@ -2,6 +2,33 @@
 
 *2026-08-06 — covers game-components [#123](https://github.com/Provable-Games/game-components/pull/123), super-death-mountain [#149](https://github.com/Provable-Games/super-death-mountain/pull/149) / [#150](https://github.com/Provable-Games/super-death-mountain/pull/150), budokan [#313](https://github.com/Provable-Games/budokan/pull/313). All numbers are measured — snforge harness or real Sepolia transactions — not estimates, except where marked.*
 
+## ⚠️ 2.1.1 is a BREAKING release despite the patch number
+
+The version is a patch, but the ABI changed. Nothing in this ecosystem
+resolves versions automatically — consumers pin git tags and there is no
+registry — so no one is pulled into 2.1.1 involuntarily. But **do not treat
+`v2.1.0 → v2.1.1` as a safe bump.**
+
+Two SRC5 interface ids move:
+
+| Constant | v2.1.0 | v2.1.1 |
+| --- | --- | --- |
+| `IMINIGAME_ID` | `0x3d1730c2…cc2b4` | `0x1b78fcd155ca1cfe04a0f0f75dd48b398995d2f9ff0c9f0e00ec80c71d1f2bb` |
+| `IMINIGAME_TOKEN_ID` | `0x15951d6d…b7aea` | `0x20253de95bcdb23620c88405a5f97da040b91de832ad98a34b45c4f3331d13b` |
+
+**Interface ids must move in lockstep across deployed contracts.** A contract
+compiled against 2.1.1 probes the new value; a contract already deployed
+registers the old one. They will not detect each other, and an SRC5 probe
+fails at RUNTIME — no compile error warns you. Budokan's `create_tournament`
+enforces exactly such a check against live games, so plan the redeploys
+together rather than one at a time.
+
+The source-level breaks are loud by comparison and will simply fail to
+compile: `TokenMetadata` loses `game_id` and widens `metadata` to `u128`, and
+`IMinigame::mint_game` / `MintGameParams.metadata` widen from `u16` to `u128`.
+
+---
+
 ## TL;DR
 
 A beast-mode game (~75 actions) cost **~$0.40** on the original architecture. On the final architecture it costs **~$0.35 (−12%)**, with every stage of a game's life cheaper: mint, start, every action, and game-end (which now costs *nothing* — the ~6.73M-gas sync transaction no longer exists). The dominant remaining cost is per-transaction protocol overhead (~44% of a long game), which points at client-side action batching (est. ~$0.25–0.28) as the next lever — a client change, not a contract change.
@@ -185,7 +212,7 @@ map:
 | Old name (pre-rename) | New standard name | Legacy name |
 | --- | --- | --- |
 | `IMinigameTokenLite` (+`Dispatcher`/`DispatcherTrait`) | `IMinigameToken` (+`Dispatcher`/`DispatcherTrait`) | — |
-| `IMINIGAME_TOKEN_LITE_ID` (= `0x15951d…7aea` at the rename) | `IMINIGAME_TOKEN_ID` (value CHANGED in 2.2.0 to `0x20253d…d13b` — see above) | — |
+| `IMINIGAME_TOKEN_LITE_ID` (= `0x15951d…7aea` at the rename) | `IMINIGAME_TOKEN_ID` (value CHANGED in 2.1.1 to `0x20253d…d13b` — see above) | — |
 | `IMinigameToken` (original full trait) | — | `IMinigameTokenLegacy` |
 | `IMINIGAME_TOKEN_ID` (original, = `0x246f61…9906`) | — | `IMINIGAME_TOKEN_LEGACY_ID` (same value) |
 | `game_components_interfaces::token::lite` | `game_components_interfaces::token::core` | — |
