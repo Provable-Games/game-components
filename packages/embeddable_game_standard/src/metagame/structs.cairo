@@ -4,7 +4,7 @@ use starknet::ContractAddress;
 /// Parameters for minting a token in batch operations through metagame
 #[derive(Drop, Serde)]
 pub struct MintMetagameParams {
-    pub game_address: Option<ContractAddress>,
+    pub game_address: ContractAddress,
     pub player_name: Option<felt252>,
     pub settings_id: Option<u32>,
     pub start: Option<u64>,
@@ -18,5 +18,8 @@ pub struct MintMetagameParams {
     pub soulbound: bool,
     pub paymaster: bool,
     pub salt: u16,
-    pub metadata: u16,
+    /// Inert data the game interprets. `u128` to reach the standard token's
+    /// 65-bit field; a legacy mint asserts the value fits its u16 field
+    /// rather than truncating.
+    pub metadata: u128,
 }

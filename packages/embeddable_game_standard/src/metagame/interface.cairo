@@ -1,4 +1,2 @@
-// Re-export from interfaces package for backward compatibility
-pub use game_components_interfaces::metagame::{
-    IMETAGAME_ID, IMetagame, IMetagameDispatcher, IMetagameDispatcherTrait,
-};
+// `IMetagame` was removed — a metagame is self-bound and exposes no addresses.
+// See `game_components_interfaces::metagame::core` for the rationale.

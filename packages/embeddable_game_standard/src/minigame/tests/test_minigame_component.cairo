@@ -249,9 +249,9 @@ fn test_initialize_with_no_optional_addresses() {
     assert!(minigame_dispatcher.token_address() == token_address, "Token address mismatch");
 }
 
-// Test MN-U-03: Initialize with invalid token (missing IMINIGAME_TOKEN_ID)
+// Test MN-U-03: Initialize with invalid token (missing IMINIGAME_TOKEN_LEGACY_ID)
 #[test]
-#[should_panic(expected: "Minigame: Token does not support IMINIGAME_TOKEN_ID")]
+#[should_panic(expected: "Minigame: Token does not support IMINIGAME_TOKEN_LEGACY_ID")]
 fn test_initialize_with_invalid_token() {
     let token_address = addr(0x123);
 

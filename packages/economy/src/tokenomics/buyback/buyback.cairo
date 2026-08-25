@@ -43,6 +43,12 @@ pub mod BuybackComponent {
         Buyback_extension_address: ContractAddress,
         /// Per-token configuration overrides (None = use global defaults)
         Buyback_token_config: Map<ContractAddress, Option<TokenBuybackConfig>>,
+        /// Strict mode: when true, tokens without an explicit per-token config
+        /// revert instead of falling back to the global defaults (Ekubo
+        /// revenue_buybacks' Option::None default-config semantics, adapted —
+        /// our global config stays mandatory because sweep reads
+        /// buy_token/treasury from it; only the trading POLICY is gated)
+        Buyback_require_token_config: bool,
         /// Position token ID per sell token (0 if not created)
         Buyback_position_token_id: Map<ContractAddress, u64>,
         /// Number of orders created per sell token
@@ -67,6 +73,7 @@ pub mod BuybackComponent {
         BuyTokenSwept: BuyTokenSwept,
         GlobalConfigUpdated: GlobalConfigUpdated,
         TokenConfigUpdated: TokenConfigUpdated,
+        RequireTokenConfigUpdated: RequireTokenConfigUpdated,
     }
 
     /// Emitted when a new buyback order is started
@@ -119,6 +126,12 @@ pub mod BuybackComponent {
         pub sell_token: ContractAddress,
         pub old_config: Option<TokenBuybackConfig>,
         pub new_config: Option<TokenBuybackConfig>,
+    }
+
+    /// Emitted when strict per-token config mode is toggled
+    #[derive(Drop, starknet::Event)]
+    pub struct RequireTokenConfigUpdated {
+        pub required: bool,
     }
 
     /// External implementation of IBuyback
@@ -541,6 +554,8 @@ pub mod BuybackComponent {
             match self.Buyback_token_config.read(sell_token) {
                 Option::Some(config) => config,
                 Option::None => {
+                    // Strict mode: only explicitly-configured tokens may trade
+                    assert(!self.Buyback_require_token_config.read(), Errors::NO_CONFIG_FOR_TOKEN);
                     // Build default config from global settings
                     let global = self.Buyback_global_config.read();
                     TokenBuybackConfig {
@@ -607,6 +622,17 @@ pub mod BuybackComponent {
             let old_config = self.Buyback_token_config.read(sell_token);
             self.Buyback_token_config.write(sell_token, config);
             self.emit(TokenConfigUpdated { sell_token, old_config, new_config: config });
+        }
+
+        /// Toggle strict per-token config mode (internal - should be protected
+        /// by embedding contract). When enabled, `_get_effective_config`
+        /// reverts for tokens without an explicit config instead of falling
+        /// back to the global defaults. `sweep_buy_token_to_treasury` is
+        /// unaffected — it reads identity (buy_token/treasury) off the global
+        /// config, which stays mandatory.
+        fn set_require_token_config(ref self: ComponentState<TContractState>, required: bool) {
+            self.Buyback_require_token_config.write(required);
+            self.emit(RequireTokenConfigUpdated { required });
         }
     }
 }

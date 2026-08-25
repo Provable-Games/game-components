@@ -8,8 +8,9 @@ pub mod MinigameComponent {
     use game_components_embeddable_game_standard::registry::interface::{
         IMINIGAME_REGISTRY_ID, IMinigameRegistryDispatcher, IMinigameRegistryDispatcherTrait,
     };
-    use game_components_embeddable_game_standard::token::interface::{
-        IMINIGAME_TOKEN_ID, IMinigameTokenDispatcher, IMinigameTokenDispatcherTrait,
+    use game_components_embeddable_game_standard::token_legacy::interface::{
+        IMINIGAME_TOKEN_LEGACY_ID, IMinigameTokenLegacyDispatcher,
+        IMinigameTokenLegacyDispatcherTrait,
     };
     use openzeppelin_interfaces::introspection::{ISRC5Dispatcher, ISRC5DispatcherTrait};
     use openzeppelin_introspection::src5::SRC5Component;
@@ -129,9 +130,12 @@ pub mod MinigameComponent {
 
             let token_src5_dispatcher = ISRC5Dispatcher { contract_address: token_address };
             let supports_minigame_token = token_src5_dispatcher
-                .supports_interface(IMINIGAME_TOKEN_ID);
-            assert!(supports_minigame_token, "Minigame: Token does not support IMINIGAME_TOKEN_ID");
-            let minigame_token_dispatcher = IMinigameTokenDispatcher {
+                .supports_interface(IMINIGAME_TOKEN_LEGACY_ID);
+            assert!(
+                supports_minigame_token,
+                "Minigame: Token does not support IMINIGAME_TOKEN_LEGACY_ID",
+            );
+            let minigame_token_dispatcher = IMinigameTokenLegacyDispatcher {
                 contract_address: token_address,
             };
             let minigame_registry_address = minigame_token_dispatcher.game_registry_address();

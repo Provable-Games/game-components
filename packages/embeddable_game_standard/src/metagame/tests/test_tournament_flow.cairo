@@ -1,5 +1,5 @@
-use game_components_embeddable_game_standard::token::interface::{
-    IMinigameTokenDispatcher, IMinigameTokenDispatcherTrait,
+use game_components_embeddable_game_standard::token_legacy::interface::{
+    IMinigameTokenLegacyDispatcher, IMinigameTokenLegacyDispatcherTrait,
 };
 use snforge_std::{
     ContractClassTrait, DeclareResultTrait, declare, start_cheat_caller_address,
@@ -66,7 +66,7 @@ fn test_tournament_flow() {
     start_cheat_caller_address(metagame_address, player1);
     let p1_g1_token = metagame_dispatcher
         .mint(
-            Option::Some(game1_address),
+            game1_address,
             Option::Some('Player1'),
             Option::None,
             Option::Some(1000),
@@ -85,7 +85,7 @@ fn test_tournament_flow() {
 
     let p1_g2_token = metagame_dispatcher
         .mint(
-            Option::Some(game2_address),
+            game2_address,
             Option::Some('Player1'),
             Option::None,
             Option::Some(1000),
@@ -107,7 +107,7 @@ fn test_tournament_flow() {
     start_cheat_caller_address(metagame_address, player2);
     let p2_g1_token = metagame_dispatcher
         .mint(
-            Option::Some(game1_address),
+            game1_address,
             Option::Some('Player2'),
             Option::None,
             Option::Some(1000),
@@ -126,7 +126,7 @@ fn test_tournament_flow() {
 
     let p2_g2_token = metagame_dispatcher
         .mint(
-            Option::Some(game2_address),
+            game2_address,
             Option::Some('Player2'),
             Option::None,
             Option::Some(1000),
@@ -145,7 +145,7 @@ fn test_tournament_flow() {
 
     let p2_g3_token = metagame_dispatcher
         .mint(
-            Option::Some(game3_address),
+            game3_address,
             Option::Some('Player2'),
             Option::None,
             Option::Some(1000),
@@ -165,7 +165,7 @@ fn test_tournament_flow() {
 
     // 9. Verify all tokens have context
     let context_dispatcher = IMetagameContextDispatcher { contract_address: context_address };
-    let token_dispatcher = IMinigameTokenDispatcher { contract_address: token_address };
+    let token_dispatcher = IMinigameTokenLegacyDispatcher { contract_address: token_address };
 
     // Store contexts in mock (in real scenario, this would be done during mint)
     let context_setter = IContextSetterDispatcher { contract_address: context_address };
@@ -228,8 +228,6 @@ mod MockMetagameWithContext {
     component!(path: MetagameComponent, storage: metagame, event: MetagameEvent);
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
 
-    #[abi(embed_v0)]
-    impl MetagameImpl = MetagameComponent::MetagameImpl<ContractState>;
     impl MetagameInternalImpl = MetagameComponent::InternalImpl<ContractState>;
 
     #[storage]
@@ -254,16 +252,14 @@ mod MockMetagameWithContext {
         ref self: ContractState,
         context_address: Option<ContractAddress>,
         minigame_token_address: ContractAddress,
-    ) {
-        self.metagame.initializer(context_address, minigame_token_address);
-    }
+    ) {}
 
     // Expose mint function for testing
     #[abi(embed_v0)]
     impl MockMetagameImpl of super::IMockMetagame<ContractState> {
         fn mint(
             ref self: ContractState,
-            game_address: Option<ContractAddress>,
+            game_address: ContractAddress,
             player_name: Option<felt252>,
             settings_id: Option<u32>,
             start: Option<u64>,
@@ -277,7 +273,7 @@ mod MockMetagameWithContext {
             soulbound: bool,
             paymaster: bool,
             salt: u16,
-            metadata: u16,
+            metadata: u128,
         ) -> felt252 {
             self
                 .metagame
@@ -307,7 +303,7 @@ mod MockMetagameWithContext {
 trait IMockMetagame<TContractState> {
     fn mint(
         ref self: TContractState,
-        game_address: Option<ContractAddress>,
+        game_address: ContractAddress,
         player_name: Option<felt252>,
         settings_id: Option<u32>,
         start: Option<u64>,
@@ -321,7 +317,7 @@ trait IMockMetagame<TContractState> {
         soulbound: bool,
         paymaster: bool,
         salt: u16,
-        metadata: u16,
+        metadata: u128,
     ) -> felt252;
 }
 
@@ -422,10 +418,10 @@ mod MockContextProvider {
 #[starknet::contract]
 mod MockTokenContract {
     use core::num::traits::Zero;
-    use game_components_embeddable_game_standard::token::interface::{
-        IMINIGAME_TOKEN_ID, IMinigameToken,
+    use game_components_embeddable_game_standard::token_legacy::interface::{
+        IMINIGAME_TOKEN_LEGACY_ID, IMinigameTokenLegacy,
     };
-    use game_components_embeddable_game_standard::token::structs::{
+    use game_components_embeddable_game_standard::token_legacy::structs::{
         Lifecycle, MintBatchRecipient, PlayerNameUpdate, TokenFullState, TokenMetadata,
         TokenMutableState,
     };
@@ -454,7 +450,7 @@ mod MockTokenContract {
     }
 
     #[abi(embed_v0)]
-    impl MinigameTokenImpl of IMinigameToken<ContractState> {
+    impl MinigameTokenImpl of IMinigameTokenLegacy<ContractState> {
         fn token_metadata(self: @ContractState, token_id: felt252) -> TokenMetadata {
             TokenMetadata {
                 game_id: 0,
@@ -772,7 +768,7 @@ mod MockTokenContract {
     #[abi(embed_v0)]
     impl SRC5Impl of ISRC5<ContractState> {
         fn supports_interface(self: @ContractState, interface_id: felt252) -> bool {
-            interface_id == IMINIGAME_TOKEN_ID
+            interface_id == IMINIGAME_TOKEN_LEGACY_ID
                 || interface_id == openzeppelin_interfaces::introspection::ISRC5_ID
         }
     }

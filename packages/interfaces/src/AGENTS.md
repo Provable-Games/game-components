@@ -8,7 +8,9 @@ Single source of truth for all game component interface definitions. Other packa
 |--------|------------|---------|
 | `metagame` | `IMetagame`, `IMetagameContext`, `IMetagameCallback` | Game management, context extensions |
 | `minigame` | `IMinigame`, `IMinigameTokenData`, `IMinigameSettings`, `IMinigameObjectives` | Game logic, score/game_over queries |
-| `token` | `IMinigameToken`, `IMinigameTokenMinter`, `IMinigameTokenObjectives`, `IMinigameTokenSettings`, `IMinigameTokenRenderer` | ERC721 token with extensions |
+| `token` (`token/core`) | `IMinigameToken` | THE minigame token standard: gas-optimized token embedded in the game contract itself (self-bound, no registry, no mutable state), plus the `IMinigameTokenMinter` surface |
+| `token/game_fee` | `IMinigameTokenGameFee` | Game fee recipient (payout sink) + license + fee rate on the standard token (replaces the registry's `game_fee_info`); setters gated on the game contract's Ownable owner |
+| `token/legacy` | `IMinigameTokenLegacy`, `IMinigameTokenMinter`, `IMinigameTokenObjectives`, `IMinigameTokenSettings`, `IMinigameTokenRenderer` | Original multi-game ERC721 token with extensions (kept for deployed denshokan) |
 | `registry` | `IMinigameRegistry` | Game registration and metadata lookup |
 | `leaderboard` | `ILeaderboard`, `ILeaderboardAdmin`, `IGameDetails` | Tournament scoring and rankings |
 | `tokenomics/buyback` | `IBuyback`, `IBuybackAdmin` | Autonomous buyback via Ekubo TWAMM |
@@ -27,13 +29,14 @@ Single source of truth for all game component interface definitions. Other packa
 ## Interface ID Constants
 
 ```cairo
-pub const IMETAGAME_ID: felt252 = 0x...;
 pub const IMETAGAME_CONTEXT_ID: felt252 = 0x...;
 pub const IMINIGAME_ID: felt252 = 0x...;
 pub const IMINIGAME_SETTINGS_ID: felt252 = 0x...;
 pub const IMINIGAME_OBJECTIVES_ID: felt252 = 0x...;
 pub const IMINIGAME_TOKEN_ID: felt252 = 0x...;
+pub const IMINIGAME_TOKEN_LEGACY_ID: felt252 = 0x...;
 pub const IMINIGAME_TOKEN_MINTER_ID: felt252 = 0x...;
+pub const IMINIGAME_TOKEN_GAME_FEE_ID: felt252 = 0x...;
 pub const IMINIGAME_REGISTRY_ID: felt252 = 0x...;
 pub const ILEADERBOARD_ID: felt252 = 0x...;
 ```
@@ -160,22 +163,36 @@ The tool outputs the extended function selectors and the final XOR'd interface I
 - For single-function interfaces, the ID equals the single extended function selector
 - Always update the EFS comment above the constant to match the tool's output
 
-### Methods excluded from `IMINIGAME_TOKEN_ID`
+### Methods excluded from `IMINIGAME_TOKEN_LEGACY_ID`
 
-`IMinigameToken::refresh_metadata` and `refresh_metadata_batch` are **not** part of
-the `IMINIGAME_TOKEN_ID` derivation. Omit both from the stripped input file or the
-constant will not reproduce.
+`IMinigameTokenLegacy::refresh_metadata` and `refresh_metadata_batch` are **not**
+part of the `IMINIGAME_TOKEN_LEGACY_ID` derivation. Omit both from the stripped
+input file or the constant will not reproduce.
 
 The ID is registered on-chain by every deployed token contract. Rederiving it to
-cover two additive, optional methods would make `supports_interface(IMINIGAME_TOKEN_ID)`
-return false on all of them and break interface discovery for every existing
-consumer — a breaking change across the ecosystem in exchange for nothing a caller
-can act on. The ID identifies the original surface, which those contracts all still
-implement in full.
+cover two additive, optional methods would make
+`supports_interface(IMINIGAME_TOKEN_LEGACY_ID)` return false on all of them and
+break interface discovery for every existing consumer — a breaking change across
+the ecosystem in exchange for nothing a caller can act on. The ID identifies the
+original surface, which those contracts all still implement in full.
 
 Apply the same reasoning to future additive methods: extend the trait, leave the ID
 alone, and note the exclusion here. Change the ID only for a genuinely breaking
 change to the existing surface.
+
+The same refresh exclusion applies to `IMINIGAME_TOKEN_ID` (the standard token):
+it is derived over `IMinigameToken` minus `refresh_metadata` (the per-selector
+breakdown is kept in the doc comment above the constant in `token/core.cairo`).
+
+### Frozen ID values across the standard/legacy rename
+
+Both token interface-id VALUES are frozen — deployed contracts register them
+on-chain. When the lite token became the standard, only the NAMES moved:
+
+| Constant (today) | Value | Was named |
+| --- | --- | --- |
+| `IMINIGAME_TOKEN_ID` | `0x15951d6d145a5a13c454bd75f0787e43e531a80a4bfb42a01fc4859e6fb7aea` | `IMINIGAME_TOKEN_LITE_ID` |
+| `IMINIGAME_TOKEN_LEGACY_ID` | `0x246f614bd76b91c378a91877851f2ccdb99278e9fb77c782a22355059ce9906` | `IMINIGAME_TOKEN_ID` |
 
 ## Dependencies
 

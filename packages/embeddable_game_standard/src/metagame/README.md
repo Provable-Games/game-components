@@ -12,20 +12,17 @@ High-level game management component for token delegation and minting coordinati
 
 ## Interface
 
-### IMetagame (Read-only)
+### IMetagame — REMOVED
 
-| Method | Returns | Description |
-|--------|---------|-------------|
-| `context_address()` | `ContractAddress` | Optional context contract (tournaments/events) |
-| `default_token_address()` | `ContractAddress` | Default MinigameToken for minting |
-
-**Interface ID**: `0x0260d5160a283a03815f6c3799926c7bdbec5f22e759f992fb8faf172243ab20`
+The component is self-bound and stores no addresses, so the trait had no
+methods left; `IMetagame` and `IMETAGAME_ID` are gone. Discover a metagame via
+`IMETAGAME_CONTEXT_ID` (context provider) or `IMETAGAME_CALLBACK_ID` (legacy
+callback receiver).
 
 ### InternalTrait
 
 | Method | Description |
 |--------|-------------|
-| `initializer(context_address, default_token_address)` | Initialize with optional context |
 | `mint(game_address, player_name, settings_id, ...)` | Mint single token |
 | `mint_batch(mints: Array<MintMetagameParams>)` | Batch mint tokens |
 | `assert_game_registered(game_address)` | Validate game registration |
@@ -108,7 +105,7 @@ Metagame
 
 ## Initialization Requirements
 
-- `default_token_address` MUST support `IMINIGAME_TOKEN_ID`
+- `default_token_address` MUST support `IMINIGAME_TOKEN_LEGACY_ID` (the legacy multi-game token)
 - `context_address` (if provided) MUST support `IMETAGAME_CONTEXT_ID`
 - Both addresses validated via SRC5 introspection on init
 

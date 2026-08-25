@@ -4,7 +4,7 @@ use starknet::ContractAddress;
 pub trait IMetagameMock<TContractState> {
     fn mint_game(
         ref self: TContractState,
-        game_address: Option<ContractAddress>,
+        game_address: ContractAddress,
         player_name: Option<felt252>,
         settings_id: Option<u32>,
         start: Option<u64>,
@@ -17,7 +17,7 @@ pub trait IMetagameMock<TContractState> {
         soulbound: bool,
         paymaster: bool,
         salt: u16,
-        metadata: u16,
+        metadata: u128,
     ) -> felt252;
 }
 
@@ -84,8 +84,6 @@ pub mod metagame_mock {
         }
     }
 
-    #[abi(embed_v0)]
-    impl MetagameImpl = MetagameComponent::MetagameImpl<ContractState>;
     impl MetagameInternalImpl = MetagameComponent::InternalImpl<ContractState>;
     impl ContextInternalImpl = ContextComponent::InternalImpl<ContractState>;
 
@@ -170,7 +168,7 @@ pub mod metagame_mock {
     impl MetagameMockImpl of super::IMetagameMock<ContractState> {
         fn mint_game(
             ref self: ContractState,
-            game_address: Option<ContractAddress>,
+            game_address: ContractAddress,
             player_name: Option<felt252>,
             settings_id: Option<u32>,
             start: Option<u64>,
@@ -183,7 +181,7 @@ pub mod metagame_mock {
             soulbound: bool,
             paymaster: bool,
             salt: u16,
-            metadata: u16,
+            metadata: u128,
         ) -> felt252 {
             let context = array![GameContext { name: 'Test Context 1', value: 'Test Context' }]
                 .span();
@@ -256,7 +254,6 @@ pub mod metagame_mock {
             supports_context: bool,
         ) {
             // Initialize the metagame component
-            self.metagame.initializer(context_address, minigame_token_address);
 
             // Initialize local storage
             self.token_counter.write(0);
@@ -267,7 +264,7 @@ pub mod metagame_mock {
             }
 
             // Initialize callback component (registers SRC5 interface)
-            self.callback.initializer();
+            self.callback.initializer(minigame_token_address);
         }
     }
 }

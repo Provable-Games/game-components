@@ -1,9 +1,9 @@
 codecov:
   require_ci_to_pass: true
   notify:
-    # Must equal package count in .github/workflows/main-ci.yml matrix
-    # See AGENTS.md "CI Configuration" section when adding packages
-    after_n_builds: 17
+    # Must equal total module count in the .github/workflows/main-ci.yml matrix
+    # (modules, NOT packages). See AGENTS.md "CI Configuration" when adding a module
+    after_n_builds: 18
 
 comment:
   layout: "diff, files, header, footer"

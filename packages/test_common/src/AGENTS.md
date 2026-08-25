@@ -24,6 +24,7 @@ Located in `src/mocks/`:
 
 | Mock | Purpose |
 |------|---------|
+| `standard_game_mock.cairo` | Merged one-address game+token: embeds `MinigameTokenComponent` (self-bound, absorbed minter registry) with `IMinigameTokenData`, `IMinigame` views, and settings |
 | `metagame_mock.cairo` | Metagame component mock with callback tracking |
 | `minigame_mock.cairo` | Full minigame mock with settings, objectives, and scoring |
 | `mock_erc20.cairo` | ERC20 token with mint/burn for testing |

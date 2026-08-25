@@ -11,3 +11,4 @@ pub mod mock_objectives_contract;
 pub mod mock_registry_contract;
 pub mod mock_rejecting_entry_validator;
 pub mod mock_settings_contract;
+pub mod standard_game_mock;

@@ -1,3 +1,4 @@
+mod test_batch_recipients;
 mod test_callback;
 mod test_context_component;
 mod test_fuzz_mint_parameters;

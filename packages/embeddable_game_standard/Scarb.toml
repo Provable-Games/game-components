@@ -28,4 +28,5 @@ build-external-contracts = [
     "game_components_test_common::mocks::minigame_mock::minigame_mock",
     "game_components_test_common::mocks::metagame_mock::metagame_mock",
     "game_components_test_common::mocks::mock_game::MockGame",
+    "game_components_test_common::mocks::standard_game_mock::StandardGameMock",
 ]

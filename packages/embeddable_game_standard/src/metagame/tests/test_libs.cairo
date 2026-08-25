@@ -3,8 +3,8 @@
 // =============================================================================
 // Tests for library functions: assert_game_registered, mint, mint_batch
 
-use game_components_embeddable_game_standard::token::interface::{
-    IMinigameTokenDispatcher, IMinigameTokenDispatcherTrait,
+use game_components_embeddable_game_standard::token_legacy::interface::{
+    IMinigameTokenLegacyDispatcher, IMinigameTokenLegacyDispatcherTrait,
 };
 use game_components_testing::constants::{ALICE, BOB};
 use snforge_std::{ContractClassTrait, DeclareResultTrait, declare, mock_call};
@@ -56,17 +56,17 @@ fn sample_context() -> GameContextDetails {
 }
 
 // =============================================================================
-// MINT TESTS - DEFAULT TOKEN PATH (game_address = None)
+// MINT TESTS - GAME PATH (the token is resolved from game_address)
 // =============================================================================
 
 // LIB-MINT-01: Mint with only required params
 #[test]
-fn test_mint_default_token_minimal() {
+fn test_mint_through_game_minimal() {
     let token_address = deploy_mock_minigame_token();
+    let game_address = deploy_mock_minigame(token_address);
 
     let token_id = libs::mint(
-        token_address,
-        Option::None, // game_address
+        game_address,
         Option::None, // player_name
         Option::None, // settings_id
         Option::None, // start
@@ -88,12 +88,12 @@ fn test_mint_default_token_minimal() {
 
 // LIB-MINT-02: Mint with player name
 #[test]
-fn test_mint_default_token_with_player_name() {
+fn test_mint_through_game_with_player_name() {
     let token_address = deploy_mock_minigame_token();
+    let game_address = deploy_mock_minigame(token_address);
 
     let token_id = libs::mint(
-        token_address,
-        Option::None,
+        game_address,
         Option::Some('Player1'),
         Option::None,
         Option::None,
@@ -110,19 +110,19 @@ fn test_mint_default_token_with_player_name() {
         0,
     );
 
-    let token_dispatcher = IMinigameTokenDispatcher { contract_address: token_address };
+    let token_dispatcher = IMinigameTokenLegacyDispatcher { contract_address: token_address };
     let player_name = token_dispatcher.player_name(token_id);
     assert!(player_name == 'Player1', "Player name mismatch");
 }
 
 // LIB-MINT-03: Mint with settings_id
 #[test]
-fn test_mint_default_token_with_settings() {
+fn test_mint_through_game_with_settings() {
     let token_address = deploy_mock_minigame_token();
+    let game_address = deploy_mock_minigame(token_address);
 
     let token_id = libs::mint(
-        token_address,
-        Option::None,
+        game_address,
         Option::None,
         Option::Some(42),
         Option::None,
@@ -144,12 +144,12 @@ fn test_mint_default_token_with_settings() {
 
 // LIB-MINT-04: Mint with lifecycle (start/end)
 #[test]
-fn test_mint_default_token_with_lifecycle() {
+fn test_mint_through_game_with_lifecycle() {
     let token_address = deploy_mock_minigame_token();
+    let game_address = deploy_mock_minigame(token_address);
 
     let token_id = libs::mint(
-        token_address,
-        Option::None,
+        game_address,
         Option::None,
         Option::None,
         Option::Some(1000),
@@ -166,7 +166,7 @@ fn test_mint_default_token_with_lifecycle() {
         0,
     );
 
-    let token_dispatcher = IMinigameTokenDispatcher { contract_address: token_address };
+    let token_dispatcher = IMinigameTokenLegacyDispatcher { contract_address: token_address };
     let metadata = token_dispatcher.token_metadata(token_id);
     assert!(metadata.lifecycle.start == 1000, "Start time mismatch");
     assert!(metadata.lifecycle.end == 2000, "End time mismatch");
@@ -174,12 +174,12 @@ fn test_mint_default_token_with_lifecycle() {
 
 // LIB-MINT-05: Mint with objective_id
 #[test]
-fn test_mint_default_token_with_objective() {
+fn test_mint_through_game_with_objective() {
     let token_address = deploy_mock_minigame_token();
+    let game_address = deploy_mock_minigame(token_address);
 
     let token_id = libs::mint(
-        token_address,
-        Option::None,
+        game_address,
         Option::None,
         Option::None,
         Option::None,
@@ -201,13 +201,13 @@ fn test_mint_default_token_with_objective() {
 
 // LIB-MINT-06: Mint with context
 #[test]
-fn test_mint_default_token_with_context() {
+fn test_mint_through_game_with_context() {
     let token_address = deploy_mock_minigame_token();
+    let game_address = deploy_mock_minigame(token_address);
     let context = sample_context();
 
     let token_id = libs::mint(
-        token_address,
-        Option::None,
+        game_address,
         Option::None,
         Option::None,
         Option::None,
@@ -229,12 +229,12 @@ fn test_mint_default_token_with_context() {
 
 // LIB-MINT-07: Mint with client URL
 #[test]
-fn test_mint_default_token_with_client_url() {
+fn test_mint_through_game_with_client_url() {
     let token_address = deploy_mock_minigame_token();
+    let game_address = deploy_mock_minigame(token_address);
 
     let token_id = libs::mint(
-        token_address,
-        Option::None,
+        game_address,
         Option::None,
         Option::None,
         Option::None,
@@ -256,13 +256,13 @@ fn test_mint_default_token_with_client_url() {
 
 // LIB-MINT-08: Mint with renderer address
 #[test]
-fn test_mint_default_token_with_renderer() {
+fn test_mint_through_game_with_renderer() {
     let token_address = deploy_mock_minigame_token();
+    let game_address = deploy_mock_minigame(token_address);
     let renderer: ContractAddress = 0xBEEF.try_into().unwrap();
 
     let token_id = libs::mint(
-        token_address,
-        Option::None,
+        game_address,
         Option::None,
         Option::None,
         Option::None,
@@ -284,12 +284,12 @@ fn test_mint_default_token_with_renderer() {
 
 // LIB-MINT-09: Mint soulbound token
 #[test]
-fn test_mint_default_token_soulbound() {
+fn test_mint_through_game_soulbound() {
     let token_address = deploy_mock_minigame_token();
+    let game_address = deploy_mock_minigame(token_address);
 
     let token_id = libs::mint(
-        token_address,
-        Option::None,
+        game_address,
         Option::None,
         Option::None,
         Option::None,
@@ -311,14 +311,14 @@ fn test_mint_default_token_soulbound() {
 
 // LIB-MINT-10: Mint with all parameters
 #[test]
-fn test_mint_default_token_all_params() {
+fn test_mint_through_game_all_params() {
     let token_address = deploy_mock_minigame_token();
+    let game_address = deploy_mock_minigame(token_address);
     let renderer: ContractAddress = 0xBEEF.try_into().unwrap();
     let context = sample_context();
 
     let token_id = libs::mint(
-        token_address,
-        Option::None, // game_address (using default token path)
+        game_address,
         Option::Some('FullPlayer'),
         Option::Some(99),
         Option::Some(1000),
@@ -337,7 +337,7 @@ fn test_mint_default_token_all_params() {
 
     assert!(token_id != 0, "Token should be minted with all params");
 
-    let token_dispatcher = IMinigameTokenDispatcher { contract_address: token_address };
+    let token_dispatcher = IMinigameTokenLegacyDispatcher { contract_address: token_address };
     let player_name = token_dispatcher.player_name(token_id);
     assert!(player_name == 'FullPlayer', "Player name mismatch");
 }
@@ -353,8 +353,7 @@ fn test_mint_game_token_routes_through_game() {
     let game_address = deploy_mock_minigame(token_address);
 
     let token_id = libs::mint(
-        token_address, // default_token_address (not used when game_address is provided)
-        Option::Some(game_address),
+        game_address,
         Option::Some('GamePlayer'),
         Option::None,
         Option::None,
@@ -373,7 +372,7 @@ fn test_mint_game_token_routes_through_game() {
 
     assert!(token_id != 0, "Token should be minted through game");
 
-    let token_dispatcher = IMinigameTokenDispatcher { contract_address: token_address };
+    let token_dispatcher = IMinigameTokenLegacyDispatcher { contract_address: token_address };
     let player_name = token_dispatcher.player_name(token_id);
     assert!(player_name == 'GamePlayer', "Player name should be preserved");
 }
@@ -386,8 +385,7 @@ fn test_mint_game_token_preserves_params() {
     let context = sample_context();
 
     let token_id = libs::mint(
-        token_address,
-        Option::Some(game_address),
+        game_address,
         Option::Some('GamePlayer2'),
         Option::Some(42),
         Option::Some(500),
@@ -406,7 +404,7 @@ fn test_mint_game_token_preserves_params() {
 
     assert!(token_id != 0, "Token should be minted with all params through game");
 
-    let token_dispatcher = IMinigameTokenDispatcher { contract_address: token_address };
+    let token_dispatcher = IMinigameTokenLegacyDispatcher { contract_address: token_address };
     let metadata = token_dispatcher.token_metadata(token_id);
     assert!(metadata.lifecycle.start == 500, "Start time should be preserved");
     assert!(metadata.lifecycle.end == 1500, "End time should be preserved");
@@ -420,10 +418,10 @@ fn test_mint_game_token_preserves_params() {
 #[test]
 fn test_mint_instant_game() {
     let token_address = deploy_mock_minigame_token();
+    let game_address = deploy_mock_minigame(token_address);
 
     let token_id = libs::mint(
-        token_address,
-        Option::None,
+        game_address,
         Option::None,
         Option::None,
         Option::Some(100),
@@ -442,7 +440,7 @@ fn test_mint_instant_game() {
 
     assert!(token_id != 0, "Instant game token should be minted");
 
-    let token_dispatcher = IMinigameTokenDispatcher { contract_address: token_address };
+    let token_dispatcher = IMinigameTokenLegacyDispatcher { contract_address: token_address };
     let metadata = token_dispatcher.token_metadata(token_id);
     assert!(metadata.lifecycle.start == metadata.lifecycle.end, "Start should equal end");
 }
@@ -454,10 +452,8 @@ fn test_mint_instant_game() {
 // LIB-BATCH-01: Empty batch
 #[test]
 fn test_mint_batch_empty_array() {
-    let token_address = deploy_mock_minigame_token();
-
     let mints: Array<MintMetagameParams> = array![];
-    let token_ids = libs::mint_batch(token_address, mints);
+    let token_ids = libs::mint_batch(mints);
 
     assert!(token_ids.len() == 0, "Empty batch should return empty array");
 }
@@ -466,10 +462,11 @@ fn test_mint_batch_empty_array() {
 #[test]
 fn test_mint_batch_single_mint() {
     let token_address = deploy_mock_minigame_token();
+    let game_address = deploy_mock_minigame(token_address);
 
     let mints = array![
         MintMetagameParams {
-            game_address: Option::None,
+            game_address,
             player_name: Option::Some('BatchPlayer1'),
             settings_id: Option::None,
             start: Option::None,
@@ -487,7 +484,7 @@ fn test_mint_batch_single_mint() {
         },
     ];
 
-    let token_ids = libs::mint_batch(token_address, mints);
+    let token_ids = libs::mint_batch(mints);
 
     assert!(token_ids.len() == 1, "Should return 1 token ID");
     assert!(*token_ids.at(0) == 1.into(), "First token ID should be 1");
@@ -497,10 +494,11 @@ fn test_mint_batch_single_mint() {
 #[test]
 fn test_mint_batch_multiple_mints() {
     let token_address = deploy_mock_minigame_token();
+    let game_address = deploy_mock_minigame(token_address);
 
     let mints = array![
         MintMetagameParams {
-            game_address: Option::None,
+            game_address,
             player_name: Option::Some('Player1'),
             settings_id: Option::None,
             start: Option::None,
@@ -517,7 +515,7 @@ fn test_mint_batch_multiple_mints() {
             metadata: 0,
         },
         MintMetagameParams {
-            game_address: Option::None,
+            game_address,
             player_name: Option::Some('Player2'),
             settings_id: Option::None,
             start: Option::None,
@@ -534,7 +532,7 @@ fn test_mint_batch_multiple_mints() {
             metadata: 0,
         },
         MintMetagameParams {
-            game_address: Option::None,
+            game_address,
             player_name: Option::Some('Player3'),
             settings_id: Option::None,
             start: Option::None,
@@ -552,7 +550,7 @@ fn test_mint_batch_multiple_mints() {
         },
     ];
 
-    let token_ids = libs::mint_batch(token_address, mints);
+    let token_ids = libs::mint_batch(mints);
 
     assert!(token_ids.len() == 3, "Should return 3 token IDs");
     assert!(*token_ids.at(0) == 1.into(), "First token ID should be 1");
@@ -564,10 +562,11 @@ fn test_mint_batch_multiple_mints() {
 #[test]
 fn test_mint_batch_preserves_order() {
     let token_address = deploy_mock_minigame_token();
+    let game_address = deploy_mock_minigame(token_address);
 
     let mints = array![
         MintMetagameParams {
-            game_address: Option::None,
+            game_address,
             player_name: Option::Some('First'),
             settings_id: Option::None,
             start: Option::Some(100),
@@ -584,7 +583,7 @@ fn test_mint_batch_preserves_order() {
             metadata: 0,
         },
         MintMetagameParams {
-            game_address: Option::None,
+            game_address,
             player_name: Option::Some('Second'),
             settings_id: Option::None,
             start: Option::Some(200),
@@ -602,9 +601,9 @@ fn test_mint_batch_preserves_order() {
         },
     ];
 
-    let token_ids = libs::mint_batch(token_address, mints);
+    let token_ids = libs::mint_batch(mints);
 
-    let token_dispatcher = IMinigameTokenDispatcher { contract_address: token_address };
+    let token_dispatcher = IMinigameTokenLegacyDispatcher { contract_address: token_address };
 
     // Verify first token
     let first_name = token_dispatcher.player_name(*token_ids.at(0));
@@ -619,11 +618,12 @@ fn test_mint_batch_preserves_order() {
 #[test]
 fn test_mint_batch_with_context() {
     let token_address = deploy_mock_minigame_token();
+    let game_address = deploy_mock_minigame(token_address);
     let context = sample_context();
 
     let mints = array![
         MintMetagameParams {
-            game_address: Option::None,
+            game_address,
             player_name: Option::Some('ContextPlayer'),
             settings_id: Option::None,
             start: Option::None,
@@ -641,7 +641,7 @@ fn test_mint_batch_with_context() {
         },
     ];
 
-    let token_ids = libs::mint_batch(token_address, mints);
+    let token_ids = libs::mint_batch(mints);
 
     assert!(token_ids.len() == 1, "Should mint token with context");
 }
@@ -650,10 +650,11 @@ fn test_mint_batch_with_context() {
 #[test]
 fn test_mint_batch_with_client_url() {
     let token_address = deploy_mock_minigame_token();
+    let game_address = deploy_mock_minigame(token_address);
 
     let mints = array![
         MintMetagameParams {
-            game_address: Option::None,
+            game_address,
             player_name: Option::None,
             settings_id: Option::None,
             start: Option::None,
@@ -671,7 +672,7 @@ fn test_mint_batch_with_client_url() {
         },
     ];
 
-    let token_ids = libs::mint_batch(token_address, mints);
+    let token_ids = libs::mint_batch(mints);
 
     assert!(token_ids.len() == 1, "Should mint token with client URL");
 }
@@ -685,10 +686,10 @@ fn test_mint_batch_with_client_url() {
 #[fuzzer(runs: 100)]
 fn test_fuzz_mint_player_names(player_name: felt252) {
     let token_address = deploy_mock_minigame_token();
+    let game_address = deploy_mock_minigame(token_address);
 
     let token_id = libs::mint(
-        token_address,
-        Option::None,
+        game_address,
         Option::Some(player_name),
         Option::None,
         Option::None,
@@ -707,7 +708,7 @@ fn test_fuzz_mint_player_names(player_name: felt252) {
 
     assert!(token_id != 0, "Token should be minted");
 
-    let token_dispatcher = IMinigameTokenDispatcher { contract_address: token_address };
+    let token_dispatcher = IMinigameTokenLegacyDispatcher { contract_address: token_address };
     let retrieved_name = token_dispatcher.player_name(token_id);
     assert!(retrieved_name == player_name, "Player name should be preserved");
 }
@@ -717,10 +718,10 @@ fn test_fuzz_mint_player_names(player_name: felt252) {
 #[fuzzer(runs: 100)]
 fn test_fuzz_mint_settings_ids(settings_id: u32) {
     let token_address = deploy_mock_minigame_token();
+    let game_address = deploy_mock_minigame(token_address);
 
     let token_id = libs::mint(
-        token_address,
-        Option::None,
+        game_address,
         Option::None,
         Option::Some(settings_id),
         Option::None,
@@ -745,10 +746,10 @@ fn test_fuzz_mint_settings_ids(settings_id: u32) {
 #[fuzzer(runs: 100)]
 fn test_fuzz_mint_objective_ids(objective_id: u32) {
     let token_address = deploy_mock_minigame_token();
+    let game_address = deploy_mock_minigame(token_address);
 
     let token_id = libs::mint(
-        token_address,
-        Option::None,
+        game_address,
         Option::None,
         Option::None,
         Option::None,
@@ -777,10 +778,10 @@ fn test_fuzz_mint_objective_ids(objective_id: u32) {
 mod MockMinigameTokenForLibs {
     use core::num::traits::Zero;
     use game_components_embeddable_game_standard::metagame::extensions::context::structs::GameContextDetails;
-    use game_components_embeddable_game_standard::token::interface::{
-        IMINIGAME_TOKEN_ID, IMinigameToken,
+    use game_components_embeddable_game_standard::token_legacy::interface::{
+        IMINIGAME_TOKEN_LEGACY_ID, IMinigameTokenLegacy,
     };
-    use game_components_embeddable_game_standard::token::structs::{
+    use game_components_embeddable_game_standard::token_legacy::structs::{
         Lifecycle, MintBatchRecipient, PlayerNameUpdate, TokenFullState, TokenMetadata,
         TokenMutableState,
     };
@@ -807,7 +808,7 @@ mod MockMinigameTokenForLibs {
     }
 
     #[abi(embed_v0)]
-    impl MinigameTokenImpl of IMinigameToken<ContractState> {
+    impl MinigameTokenImpl of IMinigameTokenLegacy<ContractState> {
         fn token_metadata(self: @ContractState, token_id: felt252) -> TokenMetadata {
             TokenMetadata {
                 game_id: 0,
@@ -1087,7 +1088,28 @@ mod MockMinigameTokenForLibs {
             salt: u16,
             metadata: u16,
         ) -> Array<felt252> {
-            panic!("not implemented")
+            // Minimal but real: one id per requested count, in recipient order,
+            // recording the paired game — so the metagame lib's legacy batch
+            // path is genuinely exercised rather than stubbed out.
+            let mut token_ids = array![];
+            let mut i = 0;
+            while i < recipients.len() {
+                let recipient = *recipients.at(i);
+                let mut n: u16 = 0;
+                while n < recipient.count {
+                    let token_id_u64 = self.next_token_id.read();
+                    self.next_token_id.write(token_id_u64 + 1);
+                    let token_id: felt252 = token_id_u64.into();
+                    self.token_game_address.write(token_id, game_address);
+                    if let Option::Some(name) = player_name {
+                        self.token_player_names.write(token_id, name);
+                    }
+                    token_ids.append(token_id);
+                    n += 1;
+                }
+                i += 1;
+            }
+            token_ids
         }
 
         fn update_game(ref self: ContractState, token_id: felt252) {}
@@ -1105,7 +1127,7 @@ mod MockMinigameTokenForLibs {
     #[abi(embed_v0)]
     impl SRC5Impl of ISRC5<ContractState> {
         fn supports_interface(self: @ContractState, interface_id: felt252) -> bool {
-            interface_id == IMINIGAME_TOKEN_ID
+            interface_id == IMINIGAME_TOKEN_LEGACY_ID
                 || interface_id == openzeppelin_interfaces::introspection::ISRC5_ID
         }
     }
@@ -1380,6 +1402,9 @@ fn test_assert_game_registered_success() {
     let registry_address: ContractAddress = 0x333.try_into().unwrap();
 
     mock_call(game_address, selector!("token_address"), token_address, 1);
+    // Not a standard token: the SRC5 probe for IMINIGAME_TOKEN_ID answers
+    // false, so the check falls through to the registry path.
+    mock_call(token_address, selector!("supports_interface"), false, 1);
     mock_call(token_address, selector!("game_registry_address"), registry_address, 1);
     mock_call(registry_address, selector!("is_game_registered"), true, 1);
 
@@ -1395,6 +1420,8 @@ fn test_assert_game_registered_fails_for_unregistered() {
     let registry_address: ContractAddress = 0x666.try_into().unwrap();
 
     mock_call(game_address, selector!("token_address"), token_address, 1);
+    // Not a standard token — falls through to the registry path.
+    mock_call(token_address, selector!("supports_interface"), false, 1);
     mock_call(token_address, selector!("game_registry_address"), registry_address, 1);
     mock_call(registry_address, selector!("is_game_registered"), false, 1);
 
@@ -1409,12 +1436,13 @@ fn test_assert_game_registered_fails_for_unregistered() {
 #[test]
 fn test_mint_batch_mixed_game_addresses() {
     let token_address = deploy_mock_minigame_token();
-    let game_address = deploy_mock_minigame(token_address);
+    let game_a = deploy_mock_minigame(token_address);
+    let game_b = deploy_mock_minigame(token_address);
 
     let mints = array![
         MintMetagameParams {
-            game_address: Option::Some(game_address),
-            player_name: Option::Some('WithGame'),
+            game_address: game_a,
+            player_name: Option::Some('GameA'),
             settings_id: Option::None,
             start: Option::None,
             end: Option::None,
@@ -1430,8 +1458,8 @@ fn test_mint_batch_mixed_game_addresses() {
             metadata: 0,
         },
         MintMetagameParams {
-            game_address: Option::None,
-            player_name: Option::Some('NoGame'),
+            game_address: game_b,
+            player_name: Option::Some('GameB'),
             settings_id: Option::None,
             start: Option::None,
             end: Option::None,
@@ -1448,27 +1476,36 @@ fn test_mint_batch_mixed_game_addresses() {
         },
     ];
 
-    let token_ids = libs::mint_batch(token_address, mints);
+    let token_ids = libs::mint_batch(mints);
 
     assert!(token_ids.len() == 2, "Should return 2 token IDs");
 
-    let token_dispatcher = IMinigameTokenDispatcher { contract_address: token_address };
-    let first_game_addr = token_dispatcher.token_game_address(*token_ids.at(0));
-    assert!(first_game_addr == game_address, "First token should have game address");
-
-    let second_name = token_dispatcher.player_name(*token_ids.at(1));
-    assert!(second_name == 'NoGame', "Second token should have NoGame name");
+    let token_dispatcher = IMinigameTokenLegacyDispatcher { contract_address: token_address };
+    // Each entry mints against its own game.
+    assert!(
+        token_dispatcher.token_game_address(*token_ids.at(0)) == game_a,
+        "First token should carry game A",
+    );
+    assert!(
+        token_dispatcher.token_game_address(*token_ids.at(1)) == game_b,
+        "Second token should carry game B",
+    );
+    assert!(
+        token_dispatcher.player_name(*token_ids.at(1)) == 'GameB',
+        "Second token should have GameB name",
+    );
 }
 
 // LIB-BATCH-09: Batch with different recipients
 #[test]
 fn test_mint_batch_different_recipients() {
     let token_address = deploy_mock_minigame_token();
+    let game_address = deploy_mock_minigame(token_address);
     let carol: ContractAddress = 0xCAFE.try_into().unwrap();
 
     let mints = array![
         MintMetagameParams {
-            game_address: Option::None,
+            game_address,
             player_name: Option::Some('Alice'),
             settings_id: Option::None,
             start: Option::None,
@@ -1485,7 +1522,7 @@ fn test_mint_batch_different_recipients() {
             metadata: 0,
         },
         MintMetagameParams {
-            game_address: Option::None,
+            game_address,
             player_name: Option::Some('Bob'),
             settings_id: Option::None,
             start: Option::None,
@@ -1502,7 +1539,7 @@ fn test_mint_batch_different_recipients() {
             metadata: 0,
         },
         MintMetagameParams {
-            game_address: Option::None,
+            game_address,
             player_name: Option::Some('Carol'),
             settings_id: Option::None,
             start: Option::None,
@@ -1520,7 +1557,7 @@ fn test_mint_batch_different_recipients() {
         },
     ];
 
-    let token_ids = libs::mint_batch(token_address, mints);
+    let token_ids = libs::mint_batch(mints);
 
     assert!(token_ids.len() == 3, "Should mint 3 tokens");
     assert!(*token_ids.at(0) == 1.into(), "First ID should be 1");
@@ -1532,10 +1569,11 @@ fn test_mint_batch_different_recipients() {
 #[test]
 fn test_mint_batch_mixed_soulbound() {
     let token_address = deploy_mock_minigame_token();
+    let game_address = deploy_mock_minigame(token_address);
 
     let mints = array![
         MintMetagameParams {
-            game_address: Option::None,
+            game_address,
             player_name: Option::Some('Transferable'),
             settings_id: Option::None,
             start: Option::None,
@@ -1552,7 +1590,7 @@ fn test_mint_batch_mixed_soulbound() {
             metadata: 0,
         },
         MintMetagameParams {
-            game_address: Option::None,
+            game_address,
             player_name: Option::Some('Soulbound'),
             settings_id: Option::None,
             start: Option::None,
@@ -1570,7 +1608,7 @@ fn test_mint_batch_mixed_soulbound() {
         },
     ];
 
-    let token_ids = libs::mint_batch(token_address, mints);
+    let token_ids = libs::mint_batch(mints);
     assert!(token_ids.len() == 2, "Should mint 2 tokens with mixed soulbound");
 }
 
@@ -1578,6 +1616,7 @@ fn test_mint_batch_mixed_soulbound() {
 #[test]
 fn test_mint_batch_large_batch() {
     let token_address = deploy_mock_minigame_token();
+    let game_address = deploy_mock_minigame(token_address);
 
     let mut mints: Array<MintMetagameParams> = array![];
     let mut i: u32 = 0;
@@ -1588,7 +1627,7 @@ fn test_mint_batch_large_batch() {
         mints
             .append(
                 MintMetagameParams {
-                    game_address: Option::None,
+                    game_address,
                     player_name: Option::None,
                     settings_id: Option::Some(i),
                     start: Option::None,
@@ -1608,7 +1647,7 @@ fn test_mint_batch_large_batch() {
         i += 1;
     }
 
-    let token_ids = libs::mint_batch(token_address, mints);
+    let token_ids = libs::mint_batch(mints);
 
     assert!(token_ids.len() == 50, "Should mint 50 tokens");
     assert!(*token_ids.at(0) == 1.into(), "First ID should be 1");
@@ -1624,10 +1663,10 @@ fn test_mint_batch_large_batch() {
 mod MockMinigameTokenWithRegistry {
     use core::num::traits::Zero;
     use game_components_embeddable_game_standard::metagame::extensions::context::structs::GameContextDetails;
-    use game_components_embeddable_game_standard::token::interface::{
-        IMINIGAME_TOKEN_ID, IMinigameToken,
+    use game_components_embeddable_game_standard::token_legacy::interface::{
+        IMINIGAME_TOKEN_LEGACY_ID, IMinigameTokenLegacy,
     };
-    use game_components_embeddable_game_standard::token::structs::{
+    use game_components_embeddable_game_standard::token_legacy::structs::{
         Lifecycle, MintBatchRecipient, PlayerNameUpdate, TokenFullState, TokenMetadata,
         TokenMutableState,
     };
@@ -1655,7 +1694,7 @@ mod MockMinigameTokenWithRegistry {
     }
 
     #[abi(embed_v0)]
-    impl MinigameTokenImpl of IMinigameToken<ContractState> {
+    impl MinigameTokenImpl of IMinigameTokenLegacy<ContractState> {
         fn token_metadata(self: @ContractState, token_id: felt252) -> TokenMetadata {
             TokenMetadata {
                 game_id: 0,
@@ -1914,7 +1953,28 @@ mod MockMinigameTokenWithRegistry {
             salt: u16,
             metadata: u16,
         ) -> Array<felt252> {
-            panic!("not implemented")
+            // Minimal but real: one id per requested count, in recipient order,
+            // recording the paired game — so the metagame lib's legacy batch
+            // path is genuinely exercised rather than stubbed out.
+            let mut token_ids = array![];
+            let mut i = 0;
+            while i < recipients.len() {
+                let recipient = *recipients.at(i);
+                let mut n: u16 = 0;
+                while n < recipient.count {
+                    let token_id_u64 = self.next_token_id.read();
+                    self.next_token_id.write(token_id_u64 + 1);
+                    let token_id: felt252 = token_id_u64.into();
+                    self.token_game_address.write(token_id, game_address);
+                    if let Option::Some(name) = player_name {
+                        self.token_player_names.write(token_id, name);
+                    }
+                    token_ids.append(token_id);
+                    n += 1;
+                }
+                i += 1;
+            }
+            token_ids
         }
 
         fn update_game(ref self: ContractState, token_id: felt252) {}
@@ -1932,8 +1992,399 @@ mod MockMinigameTokenWithRegistry {
     #[abi(embed_v0)]
     impl SRC5Impl of ISRC5<ContractState> {
         fn supports_interface(self: @ContractState, interface_id: felt252) -> bool {
-            interface_id == IMINIGAME_TOKEN_ID
+            interface_id == IMINIGAME_TOKEN_LEGACY_ID
                 || interface_id == openzeppelin_interfaces::introspection::ISRC5_ID
         }
+    }
+}
+
+// =============================================================================
+// STANDARD (SELF-BOUND) TOKEN PATHS
+// =============================================================================
+//
+// `assert_game_registered` accepts a self-bound standard token, so every
+// downstream lib path must be able to serve one too. These run against the
+// real merged game+token contract (`StandardGameMock`), not a mock ABI.
+
+#[cfg(test)]
+mod standard_token_paths {
+    use game_components_embeddable_game_standard::token::interface::{
+        IMinigameTokenDispatcher, IMinigameTokenDispatcherTrait,
+    };
+    use game_components_interfaces::token::game_fee::{
+        IMinigameTokenGameFeeDispatcher, IMinigameTokenGameFeeDispatcherTrait,
+    };
+    use game_components_testing::constants::{ALICE, BOB, OWNER};
+    use openzeppelin_interfaces::erc721::{IERC721Dispatcher, IERC721DispatcherTrait};
+    use snforge_std::{ContractClassTrait, DeclareResultTrait, declare};
+    use starknet::ContractAddress;
+    use crate::metagame::metagame as libs;
+
+    /// One contract that is both the game and the standard token.
+    fn deploy_standard_game(game_fee_recipient: ContractAddress) -> ContractAddress {
+        let contract = declare("StandardGameMock").unwrap().contract_class();
+        let mut calldata: Array<felt252> = array![];
+        let name: ByteArray = "StandardToken";
+        let symbol: ByteArray = "STD";
+        let base_uri: ByteArray = "https://token.test/";
+        name.serialize(ref calldata);
+        symbol.serialize(ref calldata);
+        base_uri.serialize(ref calldata);
+        game_fee_recipient.serialize(ref calldata);
+        OWNER().serialize(ref calldata);
+        let (contract_address, _) = contract.deploy(@calldata).unwrap();
+        contract_address
+    }
+
+    /// The self-bound pairing is what "registered" means for a standard token.
+    #[test]
+    fn test_assert_game_registered_accepts_standard_token() {
+        let game = deploy_standard_game(ALICE());
+        libs::assert_game_registered(game);
+    }
+
+    /// Regression: the gate accepted standard tokens while `mint` still spoke
+    /// the legacy 15-arg ABI, so every accepted game reverted at mint.
+    #[test]
+    fn test_mint_through_standard_token() {
+        let game = deploy_standard_game(ALICE());
+
+        let token_id = libs::mint(
+            game,
+            Option::Some('player'),
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None, // renderer — unsupported, must be None
+            Option::None, // skills — unsupported, must be None
+            BOB(),
+            false,
+            false,
+            0,
+            0,
+        );
+
+        assert!(token_id != 0, "mint returned a zero token id");
+        let erc721 = IERC721Dispatcher { contract_address: game };
+        assert!(erc721.owner_of(token_id.into()) == BOB(), "token not minted to recipient");
+        let token = IMinigameTokenDispatcher { contract_address: game };
+        assert!(token.player_name(token_id) == 'player', "player name not stored");
+    }
+
+    /// `metadata` is u128 so the single-mint path reaches the same 65-bit field
+    /// the batch path does — a u16 here would silently narrow a consumer that
+    /// threads a wider value through.
+    #[test]
+    fn test_mint_carries_wide_metadata() {
+        let game = deploy_standard_game(ALICE());
+        let wide: u128 = 0x100000000;
+
+        let token_id = libs::mint(
+            game,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            BOB(),
+            false,
+            false,
+            0,
+            wide,
+        );
+
+        let token = IMinigameTokenDispatcher { contract_address: game };
+        assert!(token.mint_metadata(token_id) == wide, "wide metadata lost on the single mint");
+    }
+
+    /// Minimal mint through a standard game — every optional param None.
+    #[test]
+    fn test_mint_standard_token_minimal() {
+        let game = deploy_standard_game(ALICE());
+
+        let token_id = libs::mint(
+            game,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            BOB(),
+            false,
+            false,
+            0,
+            0,
+        );
+
+        let erc721 = IERC721Dispatcher { contract_address: game };
+        assert!(erc721.owner_of(token_id.into()) == BOB(), "token not minted to recipient");
+    }
+
+    /// Unsupported params are rejected loudly, never silently dropped.
+    #[test]
+    #[should_panic(expected: "Metagame: standard tokens have no per-token renderer")]
+    fn test_mint_rejects_renderer_on_standard_token() {
+        let game = deploy_standard_game(ALICE());
+        libs::mint(
+            game,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::Some(BOB()),
+            Option::None,
+            BOB(),
+            false,
+            false,
+            0,
+            0,
+        );
+    }
+
+    #[test]
+    #[should_panic(expected: "Metagame: standard tokens have no per-token skills")]
+    fn test_mint_rejects_skills_on_standard_token() {
+        let game = deploy_standard_game(ALICE());
+        libs::mint(
+            game,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::Some(BOB()),
+            BOB(),
+            false,
+            false,
+            0,
+            0,
+        );
+    }
+
+    /// The game-fee surface replaces the registry's fee role — previously this
+    /// reverted on the missing `game_registry_address()` entrypoint.
+    #[test]
+    fn test_get_game_fee_info_reads_game_fee_surface() {
+        let game = deploy_standard_game(ALICE());
+        let fee_info = libs::get_game_fee_info(game);
+        let declared = IMinigameTokenGameFeeDispatcher { contract_address: game };
+        assert!(
+            fee_info.fee_numerator == declared.game_fee_terms().fee_numerator,
+            "fee numerator does not match the token's declared fee",
+        );
+    }
+
+    /// The payee is named directly, not resolved through a registry NFT owner.
+    #[test]
+    fn test_get_game_fee_recipient_is_the_declared_payee() {
+        let game = deploy_standard_game(ALICE());
+        assert!(
+            libs::get_game_fee_recipient(game) == ALICE(),
+            "payee is not the declared fee recipient",
+        );
+    }
+}
+
+// =============================================================================
+// SINGLE-GAME LEGACY TOKEN (ZERO REGISTRY)
+// =============================================================================
+//
+// A legacy token is a SEPARATE contract from its game, so with no registry the
+// pairing is the token's own `game_address()` view — not an address equality
+// against the token itself. This shape previously dispatched into address 0
+// and reverted with CONTRACT_NOT_DEPLOYED.
+
+#[cfg(test)]
+mod legacy_single_game_token {
+    use core::num::traits::Zero;
+    use game_components_testing::constants::{ALICE, BOB};
+    use snforge_std::mock_call;
+    use starknet::ContractAddress;
+    use crate::metagame::metagame as libs;
+    use super::{deploy_mock_minigame_for_registry, deploy_mock_token_with_registry};
+
+    #[test]
+    fn test_assert_game_registered_accepts_paired_single_game_token() {
+        let zero_registry: ContractAddress = Zero::zero();
+        let token = deploy_mock_token_with_registry(zero_registry);
+        let game = deploy_mock_minigame_for_registry(token);
+        // The token names its paired game — that is the pairing to check.
+        mock_call(token, selector!("game_address"), game, 1);
+
+        libs::assert_game_registered(game);
+    }
+
+    /// Regression: the gate admits this shape, but the fee path walked to the
+    /// registry without a zero guard and reverted dispatching at address 0.
+    /// A game that declares no fee anywhere is owed nothing — answer zero
+    /// rather than reverting, so callers need no pre-check.
+    #[test]
+    fn test_get_game_fee_info_returns_zero_for_single_game_token() {
+        let zero_registry: ContractAddress = Zero::zero();
+        let token = deploy_mock_token_with_registry(zero_registry);
+        let game = deploy_mock_minigame_for_registry(token);
+
+        let info = libs::get_game_fee_info(game);
+        assert!(info.fee_numerator == 0, "a game declaring no fee is owed nothing");
+    }
+
+    /// And the whole point of answering zero: the fee path stays total, so
+    /// `pay_game_fee` short-circuits before it ever needs a payee.
+    #[test]
+    fn test_zero_fee_means_nothing_to_pay_for_single_game_token() {
+        let zero_registry: ContractAddress = Zero::zero();
+        let token = deploy_mock_token_with_registry(zero_registry);
+        let game = deploy_mock_minigame_for_registry(token);
+
+        let info = libs::get_game_fee_info(game);
+        assert!(
+            libs::calculate_game_fee(1_000_000, info.fee_numerator) == 0,
+            "no declared fee should compute to no payment",
+        );
+    }
+
+    /// An absent payee is NOT a benign zero — paying address 0 burns funds, so
+    /// asking for one that was never declared is a caller bug, not a state.
+    #[test]
+    #[should_panic(expected: "Metagame: game declares no fee recipient")]
+    fn test_get_game_fee_recipient_rejects_undeclared_payee() {
+        let zero_registry: ContractAddress = Zero::zero();
+        let token = deploy_mock_token_with_registry(zero_registry);
+        let game = deploy_mock_minigame_for_registry(token);
+
+        libs::get_game_fee_recipient(game);
+    }
+
+    #[test]
+    #[should_panic(expected: "Game is not registered")]
+    fn test_assert_game_registered_rejects_mispaired_single_game_token() {
+        let zero_registry: ContractAddress = Zero::zero();
+        let token = deploy_mock_token_with_registry(zero_registry);
+        let game = deploy_mock_minigame_for_registry(token);
+        // The token is bound to a different game.
+        mock_call(token, selector!("game_address"), ALICE(), 1);
+
+        libs::assert_game_registered(game);
+    }
+
+    #[test]
+    #[should_panic(expected: "Game is not registered")]
+    fn test_assert_game_registered_rejects_unbound_single_game_token() {
+        let zero_registry: ContractAddress = Zero::zero();
+        let token = deploy_mock_token_with_registry(zero_registry);
+        let game = deploy_mock_minigame_for_registry(token);
+        // A token that names no game at all must not pass.
+        mock_call(token, selector!("game_address"), BOB(), 1);
+
+        libs::assert_game_registered(game);
+    }
+}
+
+// =============================================================================
+// HOSTILE GAME POINTING AT SOMEONE ELSE'S STANDARD TOKEN
+// =============================================================================
+//
+// A standard token is self-bound, so `token_address() == game_address` IS its
+// registration check. Any path that trusts a game's `token_address()` must
+// enforce it: otherwise a contract that merely implements `token_address()`
+// can name a standard token it does not own and have the metagame mint on it
+// or pay its fee recipient — at a fee rate the attacker controls.
+
+#[cfg(test)]
+mod hostile_game_paths {
+    use game_components_testing::constants::{ALICE, BOB, OWNER};
+    use snforge_std::{ContractClassTrait, DeclareResultTrait, declare, mock_call};
+    use starknet::ContractAddress;
+    use crate::metagame::metagame as libs;
+
+    fn deploy_standard_game(game_fee_recipient: ContractAddress) -> ContractAddress {
+        let contract = declare("StandardGameMock").unwrap().contract_class();
+        let mut calldata: Array<felt252> = array![];
+        let name: ByteArray = "StandardToken";
+        let symbol: ByteArray = "STD";
+        let base_uri: ByteArray = "https://token.test/";
+        name.serialize(ref calldata);
+        symbol.serialize(ref calldata);
+        base_uri.serialize(ref calldata);
+        game_fee_recipient.serialize(ref calldata);
+        OWNER().serialize(ref calldata);
+        let (contract_address, _) = contract.deploy(@calldata).unwrap();
+        contract_address
+    }
+
+    /// A hostile "game" that reports a victim's standard token as its own.
+    fn hostile_game_pointing_at(victim_token: ContractAddress) -> ContractAddress {
+        let hostile: ContractAddress = 0xBAD.try_into().unwrap();
+        mock_call(hostile, selector!("token_address"), victim_token, 10);
+        hostile
+    }
+
+    #[test]
+    #[should_panic(expected: "Game is not registered")]
+    fn test_mint_rejects_game_pointing_at_foreign_standard_token() {
+        let victim = deploy_standard_game(ALICE());
+        let hostile = hostile_game_pointing_at(victim);
+
+        libs::mint(
+            hostile,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            BOB(),
+            false,
+            false,
+            0,
+            0,
+        );
+    }
+
+    /// Fee terms must not be readable through a game that does not own the token.
+    #[test]
+    #[should_panic(expected: "Game is not registered")]
+    fn test_get_game_fee_info_rejects_foreign_standard_token() {
+        let victim = deploy_standard_game(ALICE());
+        let hostile = hostile_game_pointing_at(victim);
+        libs::get_game_fee_info(hostile);
+    }
+
+    /// The payee must not be redirectable to a foreign token's fee recipient.
+    #[test]
+    #[should_panic(expected: "Game is not registered")]
+    fn test_get_game_fee_recipient_rejects_foreign_standard_token() {
+        let victim = deploy_standard_game(ALICE());
+        let hostile = hostile_game_pointing_at(victim);
+        libs::get_game_fee_recipient(hostile);
+    }
+
+    /// The self-bound game itself still works through all three paths.
+    #[test]
+    fn test_self_bound_game_still_passes_every_path() {
+        let game = deploy_standard_game(ALICE());
+        libs::assert_game_registered(game);
+        assert!(libs::get_game_fee_recipient(game) == ALICE(), "payee should be the recipient");
+        assert!(libs::get_game_fee_info(game).fee_numerator == 500, "default fee is 500 bps");
     }
 }

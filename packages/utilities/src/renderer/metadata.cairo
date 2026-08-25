@@ -3,7 +3,7 @@ use game_components_embeddable_game_standard::metagame::extensions::context::str
 use game_components_embeddable_game_standard::minigame::extensions::settings::structs::GameSettingDetails;
 use game_components_embeddable_game_standard::minigame::structs::GameDetail;
 use game_components_embeddable_game_standard::registry::interface::GameMetadata;
-use game_components_embeddable_game_standard::token::structs::TokenMetadata;
+use game_components_embeddable_game_standard::token_legacy::structs::TokenMetadata;
 use graffiti::json::JsonImpl;
 use starknet::{ContractAddress, get_block_timestamp};
 use crate::utils::encoding::{bytes_base64_encode, felt252_to_byte_array};
