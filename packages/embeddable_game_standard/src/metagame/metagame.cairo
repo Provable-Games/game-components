@@ -5,6 +5,7 @@ use game_components_embeddable_game_standard::minigame::interface::{
 };
 use game_components_embeddable_game_standard::registry::interface::{
     FEE_DENOMINATOR, GameFeeInfo, IMinigameRegistryDispatcher, IMinigameRegistryDispatcherTrait,
+    default_license,
 };
 use game_components_embeddable_game_standard::token_legacy::interface::{
     IMinigameTokenLegacyDispatcher, IMinigameTokenLegacyDispatcherTrait,
@@ -412,6 +413,18 @@ pub fn get_game_fee_info(game_address: ContractAddress) -> GameFeeInfo {
         contract_address: minigame_token_address,
     };
     let minigame_registry_address = minigame_token_dispatcher.game_registry_address();
+    if minigame_registry_address.is_zero() {
+        // Single-game legacy token: no registry to ask and no creator surface,
+        // so the game declares no fee anywhere. "Declares nothing" and
+        // "declares zero" mean the same thing — nobody is owed anything — so
+        // answer zero rather than reverting. This keeps the fee question total:
+        // `calculate_game_fee` returns 0 and `pay_game_fee` exits before
+        // transferring, so no caller has to pre-check.
+        //
+        // `assert_game_registered` admits this shape; without this guard the
+        // walk below dispatched at address 0 and reverted.
+        return GameFeeInfo { license: default_license(), fee_numerator: 0 };
+    }
     let minigame_registry_dispatcher = IMinigameRegistryDispatcher {
         contract_address: minigame_registry_address,
     };
@@ -442,6 +455,12 @@ pub fn get_game_creator_address(game_address: ContractAddress) -> ContractAddres
     }
     let token_dispatcher = IMinigameTokenLegacyDispatcher { contract_address: token_address };
     let registry_address = token_dispatcher.game_registry_address();
+    // Unlike the fee, an absent PAYEE is not a benign zero. Reaching here means
+    // a caller is trying to pay a game that never named anyone, and paying the
+    // zero address would burn the funds. `get_game_fee_info` returns 0 for this
+    // shape, so `pay_game_fee` exits before reaching this — arriving anyway is
+    // a caller bug worth surfacing.
+    assert!(!registry_address.is_zero(), "Metagame: game declares no fee recipient");
     let registry_dispatcher = IMinigameRegistryDispatcher { contract_address: registry_address };
     let game_id = registry_dispatcher.game_id_from_address(game_address);
     IERC721Dispatcher { contract_address: registry_address }.owner_of(game_id.into())

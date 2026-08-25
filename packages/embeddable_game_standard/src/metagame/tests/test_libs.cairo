@@ -2230,6 +2230,47 @@ mod legacy_single_game_token {
         libs::assert_game_registered(game);
     }
 
+    /// Regression: the gate admits this shape, but the fee path walked to the
+    /// registry without a zero guard and reverted dispatching at address 0.
+    /// A game that declares no fee anywhere is owed nothing — answer zero
+    /// rather than reverting, so callers need no pre-check.
+    #[test]
+    fn test_get_game_fee_info_returns_zero_for_single_game_token() {
+        let zero_registry: ContractAddress = Zero::zero();
+        let token = deploy_mock_token_with_registry(zero_registry);
+        let game = deploy_mock_minigame_for_registry(token);
+
+        let info = libs::get_game_fee_info(game);
+        assert!(info.fee_numerator == 0, "a game declaring no fee is owed nothing");
+    }
+
+    /// And the whole point of answering zero: the fee path stays total, so
+    /// `pay_game_fee` short-circuits before it ever needs a payee.
+    #[test]
+    fn test_zero_fee_means_nothing_to_pay_for_single_game_token() {
+        let zero_registry: ContractAddress = Zero::zero();
+        let token = deploy_mock_token_with_registry(zero_registry);
+        let game = deploy_mock_minigame_for_registry(token);
+
+        let info = libs::get_game_fee_info(game);
+        assert!(
+            libs::calculate_game_fee(1_000_000, info.fee_numerator) == 0,
+            "no declared fee should compute to no payment",
+        );
+    }
+
+    /// An absent payee is NOT a benign zero — paying address 0 burns funds, so
+    /// asking for one that was never declared is a caller bug, not a state.
+    #[test]
+    #[should_panic(expected: "Metagame: game declares no fee recipient")]
+    fn test_get_game_creator_address_rejects_undeclared_payee() {
+        let zero_registry: ContractAddress = Zero::zero();
+        let token = deploy_mock_token_with_registry(zero_registry);
+        let game = deploy_mock_minigame_for_registry(token);
+
+        libs::get_game_creator_address(game);
+    }
+
     #[test]
     #[should_panic(expected: "Game is not registered")]
     fn test_assert_game_registered_rejects_mispaired_single_game_token() {
