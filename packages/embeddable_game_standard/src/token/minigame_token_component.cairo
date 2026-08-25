@@ -718,7 +718,10 @@ pub mod MinigameTokenComponent {
         /// `MinigameTokenImpl` + `MinterImpl` + `CreatorImpl` all together.
         /// A partial wiring that still calls this initializer advertises
         /// entrypoints it does not have, and probe-then-dispatch consumers
-        /// (e.g. metagame's fee resolution) will revert against it.
+        /// (e.g. metagame's fee resolution) will revert against it. Note the
+        /// trigger point: that revert fires at first FEE CLAIM, not at
+        /// deploy — an integration test that exercises fee payment is what
+        /// catches a partial wiring before production does.
         ///
         /// `game_creator` must be non-zero (it is the monetization payee);
         /// `license`/`fee_numerator` default to the ecosystem terms
