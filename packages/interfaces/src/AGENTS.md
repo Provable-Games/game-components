@@ -191,7 +191,7 @@ on-chain. When the lite token became the standard, only the NAMES moved:
 
 | Constant (today) | Value | Was named |
 | --- | --- | --- |
-| `IMINIGAME_TOKEN_ID` | `0x15951d6d145a5a13c454bd75f0787e43e531a80a4bfb42a01fc4859e6fb7aea` | `IMINIGAME_TOKEN_LITE_ID` |
+| `IMINIGAME_TOKEN_ID` | `0x20253de95bcdb23620c88405a5f97da040b91de832ad98a34b45c4f3331d13b` | `IMINIGAME_TOKEN_LITE_ID` |
 | `IMINIGAME_TOKEN_LEGACY_ID` | `0x246f614bd76b91c378a91877851f2ccdb99278e9fb77c782a22355059ce9906` | `IMINIGAME_TOKEN_ID` |
 
 ## Dependencies

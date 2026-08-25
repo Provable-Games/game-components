@@ -204,7 +204,6 @@ fn test_mint_defaults_and_metadata_view() {
     );
 
     let metadata = token.token_metadata(token_id);
-    assert!(metadata.game_id == 0, "game_id should be 0");
     assert!(metadata.settings_id == 0, "settings_id should default 0");
     assert!(metadata.minted_at == 1000, "minted_at mismatch");
     assert!(metadata.lifecycle.start == 1000, "start clamps to mint time");
@@ -218,7 +217,7 @@ fn test_mint_defaults_and_metadata_view() {
     assert!(metadata.objective_id == 0, "objective_id defaults to 0");
     assert!(!metadata.has_context, "has_context defaults to false");
     assert!(!metadata.paymaster, "paymaster defaults to false");
-    assert!(metadata.metadata == 0, "u16 metadata field is always 0 (see mint_metadata)");
+    assert!(metadata.metadata == 0, "metadata defaults to 0");
     assert!(token.objective_id(token_id) == 0, "objective_id view defaults to 0");
     assert!(token.mint_metadata(token_id) == 0, "mint_metadata defaults to 0");
     assert!(token.client_url(token_id) == "", "client_url defaults to empty");
@@ -763,16 +762,20 @@ fn test_mint_restored_fields_roundtrip() {
     assert!(token.objective_id(token_id) == 123456, "objective_id view mismatch");
     assert!(token.mint_metadata(token_id) == 0xDEADBEEFCAFE, "mint_metadata view mismatch");
 
-    // Shared TokenMetadata struct: objective_id/has_context/paymaster are
-    // populated from the id; the u16 metadata field CANNOT hold the 65-bit
-    // value and stays 0 (never truncated) — mint_metadata is the real view.
+    // Shared TokenMetadata struct: every packed field round-trips, metadata
+    // included — the struct field is 65 bits wide, so it holds exactly what
+    // was minted and agrees with mint_metadata.
     // objective_id is inert data the game interprets: the standard token has no
     // completion machinery, so completed_objective stays false.
     let md = token.token_metadata(token_id);
     assert!(md.objective_id == 123456, "TokenMetadata.objective_id mismatch");
     assert!(md.has_context, "TokenMetadata.has_context mismatch");
     assert!(md.paymaster, "TokenMetadata.paymaster mismatch");
-    assert!(md.metadata == 0, "TokenMetadata.metadata must be 0, not a truncation");
+    assert!(md.metadata == 0xDEADBEEFCAFE, "TokenMetadata.metadata must round-trip");
+    assert!(
+        md.metadata == token.mint_metadata(token_id),
+        "TokenMetadata.metadata must agree with mint_metadata",
+    );
     assert!(!md.completed_objective, "completed_objective stays always-false");
 }
 

@@ -9,7 +9,7 @@ use crate::structs::minigame::{GameDetail, MintGameParams};
 /// - objectives_address()->ContractAddress
 /// - mint_game(...)->felt252
 /// - mint_game_batch(Array<MintGameParams>)->Array<felt252>
-pub const IMINIGAME_ID: felt252 = 0x3d1730c22937da340212dec5546ff5826895259966fa6a92d1191ab068cc2b4;
+pub const IMINIGAME_ID: felt252 = 0x1b78fcd155ca1cfe04a0f0f75dd48b398995d2f9ff0c9f0e00ec80c71d1f2bb;
 
 #[starknet::interface]
 pub trait IMinigame<TState> {
@@ -31,7 +31,7 @@ pub trait IMinigame<TState> {
         soulbound: bool,
         paymaster: bool,
         salt: u16,
-        metadata: u16,
+        metadata: u128,
     ) -> felt252;
     /// Batch mint games with per-token parameters
     fn mint_game_batch(self: @TState, mints: Array<MintGameParams>) -> Array<felt252>;

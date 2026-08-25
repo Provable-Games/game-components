@@ -126,7 +126,7 @@ With the layout compat shim retired, the ABI compat shim went with it — before
 | `refresh_metadata_batch` deleted | A multicall of singles |
 | Read views + rename kept | `token_metadata`, `is_playable`, `settings_id`, `minted_by`, `minted_by_address`, `is_soulbound`, `objective_id`, `client_url`, `mint_metadata`, `player_name` (near-zero-cost client/RPC conveniences) and `update_player_name` (owner-gated capability) stay |
 | Legacy id registration dropped | `initializer()` registers ONLY `IMINIGAME_TOKEN_LITE_ID` — SRC5 is honest; `supports_interface(IMINIGAME_TOKEN_ID)` is now false on lite tokens |
-| New interface id | `IMINIGAME_TOKEN_LITE_ID = 0x15951d6d145a5a13c454bd75f0787e43e531a80a4bfb42a01fc4859e6fb7aea` (rederived over the 14-function surface minus `refresh_metadata`, per the refresh-exclusion convention) |
+| New interface id | `IMINIGAME_TOKEN_LITE_ID = 0x20253de95bcdb23620c88405a5f97da040b91de832ad98a34b45c4f3331d13b` (rederived over the 14-function surface minus `refresh_metadata`, per the refresh-exclusion convention) |
 
 **Downstream:** SDM dungeons/GameCore and budokan v2 migrate their mint call sites to the 12-arg shape (drop the game-address, renderer and skills arguments; the remaining params keep their full-token positions and meanings — pass `None`/`false`/`0` where unused, noting `metadata` is now `u128`), GameCore's guard becomes the component-internal call, and anything that asserted the full-token id or called `game_registry_address()` on a lite token switches to the lite-id SRC5 probe.
 

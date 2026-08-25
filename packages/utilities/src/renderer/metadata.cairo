@@ -36,7 +36,6 @@ pub fn create_custom_metadata(
     objective_name: ByteArray,
 ) -> ByteArray {
     let _token_id_hex = format!("0x{:x}", token_id);
-    let _game_id = format!("{}", token_metadata.game_id);
     let _score = format!("{}", score);
     let _minted_at = format!("{}", token_metadata.minted_at);
     let _start = format!("{}", token_metadata.lifecycle.start);
@@ -57,8 +56,7 @@ pub fn create_custom_metadata(
 
     // Core game metadata traits
     let mut attributes = array![
-        create_trait("Token ID", _token_id_hex), create_trait("Game ID", _game_id),
-        create_trait("Game Name", game_metadata.name),
+        create_trait("Token ID", _token_id_hex), create_trait("Game Name", game_metadata.name),
         create_trait("Game Developer", game_metadata.developer),
         create_trait("Publisher", game_metadata.publisher),
         create_trait("Genre", game_metadata.genre), create_trait("Minted By", _minted_by),
@@ -68,7 +66,7 @@ pub fn create_custom_metadata(
         create_trait("Game Over", bool_to_str(token_metadata.game_over)),
         create_trait("Soulbound", bool_to_str(token_metadata.soulbound)),
         create_trait("Paymaster", bool_to_str(token_metadata.paymaster)),
-        create_trait("Metadata", format!("{}", Into::<u16, u32>::into(token_metadata.metadata))),
+        create_trait("Metadata", format!("{}", token_metadata.metadata)),
         create_trait("Settings ID", _settings_id),
     ];
 

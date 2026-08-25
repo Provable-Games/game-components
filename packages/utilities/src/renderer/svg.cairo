@@ -247,7 +247,6 @@ pub fn create_default_svg(
     } else {
         uri_encode(game_metadata.color.clone())
     };
-    let _game_id = format!("{}", token_metadata.game_id);
     let _score = format!("{}", score);
     let _game_name = uri_encode(truncate_with_ellipsis(format!("{}", game_metadata.name), 17));
     let _developer = uri_encode(truncate_with_ellipsis(format!("{}", game_metadata.developer), 21));
@@ -908,7 +907,6 @@ mod tests {
 
     fn default_token_metadata() -> TokenMetadata {
         TokenMetadata {
-            game_id: 1,
             settings_id: 1,
             minted_at: 1640995200,
             minted_by: 123,

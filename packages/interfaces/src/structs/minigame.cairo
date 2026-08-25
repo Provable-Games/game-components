@@ -53,7 +53,10 @@ pub struct MintGameParams {
     pub soulbound: bool,
     pub paymaster: bool,
     pub salt: u16,
-    pub metadata: u16,
+    /// Inert data the game interprets. `u128` to reach the token id's 65-bit
+    /// field — a `u16` here would cap this mint path at 16 of those bits
+    /// while the token's own `mint` accepted all 65.
+    pub metadata: u128,
 }
 
 #[derive(Drop, Serde, Clone)]

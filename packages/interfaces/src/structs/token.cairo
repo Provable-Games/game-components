@@ -23,7 +23,6 @@ pub struct Lifecycle {
 
 #[derive(Copy, Drop, Serde)]
 pub struct TokenMetadata {
-    pub game_id: u64,
     pub minted_at: u64,
     pub settings_id: u32,
     pub lifecycle: Lifecycle,
@@ -36,13 +35,14 @@ pub struct TokenMetadata {
     pub has_context: bool,
     pub objective_id: u32,
     pub paymaster: bool,
-    pub metadata: u16,
+    /// Inert data the game interprets, 65 bits wide — matching the token id's
+    /// packed field exactly, so the value read back is the value minted.
+    pub metadata: u128,
 }
 
 impl TokenMetadataDefault of Default<TokenMetadata> {
     fn default() -> TokenMetadata {
         TokenMetadata {
-            game_id: 0,
             minted_at: 0,
             settings_id: 0,
             lifecycle: Lifecycle { start: 0, end: 0 },
@@ -78,7 +78,8 @@ pub struct MintParams {
     pub soulbound: bool,
     pub paymaster: bool,
     pub salt: u16,
-    pub metadata: u16,
+    /// Inert data the game interprets — 65 bits, per the id layout.
+    pub metadata: u128,
 }
 
 /// Per-recipient parameters for `mint_batch_recipients`.

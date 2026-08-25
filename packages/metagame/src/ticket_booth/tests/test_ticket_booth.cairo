@@ -968,7 +968,6 @@ mod MockMinigameTokenForTicketBooth {
 
     fn blank_metadata() -> TokenMetadata {
         TokenMetadata {
-            game_id: 0,
             minted_at: 0,
             settings_id: 0,
             lifecycle: Lifecycle { start: 0, end: 0 },
@@ -1011,7 +1010,7 @@ mod MockMinigameTokenForTicketBooth {
             soulbound: bool,
             paymaster: bool,
             salt: u16,
-            metadata: u16,
+            metadata: u128,
         ) -> felt252 {
             self.next_token_id.read().into()
         }
