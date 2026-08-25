@@ -185,7 +185,7 @@ map:
 | Old name (pre-rename) | New standard name | Legacy name |
 | --- | --- | --- |
 | `IMinigameTokenLite` (+`Dispatcher`/`DispatcherTrait`) | `IMinigameToken` (+`Dispatcher`/`DispatcherTrait`) | — |
-| `IMINIGAME_TOKEN_LITE_ID` (= `0x15951d…7aea`) | `IMINIGAME_TOKEN_ID` (same value) | — |
+| `IMINIGAME_TOKEN_LITE_ID` (= `0x15951d…7aea` at the rename) | `IMINIGAME_TOKEN_ID` (value CHANGED in 2.2.0 to `0x20253d…d13b` — see above) | — |
 | `IMinigameToken` (original full trait) | — | `IMinigameTokenLegacy` |
 | `IMINIGAME_TOKEN_ID` (original, = `0x246f61…9906`) | — | `IMINIGAME_TOKEN_LEGACY_ID` (same value) |
 | `game_components_interfaces::token::lite` | `game_components_interfaces::token::core` | — |
