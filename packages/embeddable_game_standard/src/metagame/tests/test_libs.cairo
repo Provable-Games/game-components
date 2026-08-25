@@ -1088,7 +1088,28 @@ mod MockMinigameTokenForLibs {
             salt: u16,
             metadata: u16,
         ) -> Array<felt252> {
-            panic!("not implemented")
+            // Minimal but real: one id per requested count, in recipient order,
+            // recording the paired game — so the metagame lib's legacy batch
+            // path is genuinely exercised rather than stubbed out.
+            let mut token_ids = array![];
+            let mut i = 0;
+            while i < recipients.len() {
+                let recipient = *recipients.at(i);
+                let mut n: u16 = 0;
+                while n < recipient.count {
+                    let token_id_u64 = self.next_token_id.read();
+                    self.next_token_id.write(token_id_u64 + 1);
+                    let token_id: felt252 = token_id_u64.into();
+                    self.token_game_address.write(token_id, game_address);
+                    if let Option::Some(name) = player_name {
+                        self.token_player_names.write(token_id, name);
+                    }
+                    token_ids.append(token_id);
+                    n += 1;
+                }
+                i += 1;
+            }
+            token_ids
         }
 
         fn update_game(ref self: ContractState, token_id: felt252) {}
@@ -1932,7 +1953,28 @@ mod MockMinigameTokenWithRegistry {
             salt: u16,
             metadata: u16,
         ) -> Array<felt252> {
-            panic!("not implemented")
+            // Minimal but real: one id per requested count, in recipient order,
+            // recording the paired game — so the metagame lib's legacy batch
+            // path is genuinely exercised rather than stubbed out.
+            let mut token_ids = array![];
+            let mut i = 0;
+            while i < recipients.len() {
+                let recipient = *recipients.at(i);
+                let mut n: u16 = 0;
+                while n < recipient.count {
+                    let token_id_u64 = self.next_token_id.read();
+                    self.next_token_id.write(token_id_u64 + 1);
+                    let token_id: felt252 = token_id_u64.into();
+                    self.token_game_address.write(token_id, game_address);
+                    if let Option::Some(name) = player_name {
+                        self.token_player_names.write(token_id, name);
+                    }
+                    token_ids.append(token_id);
+                    n += 1;
+                }
+                i += 1;
+            }
+            token_ids
         }
 
         fn update_game(ref self: ContractState, token_id: felt252) {}

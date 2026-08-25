@@ -12,6 +12,7 @@
 #[starknet::component]
 pub mod MetagameComponent {
     use game_components_embeddable_game_standard::metagame::extensions::context::structs::GameContextDetails;
+    use game_components_interfaces::structs::token::MintBatchRecipient;
     use openzeppelin_interfaces::erc20::{IERC20Dispatcher, IERC20DispatcherTrait};
     use starknet::contract_address::ContractAddress;
     use crate::metagame::metagame as libs;
@@ -72,6 +73,47 @@ pub mod MetagameComponent {
             ref self: ComponentState<TContractState>, mints: Array<MintMetagameParams>,
         ) -> Array<felt252> {
             libs::mint_batch(mints)
+        }
+
+        /// Many tokens for ONE game in a single dispatch, via the token's own
+        /// `mint_batch_recipients`. Prefer this over `mint_batch` whenever the
+        /// batch shares a game: `mint_batch` costs one cross-contract call per
+        /// token and re-serialises `context` each time.
+        fn mint_batch_recipients(
+            ref self: ComponentState<TContractState>,
+            game_address: ContractAddress,
+            player_name: Option<felt252>,
+            settings_id: Option<u32>,
+            start: Option<u64>,
+            end: Option<u64>,
+            objective_id: Option<u32>,
+            context: Option<GameContextDetails>,
+            client_url: Option<ByteArray>,
+            renderer_address: Option<ContractAddress>,
+            skills_address: Option<ContractAddress>,
+            recipients: Array<MintBatchRecipient>,
+            soulbound: bool,
+            paymaster: bool,
+            salt: u16,
+            metadata: u128,
+        ) -> Array<felt252> {
+            libs::mint_batch_recipients(
+                game_address,
+                player_name,
+                settings_id,
+                start,
+                end,
+                objective_id,
+                context,
+                client_url,
+                renderer_address,
+                skills_address,
+                recipients,
+                soulbound,
+                paymaster,
+                salt,
+                metadata,
+            )
         }
 
         /// Reads fee from registry, calculates amount, transfers via ERC20

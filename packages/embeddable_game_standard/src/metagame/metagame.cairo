@@ -9,6 +9,7 @@ use game_components_embeddable_game_standard::registry::interface::{
 use game_components_embeddable_game_standard::token_legacy::interface::{
     IMinigameTokenLegacyDispatcher, IMinigameTokenLegacyDispatcherTrait,
 };
+use game_components_interfaces::structs::token::MintBatchRecipient;
 use game_components_interfaces::token::core::{
     IMINIGAME_TOKEN_ID, IMinigameTokenDispatcher, IMinigameTokenDispatcherTrait,
 };
@@ -199,6 +200,90 @@ pub fn mint(
             paymaster,
             salt,
             metadata,
+        )
+}
+
+/// Mints many tokens for ONE game in a single call, via the token's own
+/// `mint_batch_recipients` entrypoint.
+///
+/// This is NOT `mint_batch`. `mint_batch` loops over `mint`, one cross-contract
+/// dispatch per token, and each entry may name a different game. This routes a
+/// single dispatch to the token's batch entrypoint, which hoists the
+/// batch-invariant work (packing, the shared has_context bit) and runs one
+/// global salt counter across the batch. For a many-recipient single-game mint
+/// — a tournament entry — that is the difference between N dispatches and one,
+/// with the `context` array re-serialised N times versus once.
+///
+/// Both token generations are served. `metadata` is `u128` to reach the
+/// standard token's 65-bit field; the legacy token's field is `u16`, so a
+/// legacy mint asserts the value fits rather than truncating it silently.
+///
+/// # Arguments
+/// * `game_address` - The game whose token mints; the token is resolved from it
+/// * `recipients` - Per-recipient counts; salts run `salt .. salt + sum(counts) - 1`
+///
+/// # Returns
+/// * `Array<felt252>` - The minted token ids, in recipient order
+pub fn mint_batch_recipients(
+    game_address: ContractAddress,
+    player_name: Option<felt252>,
+    settings_id: Option<u32>,
+    start: Option<u64>,
+    end: Option<u64>,
+    objective_id: Option<u32>,
+    context: Option<GameContextDetails>,
+    client_url: Option<ByteArray>,
+    renderer_address: Option<ContractAddress>,
+    skills_address: Option<ContractAddress>,
+    recipients: Array<MintBatchRecipient>,
+    soulbound: bool,
+    paymaster: bool,
+    salt: u16,
+    metadata: u128,
+) -> Array<felt252> {
+    let minigame_dispatcher = IMinigameDispatcher { contract_address: game_address };
+    let minigame_token_address = minigame_dispatcher.token_address();
+
+    if is_standard_token(minigame_token_address) {
+        assert_self_bound(minigame_token_address, game_address);
+        assert!(renderer_address.is_none(), "Metagame: standard tokens have no per-token renderer");
+        assert!(skills_address.is_none(), "Metagame: standard tokens have no per-token skills");
+        return IMinigameTokenDispatcher { contract_address: minigame_token_address }
+            .mint_batch_recipients(
+                player_name,
+                settings_id,
+                start,
+                end,
+                objective_id,
+                context,
+                client_url,
+                recipients,
+                soulbound,
+                paymaster,
+                salt,
+                metadata,
+            );
+    }
+
+    // Legacy token: narrower metadata field — reject rather than truncate.
+    let legacy_metadata: u16 = metadata.try_into().expect('Metagame: metadata exceeds u16');
+    IMinigameTokenLegacyDispatcher { contract_address: minigame_token_address }
+        .mint_batch_recipients(
+            game_address,
+            player_name,
+            settings_id,
+            start,
+            end,
+            objective_id,
+            context,
+            client_url,
+            renderer_address,
+            skills_address,
+            recipients,
+            soulbound,
+            paymaster,
+            salt,
+            legacy_metadata,
         )
 }
 

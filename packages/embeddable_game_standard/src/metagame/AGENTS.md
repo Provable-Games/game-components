@@ -36,9 +36,23 @@ legacy callback receiver. The component now exposes internals only.
 
 | Method | Description |
 |--------|-------------|
-| `mint(game_address, player_name, settings_id, ...)` | Mint single token |
-| `mint_batch(mints: Array<MintMetagameParams>)` | Batch mint tokens |
+| `mint(game_address, player_name, settings_id, ...)` | Mint a single token |
+| `mint_batch(mints: Array<MintMetagameParams>)` | Many tokens, **one call per token**; each entry may name a different game |
+| `mint_batch_recipients(game_address, ..., recipients, ..., metadata: u128)` | Many tokens for **ONE** game in a **single dispatch**, via the token's own batch entrypoint |
 | `assert_game_registered(game_address)` | Validate game registration |
+| `get_game_fee_info(game_address)` / `pay_game_fee(...)` | Resolve fee terms / pay the game creator |
+
+**Choosing between the batch calls:** if the batch shares a game — a tournament
+entry, say — use `mint_batch_recipients`. `mint_batch` costs one cross-contract
+dispatch per token and re-serialises `context` (which contains an `Array`) each
+time; `mint_batch_recipients` hoists the batch-invariant work and runs a single
+global salt counter. Reach for `mint_batch` only when entries genuinely name
+different games.
+
+`mint_batch_recipients` takes `metadata: u128` to reach the standard token's
+65-bit field. The legacy token's field is `u16`, so the legacy path asserts the
+value fits rather than truncating it. (`mint` still takes `metadata: u16` — a
+known inconsistency, widening it is a further breaking change.)
 
 ## Extensions
 
@@ -82,10 +96,14 @@ mod MyMetagame {
         src5: SRC5Component::Storage,
     }
 
-    #[abi(embed_v0)]
-    impl MetagameImpl = MetagameComponent::MetagameImpl<ContractState>;
+    impl MetagameInternalImpl = MetagameComponent::InternalImpl<ContractState>;
 }
 ```
+
+There is no `#[abi(embed_v0)]` line and no `initializer` call: the component
+exposes no ABI (see "IMetagame — REMOVED") and holds no state. A metagame that
+also provides context additionally embeds `ContextComponent` and calls
+`self.context.initializer()`.
 
 ## Relationships
 
@@ -126,7 +144,14 @@ pub struct MintMetagameParams {
     pub context: Option<GameContextDetails>,
     pub client_url: Option<ByteArray>,
     pub renderer_address: Option<ContractAddress>,
+    pub skills_address: Option<ContractAddress>,
     pub to: ContractAddress,
     pub soulbound: bool,
+    pub paymaster: bool,
+    pub salt: u16,
+    pub metadata: u16,
 }
 ```
+
+`renderer_address` and `skills_address` exist for legacy tokens only; a
+standard-token mint rejects them loudly rather than dropping them silently.
