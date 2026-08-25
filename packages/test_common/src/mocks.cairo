@@ -1,14 +1,11 @@
 pub mod metagame_mock;
-pub mod minigame_mock;
 pub mod mock_entry_validator;
-pub mod mock_enumerable;
 pub mod mock_erc20;
 pub mod mock_erc721;
 pub mod mock_game;
 pub mod mock_game_details;
 pub mod mock_leaderboard_contract;
 pub mod mock_objectives_contract;
-pub mod mock_registry_contract;
 pub mod mock_rejecting_entry_validator;
 pub mod mock_settings_contract;
 pub mod standard_game_mock;

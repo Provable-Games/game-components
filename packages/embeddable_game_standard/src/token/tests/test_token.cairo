@@ -1,4 +1,5 @@
 use game_components_interfaces::structs::metagame::{GameContext, GameContextDetails};
+use game_components_interfaces::structs::token::MintBatchRecipient;
 use game_components_interfaces::token::game_fee::{
     DEFAULT_GAME_FEE_BPS, FEE_DENOMINATOR, GameFeeTerms, IMINIGAME_TOKEN_GAME_FEE_ID,
     IMinigameTokenGameFeeDispatcher, IMinigameTokenGameFeeDispatcherTrait, default_license,
@@ -26,8 +27,6 @@ use crate::token::packing::{
     unpack_objective_id, unpack_paymaster, unpack_salt, unpack_settings_id, unpack_soulbound,
     unpack_start_delay, unpack_token_id, unpack_tx_hash,
 };
-use crate::token_legacy::interface::IMINIGAME_TOKEN_LEGACY_ID;
-use crate::token_legacy::structs::MintBatchRecipient;
 
 fn addr(value: felt252) -> ContractAddress {
     value.try_into().unwrap()
@@ -138,11 +137,15 @@ fn test_deployment_and_interfaces() {
     assert!(
         src5.supports_interface(IMINIGAME_TOKEN_ID), "Should register the standard interface id",
     );
-    // SRC5 is honest: a standard token does NOT implement IMinigameTokenLegacy and no
-    // longer advertises the legacy token id.
+    // SRC5 is honest: the standard token must never claim the RETIRED
+    // generation's id. That generation's code is gone, but deployed contracts
+    // still register this value on-chain, so the literal is inlined here
+    // deliberately — a consumer probing it must not match a standard token.
+    let retired_legacy_id: felt252 =
+        0x246f614bd76b91c378a91877851f2ccdb99278e9fb77c782a22355059ce9906;
     assert!(
-        !src5.supports_interface(IMINIGAME_TOKEN_LEGACY_ID),
-        "Must NOT advertise the legacy token id",
+        !src5.supports_interface(retired_legacy_id),
+        "Must NOT advertise the retired generation's token id",
     );
 }
 

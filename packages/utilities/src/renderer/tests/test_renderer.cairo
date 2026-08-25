@@ -14,8 +14,8 @@ use game_components_embeddable_game_standard::minigame::extensions::settings::st
     GameSetting, GameSettingDetails,
 };
 use game_components_embeddable_game_standard::minigame::structs::GameDetail;
-use game_components_embeddable_game_standard::registry::interface::GameMetadata;
-use game_components_embeddable_game_standard::token_legacy::structs::{Lifecycle, TokenMetadata};
+use game_components_interfaces::structs::minigame::GameMetadata;
+use game_components_interfaces::structs::token::{Lifecycle, TokenMetadata};
 use snforge_std::{start_cheat_block_timestamp_global, stop_cheat_block_timestamp_global};
 use starknet::ContractAddress;
 use crate::renderer::metadata::create_custom_metadata;

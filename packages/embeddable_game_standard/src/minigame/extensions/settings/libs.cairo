@@ -1,13 +1,7 @@
-use game_components_embeddable_game_standard::token_legacy::extensions::settings::interface::{
-    IMINIGAME_TOKEN_SETTINGS_ID, IMinigameTokenSettingsDispatcher,
-    IMinigameTokenSettingsDispatcherTrait,
+use game_components_interfaces::token::core::{
+    IMinigameTokenDispatcher, IMinigameTokenDispatcherTrait,
 };
-use game_components_embeddable_game_standard::token_legacy::interface::{
-    IMinigameTokenLegacyDispatcher, IMinigameTokenLegacyDispatcherTrait,
-};
-use openzeppelin_interfaces::introspection::{ISRC5Dispatcher, ISRC5DispatcherTrait};
 use starknet::ContractAddress;
-use crate::minigame::extensions::settings::structs::GameSettingDetails;
 
 /// Gets the settings ID for a game token
 ///
@@ -18,57 +12,18 @@ use crate::minigame::extensions::settings::structs::GameSettingDetails;
 /// # Returns
 /// * `u32` - The settings ID
 pub fn get_settings_id(minigame_token_address: ContractAddress, token_id: felt252) -> u32 {
-    let minigame_token_dispatcher = IMinigameTokenLegacyDispatcher {
-        contract_address: minigame_token_address,
-    };
-    minigame_token_dispatcher.settings_id(token_id)
+    IMinigameTokenDispatcher { contract_address: minigame_token_address }.settings_id(token_id)
 }
-
-/// Announces created settings to the minigame token contract, when it has a
-/// settings surface.
-///
-/// The token-side `create_settings` stores nothing — it validates and emits a
-/// `SettingsCreated` event for indexers. The game contract remains the source
-/// of truth for what settings exist (`settings_exist` answers from the game).
-/// Standard tokens have no settings surface at all and do not register
-/// `IMINIGAME_TOKEN_SETTINGS_ID`, so the announcement is skipped for them
-/// instead of reverting with ENTRYPOINT_NOT_FOUND — which would otherwise
-/// brick settings creation (and constructors that create default settings)
-/// for every game wired to a standard token.
-///
-/// # Arguments
-/// * `minigame_token_address` - The address of the minigame token contract
-/// * `game_address` - The address of the game contract creating the settings
-/// * `creator_address` - The address of the creator
-/// * `settings_id` - The ID of the settings to create
-/// * `settings_details` - The settings details (name, description, settings)
-pub fn create_settings(
-    minigame_token_address: ContractAddress,
-    game_address: ContractAddress,
-    creator_address: ContractAddress,
-    settings_id: u32,
-    settings_details: GameSettingDetails,
-) {
-    let token_src5 = ISRC5Dispatcher { contract_address: minigame_token_address };
-    if !token_src5.supports_interface(IMINIGAME_TOKEN_SETTINGS_ID) {
-        return;
-    }
-    let minigame_token_dispatcher = IMinigameTokenSettingsDispatcher {
-        contract_address: minigame_token_address,
-    };
-    minigame_token_dispatcher
-        .create_settings(game_address, creator_address, settings_id, settings_details);
-}
-// /// Asserts that a setting exists by checking the game contract
-// ///
-// /// # Arguments
-// /// * `game_contract` - Reference to the game contract implementing IMinigameSettings
-// /// * `settings_id` - The ID of the setting to check
-// pub fn assert_settings_exist(settings_id: u32) {
-//     let setting_exists = minigame_token_dispatcher.settings_exist(settings_id);
-//     if !setting_exists {
-//         panic!("Game: Setting ID {} does not exist", settings_id);
-//     }
-// }
+// A `create_settings` announcement lived here: it dispatched to the token's
+// settings surface so indexers saw a `SettingsCreated` event. That surface
+// belonged to the retired token generation and the standard token never had
+// one — the announcement already SRC5-probed and skipped for standard tokens,
+// so with the retired generation gone it could only ever skip. It is removed
+// rather than left as a call that does nothing.
+//
+// Nothing is lost functionally: the token side stored nothing, and the game
+// contract remains the source of truth for which settings exist
+// (`settings_exist` answers from the game). Indexers that consumed the
+// token-side event read it from the game's own `SettingsCreated` instead.
 
 

@@ -231,10 +231,8 @@ jobs:
           add() { INCLUDES=$(echo "$INCLUDES" | jq -c --arg p "$1" --arg m "$2" --arg r "$3" --argjson f "$4" '. + [{package:$p,module:$m,runner:$r,fuzzer_runs:$f}]'); }
 
           if [ "$NEED_EGS" = "true" ]; then
-            add game_components_embeddable_game_standard token_legacy ubuntu-latest-32 32
             add game_components_embeddable_game_standard minigame ubuntu-latest-8 32
             add game_components_embeddable_game_standard metagame ubuntu-latest-8 32
-            add game_components_embeddable_game_standard registry ubuntu-latest-8 32
             add game_components_embeddable_game_standard token ubuntu-latest-8 32
           fi
           if [ "$NEED_METAGAME" = "true" ]; then

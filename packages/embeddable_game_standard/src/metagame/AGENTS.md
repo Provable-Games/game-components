@@ -40,7 +40,7 @@ legacy callback receiver. The component now exposes internals only.
 | `mint_batch(mints: Array<MintMetagameParams>)` | Many tokens, **one call per token**; each entry may name a different game |
 | `mint_batch_recipients(game_address, ..., recipients, ..., metadata: u128)` | Many tokens for **ONE** game in a **single dispatch**, via the token's own batch entrypoint |
 | `assert_game_registered(game_address)` | Validate game registration |
-| `get_game_fee_info(game_address)` / `get_game_fee_recipient(...)` / `pay_game_fee(...)` | Resolve a game's fee terms and recipient, and pay them |
+| `get_game_fee_terms(game_address)` / `pay_game_fee(...)` | Resolve a game's rate, license and recipient in ONE call, and pay them |
 
 **Choosing between the batch calls:** if the batch shares a game — a tournament
 entry, say — use `mint_batch_recipients`. `mint_batch` costs one cross-contract
@@ -68,18 +68,6 @@ Optional tournament/event context management.
 | `IMetagameContextSVG` | `context_svg(token_id)` |
 
 **Interface ID**: `0x0c2e78065b81a310a1cb470d14a7b88875542ad05286b3263cf3c254082386e`
-
-### Callback (`extensions/callback/`)
-
-Automatic callbacks from token contracts on game state changes.
-
-| Interface | Methods |
-|-----------|---------|
-| `IMetagameCallback` | `on_game_action(token_id, score)` |
-| | `on_game_over(token_id, final_score)` |
-| | `on_objective_complete(token_id)` |
-
-**Interface ID**: `0x04d4f4758b99dcb4f1e2dc37c3a6e8c7a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6`
 
 ## Component Embedding
 
@@ -114,23 +102,22 @@ Metagame (self-bound: this contract)
   `-- per-mint: game_address ----> IMinigame.token_address() --> the game's token
 ```
 
-Both token generations are served, branched on SRC5: a token supporting
-`IMINIGAME_TOKEN_ID` is a self-bound standard token, otherwise it is treated as
-a legacy registry-backed token. This applies to `assert_game_registered`,
-`mint`/`mint_batch` and `get_game_fee_info`/`pay_game_fee`.
+There is one token generation. `assert_game_registered` is an address
+equality, and every mint path applies the same check before trusting a game's
+`token_address()` — a contract that merely implements it must not have a
+metagame mint on a token it does not own or pay its fee recipient.
 
 ## Initialization Requirements
 
 None — the component has no `initializer`. A metagame that provides context
-calls `ContextComponent::initializer()` on itself; a legacy callback receiver
-calls `MetagameCallbackComponent::initializer(token_address)`.
+calls `ContextComponent::initializer()` on itself.
 
-## Callback extension
+## Retired
 
-`MetagameCallbackComponent::initializer(token_address)` binds the LEGACY token
-allowed to call back. Callbacks fire from `update_game()`, which the standard
-self-bound token does not have — so the callback extension is legacy-only and
-owns its token binding rather than reading one off `MetagameComponent`.
+`MetagameCallbackComponent` was removed with the registry-backed generation.
+Callbacks fired from `update_game()`, which the token no longer has: there is
+no mutable token state to sync, so nothing calls back. To build against that
+generation, pin `v2.0.0` or earlier.
 
 ## MintMetagameParams
 

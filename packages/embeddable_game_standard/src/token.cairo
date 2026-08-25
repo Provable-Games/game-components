@@ -1,4 +1,5 @@
 pub mod interface;
+pub mod lifecycle;
 pub mod minigame_token_component;
 pub mod packing;
 

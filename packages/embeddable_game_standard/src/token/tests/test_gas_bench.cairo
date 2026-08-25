@@ -1,36 +1,28 @@
-// Gas benchmarks: MinigameTokenComponent (self-bound in the one-address
-// StandardGameMock — game and token are the same contract) vs the legacy
-// CoreTokenComponent in its deployed-denshokan configuration (multi-game
-// registry + all extensions).
+// Gas benchmarks: MinigameTokenComponent, self-bound in the one-address
+// StandardGameMock — game and token are the same contract.
 //
 // Method: paired tests. Each `*_baseline` test performs setup only; each op
 // test repeats the measured operation 10 times on top of the same setup.
 // Per-op cost = (op_test_l2_gas - baseline_l2_gas) / 10. Deployment noise
 // cancels out within a pair; snforge prints l2_gas per test.
 //
-// Caveats when reading the numbers:
-// * MockGame's `game_over()`/`score()` return from trivial storage. On a real
-//   game (e.g. death mountain) each callback re-runs full asset loading —
-//   measured on mainnet at ~1.56M L2 gas per callback — so the real
-//   `update_game` vs `refresh_metadata` gap is far larger than shown here.
-// * FullTokenContract does not include EnumerableComponent; the deployed
-//   denshokan does, adding two storage writes per mint and per transfer on
-//   top of the legacy-token numbers.
+// Caveat when reading the numbers: MockGame's `game_over()`/`score()` return
+// from trivial storage. On a real game (e.g. death mountain) each callback
+// re-runs full asset loading — measured on mainnet at ~1.56M L2 gas per
+// callback.
+//
+// These were paired against the registry-backed token in its
+// deployed-denshokan shape until that generation was retired. The comparison
+// is settled and recorded in docs/denshokan-lite-migration.md; what remains
+// measures the standard token against itself across releases.
 
 use game_components_test_common::mocks::standard_game_mock::{
     IStandardGameMockDispatcher, IStandardGameMockDispatcherTrait,
 };
-use openzeppelin_interfaces::erc721::{ERC721ABIDispatcher, ERC721ABIDispatcherTrait};
-use snforge_std::{
-    CheatSpan, ContractClassTrait, DeclareResultTrait, cheat_caller_address, declare,
-    start_cheat_block_timestamp,
-};
+use openzeppelin_interfaces::erc721::ERC721ABIDispatcher;
+use snforge_std::{ContractClassTrait, DeclareResultTrait, declare, start_cheat_block_timestamp};
 use starknet::ContractAddress;
-use crate::registry::interface::{IMinigameRegistryDispatcher, IMinigameRegistryDispatcherTrait};
 use crate::token::interface::{IMinigameTokenDispatcher, IMinigameTokenDispatcherTrait};
-use crate::token_legacy::interface::{
-    IMinigameTokenLegacyDispatcher, IMinigameTokenLegacyDispatcherTrait,
-};
 
 const START_TIME: u64 = 1000;
 const END_TIME: u64 = 100000;
@@ -81,66 +73,6 @@ fn setup_standard() -> (IMinigameTokenDispatcher, ERC721ABIDispatcher, ContractA
     )
 }
 
-/// Legacy token in the deployed-denshokan shape: multi-game registry with the
-/// mock game registered, all optional extensions compiled in.
-fn setup_legacy() -> (IMinigameTokenLegacyDispatcher, ERC721ABIDispatcher, ContractAddress) {
-    let game = deploy_mock_game();
-
-    let registry_class = declare("MinigameRegistryContract").unwrap().contract_class();
-    let mut registry_calldata: Array<felt252> = array![];
-    let reg_name: ByteArray = "GameCreatorToken";
-    let reg_symbol: ByteArray = "GCT";
-    let reg_base_uri: ByteArray = "";
-    reg_name.serialize(ref registry_calldata);
-    reg_symbol.serialize(ref registry_calldata);
-    reg_base_uri.serialize(ref registry_calldata);
-    registry_calldata.append(1); // event_relayer_address: None
-    let (registry_address, _) = registry_class.deploy(@registry_calldata).unwrap();
-
-    // register_game records the caller as the game contract
-    let registry = IMinigameRegistryDispatcher { contract_address: registry_address };
-    cheat_caller_address(registry_address, game, CheatSpan::TargetCalls(1));
-    registry
-        .register_game(
-            OWNER(),
-            "MockGame",
-            "d",
-            "dev",
-            "pub",
-            "genre",
-            "img",
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            1,
-            Option::None,
-            Option::None,
-        );
-
-    let token_class = declare("FullTokenContract").unwrap().contract_class();
-    let mut token_calldata: Array<felt252> = array![];
-    let name: ByteArray = "FullToken";
-    let symbol: ByteArray = "FULL";
-    let base_uri: ByteArray = "https://full.test/";
-    name.serialize(ref token_calldata);
-    symbol.serialize(ref token_calldata);
-    base_uri.serialize(ref token_calldata);
-    OWNER().serialize(ref token_calldata);
-    OWNER().serialize(ref token_calldata); // royalty receiver
-    let royalty_fraction: u128 = 500;
-    royalty_fraction.serialize(ref token_calldata);
-    token_calldata.append(0); // game_registry_address: Some
-    registry_address.serialize(ref token_calldata);
-    let (token_address, _) = token_class.deploy(@token_calldata).unwrap();
-    start_cheat_block_timestamp(token_address, START_TIME);
-    (
-        IMinigameTokenLegacyDispatcher { contract_address: token_address },
-        ERC721ABIDispatcher { contract_address: token_address },
-        game,
-    )
-}
 
 fn mint_standard(token: IMinigameTokenDispatcher, _game: ContractAddress, salt: u16) -> felt252 {
     // Standard mint — no game address (self-bound); the restored legacy-token
@@ -163,26 +95,6 @@ fn mint_standard(token: IMinigameTokenDispatcher, _game: ContractAddress, salt: 
         )
 }
 
-fn mint_legacy(token: IMinigameTokenLegacyDispatcher, game: ContractAddress, salt: u16) -> felt252 {
-    token
-        .mint(
-            game,
-            Option::Some('bench'),
-            Option::None,
-            Option::Some(START_TIME),
-            Option::Some(END_TIME),
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            ALICE(),
-            false,
-            false,
-            salt,
-            0,
-        )
-}
 
 // ================================================================================================
 // BASELINES (setup only)
@@ -193,10 +105,6 @@ fn bench_standard_deploy_baseline() {
     let (_, _, _) = setup_standard();
 }
 
-#[test]
-fn bench_legacy_deploy_baseline() {
-    let (_, _, _) = setup_legacy();
-}
 
 // ================================================================================================
 // MINT — first mint (x1, cold minter registration) and x10 (9 warm mints)
@@ -208,11 +116,6 @@ fn bench_standard_mint_x1() {
     mint_standard(token, game, 0);
 }
 
-#[test]
-fn bench_legacy_mint_x1() {
-    let (token, _, game) = setup_legacy();
-    mint_legacy(token, game, 0);
-}
 
 #[test]
 fn bench_standard_mint_x10() {
@@ -224,15 +127,6 @@ fn bench_standard_mint_x10() {
     }
 }
 
-#[test]
-fn bench_legacy_mint_x10() {
-    let (token, _, game) = setup_legacy();
-    let mut salt: u16 = 0;
-    while salt < 10 {
-        mint_legacy(token, game, salt);
-        salt += 1;
-    }
-}
 
 // ================================================================================================
 // PER-ACTION GUARD — full: owner_of + assert_is_playable (2 calls, as
@@ -253,18 +147,6 @@ fn bench_standard_guard_x10() {
     }
 }
 
-#[test]
-fn bench_legacy_guard_x10() {
-    let (token, erc721, game) = setup_legacy();
-    let token_id = mint_legacy(token, game, 0);
-    let mut i: u32 = 0;
-    while i < 10 {
-        let owner = erc721.owner_of(token_id.into());
-        assert!(owner == ALICE(), "owner check");
-        token.assert_is_playable(token_id);
-        i += 1;
-    }
-}
 
 // ================================================================================================
 // POST-ACTION — full: update_game (SRC5 + registry resolve + game_over +
@@ -282,13 +164,3 @@ fn bench_standard_post_action_x10() {
     }
 }
 
-#[test]
-fn bench_legacy_post_action_x10() {
-    let (token, _, game) = setup_legacy();
-    let token_id = mint_legacy(token, game, 0);
-    let mut i: u32 = 0;
-    while i < 10 {
-        token.update_game(token_id);
-        i += 1;
-    }
-}

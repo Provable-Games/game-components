@@ -38,9 +38,6 @@ pub mod StandardGameMock {
     use game_components_embeddable_game_standard::metagame::extensions::context::structs::GameContextDetails;
     use game_components_embeddable_game_standard::minigame::extensions::settings::interface::IMinigameSettings;
     use game_components_embeddable_game_standard::minigame::extensions::settings::settings::SettingsComponent;
-    use game_components_embeddable_game_standard::minigame::extensions::settings::structs::{
-        GameSetting, GameSettingDetails,
-    };
     use game_components_embeddable_game_standard::minigame::interface::{
         IMINIGAME_ID, IMinigame, IMinigameTokenData,
     };
@@ -355,21 +352,10 @@ pub mod StandardGameMock {
                 .entry(new_settings_id)
                 .write((name.clone(), description.clone(), true));
             self.settings_count.write(new_settings_id);
-
-            let settings = array![GameSetting { name: 'Difficulty', value: difficulty.into() }];
-
-            // Announce to the token — i.e. this contract. The SRC5 guard in
-            // the settings lib finds no IMINIGAME_TOKEN_SETTINGS_ID surface on
-            // the standard token and silently skips, mirroring minigame_mock's
-            // flow against a standard-token deployment.
-            self
-                .settings
-                .create_settings(
-                    get_contract_address(),
-                    new_settings_id,
-                    GameSettingDetails { name, description, settings: settings.span() },
-                    get_contract_address(),
-                );
+            // The game is the source of truth for which settings exist, and
+        // answers `settings_exist` from the storage written above. There is
+        // no longer a token-side announcement: that surface belonged to the
+        // retired token generation, and the standard token never had one.
         }
     }
 }

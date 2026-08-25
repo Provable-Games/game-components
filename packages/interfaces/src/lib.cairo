@@ -5,7 +5,7 @@
 pub mod structs;
 pub use structs::{
     leaderboard as leaderboard_structs, metagame as metagame_structs, minigame as minigame_structs,
-    registry as registry_structs, token as token_structs,
+    token as token_structs,
 };
 
 // Budokan-extracted interfaces
@@ -20,7 +20,6 @@ pub mod metagame;
 pub mod minigame;
 pub mod prize;
 pub mod registration;
-pub mod registry;
 pub mod token;
 pub mod tokenomics;
 
@@ -55,8 +54,7 @@ pub use leaderboard::{
 // Re-export commonly used items at top level for convenience
 // Metagame
 pub use metagame::{
-    IMETAGAME_CALLBACK_ID, IMETAGAME_CONTEXT_ID, IMetagameCallback, IMetagameCallbackDispatcher,
-    IMetagameCallbackDispatcherTrait, IMetagameContext, IMetagameContextDetails,
+    IMETAGAME_CONTEXT_ID, IMetagameContext, IMetagameContextDetails,
     IMetagameContextDetailsDispatcher, IMetagameContextDetailsDispatcherTrait,
     IMetagameContextDispatcher, IMetagameContextDispatcherTrait, IMetagameContextSVG,
     IMetagameContextSVGDispatcher, IMetagameContextSVGDispatcherTrait,
@@ -90,32 +88,21 @@ pub use registration::{
     IRegistration, IRegistrationDispatcher, IRegistrationDispatcherTrait, Registration,
 };
 
-// Registry
-pub use registry::{
-    DEFAULT_GAME_FEE_BPS, FEE_DENOMINATOR, IMINIGAME_REGISTRY_ID, IMinigameRegistry,
-    IMinigameRegistryDispatcher, IMinigameRegistryDispatcherTrait, default_license,
-};
-
 // Structs
 pub use structs::{
-    GameContext, GameContextDetails, GameDetail, GameFeeInfo, GameFeeTerms, GameMetadata,
-    GameObjective, GameObjectiveDetails, GameSetting, GameSettingDetails, LeaderboardConfig,
-    LeaderboardEntry, LeaderboardResult, LeaderboardStoreConfig, Lifecycle, MintBatchRecipient,
-    MintGameParams, MintParams, PlayerNameUpdate, TokenMetadata,
+    GameContext, GameContextDetails, GameDetail, GameFeeTerms, GameMetadata, GameObjective,
+    GameObjectiveDetails, GameSetting, GameSettingDetails, LeaderboardConfig, LeaderboardEntry,
+    LeaderboardResult, LeaderboardStoreConfig, Lifecycle, MintBatchRecipient, MintGameParams,
+    MintParams, PlayerNameUpdate, TokenMetadata,
 };
 
 // Token
 pub use token::{
-    IMINIGAME_TOKEN_CONTEXT_ID, IMINIGAME_TOKEN_GAME_FEE_ID, IMINIGAME_TOKEN_ID,
-    IMINIGAME_TOKEN_LEGACY_ID, IMINIGAME_TOKEN_MINTER_ID, IMINIGAME_TOKEN_OBJECTIVES_ID,
-    IMINIGAME_TOKEN_RENDERER_ID, IMINIGAME_TOKEN_SETTINGS_ID, IMinigameToken,
-    IMinigameTokenDispatcher, IMinigameTokenDispatcherTrait, IMinigameTokenGameFee,
-    IMinigameTokenGameFeeDispatcher, IMinigameTokenGameFeeDispatcherTrait, IMinigameTokenLegacy,
-    IMinigameTokenLegacyDispatcher, IMinigameTokenLegacyDispatcherTrait, IMinigameTokenMinter,
-    IMinigameTokenMinterDispatcher, IMinigameTokenMinterDispatcherTrait, IMinigameTokenObjectives,
-    IMinigameTokenObjectivesDispatcher, IMinigameTokenObjectivesDispatcherTrait,
-    IMinigameTokenRenderer, IMinigameTokenRendererDispatcher, IMinigameTokenRendererDispatcherTrait,
-    IMinigameTokenSettings, IMinigameTokenSettingsDispatcher, IMinigameTokenSettingsDispatcherTrait,
+    DEFAULT_GAME_FEE_BPS, FEE_DENOMINATOR, IMINIGAME_TOKEN_GAME_FEE_ID, IMINIGAME_TOKEN_ID,
+    IMINIGAME_TOKEN_MINTER_ID, IMinigameToken, IMinigameTokenDispatcher,
+    IMinigameTokenDispatcherTrait, IMinigameTokenGameFee, IMinigameTokenGameFeeDispatcher,
+    IMinigameTokenGameFeeDispatcherTrait, IMinigameTokenMinter, IMinigameTokenMinterDispatcher,
+    IMinigameTokenMinterDispatcherTrait, default_license,
 };
 
 // Tokenomics (existing)

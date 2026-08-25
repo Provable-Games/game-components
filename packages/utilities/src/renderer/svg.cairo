@@ -4,8 +4,8 @@ use core::num::traits::Zero;
 use game_components_embeddable_game_standard::metagame::extensions::context::structs::GameContextDetails;
 use game_components_embeddable_game_standard::minigame::extensions::objectives::structs::GameObjectiveDetails;
 use game_components_embeddable_game_standard::minigame::extensions::settings::structs::GameSettingDetails;
-use game_components_embeddable_game_standard::registry::interface::GameMetadata;
-use game_components_embeddable_game_standard::token_legacy::structs::TokenMetadata;
+use game_components_interfaces::structs::minigame::GameMetadata;
+use game_components_interfaces::structs::token::TokenMetadata;
 use starknet::get_block_timestamp;
 use crate::utils::encoding::felt252_to_byte_array;
 
@@ -898,8 +898,8 @@ mod tests {
     use game_components_embeddable_game_standard::minigame::extensions::settings::structs::{
         GameSetting, GameSettingDetails,
     };
-    use game_components_embeddable_game_standard::registry::interface::GameMetadata;
-    use game_components_embeddable_game_standard::token_legacy::structs::{Lifecycle, TokenMetadata};
+    use game_components_interfaces::structs::minigame::GameMetadata;
+    use game_components_interfaces::structs::token::{Lifecycle, TokenMetadata};
     use snforge_std::{start_cheat_block_timestamp_global, stop_cheat_block_timestamp_global};
     use super::{
         calculate_timeline_progress, create_default_svg, timestamp_to_datetime,

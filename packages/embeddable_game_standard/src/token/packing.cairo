@@ -60,9 +60,15 @@
 //   Full unpack: 3 u128 + 6 u64 DivRems (was 10 u128 DivRems).
 
 use game_components_interfaces::structs::token::{Lifecycle, TokenMetadata};
-// Shared with the legacy token: extracting the last 10 bits of the tx hash is
-// layout-independent.
-pub use crate::token_legacy::structs::extract_tx_hash_bits;
+
+/// Last 10 bits of a transaction hash, for the id's collision-protection
+/// field. Layout-independent — it was shared with the legacy token before that
+/// generation was retired.
+#[inline(always)]
+pub fn extract_tx_hash_bits(tx_hash: felt252) -> u16 {
+    let hash_u256: u256 = tx_hash.into();
+    (hash_u256 & 0x3FF_u256).try_into().unwrap()
+}
 
 /// Data structure representing the packed token ID fields (for convenience).
 #[derive(Copy, Drop, Serde)]

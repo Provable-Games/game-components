@@ -3,7 +3,6 @@
 pub mod leaderboard;
 pub mod metagame;
 pub mod minigame;
-pub mod registry;
 pub mod token;
 pub use leaderboard::{
     LeaderboardConfig, LeaderboardEntry, LeaderboardResult, LeaderboardStoreConfig,
@@ -12,10 +11,9 @@ pub use leaderboard::{
 // Re-export commonly used structs at top level
 pub use metagame::{GameContext, GameContextDetails};
 pub use minigame::{
-    GameDetail, GameObjective, GameObjectiveDetails, GameSetting, GameSettingDetails,
+    GameDetail, GameMetadata, GameObjective, GameObjectiveDetails, GameSetting, GameSettingDetails,
     MintGameParams,
 };
-pub use registry::{GameFeeInfo, GameMetadata};
 pub use token::{
     GameFeeTerms, Lifecycle, MintBatchRecipient, MintParams, PlayerNameUpdate, TokenFullState,
     TokenMetadata, TokenMutableState,

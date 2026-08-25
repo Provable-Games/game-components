@@ -4,9 +4,7 @@
 // Tests for the calculate_game_fee pure function in the metagame library.
 
 use game_components_embeddable_game_standard::metagame::metagame::calculate_game_fee;
-use game_components_embeddable_game_standard::registry::interface::{
-    DEFAULT_GAME_FEE_BPS, FEE_DENOMINATOR,
-};
+use game_components_interfaces::token::game_fee::{DEFAULT_GAME_FEE_BPS, FEE_DENOMINATOR};
 
 // ==============================================================================
 // BASIC CALCULATION
