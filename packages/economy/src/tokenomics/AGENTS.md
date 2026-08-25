@@ -33,6 +33,7 @@ Permissionless buyback execution using Ekubo TWAMM DCA orders.
 |----------|-------------|
 | `set_global_config(config)` | Update global defaults |
 | `set_token_config(sell_token, config)` | Set/clear per-token config |
+| `set_require_token_config(required)` | Strict mode: when true, tokens without an explicit per-token config revert (`'No config for token'`) instead of falling back to global defaults. Default false (historic behavior). Sweep is unaffected |
 
 ### Structs
 
