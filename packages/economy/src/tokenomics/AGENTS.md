@@ -19,7 +19,7 @@ Permissionless buyback execution using Ekubo TWAMM DCA orders.
 
 | Function | Description |
 |----------|-------------|
-| `buy_back(params: BuybackParams)` | Execute buyback with full contract balance. End times are deliberately NOT ordered against earlier orders (an ordering invariant was tried and reverted: with `max_delay = 0` it let one far-scheduled permissionless order pin every future `buy_back`) |
+| `buy_back(params: BuybackParams)` | Execute buyback with full contract balance. End times are deliberately NOT ordered against earlier orders (an ordering invariant was tried and reverted as a DoS). `start_time - now` is capped by the component-level `MAX_SCHEDULE_HORIZON` (30 days) REGARDLESS of `max_delay` — `max_delay = 0` means no *configured* limit, not no limit. The resolved config is re-validated against the global envelope on every call (`'Config exceeds global bounds'`) |
 | `claim_buyback_proceeds(sell_token, limit)` | Claim completed orders to treasury. SKIPS unfinished orders (out-of-order end times cannot strand later matured ones); the bookmark advances only across the contiguous claimed prefix, and revisited drained orders re-withdraw 0 (Ekubo idempotency). Pays the CURRENT config's treasury — a treasury change redirects in-flight proceeds (fine under a timelock owner; sharp otherwise) |
 | `sweep_buy_token_to_treasury()` | Transfer accumulated buy tokens to treasury |
 | `get_global_config()` | Global configuration defaults |
@@ -31,8 +31,8 @@ Permissionless buyback execution using Ekubo TWAMM DCA orders.
 
 | Function | Description |
 |----------|-------------|
-| `set_global_config(config)` | Update global defaults. The global config is also a BOUND (see below); tightening it later does NOT re-check stored per-token configs |
-| `set_token_config(sell_token, config)` | Set/clear per-token config. Per-token policy must refine WITHIN the global envelope: `min_duration`/`min_delay` may only rise, `max_duration`/`max_delay` may only tighten (a per-token 0 ceiling is legal only when the global ceiling is 0). `fee` and `minimum_amount` are free. Reverts `'Config exceeds global bounds'` — without this, strict mode would make the global policy fields decorative |
+| `set_global_config(config)` | Update global defaults. The global config is also a BOUND (see below); tightening it binds existing per-token configs at their next `buy_back` (which reverts until the owner re-sets them) — claims stay live regardless |
+| `set_token_config(sell_token, config)` | Set/clear per-token config. Per-token policy must refine WITHIN the global envelope: `min_duration`/`min_delay` may only rise, `max_duration`/`max_delay` may only tighten (a per-token 0 ceiling is legal only when the global ceiling is 0). `fee` and `minimum_amount` are free. Reverts `'Config exceeds global bounds'`; the same check re-runs at `buy_back` time, so the bound holds at runtime, not only at set time |
 | `set_require_token_config(required)` | Strict mode: when true, tokens without an explicit per-token config revert (`'No config for token'`) instead of falling back to global defaults. Default false (historic behavior). Sweep is unaffected |
 
 ### Structs

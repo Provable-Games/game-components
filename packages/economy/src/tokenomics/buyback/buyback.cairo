@@ -29,7 +29,7 @@ pub mod BuybackComponent {
         StoragePointerWriteAccess,
     };
     use starknet::{ContractAddress, get_block_timestamp, get_contract_address};
-    use crate::tokenomics::constants::Errors;
+    use crate::tokenomics::constants::{Errors, MAX_SCHEDULE_HORIZON};
 
     /// Storage for the Buyback component
     /// All storage keys are prefixed with `Buyback_` to avoid collisions
@@ -167,6 +167,29 @@ pub mod BuybackComponent {
             if start_time > current_time && config.max_delay > 0 {
                 assert(start_time - current_time <= config.max_delay, Errors::DELAY_TOO_LONG);
             }
+
+            // Component-level scheduling horizon, enforced REGARDLESS of
+            // max_delay (max_delay = 0 = "no CONFIGURED limit" — not "no
+            // limit"). An unbounded start_time is the root cause behind two
+            // permissionless-DoS shapes: it killed the creation-ordering
+            // invariant (one far-scheduled order pinning all future
+            // buy_backs), and it is what let the claim bookmark be pinned
+            // arbitrarily long. The horizon bounds both at the source.
+            if start_time > current_time {
+                assert(
+                    start_time - current_time <= MAX_SCHEDULE_HORIZON, Errors::START_BEYOND_HORIZON,
+                );
+            }
+
+            // The global config is a RUNTIME bound, not only a
+            // set_token_config-time one: re-validating the resolved config
+            // here means tightening the global envelope binds existing
+            // per-token configs immediately (buy_back reverts loudly until
+            // the owner re-sets them) instead of leaving stale-config trades
+            // as owner homework. The global-fallback config trivially
+            // satisfies its own envelope. Claims deliberately do NOT
+            // validate — the payout path must stay live under any config.
+            self._assert_config_within_global(@config);
 
             // === End Time Validation ===
             let actual_start = max(current_time, start_time);
@@ -584,6 +607,34 @@ pub mod BuybackComponent {
 
         /// Get the effective configuration for a sell token
         /// Returns the per-token config if set, otherwise builds from global defaults
+        /// Assert a resolved/candidate config sits WITHIN the global
+        /// envelope: floors may only rise, ceilings only tighten; a 0 ceiling
+        /// ("no maximum") is allowed only when the global ceiling is also 0.
+        /// fee, minimum_amount, buy_token and treasury are not constrained.
+        /// Called from set_token_config (candidate) and buy_back (resolved) —
+        /// NOT from claims, which must stay live under any config.
+        fn _assert_config_within_global(
+            self: @ComponentState<TContractState>, config: @TokenBuybackConfig,
+        ) {
+            let g = self.Buyback_global_config.read();
+            assert(
+                *config.min_duration >= g.default_min_duration, Errors::TOKEN_CONFIG_EXCEEDS_GLOBAL,
+            );
+            if g.default_max_duration > 0 {
+                assert(
+                    *config.max_duration != 0 && *config.max_duration <= g.default_max_duration,
+                    Errors::TOKEN_CONFIG_EXCEEDS_GLOBAL,
+                );
+            }
+            assert(*config.min_delay >= g.default_min_delay, Errors::TOKEN_CONFIG_EXCEEDS_GLOBAL);
+            if g.default_max_delay > 0 {
+                assert(
+                    *config.max_delay != 0 && *config.max_delay <= g.default_max_delay,
+                    Errors::TOKEN_CONFIG_EXCEEDS_GLOBAL,
+                );
+            }
+        }
+
         fn _get_effective_config(
             self: @ComponentState<TContractState>, sell_token: ContractAddress,
         ) -> TokenBuybackConfig {
@@ -663,26 +714,10 @@ pub mod BuybackComponent {
                 // any per-token config could undercut the configured bounds.
                 // fee and minimum_amount stay free — a different pool may
                 // legitimately sit at a different tier.
-                // NOTE: tightening the GLOBAL config later does not re-check
-                // per-token configs already stored; that remains the owner's
-                // responsibility.
-                let g = self.Buyback_global_config.read();
-                assert(
-                    c.min_duration >= g.default_min_duration, Errors::TOKEN_CONFIG_EXCEEDS_GLOBAL,
-                );
-                if g.default_max_duration > 0 {
-                    assert(
-                        c.max_duration != 0 && c.max_duration <= g.default_max_duration,
-                        Errors::TOKEN_CONFIG_EXCEEDS_GLOBAL,
-                    );
-                }
-                assert(c.min_delay >= g.default_min_delay, Errors::TOKEN_CONFIG_EXCEEDS_GLOBAL);
-                if g.default_max_delay > 0 {
-                    assert(
-                        c.max_delay != 0 && c.max_delay <= g.default_max_delay,
-                        Errors::TOKEN_CONFIG_EXCEEDS_GLOBAL,
-                    );
-                }
+                // The same check runs again at buy_back time against the
+                // resolved config, so tightening the GLOBAL later binds
+                // existing per-token configs at the next trade.
+                self._assert_config_within_global(@c);
             }
 
             let old_config = self.Buyback_token_config.read(sell_token);

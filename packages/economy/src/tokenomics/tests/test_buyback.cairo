@@ -2,6 +2,7 @@
 ///
 /// These tests verify the component's behavior in isolation using mock contracts
 /// and direct component state testing where possible.
+use game_components_economy::tokenomics::constants::MAX_SCHEDULE_HORIZON;
 use game_components_economy::tokenomics::{
     BuybackParams, IBuybackAdminDispatcher, IBuybackAdminDispatcherTrait, IBuybackDispatcher,
     IBuybackDispatcherTrait, TokenBuybackConfig,
@@ -1868,4 +1869,122 @@ fn test_token_config_within_global_envelope_accepted() {
     let stored = dispatcher.get_token_config(sell_token).unwrap();
     assert(stored.min_duration == defaults::MIN_DURATION + 100, 'min_duration mismatch');
     assert(stored.max_duration == defaults::MAX_DURATION - 100, 'max_duration mismatch');
+}
+
+// ============================================================================
+// Scheduling horizon (component ceiling, independent of max_delay)
+// ============================================================================
+
+/// max_delay = 0 means "no CONFIGURED limit", not "no limit": the component
+/// horizon still bounds start_time. An unbounded start is the root cause of
+/// two permissionless-DoS shapes (the reverted ordering invariant, and
+/// pinning the claim bookmark arbitrarily long).
+#[test]
+#[should_panic(expected: ('Start beyond schedule horizon', 'ENTRYPOINT_FAILED'))]
+fn test_buy_back_rejects_start_beyond_horizon_even_with_no_max_delay() {
+    let buyback_token = deploy_mock_erc20("Buyback", "BUY");
+    let sell_token = deploy_mock_erc20("Sell", "SELL");
+    let contract = setup_buyback_with_token_config(buyback_token, sell_token);
+    let dispatcher = IBuybackDispatcher { contract_address: contract };
+    let mock_erc20 = IMockERC20Dispatcher { contract_address: sell_token };
+
+    mock_erc20.mint(contract, amounts::THOUSAND_TOKENS);
+    start_cheat_block_timestamp_global(1000);
+
+    let start = 1000 + MAX_SCHEDULE_HORIZON + 1;
+    dispatcher
+        .buy_back(
+            BuybackParams {
+                sell_token, start_time: start, end_time: start + defaults::MIN_DURATION,
+            },
+        );
+}
+
+#[test]
+fn test_buy_back_accepts_start_within_horizon() {
+    let buyback_token = deploy_mock_erc20("Buyback", "BUY");
+    let sell_token = deploy_mock_erc20("Sell", "SELL");
+    let contract = setup_buyback_with_token_config(buyback_token, sell_token);
+    let dispatcher = IBuybackDispatcher { contract_address: contract };
+    let mock_erc20 = IMockERC20Dispatcher { contract_address: sell_token };
+    let mock_positions: ContractAddress = 'POSITIONS'.try_into().unwrap();
+
+    mock_erc20.mint(contract, amounts::THOUSAND_TOKENS);
+    start_cheat_block_timestamp_global(1000);
+    mock_call(mock_positions, selector!("mint_and_increase_sell_amount"), (1_u64, 100_u128), 1);
+
+    let start = 1000 + MAX_SCHEDULE_HORIZON;
+    dispatcher
+        .buy_back(
+            BuybackParams {
+                sell_token, start_time: start, end_time: start + defaults::MIN_DURATION,
+            },
+        );
+    assert(dispatcher.get_order_count(sell_token) == 1, 'Order should be created');
+}
+
+// ============================================================================
+// Global envelope enforced at RUNTIME (buy_back), never at claims
+// ============================================================================
+
+/// Tightening the global envelope binds existing per-token configs at the
+/// next trade — buy_back reverts loudly until the owner re-sets them.
+#[test]
+#[should_panic(expected: ('Config exceeds global bounds', 'ENTRYPOINT_FAILED'))]
+fn test_tightened_global_binds_existing_token_config_at_buy_back() {
+    let buyback_token = deploy_mock_erc20("Buyback", "BUY");
+    let sell_token = deploy_mock_erc20("Sell", "SELL");
+    let contract = setup_buyback_with_token_config(buyback_token, sell_token);
+    let dispatcher = IBuybackDispatcher { contract_address: contract };
+    let admin_dispatcher = IBuybackAdminDispatcher { contract_address: contract };
+    let mock_erc20 = IMockERC20Dispatcher { contract_address: sell_token };
+
+    // Tighten the global floor ABOVE the stored per-token min_duration
+    let mut tightened = defaults::global_config_with(buyback_token, TREASURY());
+    tightened.default_min_duration = defaults::MIN_DURATION + 1;
+    start_cheat_caller_address(contract, OWNER());
+    admin_dispatcher.set_global_config(tightened);
+    stop_cheat_caller_address(contract);
+
+    mock_erc20.mint(contract, amounts::THOUSAND_TOKENS);
+    start_cheat_block_timestamp_global(1000);
+    dispatcher
+        .buy_back(
+            BuybackParams {
+                sell_token, start_time: 0, end_time: 1000 + defaults::MIN_DURATION + 1,
+            },
+        );
+}
+
+/// Claims deliberately do NOT validate the envelope: the payout path stays
+/// live even when the config was tightened out from under existing orders.
+#[test]
+fn test_claims_stay_live_when_config_out_of_envelope() {
+    let buyback_token = deploy_mock_erc20("Buyback", "BUY");
+    let sell_token = deploy_mock_erc20("Sell", "SELL");
+    let contract = setup_buyback_with_token_config(buyback_token, sell_token);
+    let dispatcher = IBuybackDispatcher { contract_address: contract };
+    let admin_dispatcher = IBuybackAdminDispatcher { contract_address: contract };
+    let mock_erc20 = IMockERC20Dispatcher { contract_address: sell_token };
+    let mock_positions: ContractAddress = 'POSITIONS'.try_into().unwrap();
+
+    // Order created while the config is within the envelope
+    mock_erc20.mint(contract, amounts::THOUSAND_TOKENS);
+    start_cheat_block_timestamp_global(1000);
+    mock_call(mock_positions, selector!("mint_and_increase_sell_amount"), (1_u64, 100_u128), 1);
+    let end = 1000 + defaults::MIN_DURATION;
+    dispatcher.buy_back(BuybackParams { sell_token, start_time: 0, end_time: end });
+
+    // Global tightened AFTER creation — per-token config now out of envelope
+    let mut tightened = defaults::global_config_with(buyback_token, TREASURY());
+    tightened.default_min_duration = defaults::MIN_DURATION + 1;
+    start_cheat_caller_address(contract, OWNER());
+    admin_dispatcher.set_global_config(tightened);
+    stop_cheat_caller_address(contract);
+
+    // Claim still succeeds
+    start_cheat_block_timestamp_global(end + 1);
+    mock_call(mock_positions, selector!("withdraw_proceeds_from_sale_to"), 500_u128, 1);
+    let proceeds = dispatcher.claim_buyback_proceeds(sell_token, 0);
+    assert(proceeds == 500, 'Claim must stay live');
 }
