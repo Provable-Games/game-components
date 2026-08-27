@@ -38,13 +38,8 @@ pub trait Store<T> {
     /// Returns 0 (= not registered for THIS context, no flags set) for unknown pairs.
     fn get_token_state_raw(self: @T, context_id: u64, token_id: felt252) -> felt252;
     fn set_token_state_raw(ref self: T, context_id: u64, token_id: felt252, state: felt252);
-    /// Best-effort reverse index, `token_id -> context_id`. See
-    /// `registration_component.cairo` for why this one CANNOT be exact and
-    /// must never be used to authorize anything.
-    /// Raw slot value: a `context_id` widened to felt252, 0 for "never seen",
-    /// or `AMBIGUOUS_CONTEXT` (2^64, outside the u64 range so no real context
-    /// can collide with it). Consumers should read the component's
-    /// `_get_token_last_context`, which maps the sentinel back to 0.
+    /// Packed `LastContext` for the display-only reverse index. Read it via
+    /// the component's `_get_token_last_context`; never authorize against it.
     fn get_token_last_context(self: @T, token_id: felt252) -> felt252;
-    fn set_token_last_context(ref self: T, token_id: felt252, context_id: felt252);
+    fn set_token_last_context(ref self: T, token_id: felt252, packed: felt252);
 }

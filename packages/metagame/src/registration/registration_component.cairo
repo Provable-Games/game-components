@@ -2,85 +2,38 @@
 
 /// RegistrationComponent handles registration storage and logic for any context.
 /// Entries are keyed by (context_id, entry_id) for direct enumeration.
-/// Per-token state (context_id + has_submitted + is_banned) lives in a single
-/// packed felt252 keyed by token_id, giving consumers O(1) state access from a
-/// token without intermediate lookups.
 ///
 /// Storage layout:
 ///   - Registration_token_ids: (context_id, entry_id) -> felt252  (game token ID)
 ///   - Registration_entry_counts: context_id -> u32  (next entry_id is count + 1)
-///   - Registration_token_state: (context_id, token_id) -> packed felt252
-///       bits  0..63: context_id (u64) — 0 means "not registered HERE"
-///       bit   64:    has_submitted
-///       bit   65:    is_banned
-///   - Registration_token_last_context: token_id -> context_id as felt252
-///     (display only; 0 = never seen, 2^64 = ambiguous)
+///   - Registration_token_state: (context_id, token_id) -> packed TokenState
+///   - Registration_token_last_context: token_id -> packed LastContext
+///     (display only)
 ///
-/// Conventions:
-///   - context_id is expected to be >= 1. `_get_token_context` treats 0 as
-///     "not registered", so a caller using context_id == 0 cannot
-///     distinguish a real context-zero registration from an unknown
-///     token via the reverse index. entry_id is always >= 1 by
-///     construction (see `increment_entry_count`).
+/// See structs.cairo for both packed layouts.
 ///
-/// # Token ids are only unique within one game
+/// context_id is expected to be >= 1: `_get_token_context` treats 0 as "not
+/// registered". entry_id is always >= 1 by construction.
 ///
-/// Token state is keyed by the PAIR `(context_id, token_id)`, because a token
-/// id is unique only within the contract that minted it -- identity is
-/// `(game, id)`, never `id` alone. Keying on `token_id` was safe only while
-/// every entry came from a single shared token contract.
+/// Token state is keyed by the PAIR (context_id, token_id) because a token id
+/// is unique only within the contract that minted it — identity is (game, id),
+/// never id alone. Keying on token_id was safe only while every entry came
+/// from one shared token contract.
 ///
-/// Ids are packed felts, not counters, so two games do not collide by default:
-/// a collision needs two ids that pack byte-identically. Reachable by accident
-/// (one multicall minting into two games with the same params and salt in one
-/// block) and, more to the point, on purpose -- an attacker controls their own
-/// game contract and every packed field except `minted_at`, a block timestamp
-/// they need only match to the second.
+/// UPGRADE HAZARD: that re-keying moved every slot, and there is no migration.
+/// A class upgraded in place over storage written by v2.1.1 or earlier reads
+/// the new keys, finds them empty, and strands every existing entry. Deploy
+/// fresh. Cairo cannot make the contract refuse, so this note is the only
+/// guard. How it surfaces depends on the consumer: one that gates on
+/// `get_token_context(ctx, id) == ctx` before trusting the flags fails CLOSED
+/// (entries locked out of submitting); one that reads `is_token_banned`
+/// without proving registration fails OPEN (a banned token reads clean).
+/// Neither is visible at upgrade time.
 ///
-/// `set_entry` wrote the state slot unconditionally, so the later registration
-/// overwrote the earlier token's context and cleared its flags, locking that
-/// player out of the context they had registered and paid for. A targeted
-/// grief, for the price of one entry on a game the attacker controls.
-///
-/// # UPGRADE HAZARD: this layout is not backward compatible
-///
-/// Re-keying `Registration_token_state` moved every slot. A class upgraded in
-/// place over storage written by v2.1.1 or earlier (both ship the old
-/// `Map<felt252, felt252>`) reads the NEW keys, which are empty, and old
-/// entries become unreachable rather than migrated. **Deploy fresh; do not
-/// upgrade an existing deployment across this change.**
-///
-/// There is deliberately no migration path. A lazy dual-map backfill is
-/// permanent complexity for a transition nobody intends to make -- Budokan v2
-/// is a fresh deployment with a hard cutover -- and code that never runs is
-/// never exercised. Cairo offers no way to make the contract refuse to run
-/// against populated storage, so this comment is the only instrument
-/// available; if a migration is ever actually wanted, write it deliberately
-/// rather than discovering the need in production.
-///
-/// What the failure looks like matters, because it differs by consumer:
-///
-/// - At THIS component's surface, the flags read clean:
-///   `get_token_context` returns 0, `is_token_submitted` and `is_token_banned`
-///   return false, for every pre-existing entry.
-/// - A consumer that gates on `get_token_context(ctx, id) == ctx` before
-///   trusting the flags -- as Budokan does on both its submit and ban paths --
-///   fails CLOSED. The context check reverts first, so the cleared ban is
-///   unreachable, and the real damage is that every pre-existing entry is
-///   locked out of submitting. Loud at the point of use, silent at upgrade.
-/// - A consumer that reads `is_token_banned` WITHOUT first proving
-///   registration in that context fails OPEN: a banned token reads clean.
-///
-/// So "you would notice" is only true for the first kind, and only once a
-/// player tries to submit. Neither kind notices at upgrade time.
-///
-/// `Registration_token_last_context` is a DISPLAY-ONLY reverse index for
-/// `has_context`-style read surfaces that are handed a bare `token_id` and no
-/// game. Last writer wins across games, and it is deliberately not consulted
-/// by anything that authorizes: a reverse lookup from a bare token id is
-/// fundamentally ambiguous once ids are not globally unique, and the only
-/// real fix is to carry the game address in that interface.
-
+/// Registration_token_last_context is a DISPLAY-ONLY reverse index for callers
+/// handed a bare token_id and no game. Never authorize against it: it reports
+/// ambiguous once an id appears in two contexts, because a bare id genuinely
+/// cannot name one. Carrying the game address in the interface is the real fix.
 #[starknet::component]
 pub mod RegistrationComponent {
     use game_components_interfaces::registration::{IRegistration, Registration};
@@ -89,9 +42,10 @@ pub mod RegistrationComponent {
     };
     use crate::registration::registration::registration::RegistrationValidationImpl;
     use crate::registration::registration_store::{
-        AMBIGUOUS_CONTEXT, RegistrationStoreImpl, RegistrationStoreTrait,
+        RegistrationStoreImpl, RegistrationStoreTrait,
     };
     use crate::registration::store::Store;
+    use crate::registration::structs::LastContextStorePacking;
 
     #[storage]
     pub struct Storage {
@@ -159,9 +113,9 @@ pub mod RegistrationComponent {
         }
 
         fn set_token_last_context(
-            ref self: ComponentState<TContractState>, token_id: felt252, context_id: felt252,
+            ref self: ComponentState<TContractState>, token_id: felt252, packed: felt252,
         ) {
-            self.Registration_token_last_context.entry(token_id).write(context_id);
+            self.Registration_token_last_context.entry(token_id).write(packed);
         }
     }
 
@@ -263,12 +217,13 @@ pub mod RegistrationComponent {
         fn _get_token_last_context(
             self: @ComponentState<TContractState>, token_id: felt252,
         ) -> u64 {
-            let stored = Store::get_token_last_context(self, token_id);
-            if stored == AMBIGUOUS_CONTEXT {
+            let last = LastContextStorePacking::unpack(
+                Store::get_token_last_context(self, token_id),
+            );
+            if last.is_ambiguous {
                 0
             } else {
-                // Any non-sentinel value was written from a u64 context.
-                stored.try_into().unwrap()
+                last.context_id
             }
         }
     }

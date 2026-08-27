@@ -4,37 +4,9 @@ use game_components_interfaces::registration::Registration;
 use game_components_metagame::registration::registration::registration::RegistrationValidationImpl;
 use game_components_metagame::registration::store::Store;
 use game_components_metagame::registration::structs::{
-    TokenState, TokenStateStorePacking, unpack_token_context_id, unpack_token_has_submitted,
-    unpack_token_is_banned,
+    LastContext, LastContextStorePacking, TokenState, TokenStateStorePacking,
+    unpack_token_context_id, unpack_token_has_submitted, unpack_token_is_banned,
 };
-
-/// Stored sentinel for the display-only reverse index: this token id has been
-/// seen in more than one context and no longer resolves to a single one.
-///
-/// It must NOT share the encoding of "never seen" (0). Readers can treat the
-/// two alike -- both mean "no answer" -- but the WRITER cannot: it has three
-/// states to tell apart (never seen / exactly one / ambiguous) and only two
-/// encodings to do it with. Collapsing them let a third registration read 0,
-/// mistake "ambiguous" for "never seen", and confidently name a context again.
-/// Ambiguity is monotonic: once an id is ambiguous it stays ambiguous.
-///
-/// Mapped back to 0 at the read boundary, so consumers keep the "unknown ==
-/// absent" ergonomics without the writer losing the distinction.
-/// Stored OUTSIDE the u64 range so no real `context_id` can ever equal it.
-///
-/// The previous value, `u64::MAX`, is itself a perfectly legal `context_id`
-/// and nothing bounds the range, so a context numbered `u64::MAX` stored a
-/// value indistinguishable from the sentinel: its single unambiguous
-/// registration was reported as "cannot say", and every later `set_entry` for
-/// that token read the sentinel and made it permanently sticky-ambiguous.
-/// That is precisely the confidently-wrong read the sentinel exists to
-/// prevent, reintroduced for one context value.
-///
-/// Reserving a `context_id` by assertion would have worked, but it makes a
-/// legal id illegal and puts a check on the registration path. Widening the
-/// stored type instead means the sentinel simply is not expressible as a
-/// context, so the collision cannot be written down.
-pub const AMBIGUOUS_CONTEXT: felt252 = 0x10000000000000000; // 2^64
 
 /// Store bridge: composes Store<T> reads with pure lib operations
 pub trait RegistrationStoreTrait<T> {
@@ -83,16 +55,20 @@ pub impl RegistrationStoreImpl<T, +Store<T>, +Drop<T>> of RegistrationStoreTrait
         let prev_token = self.get_token_id(*registration.context_id, *registration.entry_id);
         if prev_token != 0 && prev_token != *registration.game_token_id {
             self.set_token_state_raw(*registration.context_id, prev_token, 0);
-            // The displaced token no longer has an entry HERE, so the reverse
-            // index must stop naming this context -- otherwise it reports a
-            // context the token was evicted from, and a later registration
-            // elsewhere reads a stale value and poisons a token that was never
-            // actually ambiguous. Only clear when it names THIS context: a
-            // sentinel stays sticky, and a different context is not ours to
-            // erase.
-            let displaced: felt252 = self.get_token_last_context(prev_token);
-            if displaced == (*registration.context_id).into() {
-                self.set_token_last_context(prev_token, 0);
+            // The displaced token has no entry here any more, so stop naming
+            // this context. Only when it names THIS one: ambiguity stays, and
+            // another context is not ours to erase.
+            let displaced = LastContextStorePacking::unpack(
+                self.get_token_last_context(prev_token),
+            );
+            if !displaced.is_ambiguous && displaced.context_id == *registration.context_id {
+                self
+                    .set_token_last_context(
+                        prev_token,
+                        LastContextStorePacking::pack(
+                            LastContext { context_id: 0, is_ambiguous: false },
+                        ),
+                    );
             }
         }
         self
@@ -110,27 +86,22 @@ pub impl RegistrationStoreImpl<T, +Store<T>, +Drop<T>> of RegistrationStoreTrait
                 *registration.game_token_id,
                 TokenStateStorePacking::pack(state),
             );
-        // Display-only reverse index. A bare token id cannot identify one
-        // context once ids are not globally unique, so rather than silently
-        // pick a winner this POISONS the entry to 0 ("unknown") the moment the
-        // same id turns up in a second context. Read surfaces then degrade to
-        // "I cannot tell you" instead of confidently naming the wrong context.
-        // Costs one extra SLOAD on the registration path; the alternative is a
-        // read surface that lies.
-        let prev_context = Store::get_token_last_context(@self, *registration.game_token_id);
-        let this_context: felt252 = (*registration.context_id).into();
-        let resolved = if prev_context == AMBIGUOUS_CONTEXT {
-            // Sticky: already ambiguous, and nothing can undo that.
-            AMBIGUOUS_CONTEXT
-        } else if prev_context == 0 || prev_context == this_context {
-            this_context
+        // Display-only reverse index: never authorize against it. A bare token
+        // id cannot name one context once ids are not globally unique, so it
+        // degrades to ambiguous rather than picking a winner.
+        let prev_raw = Store::get_token_last_context(@self, *registration.game_token_id);
+        let prev = LastContextStorePacking::unpack(prev_raw);
+        let resolved = if prev.is_ambiguous {
+            prev
+        } else if prev.context_id == 0 || prev.context_id == *registration.context_id {
+            LastContext { context_id: *registration.context_id, is_ambiguous: false }
         } else {
-            AMBIGUOUS_CONTEXT
+            LastContext { context_id: 0, is_ambiguous: true }
         };
-        // Re-registering in the same context is the common path, and it leaves
-        // this value unchanged -- elide the store rather than pay for it.
-        if resolved != prev_context {
-            self.set_token_last_context(*registration.game_token_id, resolved);
+        // Re-registering in the same context leaves this unchanged; elide it.
+        let packed = LastContextStorePacking::pack(resolved);
+        if packed != prev_raw {
+            self.set_token_last_context(*registration.game_token_id, packed);
         }
     }
 
