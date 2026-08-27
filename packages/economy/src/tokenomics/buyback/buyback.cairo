@@ -280,7 +280,7 @@ pub mod BuybackComponent {
             let order_count = self.Buyback_order_counter.read(sell_token);
             let starting_bookmark = self.Buyback_order_bookmark.read(sell_token);
 
-            // Fail fast: no NOOP claims allowed
+            // Fail fast when every order is already behind the bookmark
             assert(starting_bookmark < order_count, Errors::NO_ORDERS_TO_CLAIM);
 
             // Calculate max index to process
@@ -312,8 +312,11 @@ pub mod BuybackComponent {
             // bookmark or its proceeds would be stranded. Matured orders
             // BEYOND an unfinished one are still claimed now; when the
             // bookmark later passes them they are withdrawn again, which is
-            // safe because Ekubo's proceeds withdrawal is idempotent (an
-            // ended, drained order yields 0).
+            // safe because Ekubo's proceeds withdrawal is idempotent —
+            // verified against Ekubo source: TWAMM CollectProceeds snapshots
+            // the reward rate and skips the transfer when purchased_amount is
+            // 0, returning 0 rather than reverting (a revert here would have
+            // reintroduced the stuck claim by another route).
             let mut prefix_contiguous = true;
             let mut new_bookmark = starting_bookmark;
 
@@ -354,7 +357,11 @@ pub mod BuybackComponent {
                 }
             }
 
-            // Fail if no orders were actually completed
+            // Fail when nothing matured to withdraw. NOTE: this does not
+            // guarantee non-zero proceeds — a repeat call that revisits
+            // already-drained orders beyond the prefix succeeds returning 0
+            // (each idempotent re-withdrawal yields 0). Asserting on proceeds
+            // instead would wrongly reject a legitimately zero-proceeds order.
             assert(claimed_count > 0, Errors::NO_COMPLETED_ORDERS);
 
             // Update bookmark (contiguous claimed prefix only)
