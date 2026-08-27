@@ -6,18 +6,19 @@ trait IRegistrationMock<TContractState> {
     // From IRegistration (component embedded)
     fn get_entry(self: @TContractState, context_id: u64, entry_id: u32) -> Registration;
     fn entry_exists(self: @TContractState, context_id: u64, entry_id: u32) -> bool;
-    fn is_token_banned(self: @TContractState, token_id: felt252) -> bool;
+    fn is_token_banned(self: @TContractState, context_id: u64, token_id: felt252) -> bool;
     fn get_entry_count(self: @TContractState, context_id: u64) -> u32;
     // From mock externals (exposing internal trait for tests)
     fn set_entry(ref self: TContractState, registration: Registration);
     fn increment_entry_count(ref self: TContractState, context_id: u64) -> u32;
-    fn mark_token_submitted(ref self: TContractState, token_id: felt252);
-    fn ban_token(ref self: TContractState, token_id: felt252);
+    fn mark_token_submitted(ref self: TContractState, context_id: u64, token_id: felt252);
+    fn ban_token(ref self: TContractState, context_id: u64, token_id: felt252);
     fn assert_valid_for_submission(
         self: @TContractState, registration: Registration, context_id: u64,
     );
-    fn get_token_context(self: @TContractState, token_id: felt252) -> u64;
-    fn is_token_submitted(self: @TContractState, token_id: felt252) -> bool;
+    fn get_token_context(self: @TContractState, context_id: u64, token_id: felt252) -> u64;
+    fn get_token_last_context(self: @TContractState, token_id: felt252) -> u64;
+    fn is_token_submitted(self: @TContractState, context_id: u64, token_id: felt252) -> bool;
 }
 
 fn deploy_mock() -> IRegistrationMockDispatcher {
@@ -92,7 +93,7 @@ fn test_set_entry_zero_token_id_panics() {
 #[test]
 fn test_is_token_banned_default_false() {
     let mock = deploy_mock();
-    let banned = mock.is_token_banned(0xDEAD);
+    let banned = mock.is_token_banned(1, 0xDEAD);
     assert!(!banned, "default is_banned should be false");
 }
 
@@ -106,11 +107,11 @@ fn test_ban_token() {
     let reg = make_registration(context_id, entry_id, token_id, false, false);
     mock.set_entry(reg);
 
-    assert!(!mock.is_token_banned(token_id), "should not be banned initially");
+    assert!(!mock.is_token_banned(context_id, token_id), "should not be banned initially");
 
-    mock.ban_token(token_id);
+    mock.ban_token(context_id, token_id);
 
-    assert!(mock.is_token_banned(token_id), "should be banned after ban call");
+    assert!(mock.is_token_banned(context_id, token_id), "should be banned after ban call");
 
     // Verify other fields are preserved (round-trip via get_entry)
     let retrieved = mock.get_entry(context_id, entry_id);
@@ -133,11 +134,11 @@ fn test_mark_token_submitted() {
     let reg = make_registration(context_id, entry_id, token_id, false, false);
     mock.set_entry(reg);
 
-    assert!(!mock.is_token_submitted(token_id), "should not be submitted initially");
+    assert!(!mock.is_token_submitted(context_id, token_id), "should not be submitted initially");
 
-    mock.mark_token_submitted(token_id);
+    mock.mark_token_submitted(context_id, token_id);
 
-    assert!(mock.is_token_submitted(token_id), "should be submitted after mark");
+    assert!(mock.is_token_submitted(context_id, token_id), "should be submitted after mark");
 
     // Verify other fields are preserved (round-trip via get_entry)
     let after = mock.get_entry(context_id, entry_id);
@@ -291,10 +292,10 @@ fn test_overwrite_entry() {
     assert!(retrieved.has_submitted, "has_submitted should be overwritten");
     assert!(retrieved.is_banned, "is_banned should be overwritten");
 
-    // New token resolves to the slot via the reverse index.
-    assert!(mock.get_token_context(0x8888) == context_id, "new token context");
-    // Previous token's reverse mapping must be cleared so it no longer claims the slot.
-    assert!(mock.get_token_context(0x7777) == 0, "old token context should be cleared");
+    // New token resolves within this context.
+    assert!(mock.get_token_context(context_id, 0x8888) == context_id, "new token context");
+    // Previous token's state must be cleared so it no longer claims the slot.
+    assert!(mock.get_token_context(context_id, 0x7777) == 0, "old token context should be cleared");
 }
 
 // ============================================================================
@@ -311,8 +312,8 @@ fn test_ban_then_mark_submitted() {
     let reg = make_registration(context_id, entry_id, token_id, false, false);
     mock.set_entry(reg);
 
-    mock.ban_token(token_id);
-    mock.mark_token_submitted(token_id);
+    mock.ban_token(context_id, token_id);
+    mock.mark_token_submitted(context_id, token_id);
 
     let retrieved = mock.get_entry(context_id, entry_id);
     assert!(retrieved.is_banned, "should be banned");
@@ -391,7 +392,7 @@ fn test_enumerate_entries() {
 #[test]
 fn test_token_reverse_lookup_default_zero() {
     let mock = deploy_mock();
-    assert!(mock.get_token_context(0xDEAD) == 0, "default token_context should be 0");
+    assert!(mock.get_token_last_context(0xDEAD) == 0, "default token_context should be 0");
 }
 
 #[test]
@@ -404,7 +405,7 @@ fn test_token_reverse_lookup_after_set_entry() {
     let reg = make_registration(context_id, entry_id, token_id, false, false);
     mock.set_entry(reg);
 
-    assert!(mock.get_token_context(token_id) == context_id, "token_context mismatch");
+    assert!(mock.get_token_last_context(token_id) == context_id, "token_context mismatch");
 }
 
 #[test]
@@ -416,8 +417,8 @@ fn test_token_reverse_lookup_independent_tokens() {
     mock.set_entry(reg_a);
     mock.set_entry(reg_b);
 
-    assert!(mock.get_token_context(0xAAA) == 1, "token A context");
-    assert!(mock.get_token_context(0xBBB) == 2, "token B context");
+    assert!(mock.get_token_last_context(0xAAA) == 1, "token A context");
+    assert!(mock.get_token_last_context(0xBBB) == 2, "token B context");
 }
 
 // ============================================================================
@@ -435,11 +436,97 @@ fn test_token_flags_are_independent_per_token() {
     mock.set_entry(reg_a);
     mock.set_entry(reg_b);
 
-    mock.mark_token_submitted(0xA);
-    mock.ban_token(0xB);
+    mock.mark_token_submitted(1, 0xA);
+    mock.ban_token(2, 0xB);
 
-    assert!(mock.is_token_submitted(0xA), "A submitted");
-    assert!(!mock.is_token_banned(0xA), "A not banned");
-    assert!(!mock.is_token_submitted(0xB), "B not submitted");
-    assert!(mock.is_token_banned(0xB), "B banned");
+    assert!(mock.is_token_submitted(1, 0xA), "A submitted");
+    assert!(!mock.is_token_banned(1, 0xA), "A not banned");
+    assert!(!mock.is_token_submitted(2, 0xB), "B not submitted");
+    assert!(mock.is_token_banned(2, 0xB), "B banned");
+}
+
+// ============================================================================
+// Cross-context collision: one token id registered in two contexts
+// ============================================================================
+
+/// The same token id in two different contexts must not interfere.
+///
+/// A token id is unique only within the contract that minted it, so two games
+/// can produce the same id -- accidentally (one multicall minting into both
+/// with the same params and salt in one block) or deliberately, since an
+/// attacker controls their own game contract and every packed field except the
+/// block timestamp.
+///
+/// While state was keyed on `token_id` alone, the second registration
+/// overwrote the first's context and cleared its flags, so the first player
+/// could no longer prove registration in the context they had paid to enter.
+#[test]
+fn test_same_token_id_in_two_contexts_does_not_interfere() {
+    let mock = deploy_mock();
+    let token_id: felt252 = 0xC0113DE;
+
+    // Same id, two contexts, as two different games would produce.
+    mock.set_entry(make_registration(1, 1, token_id, false, false));
+    mock.set_entry(make_registration(2, 1, token_id, false, false));
+
+    // Both registrations stand. Before the fix the first returned 0 here.
+    assert!(mock.get_token_context(1, token_id) == 1, "context 1 registration survives");
+    assert!(mock.get_token_context(2, token_id) == 2, "context 2 registration survives");
+
+    // Flags are per-context: submitting in one context must not mark the other,
+    // and a ban in one must not spread.
+    mock.mark_token_submitted(1, token_id);
+    mock.ban_token(2, token_id);
+
+    assert!(mock.is_token_submitted(1, token_id), "submitted in context 1");
+    assert!(!mock.is_token_submitted(2, token_id), "NOT submitted in context 2");
+    assert!(mock.is_token_banned(2, token_id), "banned in context 2");
+    assert!(!mock.is_token_banned(1, token_id), "NOT banned in context 1");
+
+    // A third, unrelated context still sees nothing.
+    assert!(mock.get_token_context(3, token_id) == 0, "unregistered context stays empty");
+}
+
+/// The display-only reverse index refuses to guess once an id is ambiguous.
+///
+/// It exists for read surfaces handed a bare `token_id` and no game. Such a
+/// lookup cannot be exact, so it degrades to 0 ("unknown") rather than
+/// confidently naming one of the contexts. Authorization never reads it.
+#[test]
+fn test_reverse_index_degrades_to_unknown_when_ambiguous() {
+    let mock = deploy_mock();
+    let token_id: felt252 = 0xA111B16;
+
+    mock.set_entry(make_registration(1, 1, token_id, false, false));
+    assert!(mock.get_token_last_context(token_id) == 1, "exact while unambiguous");
+
+    // Same id turns up in a second context: no longer resolvable.
+    mock.set_entry(make_registration(2, 1, token_id, false, false));
+    assert!(mock.get_token_last_context(token_id) == 0, "ambiguous resolves to unknown");
+
+    // The authoritative per-context state is unaffected by the poisoning.
+    assert!(mock.get_token_context(1, token_id) == 1, "context 1 still authoritative");
+    assert!(mock.get_token_context(2, token_id) == 2, "context 2 still authoritative");
+}
+
+/// Ambiguity is monotonic: once an id is known in more than one context it can
+/// never resolve to a single one again.
+#[test]
+fn test_reverse_index_ambiguity_is_sticky() {
+    let mock = deploy_mock();
+    let token_id: felt252 = 0x571CB1;
+
+    mock.set_entry(make_registration(1, 1, token_id, false, false));
+    mock.set_entry(make_registration(2, 1, token_id, false, false));
+    assert!(mock.get_token_last_context(token_id) == 0, "ambiguous after two contexts");
+
+    // A THIRD context must not un-poison it. The id is more ambiguous than
+    // ever, so naming context 3 here would be the confidently-wrong answer
+    // the poison exists to prevent.
+    mock.set_entry(make_registration(3, 1, token_id, false, false));
+    assert!(mock.get_token_last_context(token_id) == 0, "third context stays unknown");
+
+    // Nor may re-registering in the FIRST context rehabilitate it.
+    mock.set_entry(make_registration(1, 2, token_id, false, false));
+    assert!(mock.get_token_last_context(token_id) == 0, "re-registration stays unknown");
 }

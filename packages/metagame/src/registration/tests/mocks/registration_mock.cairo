@@ -34,13 +34,13 @@ pub mod RegistrationMock {
     }
 
     #[external(v0)]
-    fn mark_token_submitted(ref self: ContractState, token_id: felt252) {
-        self.registration.mark_token_submitted(token_id);
+    fn mark_token_submitted(ref self: ContractState, context_id: u64, token_id: felt252) {
+        self.registration.mark_token_submitted(context_id, token_id);
     }
 
     #[external(v0)]
-    fn ban_token(ref self: ContractState, token_id: felt252) {
-        self.registration.ban_token(token_id);
+    fn ban_token(ref self: ContractState, context_id: u64, token_id: felt252) {
+        self.registration.ban_token(context_id, token_id);
     }
 
     #[external(v0)]
@@ -51,12 +51,18 @@ pub mod RegistrationMock {
     }
 
     #[external(v0)]
-    fn get_token_context(self: @ContractState, token_id: felt252) -> u64 {
-        self.registration._get_token_context(token_id)
+    fn get_token_context(self: @ContractState, context_id: u64, token_id: felt252) -> u64 {
+        self.registration._get_token_context(context_id, token_id)
+    }
+
+    /// Display-only reverse index; 0 means unknown OR ambiguous.
+    #[external(v0)]
+    fn get_token_last_context(self: @ContractState, token_id: felt252) -> u64 {
+        self.registration._get_token_last_context(token_id)
     }
 
     #[external(v0)]
-    fn is_token_submitted(self: @ContractState, token_id: felt252) -> bool {
-        self.registration._is_token_submitted(token_id)
+    fn is_token_submitted(self: @ContractState, context_id: u64, token_id: felt252) -> bool {
+        self.registration._is_token_submitted(context_id, token_id)
     }
 }
