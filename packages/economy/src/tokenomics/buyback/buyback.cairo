@@ -245,6 +245,15 @@ pub mod BuybackComponent {
             // creation does NOT imply sorted end times — buy_back is
             // permissionless and each caller picks end_time — so the invariant
             // is enforced here instead of assumed.
+            //
+            // Liveness: under a stable config this can never permanently block
+            // creation — the allowed end window (actual_start + durations)
+            // moves forward at least as fast as the predecessor's end. Two
+            // BOUNDED transient blocks exist, both loud-at-creation and
+            // self-healing: a far-SCHEDULED order blocks sooner ones until
+            // its start passes (bounded by max_delay), and TIGHTENING
+            // max_duration between orders blocks until time clears the old,
+            // longer end (bounded by the size of the tightening).
             if order_index > 0 {
                 let prev_order = self.Buyback_orders.read((params.sell_token, order_index - 1));
                 assert(params.end_time >= prev_order.end_time, Errors::END_TIME_BEFORE_PREVIOUS);
