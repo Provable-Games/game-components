@@ -4,6 +4,28 @@
 /// A reusable component for managing capacity-limited, per-entrant prize pools.
 /// Supports ERC20 (fungible pool) and ERC721 (NFT stack) prize types.
 /// Multiple contexts are supported via context_id.
+///
+/// # Every per-token mapping is keyed by (context_id, token_id)
+///
+/// A game token id is unique only within the contract that minted it --
+/// identity is (game, id), never id alone -- and this component is metagame
+/// state that sees many game contracts at once. Ids are packed felts rather
+/// than counters, so a collision is not automatic, but it is constructible: an
+/// attacker controls their own game contract and every packed field except
+/// `minted_at`, which is a block timestamp they need only match to the second.
+///
+/// `gpp_token_nft` was keyed on `token_id` alone while `gpp_prize_token`,
+/// `gpp_nft_at`, `gpp_pool` and `gpp_token_claimed` were all context-scoped.
+/// Mixing the two scopes moved assets to the wrong place:
+///
+/// - `_claim_prize` read the reservation cross-context but transferred through
+///   the per-context `prize_token`. With a colliding id in contexts A and B,
+///   claiming in A sent B's reserved NFT -- silently, when both contexts use
+///   the same collection, so B's rightful claimant simply found it gone.
+/// - `_release_slot` returned the overwritten id into the OTHER context's
+///   pool, so a pool gained an NFT it did not own while its own was orphaned.
+/// - `gpp_token_claimed` being correctly per-context meant the CEI guard gave
+///   no cross-context protection at all.
 #[starknet::component]
 pub mod GppComponent {
     use core::num::traits::Zero;
@@ -27,7 +49,9 @@ pub mod GppComponent {
         gpp_prize_token: Map<u64, ContractAddress>,
         gpp_pool: Map<u64, PackedGppPool>,
         gpp_nft_at: Map<(u64, u32), u128>,
-        gpp_token_nft: Map<felt252, u128>,
+        /// (context_id, token_id) -> reserved NFT id. The pair is the
+        /// identity; see the module docs for why a bare token id is not.
+        gpp_token_nft: Map<(u64, felt252), u128>,
         gpp_token_claimed: Map<(u64, felt252), bool>,
     }
 
@@ -116,14 +140,19 @@ pub mod GppComponent {
             self.gpp_nft_at.write((context_id, index), nft_id);
         }
 
-        fn get_token_nft(self: @ComponentState<TContractState>, token_id: felt252) -> u128 {
-            self.gpp_token_nft.read(token_id)
+        fn get_token_nft(
+            self: @ComponentState<TContractState>, context_id: u64, token_id: felt252,
+        ) -> u128 {
+            self.gpp_token_nft.read((context_id, token_id))
         }
 
         fn set_token_nft(
-            ref self: ComponentState<TContractState>, token_id: felt252, nft_id: u128,
+            ref self: ComponentState<TContractState>,
+            context_id: u64,
+            token_id: felt252,
+            nft_id: u128,
         ) {
-            self.gpp_token_nft.write(token_id, nft_id);
+            self.gpp_token_nft.write((context_id, token_id), nft_id);
         }
 
         fn is_claimed(
@@ -353,7 +382,7 @@ pub mod GppComponent {
                 assert!(pool_state.nft_top > 0, "POOL_DEPLETED");
                 pool_state.nft_top -= 1;
                 let nft_id = self.gpp_nft_at.read((context_id, pool_state.nft_top));
-                self.gpp_token_nft.write(game_token_id, nft_id);
+                self.gpp_token_nft.write((context_id, game_token_id), nft_id);
             }
 
             self.gpp_pool.write(context_id, pool_state);
@@ -388,7 +417,7 @@ pub mod GppComponent {
             if config.prize_type == PRIZE_TYPE_ERC20 {
                 pool_state.pool_balance += config.per_entrant;
             } else {
-                let nft_id = self.gpp_token_nft.read(game_token_id);
+                let nft_id = self.gpp_token_nft.read((context_id, game_token_id));
                 self.gpp_nft_at.write((context_id, pool_state.nft_top), nft_id);
                 pool_state.nft_top += 1;
             }
@@ -424,7 +453,7 @@ pub mod GppComponent {
                 let amount_u256: u256 = config.per_entrant.into();
                 erc20.transfer(recipient, amount_u256);
             } else {
-                nft_token_id = self.gpp_token_nft.read(game_token_id);
+                nft_token_id = self.gpp_token_nft.read((context_id, game_token_id));
                 let erc721 = IERC721Dispatcher { contract_address: prize_token };
                 let nft_u256: u256 = nft_token_id.into();
                 erc721.transfer_from(starknet::get_contract_address(), recipient, nft_u256);

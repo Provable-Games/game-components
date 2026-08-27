@@ -14,8 +14,13 @@ pub trait Store<T> {
     fn set_pool(ref self: T, context_id: u64, pool: PackedGppPool);
     fn get_nft_at(self: @T, context_id: u64, index: u32) -> u128;
     fn set_nft_at(ref self: T, context_id: u64, index: u32, nft_id: u128);
-    fn get_token_nft(self: @T, token_id: felt252) -> u128;
-    fn set_token_nft(ref self: T, token_id: felt252, nft_id: u128);
+    /// The NFT reserved for `token_id` IN `context_id`.
+    ///
+    /// Keyed by the pair, not by token id alone: a game token id is unique
+    /// only within the contract that minted it, and a metagame runs contexts
+    /// against many game contracts. See the component docs.
+    fn get_token_nft(self: @T, context_id: u64, token_id: felt252) -> u128;
+    fn set_token_nft(ref self: T, context_id: u64, token_id: felt252, nft_id: u128);
     fn is_claimed(self: @T, context_id: u64, token_id: felt252) -> bool;
     fn set_claimed(ref self: T, context_id: u64, token_id: felt252, claimed: bool);
 }
