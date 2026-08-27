@@ -13,7 +13,8 @@
 ///       bits  0..63: context_id (u64) — 0 means "not registered HERE"
 ///       bit   64:    has_submitted
 ///       bit   65:    is_banned
-///   - Registration_token_last_context: token_id -> context_id (display only)
+///   - Registration_token_last_context: token_id -> context_id as felt252
+///     (display only; 0 = never seen, 2^64 = ambiguous)
 ///
 /// Conventions:
 ///   - context_id is expected to be >= 1. `_get_token_context` treats 0 as
@@ -40,6 +41,38 @@
 /// overwrote the earlier token's context and cleared its flags, locking that
 /// player out of the context they had registered and paid for. A targeted
 /// grief, for the price of one entry on a game the attacker controls.
+///
+/// # UPGRADE HAZARD: this layout is not backward compatible
+///
+/// Re-keying `Registration_token_state` moved every slot. A class upgraded in
+/// place over storage written by v2.1.1 or earlier (both ship the old
+/// `Map<felt252, felt252>`) reads the NEW keys, which are empty, and old
+/// entries become unreachable rather than migrated. **Deploy fresh; do not
+/// upgrade an existing deployment across this change.**
+///
+/// There is deliberately no migration path. A lazy dual-map backfill is
+/// permanent complexity for a transition nobody intends to make -- Budokan v2
+/// is a fresh deployment with a hard cutover -- and code that never runs is
+/// never exercised. Cairo offers no way to make the contract refuse to run
+/// against populated storage, so this comment is the only instrument
+/// available; if a migration is ever actually wanted, write it deliberately
+/// rather than discovering the need in production.
+///
+/// What the failure looks like matters, because it differs by consumer:
+///
+/// - At THIS component's surface, the flags read clean:
+///   `get_token_context` returns 0, `is_token_submitted` and `is_token_banned`
+///   return false, for every pre-existing entry.
+/// - A consumer that gates on `get_token_context(ctx, id) == ctx` before
+///   trusting the flags -- as Budokan does on both its submit and ban paths --
+///   fails CLOSED. The context check reverts first, so the cleared ban is
+///   unreachable, and the real damage is that every pre-existing entry is
+///   locked out of submitting. Loud at the point of use, silent at upgrade.
+/// - A consumer that reads `is_token_banned` WITHOUT first proving
+///   registration in that context fails OPEN: a banned token reads clean.
+///
+/// So "you would notice" is only true for the first kind, and only once a
+/// player tries to submit. Neither kind notices at upgrade time.
 ///
 /// `Registration_token_last_context` is a DISPLAY-ONLY reverse index for
 /// `has_context`-style read surfaces that are handed a bare `token_id` and no
@@ -70,7 +103,7 @@ pub mod RegistrationComponent {
         /// TokenStateStorePacking for layout.
         Registration_token_state: Map<(u64, felt252), felt252>,
         /// Display-only reverse index. NEVER authorize against this.
-        Registration_token_last_context: Map<felt252, u64>,
+        Registration_token_last_context: Map<felt252, felt252>,
     }
 
     #[event]
@@ -119,12 +152,14 @@ pub mod RegistrationComponent {
             self.Registration_token_state.entry((context_id, token_id)).write(state);
         }
 
-        fn get_token_last_context(self: @ComponentState<TContractState>, token_id: felt252) -> u64 {
+        fn get_token_last_context(
+            self: @ComponentState<TContractState>, token_id: felt252,
+        ) -> felt252 {
             self.Registration_token_last_context.entry(token_id).read()
         }
 
         fn set_token_last_context(
-            ref self: ComponentState<TContractState>, token_id: felt252, context_id: u64,
+            ref self: ComponentState<TContractState>, token_id: felt252, context_id: felt252,
         ) {
             self.Registration_token_last_context.entry(token_id).write(context_id);
         }
@@ -232,7 +267,8 @@ pub mod RegistrationComponent {
             if stored == AMBIGUOUS_CONTEXT {
                 0
             } else {
-                stored
+                // Any non-sentinel value was written from a u64 context.
+                stored.try_into().unwrap()
             }
         }
     }

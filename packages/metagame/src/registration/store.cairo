@@ -41,6 +41,10 @@ pub trait Store<T> {
     /// Best-effort reverse index, `token_id -> context_id`. See
     /// `registration_component.cairo` for why this one CANNOT be exact and
     /// must never be used to authorize anything.
-    fn get_token_last_context(self: @T, token_id: felt252) -> u64;
-    fn set_token_last_context(ref self: T, token_id: felt252, context_id: u64);
+    /// Raw slot value: a `context_id` widened to felt252, 0 for "never seen",
+    /// or `AMBIGUOUS_CONTEXT` (2^64, outside the u64 range so no real context
+    /// can collide with it). Consumers should read the component's
+    /// `_get_token_last_context`, which maps the sentinel back to 0.
+    fn get_token_last_context(self: @T, token_id: felt252) -> felt252;
+    fn set_token_last_context(ref self: T, token_id: felt252, context_id: felt252);
 }

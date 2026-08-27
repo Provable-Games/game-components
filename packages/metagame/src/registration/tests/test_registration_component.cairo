@@ -530,3 +530,62 @@ fn test_reverse_index_ambiguity_is_sticky() {
     mock.set_entry(make_registration(1, 2, token_id, false, false));
     assert!(mock.get_token_last_context(token_id) == 0, "re-registration stays unknown");
 }
+
+/// A context numbered `u64::MAX` is unremarkable to every other part of this
+/// component, and nothing bounds the range. It must not be mistaken for the
+/// ambiguity sentinel.
+///
+/// While the sentinel was `u64::MAX` itself, this token's single, entirely
+/// unambiguous registration was reported as "cannot say" -- the exact
+/// confidently-wrong read the sentinel exists to prevent, reintroduced for one
+/// context value.
+#[test]
+fn test_max_u64_context_is_not_mistaken_for_ambiguous() {
+    let mock = deploy_mock();
+    let max_context: u64 = 0xFFFFFFFFFFFFFFFF;
+    let token_id: felt252 = 0xAA11;
+
+    mock.set_entry(make_registration(max_context, 1, token_id, false, false));
+
+    assert!(
+        mock.get_token_last_context(token_id) == max_context,
+        "a real max-u64 context resolves normally",
+    );
+
+    // And it must not have been poisoned: registering again in the SAME
+    // context is not an ambiguity, so it still resolves.
+    mock.set_entry(make_registration(max_context, 2, token_id, false, false));
+    assert!(
+        mock.get_token_last_context(token_id) == max_context,
+        "re-registering in one context stays unambiguous",
+    );
+}
+
+/// A token displaced from its slot no longer has an entry in that context, so
+/// the reverse index must stop naming it.
+///
+/// Otherwise it reports a context the token was evicted from, and -- worse --
+/// a later registration elsewhere reads that stale value, sees a mismatch, and
+/// poisons a token that was never actually in two contexts at once.
+#[test]
+fn test_displaced_token_reverse_entry_is_cleared() {
+    let mock = deploy_mock();
+    let displaced: felt252 = 0xD15;
+    let replacement: felt252 = 0xBB22;
+
+    mock.set_entry(make_registration(1, 1, displaced, false, false));
+    assert!(mock.get_token_last_context(displaced) == 1, "displaced token starts in context 1");
+
+    // Same (context, entry) slot, different token: the first is evicted.
+    mock.set_entry(make_registration(1, 1, replacement, false, false));
+
+    assert!(mock.get_token_last_context(displaced) == 0, "evicted token names no context");
+    assert!(mock.get_token_last_context(replacement) == 1, "replacement resolves to context 1");
+
+    // The evicted token registering elsewhere is a normal single-context
+    // registration, not an ambiguity -- it was never in two places at once.
+    mock.set_entry(make_registration(2, 1, displaced, false, false));
+    assert!(
+        mock.get_token_last_context(displaced) == 2, "re-registration elsewhere is unambiguous",
+    );
+}

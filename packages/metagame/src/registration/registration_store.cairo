@@ -20,7 +20,21 @@ use game_components_metagame::registration::structs::{
 ///
 /// Mapped back to 0 at the read boundary, so consumers keep the "unknown ==
 /// absent" ergonomics without the writer losing the distinction.
-pub const AMBIGUOUS_CONTEXT: u64 = 0xFFFFFFFFFFFFFFFF;
+/// Stored OUTSIDE the u64 range so no real `context_id` can ever equal it.
+///
+/// The previous value, `u64::MAX`, is itself a perfectly legal `context_id`
+/// and nothing bounds the range, so a context numbered `u64::MAX` stored a
+/// value indistinguishable from the sentinel: its single unambiguous
+/// registration was reported as "cannot say", and every later `set_entry` for
+/// that token read the sentinel and made it permanently sticky-ambiguous.
+/// That is precisely the confidently-wrong read the sentinel exists to
+/// prevent, reintroduced for one context value.
+///
+/// Reserving a `context_id` by assertion would have worked, but it makes a
+/// legal id illegal and puts a check on the registration path. Widening the
+/// stored type instead means the sentinel simply is not expressible as a
+/// context, so the collision cannot be written down.
+pub const AMBIGUOUS_CONTEXT: felt252 = 0x10000000000000000; // 2^64
 
 /// Store bridge: composes Store<T> reads with pure lib operations
 pub trait RegistrationStoreTrait<T> {
@@ -69,6 +83,17 @@ pub impl RegistrationStoreImpl<T, +Store<T>, +Drop<T>> of RegistrationStoreTrait
         let prev_token = self.get_token_id(*registration.context_id, *registration.entry_id);
         if prev_token != 0 && prev_token != *registration.game_token_id {
             self.set_token_state_raw(*registration.context_id, prev_token, 0);
+            // The displaced token no longer has an entry HERE, so the reverse
+            // index must stop naming this context -- otherwise it reports a
+            // context the token was evicted from, and a later registration
+            // elsewhere reads a stale value and poisons a token that was never
+            // actually ambiguous. Only clear when it names THIS context: a
+            // sentinel stays sticky, and a different context is not ours to
+            // erase.
+            let displaced: felt252 = self.get_token_last_context(prev_token);
+            if displaced == (*registration.context_id).into() {
+                self.set_token_last_context(prev_token, 0);
+            }
         }
         self
             .set_token_id(
@@ -93,11 +118,12 @@ pub impl RegistrationStoreImpl<T, +Store<T>, +Drop<T>> of RegistrationStoreTrait
         // Costs one extra SLOAD on the registration path; the alternative is a
         // read surface that lies.
         let prev_context = Store::get_token_last_context(@self, *registration.game_token_id);
+        let this_context: felt252 = (*registration.context_id).into();
         let resolved = if prev_context == AMBIGUOUS_CONTEXT {
             // Sticky: already ambiguous, and nothing can undo that.
             AMBIGUOUS_CONTEXT
-        } else if prev_context == 0 || prev_context == *registration.context_id {
-            *registration.context_id
+        } else if prev_context == 0 || prev_context == this_context {
+            this_context
         } else {
             AMBIGUOUS_CONTEXT
         };
