@@ -117,9 +117,7 @@ pub mod RegistrationComponent {
             self.Registration_token_state.entry((context_id, token_id)).write(state);
         }
 
-        fn get_token_last_context(
-            self: @ComponentState<TContractState>, token_id: felt252,
-        ) -> u64 {
+        fn get_token_last_context(self: @ComponentState<TContractState>, token_id: felt252) -> u64 {
             self.Registration_token_last_context.entry(token_id).read()
         }
 
