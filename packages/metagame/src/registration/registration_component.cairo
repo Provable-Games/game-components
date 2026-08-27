@@ -55,7 +55,9 @@ pub mod RegistrationComponent {
         Map, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess,
     };
     use crate::registration::registration::registration::RegistrationValidationImpl;
-    use crate::registration::registration_store::{RegistrationStoreImpl, RegistrationStoreTrait};
+    use crate::registration::registration_store::{
+        AMBIGUOUS_CONTEXT, RegistrationStoreImpl, RegistrationStoreTrait,
+    };
     use crate::registration::store::Store;
 
     #[storage]
@@ -217,12 +219,21 @@ pub mod RegistrationComponent {
             RegistrationStoreTrait::is_token_banned(self, context_id, token_id)
         }
 
-        /// Display-only. See the module docs: last writer wins across games,
-        /// so never authorize against this.
+        /// Display-only. See the module docs -- never authorize against this.
+        ///
+        /// Reports 0 both for "never registered" and for "registered in more
+        /// than one context, so I cannot say which". Callers that treat
+        /// unknown as absent are already correct; callers that need certainty
+        /// must use `_get_token_context`, which takes the context.
         fn _get_token_last_context(
             self: @ComponentState<TContractState>, token_id: felt252,
         ) -> u64 {
-            Store::get_token_last_context(self, token_id)
+            let stored = Store::get_token_last_context(self, token_id);
+            if stored == AMBIGUOUS_CONTEXT {
+                0
+            } else {
+                stored
+            }
         }
     }
 }

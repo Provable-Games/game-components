@@ -508,3 +508,25 @@ fn test_reverse_index_degrades_to_unknown_when_ambiguous() {
     assert!(mock.get_token_context(1, token_id) == 1, "context 1 still authoritative");
     assert!(mock.get_token_context(2, token_id) == 2, "context 2 still authoritative");
 }
+
+/// Ambiguity is monotonic: once an id is known in more than one context it can
+/// never resolve to a single one again.
+#[test]
+fn test_reverse_index_ambiguity_is_sticky() {
+    let mock = deploy_mock();
+    let token_id: felt252 = 0x571CB1;
+
+    mock.set_entry(make_registration(1, 1, token_id, false, false));
+    mock.set_entry(make_registration(2, 1, token_id, false, false));
+    assert!(mock.get_token_last_context(token_id) == 0, "ambiguous after two contexts");
+
+    // A THIRD context must not un-poison it. The id is more ambiguous than
+    // ever, so naming context 3 here would be the confidently-wrong answer
+    // the poison exists to prevent.
+    mock.set_entry(make_registration(3, 1, token_id, false, false));
+    assert!(mock.get_token_last_context(token_id) == 0, "third context stays unknown");
+
+    // Nor may re-registering in the FIRST context rehabilitate it.
+    mock.set_entry(make_registration(1, 2, token_id, false, false));
+    assert!(mock.get_token_last_context(token_id) == 0, "re-registration stays unknown");
+}
