@@ -19,8 +19,8 @@ Permissionless buyback execution using Ekubo TWAMM DCA orders.
 
 | Function | Description |
 |----------|-------------|
-| `buy_back(params: BuybackParams)` | Execute buyback with full contract balance |
-| `claim_buyback_proceeds(sell_token, limit)` | Claim completed orders to treasury |
+| `buy_back(params: BuybackParams)` | Execute buyback with full contract balance. `end_time` must be >= the previous order's (`'End before previous order'`) — the claim loop breaks at the first unfinished order, so end times are enforced non-decreasing at creation |
+| `claim_buyback_proceeds(sell_token, limit)` | Claim completed orders to treasury. Pays the CURRENT config's treasury — a treasury change redirects in-flight proceeds (fine under a timelock owner; sharp otherwise) |
 | `sweep_buy_token_to_treasury()` | Transfer accumulated buy tokens to treasury |
 | `get_global_config()` | Global configuration defaults |
 | `get_token_config(sell_token)` | Per-token override (None = use global) |
@@ -31,8 +31,8 @@ Permissionless buyback execution using Ekubo TWAMM DCA orders.
 
 | Function | Description |
 |----------|-------------|
-| `set_global_config(config)` | Update global defaults |
-| `set_token_config(sell_token, config)` | Set/clear per-token config |
+| `set_global_config(config)` | Update global defaults. The global config is also a BOUND (see below); tightening it later does NOT re-check stored per-token configs |
+| `set_token_config(sell_token, config)` | Set/clear per-token config. Per-token policy must refine WITHIN the global envelope: `min_duration`/`min_delay` may only rise, `max_duration`/`max_delay` may only tighten (a per-token 0 ceiling is legal only when the global ceiling is 0). `fee` and `minimum_amount` are free. Reverts `'Config exceeds global bounds'` — without this, strict mode would make the global policy fields decorative |
 | `set_require_token_config(required)` | Strict mode: when true, tokens without an explicit per-token config revert (`'No config for token'`) instead of falling back to global defaults. Default false (historic behavior). Sweep is unaffected |
 
 ### Structs

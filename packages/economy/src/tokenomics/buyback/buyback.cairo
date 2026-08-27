@@ -238,6 +238,17 @@ pub mod BuybackComponent {
 
             // === Store Packed Order Info (single storage slot) ===
             let order_index = self.Buyback_order_counter.read(params.sell_token);
+            // End times must be non-decreasing across orders: the claim loop
+            // breaks at the first unfinished order, so an out-of-order shorter
+            // order would mature unclaimable behind a longer predecessor
+            // (blocked for up to max_duration - min_duration). Sequential
+            // creation does NOT imply sorted end times — buy_back is
+            // permissionless and each caller picks end_time — so the invariant
+            // is enforced here instead of assumed.
+            if order_index > 0 {
+                let prev_order = self.Buyback_orders.read((params.sell_token, order_index - 1));
+                assert(params.end_time >= prev_order.end_time, Errors::END_TIME_BEFORE_PREVIOUS);
+            }
             let packed_order = PackedOrderInfo {
                 start_time: params.start_time, // Store raw params.start_time for OrderKey
                 // reconstruction
@@ -303,7 +314,9 @@ pub mod BuybackComponent {
 
                 // Only claim if order has ended
                 if packed_order.end_time > current_time {
-                    // Orders are created sequentially, so we can break here
+                    // buy_back enforces non-decreasing end times across orders
+                    // (END_TIME_BEFORE_PREVIOUS), so the first unfinished
+                    // order gates everything after it and breaking is sound.
                     break;
                 }
 
@@ -617,6 +630,36 @@ pub mod BuybackComponent {
                     c.min_duration <= c.max_duration || c.max_duration == 0,
                     Errors::MIN_DURATION_GT_MAX_DURATION,
                 );
+
+                // The global config is a BOUND, not just a default: per-token
+                // policy must refine WITHIN the global envelope (floors can
+                // only rise, ceilings only tighten; a per-token 0 ceiling —
+                // "no maximum" — is allowed only when the global ceiling is
+                // also 0). Without this, strict mode makes the global policy
+                // fields decorative: the None fallback becomes unreachable and
+                // any per-token config could undercut the configured bounds.
+                // fee and minimum_amount stay free — a different pool may
+                // legitimately sit at a different tier.
+                // NOTE: tightening the GLOBAL config later does not re-check
+                // per-token configs already stored; that remains the owner's
+                // responsibility.
+                let g = self.Buyback_global_config.read();
+                assert(
+                    c.min_duration >= g.default_min_duration, Errors::TOKEN_CONFIG_EXCEEDS_GLOBAL,
+                );
+                if g.default_max_duration > 0 {
+                    assert(
+                        c.max_duration != 0 && c.max_duration <= g.default_max_duration,
+                        Errors::TOKEN_CONFIG_EXCEEDS_GLOBAL,
+                    );
+                }
+                assert(c.min_delay >= g.default_min_delay, Errors::TOKEN_CONFIG_EXCEEDS_GLOBAL);
+                if g.default_max_delay > 0 {
+                    assert(
+                        c.max_delay != 0 && c.max_delay <= g.default_max_delay,
+                        Errors::TOKEN_CONFIG_EXCEEDS_GLOBAL,
+                    );
+                }
             }
 
             let old_config = self.Buyback_token_config.read(sell_token);

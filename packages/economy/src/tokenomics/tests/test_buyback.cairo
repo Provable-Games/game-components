@@ -633,8 +633,13 @@ fn test_buy_back_allows_any_duration_when_max_duration_is_zero() {
     let mock_erc20 = IMockERC20Dispatcher { contract_address: sell_token };
     let mock_positions: ContractAddress = 'POSITIONS'.try_into().unwrap();
 
-    // Set token config with max_duration = 0 (no limit)
+    // The global config is a BOUND: a per-token "no maximum" (max_duration = 0)
+    // is only a legal refinement when the global ceiling is also open. Open
+    // the global envelope first, then set the unlimited token config.
+    let mut open_global = defaults::global_config_with(buyback_token, TREASURY());
+    open_global.default_max_duration = 0;
     start_cheat_caller_address(contract, OWNER());
+    admin_dispatcher.set_global_config(open_global);
     admin_dispatcher
         .set_token_config(sell_token, Option::Some(defaults::token_config_with_no_max_duration()));
     stop_cheat_caller_address(contract);
@@ -1714,4 +1719,129 @@ fn test_non_owner_cannot_set_require_token_config() {
 
     start_cheat_caller_address(contract, USER1());
     admin_dispatcher.set_require_token_config(true);
+}
+
+// ============================================================================
+// Order end-time monotonicity (claim-loop soundness)
+// ============================================================================
+
+/// Opens two orders where the second ends BEFORE the first — the shape that
+/// used to leave matured proceeds unclaimable behind a longer predecessor.
+/// Now rejected at creation so the claim loop's early break stays sound.
+#[test]
+#[should_panic(expected: ('End before previous order', 'ENTRYPOINT_FAILED'))]
+fn test_buy_back_rejects_end_time_before_previous_order() {
+    let buyback_token = deploy_mock_erc20("Buyback", "BUY");
+    let sell_token = deploy_mock_erc20("Sell", "SELL");
+    let contract = setup_buyback_with_token_config(buyback_token, sell_token);
+    let dispatcher = IBuybackDispatcher { contract_address: contract };
+    let mock_erc20 = IMockERC20Dispatcher { contract_address: sell_token };
+    let mock_positions: ContractAddress = 'POSITIONS'.try_into().unwrap();
+
+    mock_erc20.mint(contract, amounts::THOUSAND_TOKENS);
+    start_cheat_block_timestamp_global(1000);
+    mock_call(mock_positions, selector!("mint_and_increase_sell_amount"), (1_u64, 100_u128), 1);
+    mock_call(mock_positions, selector!("increase_sell_amount"), 100_u128, 1);
+
+    // First order: long
+    let long_end = 1000 + defaults::MAX_DURATION;
+    dispatcher.buy_back(BuybackParams { sell_token, start_time: 0, end_time: long_end });
+
+    // Second order: matures earlier — must be rejected
+    mock_erc20.mint(contract, amounts::THOUSAND_TOKENS);
+    let short_end = 1000 + defaults::MIN_DURATION;
+    dispatcher.buy_back(BuybackParams { sell_token, start_time: 0, end_time: short_end });
+}
+
+#[test]
+fn test_buy_back_accepts_equal_and_later_end_times() {
+    let buyback_token = deploy_mock_erc20("Buyback", "BUY");
+    let sell_token = deploy_mock_erc20("Sell", "SELL");
+    let contract = setup_buyback_with_token_config(buyback_token, sell_token);
+    let dispatcher = IBuybackDispatcher { contract_address: contract };
+    let mock_erc20 = IMockERC20Dispatcher { contract_address: sell_token };
+    let mock_positions: ContractAddress = 'POSITIONS'.try_into().unwrap();
+
+    mock_erc20.mint(contract, amounts::THOUSAND_TOKENS);
+    start_cheat_block_timestamp_global(1000);
+    mock_call(mock_positions, selector!("mint_and_increase_sell_amount"), (1_u64, 100_u128), 1);
+    mock_call(mock_positions, selector!("increase_sell_amount"), 100_u128, 2);
+
+    let end = 1000 + defaults::MIN_DURATION;
+    dispatcher.buy_back(BuybackParams { sell_token, start_time: 0, end_time: end });
+    // Equal end time is allowed (same batch of maturity)
+    mock_erc20.mint(contract, amounts::THOUSAND_TOKENS);
+    dispatcher.buy_back(BuybackParams { sell_token, start_time: 0, end_time: end });
+    // Later end time is allowed
+    mock_erc20.mint(contract, amounts::THOUSAND_TOKENS);
+    dispatcher.buy_back(BuybackParams { sell_token, start_time: 0, end_time: end + 1000 });
+
+    assert(dispatcher.get_order_count(sell_token) == 3, 'Should have 3 orders');
+}
+
+// ============================================================================
+// Global config as BOUND (per-token subset rule)
+// ============================================================================
+
+#[test]
+#[should_panic(expected: ('Config exceeds global bounds', 'ENTRYPOINT_FAILED'))]
+fn test_token_config_below_global_min_duration_rejected() {
+    let buyback_token = deploy_mock_erc20("Buyback", "BUY");
+    let sell_token = deploy_mock_erc20("Sell", "SELL");
+    let contract = setup_buyback_contract(buyback_token);
+    let admin_dispatcher = IBuybackAdminDispatcher { contract_address: contract };
+
+    let mut c = defaults::default_token_config();
+    c.min_duration = defaults::MIN_DURATION - 1;
+    start_cheat_caller_address(contract, OWNER());
+    admin_dispatcher.set_token_config(sell_token, Option::Some(c));
+}
+
+#[test]
+#[should_panic(expected: ('Config exceeds global bounds', 'ENTRYPOINT_FAILED'))]
+fn test_token_config_above_global_max_duration_rejected() {
+    let buyback_token = deploy_mock_erc20("Buyback", "BUY");
+    let sell_token = deploy_mock_erc20("Sell", "SELL");
+    let contract = setup_buyback_contract(buyback_token);
+    let admin_dispatcher = IBuybackAdminDispatcher { contract_address: contract };
+
+    let mut c = defaults::default_token_config();
+    c.max_duration = defaults::MAX_DURATION + 1;
+    start_cheat_caller_address(contract, OWNER());
+    admin_dispatcher.set_token_config(sell_token, Option::Some(c));
+}
+
+/// A per-token "no maximum" (0) may not escape a finite global ceiling.
+#[test]
+#[should_panic(expected: ('Config exceeds global bounds', 'ENTRYPOINT_FAILED'))]
+fn test_token_config_zero_ceiling_cannot_escape_finite_global() {
+    let buyback_token = deploy_mock_erc20("Buyback", "BUY");
+    let sell_token = deploy_mock_erc20("Sell", "SELL");
+    let contract = setup_buyback_contract(buyback_token);
+    let admin_dispatcher = IBuybackAdminDispatcher { contract_address: contract };
+
+    start_cheat_caller_address(contract, OWNER());
+    admin_dispatcher
+        .set_token_config(sell_token, Option::Some(defaults::token_config_with_no_max_duration()));
+}
+
+#[test]
+fn test_token_config_within_global_envelope_accepted() {
+    let buyback_token = deploy_mock_erc20("Buyback", "BUY");
+    let sell_token = deploy_mock_erc20("Sell", "SELL");
+    let contract = setup_buyback_contract(buyback_token);
+    let dispatcher = IBuybackDispatcher { contract_address: contract };
+    let admin_dispatcher = IBuybackAdminDispatcher { contract_address: contract };
+
+    // Tighter than global on both ends: a legal refinement
+    let mut c = defaults::default_token_config();
+    c.min_duration = defaults::MIN_DURATION + 100;
+    c.max_duration = defaults::MAX_DURATION - 100;
+    start_cheat_caller_address(contract, OWNER());
+    admin_dispatcher.set_token_config(sell_token, Option::Some(c));
+    stop_cheat_caller_address(contract);
+
+    let stored = dispatcher.get_token_config(sell_token).unwrap();
+    assert(stored.min_duration == defaults::MIN_DURATION + 100, 'min_duration mismatch');
+    assert(stored.max_duration == defaults::MAX_DURATION - 100, 'max_duration mismatch');
 }
