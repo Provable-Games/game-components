@@ -8,11 +8,11 @@ use starknet::storage_access::StorePacking;
 /// Entry requirement metadata
 /// Packs: entry_limit (u32) | req_type (u8) into a single u64
 /// Total: 32 + 8 = 40 bits -> fits in u64
-/// req_type: 0=token, 1=extension, 255=None
+/// req_type: 0=None, 1=token, 2=extension
 #[derive(Copy, Drop, Serde)]
 pub struct EntryRequirementMeta {
     pub entry_limit: u32, // Max ~4.3B entries per qualified address
-    pub req_type: u8 // 255 = None (no entry requirement)
+    pub req_type: u8 // 0 = None (no entry requirement)
 }
 
 pub impl EntryRequirementMetaStorePacking of StorePacking<EntryRequirementMeta, u64> {
