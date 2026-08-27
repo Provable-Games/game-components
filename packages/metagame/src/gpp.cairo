@@ -3,3 +3,6 @@
 pub mod gpp_component;
 pub mod store;
 pub mod structs;
+
+#[cfg(test)]
+mod tests;
