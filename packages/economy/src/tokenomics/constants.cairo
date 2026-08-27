@@ -34,7 +34,6 @@ pub mod Errors {
 
     // Config consistency errors
     pub const NO_CONFIG_FOR_TOKEN: felt252 = 'No config for token';
-    pub const END_TIME_BEFORE_PREVIOUS: felt252 = 'End before previous order';
     pub const TOKEN_CONFIG_EXCEEDS_GLOBAL: felt252 = 'Config exceeds global bounds';
     pub const BUY_TOKEN_MISMATCH: felt252 = 'Buy token mismatch';
     pub const FEE_MISMATCH: felt252 = 'Fee mismatch';

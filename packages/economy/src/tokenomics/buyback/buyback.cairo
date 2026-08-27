@@ -238,26 +238,14 @@ pub mod BuybackComponent {
 
             // === Store Packed Order Info (single storage slot) ===
             let order_index = self.Buyback_order_counter.read(params.sell_token);
-            // End times must be non-decreasing across orders: the claim loop
-            // breaks at the first unfinished order, so an out-of-order shorter
-            // order would mature unclaimable behind a longer predecessor
-            // (blocked for up to max_duration - min_duration). Sequential
-            // creation does NOT imply sorted end times — buy_back is
-            // permissionless and each caller picks end_time — so the invariant
-            // is enforced here instead of assumed.
-            //
-            // Liveness: under a stable config this can never permanently block
-            // creation — the allowed end window (actual_start + durations)
-            // moves forward at least as fast as the predecessor's end. Two
-            // BOUNDED transient blocks exist, both loud-at-creation and
-            // self-healing: a far-SCHEDULED order blocks sooner ones until
-            // its start passes (bounded by max_delay), and TIGHTENING
-            // max_duration between orders blocks until time clears the old,
-            // longer end (bounded by the size of the tightening).
-            if order_index > 0 {
-                let prev_order = self.Buyback_orders.read((params.sell_token, order_index - 1));
-                assert(params.end_time >= prev_order.end_time, Errors::END_TIME_BEFORE_PREVIOUS);
-            }
+            // NOTE: end times are deliberately NOT constrained against earlier
+            // orders. An ordering invariant here was tried and reverted: with
+            // max_delay = 0 ("no scheduling limit", the documented default)
+            // start_time is unbounded, so a permissionless caller could pin
+            // every future buy_back behind one far-scheduled order — an
+            // attacker-chosen DoS, worse than the out-of-order claims it
+            // prevented. The claim loop copes with out-of-order end times
+            // instead (it skips unfinished orders rather than breaking).
             let packed_order = PackedOrderInfo {
                 start_time: params.start_time, // Store raw params.start_time for OrderKey
                 // reconstruction
@@ -316,17 +304,28 @@ pub mod BuybackComponent {
 
             let mut order_number = starting_bookmark;
             let mut total_proceeds: u128 = 0;
+            let mut claimed_count: u128 = 0;
+            // The bookmark may only advance across a CONTIGUOUS claimed
+            // prefix — creation order does not imply sorted end times
+            // (buy_back is permissionless and each caller picks end_time),
+            // so an unfinished order must not be skipped over by the
+            // bookmark or its proceeds would be stranded. Matured orders
+            // BEYOND an unfinished one are still claimed now; when the
+            // bookmark later passes them they are withdrawn again, which is
+            // safe because Ekubo's proceeds withdrawal is idempotent (an
+            // ended, drained order yields 0).
+            let mut prefix_contiguous = true;
+            let mut new_bookmark = starting_bookmark;
 
             // Iterate through orders and claim completed ones
             while order_number < max_index {
                 let packed_order = self.Buyback_orders.read((sell_token, order_number));
 
-                // Only claim if order has ended
+                // Skip (not break on) orders that have not ended
                 if packed_order.end_time > current_time {
-                    // buy_back enforces non-decreasing end times across orders
-                    // (END_TIME_BEFORE_PREVIOUS), so the first unfinished
-                    // order gates everything after it and breaking is sound.
-                    break;
+                    prefix_contiguous = false;
+                    order_number += 1;
+                    continue;
                 }
 
                 // Build order key using stored active buy_token and fee
@@ -348,19 +347,27 @@ pub mod BuybackComponent {
                     .withdraw_proceeds_from_sale_to(position_id, order_key, config.treasury);
 
                 total_proceeds += proceeds;
+                claimed_count += 1;
                 order_number += 1;
+                if prefix_contiguous {
+                    new_bookmark = order_number;
+                }
             }
 
             // Fail if no orders were actually completed
-            assert(order_number > starting_bookmark, Errors::NO_COMPLETED_ORDERS);
+            assert(claimed_count > 0, Errors::NO_COMPLETED_ORDERS);
 
-            // Update bookmark
-            self.Buyback_order_bookmark.write(sell_token, order_number);
+            // Update bookmark (contiguous claimed prefix only)
+            self.Buyback_order_bookmark.write(sell_token, new_bookmark);
 
             // If all orders have been claimed, clear active buy_token, fee, and position_id
             // This allows config changes for future orders and ensures a new position is minted
-            // for the potentially different buy_token/fee combination
-            if order_number == order_count {
+            // for the potentially different buy_token/fee combination.
+            // Must key on the contiguous prefix, NOT the scan position: the
+            // scan reaches max_index even when unfinished orders were skipped,
+            // and clearing then would strand their eventual claims (zeroed
+            // position_id / active_buy_token).
+            if new_bookmark == order_count {
                 let zero_address: ContractAddress = Zero::zero();
                 self.Buyback_active_buy_token.write(sell_token, zero_address);
                 self.Buyback_active_fee.write(sell_token, 0);
@@ -374,8 +381,8 @@ pub mod BuybackComponent {
                         sell_token,
                         buy_token: active_buy_token,
                         amount: total_proceeds,
-                        orders_claimed: order_number - starting_bookmark,
-                        new_bookmark: order_number,
+                        orders_claimed: claimed_count,
+                        new_bookmark,
                     },
                 );
 

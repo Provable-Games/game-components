@@ -1722,15 +1722,17 @@ fn test_non_owner_cannot_set_require_token_config() {
 }
 
 // ============================================================================
-// Order end-time monotonicity (claim-loop soundness)
+// Claim-loop skip semantics (out-of-order end times)
 // ============================================================================
 
-/// Opens two orders where the second ends BEFORE the first — the shape that
-/// used to leave matured proceeds unclaimable behind a longer predecessor.
-/// Now rejected at creation so the claim loop's early break stays sound.
+/// The shape that used to strand proceeds: a long order followed by a short
+/// one. The claim loop now SKIPS the unfinished long order and claims the
+/// matured short one; the bookmark stays before the long order so its own
+/// claim is not stranded. (An ordering invariant at creation was tried and
+/// reverted — with max_delay = 0 it let one far-scheduled order pin every
+/// future buy_back.)
 #[test]
-#[should_panic(expected: ('End before previous order', 'ENTRYPOINT_FAILED'))]
-fn test_buy_back_rejects_end_time_before_previous_order() {
+fn test_claim_skips_unfinished_and_claims_matured_later_order() {
     let buyback_token = deploy_mock_erc20("Buyback", "BUY");
     let sell_token = deploy_mock_erc20("Sell", "SELL");
     let contract = setup_buyback_with_token_config(buyback_token, sell_token);
@@ -1738,23 +1740,34 @@ fn test_buy_back_rejects_end_time_before_previous_order() {
     let mock_erc20 = IMockERC20Dispatcher { contract_address: sell_token };
     let mock_positions: ContractAddress = 'POSITIONS'.try_into().unwrap();
 
-    mock_erc20.mint(contract, amounts::THOUSAND_TOKENS);
     start_cheat_block_timestamp_global(1000);
     mock_call(mock_positions, selector!("mint_and_increase_sell_amount"), (1_u64, 100_u128), 1);
     mock_call(mock_positions, selector!("increase_sell_amount"), 100_u128, 1);
 
-    // First order: long
+    // Order 0: long. Order 1: matures much earlier.
+    mock_erc20.mint(contract, amounts::THOUSAND_TOKENS);
     let long_end = 1000 + defaults::MAX_DURATION;
     dispatcher.buy_back(BuybackParams { sell_token, start_time: 0, end_time: long_end });
-
-    // Second order: matures earlier — must be rejected
     mock_erc20.mint(contract, amounts::THOUSAND_TOKENS);
     let short_end = 1000 + defaults::MIN_DURATION;
     dispatcher.buy_back(BuybackParams { sell_token, start_time: 0, end_time: short_end });
+
+    // Advance past the short order only
+    start_cheat_block_timestamp_global(short_end + 1);
+    mock_call(mock_positions, selector!("withdraw_proceeds_from_sale_to"), 500_u128, 1);
+    let proceeds = dispatcher.claim_buyback_proceeds(sell_token, 0);
+    assert(proceeds == 500, 'Short order should be claimed');
+
+    // Bookmark must NOT advance past the unfinished long order
+    assert(dispatcher.get_order_bookmark(sell_token) == 0, 'Bookmark must hold at 0');
 }
 
+/// After the long order also matures, a second claim withdraws it and the
+/// bookmark advances across the whole (now contiguous) prefix. The revisited
+/// short order is withdrawn again — Ekubo proceeds withdrawal is idempotent,
+/// so the second withdrawal contributes 0.
 #[test]
-fn test_buy_back_accepts_equal_and_later_end_times() {
+fn test_bookmark_advances_once_gap_closes() {
     let buyback_token = deploy_mock_erc20("Buyback", "BUY");
     let sell_token = deploy_mock_erc20("Sell", "SELL");
     let contract = setup_buyback_with_token_config(buyback_token, sell_token);
@@ -1762,21 +1775,32 @@ fn test_buy_back_accepts_equal_and_later_end_times() {
     let mock_erc20 = IMockERC20Dispatcher { contract_address: sell_token };
     let mock_positions: ContractAddress = 'POSITIONS'.try_into().unwrap();
 
-    mock_erc20.mint(contract, amounts::THOUSAND_TOKENS);
     start_cheat_block_timestamp_global(1000);
     mock_call(mock_positions, selector!("mint_and_increase_sell_amount"), (1_u64, 100_u128), 1);
-    mock_call(mock_positions, selector!("increase_sell_amount"), 100_u128, 2);
+    mock_call(mock_positions, selector!("increase_sell_amount"), 100_u128, 1);
 
-    let end = 1000 + defaults::MIN_DURATION;
-    dispatcher.buy_back(BuybackParams { sell_token, start_time: 0, end_time: end });
-    // Equal end time is allowed (same batch of maturity)
     mock_erc20.mint(contract, amounts::THOUSAND_TOKENS);
-    dispatcher.buy_back(BuybackParams { sell_token, start_time: 0, end_time: end });
-    // Later end time is allowed
+    let long_end = 1000 + defaults::MAX_DURATION;
+    dispatcher.buy_back(BuybackParams { sell_token, start_time: 0, end_time: long_end });
     mock_erc20.mint(contract, amounts::THOUSAND_TOKENS);
-    dispatcher.buy_back(BuybackParams { sell_token, start_time: 0, end_time: end + 1000 });
+    let short_end = 1000 + defaults::MIN_DURATION;
+    dispatcher.buy_back(BuybackParams { sell_token, start_time: 0, end_time: short_end });
 
-    assert(dispatcher.get_order_count(sell_token) == 3, 'Should have 3 orders');
+    // First claim: short order only (bookmark holds at 0)
+    start_cheat_block_timestamp_global(short_end + 1);
+    mock_call(mock_positions, selector!("withdraw_proceeds_from_sale_to"), 500_u128, 1);
+    dispatcher.claim_buyback_proceeds(sell_token, 0);
+
+    // Long order matures. Second claim withdraws the long order AND revisits
+    // the already-drained short order (mock_call cannot vary per call, so the
+    // mock pays 500 for both — proceeds == 1000 here proves the revisit call
+    // happens; in production Ekubo's idempotent withdrawal returns 0 for the
+    // drained order, so no funds are double-counted).
+    start_cheat_block_timestamp_global(long_end + 1);
+    mock_call(mock_positions, selector!("withdraw_proceeds_from_sale_to"), 500_u128, 2);
+    let proceeds = dispatcher.claim_buyback_proceeds(sell_token, 0);
+    assert(proceeds == 1000, 'Long + revisited short claimed');
+    assert(dispatcher.get_order_bookmark(sell_token) == 2, 'Bookmark must reach 2');
 }
 
 // ============================================================================

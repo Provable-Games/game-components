@@ -19,8 +19,8 @@ Permissionless buyback execution using Ekubo TWAMM DCA orders.
 
 | Function | Description |
 |----------|-------------|
-| `buy_back(params: BuybackParams)` | Execute buyback with full contract balance. `end_time` must be >= the previous order's (`'End before previous order'`) — the claim loop breaks at the first unfinished order, so end times are enforced non-decreasing at creation |
-| `claim_buyback_proceeds(sell_token, limit)` | Claim completed orders to treasury. Pays the CURRENT config's treasury — a treasury change redirects in-flight proceeds (fine under a timelock owner; sharp otherwise) |
+| `buy_back(params: BuybackParams)` | Execute buyback with full contract balance. End times are deliberately NOT ordered against earlier orders (an ordering invariant was tried and reverted: with `max_delay = 0` it let one far-scheduled permissionless order pin every future `buy_back`) |
+| `claim_buyback_proceeds(sell_token, limit)` | Claim completed orders to treasury. SKIPS unfinished orders (out-of-order end times cannot strand later matured ones); the bookmark advances only across the contiguous claimed prefix, and revisited drained orders re-withdraw 0 (Ekubo idempotency). Pays the CURRENT config's treasury — a treasury change redirects in-flight proceeds (fine under a timelock owner; sharp otherwise) |
 | `sweep_buy_token_to_treasury()` | Transfer accumulated buy tokens to treasury |
 | `get_global_config()` | Global configuration defaults |
 | `get_token_config(sell_token)` | Per-token override (None = use global) |
