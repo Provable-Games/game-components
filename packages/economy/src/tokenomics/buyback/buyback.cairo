@@ -713,7 +713,16 @@ pub mod BuybackComponent {
                 // fields decorative: the None fallback becomes unreachable and
                 // any per-token config could undercut the configured bounds.
                 // fee and minimum_amount stay free — a different pool may
-                // legitimately sit at a different tier.
+                // legitimately sit at a different tier, and a coherent global
+                // floor on minimum_amount cannot exist across tokens with
+                // different decimals. CAUTION the freedom implies: under
+                // strict mode the global minimum_amount is never consulted,
+                // so a per-token config naming minimum_amount = 0 quietly
+                // reopens the dust-spam order-growth vector for that token —
+                // it looks unremarkable in calldata and deserves per-config
+                // review. (Sizing note: an attacker's dust becomes treasury
+                // revenue, so a modest floor makes the attack pointless
+                // rather than merely expensive.)
                 // The same check runs again at buy_back time against the
                 // resolved config, so tightening the GLOBAL later binds
                 // existing per-token configs at the next trade.
