@@ -41,9 +41,7 @@ pub mod RegistrationComponent {
         Map, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess,
     };
     use crate::registration::registration::registration::RegistrationValidationImpl;
-    use crate::registration::registration_store::{
-        RegistrationStoreImpl, RegistrationStoreTrait,
-    };
+    use crate::registration::registration_store::{RegistrationStoreImpl, RegistrationStoreTrait};
     use crate::registration::store::Store;
     use crate::registration::structs::LastContextStorePacking;
 
