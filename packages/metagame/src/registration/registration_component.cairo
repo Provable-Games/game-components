@@ -48,7 +48,6 @@ pub mod RegistrationComponent {
         /// Per-(context, token) packed state. See structs.cairo
         /// TokenStateStorePacking for layout.
         Registration_token_state: Map<(u64, felt252), felt252>,
-        /// Display-only reverse index. NEVER authorize against this.
     }
 
     #[event]
@@ -186,6 +185,5 @@ pub mod RegistrationComponent {
         ) -> bool {
             RegistrationStoreTrait::is_token_banned(self, context_id, token_id)
         }
-        /// Display-only. See the module docs -- never authorize against this.
     }
 }

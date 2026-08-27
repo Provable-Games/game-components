@@ -1,4 +1,4 @@
-use snforge_std::{ContractClassTrait, DeclareResultTrait, declare};
+use snforge_std::{ContractClassTrait, DeclareResultTrait, declare, map_entry_address, store};
 use starknet::ContractAddress;
 use crate::entry_requirement::structs::{
     EntryRequirement, EntryRequirementType, ExtensionConfig, NFTQualification, QualificationEntries,
@@ -54,21 +54,36 @@ fn deploy_entry_requirement_mock() -> IEntryRequirementMockDispatcher {
 // ============================================================================
 
 #[test]
-fn test_get_entry_requirement_default_is_token_with_zero_address() {
+fn test_get_entry_requirement_default_is_none() {
     let mock = deploy_entry_requirement_mock();
-    // Uninitialized storage has req_type=0 (TOKEN) with entry_limit=0 and zero address.
-    // The component only returns None when req_type == 255 (REQ_TYPE_NONE).
-    let result = mock.get_entry_requirement(1);
-    assert!(result.is_some(), "default should be Some (req_type defaults to 0=TOKEN)");
-    let req = result.unwrap();
-    assert!(req.entry_limit == 0, "default entry_limit should be 0");
-    match req.entry_requirement_type {
-        EntryRequirementType::token(addr) => {
-            let zero_addr: starknet::ContractAddress = 0.try_into().unwrap();
-            assert!(addr == zero_addr, "default token address should be zero");
-        },
-        _ => { panic!("default should be token type"); },
-    }
+    // A context that was never written reads back as all-zero storage. Zero is
+    // REQ_TYPE_NONE, so it must decode as "no entry requirement" — not as a
+    // token gate against the zero address, which would gate entry on a
+    // contract that does not exist.
+    assert!(mock.get_entry_requirement(1).is_none(), "unwritten context should be None");
+}
+
+#[test]
+fn test_get_entry_requirement_unwritten_is_none_for_any_context() {
+    let mock = deploy_entry_requirement_mock();
+    assert!(mock.get_entry_requirement(0).is_none(), "context 0 should be None");
+    assert!(mock.get_entry_requirement(2).is_none(), "context 2 should be None");
+    assert!(mock.get_entry_requirement(0xFFFFFFFFFFFFFFFF).is_none(), "max context should be None");
+}
+
+#[test]
+fn test_get_entry_requirement_unknown_req_type_is_none() {
+    let mock = deploy_entry_requirement_mock();
+    // Forward compatibility: a req_type this build does not recognise must
+    // decode as None rather than falling through to a variant.
+    // Written straight to storage: `set_entry_requirement` cannot produce this.
+    // packed = entry_limit * 0x100 + req_type = 7 * 256 + 200 = 1992
+    store(
+        mock.contract_address,
+        map_entry_address(selector!("EntryRequirement_meta"), array![1].span()),
+        array![1992].span(),
+    );
+    assert!(mock.get_entry_requirement(1).is_none(), "unknown req_type should be None");
 }
 
 #[test]
@@ -209,16 +224,8 @@ fn test_different_context_ids_are_independent() {
         _ => { panic!("context 1 should be token type"); },
     }
 
-    // Context 2 was not explicitly set; its default token address should be zero
-    let result2 = mock.get_entry_requirement(2).unwrap();
-    assert!(result2.entry_limit == 0, "context 2 default entry_limit should be 0");
-    match result2.entry_requirement_type {
-        EntryRequirementType::token(addr) => {
-            let zero_addr: starknet::ContractAddress = 0.try_into().unwrap();
-            assert!(addr == zero_addr, "context 2 default token address should be zero");
-        },
-        _ => { panic!("context 2 default should be token type"); },
-    }
+    // Context 2 was never written, so setting context 1 must not leak into it.
+    assert!(mock.get_entry_requirement(2).is_none(), "context 2 should remain None");
 }
 
 #[test]

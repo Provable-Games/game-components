@@ -5,6 +5,20 @@
 /// - Entry requirement type (token, extension)
 /// - Qualification entries tracking
 /// - Entry count management
+///
+/// UPGRADE HAZARD: `req_type` was re-encoded so that 0 means None (was: 0
+/// token, 1 extension, 255 None). The packed layout is unchanged, only the
+/// meaning of the value — so a class upgraded in place over storage written
+/// by v2.1.2 or earlier reads every existing token requirement as None and
+/// every extension requirement as a token requirement. Deploy fresh; there is
+/// no migration and Cairo cannot make the contract refuse.
+///
+/// The re-encoding is the fix for a zero-state bug: `EntryRequirement_meta`
+/// is a Map, so a context that was never written reads back as all-zero.
+/// Under the old encoding that decoded as `Some(token(0x0))` — a live entry
+/// gate against a contract that does not exist — instead of `None`. Any
+/// unknown `req_type` now decodes as None too, so a future variant added by a
+/// newer writer degrades to "no requirement" rather than to a wrong one.
 
 #[starknet::component]
 pub mod EntryRequirementComponent {

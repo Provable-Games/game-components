@@ -72,23 +72,19 @@ pub impl EntryRequirementStoreImpl<T, +Store<T>, +Drop<T>> of EntryRequirementSt
         if meta.req_type == entry_requirement::REQ_TYPE_NONE {
             return Option::None;
         }
-        let entry_requirement_type = match meta.req_type {
-            0 => {
-                let token = self.get_token(context_id);
-                EntryRequirementType::token(token)
-            },
-            1 => {
-                // Config is not persisted — the extension contract is the
-                // source of truth. Hosts that need to surface the original
-                // config should source it from their own event stream
-                // (e.g. the `TournamentCreated`-style event that carries
-                // the full `EntryRequirement` payload supplied at creation).
-                let address = self.get_extension_address(context_id);
-                EntryRequirementType::extension(
-                    ExtensionConfig { address, config: array![].span() },
-                )
-            },
-            _ => { return Option::None; },
+        let entry_requirement_type = if meta.req_type == entry_requirement::REQ_TYPE_TOKEN {
+            let token = self.get_token(context_id);
+            EntryRequirementType::token(token)
+        } else if meta.req_type == entry_requirement::REQ_TYPE_EXTENSION {
+            // Config is not persisted — the extension contract is the
+            // source of truth. Hosts that need to surface the original
+            // config should source it from their own event stream
+            // (e.g. the `TournamentCreated`-style event that carries
+            // the full `EntryRequirement` payload supplied at creation).
+            let address = self.get_extension_address(context_id);
+            EntryRequirementType::extension(ExtensionConfig { address, config: array![].span() })
+        } else {
+            return Option::None;
         };
         Option::Some(EntryRequirement { entry_limit: meta.entry_limit, entry_requirement_type })
     }
