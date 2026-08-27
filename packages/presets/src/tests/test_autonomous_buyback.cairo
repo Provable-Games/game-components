@@ -1506,6 +1506,11 @@ fn test_max_duration_zero_means_no_limit() {
     let mock_erc20 = IMockERC20Dispatcher { contract_address: sell_token };
     let mock_positions: ContractAddress = 'POSITIONS'.try_into().unwrap();
 
+    // The global config is a BOUND: a per-token "no maximum" (max_duration = 0)
+    // is only a legal refinement when the global ceiling is also open, so
+    // open the global envelope first.
+    let mut open_global = default_global_config(buyback_token);
+    open_global.default_max_duration = 0;
     // Config with max_duration = 0 (no limit)
     let config = TokenBuybackConfig {
         buy_token: buyback_token,
@@ -1518,6 +1523,7 @@ fn test_max_duration_zero_means_no_limit() {
         fee: DEFAULT_FEE,
     };
     start_cheat_caller_address(contract, OWNER());
+    admin.set_global_config(open_global);
     admin.set_token_config(sell_token, Option::Some(config));
     stop_cheat_caller_address(contract);
 

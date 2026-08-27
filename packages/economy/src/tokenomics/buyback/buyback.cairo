@@ -29,7 +29,7 @@ pub mod BuybackComponent {
         StoragePointerWriteAccess,
     };
     use starknet::{ContractAddress, get_block_timestamp, get_contract_address};
-    use crate::tokenomics::constants::Errors;
+    use crate::tokenomics::constants::{Errors, MAX_SCHEDULE_HORIZON};
 
     /// Storage for the Buyback component
     /// All storage keys are prefixed with `Buyback_` to avoid collisions
@@ -168,6 +168,29 @@ pub mod BuybackComponent {
                 assert(start_time - current_time <= config.max_delay, Errors::DELAY_TOO_LONG);
             }
 
+            // Component-level scheduling horizon, enforced REGARDLESS of
+            // max_delay (max_delay = 0 = "no CONFIGURED limit" — not "no
+            // limit"). An unbounded start_time is the root cause behind two
+            // permissionless-DoS shapes: it killed the creation-ordering
+            // invariant (one far-scheduled order pinning all future
+            // buy_backs), and it is what let the claim bookmark be pinned
+            // arbitrarily long. The horizon bounds both at the source.
+            if start_time > current_time {
+                assert(
+                    start_time - current_time <= MAX_SCHEDULE_HORIZON, Errors::START_BEYOND_HORIZON,
+                );
+            }
+
+            // The global config is a RUNTIME bound, not only a
+            // set_token_config-time one: re-validating the resolved config
+            // here means tightening the global envelope binds existing
+            // per-token configs immediately (buy_back reverts loudly until
+            // the owner re-sets them) instead of leaving stale-config trades
+            // as owner homework. The global-fallback config trivially
+            // satisfies its own envelope. Claims deliberately do NOT
+            // validate — the payout path must stay live under any config.
+            self._assert_config_within_global(@config);
+
             // === End Time Validation ===
             let actual_start = max(current_time, start_time);
             assert(params.end_time > actual_start, Errors::END_TIME_INVALID);
@@ -238,6 +261,14 @@ pub mod BuybackComponent {
 
             // === Store Packed Order Info (single storage slot) ===
             let order_index = self.Buyback_order_counter.read(params.sell_token);
+            // NOTE: end times are deliberately NOT constrained against earlier
+            // orders. An ordering invariant here was tried and reverted: with
+            // max_delay = 0 ("no scheduling limit", the documented default)
+            // start_time is unbounded, so a permissionless caller could pin
+            // every future buy_back behind one far-scheduled order — an
+            // attacker-chosen DoS, worse than the out-of-order claims it
+            // prevented. The claim loop copes with out-of-order end times
+            // instead (it skips unfinished orders rather than breaking).
             let packed_order = PackedOrderInfo {
                 start_time: params.start_time, // Store raw params.start_time for OrderKey
                 // reconstruction
@@ -272,7 +303,7 @@ pub mod BuybackComponent {
             let order_count = self.Buyback_order_counter.read(sell_token);
             let starting_bookmark = self.Buyback_order_bookmark.read(sell_token);
 
-            // Fail fast: no NOOP claims allowed
+            // Fail fast when every order is already behind the bookmark
             assert(starting_bookmark < order_count, Errors::NO_ORDERS_TO_CLAIM);
 
             // Calculate max index to process
@@ -296,15 +327,31 @@ pub mod BuybackComponent {
 
             let mut order_number = starting_bookmark;
             let mut total_proceeds: u128 = 0;
+            let mut claimed_count: u128 = 0;
+            // The bookmark may only advance across a CONTIGUOUS claimed
+            // prefix — creation order does not imply sorted end times
+            // (buy_back is permissionless and each caller picks end_time),
+            // so an unfinished order must not be skipped over by the
+            // bookmark or its proceeds would be stranded. Matured orders
+            // BEYOND an unfinished one are still claimed now; when the
+            // bookmark later passes them they are withdrawn again, which is
+            // safe because Ekubo's proceeds withdrawal is idempotent —
+            // verified against Ekubo source: TWAMM CollectProceeds snapshots
+            // the reward rate and skips the transfer when purchased_amount is
+            // 0, returning 0 rather than reverting (a revert here would have
+            // reintroduced the stuck claim by another route).
+            let mut prefix_contiguous = true;
+            let mut new_bookmark = starting_bookmark;
 
             // Iterate through orders and claim completed ones
             while order_number < max_index {
                 let packed_order = self.Buyback_orders.read((sell_token, order_number));
 
-                // Only claim if order has ended
+                // Skip (not break on) orders that have not ended
                 if packed_order.end_time > current_time {
-                    // Orders are created sequentially, so we can break here
-                    break;
+                    prefix_contiguous = false;
+                    order_number += 1;
+                    continue;
                 }
 
                 // Build order key using stored active buy_token and fee
@@ -326,19 +373,31 @@ pub mod BuybackComponent {
                     .withdraw_proceeds_from_sale_to(position_id, order_key, config.treasury);
 
                 total_proceeds += proceeds;
+                claimed_count += 1;
                 order_number += 1;
+                if prefix_contiguous {
+                    new_bookmark = order_number;
+                }
             }
 
-            // Fail if no orders were actually completed
-            assert(order_number > starting_bookmark, Errors::NO_COMPLETED_ORDERS);
+            // Fail when nothing matured to withdraw. NOTE: this does not
+            // guarantee non-zero proceeds — a repeat call that revisits
+            // already-drained orders beyond the prefix succeeds returning 0
+            // (each idempotent re-withdrawal yields 0). Asserting on proceeds
+            // instead would wrongly reject a legitimately zero-proceeds order.
+            assert(claimed_count > 0, Errors::NO_COMPLETED_ORDERS);
 
-            // Update bookmark
-            self.Buyback_order_bookmark.write(sell_token, order_number);
+            // Update bookmark (contiguous claimed prefix only)
+            self.Buyback_order_bookmark.write(sell_token, new_bookmark);
 
             // If all orders have been claimed, clear active buy_token, fee, and position_id
             // This allows config changes for future orders and ensures a new position is minted
-            // for the potentially different buy_token/fee combination
-            if order_number == order_count {
+            // for the potentially different buy_token/fee combination.
+            // Must key on the contiguous prefix, NOT the scan position: the
+            // scan reaches max_index even when unfinished orders were skipped,
+            // and clearing then would strand their eventual claims (zeroed
+            // position_id / active_buy_token).
+            if new_bookmark == order_count {
                 let zero_address: ContractAddress = Zero::zero();
                 self.Buyback_active_buy_token.write(sell_token, zero_address);
                 self.Buyback_active_fee.write(sell_token, 0);
@@ -352,8 +411,8 @@ pub mod BuybackComponent {
                         sell_token,
                         buy_token: active_buy_token,
                         amount: total_proceeds,
-                        orders_claimed: order_number - starting_bookmark,
-                        new_bookmark: order_number,
+                        orders_claimed: claimed_count,
+                        new_bookmark,
                     },
                 );
 
@@ -548,6 +607,34 @@ pub mod BuybackComponent {
 
         /// Get the effective configuration for a sell token
         /// Returns the per-token config if set, otherwise builds from global defaults
+        /// Assert a resolved/candidate config sits WITHIN the global
+        /// envelope: floors may only rise, ceilings only tighten; a 0 ceiling
+        /// ("no maximum") is allowed only when the global ceiling is also 0.
+        /// fee, minimum_amount, buy_token and treasury are not constrained.
+        /// Called from set_token_config (candidate) and buy_back (resolved) —
+        /// NOT from claims, which must stay live under any config.
+        fn _assert_config_within_global(
+            self: @ComponentState<TContractState>, config: @TokenBuybackConfig,
+        ) {
+            let g = self.Buyback_global_config.read();
+            assert(
+                *config.min_duration >= g.default_min_duration, Errors::TOKEN_CONFIG_EXCEEDS_GLOBAL,
+            );
+            if g.default_max_duration > 0 {
+                assert(
+                    *config.max_duration != 0 && *config.max_duration <= g.default_max_duration,
+                    Errors::TOKEN_CONFIG_EXCEEDS_GLOBAL,
+                );
+            }
+            assert(*config.min_delay >= g.default_min_delay, Errors::TOKEN_CONFIG_EXCEEDS_GLOBAL);
+            if g.default_max_delay > 0 {
+                assert(
+                    *config.max_delay != 0 && *config.max_delay <= g.default_max_delay,
+                    Errors::TOKEN_CONFIG_EXCEEDS_GLOBAL,
+                );
+            }
+        }
+
         fn _get_effective_config(
             self: @ComponentState<TContractState>, sell_token: ContractAddress,
         ) -> TokenBuybackConfig {
@@ -617,6 +704,29 @@ pub mod BuybackComponent {
                     c.min_duration <= c.max_duration || c.max_duration == 0,
                     Errors::MIN_DURATION_GT_MAX_DURATION,
                 );
+
+                // The global config is a BOUND, not just a default: per-token
+                // policy must refine WITHIN the global envelope (floors can
+                // only rise, ceilings only tighten; a per-token 0 ceiling —
+                // "no maximum" — is allowed only when the global ceiling is
+                // also 0). Without this, strict mode makes the global policy
+                // fields decorative: the None fallback becomes unreachable and
+                // any per-token config could undercut the configured bounds.
+                // fee and minimum_amount stay free — a different pool may
+                // legitimately sit at a different tier, and a coherent global
+                // floor on minimum_amount cannot exist across tokens with
+                // different decimals. CAUTION the freedom implies: under
+                // strict mode the global minimum_amount is never consulted,
+                // so a per-token config naming minimum_amount = 0 quietly
+                // reopens the dust-spam order-growth vector for that token —
+                // it looks unremarkable in calldata and deserves per-config
+                // review. (Sizing note: an attacker's dust becomes treasury
+                // revenue, so a modest floor makes the attack pointless
+                // rather than merely expensive.)
+                // The same check runs again at buy_back time against the
+                // resolved config, so tightening the GLOBAL later binds
+                // existing per-token configs at the next trade.
+                self._assert_config_within_global(@c);
             }
 
             let old_config = self.Buyback_token_config.read(sell_token);
