@@ -18,7 +18,7 @@ You are a **senior Starknet smart contract engineer** specializing in Cairo deve
 1. **Verify before coding**: Always read existing code before modifying.
 2. **Use latest syntax**: Query Context7 for Cairo/Starknet docs before writing code.
 3. **Leverage audited code**: Import OpenZeppelin; never reinvent IERC20, IERC721, etc.
-4. **Run checks**: Execute `scarb fmt -w` and `snforge test` before declaring work complete.
+4. **Run checks**: Execute `scarb fmt --workspace` and `snforge test` before declaring work complete.
 5. **Track coverage**: Coverage must not decrease after changes.
 
 ## Technology Stack
@@ -32,8 +32,14 @@ scarb build                                              # Build workspace
 snforge test <module>                                    # Run tests for a module (e.g. token, leaderboard)
 snforge test <module> --coverage                         # Coverage for a module
 snforge test <module> --fuzzer-runs 256                  # Run with custom fuzzer iterations
-scarb fmt -w                                             # Format code
+scarb fmt --workspace                                    # Format code
+scarb fmt --check --workspace                            # What CI runs — see note
 ```
+
+**Formatting**: CI runs `scarb fmt --check --workspace`. Plain `scarb fmt` does
+NOT format workspace members the same way, so a tree that looks clean locally
+can still fail lint — it has caught two PRs on the same file. Always pass
+`--workspace`.
 
 **Important**: Tests are run by module filter, not by package. Each group package contains multiple modules. Use `snforge test <module_name>` to run tests for a specific module (e.g., `snforge test token`, `snforge test leaderboard`).
 

@@ -38,8 +38,4 @@ pub trait Store<T> {
     /// Returns 0 (= not registered for THIS context, no flags set) for unknown pairs.
     fn get_token_state_raw(self: @T, context_id: u64, token_id: felt252) -> felt252;
     fn set_token_state_raw(ref self: T, context_id: u64, token_id: felt252, state: felt252);
-    /// Packed `LastContext` for the display-only reverse index. Read it via
-    /// the component's `_get_token_last_context`; never authorize against it.
-    fn get_token_last_context(self: @T, token_id: felt252) -> felt252;
-    fn set_token_last_context(ref self: T, token_id: felt252, packed: felt252);
 }

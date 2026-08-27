@@ -7,10 +7,8 @@
 ///   - Registration_token_ids: (context_id, entry_id) -> felt252  (game token ID)
 ///   - Registration_entry_counts: context_id -> u32  (next entry_id is count + 1)
 ///   - Registration_token_state: (context_id, token_id) -> packed TokenState
-///   - Registration_token_last_context: token_id -> packed LastContext
-///     (display only)
 ///
-/// See structs.cairo for both packed layouts.
+/// See structs.cairo for the packed TokenState layout.
 ///
 /// context_id is expected to be >= 1: `_get_token_context` treats 0 as "not
 /// registered". entry_id is always >= 1 by construction.
@@ -30,10 +28,7 @@
 /// without proving registration fails OPEN (a banned token reads clean).
 /// Neither is visible at upgrade time.
 ///
-/// Registration_token_last_context is a DISPLAY-ONLY reverse index for callers
-/// handed a bare token_id and no game. Never authorize against it: it reports
-/// ambiguous once an id appears in two contexts, because a bare id genuinely
-/// cannot name one. Carrying the game address in the interface is the real fix.
+
 #[starknet::component]
 pub mod RegistrationComponent {
     use game_components_interfaces::registration::{IRegistration, Registration};
@@ -43,7 +38,6 @@ pub mod RegistrationComponent {
     use crate::registration::registration::registration::RegistrationValidationImpl;
     use crate::registration::registration_store::{RegistrationStoreImpl, RegistrationStoreTrait};
     use crate::registration::store::Store;
-    use crate::registration::structs::LastContextStorePacking;
 
     #[storage]
     pub struct Storage {
@@ -55,7 +49,6 @@ pub mod RegistrationComponent {
         /// TokenStateStorePacking for layout.
         Registration_token_state: Map<(u64, felt252), felt252>,
         /// Display-only reverse index. NEVER authorize against this.
-        Registration_token_last_context: Map<felt252, felt252>,
     }
 
     #[event]
@@ -102,18 +95,6 @@ pub mod RegistrationComponent {
             state: felt252,
         ) {
             self.Registration_token_state.entry((context_id, token_id)).write(state);
-        }
-
-        fn get_token_last_context(
-            self: @ComponentState<TContractState>, token_id: felt252,
-        ) -> felt252 {
-            self.Registration_token_last_context.entry(token_id).read()
-        }
-
-        fn set_token_last_context(
-            ref self: ComponentState<TContractState>, token_id: felt252, packed: felt252,
-        ) {
-            self.Registration_token_last_context.entry(token_id).write(packed);
         }
     }
 
@@ -205,24 +186,6 @@ pub mod RegistrationComponent {
         ) -> bool {
             RegistrationStoreTrait::is_token_banned(self, context_id, token_id)
         }
-
         /// Display-only. See the module docs -- never authorize against this.
-        ///
-        /// Reports 0 both for "never registered" and for "registered in more
-        /// than one context, so I cannot say which". Callers that treat
-        /// unknown as absent are already correct; callers that need certainty
-        /// must use `_get_token_context`, which takes the context.
-        fn _get_token_last_context(
-            self: @ComponentState<TContractState>, token_id: felt252,
-        ) -> u64 {
-            let last = LastContextStorePacking::unpack(
-                Store::get_token_last_context(self, token_id),
-            );
-            if last.is_ambiguous {
-                0
-            } else {
-                last.context_id
-            }
-        }
     }
 }

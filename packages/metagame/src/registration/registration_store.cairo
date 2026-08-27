@@ -4,8 +4,8 @@ use game_components_interfaces::registration::Registration;
 use game_components_metagame::registration::registration::registration::RegistrationValidationImpl;
 use game_components_metagame::registration::store::Store;
 use game_components_metagame::registration::structs::{
-    LastContext, LastContextStorePacking, TokenState, TokenStateStorePacking,
-    unpack_token_context_id, unpack_token_has_submitted, unpack_token_is_banned,
+    TokenState, TokenStateStorePacking, unpack_token_context_id, unpack_token_has_submitted,
+    unpack_token_is_banned,
 };
 
 /// Store bridge: composes Store<T> reads with pure lib operations
@@ -55,21 +55,6 @@ pub impl RegistrationStoreImpl<T, +Store<T>, +Drop<T>> of RegistrationStoreTrait
         let prev_token = self.get_token_id(*registration.context_id, *registration.entry_id);
         if prev_token != 0 && prev_token != *registration.game_token_id {
             self.set_token_state_raw(*registration.context_id, prev_token, 0);
-            // The displaced token has no entry here any more, so stop naming
-            // this context. Only when it names THIS one: ambiguity stays, and
-            // another context is not ours to erase.
-            let displaced = LastContextStorePacking::unpack(
-                self.get_token_last_context(prev_token),
-            );
-            if !displaced.is_ambiguous && displaced.context_id == *registration.context_id {
-                self
-                    .set_token_last_context(
-                        prev_token,
-                        LastContextStorePacking::pack(
-                            LastContext { context_id: 0, is_ambiguous: false },
-                        ),
-                    );
-            }
         }
         self
             .set_token_id(
@@ -86,23 +71,6 @@ pub impl RegistrationStoreImpl<T, +Store<T>, +Drop<T>> of RegistrationStoreTrait
                 *registration.game_token_id,
                 TokenStateStorePacking::pack(state),
             );
-        // Display-only reverse index: never authorize against it. A bare token
-        // id cannot name one context once ids are not globally unique, so it
-        // degrades to ambiguous rather than picking a winner.
-        let prev_raw = Store::get_token_last_context(@self, *registration.game_token_id);
-        let prev = LastContextStorePacking::unpack(prev_raw);
-        let resolved = if prev.is_ambiguous {
-            prev
-        } else if prev.context_id == 0 || prev.context_id == *registration.context_id {
-            LastContext { context_id: *registration.context_id, is_ambiguous: false }
-        } else {
-            LastContext { context_id: 0, is_ambiguous: true }
-        };
-        // Re-registering in the same context leaves this unchanged; elide it.
-        let packed = LastContextStorePacking::pack(resolved);
-        if packed != prev_raw {
-            self.set_token_last_context(*registration.game_token_id, packed);
-        }
     }
 
     fn entry_exists(self: @T, context_id: u64, entry_id: u32) -> bool {
