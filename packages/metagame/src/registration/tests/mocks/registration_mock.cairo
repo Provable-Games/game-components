@@ -57,10 +57,6 @@ pub mod RegistrationMock {
 
     /// Display-only reverse index; 0 means unknown OR ambiguous.
     #[external(v0)]
-    fn get_token_last_context(self: @ContractState, token_id: felt252) -> u64 {
-        self.registration._get_token_last_context(token_id)
-    }
-
     #[external(v0)]
     fn is_token_submitted(self: @ContractState, context_id: u64, token_id: felt252) -> bool {
         self.registration._is_token_submitted(context_id, token_id)

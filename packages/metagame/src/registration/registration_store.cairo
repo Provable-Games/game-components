@@ -8,20 +8,6 @@ use game_components_metagame::registration::structs::{
     unpack_token_is_banned,
 };
 
-/// Stored sentinel for the display-only reverse index: this token id has been
-/// seen in more than one context and no longer resolves to a single one.
-///
-/// It must NOT share the encoding of "never seen" (0). Readers can treat the
-/// two alike -- both mean "no answer" -- but the WRITER cannot: it has three
-/// states to tell apart (never seen / exactly one / ambiguous) and only two
-/// encodings to do it with. Collapsing them let a third registration read 0,
-/// mistake "ambiguous" for "never seen", and confidently name a context again.
-/// Ambiguity is monotonic: once an id is ambiguous it stays ambiguous.
-///
-/// Mapped back to 0 at the read boundary, so consumers keep the "unknown ==
-/// absent" ergonomics without the writer losing the distinction.
-pub const AMBIGUOUS_CONTEXT: u64 = 0xFFFFFFFFFFFFFFFF;
-
 /// Store bridge: composes Store<T> reads with pure lib operations
 pub trait RegistrationStoreTrait<T> {
     /// Get a full registration entry
@@ -85,27 +71,6 @@ pub impl RegistrationStoreImpl<T, +Store<T>, +Drop<T>> of RegistrationStoreTrait
                 *registration.game_token_id,
                 TokenStateStorePacking::pack(state),
             );
-        // Display-only reverse index. A bare token id cannot identify one
-        // context once ids are not globally unique, so rather than silently
-        // pick a winner this POISONS the entry to 0 ("unknown") the moment the
-        // same id turns up in a second context. Read surfaces then degrade to
-        // "I cannot tell you" instead of confidently naming the wrong context.
-        // Costs one extra SLOAD on the registration path; the alternative is a
-        // read surface that lies.
-        let prev_context = Store::get_token_last_context(@self, *registration.game_token_id);
-        let resolved = if prev_context == AMBIGUOUS_CONTEXT {
-            // Sticky: already ambiguous, and nothing can undo that.
-            AMBIGUOUS_CONTEXT
-        } else if prev_context == 0 || prev_context == *registration.context_id {
-            *registration.context_id
-        } else {
-            AMBIGUOUS_CONTEXT
-        };
-        // Re-registering in the same context is the common path, and it leaves
-        // this value unchanged -- elide the store rather than pay for it.
-        if resolved != prev_context {
-            self.set_token_last_context(*registration.game_token_id, resolved);
-        }
     }
 
     fn entry_exists(self: @T, context_id: u64, entry_id: u32) -> bool {
