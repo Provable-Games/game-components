@@ -1,7 +1,7 @@
 // Core minigame interfaces
 use starknet::ContractAddress;
 use crate::structs::metagame::GameContextDetails;
-use crate::structs::minigame::{GameDetail, MintGameParams};
+use crate::structs::minigame::{GameDetail, GameMetadata, MintGameParams};
 
 /// SNIP-5 interface ID derived via src5_rs: XOR of extended function selectors
 /// - token_address()->ContractAddress
@@ -67,4 +67,19 @@ pub trait IMinigameDetailsSVG<TState> {
 #[starknet::interface]
 pub trait IMinigameTokenUri<TState> {
     fn token_uri(self: @TState, token_id: u256) -> ByteArray;
+}
+
+/// A game's own identity.
+///
+/// Deliberately NOT derived from a token's rendered URI. `GameMetadata` was
+/// only ever a renderer input, so the only way to learn a game's name was to
+/// mint a token, render it, and parse traits back out of the document — which
+/// makes game identity depend on that game's renderer emitting the right
+/// ones. That is the same failure that lost Context, one field over.
+///
+/// Per-contract and constant, so a consumer reads it once rather than once
+/// per token, and no rendering choice can affect it.
+#[starknet::interface]
+pub trait IMinigameGameMetadata<TState> {
+    fn game_metadata(self: @TState) -> GameMetadata;
 }
