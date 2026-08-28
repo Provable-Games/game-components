@@ -144,12 +144,6 @@ pub trait IBuybackAdmin<TContractState> {
     /// Set the global configuration defaults
     fn set_global_config(ref self: TContractState, config: GlobalBuybackConfig);
 
-    /// Toggle strict per-token config mode. When enabled, tokens WITHOUT an
-    /// explicit per-token config revert (`'No config for token'`) instead of
-    /// falling back to the global defaults — governance decides which tokens
-    /// are tradeable. Off by default (global fallback, the historic behavior).
-    fn set_require_token_config(ref self: TContractState, required: bool);
-
     /// Set or clear per-token configuration
     fn set_token_config(
         ref self: TContractState, sell_token: ContractAddress, config: Option<TokenBuybackConfig>,

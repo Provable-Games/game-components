@@ -95,13 +95,6 @@ pub mod AutonomousBuyback {
             self.buyback.set_global_config(config);
         }
 
-        /// Toggle strict per-token config mode (owner only): when enabled,
-        /// only explicitly-configured tokens can be bought back
-        fn set_require_token_config(ref self: ContractState, required: bool) {
-            self.ownable.assert_only_owner();
-            self.buyback.set_require_token_config(required);
-        }
-
         /// Set or clear per-token configuration (owner only)
         /// None = use global defaults, Some = override with specific config
         fn set_token_config(
