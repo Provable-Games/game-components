@@ -1654,3 +1654,78 @@ fn test_set_token_config_rejects_min_duration_gt_max_duration() {
     admin_dispatcher.set_token_config(sell_token, Option::Some(invalid_config));
     stop_cheat_caller_address(contract);
 }
+
+// ============================================================================
+// SECURITY: unbounded scheduling DoS (proof of bug)
+// ============================================================================
+// These two tests DEMONSTRATE the vulnerability on the current code: with
+// max_delay = 0 ("no limit", the default), a permissionless caller can
+// schedule an order arbitrarily far in the future, and because the claim loop
+// stops at the first unfinished order, that one order pins the proceeds of
+// every matured order behind it. Funds are delayed by an attacker-chosen
+// amount. The fix rejects the far-future order at creation; after it, these
+// tests are replaced by rejection tests.
+
+const TEN_YEARS: u64 = 10 * 365 * 86400;
+
+/// PROOF (accept): a far-future order is accepted when max_delay = 0.
+#[test]
+fn test_dos_far_future_order_is_accepted_when_max_delay_zero() {
+    let buyback_token = deploy_mock_erc20("Buyback", "BUY");
+    let sell_token = deploy_mock_erc20("Sell", "SELL");
+    let contract = setup_buyback_with_token_config(buyback_token, sell_token);
+    let dispatcher = IBuybackDispatcher { contract_address: contract };
+    let mock_erc20 = IMockERC20Dispatcher { contract_address: sell_token };
+    let mock_positions: ContractAddress = 'POSITIONS'.try_into().unwrap();
+
+    mock_erc20.mint(contract, amounts::THOUSAND_TOKENS);
+    start_cheat_block_timestamp_global(1000);
+    mock_call(mock_positions, selector!("mint_and_increase_sell_amount"), (1_u64, 100_u128), 1);
+
+    // start_time ten years out — accepted only because max_delay = 0 disables
+    // the ceiling. This is the pin the attacker plants.
+    let far = 1000 + TEN_YEARS;
+    dispatcher
+        .buy_back(
+            BuybackParams { sell_token, start_time: far, end_time: far + defaults::MIN_DURATION },
+        );
+    assert(dispatcher.get_order_count(sell_token) == 1, 'far-future order accepted');
+}
+
+/// PROOF (pin): a matured later order cannot be claimed behind the far-future
+/// one — the claim reverts NO_COMPLETED_ORDERS with proceeds sitting there.
+#[test]
+#[should_panic(expected: ('No completed orders', 'ENTRYPOINT_FAILED'))]
+fn test_dos_far_future_order_pins_a_matured_later_order() {
+    let buyback_token = deploy_mock_erc20("Buyback", "BUY");
+    let sell_token = deploy_mock_erc20("Sell", "SELL");
+    let contract = setup_buyback_with_token_config(buyback_token, sell_token);
+    let dispatcher = IBuybackDispatcher { contract_address: contract };
+    let mock_erc20 = IMockERC20Dispatcher { contract_address: sell_token };
+    let mock_positions: ContractAddress = 'POSITIONS'.try_into().unwrap();
+
+    start_cheat_block_timestamp_global(1000);
+    mock_call(mock_positions, selector!("mint_and_increase_sell_amount"), (1_u64, 100_u128), 1);
+    mock_call(mock_positions, selector!("increase_sell_amount"), 100_u128, 1);
+
+    // Attacker's order 0: ten years out.
+    mock_erc20.mint(contract, amounts::THOUSAND_TOKENS);
+    let far = 1000 + TEN_YEARS;
+    dispatcher
+        .buy_back(
+            BuybackParams { sell_token, start_time: far, end_time: far + defaults::MIN_DURATION },
+        );
+
+    // Legit order 1: starts now, matures in MIN_DURATION.
+    mock_erc20.mint(contract, amounts::THOUSAND_TOKENS);
+    dispatcher
+        .buy_back(
+            BuybackParams { sell_token, start_time: 0, end_time: 1000 + defaults::MIN_DURATION },
+        );
+
+    // Order 1 has matured; order 0 has not even started. The loop breaks at
+    // order 0 and order 1's proceeds are unreachable.
+    start_cheat_block_timestamp_global(1000 + defaults::MIN_DURATION + 1);
+    mock_call(mock_positions, selector!("withdraw_proceeds_from_sale_to"), 500_u128, 10);
+    dispatcher.claim_buyback_proceeds(sell_token, 0);
+}
