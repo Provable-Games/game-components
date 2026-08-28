@@ -32,9 +32,17 @@ never calls back to ask. Nothing syncs state between them.
 
 | Method | Returns | Description |
 |--------|---------|-------------|
-| `token_name(token_id)` | `ByteArray` | Display name for token |
-| `token_description(token_id)` | `ByteArray` | Token description |
-| `game_details(token_id)` | `Span<GameDetail>` | Key-value game details |
+| `token_name()` | `ByteArray` | The game's display name — game-level, not per-token |
+| `token_description()` | `ByteArray` | The game's description — game-level |
+| `game_details(token_id)` | `Span<GameDetail>` | Per-token detail rows |
+| `game_details_batch(token_ids)` | `Array<Span<GameDetail>>` | Batch of the above |
+
+`token_name`/`token_description` dropped their `token_id`: every token of a
+game shares them, and implementations ignored the parameter (their batch
+variants looped one constant, so both are gone). This surface is commonly
+implemented on a SEPARATE renderer contract rather than the game itself — SVG
+generation is large enough to hit the class-size limit — so it is a renderer
+surface that a game may point at, not part of the token standard.
 
 ## Extensions
 

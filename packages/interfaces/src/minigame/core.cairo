@@ -13,13 +13,13 @@ pub trait IMinigameTokenData<TState> {
 
 #[starknet::interface]
 pub trait IMinigameDetails<TState> {
-    fn token_name(self: @TState, token_id: felt252) -> ByteArray;
-    fn token_description(self: @TState, token_id: felt252) -> ByteArray;
+    /// The game's display name. Game-level, NOT per-token: every token of a
+    /// game shares it, and implementations that took a `token_id` ignored it.
+    fn token_name(self: @TState) -> ByteArray;
+    /// The game's description. Game-level, same reasoning as `token_name`.
+    fn token_description(self: @TState) -> ByteArray;
+    /// Per-token detail rows — the only genuinely token-keyed method here.
     fn game_details(self: @TState, token_id: felt252) -> Span<GameDetail>;
-
-    // Batch operations
-    fn token_name_batch(self: @TState, token_ids: Span<felt252>) -> Array<ByteArray>;
-    fn token_description_batch(self: @TState, token_ids: Span<felt252>) -> Array<ByteArray>;
     fn game_details_batch(self: @TState, token_ids: Span<felt252>) -> Array<Span<GameDetail>>;
 }
 
