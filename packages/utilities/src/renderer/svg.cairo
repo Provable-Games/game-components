@@ -989,7 +989,6 @@ mod tests {
         start_cheat_block_timestamp_global(1656763200); // midway 2022-2023
 
         let game_metadata = GameMetadata {
-            contract_address: 0x1234567890123456789012345678901234567890.try_into().unwrap(),
             name: "zKube",
             description: "This is as really long description as it can be to test the text wrapping in the SVG generation logic.  It should properly wrap across multiple lines without overflowing the card design. ashdfbyuasdvfyugaysudfbuyasgdf",
             developer: "zKorp",
@@ -998,11 +997,7 @@ mod tests {
             image: "https://zkube.vercel.app/assets/pwa-512x512.png",
             color: "blue",
             client_url: "https://zkube.vercel.app",
-            renderer_address: 0x9876543210987654321098765432109876543210.try_into().unwrap(),
             royalty_fraction: 500,
-            skills_address: 0.try_into().unwrap(),
-            created_at: 0,
-            version: 0,
         };
 
         let svg_result = create_default_svg(
@@ -1026,7 +1021,6 @@ mod tests {
         start_cheat_block_timestamp_global(1709654400); // 2024-03-05
 
         let game_metadata = GameMetadata {
-            contract_address: 0x1234567890123456789012345678901234567890.try_into().unwrap(),
             name: "Loot Survivor",
             description: "Fully onchain arcade dungeon crawler",
             developer: "Provable Games",
@@ -1035,11 +1029,7 @@ mod tests {
             image: "https://lootsurvivor.io/favicon.png",
             color: "#33FF33",
             client_url: "https://lootsurvivor.io",
-            renderer_address: 0x9876543210987654321098765432109876543210.try_into().unwrap(),
             royalty_fraction: 500,
-            skills_address: 0.try_into().unwrap(),
-            created_at: 0,
-            version: 0,
         };
 
         let mut token_metadata = default_token_metadata();
@@ -1130,7 +1120,6 @@ mod tests {
         start_cheat_block_timestamp_global(1656763200);
 
         let game_metadata = GameMetadata {
-            contract_address: 0x1234567890123456789012345678901234567890.try_into().unwrap(),
             name: "Extremely Long Game Name That Overflows",
             description: "A purposefully verbose description to verify word wrapping still works after the truncation changes are applied to the card.",
             developer: "Very Long Developer Studio Name",
@@ -1139,11 +1128,7 @@ mod tests {
             image: "https://example.com/img.png",
             color: "#FF6600",
             client_url: "https://example.com",
-            renderer_address: 0x9876543210987654321098765432109876543210.try_into().unwrap(),
             royalty_fraction: 1250,
-            skills_address: 0.try_into().unwrap(),
-            created_at: 0,
-            version: 0,
         };
 
         let mut token_metadata = default_token_metadata();

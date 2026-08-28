@@ -39,7 +39,6 @@ fn MINTED_BY_ADDRESS() -> ContractAddress {
 
 fn default_game_metadata() -> GameMetadata {
     GameMetadata {
-        contract_address: TEST_ADDRESS(),
         name: "Test Game",
         description: "A test game description",
         developer: "Test Developer",
@@ -48,11 +47,7 @@ fn default_game_metadata() -> GameMetadata {
         image: "https://example.com/logo.png",
         color: "white",
         client_url: "https://example.com/play",
-        renderer_address: TEST_ADDRESS(),
         royalty_fraction: 500,
-        skills_address: ZERO_ADDRESS(),
-        created_at: 0,
-        version: 0,
     }
 }
 

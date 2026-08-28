@@ -9,8 +9,6 @@ Centralized interface and struct definitions for all game components. Other pack
 | `metagame` | `IMetagame`, `IMetagameContext`, `IMetagameCallback` | Game management, context extensions |
 | `minigame` | `IMinigame`, `IMinigameTokenData`, `IMinigameSettings`, `IMinigameObjectives` | Game logic, score/game_over queries |
 | `token` (`token/core`) | `IMinigameToken` | THE minigame token standard: self-bound token embedded in the game contract (plus the `IMinigameTokenMinter` surface) |
-| `token/legacy` | `IMinigameTokenLegacy`, `IMinigameTokenMinter`, `IMinigameTokenObjectives`, `IMinigameTokenSettings`, `IMinigameTokenRenderer` | Original multi-game ERC721 token with extensions (kept for deployed denshokan) |
-| `registry` | `IMinigameRegistry` | Game registration and metadata lookup |
 | `leaderboard` | `ILeaderboard`, `ILeaderboardAdmin`, `IGameDetails` | Tournament scoring and rankings |
 | `tokenomics/buyback` | `IBuyback`, `IBuybackAdmin` | Autonomous buyback via Ekubo TWAMM |
 | `tokenomics/stream` | `IStreamToken`, `IStreamTokenFactory` | Token distribution streams |
@@ -19,11 +17,10 @@ Centralized interface and struct definitions for all game components. Other pack
 
 | Module | Structs |
 |--------|---------|
-| `structs/token` | `TokenMetadata`, `Lifecycle`, `MintParams`, `PlayerNameUpdate` |
-| `structs/minigame` | `GameDetail`, `MintGameParams`, `GameSettingDetails`, `GameSetting`, `GameObjective` |
+| `structs/token` | `TokenMetadata`, `Lifecycle`, `MintBatchRecipient`, `GameFeeTerms` |
+| `structs/minigame` | `GameMetadata`, `GameDetail`, `GameSettingDetails`, `GameSetting`, `GameObjective` |
 | `structs/metagame` | `GameContextDetails`, `GameContext` |
 | `structs/leaderboard` | `LeaderboardConfig`, `LeaderboardEntry`, `LeaderboardResult`, `LeaderboardStoreConfig` |
-| `structs/registry` | `GameMetadata` |
 
 ## Interface ID Constants
 
@@ -33,9 +30,7 @@ pub const IMINIGAME_ID: felt252 = 0x...;
 pub const IMINIGAME_SETTINGS_ID: felt252 = 0x...;
 pub const IMINIGAME_OBJECTIVES_ID: felt252 = 0x...;
 pub const IMINIGAME_TOKEN_ID: felt252 = 0x...;
-pub const IMINIGAME_TOKEN_LEGACY_ID: felt252 = 0x...;
 pub const IMINIGAME_TOKEN_MINTER_ID: felt252 = 0x...;
-pub const IMINIGAME_REGISTRY_ID: felt252 = 0x...;
 pub const ILEADERBOARD_ID: felt252 = 0x...;
 ```
 
@@ -72,7 +67,7 @@ let supports = src5_dispatcher.supports_interface(IMINIGAME_SETTINGS_ID);
 
 ```cairo
 use game_components_interfaces::{
-    TokenMetadata, Lifecycle, MintParams,
+    TokenMetadata, Lifecycle, MintBatchRecipient,
     GameMetadata, GameDetail,
     LeaderboardEntry, LeaderboardConfig,
 };
@@ -84,9 +79,10 @@ use game_components_interfaces::{
 - `score(token_id: u64) -> u32` - Get token's current score
 - `game_over(token_id: u64) -> bool` - Check if game has ended
 
-**IMinigame**:
-- `is_playable(token_id: u64) -> bool` - Check if token can be played
-- `update_game(token_id: u64)` - Sync token state with game state
+**IMinigame** (identity views only — self-bound game returns its own address):
+- `token_address() -> ContractAddress`
+- `settings_address() -> ContractAddress`
+- `objectives_address() -> ContractAddress`
 
 **ILeaderboard**:
 - `submit_score(tournament_id, token_id, score, position) -> LeaderboardResult`

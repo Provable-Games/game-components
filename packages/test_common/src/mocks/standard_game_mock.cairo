@@ -8,8 +8,7 @@
 //   minter registry — no separate MinterComponent), with the soulbound
 //   transfer guard in `before_update` (pure `unpack_soulbound` from the
 //   standard `token::packing` layout).
-// * `IMinigame` views that all return the contract's own address, plus
-//   `mint_game`/`mint_game_batch` delegating to the embedded token.
+// * `IMinigame` identity views that all return the contract's own address.
 // * `IMinigameTokenData` from local maps, with test setters `set_score` /
 //   `end_game` mirroring minigame_mock's semantics.
 // * `IMinigameSettings` + minigame_mock-style `create_settings_difficulty`
@@ -35,15 +34,10 @@ pub trait IStandardGameMock<TContractState> {
 #[starknet::contract]
 pub mod StandardGameMock {
     use core::num::traits::Zero;
-    use game_components_embeddable_game_standard::metagame::extensions::context::structs::GameContextDetails;
     use game_components_embeddable_game_standard::minigame::extensions::settings::interface::IMinigameSettings;
     use game_components_embeddable_game_standard::minigame::extensions::settings::settings::SettingsComponent;
     use game_components_embeddable_game_standard::minigame::interface::{
         IMINIGAME_ID, IMinigame, IMinigameTokenData,
-    };
-    use game_components_embeddable_game_standard::minigame::structs::MintGameParams;
-    use game_components_embeddable_game_standard::token::interface::{
-        IMinigameTokenDispatcher, IMinigameTokenDispatcherTrait,
     };
     use game_components_embeddable_game_standard::token::minigame_token_component::MinigameTokenComponent;
     use game_components_embeddable_game_standard::token::packing::unpack_soulbound;
@@ -186,89 +180,6 @@ pub mod StandardGameMock {
 
         fn objectives_address(self: @ContractState) -> ContractAddress {
             get_contract_address()
-        }
-
-        /// `IMinigame::mint_game` keeps the full 15-arg trait shape. The
-        /// standard mint carries objective/context/client_url/paymaster/
-        /// metadata with their original legacy-token behaviors, so those
-        /// forward naturally (the 15-arg u16 metadata widens into the
-        /// standard's u128 field via `.into()`); only renderer/skills — which
-        /// the standard token has no surface for — must be neutral, rejected
-        /// here rather than silently discarded.
-        fn mint_game(
-            self: @ContractState,
-            player_name: Option<felt252>,
-            settings_id: Option<u32>,
-            start: Option<u64>,
-            end: Option<u64>,
-            objective_id: Option<u32>,
-            context: Option<GameContextDetails>,
-            client_url: Option<ByteArray>,
-            renderer_address: Option<ContractAddress>,
-            skills_address: Option<ContractAddress>,
-            to: ContractAddress,
-            soulbound: bool,
-            paymaster: bool,
-            salt: u16,
-            metadata: u128,
-        ) -> felt252 {
-            assert!(renderer_address.is_none(), "StandardGameMock: renderer not supported");
-            assert!(skills_address.is_none(), "StandardGameMock: skills not supported");
-            let token = IMinigameTokenDispatcher { contract_address: get_contract_address() };
-            token
-                .mint(
-                    player_name,
-                    settings_id,
-                    start,
-                    end,
-                    objective_id,
-                    context,
-                    client_url,
-                    to,
-                    soulbound,
-                    paymaster,
-                    salt,
-                    metadata.into(),
-                )
-        }
-
-        fn mint_game_batch(self: @ContractState, mints: Array<MintGameParams>) -> Array<felt252> {
-            let token = IMinigameTokenDispatcher { contract_address: get_contract_address() };
-            let mut token_ids: Array<felt252> = array![];
-            let mut index: u32 = 0;
-            while index < mints.len() {
-                let m = mints.at(index);
-                assert!(m.renderer_address.is_none(), "StandardGameMock: renderer not supported");
-                assert!(m.skills_address.is_none(), "StandardGameMock: skills not supported");
-                let context = match m.context {
-                    Option::Some(c) => Option::Some(c.clone()),
-                    Option::None => Option::None,
-                };
-                let client_url = match m.client_url {
-                    Option::Some(u) => Option::Some(u.clone()),
-                    Option::None => Option::None,
-                };
-                token_ids
-                    .append(
-                        token
-                            .mint(
-                                *m.player_name,
-                                *m.settings_id,
-                                *m.start,
-                                *m.end,
-                                *m.objective_id,
-                                context,
-                                client_url,
-                                *m.to,
-                                *m.soulbound,
-                                *m.paymaster,
-                                *m.salt,
-                                *m.metadata,
-                            ),
-                    );
-                index += 1;
-            }
-            token_ids
         }
     }
 

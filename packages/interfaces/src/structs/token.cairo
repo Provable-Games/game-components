@@ -1,7 +1,6 @@
 // Token structs
 // Note: StorePacking implementations are in the token package for optimized storage
 use starknet::ContractAddress;
-use super::metagame::GameContextDetails;
 
 /// A self-bound standard token's declared monetization terms: the fee
 /// recipient (payee), license text and fee rate. Replaces the retired
@@ -59,29 +58,6 @@ impl TokenMetadataDefault of Default<TokenMetadata> {
     }
 }
 
-/// Per-token mint parameters for batch minting.
-/// Contains all parameters for a single mint operation.
-/// Note: Not Copy because it contains ByteArray and GameContextDetails.
-#[derive(Drop, Serde)]
-pub struct MintParams {
-    pub game_address: ContractAddress,
-    pub player_name: Option<felt252>,
-    pub settings_id: Option<u32>,
-    pub start: Option<u64>,
-    pub end: Option<u64>,
-    pub objective_id: Option<u32>,
-    pub context: Option<GameContextDetails>,
-    pub client_url: Option<ByteArray>,
-    pub renderer_address: Option<ContractAddress>,
-    pub skills_address: Option<ContractAddress>,
-    pub to: ContractAddress,
-    pub soulbound: bool,
-    pub paymaster: bool,
-    pub salt: u16,
-    /// Inert data the game interprets — 65 bits, per the id layout.
-    pub metadata: u128,
-}
-
 /// Per-recipient parameters for `mint_batch_recipients`.
 /// Mints `count` tokens to `to` with the shared mint config supplied by the caller.
 /// The salt provided to `mint_batch_recipients` increments by one per minted token
@@ -90,41 +66,5 @@ pub struct MintParams {
 pub struct MintBatchRecipient {
     pub to: ContractAddress,
     pub count: u16,
-}
-
-/// Per-token name update parameters for batch name updates
-#[derive(Copy, Drop, Serde)]
-pub struct PlayerNameUpdate {
-    pub token_id: felt252,
-    pub name: felt252,
-}
-
-/// Mutable token state (game_over, completed_objective, and completion timestamp)
-/// Used for efficient queries without parsing packed token data
-#[derive(Copy, Drop, Serde)]
-pub struct TokenMutableState {
-    pub game_over: bool,
-    pub completed_objective: bool,
-    pub completed_at: u32,
-}
-
-impl TokenMutableStateDefault of Default<TokenMutableState> {
-    fn default() -> TokenMutableState {
-        TokenMutableState { game_over: false, completed_objective: false, completed_at: 0 }
-    }
-}
-
-/// Full state for a token including mutable state not in packed token ID
-/// Used for batch queries to minimize RPC calls
-#[derive(Drop, Serde)]
-pub struct TokenFullState {
-    pub token_id: felt252,
-    pub owner: ContractAddress,
-    pub player_name: felt252,
-    pub is_playable: bool,
-    pub game_address: ContractAddress,
-    pub game_over: bool,
-    pub completed_objective: bool,
-    pub lifecycle: Lifecycle,
 }
 

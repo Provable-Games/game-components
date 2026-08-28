@@ -1,40 +1,18 @@
 // Core minigame interfaces
 use starknet::ContractAddress;
-use crate::structs::metagame::GameContextDetails;
-use crate::structs::minigame::{GameDetail, MintGameParams};
+use crate::structs::minigame::GameDetail;
 
 /// SNIP-5 interface ID derived via src5_rs: XOR of extended function selectors
-/// - token_address()->ContractAddress
-/// - settings_address()->ContractAddress
-/// - objectives_address()->ContractAddress
-/// - mint_game(...)->felt252
-/// - mint_game_batch(Array<MintGameParams>)->Array<felt252>
-pub const IMINIGAME_ID: felt252 = 0x1b78fcd155ca1cfe04a0f0f75dd48b398995d2f9ff0c9f0e00ec80c71d1f2bb;
+/// token_address: 0x19f994858ac8feac4b935e3747d4a05f1a4f8a96cc87ffa2d8bc17be3f3a5d7
+/// settings_address: 0x31a225c3cb5d446d5015492333861cf55bd86d1d078aa03ebf5fab611be7ad5
+/// objectives_address: 0x1e29430bb8699d02b61fbd5aeb58cdd98d669fe2ea3ec40d9db12b87a2ddd62
+pub const IMINIGAME_ID: felt252 = 0x3672f24df9fc27c3ad99aa4e9f0a7173ccf1786921339b91fa5297588600260;
 
 #[starknet::interface]
 pub trait IMinigame<TState> {
     fn token_address(self: @TState) -> ContractAddress;
     fn settings_address(self: @TState) -> ContractAddress;
     fn objectives_address(self: @TState) -> ContractAddress;
-    fn mint_game(
-        self: @TState,
-        player_name: Option<felt252>,
-        settings_id: Option<u32>,
-        start: Option<u64>,
-        end: Option<u64>,
-        objective_id: Option<u32>,
-        context: Option<GameContextDetails>,
-        client_url: Option<ByteArray>,
-        renderer_address: Option<ContractAddress>,
-        skills_address: Option<ContractAddress>,
-        to: ContractAddress,
-        soulbound: bool,
-        paymaster: bool,
-        salt: u16,
-        metadata: u128,
-    ) -> felt252;
-    /// Batch mint games with per-token parameters
-    fn mint_game_batch(self: @TState, mints: Array<MintGameParams>) -> Array<felt252>;
 }
 
 #[starknet::interface]

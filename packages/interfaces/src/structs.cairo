@@ -12,9 +12,5 @@ pub use leaderboard::{
 pub use metagame::{GameContext, GameContextDetails};
 pub use minigame::{
     GameDetail, GameMetadata, GameObjective, GameObjectiveDetails, GameSetting, GameSettingDetails,
-    MintGameParams,
 };
-pub use token::{
-    GameFeeTerms, Lifecycle, MintBatchRecipient, MintParams, PlayerNameUpdate, TokenFullState,
-    TokenMetadata, TokenMutableState,
-};
+pub use token::{GameFeeTerms, Lifecycle, MintBatchRecipient, TokenMetadata};

@@ -9,7 +9,7 @@ IS its own token.
 | Path | Purpose |
 |------|---------|
 | `interface.cairo` | `IMinigame`, `IMinigameTokenData`, `IMinigameDetails`, `IMinigameTokenUri` |
-| `structs.cairo` | `MintGameParams` |
+| `structs.cairo` | `GameDetail` |
 | `extensions/settings/` | `SettingsComponent` — settings presets |
 | `extensions/objectives/` | `ObjectivesComponent` — achievement tracking |
 
@@ -22,10 +22,12 @@ IS its own token.
 | `token_address()` | `ContractAddress` | The game's token — for a self-bound game, **its own address** |
 | `settings_address()` | `ContractAddress` | Optional settings contract |
 | `objectives_address()` | `ContractAddress` | Optional objectives contract |
-| `mint_game(player_name, settings_id, ...)` | `felt252` | Mint single game token |
-| `mint_game_batch(mints)` | `Array<felt252>` | Batch mint game tokens |
 
-**Interface ID**: `0x02c0f9265d397c10970f24822e4b57cac7d8895f8c449b7c9caaa26910499704`
+`IMinigame` carries only the identity views. Minting goes through the token's
+own `IMinigameTokenMinter::mint` (the game IS the token) — there is no separate
+`mint_game`/`mint_game_batch` self-dispatch wrapper.
+
+**Interface ID**: `0x3672f24df9fc27c3ad99aa4e9f0a7173ccf1786921339b91fa5297588600260`
 
 `token_address()` returning the contract's own address is what makes a game
 discoverable as self-bound: `metagame::assert_game_registered` is exactly that
@@ -112,7 +114,7 @@ mod MyGame {
 ## Game Lifecycle
 
 1. **Init**: `MinigameTokenComponent::initializer(game_fee_recipient, license, fee_numerator)`
-2. **Mint**: `mint_game()` — the token is this contract
+2. **Mint**: `mint()` (`IMinigameTokenMinter`) — the token is this contract
 3. **Guard**: `assert_owner_and_playable(token_id, caller)` before actions — internal, zero syscalls
 4. **Play**: update game state, then `refresh_metadata(token_id)` (ERC-4906)
 5. **Complete**: return `true` from `game_over()` when finished

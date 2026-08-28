@@ -949,7 +949,6 @@ mod MockERC721ForTicketBooth {
 mod MockMinigameTokenForTicketBooth {
     use game_components_interfaces::minigame::{IMINIGAME_ID, IMinigame};
     use game_components_interfaces::structs::metagame::GameContextDetails;
-    use game_components_interfaces::structs::minigame::MintGameParams;
     use game_components_interfaces::structs::token::{Lifecycle, MintBatchRecipient, TokenMetadata};
     use game_components_interfaces::token::core::{IMINIGAME_TOKEN_ID, IMinigameToken};
     use openzeppelin_interfaces::introspection::ISRC5;
@@ -994,34 +993,6 @@ mod MockMinigameTokenForTicketBooth {
         }
         fn objectives_address(self: @ContractState) -> ContractAddress {
             get_contract_address()
-        }
-        fn mint_game(
-            self: @ContractState,
-            player_name: Option<felt252>,
-            settings_id: Option<u32>,
-            start: Option<u64>,
-            end: Option<u64>,
-            objective_id: Option<u32>,
-            context: Option<GameContextDetails>,
-            client_url: Option<ByteArray>,
-            renderer_address: Option<ContractAddress>,
-            skills_address: Option<ContractAddress>,
-            to: ContractAddress,
-            soulbound: bool,
-            paymaster: bool,
-            salt: u16,
-            metadata: u128,
-        ) -> felt252 {
-            self.next_token_id.read().into()
-        }
-        fn mint_game_batch(self: @ContractState, mints: Array<MintGameParams>) -> Array<felt252> {
-            let mut ids = array![];
-            let mut i = 0;
-            while i < mints.len() {
-                ids.append((self.next_token_id.read() + i.into()).into());
-                i += 1;
-            }
-            ids
         }
     }
 
