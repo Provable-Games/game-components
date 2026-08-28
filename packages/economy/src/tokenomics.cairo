@@ -30,6 +30,7 @@ pub mod buyback;
 pub mod constants;
 pub mod deposit_lock;
 pub mod factory;
+pub mod splitter;
 pub mod stream;
 
 // Re-exports for convenience - Buyback
@@ -47,6 +48,9 @@ pub use deposit_lock::deposit_lock::DepositLockComponent;
 
 // Re-exports for convenience - Factory
 pub use factory::StreamTokenFactory;
+
+// Re-exports for convenience - Splitter
+pub use splitter::splitter::SplitterComponent;
 
 // Re-exports for convenience - Stream
 pub use stream::{

@@ -106,4 +106,4 @@ pub use token::{
 };
 
 // Tokenomics (existing)
-pub use tokenomics::{buyback, deposit_lock, stream};
+pub use tokenomics::{buyback, deposit_lock, splitter, stream};
