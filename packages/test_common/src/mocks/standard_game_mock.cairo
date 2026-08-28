@@ -8,7 +8,6 @@
 //   minter registry — no separate MinterComponent), with the soulbound
 //   transfer guard in `before_update` (pure `unpack_soulbound` from the
 //   standard `token::packing` layout).
-// * `IMinigame` identity views that all return the contract's own address.
 // * `IMinigameTokenData` from local maps, with test setters `set_score` /
 //   `end_game` mirroring minigame_mock's semantics.
 // * `IMinigameSettings` + minigame_mock-style `create_settings_difficulty`
@@ -36,19 +35,16 @@ pub mod StandardGameMock {
     use core::num::traits::Zero;
     use game_components_embeddable_game_standard::minigame::extensions::settings::interface::IMinigameSettings;
     use game_components_embeddable_game_standard::minigame::extensions::settings::settings::SettingsComponent;
-    use game_components_embeddable_game_standard::minigame::interface::{
-        IMINIGAME_ID, IMinigame, IMinigameTokenData,
-    };
+    use game_components_embeddable_game_standard::minigame::interface::IMinigameTokenData;
     use game_components_embeddable_game_standard::token::minigame_token_component::MinigameTokenComponent;
     use game_components_embeddable_game_standard::token::packing::unpack_soulbound;
     use openzeppelin_access::ownable::OwnableComponent;
     use openzeppelin_introspection::src5::SRC5Component;
-    use openzeppelin_introspection::src5::SRC5Component::InternalTrait as SRC5InternalTrait;
     use openzeppelin_token::erc721::ERC721Component;
+    use starknet::ContractAddress;
     use starknet::storage::{
         Map, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess,
     };
-    use starknet::{ContractAddress, get_contract_address};
 
     component!(path: ERC721Component, storage: erc721, event: ERC721Event);
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
@@ -163,24 +159,6 @@ pub mod StandardGameMock {
         self.minigame_token.initializer(game_fee_recipient, Option::None, Option::None);
         // Registers IMINIGAME_SETTINGS_ID (mirrors minigame_mock).
         self.settings.initializer();
-        self.src5.register_interface(IMINIGAME_ID);
-    }
-
-    /// The one-address shape made concrete: every address the game advertises
-    /// is this contract.
-    #[abi(embed_v0)]
-    impl MinigameImpl of IMinigame<ContractState> {
-        fn token_address(self: @ContractState) -> ContractAddress {
-            get_contract_address()
-        }
-
-        fn settings_address(self: @ContractState) -> ContractAddress {
-            get_contract_address()
-        }
-
-        fn objectives_address(self: @ContractState) -> ContractAddress {
-            get_contract_address()
-        }
     }
 
     #[abi(embed_v0)]

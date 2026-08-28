@@ -6,9 +6,8 @@ pub mod settings;
 
 // Re-export commonly used items at top level
 pub use core::{
-    IMINIGAME_ID, IMinigame, IMinigameDetails, IMinigameDetailsDispatcher,
-    IMinigameDetailsDispatcherTrait, IMinigameDetailsSVG, IMinigameDetailsSVGDispatcher,
-    IMinigameDetailsSVGDispatcherTrait, IMinigameDispatcher, IMinigameDispatcherTrait,
+    IMinigameDetails, IMinigameDetailsDispatcher, IMinigameDetailsDispatcherTrait,
+    IMinigameDetailsSVG, IMinigameDetailsSVGDispatcher, IMinigameDetailsSVGDispatcherTrait,
     IMinigameTokenData, IMinigameTokenDataDispatcher, IMinigameTokenDataDispatcherTrait,
     IMinigameTokenUri, IMinigameTokenUriDispatcher, IMinigameTokenUriDispatcherTrait,
 };

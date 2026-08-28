@@ -947,7 +947,6 @@ mod MockERC721ForTicketBooth {
 // both the game and its token, which is what `mint` now resolves and mints at.
 #[starknet::contract]
 mod MockMinigameTokenForTicketBooth {
-    use game_components_interfaces::minigame::{IMINIGAME_ID, IMinigame};
     use game_components_interfaces::structs::metagame::GameContextDetails;
     use game_components_interfaces::structs::token::{Lifecycle, MintBatchRecipient, TokenMetadata};
     use game_components_interfaces::token::core::{IMINIGAME_TOKEN_ID, IMinigameToken};
@@ -979,20 +978,6 @@ mod MockMinigameTokenForTicketBooth {
             objective_id: 0,
             paymaster: false,
             metadata: 0,
-        }
-    }
-
-    /// Self-bound: every address this game advertises is itself.
-    #[abi(embed_v0)]
-    impl MinigameImpl of IMinigame<ContractState> {
-        fn token_address(self: @ContractState) -> ContractAddress {
-            get_contract_address()
-        }
-        fn settings_address(self: @ContractState) -> ContractAddress {
-            get_contract_address()
-        }
-        fn objectives_address(self: @ContractState) -> ContractAddress {
-            get_contract_address()
         }
     }
 
@@ -1085,7 +1070,6 @@ mod MockMinigameTokenForTicketBooth {
     impl SRC5Impl of ISRC5<ContractState> {
         fn supports_interface(self: @ContractState, interface_id: felt252) -> bool {
             interface_id == IMINIGAME_TOKEN_ID
-                || interface_id == IMINIGAME_ID
                 || interface_id == openzeppelin_interfaces::introspection::ISRC5_ID
         }
     }
