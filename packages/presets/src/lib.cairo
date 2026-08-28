@@ -10,12 +10,15 @@
 //! - **Leaderboard**: Tournament leaderboard management with scoring and ranking
 //! - **AutonomousBuyback**: Autonomous token buyback via Ekubo TWAMM
 //! - **StreamToken**: ERC20 token with built-in TWAMM distribution
+//! - **DepositLock**: Holds an ERC20 and releases each arrival after a fixed term
 
 pub mod autonomous_buyback;
+pub mod deposit_lock;
 pub mod leaderboard;
 pub mod stream_token;
 
 pub use autonomous_buyback::AutonomousBuyback;
+pub use deposit_lock::DepositLock;
 pub use stream_token::StreamToken;
 
 #[cfg(test)]

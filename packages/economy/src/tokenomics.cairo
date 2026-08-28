@@ -1,7 +1,8 @@
 /// Game Components Tokenomics
 ///
-/// A Cairo library providing reusable components for executing autonomous
-/// token buybacks and distributions via Ekubo's TWAMM (Time-Weighted Average Market Maker).
+/// A Cairo library providing reusable components for autonomous token
+/// buybacks and distributions via Ekubo's TWAMM (Time-Weighted Average Market
+/// Maker), plus a fixed-term deposit lock for holding revenue.
 ///
 /// # Features
 /// - Permissionless buyback execution
@@ -27,6 +28,7 @@
 /// ```
 pub mod buyback;
 pub mod constants;
+pub mod deposit_lock;
 pub mod factory;
 pub mod stream;
 
@@ -39,6 +41,9 @@ pub use buyback::{
 
 // Re-exports for convenience - Constants
 pub use constants::{ERC20_UNIT, Errors};
+
+// Re-exports for convenience - Deposit Lock
+pub use deposit_lock::deposit_lock::DepositLockComponent;
 
 // Re-exports for convenience - Factory
 pub use factory::StreamTokenFactory;

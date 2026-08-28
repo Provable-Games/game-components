@@ -119,6 +119,36 @@ pub struct CreateTokenParams {
 
 ---
 
+## DepositLockComponent
+
+Holds a single ERC20 received by plain transfer and releases each arrival to a beneficiary after a fixed term. Each deposit keeps its own term from its own arrival.
+
+### IDepositLock<TState> (Permissionless)
+
+| Function | Description |
+|----------|-------------|
+| `lock()` | Crank: stamp everything arrived since the last call (`balance − locked_total`) with a fresh term. Permissionless — it can only move funds from unrecorded to locked |
+| `release(limit)` | Send matured deposits to the beneficiary, oldest first, at most `limit` day-buckets. Permissionless |
+| `pending()` | Arrived but not yet stamped by `lock` — cannot be released |
+| `releasable()` | Matured and awaiting `release` |
+| `locked_total()` | Recorded and unreleased, matured or not |
+| `unlock_day_at(index)` / `queue_range()` | Inspect the day queue |
+| `token()` / `beneficiary()` / `lock_duration()` | Config views |
+
+### IDepositLockAdmin<TState> (Owner-gated by the embedder)
+
+| Function | Description |
+|----------|-------------|
+| `set_beneficiary(beneficiary)` | Change where matured deposits go. Cannot shorten a lock. Internal in the component (`InternalTrait::set_beneficiary`, no access check); the embedding contract exposes it behind its own owner gate |
+
+### Design
+
+- **Day bucketing**: unlock times round UP to a day boundary and same-day deposits merge, so outstanding records are bounded by `lock_duration` in days (≤366 for a year) regardless of deposit count — dust cannot inflate `release` cost. Rounding up means a deposit is locked for *at least* the full term.
+- **`initializer(token, beneficiary, lock_duration)`**: token and term are fixed (no setters); all non-zero.
+- **No emergency withdrawal** by design. Composition: embed `DepositLockImpl` (permissionless) + `OwnableComponent`, forward `set_beneficiary` through `assert_only_owner` — see the `DepositLock` preset.
+
+---
+
 ## StreamTokenFactory
 
 Deploys autonomous stream tokens with TWAMM integration.
