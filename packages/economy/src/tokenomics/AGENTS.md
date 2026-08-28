@@ -149,6 +149,29 @@ Holds a single ERC20 received by plain transfer and releases each arrival to a b
 
 ---
 
+## SplitterComponent
+
+Divides whatever it receives across a weighted list of destinations. `distribute(token)` reads the contract's own balance and pays each leg its basis-point share, with the FINAL leg taking the remainder — so parts sum to exactly the whole, no dust stranded. Permissionless, any ERC20, no per-token setup.
+
+### ISplitter<TState> (Permissionless)
+
+| Function | Description |
+|----------|-------------|
+| `distribute(token)` | Split the whole balance of `token` across the legs |
+| `distribute_many(tokens)` | `distribute` over several tokens; empty balances skipped (keeper-friendly batch) |
+| `split()` | The configured `Span<SplitLeg>` |
+
+### Design
+
+- **`initializer(legs)`**: validates legs are non-empty, ≤ `MAX_LEGS` (8), non-zero destination/bps, no duplicate destination, summing to exactly `BPS_DENOMINATOR` (10000). No setter — the split is immutable, and there is **no owner** (change a ratio by re-pointing the revenue source at a new splitter).
+- **Conservation**: one balance read drives every leg; the last leg gets `total − paid`, so integer division never strands dust.
+- **No emergency withdrawal** — `distribute` is the only exit and is permissionless.
+- **Standard-ERC20 assumption**: a balance ≥ `2^256/10000` overflows the `total*bps` multiply; a non-standard `transfer` reverts `distribute` for that token.
+
+`SplitLeg { destination, bps }` lives in `interfaces/tokenomics/splitter`.
+
+---
+
 ## StreamTokenFactory
 
 Deploys autonomous stream tokens with TWAMM integration.

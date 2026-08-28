@@ -115,6 +115,18 @@ fn constructor(
 
 ---
 
+## Splitter
+
+Splits any ERC20 across a fixed weighted set of destinations. Immutable and **ownerless**.
+
+**Components:** `SplitterComponent`
+
+**Constructor:** `constructor(legs: Span<SplitLeg>)` — legs sum to 10000 bps; fixed hereafter.
+
+**Permissionless:** `distribute(token)`, `distribute_many(tokens)`, `split()` view. Last leg takes the remainder (dust-proof); no emergency withdrawal.
+
+---
+
 ## Building Custom Presets
 
 Compose components for custom contracts:
