@@ -11,6 +11,6 @@ pub use leaderboard::{
 // Re-export commonly used structs at top level
 pub use metagame::{GameContext, GameContextDetails};
 pub use minigame::{
-    GameDetail, GameMetadata, GameObjective, GameObjectiveDetails, GameSetting, GameSettingDetails,
+    GameDetail, GameObjective, GameObjectiveDetails, GameSetting, GameSettingDetails,
 };
 pub use token::{GameFeeTerms, Lifecycle, MintBatchRecipient, TokenMetadata};
