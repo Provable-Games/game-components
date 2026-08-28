@@ -104,14 +104,22 @@ pub mod metagame_mock {
 
     #[abi(embed_v0)]
     impl MetagameContextImpl of IMetagameContext<ContractState> {
-        fn has_context(self: @ContractState, token_id: felt252) -> bool {
+        fn has_context(
+            self: @ContractState, game_address: ContractAddress, token_id: felt252,
+        ) -> bool {
+            // The mock keys only by token_id — enough for tests, which use one
+            // game. A real metagame must key by the (game, token) pair.
+            let _ = game_address;
             self.token_context_exists.read(token_id)
         }
     }
 
     #[abi(embed_v0)]
     impl MetagameContextDetailsImpl of IMetagameContextDetails<ContractState> {
-        fn context_details(self: @ContractState, token_id: felt252) -> GameContextDetails {
+        fn context_details(
+            self: @ContractState, game_address: ContractAddress, token_id: felt252,
+        ) -> GameContextDetails {
+            let _ = game_address;
             let context_count = self.token_context_count.read(token_id);
             let mut contexts = array![];
 

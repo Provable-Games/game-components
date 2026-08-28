@@ -14,9 +14,16 @@ trait IContextSetter<TContractState> {
 }
 
 // Test contract that embeds ContextComponent
+/// Any non-zero address: these mocks key context by token_id alone, so the
+/// game address is carried through the ABI but not used to discriminate.
+fn test_game() -> starknet::ContractAddress {
+    0x67616d65.try_into().unwrap()
+}
+
 #[starknet::contract]
 mod MockContextContract {
     use openzeppelin_introspection::src5::SRC5Component;
+    use starknet::ContractAddress;
     use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
     use crate::metagame::extensions::context::context::ContextComponent;
     use crate::metagame::extensions::context::interface::{
@@ -82,7 +89,11 @@ mod MockContextContract {
     // Implement the context interface to use our test storage
     #[abi(embed_v0)]
     impl IMetagameContextImpl of IMetagameContext<ContractState> {
-        fn has_context(self: @ContractState, token_id: felt252) -> bool {
+        fn has_context(
+            self: @ContractState, game_address: ContractAddress, token_id: felt252,
+        ) -> bool {
+            // Single-game mock: the pair collapses to token_id here.
+            let _ = game_address;
             if token_id == 1 {
                 self.has_context_1.read()
             } else if token_id == 2 {
@@ -107,8 +118,10 @@ mod MockContextContract {
 
     #[abi(embed_v0)]
     impl IMetagameContextDetailsImpl of IMetagameContextDetails<ContractState> {
-        fn context_details(self: @ContractState, token_id: felt252) -> GameContextDetails {
-            if !self.has_context(token_id) {
+        fn context_details(
+            self: @ContractState, game_address: ContractAddress, token_id: felt252,
+        ) -> GameContextDetails {
+            if !self.has_context(game_address, token_id) {
                 panic!("Context not found for token");
             }
 
@@ -149,8 +162,10 @@ mod MockContextContract {
     // Implement the SVG interface
     #[abi(embed_v0)]
     impl IMetagameContextSVGImpl of IMetagameContextSVG<ContractState> {
-        fn context_svg(self: @ContractState, token_id: felt252) -> ByteArray {
-            let context = self.context_details(token_id);
+        fn context_svg(
+            self: @ContractState, game_address: ContractAddress, token_id: felt252,
+        ) -> ByteArray {
+            let context = self.context_details(game_address, token_id);
             // Return mock SVG with the actual context name
             "<svg><text>" + context.name + "</text></svg>"
         }
@@ -251,10 +266,10 @@ fn test_mint_with_context_external_provider() {
 
     // Verify context was stored
     let context_dispatcher = IMetagameContextDispatcher { contract_address };
-    assert!(context_dispatcher.has_context(1), "Should have context");
+    assert!(context_dispatcher.has_context(test_game(), 1), "Should have context");
 
     let context_details_dispatcher = IMetagameContextDetailsDispatcher { contract_address };
-    let retrieved_context = context_details_dispatcher.context_details(1);
+    let retrieved_context = context_details_dispatcher.context_details(test_game(), 1);
     assert!(retrieved_context.id == Option::Some(1), "Context ID mismatch");
     assert!(retrieved_context.name == "Tournament 2024", "Name mismatch");
 }
@@ -277,7 +292,7 @@ fn test_mint_with_context_self_provider() {
     setter.store_context(2, context_details);
 
     let context_dispatcher = IMetagameContextDispatcher { contract_address };
-    assert!(context_dispatcher.has_context(2), "Should have context");
+    assert!(context_dispatcher.has_context(test_game(), 2), "Should have context");
 }
 
 // Test CTX-U-05: Query has_context for valid token
@@ -294,7 +309,7 @@ fn test_has_context_valid_token() {
     setter.store_context(10, context_details);
 
     let context_dispatcher = IMetagameContextDispatcher { contract_address };
-    assert!(context_dispatcher.has_context(10), "Should have context");
+    assert!(context_dispatcher.has_context(test_game(), 10), "Should have context");
 }
 
 // Test CTX-U-06: Query has_context for no context
@@ -304,7 +319,7 @@ fn test_has_context_no_context() {
     let (contract_address, _) = contract.deploy(@array![]).unwrap();
 
     let context_dispatcher = IMetagameContextDispatcher { contract_address };
-    assert!(!context_dispatcher.has_context(999), "Should not have context");
+    assert!(!context_dispatcher.has_context(test_game(), 999), "Should not have context");
 }
 
 // Test CTX-U-07: Get context for valid token
@@ -324,7 +339,7 @@ fn test_get_context_valid_token() {
     setter.store_context(20, context_details);
 
     let context_details_dispatcher = IMetagameContextDetailsDispatcher { contract_address };
-    let retrieved = context_details_dispatcher.context_details(20);
+    let retrieved = context_details_dispatcher.context_details(test_game(), 20);
 
     assert!(retrieved.id == Option::Some(1), "Context ID mismatch");
     assert!(retrieved.name == "Championship", "Name mismatch");
@@ -340,7 +355,7 @@ fn test_get_context_nonexistent_token() {
     let (contract_address, _) = contract.deploy(@array![]).unwrap();
 
     let context_details_dispatcher = IMetagameContextDetailsDispatcher { contract_address };
-    context_details_dispatcher.context_details(999); // Should panic
+    context_details_dispatcher.context_details(test_game(), 999); // Should panic
 }
 
 // Test CTX-U-09: Context with empty array
@@ -360,7 +375,7 @@ fn test_context_with_empty_array() {
     setter.store_context(30, context_details);
 
     let context_details_dispatcher = IMetagameContextDetailsDispatcher { contract_address };
-    let retrieved = context_details_dispatcher.context_details(30);
+    let retrieved = context_details_dispatcher.context_details(test_game(), 30);
     assert!(retrieved.context.len() == 2, "Context array should have mock data");
 }
 
@@ -392,6 +407,6 @@ fn test_context_with_100_items() {
     setter.store_context(40, context_details);
 
     let context_details_dispatcher = IMetagameContextDetailsDispatcher { contract_address };
-    let retrieved = context_details_dispatcher.context_details(40);
+    let retrieved = context_details_dispatcher.context_details(test_game(), 40);
     assert!(retrieved.context.len() == 2, "Should have mock context items");
 }
