@@ -11,7 +11,7 @@
 //! 4. the ratios match the basis-point path (which is the same mathematics
 //!    computed less precisely), so the shape does not change.
 
-use crate::distribution::calculator::calculate_share;
+use crate::distribution::calculator::{calculate_share, share_at, weight_vector};
 use crate::distribution::payout::{
     MAX_EXACT_EXPONENT, calculate_payout, max_geometric_payouts, payout_weight, payout_weight_sum,
     supports_exact_payout,
@@ -64,19 +64,27 @@ fn test_no_zero_payouts_where_basis_points_die() {
     let dist = Distribution::Exponential(30); // k = 3, steep
     let n: u32 = 100;
 
-    let mut zero_shares: u32 = 0;
     let mut p: u32 = 1;
     while p <= n {
-        if calculate_share(dist, p, n, BASIS_POINTS) == 0 {
-            zero_shares += 1;
-        }
         assert!(calculate_payout(dist, p, n, POOL) > 0, "position {} paid nothing", p);
         p += 1;
     }
 
     // Guard the premise: if this curve ever stops starving the basis-point
     // path, the test above stops proving anything.
-    assert!(zero_shares > 0, "expected the bps path to zero out some positions");
+    //
+    // The last place is the whole guard. The curve is strictly decreasing and
+    // truncation is monotone, so position n holds the smallest share — it
+    // reads 0 exactly when *some* position does, and it is the position the
+    // module docs name as unclaimable. Probing it alone rather than counting
+    // every zero is not a weaker premise, it is the same one: `calculate_share`
+    // rebuilds the whole n-weight vector per call, so sweeping all n positions
+    // is O(n^2) fixed point work for a fact the minimum already settles, and at
+    // n=100 that overruns snforge's per-test step budget.
+    assert!(
+        calculate_share(dist, n, n, BASIS_POINTS) == 0,
+        "expected the bps path to zero out the last position",
+    );
 }
 
 #[test]
@@ -116,6 +124,19 @@ fn test_payouts_are_monotonically_non_increasing() {
 /// Same curve as the basis-point path: scaling a payout back into basis
 /// points reproduces `calculate_share` to within the 1 bps that the fixed
 /// point implementation loses to rounding.
+///
+/// The basis-point side is read off one weight vector per field size rather
+/// than one `calculate_share` call per position. `calculate_share` rebuilds
+/// the whole vector on every call — the normalization sum *is* the
+/// denominator, so that is inherent, and it is why `calculate_total` and
+/// `calculate_share_with_dust` build the vector once too. Calling it per
+/// position makes a single field size O(n^2) and the sweep O(n^3), which
+/// overruns snforge's per-test step budget long before n=30.
+///
+/// `share_at(@weight_vector(d, n), .., p, s)` is the body `calculate_share`
+/// runs for Linear and Exponential, so the compared values are unchanged —
+/// only the redundant rebuilds are gone, and the sweep re-checks that
+/// equivalence against `calculate_share` itself on the small fields.
 #[test]
 fn test_matches_the_basis_point_curve() {
     let dists = array![
@@ -125,9 +146,10 @@ fn test_matches_the_basis_point_curve() {
     for dist in dists {
         let mut n: u32 = 1;
         while n <= 30 {
+            let (weights, denominator) = weight_vector(dist, n);
             let mut p: u32 = 1;
             while p <= n {
-                let bps = calculate_share(dist, p, n, BASIS_POINTS);
+                let bps = share_at(@weights, denominator, p, BASIS_POINTS);
                 // Payout of a 10000-unit pool IS the basis-point share.
                 let payout = calculate_payout(dist, p, n, 10000);
                 let payout_u16: u16 = payout.try_into().unwrap();
@@ -137,6 +159,18 @@ fn test_matches_the_basis_point_curve() {
                     bps - payout_u16
                 };
                 assert!(diff <= 1, "curve moved at n={} p={}: {} vs {}", n, p, bps, payout_u16);
+                // Anchor the oracle to the public entry point. Going through
+                // `calculate_share` is the O(n^2) path this test avoids, so
+                // the anchor stays on the small fields — enough to catch the
+                // oracle drifting away from what callers actually run.
+                if n <= 4 {
+                    assert!(
+                        bps == calculate_share(dist, p, n, BASIS_POINTS),
+                        "oracle drifted from calculate_share at n={} p={}",
+                        n,
+                        p,
+                    );
+                }
                 p += 1;
             }
             n += 1;

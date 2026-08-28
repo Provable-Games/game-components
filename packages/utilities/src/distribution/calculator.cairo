@@ -165,7 +165,14 @@ pub fn calculate_share_with_dust(
 /// Exponential: weight = ((n - (p-1)) / n) ^ (weight/10)
 ///
 /// Weight is scaled by 10 (e.g., 10 = 1.0, 25 = 2.5, 100 = 10.0).
-fn weight_vector(distribution: Distribution, total_payouts: u32) -> (Array<Fixed>, Fixed) {
+///
+/// Crate-internal alongside `share_at` so that a test reading a whole curve
+/// can build the vector once. Going through `calculate_share` per position
+/// rebuilds it every time: O(n^2) fixed point work for one field size, which
+/// is the cost this hoist exists to remove.
+pub(crate) fn weight_vector(
+    distribution: Distribution, total_payouts: u32,
+) -> (Array<Fixed>, Fixed) {
     let mut weights: Array<Fixed> = array![];
     let mut denominator = FixedTrait::ZERO();
 
@@ -226,7 +233,11 @@ fn weight_vector(distribution: Distribution, total_payouts: u32) -> (Array<Fixed
 
 /// One position's share in basis points, read off a prebuilt weight vector.
 /// `payout_index` is 1-indexed. Returns 0 when out of range.
-fn share_at(
+///
+/// `share_at(@weight_vector(d, n), .., p, s)` is verbatim what
+/// `calculate_share(d, p, n, s)` runs for Linear and Exponential, so a caller
+/// holding the vector reads identical values without paying for the rebuild.
+pub(crate) fn share_at(
     weights: @Array<Fixed>, denominator: Fixed, payout_index: u32, available_share: u16,
 ) -> u16 {
     if payout_index == 0 || payout_index > weights.len() || denominator == FixedTrait::ZERO() {
