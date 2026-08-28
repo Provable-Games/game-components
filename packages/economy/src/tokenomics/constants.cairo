@@ -1,12 +1,3 @@
-/// Component-level ceiling on how far in the future an order may be
-/// scheduled (start_time - now), applied REGARDLESS of `max_delay`.
-/// `max_delay = 0` means "no CONFIGURED limit" — this ceiling still applies.
-/// Rationale: an unbounded start_time is the root cause behind two
-/// permissionless-DoS shapes (a creation-ordering invariant died on it, and
-/// the claim bookmark pins on it); a config value may only tighten below
-/// this, never escape it. 30 days.
-pub const MAX_SCHEDULE_HORIZON: u64 = 2_592_000;
-
 /// Error codes for the Autonomous Buyback component
 pub mod Errors {
     // Buyback initialization errors
@@ -42,9 +33,6 @@ pub mod Errors {
     pub const NO_BUY_TOKEN_TO_SWEEP: felt252 = 'No buy token to sweep';
 
     // Config consistency errors
-    pub const NO_CONFIG_FOR_TOKEN: felt252 = 'No config for token';
-    pub const START_BEYOND_HORIZON: felt252 = 'Start beyond schedule horizon';
-    pub const TOKEN_CONFIG_EXCEEDS_GLOBAL: felt252 = 'Config exceeds global bounds';
     pub const BUY_TOKEN_MISMATCH: felt252 = 'Buy token mismatch';
     pub const FEE_MISMATCH: felt252 = 'Fee mismatch';
     pub const MIN_DELAY_GT_MAX_DELAY: felt252 = 'min_delay > max_delay';
