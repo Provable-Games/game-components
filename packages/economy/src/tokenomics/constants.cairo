@@ -37,6 +37,7 @@ pub mod Errors {
     pub const FEE_MISMATCH: felt252 = 'Fee mismatch';
     pub const MIN_DELAY_GT_MAX_DELAY: felt252 = 'min_delay > max_delay';
     pub const MIN_DURATION_GT_MAX_DURATION: felt252 = 'min_duration > max_duration';
+    pub const MAX_DURATION_ZERO: felt252 = 'max_duration must be non-zero';
 
     // Stream component errors
     pub const STREAM_INVALID_FACTORY: felt252 = 'Invalid factory address';

@@ -150,8 +150,14 @@ pub mod BuybackComponent {
                 assert(start_time - current_time >= config.min_delay, Errors::DELAY_TOO_SHORT);
             }
 
-            // If start is in the future and max_delay is set, enforce maximum delay
-            if start_time > current_time && config.max_delay > 0 {
+            // If the order starts in the future, it must start within max_delay.
+            // Enforced UNCONDITIONALLY: max_delay = 0 means "must start
+            // immediately" (a future start is then rejected), matching Ekubo's
+            // revenue_buybacks convention. An unbounded start_time is a
+            // permissionless-DoS vector — a far-future order pins the claim
+            // loop behind it — so 0 fails CLOSED here, it does not disable the
+            // check.
+            if start_time > current_time {
                 assert(start_time - current_time <= config.max_delay, Errors::DELAY_TOO_LONG);
             }
 
@@ -161,10 +167,12 @@ pub mod BuybackComponent {
 
             let duration = params.end_time - actual_start;
             assert(duration >= config.min_duration, Errors::DURATION_TOO_SHORT);
-            // max_duration == 0 means no maximum limit (consistent with max_delay behavior)
-            if config.max_duration > 0 {
-                assert(duration <= config.max_duration, Errors::DURATION_TOO_LONG);
-            }
+            // Enforced UNCONDITIONALLY (Ekubo convention): an unbounded
+            // duration is the second half of the same DoS — a very-long order
+            // pins the claim loop just as a far-future start does. max_duration
+            // = 0 is rejected at config time (below), so a valid config always
+            // has a real ceiling here.
+            assert(duration <= config.max_duration, Errors::DURATION_TOO_LONG);
 
             // === Amount Handling (always full balance, with minimum threshold) ===
             let sell_token_dispatcher = IERC20Dispatcher { contract_address: params.sell_token };
@@ -512,16 +520,18 @@ pub mod BuybackComponent {
             assert(positions_address != zero_address, Errors::INVALID_POSITIONS_ADDRESS);
             assert(extension_address != zero_address, Errors::INVALID_EXTENSION_ADDRESS);
 
-            // Validate delay/duration consistency (0 = no limit, so only validate when both are
-            // set)
+            // Scheduling bounds fail CLOSED: max_delay = 0 is a valid value
+            // ("must start immediately"), but max_duration = 0 would forbid
+            // every order (duration >= min_duration >= 0 and duration <= 0),
+            // so it is rejected here to fail loud at config time rather than
+            // silently bricking buy_back. min may not exceed max.
             assert(
-                global_config.default_min_delay <= global_config.default_max_delay
-                    || global_config.default_max_delay == 0,
+                global_config.default_min_delay <= global_config.default_max_delay,
                 Errors::MIN_DELAY_GT_MAX_DELAY,
             );
+            assert(global_config.default_max_duration != 0, Errors::MAX_DURATION_ZERO);
             assert(
-                global_config.default_min_duration <= global_config.default_max_duration
-                    || global_config.default_max_duration == 0,
+                global_config.default_min_duration <= global_config.default_max_duration,
                 Errors::MIN_DURATION_GT_MAX_DURATION,
             );
 
@@ -565,16 +575,17 @@ pub mod BuybackComponent {
             assert(config.default_buy_token != zero_address, Errors::INVALID_BUY_TOKEN);
             assert(config.default_treasury != zero_address, Errors::INVALID_TREASURY);
 
-            // Validate delay/duration consistency (0 = no limit, so only validate when both are
-            // set)
+            // Scheduling bounds fail CLOSED (same rules as the initializer):
+            // max_delay = 0 is valid ("must start immediately"); max_duration
+            // = 0 is rejected (it would forbid every order); min may not
+            // exceed max.
             assert(
-                config.default_min_delay <= config.default_max_delay
-                    || config.default_max_delay == 0,
+                config.default_min_delay <= config.default_max_delay,
                 Errors::MIN_DELAY_GT_MAX_DELAY,
             );
+            assert(config.default_max_duration != 0, Errors::MAX_DURATION_ZERO);
             assert(
-                config.default_min_duration <= config.default_max_duration
-                    || config.default_max_duration == 0,
+                config.default_min_duration <= config.default_max_duration,
                 Errors::MIN_DURATION_GT_MAX_DURATION,
             );
 
@@ -595,13 +606,9 @@ pub mod BuybackComponent {
                 let zero_address: ContractAddress = Zero::zero();
                 assert(c.buy_token != zero_address, Errors::INVALID_BUY_TOKEN);
                 assert(c.treasury != zero_address, Errors::INVALID_TREASURY);
-                assert(
-                    c.min_delay <= c.max_delay || c.max_delay == 0, Errors::MIN_DELAY_GT_MAX_DELAY,
-                );
-                assert(
-                    c.min_duration <= c.max_duration || c.max_duration == 0,
-                    Errors::MIN_DURATION_GT_MAX_DURATION,
-                );
+                assert(c.min_delay <= c.max_delay, Errors::MIN_DELAY_GT_MAX_DELAY);
+                assert(c.max_duration != 0, Errors::MAX_DURATION_ZERO);
+                assert(c.min_duration <= c.max_duration, Errors::MIN_DURATION_GT_MAX_DURATION);
             }
 
             let old_config = self.Buyback_token_config.read(sell_token);

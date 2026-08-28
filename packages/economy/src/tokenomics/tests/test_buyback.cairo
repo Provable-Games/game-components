@@ -165,55 +165,75 @@ fn test_initialization_rejects_min_duration_gt_max_duration() {
 }
 
 #[test]
-fn test_initialization_allows_max_delay_zero() {
-    // max_delay = 0 means "no maximum limit", so min_delay > 0 is valid
+#[should_panic(expected: 'min_delay > max_delay')]
+fn test_set_global_config_rejects_min_delay_with_zero_max_delay() {
+    // Under fail-closed semantics max_delay = 0 means "must start
+    // immediately", so a non-zero min_delay is a contradiction (start >= 1000s
+    // out AND start now) and is rejected.
     let buyback_token = deploy_mock_erc20("Buyback", "BUY");
-    let mock_positions: ContractAddress = 'POSITIONS'.try_into().unwrap();
-    let mock_extension: ContractAddress = 'EXTENSION'.try_into().unwrap();
+    let contract = setup_buyback_contract(buyback_token);
+    let admin_dispatcher = IBuybackAdminDispatcher { contract_address: contract };
 
-    let valid_config = game_components_economy::tokenomics::GlobalBuybackConfig {
+    let invalid_config = game_components_economy::tokenomics::GlobalBuybackConfig {
         default_buy_token: buyback_token,
         default_treasury: TREASURY(),
         default_minimum_amount: defaults::MIN_AMOUNT,
-        default_min_delay: 1000, // min_delay > 0 with max_delay = 0 (no limit) is valid
+        default_min_delay: 1000,
         default_max_delay: 0,
         default_min_duration: defaults::MIN_DURATION,
         default_max_duration: defaults::MAX_DURATION,
         default_fee: defaults::DEFAULT_FEE,
     };
-
-    let contract = deploy_autonomous_buyback(OWNER(), valid_config, mock_positions, mock_extension);
-    let dispatcher = IBuybackDispatcher { contract_address: contract };
-
-    let config = dispatcher.get_global_config();
-    assert(config.default_min_delay == 1000, 'min_delay should be 1000');
-    assert(config.default_max_delay == 0, 'max_delay should be 0');
+    start_cheat_caller_address(contract, OWNER());
+    admin_dispatcher.set_global_config(invalid_config);
 }
 
 #[test]
-fn test_initialization_allows_max_duration_zero() {
-    // max_duration = 0 means "no maximum limit", so min_duration > 0 is valid
+fn test_set_global_config_accepts_max_delay_zero_with_no_min() {
+    // max_delay = 0 ("must start immediately") is a valid, most-restrictive
+    // config when min_delay is also 0 — orders simply must start now.
     let buyback_token = deploy_mock_erc20("Buyback", "BUY");
-    let mock_positions: ContractAddress = 'POSITIONS'.try_into().unwrap();
-    let mock_extension: ContractAddress = 'EXTENSION'.try_into().unwrap();
+    let contract = setup_buyback_contract(buyback_token);
+    let dispatcher = IBuybackDispatcher { contract_address: contract };
+    let admin_dispatcher = IBuybackAdminDispatcher { contract_address: contract };
 
-    let valid_config = game_components_economy::tokenomics::GlobalBuybackConfig {
+    let config = game_components_economy::tokenomics::GlobalBuybackConfig {
         default_buy_token: buyback_token,
         default_treasury: TREASURY(),
         default_minimum_amount: defaults::MIN_AMOUNT,
         default_min_delay: 0,
         default_max_delay: 0,
-        default_min_duration: 1000, // min_duration > 0 with max_duration = 0 (no limit) is valid
+        default_min_duration: defaults::MIN_DURATION,
+        default_max_duration: defaults::MAX_DURATION,
+        default_fee: defaults::DEFAULT_FEE,
+    };
+    start_cheat_caller_address(contract, OWNER());
+    admin_dispatcher.set_global_config(config);
+    stop_cheat_caller_address(contract);
+    assert(dispatcher.get_global_config().default_max_delay == 0, 'max_delay 0 accepted');
+}
+
+#[test]
+#[should_panic(expected: 'max_duration must be non-zero')]
+fn test_set_global_config_rejects_max_duration_zero() {
+    // max_duration = 0 is degenerate under fail-closed scheduling (it would
+    // forbid every order), so the global config rejects it loudly.
+    let buyback_token = deploy_mock_erc20("Buyback", "BUY");
+    let contract = setup_buyback_contract(buyback_token);
+    let admin_dispatcher = IBuybackAdminDispatcher { contract_address: contract };
+
+    let invalid_config = game_components_economy::tokenomics::GlobalBuybackConfig {
+        default_buy_token: buyback_token,
+        default_treasury: TREASURY(),
+        default_minimum_amount: defaults::MIN_AMOUNT,
+        default_min_delay: 0,
+        default_max_delay: 0,
+        default_min_duration: defaults::MIN_DURATION,
         default_max_duration: 0,
         default_fee: defaults::DEFAULT_FEE,
     };
-
-    let contract = deploy_autonomous_buyback(OWNER(), valid_config, mock_positions, mock_extension);
-    let dispatcher = IBuybackDispatcher { contract_address: contract };
-
-    let config = dispatcher.get_global_config();
-    assert(config.default_min_duration == 1000, 'min_duration should be 1000');
-    assert(config.default_max_duration == 0, 'max_duration should be 0');
+    start_cheat_caller_address(contract, OWNER());
+    admin_dispatcher.set_global_config(invalid_config);
 }
 
 // ============================================================================
@@ -353,61 +373,6 @@ fn test_set_global_config_rejects_min_duration_gt_max_duration() {
     stop_cheat_caller_address(contract);
 }
 
-#[test]
-fn test_set_global_config_allows_max_delay_zero() {
-    // max_delay = 0 means "no maximum limit", so min_delay > 0 is valid
-    let buyback_token = deploy_mock_erc20("Buyback", "BUY");
-    let contract = setup_buyback_contract(buyback_token);
-    let dispatcher = IBuybackDispatcher { contract_address: contract };
-    let admin_dispatcher = IBuybackAdminDispatcher { contract_address: contract };
-
-    let valid_config = game_components_economy::tokenomics::GlobalBuybackConfig {
-        default_buy_token: buyback_token,
-        default_treasury: TREASURY(),
-        default_minimum_amount: defaults::MIN_AMOUNT,
-        default_min_delay: 1000, // min_delay > 0 with max_delay = 0 (no limit) is valid
-        default_max_delay: 0,
-        default_min_duration: defaults::MIN_DURATION,
-        default_max_duration: defaults::MAX_DURATION,
-        default_fee: defaults::DEFAULT_FEE,
-    };
-
-    start_cheat_caller_address(contract, OWNER());
-    admin_dispatcher.set_global_config(valid_config);
-    stop_cheat_caller_address(contract);
-
-    let config = dispatcher.get_global_config();
-    assert(config.default_min_delay == 1000, 'min_delay should be 1000');
-    assert(config.default_max_delay == 0, 'max_delay should be 0');
-}
-
-#[test]
-fn test_set_global_config_allows_max_duration_zero() {
-    // max_duration = 0 means "no maximum limit", so min_duration > 0 is valid
-    let buyback_token = deploy_mock_erc20("Buyback", "BUY");
-    let contract = setup_buyback_contract(buyback_token);
-    let dispatcher = IBuybackDispatcher { contract_address: contract };
-    let admin_dispatcher = IBuybackAdminDispatcher { contract_address: contract };
-
-    let valid_config = game_components_economy::tokenomics::GlobalBuybackConfig {
-        default_buy_token: buyback_token,
-        default_treasury: TREASURY(),
-        default_minimum_amount: defaults::MIN_AMOUNT,
-        default_min_delay: 0,
-        default_max_delay: 0,
-        default_min_duration: 1000, // min_duration > 0 with max_duration = 0 (no limit) is valid
-        default_max_duration: 0,
-        default_fee: defaults::DEFAULT_FEE,
-    };
-
-    start_cheat_caller_address(contract, OWNER());
-    admin_dispatcher.set_global_config(valid_config);
-    stop_cheat_caller_address(contract);
-
-    let config = dispatcher.get_global_config();
-    assert(config.default_min_duration == 1000, 'min_duration should be 1000');
-    assert(config.default_max_duration == 0, 'max_duration should be 0');
-}
 
 // ============================================================================
 // Per-Token Configuration Tests
@@ -622,41 +587,6 @@ fn test_buy_back_rejects_duration_too_long() {
     dispatcher.buy_back(params);
 }
 
-#[test]
-fn test_buy_back_allows_any_duration_when_max_duration_is_zero() {
-    // max_duration = 0 means "no maximum limit"
-    let buyback_token = deploy_mock_erc20("Buyback", "BUY");
-    let sell_token = deploy_mock_erc20("Sell", "SELL");
-    let contract = setup_buyback_contract(buyback_token);
-    let dispatcher = IBuybackDispatcher { contract_address: contract };
-    let admin_dispatcher = IBuybackAdminDispatcher { contract_address: contract };
-    let mock_erc20 = IMockERC20Dispatcher { contract_address: sell_token };
-    let mock_positions: ContractAddress = 'POSITIONS'.try_into().unwrap();
-
-    // Set token config with max_duration = 0 (no limit)
-    start_cheat_caller_address(contract, OWNER());
-    admin_dispatcher
-        .set_token_config(sell_token, Option::Some(defaults::token_config_with_no_max_duration()));
-    stop_cheat_caller_address(contract);
-
-    // Mint tokens for buyback
-    mock_erc20.mint(contract, amounts::THOUSAND_TOKENS);
-
-    // Set block timestamp
-    start_cheat_block_timestamp_global(1000);
-
-    // Mock the positions contract
-    mock_call(mock_positions, selector!("mint_and_increase_sell_amount"), (1_u64, 100_u128), 1);
-
-    // Create buyback with duration 10x longer than default MAX_DURATION
-    // This would fail with "Duration too long" if max_duration was enforced
-    let very_long_duration = defaults::MAX_DURATION * 10;
-    let params = BuybackParams { sell_token, start_time: 0, end_time: 1000 + very_long_duration };
-    dispatcher.buy_back(params);
-
-    // Verify order was created successfully
-    assert(dispatcher.get_order_count(sell_token) == 1, 'Should have 1 order');
-}
 
 #[test]
 #[should_panic(expected: 'No balance to buyback')]
@@ -1656,76 +1586,108 @@ fn test_set_token_config_rejects_min_duration_gt_max_duration() {
 }
 
 // ============================================================================
-// SECURITY: unbounded scheduling DoS (proof of bug)
+// SECURITY: scheduling bounds fail closed (regression tests)
 // ============================================================================
-// These two tests DEMONSTRATE the vulnerability on the current code: with
-// max_delay = 0 ("no limit", the default), a permissionless caller can
-// schedule an order arbitrarily far in the future, and because the claim loop
-// stops at the first unfinished order, that one order pins the proceeds of
-// every matured order behind it. Funds are delayed by an attacker-chosen
-// amount. The fix rejects the far-future order at creation; after it, these
-// tests are replaced by rejection tests.
+// The unbounded-scheduling DoS: with max_delay = 0 or max_duration = 0
+// treated as "no limit", a permissionless caller could plant a far-future or
+// very-long order that pins the claim loop (which stops at the first
+// unfinished order) behind it, delaying every matured order's proceeds by an
+// attacker-chosen amount. The fix bounds BOTH start_time and duration
+// unconditionally (Ekubo revenue_buybacks convention): max_delay = 0 now
+// means "must start immediately", and max_duration = 0 is rejected at config
+// time. These tests were proofs of the bug before the fix; they now prove the
+// vectors are closed.
 
 const TEN_YEARS: u64 = 10 * 365 * 86400;
 
-/// PROOF (accept): a far-future order is accepted when max_delay = 0.
+/// With max_delay = 0 meaning "must start immediately", a future start is
+/// rejected at creation — the attacker can no longer plant the far-future
+/// pin. (Uses the default token config, whose max_delay is 0.)
 #[test]
-fn test_dos_far_future_order_is_accepted_when_max_delay_zero() {
+#[should_panic(expected: ('Delay too long', 'ENTRYPOINT_FAILED'))]
+fn test_far_future_start_rejected_when_max_delay_zero() {
     let buyback_token = deploy_mock_erc20("Buyback", "BUY");
     let sell_token = deploy_mock_erc20("Sell", "SELL");
     let contract = setup_buyback_with_token_config(buyback_token, sell_token);
     let dispatcher = IBuybackDispatcher { contract_address: contract };
     let mock_erc20 = IMockERC20Dispatcher { contract_address: sell_token };
-    let mock_positions: ContractAddress = 'POSITIONS'.try_into().unwrap();
 
     mock_erc20.mint(contract, amounts::THOUSAND_TOKENS);
     start_cheat_block_timestamp_global(1000);
-    mock_call(mock_positions, selector!("mint_and_increase_sell_amount"), (1_u64, 100_u128), 1);
-
-    // start_time ten years out — accepted only because max_delay = 0 disables
-    // the ceiling. This is the pin the attacker plants.
     let far = 1000 + TEN_YEARS;
     dispatcher
         .buy_back(
             BuybackParams { sell_token, start_time: far, end_time: far + defaults::MIN_DURATION },
         );
-    assert(dispatcher.get_order_count(sell_token) == 1, 'far-future order accepted');
 }
 
-/// PROOF (pin): a matured later order cannot be claimed behind the far-future
-/// one — the claim reverts NO_COMPLETED_ORDERS with proceeds sitting there.
+/// A future start WITHIN a configured max_delay is still accepted — the fix
+/// bounds the horizon, it does not forbid scheduling.
 #[test]
-#[should_panic(expected: ('No completed orders', 'ENTRYPOINT_FAILED'))]
-fn test_dos_far_future_order_pins_a_matured_later_order() {
+fn test_future_start_within_max_delay_accepted() {
+    let buyback_token = deploy_mock_erc20("Buyback", "BUY");
+    let sell_token = deploy_mock_erc20("Sell", "SELL");
+    let contract = setup_buyback_contract(buyback_token);
+    let dispatcher = IBuybackDispatcher { contract_address: contract };
+    let admin = IBuybackAdminDispatcher { contract_address: contract };
+    let mock_erc20 = IMockERC20Dispatcher { contract_address: sell_token };
+    let mock_positions: ContractAddress = 'POSITIONS'.try_into().unwrap();
+
+    // A config with a real max_delay window.
+    let mut c = defaults::default_token_config();
+    c.max_delay = 86400;
+    start_cheat_caller_address(contract, OWNER());
+    admin.set_token_config(sell_token, Option::Some(c));
+    stop_cheat_caller_address(contract);
+
+    mock_erc20.mint(contract, amounts::THOUSAND_TOKENS);
+    start_cheat_block_timestamp_global(1000);
+    mock_call(mock_positions, selector!("mint_and_increase_sell_amount"), (1_u64, 100_u128), 1);
+    let start = 1000 + 3600; // within the 1-day window
+    dispatcher
+        .buy_back(
+            BuybackParams {
+                sell_token, start_time: start, end_time: start + defaults::MIN_DURATION,
+            },
+        );
+    assert(dispatcher.get_order_count(sell_token) == 1, 'within-window start accepted');
+}
+
+/// The duration half of the same DoS: a very-long order is rejected against
+/// the configured max_duration (which is now always enforced).
+#[test]
+#[should_panic(expected: ('Duration too long', 'ENTRYPOINT_FAILED'))]
+fn test_over_long_duration_rejected() {
     let buyback_token = deploy_mock_erc20("Buyback", "BUY");
     let sell_token = deploy_mock_erc20("Sell", "SELL");
     let contract = setup_buyback_with_token_config(buyback_token, sell_token);
     let dispatcher = IBuybackDispatcher { contract_address: contract };
     let mock_erc20 = IMockERC20Dispatcher { contract_address: sell_token };
-    let mock_positions: ContractAddress = 'POSITIONS'.try_into().unwrap();
 
+    mock_erc20.mint(contract, amounts::THOUSAND_TOKENS);
     start_cheat_block_timestamp_global(1000);
-    mock_call(mock_positions, selector!("mint_and_increase_sell_amount"), (1_u64, 100_u128), 1);
-    mock_call(mock_positions, selector!("increase_sell_amount"), 100_u128, 1);
-
-    // Attacker's order 0: ten years out.
-    mock_erc20.mint(contract, amounts::THOUSAND_TOKENS);
-    let far = 1000 + TEN_YEARS;
+    // Duration an order of magnitude past the configured MAX_DURATION.
     dispatcher
         .buy_back(
-            BuybackParams { sell_token, start_time: far, end_time: far + defaults::MIN_DURATION },
+            BuybackParams {
+                sell_token, start_time: 0, end_time: 1000 + defaults::MAX_DURATION * 10,
+            },
         );
+}
 
-    // Legit order 1: starts now, matures in MIN_DURATION.
-    mock_erc20.mint(contract, amounts::THOUSAND_TOKENS);
-    dispatcher
-        .buy_back(
-            BuybackParams { sell_token, start_time: 0, end_time: 1000 + defaults::MIN_DURATION },
-        );
+/// max_duration = 0 is degenerate (it would forbid every order) and is
+/// rejected at config time, failing loud at deploy rather than silently
+/// bricking buy_back.
+#[test]
+#[should_panic(expected: ('max_duration must be non-zero', 'ENTRYPOINT_FAILED'))]
+fn test_token_config_rejects_zero_max_duration() {
+    let buyback_token = deploy_mock_erc20("Buyback", "BUY");
+    let sell_token = deploy_mock_erc20("Sell", "SELL");
+    let contract = setup_buyback_contract(buyback_token);
+    let admin = IBuybackAdminDispatcher { contract_address: contract };
 
-    // Order 1 has matured; order 0 has not even started. The loop breaks at
-    // order 0 and order 1's proceeds are unreachable.
-    start_cheat_block_timestamp_global(1000 + defaults::MIN_DURATION + 1);
-    mock_call(mock_positions, selector!("withdraw_proceeds_from_sale_to"), 500_u128, 10);
-    dispatcher.claim_buyback_proceeds(sell_token, 0);
+    let mut c = defaults::default_token_config();
+    c.max_duration = 0;
+    start_cheat_caller_address(contract, OWNER());
+    admin.set_token_config(sell_token, Option::Some(c));
 }
