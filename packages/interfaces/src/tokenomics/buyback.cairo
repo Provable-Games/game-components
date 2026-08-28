@@ -12,11 +12,11 @@ pub struct GlobalBuybackConfig {
     pub default_minimum_amount: u128,
     /// Default minimum delay before order can start (0 = can start immediately)
     pub default_min_delay: u64,
-    /// Default maximum delay before order can start (0 = no maximum limit)
+    /// Default maximum delay before order can start (0 = must start immediately)
     pub default_max_delay: u64,
     /// Default minimum duration of the buyback order
     pub default_min_duration: u64,
-    /// Default maximum duration of the buyback order
+    /// Default maximum duration of the buyback order (must be non-zero)
     pub default_max_duration: u64,
     /// Default fee tier for the buyback pool
     pub default_fee: u128,
@@ -33,11 +33,11 @@ pub struct TokenBuybackConfig {
     pub minimum_amount: u128,
     /// Minimum delay before order can start
     pub min_delay: u64,
-    /// Maximum delay before order can start (0 = no maximum limit)
+    /// Maximum delay before order can start (0 = must start immediately)
     pub max_delay: u64,
     /// Minimum duration of the buyback order
     pub min_duration: u64,
-    /// Maximum duration of the buyback order
+    /// Maximum duration of the buyback order (must be non-zero)
     pub max_duration: u64,
     /// Fee tier for the buyback pool
     pub fee: u128,
