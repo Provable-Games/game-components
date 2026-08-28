@@ -62,9 +62,7 @@ pub use metagame::{
 
 // Minigame
 pub use minigame::{
-    IMINIGAME_OBJECTIVES_ID, IMINIGAME_SETTINGS_ID, IMinigameDetails, IMinigameDetailsDispatcher,
-    IMinigameDetailsDispatcherTrait, IMinigameDetailsSVG, IMinigameDetailsSVGDispatcher,
-    IMinigameDetailsSVGDispatcherTrait, IMinigameObjectives, IMinigameObjectivesDetails,
+    IMINIGAME_OBJECTIVES_ID, IMINIGAME_SETTINGS_ID, IMinigameObjectives, IMinigameObjectivesDetails,
     IMinigameObjectivesDetailsDispatcher, IMinigameObjectivesDetailsDispatcherTrait,
     IMinigameObjectivesDispatcher, IMinigameObjectivesDispatcherTrait, IMinigameObjectivesSVG,
     IMinigameObjectivesSVGDispatcher, IMinigameObjectivesSVGDispatcherTrait, IMinigameSettings,

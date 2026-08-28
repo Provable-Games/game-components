@@ -9,7 +9,7 @@ is no `MinigameComponent` and no `IMinigame`: a game embeds
 
 | Path | Purpose |
 |------|---------|
-| `interface.cairo` | `IMinigameTokenData`, `IMinigameDetails`, `IMinigameDetailsSVG` |
+| `interface.cairo` | `IMinigameTokenData` |
 | `structs.cairo` | `GameDetail` |
 | `extensions/settings/` | `SettingsComponent` — settings presets |
 | `extensions/objectives/` | `ObjectivesComponent` — achievement tracking |
@@ -28,21 +28,6 @@ is no `MinigameComponent` and no `IMinigame`: a game embeds
 The game is the sole authority here — the token holds no `game_over` latch and
 never calls back to ask. Nothing syncs state between them.
 
-### IMinigameDetails (Optional)
-
-| Method | Returns | Description |
-|--------|---------|-------------|
-| `token_name()` | `ByteArray` | The game's display name — game-level, not per-token |
-| `token_description()` | `ByteArray` | The game's description — game-level |
-| `game_details(token_id)` | `Span<GameDetail>` | Per-token detail rows |
-| `game_details_batch(token_ids)` | `Array<Span<GameDetail>>` | Batch of the above |
-
-`token_name`/`token_description` dropped their `token_id`: every token of a
-game shares them, and implementations ignored the parameter (their batch
-variants looped one constant, so both are gone). This surface is commonly
-implemented on a SEPARATE renderer contract rather than the game itself — SVG
-generation is large enough to hit the class-size limit — so it is a renderer
-surface that a game may point at, not part of the token standard.
 
 ## Extensions
 
@@ -106,6 +91,12 @@ mod MyGame {
 5. **Complete**: return `true` from `game_over()` when finished
 
 ## Retired
+
+`IMinigameDetails` / `IMinigameDetailsSVG` were removed too: nothing in the
+workspace called them, and they describe a RENDERER surface — SVG generation is
+large enough that games put it on a separate contract, which then exposes its
+own interface. A game that wants detail rows defines them where the renderer
+lives; `GameDetail` remains available as a struct for that.
 
 `IMinigame` itself (and `IMINIGAME_ID`, `mint_game`, `mint_game_batch`,
 `IMinigameTokenUri`) was removed once the game became its own token: the

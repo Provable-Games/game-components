@@ -5,11 +5,7 @@ pub mod objectives;
 pub mod settings;
 
 // Re-export commonly used items at top level
-pub use core::{
-    IMinigameDetails, IMinigameDetailsDispatcher, IMinigameDetailsDispatcherTrait,
-    IMinigameDetailsSVG, IMinigameDetailsSVGDispatcher, IMinigameDetailsSVGDispatcherTrait,
-    IMinigameTokenData, IMinigameTokenDataDispatcher, IMinigameTokenDataDispatcherTrait,
-};
+pub use core::{IMinigameTokenData, IMinigameTokenDataDispatcher, IMinigameTokenDataDispatcherTrait};
 pub use objectives::{
     IMINIGAME_OBJECTIVES_ID, IMinigameObjectives, IMinigameObjectivesDetails,
     IMinigameObjectivesDetailsDispatcher, IMinigameObjectivesDetailsDispatcherTrait,
