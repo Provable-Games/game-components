@@ -86,9 +86,9 @@ pub use registration::{
 
 // Structs
 pub use structs::{
-    GameContext, GameContextDetails, GameDetail, GameFeeTerms, GameObjective, GameObjectiveDetails,
-    GameSetting, GameSettingDetails, LeaderboardConfig, LeaderboardEntry, LeaderboardResult,
-    LeaderboardStoreConfig, Lifecycle, MintBatchRecipient, TokenMetadata,
+    GameContext, GameContextDetails, GameDetail, GameFeeTerms, GameMetadata, GameObjective,
+    GameObjectiveDetails, GameSetting, GameSettingDetails, LeaderboardConfig, LeaderboardEntry,
+    LeaderboardResult, LeaderboardStoreConfig, Lifecycle, MintBatchRecipient, TokenMetadata,
 };
 
 // Token

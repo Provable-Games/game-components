@@ -1,3 +1,4 @@
+pub mod game_metadata_mock;
 pub mod metagame_mock;
 pub mod mock_entry_validator;
 pub mod mock_erc20;

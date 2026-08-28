@@ -25,6 +25,7 @@ openzeppelin_token.workspace = true
 sierra = true
 casm = true
 build-external-contracts = [
+    "game_components_test_common::mocks::game_metadata_mock::GameMetadataMock",
     "game_components_test_common::mocks::metagame_mock::metagame_mock",
     "game_components_test_common::mocks::mock_game::MockGame",
     "game_components_test_common::mocks::standard_game_mock::StandardGameMock",

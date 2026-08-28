@@ -35,3 +35,19 @@ pub struct GameObjective {
     pub name: felt252,
     pub value: felt252,
 }
+
+/// A game's identity — what an indexer or client needs to display it.
+/// Stored once per contract and served by `IMinigameGameMetadata`.
+#[derive(Drop, Serde, Clone, starknet::Store)]
+pub struct GameMetadata {
+    pub name: ByteArray,
+    pub description: ByteArray,
+    pub developer: ByteArray,
+    pub publisher: ByteArray,
+    pub genre: ByteArray,
+    pub image: ByteArray,
+    pub color: ByteArray,
+    pub client_url: ByteArray,
+    /// Royalty fraction in basis points (e.g., 500 = 5%)
+    pub royalty_fraction: u128,
+}
