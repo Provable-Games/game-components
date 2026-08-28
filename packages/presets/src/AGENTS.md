@@ -90,6 +90,31 @@ fn constructor(
 
 ---
 
+## DepositLock
+
+Holds a single ERC20 received by transfer and releases each arrival to a beneficiary after a fixed term. Each deposit keeps its own term.
+
+**Components:** `DepositLockComponent`, `OwnableComponent`
+
+**Constructor:**
+```cairo
+fn constructor(
+    ref self: ContractState,
+    owner: ContractAddress,       // may change the beneficiary; hand to a timelock
+    token: ContractAddress,       // the single ERC20 held; fixed, no setter
+    beneficiary: ContractAddress, // receives matured deposits
+    lock_duration: u64,           // term in seconds (e.g. DepositLockComponent::ONE_YEAR)
+)
+```
+
+**Permissionless:** `lock()` (crank arrivals into a term), `release(limit)` (pay out matured buckets), plus the `pending`/`releasable`/`locked_total`/queue views.
+
+**Owner-only:** `set_beneficiary(beneficiary)` — redirects future matured funds; cannot shorten a lock.
+
+**Design:** day-bucketed so records are bounded by the term in days (dust-proof); rounds locks UP (≥ full term); no emergency withdrawal.
+
+---
+
 ## Building Custom Presets
 
 Compose components for custom contracts:
