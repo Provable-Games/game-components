@@ -1597,6 +1597,11 @@ fn test_set_token_config_rejects_min_duration_gt_max_duration() {
 // means "must start immediately", and max_duration = 0 is rejected at config
 // time. These tests were proofs of the bug before the fix; they now prove the
 // vectors are closed.
+//
+// GUARDS, not reproducers: every test below is `should_panic` on the bound
+// itself, so it goes RED if the fix is reverted — reverting the fix without
+// reverting these will fail the suite, which is the intended tripwire. (The
+// original passing proofs live in this branch's first commit, 1c4f099.)
 
 const TEN_YEARS: u64 = 10 * 365 * 86400;
 
