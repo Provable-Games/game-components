@@ -9,7 +9,6 @@ pub use core::{
     IMinigameDetails, IMinigameDetailsDispatcher, IMinigameDetailsDispatcherTrait,
     IMinigameDetailsSVG, IMinigameDetailsSVGDispatcher, IMinigameDetailsSVGDispatcherTrait,
     IMinigameTokenData, IMinigameTokenDataDispatcher, IMinigameTokenDataDispatcherTrait,
-    IMinigameTokenUri, IMinigameTokenUriDispatcher, IMinigameTokenUriDispatcherTrait,
 };
 pub use objectives::{
     IMINIGAME_OBJECTIVES_ID, IMinigameObjectives, IMinigameObjectivesDetails,

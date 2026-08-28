@@ -1,37 +1,20 @@
 # Minigame Module
 
 The interfaces a game contract implements, plus two optional extensions. There
-is no `MinigameComponent`: a game embeds `MinigameTokenComponent` directly and
-IS its own token.
+is no `MinigameComponent` and no `IMinigame`: a game embeds
+`MinigameTokenComponent` directly and IS its own token, so it is identified by
+`IMINIGAME_TOKEN_ID` rather than a separate game id.
 
 ## What lives here
 
 | Path | Purpose |
 |------|---------|
-| `interface.cairo` | `IMinigame`, `IMinigameTokenData`, `IMinigameDetails`, `IMinigameTokenUri` |
+| `interface.cairo` | `IMinigameTokenData`, `IMinigameDetails`, `IMinigameDetailsSVG` |
 | `structs.cairo` | `GameDetail` |
 | `extensions/settings/` | `SettingsComponent` — settings presets |
 | `extensions/objectives/` | `ObjectivesComponent` — achievement tracking |
 
 ## Interfaces
-
-### IMinigame (Core)
-
-| Method | Returns | Description |
-|--------|---------|-------------|
-| `token_address()` | `ContractAddress` | The game's token — for a self-bound game, **its own address** |
-| `settings_address()` | `ContractAddress` | Optional settings contract |
-| `objectives_address()` | `ContractAddress` | Optional objectives contract |
-
-`IMinigame` carries only the identity views. Minting goes through the token's
-own `IMinigameTokenMinter::mint` (the game IS the token) — there is no separate
-`mint_game`/`mint_game_batch` self-dispatch wrapper.
-
-**Interface ID**: `0x3672f24df9fc27c3ad99aa4e9f0a7173ccf1786921339b91fa5297588600260`
-
-`token_address()` returning the contract's own address is what makes a game
-discoverable as self-bound: `metagame::assert_game_registered` is exactly that
-equality check, and consumers rely on it rather than resolving a registry.
 
 ### IMinigameTokenData (MUST IMPLEMENT)
 
@@ -103,11 +86,6 @@ mod MyGame {
         fn score(self: @ContractState, token_id: felt252) -> u32 { ... }
         fn game_over(self: @ContractState, token_id: felt252) -> bool { ... }
     }
-
-    // Self-bound: every address this game advertises is itself.
-    impl MinigameImpl of IMinigame<ContractState> {
-        fn token_address(self: @ContractState) -> ContractAddress { get_contract_address() }
-    }
 }
 ```
 
@@ -120,6 +98,13 @@ mod MyGame {
 5. **Complete**: return `true` from `game_over()` when finished
 
 ## Retired
+
+`IMinigame` itself (and `IMINIGAME_ID`, `mint_game`, `mint_game_batch`,
+`IMinigameTokenUri`) was removed once the game became its own token: the
+address views were roundtrips returning the contract's own address, the mint
+methods self-dispatched to the token's `mint`, and `token_uri` is served by
+ERC721Metadata. Consumers now validate a game with
+`supports_interface(IMINIGAME_TOKEN_ID)`.
 
 `MinigameComponent` and the `minigame::minigame` lib (`pre_action`,
 `post_action`, `register_game`, `update_game`) were removed with the

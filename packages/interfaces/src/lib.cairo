@@ -72,8 +72,7 @@ pub use minigame::{
     IMinigameSettingsDetailsDispatcherTrait, IMinigameSettingsDispatcher,
     IMinigameSettingsDispatcherTrait, IMinigameSettingsSVG, IMinigameSettingsSVGDispatcher,
     IMinigameSettingsSVGDispatcherTrait, IMinigameTokenData, IMinigameTokenDataDispatcher,
-    IMinigameTokenDataDispatcherTrait, IMinigameTokenUri, IMinigameTokenUriDispatcher,
-    IMinigameTokenUriDispatcherTrait,
+    IMinigameTokenDataDispatcherTrait,
 };
 
 // Prize

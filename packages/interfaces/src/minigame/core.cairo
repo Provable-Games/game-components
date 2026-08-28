@@ -27,8 +27,3 @@ pub trait IMinigameDetails<TState> {
 pub trait IMinigameDetailsSVG<TState> {
     fn game_details_svg(self: @TState, token_id: felt252) -> ByteArray;
 }
-
-#[starknet::interface]
-pub trait IMinigameTokenUri<TState> {
-    fn token_uri(self: @TState, token_id: u256) -> ByteArray;
-}
