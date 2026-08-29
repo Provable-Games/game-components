@@ -33,8 +33,9 @@ pub trait IStandardGameMock<TContractState> {
 #[starknet::contract]
 pub mod StandardGameMock {
     use core::num::traits::Zero;
-    use game_components_embeddable_game_standard::minigame::extensions::settings::interface::IMinigameSettings;
-    use game_components_embeddable_game_standard::minigame::extensions::settings::settings::SettingsComponent;
+    use game_components_embeddable_game_standard::minigame::extensions::settings::interface::{
+        IMINIGAME_SETTINGS_ID, IMinigameSettings,
+    };
     use game_components_embeddable_game_standard::minigame::interface::IMinigameTokenData;
     use game_components_embeddable_game_standard::token::minigame_token_component::MinigameTokenComponent;
     use game_components_embeddable_game_standard::token::packing::unpack_soulbound;
@@ -49,7 +50,6 @@ pub mod StandardGameMock {
     component!(path: ERC721Component, storage: erc721, event: ERC721Event);
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
     component!(path: MinigameTokenComponent, storage: minigame_token, event: MinigameTokenEvent);
-    component!(path: SettingsComponent, storage: settings, event: SettingsEvent);
     // Required by the token component's GameFeeImpl (hard HasComponent bound):
     // the game-fee surface is administered by the contract owner.
     component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);
@@ -62,8 +62,6 @@ pub mod StandardGameMock {
         src5: SRC5Component::Storage,
         #[substorage(v0)]
         minigame_token: MinigameTokenComponent::Storage,
-        #[substorage(v0)]
-        settings: SettingsComponent::Storage,
         #[substorage(v0)]
         ownable: OwnableComponent::Storage,
         // Game state — the game contract is the sole authority on score and
@@ -88,8 +86,6 @@ pub mod StandardGameMock {
         #[flat]
         MinigameTokenEvent: MinigameTokenComponent::Event,
         #[flat]
-        SettingsEvent: SettingsComponent::Event,
-        #[flat]
         OwnableEvent: OwnableComponent::Event,
     }
 
@@ -111,7 +107,6 @@ pub mod StandardGameMock {
     impl ERC721InternalImpl = ERC721Component::InternalImpl<ContractState>;
     impl SRC5InternalImpl = SRC5Component::InternalImpl<ContractState>;
     impl MinigameTokenInternalImpl = MinigameTokenComponent::InternalImpl<ContractState>;
-    impl SettingsInternalImpl = SettingsComponent::InternalImpl<ContractState>;
     impl OwnableInternalImpl = OwnableComponent::InternalImpl<ContractState>;
 
     impl ERC721HooksImpl of ERC721Component::ERC721HooksTrait<ContractState> {
@@ -157,8 +152,7 @@ pub mod StandardGameMock {
         // and the game-fee surface's IMINIGAME_TOKEN_GAME_FEE_ID (recipient set
         // here; license/fee left to the ecosystem defaults).
         self.minigame_token.initializer(game_fee_recipient, Option::None, Option::None);
-        // Registers IMINIGAME_SETTINGS_ID (mirrors minigame_mock).
-        self.settings.initializer();
+        self.src5.register_interface(IMINIGAME_SETTINGS_ID);
     }
 
     #[abi(embed_v0)]

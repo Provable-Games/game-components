@@ -15,8 +15,8 @@ answer for its tokens' score/game-over, and two optional extensions.
 | `minigame_component.cairo` | `MinigameComponent` — the game's own data (identity), served over `IMinigameGameMetadata` |
 | `interface.cairo` | `IMinigameTokenData` |
 | `structs.cairo` | `GameDetail` |
-| `extensions/settings/` | `SettingsComponent` — settings presets |
-| `extensions/objectives/` | `ObjectivesComponent` — achievement tracking |
+| `extensions/settings/` | `IMinigameSettings` + structs |
+| `extensions/objectives/` | `IMinigameObjectives` + structs |
 
 ## MinigameComponent
 
@@ -65,11 +65,8 @@ never calls back to ask. Nothing syncs state between them.
 
 **Interface ID**: `0x0379f4343538c65a38349fb1318328629dd950d3624101aeaac1b4bd45a39eff`
 
-`SettingsComponent` registers the interface id and exposes
-`get_settings_id(token_id, token_address)`. It no longer announces created
-settings to the token: that announcement dispatched to a token-side settings
-surface that only the retired generation had, and the game is the source of
-truth for which settings exist.
+A game implements `IMinigameSettings` and registers `IMINIGAME_SETTINGS_ID`
+itself. The game is the source of truth for which settings exist.
 
 ### Objectives (`extensions/objectives/`)
 
@@ -81,9 +78,10 @@ truth for which settings exist.
 
 **Interface ID**: `0x0213cfcf73543e549f00c7cad49cf27a1e544d71315ff981930aaf77ac0709bd`
 
-`ObjectivesComponent` registers the interface id. Objective IDs pack into the
-token id as inert data the game interprets — the token has no completion
-machinery, so `completed_objective` on `token_metadata` is always false.
+A game implements `IMinigameObjectives` and registers
+`IMINIGAME_OBJECTIVES_ID` itself. Objective IDs pack into the token id as inert
+data the game interprets — the token has no completion machinery, so
+`completed_objective` on `token_metadata` is always false.
 
 ## Building a game
 
@@ -133,6 +131,10 @@ address views were roundtrips returning the contract's own address, the mint
 methods self-dispatched to the token's `mint`, and `token_uri` is served by
 ERC721Metadata. Consumers now validate a game with
 `supports_interface(IMINIGAME_TOKEN_ID)`.
+
+`SettingsComponent` and `ObjectivesComponent` are gone: both held no storage
+and their whole initializer was one `register_interface` call, which a game
+writes directly.
 
 `MinigameComponent` and the `minigame::minigame` lib (`pre_action`,
 `post_action`, `register_game`, `update_game`) were removed with the
