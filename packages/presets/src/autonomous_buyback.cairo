@@ -5,7 +5,8 @@
 ///
 /// # Features
 /// - Permissionless buyback execution via `buy_back()`
-/// - Permissionless proceeds claiming via `claim_buyback_proceeds()`
+/// - Permissionless proceeds claiming via `claim_order()` / `claim_orders()`,
+///   each naming an order by its key — no queue, so no head-of-line blocking
 /// - Owner-only configuration updates (global and per-token)
 /// - Append-only design: No emergency functions
 ///

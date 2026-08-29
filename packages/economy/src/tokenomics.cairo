@@ -37,7 +37,7 @@ pub mod stream;
 pub use buyback::{
     BuybackComponent, BuybackParams, GlobalBuybackConfig, IBuyback, IBuybackAdmin,
     IBuybackAdminDispatcher, IBuybackAdminDispatcherTrait, IBuybackDispatcher,
-    IBuybackDispatcherTrait, OrderInfo, PackedOrderInfo, TokenBuybackConfig,
+    IBuybackDispatcherTrait, TokenBuybackConfig,
 };
 
 // Re-exports for convenience - Constants

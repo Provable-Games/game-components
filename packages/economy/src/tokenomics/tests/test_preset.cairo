@@ -119,9 +119,6 @@ fn test_anyone_can_view_state() {
     let _ = dispatcher.get_effective_config(sell_token);
     let _ = dispatcher.get_positions_address();
     let _ = dispatcher.get_extension_address();
-    let _ = dispatcher.get_order_count(sell_token);
-    let _ = dispatcher.get_order_bookmark(sell_token);
-    let _ = dispatcher.get_unclaimed_orders_count(sell_token);
     let _ = dispatcher.get_position_token_id(sell_token);
 
     stop_cheat_caller_address(contract);
@@ -172,8 +169,6 @@ fn test_can_track_multiple_sell_tokens() {
     let dispatcher = IBuybackDispatcher { contract_address: contract };
 
     // Each sell token should have independent state
-    assert(dispatcher.get_order_count(sell_token_1) == 0, 'Token1 count should be 0');
-    assert(dispatcher.get_order_count(sell_token_2) == 0, 'Token2 count should be 0');
     assert(dispatcher.get_position_token_id(sell_token_1) == 0, 'Token1 pos should be 0');
     assert(dispatcher.get_position_token_id(sell_token_2) == 0, 'Token2 pos should be 0');
 }
