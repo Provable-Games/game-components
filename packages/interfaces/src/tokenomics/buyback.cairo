@@ -1,4 +1,9 @@
 use ekubo::interfaces::extensions::twamm::OrderKey;
+
+/// Re-exported because `claim_order` takes one: every consumer of this
+/// interface needs the type, and requiring them to add a direct `ekubo`
+/// dependency for it would be gratuitous.
+pub use ekubo::interfaces::extensions::twamm::OrderKey as BuybackOrderKey;
 use starknet::ContractAddress;
 
 /// Global configuration defaults that apply when no per-token override exists
