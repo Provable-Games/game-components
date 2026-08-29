@@ -1,4 +1,9 @@
 use ekubo::interfaces::extensions::twamm::OrderKey;
+
+/// Re-exported because `claim_order` takes one: every consumer of this
+/// interface needs the type, and requiring them to add a direct `ekubo`
+/// dependency for it would be gratuitous.
+pub use ekubo::interfaces::extensions::twamm::OrderKey as BuybackOrderKey;
 use starknet::ContractAddress;
 
 /// Global configuration defaults that apply when no per-token override exists
@@ -54,31 +59,6 @@ pub struct BuybackParams {
     pub end_time: u64,
 }
 
-/// Packed order information stored per order (fits in single storage slot)
-#[derive(Copy, Drop, Serde, starknet::Store, PartialEq, Debug)]
-pub struct PackedOrderInfo {
-    /// When the order started (for Ekubo OrderKey reconstruction)
-    pub start_time: u64,
-    /// When the order ends
-    pub end_time: u64,
-    /// Amount of sell token in the order
-    pub amount: u128,
-}
-
-/// Full information about a specific buyback order (returned by view functions)
-#[derive(Copy, Drop, Serde, PartialEq, Debug)]
-pub struct OrderInfo {
-    /// When the order started
-    pub start_time: u64,
-    /// When the order ends
-    pub end_time: u64,
-    /// Amount of sell token in the order
-    pub amount: u128,
-    /// Token being acquired (from sell_token config)
-    pub buy_token: ContractAddress,
-    /// Pool fee tier (from sell_token config)
-    pub fee: u128,
-}
 
 /// Permissionless interface for the Autonomous Buyback component
 #[starknet::interface]
@@ -86,10 +66,22 @@ pub trait IBuyback<TContractState> {
     /// Execute a buyback using all tokens of `sell_token` in the contract
     fn buy_back(ref self: TContractState, params: BuybackParams);
 
-    /// Claim proceeds from completed buyback orders and send to treasury
-    fn claim_buyback_proceeds(
-        ref self: TContractState, sell_token: ContractAddress, limit: u16,
-    ) -> u128;
+    /// Claim proceeds for ONE completed order and send them to the treasury.
+    ///
+    /// The caller supplies the full `OrderKey`, so orders are independent: any
+    /// matured order can be claimed at any time, in any sequence. There is no
+    /// queue and therefore no head-of-line blocking.
+    ///
+    /// The key is emitted in full by `BuybackStarted`. Claiming an order twice
+    /// yields 0 rather than reverting, so a keeper sweeping several keys is not
+    /// broken by a stale one.
+    fn claim_order(ref self: TContractState, order_key: OrderKey) -> u128;
+
+    /// `claim_order` over several keys in one call. Returns total proceeds.
+    ///
+    /// A convenience only — the keys are still supplied by the caller and are
+    /// claimed independently, so this reintroduces no ordering of any kind.
+    fn claim_orders(ref self: TContractState, order_keys: Span<OrderKey>) -> u128;
 
     /// Sweep any accumulated buy tokens directly to treasury
     fn sweep_buy_token_to_treasury(ref self: TContractState) -> u256;
@@ -115,27 +107,6 @@ pub trait IBuyback<TContractState> {
 
     /// Get the position token ID for a sell token (0 if not created)
     fn get_position_token_id(self: @TContractState, sell_token: ContractAddress) -> u64;
-
-    /// Get the number of orders created for a sell token
-    fn get_order_count(self: @TContractState, sell_token: ContractAddress) -> u128;
-
-    /// Get the bookmark (next order to claim) for a sell token
-    fn get_order_bookmark(self: @TContractState, sell_token: ContractAddress) -> u128;
-
-    /// Get the number of unclaimed orders for a sell token
-    fn get_unclaimed_orders_count(self: @TContractState, sell_token: ContractAddress) -> u128;
-
-    /// Get information about a specific order
-    fn get_order_info(self: @TContractState, sell_token: ContractAddress, index: u128) -> OrderInfo;
-
-    /// Construct an OrderKey for a specific order index
-    fn get_order_key(self: @TContractState, sell_token: ContractAddress, index: u128) -> OrderKey;
-
-    /// Get the active buy token for a sell token
-    fn get_active_buy_token(self: @TContractState, sell_token: ContractAddress) -> ContractAddress;
-
-    /// Get the active fee for a sell token
-    fn get_active_fee(self: @TContractState, sell_token: ContractAddress) -> u128;
 }
 
 /// Admin interface for the Autonomous Buyback component
