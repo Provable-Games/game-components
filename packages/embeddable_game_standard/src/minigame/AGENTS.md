@@ -1,18 +1,42 @@
 # Minigame Module
 
-The interfaces a game contract implements, plus two optional extensions. There
-is no `MinigameComponent` and no `IMinigame`: a game embeds
-`MinigameTokenComponent` directly and IS its own token, so it is identified by
-`IMINIGAME_TOKEN_ID` rather than a separate game id.
+What is left that is distinctly *game*-level, now that the game IS its token.
+Minting, playability and ownership live in `MinigameTokenComponent` on the same
+contract; a game is identified by `IMINIGAME_TOKEN_ID`, not a separate game id.
+
+So this module is: `MinigameComponent` (the game's own data — its identity, for
+indexers and clients), the `IMinigameTokenData` surface a game implements to
+answer for its tokens' score/game-over, and two optional extensions.
 
 ## What lives here
 
 | Path | Purpose |
 |------|---------|
+| `minigame_component.cairo` | `MinigameComponent` — the game's own data (identity), served over `IMinigameGameMetadata` |
 | `interface.cairo` | `IMinigameTokenData` |
 | `structs.cairo` | `GameDetail` |
 | `extensions/settings/` | `SettingsComponent` — settings presets |
 | `extensions/objectives/` | `ObjectivesComponent` — achievement tracking |
+
+## MinigameComponent
+
+Records the game's identity once at construction and serves it over
+`IMinigameGameMetadata::game_metadata()`.
+
+```cairo
+component!(path: MinigameComponent, storage: minigame, event: MinigameEvent);
+#[abi(embed_v0)]
+impl MinigameImpl = MinigameComponent::MinigameImpl<ContractState>;
+impl MinigameInternalImpl = MinigameComponent::InternalImpl<ContractState>;
+
+// in the constructor:
+self.minigame.initializer(game_metadata);
+```
+
+`GameMetadata` carries the nine identity fields — name, description, developer,
+publisher, genre, image, color, client_url, royalty_fraction. It is read once
+per contract, not once per token, and is deliberately not parsed out of a
+rendered token URI.
 
 ## Interfaces
 

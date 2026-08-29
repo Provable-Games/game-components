@@ -1,6 +1,6 @@
 pub mod extensions;
-pub mod game_metadata_component;
 pub mod interface;
+pub mod minigame_component;
 pub mod structs;
 
 #[cfg(test)]

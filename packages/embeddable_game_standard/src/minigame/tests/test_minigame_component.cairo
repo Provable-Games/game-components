@@ -1,4 +1,4 @@
-//! `GameMetadataComponent` — a game's identity, readable without a token.
+//! `MinigameComponent` — a game's identity, readable without a token.
 
 use game_components_interfaces::minigame::core::{
     IMinigameGameMetadataDispatcher, IMinigameGameMetadataDispatcherTrait,
@@ -26,7 +26,7 @@ fn sample() -> GameMetadata {
 }
 
 fn deploy() -> IMinigameGameMetadataDispatcher {
-    let contract = declare("GameMetadataMock").unwrap().contract_class();
+    let contract = declare("MinigameMock").unwrap().contract_class();
     let mut calldata = array![];
     sample().serialize(ref calldata);
     let (address, _) = contract.deploy(@calldata).unwrap();
