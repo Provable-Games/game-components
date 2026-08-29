@@ -7,7 +7,7 @@ pub trait IMockGame<TContractState> {
 
 #[starknet::contract]
 pub mod MockGame {
-    use game_components_embeddable_game_standard::minigame::interface::IMinigameTokenData;
+    use game_components_embeddable_game_standard::token::interface::IMinigameTokenData;
     use openzeppelin_introspection::src5::SRC5Component;
     use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess};
 

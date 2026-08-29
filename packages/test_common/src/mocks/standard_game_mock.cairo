@@ -36,7 +36,7 @@ pub mod StandardGameMock {
     use game_components_embeddable_game_standard::minigame::extensions::settings::interface::{
         IMINIGAME_SETTINGS_ID, IMinigameSettings,
     };
-    use game_components_embeddable_game_standard::minigame::interface::IMinigameTokenData;
+    use game_components_embeddable_game_standard::token::interface::IMinigameTokenData;
     use game_components_embeddable_game_standard::token::minigame_token_component::MinigameTokenComponent;
     use game_components_embeddable_game_standard::token::packing::unpack_soulbound;
     use openzeppelin_access::ownable::OwnableComponent;

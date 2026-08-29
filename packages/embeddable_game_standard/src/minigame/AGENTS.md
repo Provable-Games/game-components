@@ -13,7 +13,6 @@ answer for its tokens' score/game-over, and two optional extensions.
 | Path | Purpose |
 |------|---------|
 | `minigame_component.cairo` | `MinigameComponent` — the game's own data (identity), served over `IMinigameGameMetadata` |
-| `interface.cairo` | `IMinigameTokenData` |
 | `structs.cairo` | `GameDetail` |
 | `extensions/settings/` | `IMinigameSettings` + structs |
 | `extensions/objectives/` | `IMinigameObjectives` + structs |
@@ -40,7 +39,7 @@ rendered token URI.
 
 ## Interfaces
 
-### IMinigameTokenData (MUST IMPLEMENT)
+### IMinigameTokenData (MUST IMPLEMENT — now in `token::interface`)
 
 | Method | Returns | Description |
 |--------|---------|-------------|
@@ -131,6 +130,9 @@ address views were roundtrips returning the contract's own address, the mint
 methods self-dispatched to the token's `mint`, and `token_uri` is served by
 ERC721Metadata. Consumers now validate a game with
 `supports_interface(IMINIGAME_TOKEN_ID)`.
+
+`IMinigameTokenData` moved to `token::interface` — it is what a game answers
+about its own tokens, so it belongs with the token.
 
 `SettingsComponent` and `ObjectivesComponent` are gone: both held no storage
 and their whole initializer was one `register_interface` call, which a game

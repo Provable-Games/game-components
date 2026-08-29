@@ -11,7 +11,8 @@ pub mod minter;
 
 // Re-export commonly used items at top level
 pub use core::{
-    IMINIGAME_TOKEN_ID, IMinigameToken, IMinigameTokenDispatcher, IMinigameTokenDispatcherTrait,
+    IMINIGAME_TOKEN_ID, IMinigameToken, IMinigameTokenData, IMinigameTokenDataDispatcher,
+    IMinigameTokenDataDispatcherTrait, IMinigameTokenDispatcher, IMinigameTokenDispatcherTrait,
     MinigameTokenABI, MinigameTokenABIDispatcher, MinigameTokenABIDispatcherTrait,
 };
 pub use game_fee::{
