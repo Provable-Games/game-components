@@ -40,40 +40,30 @@ pub trait IMetagameCallbackMockView<TContractState> {
 
 #[starknet::contract]
 pub mod metagame_mock {
-    use game_components_embeddable_game_standard::metagame::extensions::context::context::ContextComponent;
     use game_components_embeddable_game_standard::metagame::extensions::context::interface::{
-        IMetagameContext, IMetagameContextDetails,
+        IMETAGAME_CONTEXT_ID, IMetagameContext, IMetagameContextDetails,
     };
     use game_components_embeddable_game_standard::metagame::extensions::context::structs::{
         GameContext, GameContextDetails,
     };
-    use game_components_embeddable_game_standard::metagame::metagame_component::MetagameComponent;
-    use game_components_embeddable_game_standard::metagame::metagame_component::MetagameComponent::InternalTrait as MetagameInternalTrait;
+    use game_components_embeddable_game_standard::metagame::metagame;
     use openzeppelin_introspection::src5::SRC5Component;
+    use openzeppelin_introspection::src5::SRC5Component::InternalTrait as SRC5InternalTrait;
     use starknet::ContractAddress;
     use starknet::storage::{
         Map, StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess,
         StoragePointerWriteAccess,
     };
 
-    component!(path: MetagameComponent, storage: metagame, event: MetagameEvent);
-    component!(path: ContextComponent, storage: context, event: ContextEvent);
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
 
     // Callback hooks implementation that tracks calls for test assertions
-
-    impl MetagameInternalImpl = MetagameComponent::InternalImpl<ContractState>;
-    impl ContextInternalImpl = ContextComponent::InternalImpl<ContractState>;
 
     #[abi(embed_v0)]
     impl SRC5Impl = SRC5Component::SRC5Impl<ContractState>;
 
     #[storage]
     struct Storage {
-        #[substorage(v0)]
-        metagame: MetagameComponent::Storage,
-        #[substorage(v0)]
-        context: ContextComponent::Storage,
         #[substorage(v0)]
         src5: SRC5Component::Storage,
         // Metagame storage
@@ -94,10 +84,6 @@ pub mod metagame_mock {
     #[event]
     #[derive(Drop, starknet::Event)]
     enum Event {
-        #[flat]
-        MetagameEvent: MetagameComponent::Event,
-        #[flat]
-        ContextEvent: ContextComponent::Event,
         #[flat]
         SRC5Event: SRC5Component::Event,
     }
@@ -169,25 +155,23 @@ pub mod metagame_mock {
                 context: context,
             };
             // Call the metagame component mint function
-            let token_id = self
-                .metagame
-                .mint(
-                    game_address,
-                    player_name,
-                    settings_id,
-                    start,
-                    end,
-                    objective_id,
-                    Option::Some(context_details),
-                    client_url,
-                    renderer_address,
-                    skills_address,
-                    to,
-                    soulbound,
-                    paymaster,
-                    salt,
-                    metadata,
-                );
+            let token_id = metagame::mint(
+                game_address,
+                player_name,
+                settings_id,
+                start,
+                end,
+                objective_id,
+                Option::Some(context_details),
+                client_url,
+                renderer_address,
+                skills_address,
+                to,
+                soulbound,
+                paymaster,
+                salt,
+                metadata,
+            );
 
             // Store the context data in our local storage
             self.token_context_count.write(token_id, 1);
@@ -229,7 +213,7 @@ pub mod metagame_mock {
 
             // Initialize context support if needed
             if supports_context {
-                self.context.initializer();
+                self.src5.register_interface(IMETAGAME_CONTEXT_ID);
             }
         }
     }

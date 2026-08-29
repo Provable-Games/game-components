@@ -10,7 +10,6 @@ use game_components_interfaces::token::game_fee::{
 };
 use openzeppelin_interfaces::introspection::{ISRC5Dispatcher, ISRC5DispatcherTrait};
 use starknet::ContractAddress;
-use crate::metagame::structs::MintMetagameParams;
 
 /// A game is valid exactly when its address is a standard token: the game IS
 /// its token, so minting and fees go to that address directly.
@@ -142,63 +141,6 @@ pub fn mint_batch_recipients(
         )
 }
 
-/// Mints multiple game tokens in batch through their games' token contracts
-///
-/// Each entry names its own game; the token is resolved per mint. When a batch
-/// shares one game, prefer `mint_batch_recipients` — this costs one
-/// cross-contract dispatch per token.
-///
-/// # Arguments
-/// * `mints` - Array of mint parameters for each token
-///
-/// # Returns
-/// * `Array<felt252>` - Array of minted token IDs
-pub fn mint_batch(mints: Array<MintMetagameParams>) -> Array<felt252> {
-    let mut token_ids = array![];
-    let mut index = 0;
-
-    loop {
-        if index >= mints.len() {
-            break;
-        }
-
-        let mint_param = mints.at(index);
-
-        // Clone non-copyable Option types
-        let context_clone = match mint_param.context {
-            Option::Some(ctx) => Option::Some(ctx.clone()),
-            Option::None => Option::None,
-        };
-
-        let client_url_clone = match mint_param.client_url {
-            Option::Some(url) => Option::Some(url.clone()),
-            Option::None => Option::None,
-        };
-
-        let token_id = mint(
-            *mint_param.game_address,
-            *mint_param.player_name,
-            *mint_param.settings_id,
-            *mint_param.start,
-            *mint_param.end,
-            *mint_param.objective_id,
-            context_clone,
-            client_url_clone,
-            *mint_param.renderer_address,
-            *mint_param.skills_address,
-            *mint_param.to,
-            *mint_param.soulbound,
-            *mint_param.paymaster,
-            *mint_param.salt,
-            *mint_param.metadata,
-        );
-
-        token_ids.append(token_id);
-        index += 1;
-    }
-
-    token_ids
-}
 
 /// Pure calculation: revenue * fee_numerator / FEE_DENOMINATOR
 /// Uses u256 intermediate to avoid overflow on large revenue values.
