@@ -14,4 +14,4 @@ packages/test_dojo/
 coverage.lcov
 **/snfoundry_trace/
 **/coverage_html/
-**/coverage/
+**/coverage/.claude/
