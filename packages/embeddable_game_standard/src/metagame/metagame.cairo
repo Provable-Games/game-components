@@ -12,17 +12,8 @@ use openzeppelin_interfaces::introspection::{ISRC5Dispatcher, ISRC5DispatcherTra
 use starknet::ContractAddress;
 use crate::metagame::structs::MintMetagameParams;
 
-/// The token standard is self-bound: the game contract IS its token. So there
-/// is no `token_address()` to resolve or trust — the game address itself is the
-/// token, and minting and fees go to it directly. A game is valid exactly when
-/// that address is actually a standard token, i.e. it advertises
-/// `IMINIGAME_TOKEN_ID` over SRC5. That check rejects a contract that is not a
-/// standard token, which is what stops an attacker from having a metagame mint
-/// on — or pay the fee recipient of — something that is not one.
-///
-/// This used to be one branch of a three-way walk that also served
-/// registry-backed and single-game legacy tokens. That generation is retired;
-/// what remains is the check that was always doing the real work.
+/// A game is valid exactly when its address is a standard token: the game IS
+/// its token, so minting and fees go to that address directly.
 fn assert_is_standard_game(game_address: ContractAddress) {
     assert!(
         ISRC5Dispatcher { contract_address: game_address }.supports_interface(IMINIGAME_TOKEN_ID),

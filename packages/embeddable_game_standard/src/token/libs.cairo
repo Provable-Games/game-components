@@ -1,9 +1,5 @@
-// Helpers for contracts that hold or act on someone else's game token.
-//
-// A game does not need these: it embeds `MinigameTokenComponent` and uses the
-// component's internal `assert_owner_and_playable`, which costs zero syscalls.
-// These are for a SEPARATE contract — a minter, a dungeon, a tournament —
-// reading the token over a dispatcher.
+// Dispatcher-based token reads, for a contract acting on a token it does not
+// itself embed. A game uses the component's internal guards instead.
 
 use game_components_interfaces::token::core::{
     IMinigameTokenDispatcher, IMinigameTokenDispatcherTrait,
