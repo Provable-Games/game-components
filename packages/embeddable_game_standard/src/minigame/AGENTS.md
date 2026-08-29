@@ -116,6 +116,11 @@ mod MyGame {
 
 ## Retired
 
+The `minigame::minigame` token helpers moved to `token::libs`
+(`assert_token_ownership`, `get_player_name`) — they are for a SEPARATE
+contract acting on someone else's token (a minter, a dungeon, a tournament),
+so they belong with the token. `require_owned_token` was dropped, unused.
+
 `IMinigameDetails` / `IMinigameDetailsSVG` were removed too: nothing in the
 workspace called them, and they describe a RENDERER surface — SVG generation is
 large enough that games put it on a separate contract, which then exposes its
