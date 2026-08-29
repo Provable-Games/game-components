@@ -1816,3 +1816,62 @@ fn test_claim_order_at_is_safe_to_repeat() {
     mock_call(mock_positions, selector!("withdraw_proceeds_from_sale_to"), 0_u128, 1);
     assert(dispatcher.claim_order_at(sell_token, 0) == 0, 'Repeat yields 0, not a revert');
 }
+
+/// What `claim_order_at` does NOT fix: unclaimed orders pin the config.
+///
+/// `active_buy_token` and `active_fee` are cleared only by the LOOP, and only
+/// when it reaches the very last order. `claim_order_at` deliberately does not
+/// move the bookmark, so orders left unclaimed keep the pin alive — and while
+/// it is alive, `buy_back` rejects any fee or buy_token change.
+///
+/// So with `minimum_amount = 0`, cheap junk orders can hold a sell token's fee
+/// tier frozen even though its real proceeds are always collectable. A non-zero
+/// minimum is what keeps this from being free.
+#[test]
+#[should_panic(expected: 'Fee mismatch')]
+fn test_unclaimed_orders_still_pin_the_fee_even_with_claim_order_at() {
+    let buyback_token = deploy_mock_erc20("Buyback", "BUY");
+    let sell_token = deploy_mock_erc20("Sell", "SELL");
+    let contract = setup_buyback_with_token_config(buyback_token, sell_token);
+    let dispatcher = IBuybackDispatcher { contract_address: contract };
+    let admin = IBuybackAdminDispatcher { contract_address: contract };
+    let mock_erc20 = IMockERC20Dispatcher { contract_address: sell_token };
+    let mock_positions: ContractAddress = 'POSITIONS'.try_into().unwrap();
+
+    start_cheat_block_timestamp_global(1000);
+
+    // Junk order 0, then a real order 1.
+    mock_erc20.mint(contract, 1);
+    mock_call(mock_positions, selector!("mint_and_increase_sell_amount"), (1_u64, 1_u128), 1);
+    dispatcher
+        .buy_back(
+            BuybackParams { sell_token, start_time: 0, end_time: 1000 + defaults::MIN_DURATION },
+        );
+
+    mock_erc20.mint(contract, amounts::THOUSAND_TOKENS);
+    mock_call(mock_positions, selector!("increase_sell_amount"), 100_u128, 1);
+    dispatcher
+        .buy_back(
+            BuybackParams { sell_token, start_time: 0, end_time: 1000 + defaults::MIN_DURATION },
+        );
+
+    // Collect the REAL order directly and leave the junk one alone.
+    start_cheat_block_timestamp_global(1000 + defaults::MIN_DURATION + 1);
+    mock_call(mock_positions, selector!("withdraw_proceeds_from_sale_to"), 500_u128, 1);
+    assert(dispatcher.claim_order_at(sell_token, 1) == 500, 'Real proceeds collected');
+
+    // Funds are safe -- but the pin never cleared, so the fee cannot move.
+    let mut cfg = defaults::default_token_config();
+    cfg.fee = 1020847100762815411640772995208708096;
+    start_cheat_caller_address(contract, OWNER());
+    admin.set_token_config(sell_token, Option::Some(cfg));
+    stop_cheat_caller_address(contract);
+
+    mock_erc20.mint(contract, amounts::THOUSAND_TOKENS);
+    dispatcher
+        .buy_back(
+            BuybackParams {
+                sell_token, start_time: 0, end_time: 1000 + defaults::MIN_DURATION * 3,
+            },
+        );
+}
