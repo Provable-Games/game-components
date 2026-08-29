@@ -198,17 +198,17 @@ mod standard_token_paths {
 }
 
 // =============================================================================
-// HOSTILE GAME POINTING AT SOMEONE ELSE'S TOKEN
+// FAKE GAME THAT IS NOT A STANDARD TOKEN
 // =============================================================================
 //
-// The token is self-bound, so `token_address() == game_address` IS its
-// registration check. Any path that trusts a game's `token_address()` must
-// enforce it: otherwise a contract that merely implements `token_address()`
-// can name a token it does not own and have the metagame mint on it or pay
-// its fee recipient — at a rate the attacker controls.
+// The token is self-bound: the game IS its token, so validity is exactly
+// `supports_interface(IMINIGAME_TOKEN_ID)` on the game address itself. A
+// contract that is not a standard token fails that probe and every guarded
+// path rejects it — otherwise the metagame could mint on, or pay the fee
+// recipient of, something that is not a token.
 
 #[cfg(test)]
-mod hostile_game_paths {
+mod fake_game_paths {
     use game_components_testing::constants::{ALICE, BOB, OWNER};
     use snforge_std::{ContractClassTrait, DeclareResultTrait, declare, mock_call};
     use starknet::ContractAddress;
@@ -229,21 +229,21 @@ mod hostile_game_paths {
         contract_address
     }
 
-    /// A hostile "game" that reports a victim's standard token as its own.
-    fn hostile_game_pointing_at(victim_token: ContractAddress) -> ContractAddress {
-        let hostile: ContractAddress = 0xBAD.try_into().unwrap();
-        mock_call(hostile, selector!("token_address"), victim_token, 10);
-        hostile
+    /// A fake "game" that does NOT advertise `IMINIGAME_TOKEN_ID`, so it fails
+    /// the standard-token probe.
+    fn fake_game_not_standard_token() -> ContractAddress {
+        let fake: ContractAddress = 0xBAD.try_into().unwrap();
+        mock_call(fake, selector!("supports_interface"), false, 10);
+        fake
     }
 
     #[test]
     #[should_panic(expected: "Game is not registered")]
-    fn test_mint_rejects_game_pointing_at_foreign_standard_token() {
-        let victim = deploy_standard_game(ALICE());
-        let hostile = hostile_game_pointing_at(victim);
+    fn test_mint_rejects_game_that_is_not_a_standard_token() {
+        let fake = fake_game_not_standard_token();
 
         libs::mint(
-            hostile,
+            fake,
             Option::None,
             Option::None,
             Option::None,
@@ -261,15 +261,14 @@ mod hostile_game_paths {
         );
     }
 
-    /// Fee terms — rate AND payee — must not be readable through a game that
-    /// does not own the token. This is the path that mattered: a metagame
+    /// Fee terms — rate AND payee — must not be readable through a contract
+    /// that is not a standard token. This is the path that mattered: a metagame
     /// trusting them pays out real funds at a rate the attacker sets.
     #[test]
     #[should_panic(expected: "Game is not registered")]
-    fn test_get_game_fee_terms_rejects_foreign_standard_token() {
-        let victim = deploy_standard_game(ALICE());
-        let hostile = hostile_game_pointing_at(victim);
-        libs::get_game_fee_terms(hostile);
+    fn test_get_game_fee_terms_rejects_game_that_is_not_a_standard_token() {
+        let fake = fake_game_not_standard_token();
+        libs::get_game_fee_terms(fake);
     }
 
     /// The self-bound game itself still passes every guarded path — three

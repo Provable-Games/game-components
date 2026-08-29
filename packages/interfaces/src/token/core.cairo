@@ -215,3 +215,14 @@ pub trait MinigameTokenABI<TState> {
     fn set_game_fee_recipient(ref self: TState, new_recipient: ContractAddress);
     fn set_game_fee(ref self: TState, license: ByteArray, fee_numerator: u16);
 }
+
+/// The game answers for its own tokens' state; the token holds no latch.
+#[starknet::interface]
+pub trait IMinigameTokenData<TState> {
+    fn score(self: @TState, token_id: felt252) -> u64;
+    fn game_over(self: @TState, token_id: felt252) -> bool;
+
+    // Batch operations
+    fn score_batch(self: @TState, token_ids: Span<felt252>) -> Array<u64>;
+    fn game_over_batch(self: @TState, token_ids: Span<felt252>) -> Array<bool>;
+}

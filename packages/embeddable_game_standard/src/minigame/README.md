@@ -20,10 +20,11 @@ Individual game logic foundation. Each game contract embeds this component and *
 | `token_address()` | `ContractAddress` | Associated MinigameToken |
 | `settings_address()` | `ContractAddress` | Optional settings contract |
 | `objectives_address()` | `ContractAddress` | Optional objectives contract |
-| `mint_game(player_name, settings_id, ...)` | `u64` | Mint single game token |
-| `mint_game_batch(mints)` | `Array<u64>` | Batch mint game tokens |
 
-**Interface ID**: `0x02c0f9265d397c10970f24822e4b57cac7d8895f8c449b7c9caaa26910499704`
+`IMinigame` carries only the identity views. Minting goes through the token's
+own `IMinigameTokenMinter::mint` (the game IS the token).
+
+**Interface ID**: `0x3672f24df9fc27c3ad99aa4e9f0a7173ccf1786921339b91fa5297588600260`
 
 ### IMinigameTokenData (MUST IMPLEMENT)
 
@@ -120,7 +121,7 @@ mod MyGame {
 ## Game Lifecycle
 
 1. **Init**: Deploy with `token_address`, optional `settings_address`/`objectives_address`
-2. **Mint**: Call `mint_game()` to create playable token
+2. **Mint**: Call `mint()` (`IMinigameTokenMinter`) to create playable token
 3. **Validate**: Use `assert_game_token_playable(token_id)` before actions
 4. **Play**: Update game state, `pre_action()`/`post_action()` hooks
 5. **Complete**: Return `true` from `game_over()` when finished

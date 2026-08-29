@@ -145,17 +145,17 @@ fn test_batch_recipients_carries_wide_metadata() {
     assert!(token.mint_metadata(*token_ids.at(0)) == wide, "wide metadata lost in the batch");
 }
 
-/// Same self-bound gate as every other standard-token path: a contract that
-/// merely implements `token_address()` must not mint on a token it does not own.
+/// Same self-bound gate as every other standard-token path: a contract that is
+/// not a standard token — it does not advertise `IMINIGAME_TOKEN_ID` — must not
+/// have a batch minted on it.
 #[test]
 #[should_panic(expected: "Game is not registered")]
-fn test_batch_recipients_rejects_foreign_standard_token() {
-    let victim = deploy_standard_game();
-    let hostile: ContractAddress = 0xBAD.try_into().unwrap();
-    mock_call(hostile, selector!("token_address"), victim, 10);
+fn test_batch_recipients_rejects_game_that_is_not_a_standard_token() {
+    let fake: ContractAddress = 0xBAD.try_into().unwrap();
+    mock_call(fake, selector!("supports_interface"), false, 10);
 
     libs::mint_batch_recipients(
-        hostile,
+        fake,
         Option::None,
         Option::None,
         Option::None,

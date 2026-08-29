@@ -573,30 +573,25 @@ fn test_mint_batch_recipients_rejects_zero_count() {
 // ECOSYSTEM INTEGRATION (metagame assert_game_registered)
 // ================================================================================================
 
-/// Positive path: `assert_game_registered` now probes the token's SRC5 for
-/// `IMINIGAME_TOKEN_ID` first (standard tokens expose no registry views). A
-/// self-bound standard deployment IS its own game: `token_address()` returns
-/// itself, the standard id matches, and the check reduces to a trivially-true
-/// address equality.
+/// Positive path: `assert_game_registered` probes the game's SRC5 for
+/// `IMINIGAME_TOKEN_ID`. A self-bound standard deployment IS its own token, so
+/// it advertises the id and the check passes.
 #[test]
 fn test_assert_game_registered_accepts_self_bound_game() {
     let (token, _, _) = deploy_token();
     crate::metagame::metagame::assert_game_registered(token.contract_address);
 }
 
-/// Negative path: a game whose `token_address()` points at some OTHER standard
-/// token is not a valid pairing — self-binding means the only accepted answer
-/// is the game's own address. A second StandardGameMock cannot express this
-/// misconfiguration (it always returns itself), so the fake game is a mocked
-/// address pointing at a real standard deployment: the SRC5 probe finds the
-/// id for real, then the address equality fake_game == token fails.
+/// Negative path: a fake game that is NOT a standard token — it does not
+/// advertise `IMINIGAME_TOKEN_ID` over SRC5 — is rejected. The self-bound game
+/// IS the token, so validity is exactly `supports_interface(IMINIGAME_TOKEN_ID)`
+/// on the game address itself; a contract that fails the probe cannot have a
+/// metagame mint on it or pay its fee recipient.
 #[test]
 #[should_panic(expected: "Game is not registered")]
 fn test_assert_game_registered_rejects_game_not_paired_with_standard_token() {
-    let (token, _, _) = deploy_token();
-
     let fake_game = addr('FAKE_GAME');
-    mock_call(fake_game, selector!("token_address"), token.contract_address, 1);
+    mock_call(fake_game, selector!("supports_interface"), false, 1);
     crate::metagame::metagame::assert_game_registered(fake_game);
 }
 

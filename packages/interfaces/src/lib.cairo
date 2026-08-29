@@ -62,19 +62,14 @@ pub use metagame::{
 
 // Minigame
 pub use minigame::{
-    IMINIGAME_ID, IMINIGAME_OBJECTIVES_ID, IMINIGAME_SETTINGS_ID, IMinigame, IMinigameDetails,
-    IMinigameDetailsDispatcher, IMinigameDetailsDispatcherTrait, IMinigameDetailsSVG,
-    IMinigameDetailsSVGDispatcher, IMinigameDetailsSVGDispatcherTrait, IMinigameDispatcher,
-    IMinigameDispatcherTrait, IMinigameObjectives, IMinigameObjectivesDetails,
+    IMINIGAME_OBJECTIVES_ID, IMINIGAME_SETTINGS_ID, IMinigameObjectives, IMinigameObjectivesDetails,
     IMinigameObjectivesDetailsDispatcher, IMinigameObjectivesDetailsDispatcherTrait,
     IMinigameObjectivesDispatcher, IMinigameObjectivesDispatcherTrait, IMinigameObjectivesSVG,
     IMinigameObjectivesSVGDispatcher, IMinigameObjectivesSVGDispatcherTrait, IMinigameSettings,
     IMinigameSettingsDetails, IMinigameSettingsDetailsDispatcher,
     IMinigameSettingsDetailsDispatcherTrait, IMinigameSettingsDispatcher,
     IMinigameSettingsDispatcherTrait, IMinigameSettingsSVG, IMinigameSettingsSVGDispatcher,
-    IMinigameSettingsSVGDispatcherTrait, IMinigameTokenData, IMinigameTokenDataDispatcher,
-    IMinigameTokenDataDispatcherTrait, IMinigameTokenUri, IMinigameTokenUriDispatcher,
-    IMinigameTokenUriDispatcherTrait,
+    IMinigameSettingsSVGDispatcherTrait,
 };
 
 // Prize
@@ -92,8 +87,7 @@ pub use registration::{
 pub use structs::{
     GameContext, GameContextDetails, GameDetail, GameFeeTerms, GameMetadata, GameObjective,
     GameObjectiveDetails, GameSetting, GameSettingDetails, LeaderboardConfig, LeaderboardEntry,
-    LeaderboardResult, LeaderboardStoreConfig, Lifecycle, MintBatchRecipient, MintGameParams,
-    MintParams, PlayerNameUpdate, TokenMetadata,
+    LeaderboardResult, LeaderboardStoreConfig, Lifecycle, MintBatchRecipient, TokenMetadata,
 };
 
 // Token
