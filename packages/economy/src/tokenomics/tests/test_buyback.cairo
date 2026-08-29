@@ -1696,3 +1696,123 @@ fn test_token_config_rejects_zero_max_duration() {
     start_cheat_caller_address(contract, OWNER());
     admin.set_token_config(sell_token, Option::Some(c));
 }
+
+// ============================================================================
+// claim_order_at — the head-of-line escape hatch
+// ============================================================================
+
+/// A long order ahead of a short one blocks the LOOP, but not `claim_order_at`.
+///
+/// Order index is creation order, not maturity order, so a long order planted
+/// first delays every shorter order behind it until it ends — and the block is
+/// repeatable at will. This claims the matured order directly and steps around
+/// it.
+#[test]
+fn test_claim_order_at_steps_around_a_head_of_line_block() {
+    let buyback_token = deploy_mock_erc20("Buyback", "BUY");
+    let sell_token = deploy_mock_erc20("Sell", "SELL");
+    let contract = setup_buyback_with_token_config(buyback_token, sell_token);
+    let dispatcher = IBuybackDispatcher { contract_address: contract };
+    let mock_erc20 = IMockERC20Dispatcher { contract_address: sell_token };
+    let mock_positions: ContractAddress = 'POSITIONS'.try_into().unwrap();
+
+    start_cheat_block_timestamp_global(1000);
+
+    // Order 0: the longest window the config allows.
+    mock_erc20.mint(contract, amounts::THOUSAND_TOKENS);
+    mock_call(mock_positions, selector!("mint_and_increase_sell_amount"), (1_u64, 100_u128), 1);
+    dispatcher
+        .buy_back(
+            BuybackParams { sell_token, start_time: 0, end_time: 1000 + defaults::MAX_DURATION },
+        );
+
+    // Order 1: the shortest. Created later, matures far earlier.
+    mock_erc20.mint(contract, amounts::THOUSAND_TOKENS);
+    mock_call(mock_positions, selector!("increase_sell_amount"), 100_u128, 1);
+    dispatcher
+        .buy_back(
+            BuybackParams { sell_token, start_time: 0, end_time: 1000 + defaults::MIN_DURATION },
+        );
+
+    // Past order 1's end, well before order 0's.
+    start_cheat_block_timestamp_global(1000 + defaults::MIN_DURATION + 1);
+    mock_call(mock_positions, selector!("withdraw_proceeds_from_sale_to"), 500_u128, 5);
+
+    // The escape hatch reaches it directly.
+    let proceeds = dispatcher.claim_order_at(sell_token, 1);
+    assert(proceeds == 500, 'Should claim the matured order');
+
+    // The bookmark is deliberately untouched: the loop is unchanged.
+    assert(dispatcher.get_order_bookmark(sell_token) == 0, 'Bookmark must not move');
+}
+
+/// An unmatured order is rejected — this is an ordering escape hatch, not a
+/// way to withdraw early.
+#[test]
+#[should_panic(expected: 'Order not matured')]
+fn test_claim_order_at_rejects_an_unmatured_order() {
+    let buyback_token = deploy_mock_erc20("Buyback", "BUY");
+    let sell_token = deploy_mock_erc20("Sell", "SELL");
+    let contract = setup_buyback_with_token_config(buyback_token, sell_token);
+    let dispatcher = IBuybackDispatcher { contract_address: contract };
+    let mock_positions: ContractAddress = 'POSITIONS'.try_into().unwrap();
+
+    start_cheat_block_timestamp_global(1000);
+    IMockERC20Dispatcher { contract_address: sell_token }.mint(contract, amounts::THOUSAND_TOKENS);
+    mock_call(mock_positions, selector!("mint_and_increase_sell_amount"), (1_u64, 100_u128), 1);
+    dispatcher
+        .buy_back(
+            BuybackParams { sell_token, start_time: 0, end_time: 1000 + defaults::MAX_DURATION },
+        );
+
+    dispatcher.claim_order_at(sell_token, 0);
+}
+
+/// An index past the end is rejected rather than reading empty storage.
+#[test]
+#[should_panic(expected: 'Order index out of range')]
+fn test_claim_order_at_rejects_an_index_past_the_end() {
+    let buyback_token = deploy_mock_erc20("Buyback", "BUY");
+    let sell_token = deploy_mock_erc20("Sell", "SELL");
+    let contract = setup_buyback_with_token_config(buyback_token, sell_token);
+    let dispatcher = IBuybackDispatcher { contract_address: contract };
+    let mock_positions: ContractAddress = 'POSITIONS'.try_into().unwrap();
+
+    start_cheat_block_timestamp_global(1000);
+    IMockERC20Dispatcher { contract_address: sell_token }.mint(contract, amounts::THOUSAND_TOKENS);
+    mock_call(mock_positions, selector!("mint_and_increase_sell_amount"), (1_u64, 100_u128), 1);
+    dispatcher
+        .buy_back(
+            BuybackParams { sell_token, start_time: 0, end_time: 1000 + defaults::MIN_DURATION },
+        );
+
+    start_cheat_block_timestamp_global(1000 + defaults::MIN_DURATION + 1);
+    dispatcher.claim_order_at(sell_token, 1);
+}
+
+/// Claiming the same order twice is safe: Ekubo returns 0 rather than
+/// reverting, so a keeper sweeping indices is not broken by a stale entry.
+#[test]
+fn test_claim_order_at_is_safe_to_repeat() {
+    let buyback_token = deploy_mock_erc20("Buyback", "BUY");
+    let sell_token = deploy_mock_erc20("Sell", "SELL");
+    let contract = setup_buyback_with_token_config(buyback_token, sell_token);
+    let dispatcher = IBuybackDispatcher { contract_address: contract };
+    let mock_positions: ContractAddress = 'POSITIONS'.try_into().unwrap();
+
+    start_cheat_block_timestamp_global(1000);
+    IMockERC20Dispatcher { contract_address: sell_token }.mint(contract, amounts::THOUSAND_TOKENS);
+    mock_call(mock_positions, selector!("mint_and_increase_sell_amount"), (1_u64, 100_u128), 1);
+    dispatcher
+        .buy_back(
+            BuybackParams { sell_token, start_time: 0, end_time: 1000 + defaults::MIN_DURATION },
+        );
+
+    start_cheat_block_timestamp_global(1000 + defaults::MIN_DURATION + 1);
+    mock_call(mock_positions, selector!("withdraw_proceeds_from_sale_to"), 500_u128, 1);
+    assert(dispatcher.claim_order_at(sell_token, 0) == 500, 'First claim takes proceeds');
+
+    // Second time Ekubo has nothing left to give.
+    mock_call(mock_positions, selector!("withdraw_proceeds_from_sale_to"), 0_u128, 1);
+    assert(dispatcher.claim_order_at(sell_token, 0) == 0, 'Repeat yields 0, not a revert');
+}

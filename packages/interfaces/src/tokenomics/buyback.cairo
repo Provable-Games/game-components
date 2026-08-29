@@ -91,6 +91,16 @@ pub trait IBuyback<TContractState> {
         ref self: TContractState, sell_token: ContractAddress, limit: u16,
     ) -> u128;
 
+    /// Claim ONE matured order by index, bypassing the ordered claim loop.
+    ///
+    /// `claim_buyback_proceeds` walks from a bookmark and stops at the first
+    /// unfinished order, so a long order delays claiming every shorter order
+    /// created after it. This is the escape hatch: any matured order can be
+    /// claimed directly, in any order, so head-of-line blocking cannot hold
+    /// proceeds. Does NOT move the bookmark — the loop stays the convenient
+    /// path and re-withdrawing an already-claimed order simply yields 0.
+    fn claim_order_at(ref self: TContractState, sell_token: ContractAddress, index: u128) -> u128;
+
     /// Sweep any accumulated buy tokens directly to treasury
     fn sweep_buy_token_to_treasury(ref self: TContractState) -> u256;
 

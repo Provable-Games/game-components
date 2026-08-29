@@ -64,6 +64,7 @@ pub mod BuybackComponent {
     pub enum Event {
         BuybackStarted: BuybackStarted,
         BuybackProceeds: BuybackProceeds,
+        BuybackOrderClaimed: BuybackOrderClaimed,
         BuyTokenSwept: BuyTokenSwept,
         GlobalConfigUpdated: GlobalConfigUpdated,
         TokenConfigUpdated: TokenConfigUpdated,
@@ -93,6 +94,21 @@ pub mod BuybackComponent {
         pub amount: u128,
         pub orders_claimed: u128,
         pub new_bookmark: u128,
+    }
+
+    /// Emitted when a single order is claimed out of order by index.
+    ///
+    /// Distinct from `BuybackProceeds` on purpose: this path does NOT move the
+    /// bookmark, so an indexer tracking claim progress by bookmark would be
+    /// misled if the two shared an event.
+    #[derive(Drop, starknet::Event)]
+    pub struct BuybackOrderClaimed {
+        #[key]
+        pub sell_token: ContractAddress,
+        #[key]
+        pub buy_token: ContractAddress,
+        pub order_index: u128,
+        pub amount: u128,
     }
 
     /// Emitted when accumulated buy tokens are swept to treasury
@@ -361,6 +377,70 @@ pub mod BuybackComponent {
         /// configs specify different buy_tokens, those tokens will NOT be swept by this
         /// function. Integrators using different buy_tokens per sell_token should implement
         /// their own sweep mechanism or ensure all configs use the same buy_token.
+        /// Claim ONE matured order by index, bypassing the ordered claim loop.
+        ///
+        /// The loop in `claim_buyback_proceeds` stops at the first unfinished
+        /// order, so a long order planted ahead of shorter ones delays their
+        /// proceeds until it ends — and since index is creation order rather
+        /// than maturity order, that block is repeatable at will. This claims a
+        /// single matured order directly, so the delay can always be stepped
+        /// around.
+        ///
+        /// Deliberately does NOT advance the bookmark. The bookmark means
+        /// "everything before this is claimed", and honouring that for
+        /// out-of-order claims would need a per-order claimed flag — which is
+        /// the skip-based design reverted in #134. Instead this leaves the loop
+        /// untouched: it may later re-withdraw an order claimed here and simply
+        /// receive 0, which Ekubo returns rather than reverting.
+        ///
+        /// Returns the proceeds withdrawn. 0 is a legitimate result (already
+        /// claimed, or an order that bought nothing) and is NOT an error, so a
+        /// keeper sweeping several indices is not reverted by one stale entry.
+        fn claim_order_at(
+            ref self: ComponentState<TContractState>, sell_token: ContractAddress, index: u128,
+        ) -> u128 {
+            let position_id = self.Buyback_position_token_id.read(sell_token);
+            assert(position_id != 0, Errors::POSITION_NOT_INITIALIZED);
+
+            let order_count = self.Buyback_order_counter.read(sell_token);
+            assert(index < order_count, Errors::ORDER_INDEX_OUT_OF_RANGE);
+
+            let packed_order = self.Buyback_orders.read((sell_token, index));
+            assert(packed_order.end_time <= get_block_timestamp(), Errors::ORDER_NOT_MATURED);
+
+            // Cleared once every order is claimed, and the OrderKey would be
+            // wrong without them.
+            let active_buy_token = self.Buyback_active_buy_token.read(sell_token);
+            let active_fee = self.Buyback_active_fee.read(sell_token);
+            assert(active_buy_token.is_non_zero(), Errors::NO_ACTIVE_ORDER_KEY);
+
+            let order_key = OrderKey {
+                sell_token: sell_token,
+                buy_token: active_buy_token,
+                fee: active_fee,
+                start_time: packed_order.start_time,
+                end_time: packed_order.end_time,
+            };
+
+            let config = self._get_effective_config(sell_token);
+            let proceeds = self
+                .Buyback_positions_dispatcher
+                .read()
+                .withdraw_proceeds_from_sale_to(position_id, order_key, config.treasury);
+
+            self
+                .emit(
+                    BuybackOrderClaimed {
+                        sell_token,
+                        buy_token: active_buy_token,
+                        order_index: index,
+                        amount: proceeds,
+                    },
+                );
+
+            proceeds
+        }
+
         fn sweep_buy_token_to_treasury(ref self: ComponentState<TContractState>) -> u256 {
             let global_config = self.Buyback_global_config.read();
             let buy_token = global_config.default_buy_token;
