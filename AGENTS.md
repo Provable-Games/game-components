@@ -179,5 +179,4 @@ When adding a new module to a group package, update **both** files:
 | `utilities` | `math` | `ubuntu-latest-4` | 256 |
 | `utilities` | `distribution` | `ubuntu-latest-4` | 256 |
 | `utilities` | `utils` | `ubuntu-latest-4` | 256 |
-| `utilities` | `renderer` | `ubuntu-latest-4` | 256 |
 | `presets` | `presets` | `ubuntu-latest-4` | 256 |

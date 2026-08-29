@@ -225,10 +225,6 @@ jobs:
             module: utils
             runner: ubuntu-latest-4
             fuzzer_runs: 256
-          - package: game_components_utilities
-            module: renderer
-            runner: ubuntu-latest-4
-            fuzzer_runs: 256
           # Presets (standalone package, no module filter)
           - package: game_components_presets
             module: presets

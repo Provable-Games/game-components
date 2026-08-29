@@ -1,6 +1,5 @@
-//! `GameMetadataComponent` — a game's identity, readable without a token.
+//! `MinigameComponent` — a game's identity, readable without a token.
 
-use core::num::traits::Zero;
 use game_components_interfaces::minigame::core::{
     IMinigameGameMetadataDispatcher, IMinigameGameMetadataDispatcherTrait,
 };
@@ -14,7 +13,6 @@ fn addr(v: felt252) -> ContractAddress {
 
 fn sample() -> GameMetadata {
     GameMetadata {
-        contract_address: addr('GAME'),
         name: "Test Game",
         description: "A game",
         developer: "Dev",
@@ -23,16 +21,12 @@ fn sample() -> GameMetadata {
         image: "img",
         color: "#fff",
         client_url: "https://example.test",
-        renderer_address: Zero::zero(),
         royalty_fraction: 0,
-        skills_address: Zero::zero(),
-        created_at: 0,
-        version: 1,
     }
 }
 
 fn deploy() -> IMinigameGameMetadataDispatcher {
-    let contract = declare("GameMetadataMock").unwrap().contract_class();
+    let contract = declare("MinigameMock").unwrap().contract_class();
     let mut calldata = array![];
     sample().serialize(ref calldata);
     let (address, _) = contract.deploy(@calldata).unwrap();
@@ -58,10 +52,8 @@ fn test_round_trips_every_field() {
     // ByteArray-heavy struct through storage: assert the non-string fields
     // too, so a packing change cannot quietly drop one.
     let meta = deploy().game_metadata();
-    assert!(meta.contract_address == addr('GAME'), "contract_address");
     assert!(meta.client_url == "https://example.test", "client_url");
     assert!(meta.color == "#fff", "color");
     assert!(meta.description == "A game", "description");
     assert!(meta.royalty_fraction == 0, "royalty_fraction");
-    assert!(meta.version == 1, "version");
 }

@@ -7,11 +7,8 @@ pub trait IMockGame<TContractState> {
 
 #[starknet::contract]
 pub mod MockGame {
-    use game_components_embeddable_game_standard::minigame::interface::{
-        IMINIGAME_ID, IMinigameTokenData,
-    };
+    use game_components_embeddable_game_standard::token::interface::IMinigameTokenData;
     use openzeppelin_introspection::src5::SRC5Component;
-    use openzeppelin_introspection::src5::SRC5Component::InternalTrait as SRC5InternalTrait;
     use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess};
 
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
@@ -32,9 +29,7 @@ pub mod MockGame {
     }
 
     #[constructor]
-    fn constructor(ref self: ContractState) {
-        self.src5.register_interface(IMINIGAME_ID);
-    }
+    fn constructor(ref self: ContractState) {}
 
     #[abi(embed_v0)]
     impl MinigameTokenDataImpl of IMinigameTokenData<ContractState> {

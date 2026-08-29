@@ -10,8 +10,6 @@ Single source of truth for all game component interface definitions. Other packa
 | `minigame` | `IMinigame`, `IMinigameTokenData`, `IMinigameSettings`, `IMinigameObjectives` | Game logic, score/game_over queries |
 | `token` (`token/core`) | `IMinigameToken` | THE minigame token standard: gas-optimized token embedded in the game contract itself (self-bound, no registry, no mutable state), plus the `IMinigameTokenMinter` surface |
 | `token/game_fee` | `IMinigameTokenGameFee` | Game fee recipient (payout sink) + license + fee rate on the standard token (replaces the registry's `game_fee_info`); setters gated on the game contract's Ownable owner |
-| `token/legacy` | `IMinigameTokenLegacy`, `IMinigameTokenMinter`, `IMinigameTokenObjectives`, `IMinigameTokenSettings`, `IMinigameTokenRenderer` | Original multi-game ERC721 token with extensions (kept for deployed denshokan) |
-| `registry` | `IMinigameRegistry` | Game registration and metadata lookup |
 | `leaderboard` | `ILeaderboard`, `ILeaderboardAdmin`, `IGameDetails` | Tournament scoring and rankings |
 | `tokenomics/buyback` | `IBuyback`, `IBuybackAdmin` | Autonomous buyback via Ekubo TWAMM |
 | `tokenomics/stream` | `IStreamToken`, `IStreamTokenFactory` | Token distribution streams |
@@ -20,11 +18,10 @@ Single source of truth for all game component interface definitions. Other packa
 
 | Module | Structs |
 |--------|---------|
-| `structs/token` | `TokenMetadata`, `Lifecycle`, `MintBatchRecipient`, `MintParams`, `PlayerNameUpdate` |
-| `structs/minigame` | `GameDetail`, `MintGameParams`, `GameSettingDetails`, `GameSetting`, `GameObjective` |
+| `structs/token` | `TokenMetadata`, `Lifecycle`, `MintBatchRecipient`, `GameFeeTerms` |
+| `structs/minigame` | `GameMetadata`, `GameDetail`, `GameSettingDetails`, `GameSetting`, `GameObjective` |
 | `structs/metagame` | `GameContextDetails`, `GameContext` |
 | `structs/leaderboard` | `LeaderboardConfig`, `LeaderboardEntry`, `LeaderboardResult`, `LeaderboardStoreConfig` |
-| `structs/registry` | `GameMetadata` |
 
 ## Interface ID Constants
 
@@ -34,10 +31,8 @@ pub const IMINIGAME_ID: felt252 = 0x...;
 pub const IMINIGAME_SETTINGS_ID: felt252 = 0x...;
 pub const IMINIGAME_OBJECTIVES_ID: felt252 = 0x...;
 pub const IMINIGAME_TOKEN_ID: felt252 = 0x...;
-pub const IMINIGAME_TOKEN_LEGACY_ID: felt252 = 0x...;
 pub const IMINIGAME_TOKEN_MINTER_ID: felt252 = 0x...;
 pub const IMINIGAME_TOKEN_GAME_FEE_ID: felt252 = 0x...;
-pub const IMINIGAME_REGISTRY_ID: felt252 = 0x...;
 pub const ILEADERBOARD_ID: felt252 = 0x...;
 ```
 
@@ -86,9 +81,10 @@ use game_components_interfaces::{
 - `score(token_id: u64) -> u32` - Get token's current score
 - `game_over(token_id: u64) -> bool` - Check if game has ended
 
-**IMinigame**:
-- `is_playable(token_id: u64) -> bool` - Check if token can be played
-- `update_game(token_id: u64)` - Sync token state with game state
+**IMinigame** (identity views only — self-bound game returns its own address):
+- `token_address() -> ContractAddress`
+- `settings_address() -> ContractAddress`
+- `objectives_address() -> ContractAddress`
 
 **ILeaderboard**:
 - `submit_score(tournament_id, token_id, score, position) -> LeaderboardResult`
@@ -163,36 +159,32 @@ The tool outputs the extended function selectors and the final XOR'd interface I
 - For single-function interfaces, the ID equals the single extended function selector
 - Always update the EFS comment above the constant to match the tool's output
 
-### Methods excluded from `IMINIGAME_TOKEN_LEGACY_ID`
+### Methods excluded from `IMINIGAME_TOKEN_ID`
 
-`IMinigameTokenLegacy::refresh_metadata` and `refresh_metadata_batch` are **not**
-part of the `IMINIGAME_TOKEN_LEGACY_ID` derivation. Omit both from the stripped
-input file or the constant will not reproduce.
+`IMINIGAME_TOKEN_ID` is derived over `IMinigameToken` **minus** `refresh_metadata`.
+Omit that method from the stripped input file or the constant will not reproduce
+(the per-selector breakdown is kept in the doc comment above the constant in
+`token/core.cairo`).
 
 The ID is registered on-chain by every deployed token contract. Rederiving it to
-cover two additive, optional methods would make
-`supports_interface(IMINIGAME_TOKEN_LEGACY_ID)` return false on all of them and
-break interface discovery for every existing consumer — a breaking change across
-the ecosystem in exchange for nothing a caller can act on. The ID identifies the
+cover an additive, optional method would make
+`supports_interface(IMINIGAME_TOKEN_ID)` return false on all of them and break
+interface discovery for every existing consumer — a breaking change across the
+ecosystem in exchange for nothing a caller can act on. The ID identifies the
 original surface, which those contracts all still implement in full.
 
 Apply the same reasoning to future additive methods: extend the trait, leave the ID
 alone, and note the exclusion here. Change the ID only for a genuinely breaking
 change to the existing surface.
 
-The same refresh exclusion applies to `IMINIGAME_TOKEN_ID` (the standard token):
-it is derived over `IMinigameToken` minus `refresh_metadata` (the per-selector
-breakdown is kept in the doc comment above the constant in `token/core.cairo`).
+### Frozen `IMINIGAME_TOKEN_ID` value
 
-### Frozen ID values across the standard/legacy rename
-
-Both token interface-id VALUES are frozen — deployed contracts register them
-on-chain. When the lite token became the standard, only the NAMES moved:
+The token interface-id VALUE is frozen — deployed contracts register it on-chain.
+When the lite token became the standard, only the NAME moved:
 
 | Constant (today) | Value | Was named |
 | --- | --- | --- |
 | `IMINIGAME_TOKEN_ID` | `0x20253de95bcdb23620c88405a5f97da040b91de832ad98a34b45c4f3331d13b` | `IMINIGAME_TOKEN_LITE_ID` |
-| `IMINIGAME_TOKEN_LEGACY_ID` | `0x246f614bd76b91c378a91877851f2ccdb99278e9fb77c782a22355059ce9906` | `IMINIGAME_TOKEN_ID` |
 
 ## Dependencies
 

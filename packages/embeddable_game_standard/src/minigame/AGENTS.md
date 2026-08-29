@@ -1,37 +1,45 @@
 # Minigame Module
 
-The interfaces a game contract implements, plus two optional extensions. There
-is no `MinigameComponent`: a game embeds `MinigameTokenComponent` directly and
-IS its own token.
+What is left that is distinctly *game*-level, now that the game IS its token.
+Minting, playability and ownership live in `MinigameTokenComponent` on the same
+contract; a game is identified by `IMINIGAME_TOKEN_ID`, not a separate game id.
+
+So this module is: `MinigameComponent` (the game's own data — its identity, for
+indexers and clients), the `IMinigameTokenData` surface a game implements to
+answer for its tokens' score/game-over, and two optional extensions.
 
 ## What lives here
 
 | Path | Purpose |
 |------|---------|
-| `interface.cairo` | `IMinigame`, `IMinigameTokenData`, `IMinigameDetails`, `IMinigameTokenUri` |
-| `structs.cairo` | `MintGameParams` |
-| `extensions/settings/` | `SettingsComponent` — settings presets |
-| `extensions/objectives/` | `ObjectivesComponent` — achievement tracking |
+| `minigame_component.cairo` | `MinigameComponent` — the game's own data (identity), served over `IMinigameGameMetadata` |
+| `structs.cairo` | `GameDetail` |
+| `extensions/settings/` | `IMinigameSettings` + structs |
+| `extensions/objectives/` | `IMinigameObjectives` + structs |
+
+## MinigameComponent
+
+Records the game's identity once at construction and serves it over
+`IMinigameGameMetadata::game_metadata()`.
+
+```cairo
+component!(path: MinigameComponent, storage: minigame, event: MinigameEvent);
+#[abi(embed_v0)]
+impl MinigameImpl = MinigameComponent::MinigameImpl<ContractState>;
+impl MinigameInternalImpl = MinigameComponent::InternalImpl<ContractState>;
+
+// in the constructor:
+self.minigame.initializer(game_metadata);
+```
+
+`GameMetadata` carries the nine identity fields — name, description, developer,
+publisher, genre, image, color, client_url, royalty_fraction. It is read once
+per contract, not once per token, and is deliberately not parsed out of a
+rendered token URI.
 
 ## Interfaces
 
-### IMinigame (Core)
-
-| Method | Returns | Description |
-|--------|---------|-------------|
-| `token_address()` | `ContractAddress` | The game's token — for a self-bound game, **its own address** |
-| `settings_address()` | `ContractAddress` | Optional settings contract |
-| `objectives_address()` | `ContractAddress` | Optional objectives contract |
-| `mint_game(player_name, settings_id, ...)` | `felt252` | Mint single game token |
-| `mint_game_batch(mints)` | `Array<felt252>` | Batch mint game tokens |
-
-**Interface ID**: `0x02c0f9265d397c10970f24822e4b57cac7d8895f8c449b7c9caaa26910499704`
-
-`token_address()` returning the contract's own address is what makes a game
-discoverable as self-bound: `metagame::assert_game_registered` is exactly that
-equality check, and consumers rely on it rather than resolving a registry.
-
-### IMinigameTokenData (MUST IMPLEMENT)
+### IMinigameTokenData (MUST IMPLEMENT — now in `token::interface`)
 
 | Method | Returns | Description |
 |--------|---------|-------------|
@@ -43,13 +51,6 @@ equality check, and consumers rely on it rather than resolving a registry.
 The game is the sole authority here — the token holds no `game_over` latch and
 never calls back to ask. Nothing syncs state between them.
 
-### IMinigameDetails (Optional)
-
-| Method | Returns | Description |
-|--------|---------|-------------|
-| `token_name(token_id)` | `ByteArray` | Display name for token |
-| `token_description(token_id)` | `ByteArray` | Token description |
-| `game_details(token_id)` | `Span<GameDetail>` | Key-value game details |
 
 ## Extensions
 
@@ -63,11 +64,8 @@ never calls back to ask. Nothing syncs state between them.
 
 **Interface ID**: `0x0379f4343538c65a38349fb1318328629dd950d3624101aeaac1b4bd45a39eff`
 
-`SettingsComponent` registers the interface id and exposes
-`get_settings_id(token_id, token_address)`. It no longer announces created
-settings to the token: that announcement dispatched to a token-side settings
-surface that only the retired generation had, and the game is the source of
-truth for which settings exist.
+A game implements `IMinigameSettings` and registers `IMINIGAME_SETTINGS_ID`
+itself. The game is the source of truth for which settings exist.
 
 ### Objectives (`extensions/objectives/`)
 
@@ -79,9 +77,10 @@ truth for which settings exist.
 
 **Interface ID**: `0x0213cfcf73543e549f00c7cad49cf27a1e544d71315ff981930aaf77ac0709bd`
 
-`ObjectivesComponent` registers the interface id. Objective IDs pack into the
-token id as inert data the game interprets — the token has no completion
-machinery, so `completed_objective` on `token_metadata` is always false.
+A game implements `IMinigameObjectives` and registers
+`IMINIGAME_OBJECTIVES_ID` itself. Objective IDs pack into the token id as inert
+data the game interprets — the token has no completion machinery, so
+`completed_objective` on `token_metadata` is always false.
 
 ## Building a game
 
@@ -101,23 +100,43 @@ mod MyGame {
         fn score(self: @ContractState, token_id: felt252) -> u32 { ... }
         fn game_over(self: @ContractState, token_id: felt252) -> bool { ... }
     }
-
-    // Self-bound: every address this game advertises is itself.
-    impl MinigameImpl of IMinigame<ContractState> {
-        fn token_address(self: @ContractState) -> ContractAddress { get_contract_address() }
-    }
 }
 ```
 
 ## Game Lifecycle
 
 1. **Init**: `MinigameTokenComponent::initializer(game_fee_recipient, license, fee_numerator)`
-2. **Mint**: `mint_game()` — the token is this contract
+2. **Mint**: `mint()` (`IMinigameTokenMinter`) — the token is this contract
 3. **Guard**: `assert_owner_and_playable(token_id, caller)` before actions — internal, zero syscalls
 4. **Play**: update game state, then `refresh_metadata(token_id)` (ERC-4906)
 5. **Complete**: return `true` from `game_over()` when finished
 
 ## Retired
+
+The `minigame::minigame` token helpers moved to `token::libs`
+(`assert_token_ownership`, `get_player_name`) — they are for a SEPARATE
+contract acting on someone else's token (a minter, a dungeon, a tournament),
+so they belong with the token. `require_owned_token` was dropped, unused.
+
+`IMinigameDetails` / `IMinigameDetailsSVG` were removed too: nothing in the
+workspace called them, and they describe a RENDERER surface — SVG generation is
+large enough that games put it on a separate contract, which then exposes its
+own interface. A game that wants detail rows defines them where the renderer
+lives; `GameDetail` remains available as a struct for that.
+
+`IMinigame` itself (and `IMINIGAME_ID`, `mint_game`, `mint_game_batch`,
+`IMinigameTokenUri`) was removed once the game became its own token: the
+address views were roundtrips returning the contract's own address, the mint
+methods self-dispatched to the token's `mint`, and `token_uri` is served by
+ERC721Metadata. Consumers now validate a game with
+`supports_interface(IMINIGAME_TOKEN_ID)`.
+
+`IMinigameTokenData` moved to `token::interface` — it is what a game answers
+about its own tokens, so it belongs with the token.
+
+`SettingsComponent` and `ObjectivesComponent` are gone: both held no storage
+and their whole initializer was one `register_interface` call, which a game
+writes directly.
 
 `MinigameComponent` and the `minigame::minigame` lib (`pre_action`,
 `post_action`, `register_game`, `update_game`) were removed with the
