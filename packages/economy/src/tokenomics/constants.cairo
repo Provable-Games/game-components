@@ -28,7 +28,6 @@ pub mod Errors {
     pub const NO_ORDERS_TO_CLAIM: felt252 = 'No orders to claim';
     pub const NO_COMPLETED_ORDERS: felt252 = 'No completed orders';
     pub const POSITION_NOT_INITIALIZED: felt252 = 'Position not initialized';
-    pub const ORDER_NOT_MATURED: felt252 = 'Order not matured';
 
     // Sweep errors
     pub const NO_BUY_TOKEN_TO_SWEEP: felt252 = 'No buy token to sweep';

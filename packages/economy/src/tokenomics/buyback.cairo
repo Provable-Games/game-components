@@ -5,7 +5,7 @@ pub use buyback::BuybackComponent;
 
 // Re-export interfaces from game_components_interfaces
 pub use game_components_interfaces::tokenomics::buyback::{
-    BuybackOrderKey, BuybackParams, GlobalBuybackConfig, IBuyback, IBuybackAdmin,
-    IBuybackAdminDispatcher, IBuybackAdminDispatcherTrait, IBuybackDispatcher,
-    IBuybackDispatcherTrait, TokenBuybackConfig,
+    BuybackParams, GlobalBuybackConfig, IBuyback, IBuybackAdmin, IBuybackAdminDispatcher,
+    IBuybackAdminDispatcherTrait, IBuybackDispatcher, IBuybackDispatcherTrait, OrderInfo,
+    PackedOrderInfo, TokenBuybackConfig,
 };
