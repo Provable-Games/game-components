@@ -13,6 +13,7 @@ pub mod Errors {
     pub const SELL_TOKEN_IS_BUY_TOKEN: felt252 = 'Sell token is buy token';
     pub const NO_BALANCE_TO_BUYBACK: felt252 = 'No balance to buyback';
     pub const AMOUNT_BELOW_MINIMUM: felt252 = 'Amount below minimum';
+    pub const ORDER_AMOUNT_TOO_LARGE: felt252 = 'Order amount too large';
     pub const BALANCE_OVERFLOW: felt252 = 'Balance overflow';
 
     // Timing errors

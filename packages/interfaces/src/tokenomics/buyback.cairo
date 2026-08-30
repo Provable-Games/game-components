@@ -54,15 +54,56 @@ pub struct BuybackParams {
     pub end_time: u64,
 }
 
-/// Packed order information stored per order (fits in single storage slot)
-#[derive(Copy, Drop, Serde, starknet::Store, PartialEq, Debug)]
+/// Largest `amount` a single order can hold: 2**120 - 1.
+///
+/// The record packs start_time(64) + end_time(64) + amount(120) into one
+/// felt252, which has ~251 usable bits. 120 bits caps a single order at
+/// ~1.3e36 raw units — 1.3e18 tokens at 18 decimals, far beyond any realistic
+/// supply. `buy_back` rejects anything larger rather than truncating silently.
+pub const MAX_ORDER_AMOUNT: u128 = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF;
+
+/// Order information stored per order. Occupies ONE storage slot.
+///
+/// The name used to be aspirational: with `#[derive(starknet::Store)]` this
+/// took three slots, because the derive lays out one felt PER FIELD regardless
+/// of width — a u32 costs as much as a u128. There is no
+/// `#[derive(StorePacking)]`; packing has to be written by hand, which is what
+/// `PackedOrderInfoStorePacking` below does.
+#[derive(Copy, Drop, Serde, PartialEq, Debug)]
 pub struct PackedOrderInfo {
     /// When the order started (for Ekubo OrderKey reconstruction)
     pub start_time: u64,
     /// When the order ends
     pub end_time: u64,
-    /// Amount of sell token in the order
+    /// Amount of sell token in the order. Bounded by `MAX_ORDER_AMOUNT`.
     pub amount: u128,
+}
+
+const TWO_64: felt252 = 0x10000000000000000;
+const TWO_128: felt252 = 0x100000000000000000000000000000000;
+const MASK_64: u256 = 0xFFFFFFFFFFFFFFFF;
+
+/// start_time(64) | end_time(64) | amount(120) in a single felt252.
+///
+/// Note the amount narrowing is what makes one slot reachable at all:
+/// 64 + 64 + 128 = 256 bits does NOT fit, 64 + 64 + 120 = 248 does.
+pub impl PackedOrderInfoStorePacking of starknet::storage_access::StorePacking<
+    PackedOrderInfo, felt252,
+> {
+    fn pack(value: PackedOrderInfo) -> felt252 {
+        // buy_back asserts this first with a clearer error. Repeated here so no
+        // other write path can truncate an amount silently.
+        assert(value.amount <= MAX_ORDER_AMOUNT, 'Order amount too large');
+        value.start_time.into() + value.end_time.into() * TWO_64 + value.amount.into() * TWO_128
+    }
+
+    fn unpack(value: felt252) -> PackedOrderInfo {
+        let v: u256 = value.into();
+        let start_time: u64 = (v & MASK_64).try_into().unwrap();
+        let end_time: u64 = ((v / TWO_64.into()) & MASK_64).try_into().unwrap();
+        let amount: u128 = (v / TWO_128.into()).try_into().unwrap();
+        PackedOrderInfo { start_time, end_time, amount }
+    }
 }
 
 /// Full information about a specific buyback order (returned by view functions)

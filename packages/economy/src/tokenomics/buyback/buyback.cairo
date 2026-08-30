@@ -21,7 +21,8 @@ pub mod BuybackComponent {
     use ekubo::interfaces::extensions::twamm::OrderKey;
     use ekubo::interfaces::positions::{IPositionsDispatcher, IPositionsDispatcherTrait};
     use game_components_interfaces::tokenomics::buyback::{
-        BuybackParams, GlobalBuybackConfig, OrderInfo, PackedOrderInfo, TokenBuybackConfig,
+        BuybackParams, GlobalBuybackConfig, MAX_ORDER_AMOUNT, OrderInfo, PackedOrderInfo,
+        TokenBuybackConfig,
     };
     use openzeppelin_interfaces::token::erc20::{IERC20Dispatcher, IERC20DispatcherTrait};
     use starknet::storage::{
@@ -182,6 +183,13 @@ pub mod BuybackComponent {
 
             let amount: u128 = balance.try_into().expect(Errors::BALANCE_OVERFLOW);
             assert(amount >= config.minimum_amount, Errors::AMOUNT_BELOW_MINIMUM);
+
+            // The order record packs the amount into 120 bits. Rejected here so
+            // the error names its cause rather than surfacing from inside the
+            // storage packing. ~1.3e18 tokens at 18 decimals, so unreachable for
+            // any realistic supply — but a silent truncation would corrupt the
+            // stored order and only show up as a failed claim later.
+            assert(amount <= MAX_ORDER_AMOUNT, Errors::ORDER_AMOUNT_TOO_LARGE);
 
             // === Position Handling ===
             let positions_dispatcher = self.Buyback_positions_dispatcher.read();

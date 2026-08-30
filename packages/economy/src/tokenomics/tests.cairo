@@ -15,6 +15,7 @@ mod test_buyback;
 mod test_constants;
 mod test_factory;
 mod test_factory_fork;
+mod test_order_packing;
 mod test_premint;
 mod test_preset;
 mod test_stream;
