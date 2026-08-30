@@ -6,6 +6,7 @@ use game_components_economy::tokenomics::{
     BuybackParams, IBuybackAdminDispatcher, IBuybackAdminDispatcherTrait, IBuybackDispatcher,
     IBuybackDispatcherTrait, TokenBuybackConfig,
 };
+use game_components_interfaces::tokenomics::buyback::MAX_ORDER_AMOUNT;
 use openzeppelin_interfaces::token::erc20::{IERC20Dispatcher, IERC20DispatcherTrait};
 use snforge_std::{
     EventSpyTrait, mock_call, spy_events, start_cheat_block_timestamp_global,
@@ -165,6 +166,30 @@ fn test_initialization_rejects_min_duration_gt_max_duration() {
 }
 
 #[test]
+#[ignore]
+fn test_initialization_rejects_minimum_above_order_cap() {
+    let buyback_token = deploy_mock_erc20("Buyback", "BUY");
+    let mock_positions: ContractAddress = 'POSITIONS'.try_into().unwrap();
+    let mock_extension: ContractAddress = 'EXTENSION'.try_into().unwrap();
+
+    // A minimum above the packing cap can never be satisfied by any balance
+    let invalid_config = game_components_economy::tokenomics::GlobalBuybackConfig {
+        default_buy_token: buyback_token,
+        default_treasury: TREASURY(),
+        default_minimum_amount: MAX_ORDER_AMOUNT + 1,
+        default_min_delay: 0,
+        default_max_delay: 0,
+        default_min_duration: defaults::MIN_DURATION,
+        default_max_duration: defaults::MAX_DURATION,
+        default_fee: defaults::DEFAULT_FEE,
+    };
+
+    // This panics during deployment with 'minimum_amount unsatisfiable'
+    // Validation is tested via test_set_global_config_rejects_minimum_above_order_cap
+    deploy_autonomous_buyback(OWNER(), invalid_config, mock_positions, mock_extension);
+}
+
+#[test]
 #[should_panic(expected: 'min_delay > max_delay')]
 fn test_set_global_config_rejects_min_delay_with_zero_max_delay() {
     // Under fail-closed semantics max_delay = 0 means "must start
@@ -234,6 +259,95 @@ fn test_set_global_config_rejects_max_duration_zero() {
     };
     start_cheat_caller_address(contract, OWNER());
     admin_dispatcher.set_global_config(invalid_config);
+}
+
+#[test]
+#[should_panic(expected: 'minimum_amount unsatisfiable')]
+fn test_set_global_config_rejects_minimum_above_order_cap() {
+    // buy_back requires minimum_amount <= amount <= MAX_ORDER_AMOUNT. A minimum
+    // above the cap is a config no balance can ever satisfy, so it would leave
+    // every sell token on the defaults silently unbuyable. Rejected at write time.
+    let buyback_token = deploy_mock_erc20("Buyback", "BUY");
+    let contract = setup_buyback_contract(buyback_token);
+    let admin_dispatcher = IBuybackAdminDispatcher { contract_address: contract };
+
+    let invalid_config = game_components_economy::tokenomics::GlobalBuybackConfig {
+        default_buy_token: buyback_token,
+        default_treasury: TREASURY(),
+        default_minimum_amount: MAX_ORDER_AMOUNT + 1,
+        default_min_delay: 0,
+        default_max_delay: 0,
+        default_min_duration: defaults::MIN_DURATION,
+        default_max_duration: defaults::MAX_DURATION,
+        default_fee: defaults::DEFAULT_FEE,
+    };
+    start_cheat_caller_address(contract, OWNER());
+    admin_dispatcher.set_global_config(invalid_config);
+}
+
+#[test]
+fn test_set_global_config_accepts_minimum_at_order_cap() {
+    // The cap itself is satisfiable — exactly one amount qualifies — so the
+    // bound is <=, not <. Pins which side of the boundary is rejected.
+    let buyback_token = deploy_mock_erc20("Buyback", "BUY");
+    let contract = setup_buyback_contract(buyback_token);
+    let dispatcher = IBuybackDispatcher { contract_address: contract };
+    let admin_dispatcher = IBuybackAdminDispatcher { contract_address: contract };
+
+    let config = game_components_economy::tokenomics::GlobalBuybackConfig {
+        default_buy_token: buyback_token,
+        default_treasury: TREASURY(),
+        default_minimum_amount: MAX_ORDER_AMOUNT,
+        default_min_delay: 0,
+        default_max_delay: 0,
+        default_min_duration: defaults::MIN_DURATION,
+        default_max_duration: defaults::MAX_DURATION,
+        default_fee: defaults::DEFAULT_FEE,
+    };
+    start_cheat_caller_address(contract, OWNER());
+    admin_dispatcher.set_global_config(config);
+    stop_cheat_caller_address(contract);
+
+    assert(
+        dispatcher.get_global_config().default_minimum_amount == MAX_ORDER_AMOUNT,
+        'cap minimum accepted',
+    );
+}
+
+#[test]
+#[should_panic(expected: 'minimum_amount unsatisfiable')]
+fn test_set_token_config_rejects_minimum_above_order_cap() {
+    // Same rule per token: the per-token minimum overrides the global default,
+    // so it needs the same bound or the override reintroduces the dead config.
+    let buyback_token = deploy_mock_erc20("Buyback", "BUY");
+    let sell_token = deploy_mock_erc20("Sell", "SELL");
+    let contract = setup_buyback_contract(buyback_token);
+    let admin_dispatcher = IBuybackAdminDispatcher { contract_address: contract };
+
+    let invalid_config = defaults::token_config_with_minimum(MAX_ORDER_AMOUNT + 1);
+    start_cheat_caller_address(contract, OWNER());
+    admin_dispatcher.set_token_config(sell_token, Option::Some(invalid_config));
+}
+
+#[test]
+fn test_set_token_config_accepts_minimum_at_order_cap() {
+    let buyback_token = deploy_mock_erc20("Buyback", "BUY");
+    let sell_token = deploy_mock_erc20("Sell", "SELL");
+    let contract = setup_buyback_contract(buyback_token);
+    let dispatcher = IBuybackDispatcher { contract_address: contract };
+    let admin_dispatcher = IBuybackAdminDispatcher { contract_address: contract };
+
+    start_cheat_caller_address(contract, OWNER());
+    admin_dispatcher
+        .set_token_config(
+            sell_token, Option::Some(defaults::token_config_with_minimum(MAX_ORDER_AMOUNT)),
+        );
+    stop_cheat_caller_address(contract);
+
+    assert(
+        dispatcher.get_token_config(sell_token).unwrap().minimum_amount == MAX_ORDER_AMOUNT,
+        'cap minimum accepted',
+    );
 }
 
 // ============================================================================

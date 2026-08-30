@@ -21,7 +21,8 @@ pub mod BuybackComponent {
     use ekubo::interfaces::extensions::twamm::OrderKey;
     use ekubo::interfaces::positions::{IPositionsDispatcher, IPositionsDispatcherTrait};
     use game_components_interfaces::tokenomics::buyback::{
-        BuybackParams, GlobalBuybackConfig, OrderInfo, PackedOrderInfo, TokenBuybackConfig,
+        BuybackParams, GlobalBuybackConfig, MAX_ORDER_AMOUNT, OrderInfo, PackedOrderInfo,
+        TokenBuybackConfig,
     };
     use openzeppelin_interfaces::token::erc20::{IERC20Dispatcher, IERC20DispatcherTrait};
     use starknet::storage::{
@@ -182,6 +183,13 @@ pub mod BuybackComponent {
 
             let amount: u128 = balance.try_into().expect(Errors::BALANCE_OVERFLOW);
             assert(amount >= config.minimum_amount, Errors::AMOUNT_BELOW_MINIMUM);
+
+            // The order record packs the amount into 120 bits. Rejected here so
+            // the error names its cause rather than surfacing from inside the
+            // storage packing. ~1.3e18 tokens at 18 decimals, so unreachable for
+            // any realistic supply — but a silent truncation would corrupt the
+            // stored order and only show up as a failed claim later.
+            assert(amount <= MAX_ORDER_AMOUNT, Errors::ORDER_AMOUNT_TOO_LARGE);
 
             // === Position Handling ===
             let positions_dispatcher = self.Buyback_positions_dispatcher.read();
@@ -535,6 +543,14 @@ pub mod BuybackComponent {
                 Errors::MIN_DURATION_GT_MAX_DURATION,
             );
 
+            // buy_back requires minimum_amount <= amount <= MAX_ORDER_AMOUNT, so a
+            // minimum above the packing cap is a config no order can ever satisfy.
+            // Rejected here rather than leaving that sell token silently unbuyable.
+            assert(
+                global_config.default_minimum_amount <= MAX_ORDER_AMOUNT,
+                Errors::MINIMUM_AMOUNT_UNSATISFIABLE,
+            );
+
             // Store configuration
             self.Buyback_global_config.write(global_config);
             self
@@ -589,6 +605,12 @@ pub mod BuybackComponent {
                 Errors::MIN_DURATION_GT_MAX_DURATION,
             );
 
+            // Same unsatisfiable-minimum rule as the initializer.
+            assert(
+                config.default_minimum_amount <= MAX_ORDER_AMOUNT,
+                Errors::MINIMUM_AMOUNT_UNSATISFIABLE,
+            );
+
             let old_config = self.Buyback_global_config.read();
             self.Buyback_global_config.write(config);
             self.emit(GlobalConfigUpdated { old_config, new_config: config });
@@ -609,6 +631,7 @@ pub mod BuybackComponent {
                 assert(c.min_delay <= c.max_delay, Errors::MIN_DELAY_GT_MAX_DELAY);
                 assert(c.max_duration != 0, Errors::MAX_DURATION_ZERO);
                 assert(c.min_duration <= c.max_duration, Errors::MIN_DURATION_GT_MAX_DURATION);
+                assert(c.minimum_amount <= MAX_ORDER_AMOUNT, Errors::MINIMUM_AMOUNT_UNSATISFIABLE);
             }
 
             let old_config = self.Buyback_token_config.read(sell_token);
