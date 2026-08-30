@@ -543,6 +543,14 @@ pub mod BuybackComponent {
                 Errors::MIN_DURATION_GT_MAX_DURATION,
             );
 
+            // buy_back requires minimum_amount <= amount <= MAX_ORDER_AMOUNT, so a
+            // minimum above the packing cap is a config no order can ever satisfy.
+            // Rejected here rather than leaving that sell token silently unbuyable.
+            assert(
+                global_config.default_minimum_amount <= MAX_ORDER_AMOUNT,
+                Errors::MINIMUM_AMOUNT_UNSATISFIABLE,
+            );
+
             // Store configuration
             self.Buyback_global_config.write(global_config);
             self
@@ -597,6 +605,12 @@ pub mod BuybackComponent {
                 Errors::MIN_DURATION_GT_MAX_DURATION,
             );
 
+            // Same unsatisfiable-minimum rule as the initializer.
+            assert(
+                config.default_minimum_amount <= MAX_ORDER_AMOUNT,
+                Errors::MINIMUM_AMOUNT_UNSATISFIABLE,
+            );
+
             let old_config = self.Buyback_global_config.read();
             self.Buyback_global_config.write(config);
             self.emit(GlobalConfigUpdated { old_config, new_config: config });
@@ -617,6 +631,7 @@ pub mod BuybackComponent {
                 assert(c.min_delay <= c.max_delay, Errors::MIN_DELAY_GT_MAX_DELAY);
                 assert(c.max_duration != 0, Errors::MAX_DURATION_ZERO);
                 assert(c.min_duration <= c.max_duration, Errors::MIN_DURATION_GT_MAX_DURATION);
+                assert(c.minimum_amount <= MAX_ORDER_AMOUNT, Errors::MINIMUM_AMOUNT_UNSATISFIABLE);
             }
 
             let old_config = self.Buyback_token_config.read(sell_token);
