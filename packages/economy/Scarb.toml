@@ -30,3 +30,8 @@ fuzzer_runs = 24
 name = "MAINNET"
 url = "https://api.cartridge.gg/x/starknet/mainnet/rpc/v0_10"
 block_id.number = "1100000"
+
+[[tool.snforge.fork]]
+name = "SEPOLIA"
+url = "https://api.cartridge.gg/x/starknet/sepolia/rpc/v0_10"
+block_id.number = "14328816"
