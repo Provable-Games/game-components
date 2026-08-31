@@ -149,16 +149,6 @@ fn test_error_no_buy_token_to_sweep() {
 // ============================================================================
 
 #[test]
-fn test_error_buy_token_mismatch() {
-    assert!(Errors::BUY_TOKEN_MISMATCH == 'Buy token mismatch', "Error message mismatch");
-}
-
-#[test]
-fn test_error_fee_mismatch() {
-    assert!(Errors::FEE_MISMATCH == 'Fee mismatch', "Error message mismatch");
-}
-
-#[test]
 fn test_error_min_delay_gt_max_delay() {
     assert!(Errors::MIN_DELAY_GT_MAX_DELAY == 'min_delay > max_delay', "Error message mismatch");
 }
@@ -355,4 +345,9 @@ fn test_twamm_bounds_nonzero() {
     // Bounds should be non-zero for meaningful liquidity ranges
     assert!(TWAMM_BOUNDS.lower.mag > 0, "Lower bound magnitude should be non-zero");
     assert!(TWAMM_BOUNDS.upper.mag > 0, "Upper bound magnitude should be non-zero");
+}
+
+#[test]
+fn test_error_config_epochs_exhausted() {
+    assert!(Errors::CONFIG_EPOCHS_EXHAUSTED == 'Config epochs exhausted', "Error message mismatch");
 }

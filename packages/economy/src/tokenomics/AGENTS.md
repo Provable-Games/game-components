@@ -26,6 +26,35 @@ Permissionless buyback execution using Ekubo TWAMM DCA orders.
 | `get_token_config(sell_token)` | Per-token override (None = use global) |
 | `get_order_info(sell_token, index)` | Specific order details |
 | `get_order_count(sell_token)` | Total orders for token |
+| `get_config_epoch(sell_token)` | Current config epoch (see below) |
+
+### Config epochs
+
+`buy_token` and `fee` are not stored per order and are not one mutable pair per
+sell token either. Each order records an 8-bit **epoch**, and the pair lives in
+`Map<(sell_token, epoch), EpochConfig>`.
+
+A `buy_back` that sees a different pair from the current epoch's opens the NEXT
+epoch. Orders already created keep naming the old one, so each rebuilds the
+exact Ekubo `OrderKey` it was opened with. Consequences worth knowing:
+
+- **The config is not frozen while orders are open.** The fee tier can be
+  corrected at any time; earlier orders remain claimable. There is no
+  `'Buy token mismatch'` / `'Fee mismatch'` any more — both are gone.
+- **`get_order_info` / `get_order_key` stay correct after a claim**, because
+  they resolve through the order's own epoch rather than shared state that used
+  to be zeroed on a full drain.
+- **`get_active_buy_token` / `get_active_fee` are latest-only** — what the next
+  order would use, not a value open orders are pinned to.
+- **One Ekubo position per sell token, for good.** The position id is no longer
+  cleared on a full drain: Ekubo keys a sale by `(owner, salt, order_key)` with
+  `salt` = the position id, so one NFT holds orders under many keys at once.
+- **255 changes per sell token.** The 256th is refused with
+  `'Config epochs exhausted'` rather than wrapping to epoch 0 and
+  reinterpreting old orders under the wrong config.
+
+The epoch costs 8 bits of the packed order record, so `MAX_ORDER_AMOUNT` is
+`2**112 - 1` rather than `2**120 - 1`. Still ~5.2e15 tokens at 18 decimals.
 
 ### IBuybackAdmin<TState> (Owner-only)
 
