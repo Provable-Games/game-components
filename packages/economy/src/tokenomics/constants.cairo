@@ -14,6 +14,7 @@ pub mod Errors {
     pub const NO_BALANCE_TO_BUYBACK: felt252 = 'No balance to buyback';
     pub const AMOUNT_BELOW_MINIMUM: felt252 = 'Amount below minimum';
     pub const ORDER_AMOUNT_TOO_LARGE: felt252 = 'Order amount too large';
+    pub const CONFIG_EPOCHS_EXHAUSTED: felt252 = 'Config epochs exhausted';
     pub const BALANCE_OVERFLOW: felt252 = 'Balance overflow';
 
     // Timing errors
@@ -34,8 +35,6 @@ pub mod Errors {
     pub const NO_BUY_TOKEN_TO_SWEEP: felt252 = 'No buy token to sweep';
 
     // Config consistency errors
-    pub const BUY_TOKEN_MISMATCH: felt252 = 'Buy token mismatch';
-    pub const FEE_MISMATCH: felt252 = 'Fee mismatch';
     pub const MIN_DELAY_GT_MAX_DELAY: felt252 = 'min_delay > max_delay';
     pub const MIN_DURATION_GT_MAX_DURATION: felt252 = 'min_duration > max_duration';
     pub const MAX_DURATION_ZERO: felt252 = 'max_duration must be non-zero';

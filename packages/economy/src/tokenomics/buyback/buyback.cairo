@@ -21,8 +21,8 @@ pub mod BuybackComponent {
     use ekubo::interfaces::extensions::twamm::OrderKey;
     use ekubo::interfaces::positions::{IPositionsDispatcher, IPositionsDispatcherTrait};
     use game_components_interfaces::tokenomics::buyback::{
-        BuybackParams, GlobalBuybackConfig, MAX_ORDER_AMOUNT, OrderInfo, PackedOrderInfo,
-        TokenBuybackConfig,
+        BuybackParams, EpochConfig, GlobalBuybackConfig, MAX_CONFIG_EPOCH, MAX_ORDER_AMOUNT,
+        OrderInfo, PackedOrderInfo, TokenBuybackConfig,
     };
     use openzeppelin_interfaces::token::erc20::{IERC20Dispatcher, IERC20DispatcherTrait};
     use starknet::storage::{
@@ -52,11 +52,16 @@ pub mod BuybackComponent {
         Buyback_order_bookmark: Map<ContractAddress, u128>,
         /// Packed order info: (sell_token, index) -> PackedOrderInfo (single storage slot)
         Buyback_orders: Map<(ContractAddress, u128), PackedOrderInfo>,
-        /// Active buy token per sell token (set on first order, immutable while unclaimed orders
-        /// exist)
-        Buyback_active_buy_token: Map<ContractAddress, ContractAddress>,
-        /// Active fee per sell token (set on first order, immutable while unclaimed orders exist)
-        Buyback_active_fee: Map<ContractAddress, u128>,
+        /// Current config epoch per sell token. Advances only when a buy_back
+        /// sees a buy_token/fee pair different from the one the current epoch
+        /// holds — not per order, and not per config write.
+        Buyback_config_epoch: Map<ContractAddress, u8>,
+        /// The buy_token/fee pair each (sell_token, epoch) was opened with.
+        /// An order names its epoch, so it can always rebuild the exact Ekubo
+        /// OrderKey it was created with, whatever the config does afterwards.
+        /// A zero `buy_token` means the epoch has never been written: config
+        /// validation rejects a zero buy_token, so it cannot occur otherwise.
+        Buyback_epoch_config: Map<(ContractAddress, u8), EpochConfig>,
     }
 
     /// Events emitted by the Buyback component
@@ -197,21 +202,15 @@ pub mod BuybackComponent {
             // Transfer tokens to positions contract
             sell_token_dispatcher.transfer(positions_dispatcher.contract_address, balance);
 
-            // Get or set active buy_token and fee for this sell_token
-            // These are immutable while unclaimed orders exist to ensure OrderKey consistency
-            let stored_buy_token = self.Buyback_active_buy_token.read(params.sell_token);
-            let (active_buy_token, active_fee) = if stored_buy_token.is_zero() {
-                // First order for this sell_token - store the buy_token and fee
-                self.Buyback_active_buy_token.write(params.sell_token, config.buy_token);
-                self.Buyback_active_fee.write(params.sell_token, config.fee);
-                (config.buy_token, config.fee)
-            } else {
-                // Subsequent order - must use same buy_token and fee for OrderKey consistency
-                let stored_fee = self.Buyback_active_fee.read(params.sell_token);
-                assert(stored_buy_token == config.buy_token, Errors::BUY_TOKEN_MISMATCH);
-                assert(stored_fee == config.fee, Errors::FEE_MISMATCH);
-                (stored_buy_token, stored_fee)
-            };
+            // Resolve which config epoch this order belongs to.
+            //
+            // The order records WHICH pair it was created under rather than the
+            // contract pinning one pair for as long as any order is open. A
+            // changed buy_token or fee opens a new epoch; orders already created
+            // keep naming the old one and stay claimable with the exact OrderKey
+            // they were opened with. This is what unfreezes the config.
+            let epoch = self._resolve_epoch(params.sell_token, config.buy_token, config.fee);
+            let (active_buy_token, active_fee) = (config.buy_token, config.fee);
 
             // Create order key
             // Note: Use params.start_time (not computed start_time) because Ekubo TWAMM
@@ -246,6 +245,7 @@ pub mod BuybackComponent {
                 // reconstruction
                 end_time: params.end_time,
                 amount: amount,
+                epoch,
             };
             self.Buyback_orders.write((params.sell_token, order_index), packed_order);
             self.Buyback_order_counter.write(params.sell_token, order_index + 1);
@@ -290,12 +290,17 @@ pub mod BuybackComponent {
                 }
             };
 
-            // Get config and active parameters once outside the loop (performance optimization)
+            // Get config once outside the loop (performance optimization)
             let config = self._get_effective_config(sell_token);
-            let active_buy_token = self.Buyback_active_buy_token.read(sell_token);
-            let active_fee = self.Buyback_active_fee.read(sell_token);
             let positions_dispatcher = self.Buyback_positions_dispatcher.read();
             let current_time = get_block_timestamp();
+
+            // Orders resolve their buy_token/fee through their own epoch, so the
+            // pair can no longer be hoisted out of the loop. Cache the last one
+            // instead: consecutive orders almost always share an epoch, since a
+            // new one opens only when the config actually changes.
+            let mut cached_epoch: u8 = 0;
+            let mut cached_config = EpochConfig { buy_token: Zero::zero(), fee: 0 };
 
             let mut order_number = starting_bookmark;
             let mut total_proceeds: u128 = 0;
@@ -310,11 +315,16 @@ pub mod BuybackComponent {
                     break;
                 }
 
-                // Build order key using stored active buy_token and fee
+                // Build the order key from the config THIS order was created
+                // under, not from whatever the config says now.
+                if cached_config.buy_token.is_zero() || cached_epoch != packed_order.epoch {
+                    cached_epoch = packed_order.epoch;
+                    cached_config = self.Buyback_epoch_config.read((sell_token, cached_epoch));
+                }
                 let order_key = OrderKey {
                     sell_token: sell_token,
-                    buy_token: active_buy_token,
-                    fee: active_fee,
+                    buy_token: cached_config.buy_token,
+                    fee: cached_config.fee,
                     start_time: packed_order.start_time,
                     end_time: packed_order.end_time,
                 };
@@ -338,22 +348,20 @@ pub mod BuybackComponent {
             // Update bookmark
             self.Buyback_order_bookmark.write(sell_token, order_number);
 
-            // If all orders have been claimed, clear active buy_token, fee, and position_id
-            // This allows config changes for future orders and ensures a new position is minted
-            // for the potentially different buy_token/fee combination
-            if order_number == order_count {
-                let zero_address: ContractAddress = Zero::zero();
-                self.Buyback_active_buy_token.write(sell_token, zero_address);
-                self.Buyback_active_fee.write(sell_token, 0);
-                self.Buyback_position_token_id.write(sell_token, 0);
-            }
+            // Nothing is cleared on a full drain any more. The old code reset
+            // the active pair and the position id so that a later order could
+            // use a different buy_token/fee — the epoch now does that at any
+            // time, with orders still open. Keeping the position id also keeps
+            // one Ekubo NFT per sell token for the contract's life: Ekubo keys a
+            // sale by (owner, salt, order_key) with salt = the position id, so
+            // one NFT holds orders under many different keys at once.
 
             // Emit event
             self
                 .emit(
                     BuybackProceeds {
                         sell_token,
-                        buy_token: active_buy_token,
+                        buy_token: cached_config.buy_token,
                         amount: total_proceeds,
                         orders_claimed: order_number - starting_bookmark,
                         new_bookmark: order_number,
@@ -447,60 +455,75 @@ pub mod BuybackComponent {
 
         /// Get information about a specific order
         ///
-        /// NOTE: The `buy_token` and `fee` fields are read from `active_buy_token` and
-        /// `active_fee` storage, which are cleared when all orders are claimed. After all
-        /// orders for a sell_token are claimed, this function will return zero values for
-        /// `buy_token` and `fee` even for historical orders. Retrieve order info before
-        /// claiming the final order if historical data is needed.
+        /// `buy_token` and `fee` come from the order's own config epoch, so this
+        /// stays correct for historical orders after they are claimed. It used to
+        /// read shared state that was zeroed on a full drain, and returned zeros
+        /// for exactly the orders a caller was most likely asking about.
         fn get_order_info(
             self: @ComponentState<TContractState>, sell_token: ContractAddress, index: u128,
         ) -> OrderInfo {
             let packed = self.Buyback_orders.read((sell_token, index));
-            let buy_token = self.Buyback_active_buy_token.read(sell_token);
-            let fee = self.Buyback_active_fee.read(sell_token);
+            let epoch_config = self.Buyback_epoch_config.read((sell_token, packed.epoch));
             OrderInfo {
                 start_time: packed.start_time,
                 end_time: packed.end_time,
                 amount: packed.amount,
-                buy_token,
-                fee,
+                buy_token: epoch_config.buy_token,
+                fee: epoch_config.fee,
             }
         }
 
         /// Construct an OrderKey for a specific order index
         ///
-        /// NOTE: The `buy_token` and `fee` fields are read from `active_buy_token` and
-        /// `active_fee` storage, which are cleared when all orders are claimed. After all
-        /// orders for a sell_token are claimed, this function will return an invalid OrderKey
-        /// with zero `buy_token` and `fee`. Retrieve order keys before claiming the final
-        /// order if needed for external Ekubo interactions.
+        /// Rebuilt from the order's own config epoch, so the key is the one Ekubo
+        /// actually holds the sale under and stays usable after the order is
+        /// claimed. It previously returned a zero `buy_token` and `fee` once the
+        /// queue fully drained, which made it unusable for external Ekubo calls.
         fn get_order_key(
             self: @ComponentState<TContractState>, sell_token: ContractAddress, index: u128,
         ) -> OrderKey {
             let packed = self.Buyback_orders.read((sell_token, index));
-            let buy_token = self.Buyback_active_buy_token.read(sell_token);
-            let fee = self.Buyback_active_fee.read(sell_token);
+            let epoch_config = self.Buyback_epoch_config.read((sell_token, packed.epoch));
             OrderKey {
                 sell_token: sell_token,
-                buy_token,
-                fee,
+                buy_token: epoch_config.buy_token,
+                fee: epoch_config.fee,
                 start_time: packed.start_time,
                 end_time: packed.end_time,
             }
         }
 
-        /// Get the active buy token for a sell token (set on first order)
+        /// Get the current config epoch for a sell token.
+        ///
+        /// Advances only when a `buy_back` sees a buy_token/fee pair different
+        /// from the one the current epoch holds — so it counts CONFIG CHANGES
+        /// that reached an order, not orders and not config writes.
+        fn get_config_epoch(
+            self: @ComponentState<TContractState>, sell_token: ContractAddress,
+        ) -> u8 {
+            self.Buyback_config_epoch.read(sell_token)
+        }
+
+        /// Get the buy token of the CURRENT config epoch for a sell token.
+        ///
+        /// Latest-only: this is what the next order would use, not a value every
+        /// open order is pinned to. Zero before the first order. For a specific
+        /// order use `get_order_info` / `get_order_key`.
         fn get_active_buy_token(
             self: @ComponentState<TContractState>, sell_token: ContractAddress,
         ) -> ContractAddress {
-            self.Buyback_active_buy_token.read(sell_token)
+            let epoch = self.Buyback_config_epoch.read(sell_token);
+            self.Buyback_epoch_config.read((sell_token, epoch)).buy_token
         }
 
-        /// Get the active fee for a sell token (set on first order)
+        /// Get the fee of the CURRENT config epoch for a sell token.
+        ///
+        /// Latest-only, on the same terms as `get_active_buy_token`.
         fn get_active_fee(
             self: @ComponentState<TContractState>, sell_token: ContractAddress,
         ) -> u128 {
-            self.Buyback_active_fee.read(sell_token)
+            let epoch = self.Buyback_config_epoch.read(sell_token);
+            self.Buyback_epoch_config.read((sell_token, epoch)).fee
         }
     }
 
@@ -557,6 +580,54 @@ pub mod BuybackComponent {
                 .Buyback_positions_dispatcher
                 .write(IPositionsDispatcher { contract_address: positions_address });
             self.Buyback_extension_address.write(extension_address);
+        }
+
+        /// Resolve the config epoch a new order belongs to, opening a new one if
+        /// the buy_token/fee pair has moved since the last order.
+        ///
+        /// Three cases, in the order they are checked:
+        /// - the current epoch has no config yet (first order for this sell
+        ///   token): claim epoch 0 by writing the pair into it;
+        /// - the pair is unchanged: reuse the current epoch, writing nothing;
+        /// - the pair moved: open the NEXT epoch. The old one is never
+        ///   overwritten, because orders already created still resolve through
+        ///   it and must keep rebuilding the OrderKey Ekubo holds their sale
+        ///   under.
+        ///
+        /// A zero `buy_token` is the "unwritten" marker. It cannot collide with a
+        /// real config: `initializer`, `set_global_config` and `set_token_config`
+        /// all reject a zero buy_token.
+        fn _resolve_epoch(
+            ref self: ComponentState<TContractState>,
+            sell_token: ContractAddress,
+            buy_token: ContractAddress,
+            fee: u128,
+        ) -> u8 {
+            let current = self.Buyback_config_epoch.read(sell_token);
+            let stored = self.Buyback_epoch_config.read((sell_token, current));
+
+            if stored.buy_token.is_zero() {
+                self
+                    .Buyback_epoch_config
+                    .write((sell_token, current), EpochConfig { buy_token, fee });
+                return current;
+            }
+
+            if stored.buy_token == buy_token && stored.fee == fee {
+                return current;
+            }
+
+            // Refused rather than wrapped. The epoch is 8 bits in the packed
+            // order record, so a 256th config would wrap to 0 and silently
+            // reinterpret every epoch-0 order under the newest config — wrong
+            // OrderKeys, and proceeds that can no longer be claimed. 255 changes
+            // per sell token is far past any real operational need.
+            assert(current < MAX_CONFIG_EPOCH, Errors::CONFIG_EPOCHS_EXHAUSTED);
+
+            let next = current + 1;
+            self.Buyback_config_epoch.write(sell_token, next);
+            self.Buyback_epoch_config.write((sell_token, next), EpochConfig { buy_token, fee });
+            next
         }
 
         /// Get the effective configuration for a sell token

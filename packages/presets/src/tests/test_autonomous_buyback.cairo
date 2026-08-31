@@ -482,11 +482,10 @@ fn test_set_token_config_rejects_invalid_duration() {
 // CLAIM PROCEEDS EDGE CASES
 // ==============================================================================
 
-// This test is skipped because after claiming all orders, the position is reset
-// and subsequent claims fail with 'Position not initialized' rather than 'No orders to claim'
-// This is expected behavior - the contract clears position state after all orders claimed.
+// The position id is retained across a full drain, so re-claiming now reports
+// the accurate reason instead of the misleading 'Position not initialized'.
 #[test]
-#[should_panic(expected: 'Position not initialized')]
+#[should_panic(expected: 'No orders to claim')]
 fn test_claim_proceeds_rejects_when_all_claimed() {
     let buyback_token = deploy_mock_erc20("Buyback", "BUY");
     let sell_token = deploy_mock_erc20("Sell", "SELL");
@@ -1593,9 +1592,10 @@ fn test_sweep_buy_token_success() {
     assert!(erc20.balance_of(TREASURY()) == THOUSAND_TOKENS, "Treasury should receive tokens");
 }
 
+/// The buy token may now change with orders still open: the new order opens a
+/// new config epoch and the existing one keeps its own pair.
 #[test]
-#[should_panic(expected: 'Buy token mismatch')]
-fn test_buy_back_fails_when_buy_token_changed_with_existing_orders() {
+fn test_buy_back_accepts_buy_token_change_with_existing_orders() {
     let buyback_token = deploy_mock_erc20("Buyback", "BUY");
     let new_buy_token = deploy_mock_erc20("NewBuy", "NBUY");
     let sell_token = deploy_mock_erc20("Sell", "SELL");
@@ -1634,18 +1634,29 @@ fn test_buy_back_fails_when_buy_token_changed_with_existing_orders() {
     admin.set_token_config(sell_token, Option::Some(new_config));
     stop_cheat_caller_address(contract);
 
-    // Try to create second order - should fail because active buy_token is locked
+    // Accepted: opens epoch 1
     mock_erc20.mint(contract, THOUSAND_TOKENS);
     mock_call(mock_positions, selector!("increase_sell_amount"), 200_u128, 1);
 
     let end_time2 = 1000 + MIN_DURATION + 200;
     let params2 = BuybackParams { sell_token, start_time: 0, end_time: end_time2 };
     dispatcher.buy_back(params2);
+
+    assert!(dispatcher.get_order_count(sell_token) == 2, "Both orders exist");
+    assert!(dispatcher.get_config_epoch(sell_token) == 1, "Change opened epoch 1");
+    assert!(
+        dispatcher.get_order_info(sell_token, 0).buy_token == buyback_token,
+        "Order 0 keeps its buy token",
+    );
+    assert!(
+        dispatcher.get_order_info(sell_token, 1).buy_token == new_buy_token,
+        "Order 1 uses the new one",
+    );
 }
 
+/// Same for the fee tier, the change an operator is most likely to need.
 #[test]
-#[should_panic(expected: 'Fee mismatch')]
-fn test_buy_back_fails_when_fee_changed_with_existing_orders() {
+fn test_buy_back_accepts_fee_change_with_existing_orders() {
     let buyback_token = deploy_mock_erc20("Buyback", "BUY");
     let sell_token = deploy_mock_erc20("Sell", "SELL");
     let contract = setup_buyback_contract(buyback_token);
@@ -1683,11 +1694,18 @@ fn test_buy_back_fails_when_fee_changed_with_existing_orders() {
     admin.set_token_config(sell_token, Option::Some(new_config));
     stop_cheat_caller_address(contract);
 
-    // Try to create second order - should fail because active fee is locked
+    // Accepted: opens epoch 1
     mock_erc20.mint(contract, THOUSAND_TOKENS);
     mock_call(mock_positions, selector!("increase_sell_amount"), 200_u128, 1);
 
     let end_time2 = 1000 + MIN_DURATION + 200;
     let params2 = BuybackParams { sell_token, start_time: 0, end_time: end_time2 };
     dispatcher.buy_back(params2);
+
+    assert!(dispatcher.get_config_epoch(sell_token) == 1, "Change opened epoch 1");
+    assert!(dispatcher.get_order_info(sell_token, 0).fee == DEFAULT_FEE, "Order 0 keeps its fee");
+    assert!(
+        dispatcher.get_order_info(sell_token, 1).fee == DEFAULT_FEE + 1000,
+        "Order 1 uses the new fee",
+    );
 }

@@ -9,8 +9,8 @@ use game_components_economy::tokenomics::{
 use game_components_interfaces::tokenomics::buyback::MAX_ORDER_AMOUNT;
 use openzeppelin_interfaces::token::erc20::{IERC20Dispatcher, IERC20DispatcherTrait};
 use snforge_std::{
-    EventSpyTrait, mock_call, spy_events, start_cheat_block_timestamp_global,
-    start_cheat_caller_address, stop_cheat_caller_address,
+    EventSpyTrait, map_entry_address, mock_call, spy_events, start_cheat_block_timestamp_global,
+    start_cheat_caller_address, stop_cheat_caller_address, store,
 };
 use starknet::ContractAddress;
 use super::fixtures::constants::{
@@ -1039,9 +1039,11 @@ fn setup_buyback_with_explicit_config(
     contract
 }
 
+/// The config pin is gone: a buy_token change with orders still open is
+/// ACCEPTED and opens a new config epoch. Order 0 keeps naming the pair it was
+/// created with, which is what keeps its Ekubo OrderKey reconstructible.
 #[test]
-#[should_panic(expected: 'Buy token mismatch')]
-fn test_buy_back_rejects_buy_token_change_with_unclaimed_orders() {
+fn test_buy_back_accepts_buy_token_change_with_unclaimed_orders() {
     let buyback_token = deploy_mock_erc20("Buyback", "BUY");
     let sell_token = deploy_mock_erc20("Sell", "SELL");
     let new_buyback_token = deploy_mock_erc20("NewBuyback", "NBUY");
@@ -1090,18 +1092,30 @@ fn test_buy_back_rejects_buy_token_change_with_unclaimed_orders() {
     mock_erc20.mint(contract, amounts::THOUSAND_TOKENS);
 
     // Mock the positions contract again
-    mock_call(mock_positions, selector!("increase_sell_amount"), (), 1);
+    mock_call(mock_positions, selector!("increase_sell_amount"), 100_u128, 1);
 
-    // Try to create another buyback - should fail because buy_token changed
+    // Accepted, where this used to revert with 'Buy token mismatch'
     let params2 = BuybackParams {
         sell_token, start_time: 0, end_time: 1000 + defaults::MIN_DURATION + 200,
     };
     dispatcher.buy_back(params2);
+
+    assert(dispatcher.get_order_count(sell_token) == 2, 'Should have 2 orders');
+    assert(
+        dispatcher.get_active_buy_token(sell_token) == new_buyback_token, 'New buy token active',
+    );
+
+    // The whole point: the historical order still resolves to its OWN config.
+    let order0 = dispatcher.get_order_info(sell_token, 0);
+    assert(order0.buy_token == buyback_token, 'Order 0 keeps old buy token');
+    let order1 = dispatcher.get_order_info(sell_token, 1);
+    assert(order1.buy_token == new_buyback_token, 'Order 1 has new buy token');
 }
 
+/// Same for the fee tier — the change operators are most likely to need, and
+/// the one the pin made effectively permanent under continuous revenue.
 #[test]
-#[should_panic(expected: 'Fee mismatch')]
-fn test_buy_back_rejects_fee_change_with_unclaimed_orders() {
+fn test_buy_back_accepts_fee_change_with_unclaimed_orders() {
     let buyback_token = deploy_mock_erc20("Buyback", "BUY");
     let sell_token = deploy_mock_erc20("Sell", "SELL");
     let contract = setup_buyback_with_explicit_config(buyback_token, sell_token);
@@ -1151,13 +1165,21 @@ fn test_buy_back_rejects_fee_change_with_unclaimed_orders() {
     mock_erc20.mint(contract, amounts::THOUSAND_TOKENS);
 
     // Mock the positions contract again
-    mock_call(mock_positions, selector!("increase_sell_amount"), (), 1);
+    mock_call(mock_positions, selector!("increase_sell_amount"), 100_u128, 1);
 
-    // Try to create another buyback - should fail because fee changed
+    // Accepted, where this used to revert with 'Fee mismatch'
     let params2 = BuybackParams {
         sell_token, start_time: 0, end_time: 1000 + defaults::MIN_DURATION + 200,
     };
     dispatcher.buy_back(params2);
+
+    assert(dispatcher.get_order_count(sell_token) == 2, 'Should have 2 orders');
+    assert(dispatcher.get_active_fee(sell_token) == different_fee, 'New fee active');
+
+    let order0 = dispatcher.get_order_info(sell_token, 0);
+    assert(order0.fee == defaults::DEFAULT_FEE, 'Order 0 keeps old fee');
+    let order1 = dispatcher.get_order_info(sell_token, 1);
+    assert(order1.fee == different_fee, 'Order 1 has new fee');
 }
 
 #[test]
@@ -1198,10 +1220,14 @@ fn test_active_buy_token_cleared_when_no_unclaimed_orders() {
     assert(effective.fee == 12345, 'Fee should be updated');
 }
 
+/// The position id is RETAINED across a full drain, where it used to be cleared.
+///
+/// Clearing it existed to force a fresh Ekubo position for a possibly different
+/// buy_token/fee. That is no longer needed: Ekubo keys a sale by
+/// (owner, salt, order_key) with salt = the position id, so one NFT holds orders
+/// under many keys at once, and the epoch already lets the config move.
 #[test]
-fn test_position_id_cleared_after_all_orders_claimed() {
-    // This test verifies that position_id is cleared when all orders are claimed,
-    // allowing a new position to be minted if config changes
+fn test_position_id_retained_after_all_orders_claimed() {
     let buyback_token = deploy_mock_erc20("Buyback", "BUY");
     let sell_token = deploy_mock_erc20("Sell", "SELL");
     let contract = setup_buyback_with_explicit_config(buyback_token, sell_token);
@@ -1237,10 +1263,10 @@ fn test_position_id_cleared_after_all_orders_claimed() {
     // Claim all orders
     dispatcher.claim_buyback_proceeds(sell_token, 0);
 
-    // Verify position_id, active_buy_token, and active_fee are all cleared
-    assert(dispatcher.get_position_token_id(sell_token) == 0, 'Position ID should be cleared');
-    assert(dispatcher.get_active_buy_token(sell_token) == ZERO_ADDRESS(), 'Buy token cleared');
-    assert(dispatcher.get_active_fee(sell_token) == 0, 'Fee should be cleared');
+    // The position id survives the drain, and so does the epoch's config.
+    assert(dispatcher.get_position_token_id(sell_token) == 42, 'Position ID retained');
+    assert(dispatcher.get_active_buy_token(sell_token) == buyback_token, 'Buy token retained');
+    assert(dispatcher.get_active_fee(sell_token) == defaults::DEFAULT_FEE, 'Fee retained');
 
     // Now change config to use different buy_token
     let new_buyback_token = deploy_mock_erc20("NewBuyback", "NBUY");
@@ -1262,20 +1288,24 @@ fn test_position_id_cleared_after_all_orders_claimed() {
     // Mint more tokens for second batch
     mock_erc20.mint(contract, amounts::THOUSAND_TOKENS);
 
-    // Mock mint_and_increase_sell_amount again - this should be called (not increase_sell_amount)
-    // because position_id was cleared, so a NEW position should be minted
-    mock_call(mock_positions, selector!("mint_and_increase_sell_amount"), (99_u64, 100_u128), 1);
+    // increase_sell_amount, NOT mint: the position is reused even though the
+    // buy_token and fee both changed.
+    mock_call(mock_positions, selector!("increase_sell_amount"), 100_u128, 1);
 
-    // Create second buyback with new config - should succeed and mint NEW position
+    // Second buyback under the new config reuses the same position
     let params2 = BuybackParams {
         sell_token, start_time: 0, end_time: end_time + 1 + defaults::MIN_DURATION + 100,
     };
     dispatcher.buy_back(params2);
 
-    // Verify new position was minted
-    assert(dispatcher.get_position_token_id(sell_token) == 99, 'New position ID should be 99');
+    assert(dispatcher.get_position_token_id(sell_token) == 42, 'Position ID still 42');
     assert(dispatcher.get_active_buy_token(sell_token) == new_buyback_token, 'New buy token');
     assert(dispatcher.get_active_fee(sell_token) == 999999, 'New fee');
+
+    // Order 0 predates the change and keeps its own pair.
+    let order0 = dispatcher.get_order_info(sell_token, 0);
+    assert(order0.buy_token == buyback_token, 'Order 0 keeps old buy token');
+    assert(order0.fee == defaults::DEFAULT_FEE, 'Order 0 keeps old fee');
 }
 
 // ============================================================================
@@ -1408,11 +1438,14 @@ fn test_buy_back_with_delayed_start() {
 // Claim Proceeds Tests
 // ============================================================================
 
+/// Claiming a drained queue now reports the accurate reason.
+///
+/// It used to fail with 'Position not initialized', because the position id was
+/// zeroed on a full drain — a misleading error for a contract whose position is
+/// perfectly fine. With the id retained, the bookmark check answers instead.
 #[test]
-#[should_panic(expected: 'Position not initialized')]
+#[should_panic(expected: 'No orders to claim')]
 fn test_claim_proceeds_fails_when_all_orders_already_claimed() {
-    // When all orders are claimed, the position_id is cleared (reset to 0)
-    // So attempting to claim again will fail with "Position not initialized"
     let buyback_token = deploy_mock_erc20("Buyback", "BUY");
     let sell_token = deploy_mock_erc20("Sell", "SELL");
     let contract = setup_buyback_with_token_config(buyback_token, sell_token);
@@ -1438,8 +1471,7 @@ fn test_claim_proceeds_fails_when_all_orders_already_claimed() {
     // Claim all orders
     dispatcher.claim_buyback_proceeds(sell_token, 0);
 
-    // Try to claim again - should fail with "Position not initialized"
-    // because position_id is cleared after all orders are claimed
+    // Try to claim again - the bookmark has caught up with the order count
     dispatcher.claim_buyback_proceeds(sell_token, 0);
 }
 
@@ -1809,4 +1841,208 @@ fn test_token_config_rejects_zero_max_duration() {
     c.max_duration = 0;
     start_cheat_caller_address(contract, OWNER());
     admin.set_token_config(sell_token, Option::Some(c));
+}
+
+// ============================================================================
+// Config Epoch Tests
+// ============================================================================
+// The epoch is what unfreezes the config. An order records WHICH buy_token/fee
+// pair it was created under, so the pair can move while orders are open and
+// every order stays claimable with the exact Ekubo OrderKey it was opened with.
+
+/// An unchanged config must not burn an epoch. There are only 255, and a
+/// contract that advanced on every order would exhaust them.
+#[test]
+fn test_epoch_does_not_advance_when_config_is_unchanged() {
+    let buyback_token = deploy_mock_erc20("Buyback", "BUY");
+    let sell_token = deploy_mock_erc20("Sell", "SELL");
+    let contract = setup_buyback_with_explicit_config(buyback_token, sell_token);
+    let dispatcher = IBuybackDispatcher { contract_address: contract };
+    let mock_erc20 = IMockERC20Dispatcher { contract_address: sell_token };
+    let mock_positions: ContractAddress = 'POSITIONS'.try_into().unwrap();
+
+    start_cheat_block_timestamp_global(1000);
+    mock_call(mock_positions, selector!("mint_and_increase_sell_amount"), (42_u64, 100_u128), 1);
+    mock_erc20.mint(contract, amounts::THOUSAND_TOKENS);
+    dispatcher
+        .buy_back(
+            BuybackParams {
+                sell_token, start_time: 0, end_time: 1000 + defaults::MIN_DURATION + 1,
+            },
+        );
+    assert(dispatcher.get_config_epoch(sell_token) == 0, 'First order is epoch 0');
+
+    mock_call(mock_positions, selector!("increase_sell_amount"), 100_u128, 2);
+    mock_erc20.mint(contract, amounts::THOUSAND_TOKENS);
+    dispatcher
+        .buy_back(
+            BuybackParams {
+                sell_token, start_time: 0, end_time: 1000 + defaults::MIN_DURATION + 2,
+            },
+        );
+    mock_erc20.mint(contract, amounts::THOUSAND_TOKENS);
+    dispatcher
+        .buy_back(
+            BuybackParams {
+                sell_token, start_time: 0, end_time: 1000 + defaults::MIN_DURATION + 3,
+            },
+        );
+
+    assert(dispatcher.get_config_epoch(sell_token) == 0, 'Still epoch 0');
+    assert(dispatcher.get_order_count(sell_token) == 3, 'Three orders');
+}
+
+/// A claim spanning two epochs pays out both, each against its own key. This is
+/// the case the old design could not reach at all: the second order could not
+/// exist while the first was open.
+#[test]
+fn test_claim_spans_two_epochs() {
+    let buyback_token = deploy_mock_erc20("Buyback", "BUY");
+    let sell_token = deploy_mock_erc20("Sell", "SELL");
+    let contract = setup_buyback_with_explicit_config(buyback_token, sell_token);
+    let dispatcher = IBuybackDispatcher { contract_address: contract };
+    let admin_dispatcher = IBuybackAdminDispatcher { contract_address: contract };
+    let mock_erc20 = IMockERC20Dispatcher { contract_address: sell_token };
+    let mock_positions: ContractAddress = 'POSITIONS'.try_into().unwrap();
+
+    start_cheat_block_timestamp_global(1000);
+    let end_time = 1000 + defaults::MIN_DURATION + 100;
+
+    mock_call(mock_positions, selector!("mint_and_increase_sell_amount"), (42_u64, 100_u128), 1);
+    mock_erc20.mint(contract, amounts::THOUSAND_TOKENS);
+    dispatcher.buy_back(BuybackParams { sell_token, start_time: 0, end_time });
+
+    // Fee tier corrected while order 0 is still open
+    let new_fee: u128 = 555555;
+    start_cheat_caller_address(contract, OWNER());
+    admin_dispatcher
+        .set_token_config(
+            sell_token,
+            Option::Some(
+                TokenBuybackConfig {
+                    buy_token: buyback_token,
+                    treasury: TREASURY(),
+                    minimum_amount: defaults::MIN_AMOUNT,
+                    min_delay: 0,
+                    max_delay: 0,
+                    min_duration: defaults::MIN_DURATION,
+                    max_duration: defaults::MAX_DURATION,
+                    fee: new_fee,
+                },
+            ),
+        );
+    stop_cheat_caller_address(contract);
+
+    mock_call(mock_positions, selector!("increase_sell_amount"), 100_u128, 1);
+    mock_erc20.mint(contract, amounts::THOUSAND_TOKENS);
+    dispatcher.buy_back(BuybackParams { sell_token, start_time: 0, end_time });
+
+    assert(dispatcher.get_config_epoch(sell_token) == 1, 'Config change opened epoch 1');
+
+    // Both orders complete, then both claim
+    start_cheat_block_timestamp_global(end_time + 1);
+    mock_call(mock_positions, selector!("withdraw_proceeds_from_sale_to"), 500_u128, 2);
+    let proceeds = dispatcher.claim_buyback_proceeds(sell_token, 0);
+
+    assert(proceeds == 1000, 'Both orders claimed');
+    assert(dispatcher.get_order_bookmark(sell_token) == 2, 'Bookmark past both');
+}
+
+/// The getters used to return a zero buy_token and fee once the queue drained,
+/// making `get_order_key` unusable for exactly the historical orders a caller
+/// would ask about. Each order now resolves through its own epoch.
+#[test]
+fn test_order_getters_survive_a_full_drain() {
+    let buyback_token = deploy_mock_erc20("Buyback", "BUY");
+    let sell_token = deploy_mock_erc20("Sell", "SELL");
+    let contract = setup_buyback_with_explicit_config(buyback_token, sell_token);
+    let dispatcher = IBuybackDispatcher { contract_address: contract };
+    let mock_erc20 = IMockERC20Dispatcher { contract_address: sell_token };
+    let mock_positions: ContractAddress = 'POSITIONS'.try_into().unwrap();
+
+    start_cheat_block_timestamp_global(1000);
+    let end_time = 1000 + defaults::MIN_DURATION + 100;
+    mock_call(mock_positions, selector!("mint_and_increase_sell_amount"), (42_u64, 100_u128), 1);
+    mock_erc20.mint(contract, amounts::THOUSAND_TOKENS);
+    dispatcher.buy_back(BuybackParams { sell_token, start_time: 0, end_time });
+
+    start_cheat_block_timestamp_global(end_time + 1);
+    mock_call(mock_positions, selector!("withdraw_proceeds_from_sale_to"), 500_u128, 1);
+    dispatcher.claim_buyback_proceeds(sell_token, 0);
+
+    // Queue fully drained — the getters must still describe order 0
+    let info = dispatcher.get_order_info(sell_token, 0);
+    assert(info.buy_token == buyback_token, 'Buy token survives drain');
+    assert(info.fee == defaults::DEFAULT_FEE, 'Fee survives drain');
+
+    let key = dispatcher.get_order_key(sell_token, 0);
+    assert(key.buy_token == buyback_token, 'Key buy token usable');
+    assert(key.fee == defaults::DEFAULT_FEE, 'Key fee usable');
+    assert(key.end_time == end_time, 'Key end time intact');
+}
+
+/// The 256th config change is REFUSED, not wrapped.
+///
+/// The epoch is 8 bits inside the packed order record. Wrapping to 0 would
+/// silently reinterpret every epoch-0 order under the newest config, producing
+/// wrong OrderKeys and proceeds that can no longer be claimed — a loud refusal
+/// is much the better failure. 255 changes per sell token is far past any real
+/// operational need.
+///
+/// Driving 255 real config changes exceeds the harness's 1000-event cap, so the
+/// epoch is seeded at its maximum directly and the refusal is exercised from
+/// there. The seeded state is exactly what 255 changes would leave behind: a
+/// current epoch of 255 with a config written into it.
+#[test]
+#[should_panic(expected: 'Config epochs exhausted')]
+fn test_epoch_exhaustion_is_refused() {
+    let buyback_token = deploy_mock_erc20("Buyback", "BUY");
+    let sell_token = deploy_mock_erc20("Sell", "SELL");
+    let contract = setup_buyback_with_explicit_config(buyback_token, sell_token);
+    let dispatcher = IBuybackDispatcher { contract_address: contract };
+    let admin_dispatcher = IBuybackAdminDispatcher { contract_address: contract };
+    let mock_erc20 = IMockERC20Dispatcher { contract_address: sell_token };
+    let mock_positions: ContractAddress = 'POSITIONS'.try_into().unwrap();
+
+    // Seed: current epoch = 255, with a config in it.
+    store(
+        contract,
+        map_entry_address(selector!("Buyback_config_epoch"), array![sell_token.into()].span()),
+        array![255].span(),
+    );
+    store(
+        contract,
+        map_entry_address(selector!("Buyback_epoch_config"), array![sell_token.into(), 255].span()),
+        array![buyback_token.into(), defaults::DEFAULT_FEE.into()].span(),
+    );
+    assert(dispatcher.get_config_epoch(sell_token) == 255, 'Seeded at the cap');
+
+    // A different fee would need epoch 256, which does not exist.
+    start_cheat_caller_address(contract, OWNER());
+    admin_dispatcher
+        .set_token_config(
+            sell_token,
+            Option::Some(
+                TokenBuybackConfig {
+                    buy_token: buyback_token,
+                    treasury: TREASURY(),
+                    minimum_amount: defaults::MIN_AMOUNT,
+                    min_delay: 0,
+                    max_delay: 0,
+                    min_duration: defaults::MIN_DURATION,
+                    max_duration: defaults::MAX_DURATION,
+                    fee: defaults::DEFAULT_FEE + 1,
+                },
+            ),
+        );
+
+    start_cheat_block_timestamp_global(1000);
+    mock_call(mock_positions, selector!("mint_and_increase_sell_amount"), (42_u64, 100_u128), 1);
+    mock_erc20.mint(contract, amounts::THOUSAND_TOKENS);
+    dispatcher
+        .buy_back(
+            BuybackParams {
+                sell_token, start_time: 0, end_time: 1000 + defaults::MIN_DURATION + 1,
+            },
+        );
 }

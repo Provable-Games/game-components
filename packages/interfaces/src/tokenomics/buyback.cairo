@@ -54,13 +54,42 @@ pub struct BuybackParams {
     pub end_time: u64,
 }
 
-/// Largest `amount` a single order can hold: 2**120 - 1.
+/// Largest `amount` a single order can hold: 2**112 - 1.
 ///
-/// The record packs start_time(64) + end_time(64) + amount(120) into one
-/// felt252, which has ~251 usable bits. 120 bits caps a single order at
-/// ~1.3e36 raw units — 1.3e18 tokens at 18 decimals, far beyond any realistic
-/// supply. `buy_back` rejects anything larger rather than truncating silently.
-pub const MAX_ORDER_AMOUNT: u128 = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF;
+/// The record packs start_time(64) + end_time(64) + amount(112) + epoch(8)
+/// into one felt252, which has ~251 usable bits. 112 bits caps a single order
+/// at ~5.2e33 raw units — 5.2e15 tokens at 18 decimals, far beyond any
+/// realistic supply. `buy_back` rejects anything larger rather than truncating
+/// silently.
+///
+/// This was 2**120 - 1 before the config epoch claimed 8 of those bits. The
+/// cap moved down by a factor of 256 and remains unreachable by orders of
+/// magnitude; anything relying on the literal value rather than this constant
+/// needs updating.
+pub const MAX_ORDER_AMOUNT: u128 = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFF;
+
+/// Largest config epoch a sell token can reach: 2**8 - 1.
+///
+/// One epoch is consumed per CONFIG CHANGE (not per order), so 255 is a
+/// ceiling on how many times a sell token's `buy_token`/`fee` pair may change
+/// over the contract's life. `buy_back` refuses to open a 256th, rather than
+/// wrapping to epoch 0 and silently reinterpreting every existing order under
+/// the wrong config.
+pub const MAX_CONFIG_EPOCH: u8 = 0xFF;
+
+/// The `buy_token`/`fee` pair an order was created under.
+///
+/// Stored once per (sell_token, epoch) rather than once per order: orders are
+/// many and config changes are rare, so this costs two slots amortised across
+/// every order sharing the config, and lets each order name its own Ekubo
+/// `OrderKey` without carrying the pair itself.
+#[derive(Copy, Drop, Serde, starknet::Store, PartialEq, Debug)]
+pub struct EpochConfig {
+    /// Token bought by orders in this epoch
+    pub buy_token: ContractAddress,
+    /// Ekubo pool fee for orders in this epoch
+    pub fee: u128,
+}
 
 /// Order information stored per order. Occupies ONE storage slot.
 ///
@@ -77,16 +106,23 @@ pub struct PackedOrderInfo {
     pub end_time: u64,
     /// Amount of sell token in the order. Bounded by `MAX_ORDER_AMOUNT`.
     pub amount: u128,
+    /// Which `EpochConfig` this order's `buy_token`/`fee` come from. This is
+    /// what lets the config move while orders are open: the order names its
+    /// own config instead of sharing one mutable pair per sell token.
+    pub epoch: u8,
 }
 
 const TWO_64: felt252 = 0x10000000000000000;
 const TWO_128: felt252 = 0x100000000000000000000000000000000;
+const TWO_240: felt252 = 0x1000000000000000000000000000000000000000000000000000000000000;
 const MASK_64: u256 = 0xFFFFFFFFFFFFFFFF;
+const MASK_112: u256 = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFF;
 
-/// start_time(64) | end_time(64) | amount(120) in a single felt252.
+/// start_time(64) | end_time(64) | amount(112) | epoch(8) in a single felt252.
 ///
-/// Note the amount narrowing is what makes one slot reachable at all:
-/// 64 + 64 + 128 = 256 bits does NOT fit, 64 + 64 + 120 = 248 does.
+/// 64 + 64 + 112 + 8 = 248 bits, inside felt252's ~251. The amount narrowing is
+/// what buys the room: at the full u128 the record would need 264 bits and
+/// could not be one slot at all.
 pub impl PackedOrderInfoStorePacking of starknet::storage_access::StorePacking<
     PackedOrderInfo, felt252,
 > {
@@ -94,15 +130,19 @@ pub impl PackedOrderInfoStorePacking of starknet::storage_access::StorePacking<
         // buy_back asserts this first with a clearer error. Repeated here so no
         // other write path can truncate an amount silently.
         assert(value.amount <= MAX_ORDER_AMOUNT, 'Order amount too large');
-        value.start_time.into() + value.end_time.into() * TWO_64 + value.amount.into() * TWO_128
+        value.start_time.into()
+            + value.end_time.into() * TWO_64
+            + value.amount.into() * TWO_128
+            + value.epoch.into() * TWO_240
     }
 
     fn unpack(value: felt252) -> PackedOrderInfo {
         let v: u256 = value.into();
         let start_time: u64 = (v & MASK_64).try_into().unwrap();
         let end_time: u64 = ((v / TWO_64.into()) & MASK_64).try_into().unwrap();
-        let amount: u128 = (v / TWO_128.into()).try_into().unwrap();
-        PackedOrderInfo { start_time, end_time, amount }
+        let amount: u128 = ((v / TWO_128.into()) & MASK_112).try_into().unwrap();
+        let epoch: u8 = (v / TWO_240.into()).try_into().unwrap();
+        PackedOrderInfo { start_time, end_time, amount, epoch }
     }
 }
 
@@ -172,10 +212,13 @@ pub trait IBuyback<TContractState> {
     /// Construct an OrderKey for a specific order index
     fn get_order_key(self: @TContractState, sell_token: ContractAddress, index: u128) -> OrderKey;
 
-    /// Get the active buy token for a sell token
+    /// Get the current config epoch for a sell token
+    fn get_config_epoch(self: @TContractState, sell_token: ContractAddress) -> u8;
+
+    /// Get the buy token of the current config epoch (latest-only)
     fn get_active_buy_token(self: @TContractState, sell_token: ContractAddress) -> ContractAddress;
 
-    /// Get the active fee for a sell token
+    /// Get the fee of the current config epoch (latest-only)
     fn get_active_fee(self: @TContractState, sell_token: ContractAddress) -> u128;
 }
 
