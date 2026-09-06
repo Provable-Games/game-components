@@ -14,9 +14,17 @@
 // `--gas-report` table, NOT the test total: the test total includes deployment
 // and dispatcher setup.
 //
-// `PbNoop` is the ABI floor: the same felt252 in / felt252 out entrypoint with
-// no codec call at all. Everything above that floor is calldata deserialization,
-// selector dispatch and return serialization, which no accessor can avoid.
+// There are TWO ABI floors, matched to the two return shapes; neither is
+// universal, so subtract the one that matches the probe you are reading.
+//   `PbNoop`     — felt252 in, felt252 out, no codec call. The floor for every
+//                  SCALAR accessor: bool, u16, u32, u64 and u128 all serialize
+//                  to exactly one felt like felt252 (a bool adds a
+//                  serialization branch, and nothing else).
+//   `PbNoopFull` — same entrypoint returning a twelve-field `PackedTokenId`.
+//                  The floor for `unpack_token_id`, whose return serializes
+//                  twelve felts; `PbNoop` is NOT its floor.
+// A floor is calldata deserialization, selector dispatch and return
+// serialization — what no accessor of that shape can avoid.
 //
 // Command:
 //   SCARB_UI_VERBOSITY=no-warnings snforge test gas_acc_ \
