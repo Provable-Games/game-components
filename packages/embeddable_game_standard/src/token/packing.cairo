@@ -448,8 +448,14 @@ pub fn to_token_metadata(packed: PackedTokenId) -> TokenMetadata {
 mod layout_invariants {
     use super::mask;
 
-    /// 2^n built by repeated multiplication, so the expected value is derived
+    /// `2^n` built by repeated multiplication, so the expected value is derived
     /// here rather than copied from the constant it is checking.
+    ///
+    /// * `n` — exponent; must be < 128, or the u128 multiply overflows and
+    ///   panics. Every call site passes a literal field width from the layout
+    ///   table, all of which are <= 35.
+    ///
+    /// Returns `2^n` as a u128.
     fn two_pow(n: u32) -> u128 {
         let mut result: u128 = 1;
         let mut i: u32 = 0;

@@ -25,8 +25,18 @@ pub const HAS_CONTEXT: (u32, u32) = (155, 1);
 pub const OBJECTIVE_ID: (u32, u32) = (156, 30);
 pub const METADATA: (u32, u32) = (186, 65);
 
-/// 2^n as a u256, built by repeated multiplication so no shift constant is
+/// `2^n` as a u256, built by repeated multiplication so no shift constant is
 /// shared with the code under test.
+///
+/// * `n` — exponent; must be <= 255, or the u256 multiply overflows and panics.
+///   Call sites pass field offsets and widths from the table above (max 251).
+///
+/// Returns `2^n`. Deliberately O(n) — this is a reference, not production code.
+///
+/// ```
+/// assert!(two_pow(0) == 1);
+/// assert!(two_pow(10) == 0x400);
+/// ```
 pub fn two_pow(n: u32) -> u256 {
     let mut result: u256 = 1;
     let mut i: u32 = 0;
@@ -37,19 +47,52 @@ pub fn two_pow(n: u32) -> u256 {
     result
 }
 
-/// The whole point: `(id >> offset) & ((1 << width) - 1)`, written the slow way.
+/// The whole point: `(id >> offset) & ((1 << width) - 1)`, written the slow way
+/// as division and modulo over the WHOLE 251-bit value — no u128 half-split, so
+/// it cannot repeat a half-splitting mistake made by the code under test.
+///
+/// * `token_id` — any felt252; no validity precondition, arbitrary bit patterns
+///   are meaningful input.
+/// * `spec` — `(offset, width)` from the constants above; `offset + width` must
+///   be <= 251.
+///
+/// Returns the field's value, zero-extended into a u256.
+///
+/// ```
+/// // salt lives at bits 138..153
+/// let salt: u16 = field(token_id, SALT).try_into().unwrap();
+/// ```
 pub fn field(token_id: felt252, spec: (u32, u32)) -> u256 {
     let (offset, width) = spec;
     let value: u256 = token_id.into();
     (value / two_pow(offset)) % two_pow(width)
 }
 
+/// `field`, for the three single-bit fields.
+///
+/// * `token_id` — any felt252.
+/// * `spec` — a `(offset, 1)` spec: `SOULBOUND`, `PAYMASTER` or `HAS_CONTEXT`.
+///
+/// Returns true when the bit is set.
 pub fn flag(token_id: felt252, spec: (u32, u32)) -> bool {
     field(token_id, spec) == 1
 }
 
-/// Naive packer: place each field at its absolute offset and add. Independent
-/// of the shipped packer's felt252 accumulation.
+/// Naive packer: place each field at its absolute offset and add, in u256.
+/// Independent of the shipped packer's felt252 accumulation.
+///
+/// Unlike `packing::pack_token_id` this asserts nothing and masks nothing — an
+/// over-wide field simply collides with its neighbour and the result diverges,
+/// which is what makes it useful as a differential reference. Callers must
+/// therefore respect every width themselves:
+///
+/// * `minted_at` <= 2^35-1, `start_delay` / `end_delay` <= 2^25-1,
+///   `settings_id` <= 2^16-1, `minted_by` <= 2^26-1, `tx_hash` <= 2^10-1,
+///   `salt` <= 2^16-1, `objective_id` <= 2^30-1, `metadata` <= 2^65-1.
+/// * `soulbound`, `paymaster`, `has_context` — one bit each.
+///
+/// Returns the packed 251-bit id as a felt252; panics if the accumulated value
+/// does not fit felt252, which can only happen if a width was violated.
 pub fn pack(
     minted_at: u64,
     start_delay: u32,

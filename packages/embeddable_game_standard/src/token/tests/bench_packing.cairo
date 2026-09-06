@@ -71,6 +71,11 @@ pub trait IProbeFelt<T> {
     fn run(self: @T, x: felt252) -> felt252;
 }
 
+/// ABI floor for the scalar accessors: felt252 in, felt252 out, no codec call.
+/// What remains is calldata deserialization, selector dispatch and one-felt
+/// return serialization, which no accessor can avoid. Every scalar accessor
+/// return type (bool, u16, u32, u64, u128) also serializes to exactly one felt,
+/// so this is their floor too, to within a bool's serialization branch.
 #[starknet::contract]
 pub mod PbNoop {
     #[storage]
@@ -83,6 +88,39 @@ pub mod PbNoop {
     }
 }
 
+/// ABI floor for `unpack_token_id`, whose return serializes TWELVE felts rather
+/// than one — `PbNoop` is not its floor. Fields are constants, so this is a
+/// lower bound on the real floor (a computed bool may serialize marginally
+/// dearer than a constant one); the input is still deserialized.
+#[starknet::contract]
+pub mod PbNoopFull {
+    #[storage]
+    pub struct Storage {}
+    #[abi(embed_v0)]
+    impl P of super::IProbeFull<ContractState> {
+        fn run(
+            self: @ContractState, x: felt252,
+        ) -> crate::token::tests::packing_v270::PackedTokenId {
+            crate::token::tests::packing_v270::PackedTokenId {
+                minted_at: 0,
+                start_delay: 0,
+                end_delay: 0,
+                settings_id: 0,
+                minted_by: 0,
+                soulbound: false,
+                tx_hash: 0,
+                salt: 0,
+                paymaster: false,
+                has_context: false,
+                objective_id: 0,
+                metadata: 0,
+            }
+        }
+    }
+}
+
+/// Probe: `v270` arm of `minted_at`. Single entrypoint, calls the accessor and
+/// returns its result; nothing else.
 #[starknet::contract]
 pub mod PbMintedAtV270 {
     #[storage]
@@ -95,6 +133,8 @@ pub mod PbMintedAtV270 {
     }
 }
 
+/// Probe: `new` arm of `minted_at`. Single entrypoint, calls the accessor and
+/// returns its result; nothing else.
 #[starknet::contract]
 pub mod PbMintedAtNew {
     #[storage]
@@ -107,6 +147,8 @@ pub mod PbMintedAtNew {
     }
 }
 
+/// Probe: `a` arm of `minted_at`. Single entrypoint, calls the accessor and
+/// returns its result; nothing else.
 #[starknet::contract]
 pub mod PbMintedAtA {
     #[storage]
@@ -119,6 +161,8 @@ pub mod PbMintedAtA {
     }
 }
 
+/// Probe: `v270` arm of `start_delay`. Single entrypoint, calls the accessor and
+/// returns its result; nothing else.
 #[starknet::contract]
 pub mod PbStartDelayV270 {
     #[storage]
@@ -131,6 +175,8 @@ pub mod PbStartDelayV270 {
     }
 }
 
+/// Probe: `new` arm of `start_delay`. Single entrypoint, calls the accessor and
+/// returns its result; nothing else.
 #[starknet::contract]
 pub mod PbStartDelayNew {
     #[storage]
@@ -143,6 +189,8 @@ pub mod PbStartDelayNew {
     }
 }
 
+/// Probe: `a` arm of `start_delay`. Single entrypoint, calls the accessor and
+/// returns its result; nothing else.
 #[starknet::contract]
 pub mod PbStartDelayA {
     #[storage]
@@ -155,6 +203,8 @@ pub mod PbStartDelayA {
     }
 }
 
+/// Probe: `b` arm of `start_delay`. Single entrypoint, calls the accessor and
+/// returns its result; nothing else.
 #[starknet::contract]
 pub mod PbStartDelayB {
     #[storage]
@@ -167,6 +217,8 @@ pub mod PbStartDelayB {
     }
 }
 
+/// Probe: `c` arm of `start_delay`. Single entrypoint, calls the accessor and
+/// returns its result; nothing else.
 #[starknet::contract]
 pub mod PbStartDelayC {
     #[storage]
@@ -179,6 +231,8 @@ pub mod PbStartDelayC {
     }
 }
 
+/// Probe: `v270` arm of `end_delay`. Single entrypoint, calls the accessor and
+/// returns its result; nothing else.
 #[starknet::contract]
 pub mod PbEndDelayV270 {
     #[storage]
@@ -191,6 +245,8 @@ pub mod PbEndDelayV270 {
     }
 }
 
+/// Probe: `new` arm of `end_delay`. Single entrypoint, calls the accessor and
+/// returns its result; nothing else.
 #[starknet::contract]
 pub mod PbEndDelayNew {
     #[storage]
@@ -203,6 +259,8 @@ pub mod PbEndDelayNew {
     }
 }
 
+/// Probe: `b` arm of `end_delay`. Single entrypoint, calls the accessor and
+/// returns its result; nothing else.
 #[starknet::contract]
 pub mod PbEndDelayB {
     #[storage]
@@ -215,6 +273,8 @@ pub mod PbEndDelayB {
     }
 }
 
+/// Probe: `v270` arm of `settings_id`. Single entrypoint, calls the accessor and
+/// returns its result; nothing else.
 #[starknet::contract]
 pub mod PbSettingsIdV270 {
     #[storage]
@@ -227,6 +287,8 @@ pub mod PbSettingsIdV270 {
     }
 }
 
+/// Probe: `new` arm of `settings_id`. Single entrypoint, calls the accessor and
+/// returns its result; nothing else.
 #[starknet::contract]
 pub mod PbSettingsIdNew {
     #[storage]
@@ -239,6 +301,8 @@ pub mod PbSettingsIdNew {
     }
 }
 
+/// Probe: `a` arm of `settings_id`. Single entrypoint, calls the accessor and
+/// returns its result; nothing else.
 #[starknet::contract]
 pub mod PbSettingsIdA {
     #[storage]
@@ -251,6 +315,8 @@ pub mod PbSettingsIdA {
     }
 }
 
+/// Probe: `b` arm of `settings_id`. Single entrypoint, calls the accessor and
+/// returns its result; nothing else.
 #[starknet::contract]
 pub mod PbSettingsIdB {
     #[storage]
@@ -263,6 +329,8 @@ pub mod PbSettingsIdB {
     }
 }
 
+/// Probe: `v270` arm of `minted_by`. Single entrypoint, calls the accessor and
+/// returns its result; nothing else.
 #[starknet::contract]
 pub mod PbMintedByV270 {
     #[storage]
@@ -275,6 +343,8 @@ pub mod PbMintedByV270 {
     }
 }
 
+/// Probe: `new` arm of `minted_by`. Single entrypoint, calls the accessor and
+/// returns its result; nothing else.
 #[starknet::contract]
 pub mod PbMintedByNew {
     #[storage]
@@ -287,6 +357,8 @@ pub mod PbMintedByNew {
     }
 }
 
+/// Probe: `a` arm of `minted_by`. Single entrypoint, calls the accessor and
+/// returns its result; nothing else.
 #[starknet::contract]
 pub mod PbMintedByA {
     #[storage]
@@ -299,6 +371,8 @@ pub mod PbMintedByA {
     }
 }
 
+/// Probe: `b` arm of `minted_by`. Single entrypoint, calls the accessor and
+/// returns its result; nothing else.
 #[starknet::contract]
 pub mod PbMintedByB {
     #[storage]
@@ -311,6 +385,8 @@ pub mod PbMintedByB {
     }
 }
 
+/// Probe: `c` arm of `minted_by`. Single entrypoint, calls the accessor and
+/// returns its result; nothing else.
 #[starknet::contract]
 pub mod PbMintedByC {
     #[storage]
@@ -323,6 +399,8 @@ pub mod PbMintedByC {
     }
 }
 
+/// Probe: `v270` arm of `soulbound`. Single entrypoint, calls the accessor and
+/// returns its result; nothing else.
 #[starknet::contract]
 pub mod PbSoulboundV270 {
     #[storage]
@@ -335,6 +413,8 @@ pub mod PbSoulboundV270 {
     }
 }
 
+/// Probe: `new` arm of `soulbound`. Single entrypoint, calls the accessor and
+/// returns its result; nothing else.
 #[starknet::contract]
 pub mod PbSoulboundNew {
     #[storage]
@@ -347,6 +427,8 @@ pub mod PbSoulboundNew {
     }
 }
 
+/// Probe: `a` arm of `soulbound`. Single entrypoint, calls the accessor and
+/// returns its result; nothing else.
 #[starknet::contract]
 pub mod PbSoulboundA {
     #[storage]
@@ -359,6 +441,8 @@ pub mod PbSoulboundA {
     }
 }
 
+/// Probe: `b` arm of `soulbound`. Single entrypoint, calls the accessor and
+/// returns its result; nothing else.
 #[starknet::contract]
 pub mod PbSoulboundB {
     #[storage]
@@ -371,6 +455,8 @@ pub mod PbSoulboundB {
     }
 }
 
+/// Probe: `v270` arm of `tx_hash`. Single entrypoint, calls the accessor and
+/// returns its result; nothing else.
 #[starknet::contract]
 pub mod PbTxHashV270 {
     #[storage]
@@ -383,6 +469,8 @@ pub mod PbTxHashV270 {
     }
 }
 
+/// Probe: `new` arm of `tx_hash`. Single entrypoint, calls the accessor and
+/// returns its result; nothing else.
 #[starknet::contract]
 pub mod PbTxHashNew {
     #[storage]
@@ -395,6 +483,8 @@ pub mod PbTxHashNew {
     }
 }
 
+/// Probe: `a` arm of `tx_hash`. Single entrypoint, calls the accessor and
+/// returns its result; nothing else.
 #[starknet::contract]
 pub mod PbTxHashA {
     #[storage]
@@ -407,6 +497,8 @@ pub mod PbTxHashA {
     }
 }
 
+/// Probe: `v270` arm of `salt`. Single entrypoint, calls the accessor and
+/// returns its result; nothing else.
 #[starknet::contract]
 pub mod PbSaltV270 {
     #[storage]
@@ -419,6 +511,8 @@ pub mod PbSaltV270 {
     }
 }
 
+/// Probe: `new` arm of `salt`. Single entrypoint, calls the accessor and
+/// returns its result; nothing else.
 #[starknet::contract]
 pub mod PbSaltNew {
     #[storage]
@@ -431,6 +525,8 @@ pub mod PbSaltNew {
     }
 }
 
+/// Probe: `a` arm of `salt`. Single entrypoint, calls the accessor and
+/// returns its result; nothing else.
 #[starknet::contract]
 pub mod PbSaltA {
     #[storage]
@@ -443,6 +539,8 @@ pub mod PbSaltA {
     }
 }
 
+/// Probe: `b` arm of `salt`. Single entrypoint, calls the accessor and
+/// returns its result; nothing else.
 #[starknet::contract]
 pub mod PbSaltB {
     #[storage]
@@ -455,6 +553,8 @@ pub mod PbSaltB {
     }
 }
 
+/// Probe: `v270` arm of `paymaster`. Single entrypoint, calls the accessor and
+/// returns its result; nothing else.
 #[starknet::contract]
 pub mod PbPaymasterV270 {
     #[storage]
@@ -467,6 +567,8 @@ pub mod PbPaymasterV270 {
     }
 }
 
+/// Probe: `new` arm of `paymaster`. Single entrypoint, calls the accessor and
+/// returns its result; nothing else.
 #[starknet::contract]
 pub mod PbPaymasterNew {
     #[storage]
@@ -479,6 +581,8 @@ pub mod PbPaymasterNew {
     }
 }
 
+/// Probe: `a` arm of `paymaster`. Single entrypoint, calls the accessor and
+/// returns its result; nothing else.
 #[starknet::contract]
 pub mod PbPaymasterA {
     #[storage]
@@ -491,6 +595,8 @@ pub mod PbPaymasterA {
     }
 }
 
+/// Probe: `b` arm of `paymaster`. Single entrypoint, calls the accessor and
+/// returns its result; nothing else.
 #[starknet::contract]
 pub mod PbPaymasterB {
     #[storage]
@@ -503,6 +609,8 @@ pub mod PbPaymasterB {
     }
 }
 
+/// Probe: `v270` arm of `has_context`. Single entrypoint, calls the accessor and
+/// returns its result; nothing else.
 #[starknet::contract]
 pub mod PbHasContextV270 {
     #[storage]
@@ -515,6 +623,8 @@ pub mod PbHasContextV270 {
     }
 }
 
+/// Probe: `new` arm of `has_context`. Single entrypoint, calls the accessor and
+/// returns its result; nothing else.
 #[starknet::contract]
 pub mod PbHasContextNew {
     #[storage]
@@ -527,6 +637,8 @@ pub mod PbHasContextNew {
     }
 }
 
+/// Probe: `a` arm of `has_context`. Single entrypoint, calls the accessor and
+/// returns its result; nothing else.
 #[starknet::contract]
 pub mod PbHasContextA {
     #[storage]
@@ -539,6 +651,8 @@ pub mod PbHasContextA {
     }
 }
 
+/// Probe: `b` arm of `has_context`. Single entrypoint, calls the accessor and
+/// returns its result; nothing else.
 #[starknet::contract]
 pub mod PbHasContextB {
     #[storage]
@@ -551,6 +665,8 @@ pub mod PbHasContextB {
     }
 }
 
+/// Probe: `v270` arm of `objective_id`. Single entrypoint, calls the accessor and
+/// returns its result; nothing else.
 #[starknet::contract]
 pub mod PbObjectiveIdV270 {
     #[storage]
@@ -563,6 +679,8 @@ pub mod PbObjectiveIdV270 {
     }
 }
 
+/// Probe: `new` arm of `objective_id`. Single entrypoint, calls the accessor and
+/// returns its result; nothing else.
 #[starknet::contract]
 pub mod PbObjectiveIdNew {
     #[storage]
@@ -575,6 +693,8 @@ pub mod PbObjectiveIdNew {
     }
 }
 
+/// Probe: `a` arm of `objective_id`. Single entrypoint, calls the accessor and
+/// returns its result; nothing else.
 #[starknet::contract]
 pub mod PbObjectiveIdA {
     #[storage]
@@ -587,6 +707,8 @@ pub mod PbObjectiveIdA {
     }
 }
 
+/// Probe: `b` arm of `objective_id`. Single entrypoint, calls the accessor and
+/// returns its result; nothing else.
 #[starknet::contract]
 pub mod PbObjectiveIdB {
     #[storage]
@@ -599,6 +721,8 @@ pub mod PbObjectiveIdB {
     }
 }
 
+/// Probe: `v270` arm of `metadata`. Single entrypoint, calls the accessor and
+/// returns its result; nothing else.
 #[starknet::contract]
 pub mod PbMetadataV270 {
     #[storage]
@@ -611,6 +735,8 @@ pub mod PbMetadataV270 {
     }
 }
 
+/// Probe: `new` arm of `metadata`. Single entrypoint, calls the accessor and
+/// returns its result; nothing else.
 #[starknet::contract]
 pub mod PbMetadataNew {
     #[storage]
@@ -623,6 +749,8 @@ pub mod PbMetadataNew {
     }
 }
 
+/// Probe: `v270` arm of `extract_tx_hash_bits`. Single entrypoint, calls the accessor and
+/// returns its result; nothing else.
 #[starknet::contract]
 pub mod PbExtractTxHashBitsV270 {
     #[storage]
@@ -635,6 +763,8 @@ pub mod PbExtractTxHashBitsV270 {
     }
 }
 
+/// Probe: `new` arm of `extract_tx_hash_bits`. Single entrypoint, calls the accessor and
+/// returns its result; nothing else.
 #[starknet::contract]
 pub mod PbExtractTxHashBitsNew {
     #[storage]
@@ -647,6 +777,8 @@ pub mod PbExtractTxHashBitsNew {
     }
 }
 
+/// Probe: `a` arm of `extract_tx_hash_bits`. Single entrypoint, calls the accessor and
+/// returns its result; nothing else.
 #[starknet::contract]
 pub mod PbExtractTxHashBitsA {
     #[storage]
@@ -659,6 +791,8 @@ pub mod PbExtractTxHashBitsA {
     }
 }
 
+/// Probe: `b` arm of `extract_tx_hash_bits`. Single entrypoint, calls the accessor and
+/// returns its result; nothing else.
 #[starknet::contract]
 pub mod PbExtractTxHashBitsB {
     #[storage]
@@ -671,6 +805,8 @@ pub mod PbExtractTxHashBitsB {
     }
 }
 
+/// Probe: `v270` arm of `unpack_all`. Single entrypoint, calls the accessor and
+/// returns its result; nothing else.
 #[starknet::contract]
 pub mod PbUnpackAllV270 {
     #[storage]
@@ -685,6 +821,8 @@ pub mod PbUnpackAllV270 {
     }
 }
 
+/// Probe: `a` arm of `unpack_all`. Single entrypoint, calls the accessor and
+/// returns its result; nothing else.
 #[starknet::contract]
 pub mod PbUnpackAllA {
     #[storage]
@@ -699,6 +837,8 @@ pub mod PbUnpackAllA {
     }
 }
 
+/// Probe: `b` arm of `unpack_all`. Single entrypoint, calls the accessor and
+/// returns its result; nothing else.
 #[starknet::contract]
 pub mod PbUnpackAllB {
     #[storage]
@@ -713,6 +853,8 @@ pub mod PbUnpackAllB {
     }
 }
 
+/// Probe: `c` arm of `unpack_all`. Single entrypoint, calls the accessor and
+/// returns its result; nothing else.
 #[starknet::contract]
 pub mod PbUnpackAllC {
     #[storage]
@@ -727,6 +869,8 @@ pub mod PbUnpackAllC {
     }
 }
 
+/// Probe: `d` arm of `unpack_all`. Single entrypoint, calls the accessor and
+/// returns its result; nothing else.
 #[starknet::contract]
 pub mod PbUnpackAllD {
     #[storage]
@@ -741,6 +885,8 @@ pub mod PbUnpackAllD {
     }
 }
 
+/// Probe: `new` arm of `unpack_all`. Single entrypoint, calls the accessor and
+/// returns its result; nothing else.
 #[starknet::contract]
 pub mod PbUnpackAllNew {
     #[storage]
@@ -757,8 +903,12 @@ pub mod PbUnpackAllNew {
 // Drivers — one test per probe so gas is attributable to exactly that probe.
 // ==============================================================================
 
-/// A fully populated token id: every field at a distinct non-zero value, so no
-/// accessor can be measured on an accidentally cheap input.
+/// A fully populated token id: every field carries a distinct non-zero value
+/// (top bit set where the width allows), so no accessor is measured on an
+/// accidentally cheap input. Built with the frozen v2.7.0 packer, which the
+/// correctness suite proves is bit-identical to the shipped one.
+///
+/// Returns: a 251-bit felt252 token id.
 fn bench_input() -> felt252 {
     packing_v270::pack_token_id(
         0x7EDCBA987, // minted_at   (35 bits, top bit set)
@@ -776,6 +926,8 @@ fn bench_input() -> felt252 {
     )
 }
 
+/// Deploys the `v270` probe for `minted_at` and calls it once. Read the probe
+/// contract's `run` row from `--gas-report`, not this test's total.
 #[test]
 fn gas_acc_01_minted_at_v270() {
     let c = declare("PbMintedAtV270").unwrap().contract_class();
@@ -783,6 +935,8 @@ fn gas_acc_01_minted_at_v270() {
     let _ = IProbeU64Dispatcher { contract_address: a }.run(bench_input());
 }
 
+/// Deploys the `new` probe for `minted_at` and calls it once. Read the probe
+/// contract's `run` row from `--gas-report`, not this test's total.
 #[test]
 fn gas_acc_02_minted_at_new() {
     let c = declare("PbMintedAtNew").unwrap().contract_class();
@@ -790,6 +944,8 @@ fn gas_acc_02_minted_at_new() {
     let _ = IProbeU64Dispatcher { contract_address: a }.run(bench_input());
 }
 
+/// Deploys the `a` probe for `minted_at` and calls it once. Read the probe
+/// contract's `run` row from `--gas-report`, not this test's total.
 #[test]
 fn gas_acc_03_minted_at_a() {
     let c = declare("PbMintedAtA").unwrap().contract_class();
@@ -797,6 +953,8 @@ fn gas_acc_03_minted_at_a() {
     let _ = IProbeU64Dispatcher { contract_address: a }.run(bench_input());
 }
 
+/// Deploys the `v270` probe for `start_delay` and calls it once. Read the probe
+/// contract's `run` row from `--gas-report`, not this test's total.
 #[test]
 fn gas_acc_04_start_delay_v270() {
     let c = declare("PbStartDelayV270").unwrap().contract_class();
@@ -804,6 +962,8 @@ fn gas_acc_04_start_delay_v270() {
     let _ = IProbeU32Dispatcher { contract_address: a }.run(bench_input());
 }
 
+/// Deploys the `new` probe for `start_delay` and calls it once. Read the probe
+/// contract's `run` row from `--gas-report`, not this test's total.
 #[test]
 fn gas_acc_05_start_delay_new() {
     let c = declare("PbStartDelayNew").unwrap().contract_class();
@@ -811,6 +971,8 @@ fn gas_acc_05_start_delay_new() {
     let _ = IProbeU32Dispatcher { contract_address: a }.run(bench_input());
 }
 
+/// Deploys the `a` probe for `start_delay` and calls it once. Read the probe
+/// contract's `run` row from `--gas-report`, not this test's total.
 #[test]
 fn gas_acc_06_start_delay_a() {
     let c = declare("PbStartDelayA").unwrap().contract_class();
@@ -818,6 +980,8 @@ fn gas_acc_06_start_delay_a() {
     let _ = IProbeU32Dispatcher { contract_address: a }.run(bench_input());
 }
 
+/// Deploys the `b` probe for `start_delay` and calls it once. Read the probe
+/// contract's `run` row from `--gas-report`, not this test's total.
 #[test]
 fn gas_acc_07_start_delay_b() {
     let c = declare("PbStartDelayB").unwrap().contract_class();
@@ -825,6 +989,8 @@ fn gas_acc_07_start_delay_b() {
     let _ = IProbeU32Dispatcher { contract_address: a }.run(bench_input());
 }
 
+/// Deploys the `c` probe for `start_delay` and calls it once. Read the probe
+/// contract's `run` row from `--gas-report`, not this test's total.
 #[test]
 fn gas_acc_08_start_delay_c() {
     let c = declare("PbStartDelayC").unwrap().contract_class();
@@ -832,6 +998,8 @@ fn gas_acc_08_start_delay_c() {
     let _ = IProbeU32Dispatcher { contract_address: a }.run(bench_input());
 }
 
+/// Deploys the `v270` probe for `end_delay` and calls it once. Read the probe
+/// contract's `run` row from `--gas-report`, not this test's total.
 #[test]
 fn gas_acc_09_end_delay_v270() {
     let c = declare("PbEndDelayV270").unwrap().contract_class();
@@ -839,6 +1007,8 @@ fn gas_acc_09_end_delay_v270() {
     let _ = IProbeU32Dispatcher { contract_address: a }.run(bench_input());
 }
 
+/// Deploys the `new` probe for `end_delay` and calls it once. Read the probe
+/// contract's `run` row from `--gas-report`, not this test's total.
 #[test]
 fn gas_acc_10_end_delay_new() {
     let c = declare("PbEndDelayNew").unwrap().contract_class();
@@ -846,6 +1016,8 @@ fn gas_acc_10_end_delay_new() {
     let _ = IProbeU32Dispatcher { contract_address: a }.run(bench_input());
 }
 
+/// Deploys the `b` probe for `end_delay` and calls it once. Read the probe
+/// contract's `run` row from `--gas-report`, not this test's total.
 #[test]
 fn gas_acc_11_end_delay_b() {
     let c = declare("PbEndDelayB").unwrap().contract_class();
@@ -853,6 +1025,8 @@ fn gas_acc_11_end_delay_b() {
     let _ = IProbeU32Dispatcher { contract_address: a }.run(bench_input());
 }
 
+/// Deploys the `v270` probe for `settings_id` and calls it once. Read the probe
+/// contract's `run` row from `--gas-report`, not this test's total.
 #[test]
 fn gas_acc_12_settings_id_v270() {
     let c = declare("PbSettingsIdV270").unwrap().contract_class();
@@ -860,6 +1034,8 @@ fn gas_acc_12_settings_id_v270() {
     let _ = IProbeU32Dispatcher { contract_address: a }.run(bench_input());
 }
 
+/// Deploys the `new` probe for `settings_id` and calls it once. Read the probe
+/// contract's `run` row from `--gas-report`, not this test's total.
 #[test]
 fn gas_acc_13_settings_id_new() {
     let c = declare("PbSettingsIdNew").unwrap().contract_class();
@@ -867,6 +1043,8 @@ fn gas_acc_13_settings_id_new() {
     let _ = IProbeU32Dispatcher { contract_address: a }.run(bench_input());
 }
 
+/// Deploys the `a` probe for `settings_id` and calls it once. Read the probe
+/// contract's `run` row from `--gas-report`, not this test's total.
 #[test]
 fn gas_acc_14_settings_id_a() {
     let c = declare("PbSettingsIdA").unwrap().contract_class();
@@ -874,6 +1052,8 @@ fn gas_acc_14_settings_id_a() {
     let _ = IProbeU32Dispatcher { contract_address: a }.run(bench_input());
 }
 
+/// Deploys the `b` probe for `settings_id` and calls it once. Read the probe
+/// contract's `run` row from `--gas-report`, not this test's total.
 #[test]
 fn gas_acc_15_settings_id_b() {
     let c = declare("PbSettingsIdB").unwrap().contract_class();
@@ -881,6 +1061,8 @@ fn gas_acc_15_settings_id_b() {
     let _ = IProbeU32Dispatcher { contract_address: a }.run(bench_input());
 }
 
+/// Deploys the `v270` probe for `minted_by` and calls it once. Read the probe
+/// contract's `run` row from `--gas-report`, not this test's total.
 #[test]
 fn gas_acc_16_minted_by_v270() {
     let c = declare("PbMintedByV270").unwrap().contract_class();
@@ -888,6 +1070,8 @@ fn gas_acc_16_minted_by_v270() {
     let _ = IProbeU64Dispatcher { contract_address: a }.run(bench_input());
 }
 
+/// Deploys the `new` probe for `minted_by` and calls it once. Read the probe
+/// contract's `run` row from `--gas-report`, not this test's total.
 #[test]
 fn gas_acc_17_minted_by_new() {
     let c = declare("PbMintedByNew").unwrap().contract_class();
@@ -895,6 +1079,8 @@ fn gas_acc_17_minted_by_new() {
     let _ = IProbeU64Dispatcher { contract_address: a }.run(bench_input());
 }
 
+/// Deploys the `a` probe for `minted_by` and calls it once. Read the probe
+/// contract's `run` row from `--gas-report`, not this test's total.
 #[test]
 fn gas_acc_18_minted_by_a() {
     let c = declare("PbMintedByA").unwrap().contract_class();
@@ -902,6 +1088,8 @@ fn gas_acc_18_minted_by_a() {
     let _ = IProbeU64Dispatcher { contract_address: a }.run(bench_input());
 }
 
+/// Deploys the `b` probe for `minted_by` and calls it once. Read the probe
+/// contract's `run` row from `--gas-report`, not this test's total.
 #[test]
 fn gas_acc_19_minted_by_b() {
     let c = declare("PbMintedByB").unwrap().contract_class();
@@ -909,6 +1097,8 @@ fn gas_acc_19_minted_by_b() {
     let _ = IProbeU64Dispatcher { contract_address: a }.run(bench_input());
 }
 
+/// Deploys the `c` probe for `minted_by` and calls it once. Read the probe
+/// contract's `run` row from `--gas-report`, not this test's total.
 #[test]
 fn gas_acc_20_minted_by_c() {
     let c = declare("PbMintedByC").unwrap().contract_class();
@@ -916,6 +1106,8 @@ fn gas_acc_20_minted_by_c() {
     let _ = IProbeU64Dispatcher { contract_address: a }.run(bench_input());
 }
 
+/// Deploys the `v270` probe for `soulbound` and calls it once. Read the probe
+/// contract's `run` row from `--gas-report`, not this test's total.
 #[test]
 fn gas_acc_21_soulbound_v270() {
     let c = declare("PbSoulboundV270").unwrap().contract_class();
@@ -923,6 +1115,8 @@ fn gas_acc_21_soulbound_v270() {
     let _ = IProbeBoolDispatcher { contract_address: a }.run(bench_input());
 }
 
+/// Deploys the `new` probe for `soulbound` and calls it once. Read the probe
+/// contract's `run` row from `--gas-report`, not this test's total.
 #[test]
 fn gas_acc_22_soulbound_new() {
     let c = declare("PbSoulboundNew").unwrap().contract_class();
@@ -930,6 +1124,8 @@ fn gas_acc_22_soulbound_new() {
     let _ = IProbeBoolDispatcher { contract_address: a }.run(bench_input());
 }
 
+/// Deploys the `a` probe for `soulbound` and calls it once. Read the probe
+/// contract's `run` row from `--gas-report`, not this test's total.
 #[test]
 fn gas_acc_23_soulbound_a() {
     let c = declare("PbSoulboundA").unwrap().contract_class();
@@ -937,6 +1133,8 @@ fn gas_acc_23_soulbound_a() {
     let _ = IProbeBoolDispatcher { contract_address: a }.run(bench_input());
 }
 
+/// Deploys the `b` probe for `soulbound` and calls it once. Read the probe
+/// contract's `run` row from `--gas-report`, not this test's total.
 #[test]
 fn gas_acc_24_soulbound_b() {
     let c = declare("PbSoulboundB").unwrap().contract_class();
@@ -944,6 +1142,8 @@ fn gas_acc_24_soulbound_b() {
     let _ = IProbeBoolDispatcher { contract_address: a }.run(bench_input());
 }
 
+/// Deploys the `v270` probe for `tx_hash` and calls it once. Read the probe
+/// contract's `run` row from `--gas-report`, not this test's total.
 #[test]
 fn gas_acc_25_tx_hash_v270() {
     let c = declare("PbTxHashV270").unwrap().contract_class();
@@ -951,6 +1151,8 @@ fn gas_acc_25_tx_hash_v270() {
     let _ = IProbeU16Dispatcher { contract_address: a }.run(bench_input());
 }
 
+/// Deploys the `new` probe for `tx_hash` and calls it once. Read the probe
+/// contract's `run` row from `--gas-report`, not this test's total.
 #[test]
 fn gas_acc_26_tx_hash_new() {
     let c = declare("PbTxHashNew").unwrap().contract_class();
@@ -958,6 +1160,8 @@ fn gas_acc_26_tx_hash_new() {
     let _ = IProbeU16Dispatcher { contract_address: a }.run(bench_input());
 }
 
+/// Deploys the `a` probe for `tx_hash` and calls it once. Read the probe
+/// contract's `run` row from `--gas-report`, not this test's total.
 #[test]
 fn gas_acc_27_tx_hash_a() {
     let c = declare("PbTxHashA").unwrap().contract_class();
@@ -965,6 +1169,8 @@ fn gas_acc_27_tx_hash_a() {
     let _ = IProbeU16Dispatcher { contract_address: a }.run(bench_input());
 }
 
+/// Deploys the `v270` probe for `salt` and calls it once. Read the probe
+/// contract's `run` row from `--gas-report`, not this test's total.
 #[test]
 fn gas_acc_28_salt_v270() {
     let c = declare("PbSaltV270").unwrap().contract_class();
@@ -972,6 +1178,8 @@ fn gas_acc_28_salt_v270() {
     let _ = IProbeU16Dispatcher { contract_address: a }.run(bench_input());
 }
 
+/// Deploys the `new` probe for `salt` and calls it once. Read the probe
+/// contract's `run` row from `--gas-report`, not this test's total.
 #[test]
 fn gas_acc_29_salt_new() {
     let c = declare("PbSaltNew").unwrap().contract_class();
@@ -979,6 +1187,8 @@ fn gas_acc_29_salt_new() {
     let _ = IProbeU16Dispatcher { contract_address: a }.run(bench_input());
 }
 
+/// Deploys the `a` probe for `salt` and calls it once. Read the probe
+/// contract's `run` row from `--gas-report`, not this test's total.
 #[test]
 fn gas_acc_30_salt_a() {
     let c = declare("PbSaltA").unwrap().contract_class();
@@ -986,6 +1196,8 @@ fn gas_acc_30_salt_a() {
     let _ = IProbeU16Dispatcher { contract_address: a }.run(bench_input());
 }
 
+/// Deploys the `b` probe for `salt` and calls it once. Read the probe
+/// contract's `run` row from `--gas-report`, not this test's total.
 #[test]
 fn gas_acc_31_salt_b() {
     let c = declare("PbSaltB").unwrap().contract_class();
@@ -993,6 +1205,8 @@ fn gas_acc_31_salt_b() {
     let _ = IProbeU16Dispatcher { contract_address: a }.run(bench_input());
 }
 
+/// Deploys the `v270` probe for `paymaster` and calls it once. Read the probe
+/// contract's `run` row from `--gas-report`, not this test's total.
 #[test]
 fn gas_acc_32_paymaster_v270() {
     let c = declare("PbPaymasterV270").unwrap().contract_class();
@@ -1000,6 +1214,8 @@ fn gas_acc_32_paymaster_v270() {
     let _ = IProbeBoolDispatcher { contract_address: a }.run(bench_input());
 }
 
+/// Deploys the `new` probe for `paymaster` and calls it once. Read the probe
+/// contract's `run` row from `--gas-report`, not this test's total.
 #[test]
 fn gas_acc_33_paymaster_new() {
     let c = declare("PbPaymasterNew").unwrap().contract_class();
@@ -1007,6 +1223,8 @@ fn gas_acc_33_paymaster_new() {
     let _ = IProbeBoolDispatcher { contract_address: a }.run(bench_input());
 }
 
+/// Deploys the `a` probe for `paymaster` and calls it once. Read the probe
+/// contract's `run` row from `--gas-report`, not this test's total.
 #[test]
 fn gas_acc_34_paymaster_a() {
     let c = declare("PbPaymasterA").unwrap().contract_class();
@@ -1014,6 +1232,8 @@ fn gas_acc_34_paymaster_a() {
     let _ = IProbeBoolDispatcher { contract_address: a }.run(bench_input());
 }
 
+/// Deploys the `b` probe for `paymaster` and calls it once. Read the probe
+/// contract's `run` row from `--gas-report`, not this test's total.
 #[test]
 fn gas_acc_35_paymaster_b() {
     let c = declare("PbPaymasterB").unwrap().contract_class();
@@ -1021,6 +1241,8 @@ fn gas_acc_35_paymaster_b() {
     let _ = IProbeBoolDispatcher { contract_address: a }.run(bench_input());
 }
 
+/// Deploys the `v270` probe for `has_context` and calls it once. Read the probe
+/// contract's `run` row from `--gas-report`, not this test's total.
 #[test]
 fn gas_acc_36_has_context_v270() {
     let c = declare("PbHasContextV270").unwrap().contract_class();
@@ -1028,6 +1250,8 @@ fn gas_acc_36_has_context_v270() {
     let _ = IProbeBoolDispatcher { contract_address: a }.run(bench_input());
 }
 
+/// Deploys the `new` probe for `has_context` and calls it once. Read the probe
+/// contract's `run` row from `--gas-report`, not this test's total.
 #[test]
 fn gas_acc_37_has_context_new() {
     let c = declare("PbHasContextNew").unwrap().contract_class();
@@ -1035,6 +1259,8 @@ fn gas_acc_37_has_context_new() {
     let _ = IProbeBoolDispatcher { contract_address: a }.run(bench_input());
 }
 
+/// Deploys the `a` probe for `has_context` and calls it once. Read the probe
+/// contract's `run` row from `--gas-report`, not this test's total.
 #[test]
 fn gas_acc_38_has_context_a() {
     let c = declare("PbHasContextA").unwrap().contract_class();
@@ -1042,6 +1268,8 @@ fn gas_acc_38_has_context_a() {
     let _ = IProbeBoolDispatcher { contract_address: a }.run(bench_input());
 }
 
+/// Deploys the `b` probe for `has_context` and calls it once. Read the probe
+/// contract's `run` row from `--gas-report`, not this test's total.
 #[test]
 fn gas_acc_39_has_context_b() {
     let c = declare("PbHasContextB").unwrap().contract_class();
@@ -1049,6 +1277,8 @@ fn gas_acc_39_has_context_b() {
     let _ = IProbeBoolDispatcher { contract_address: a }.run(bench_input());
 }
 
+/// Deploys the `v270` probe for `objective_id` and calls it once. Read the probe
+/// contract's `run` row from `--gas-report`, not this test's total.
 #[test]
 fn gas_acc_40_objective_id_v270() {
     let c = declare("PbObjectiveIdV270").unwrap().contract_class();
@@ -1056,6 +1286,8 @@ fn gas_acc_40_objective_id_v270() {
     let _ = IProbeU32Dispatcher { contract_address: a }.run(bench_input());
 }
 
+/// Deploys the `new` probe for `objective_id` and calls it once. Read the probe
+/// contract's `run` row from `--gas-report`, not this test's total.
 #[test]
 fn gas_acc_41_objective_id_new() {
     let c = declare("PbObjectiveIdNew").unwrap().contract_class();
@@ -1063,6 +1295,8 @@ fn gas_acc_41_objective_id_new() {
     let _ = IProbeU32Dispatcher { contract_address: a }.run(bench_input());
 }
 
+/// Deploys the `a` probe for `objective_id` and calls it once. Read the probe
+/// contract's `run` row from `--gas-report`, not this test's total.
 #[test]
 fn gas_acc_42_objective_id_a() {
     let c = declare("PbObjectiveIdA").unwrap().contract_class();
@@ -1070,6 +1304,8 @@ fn gas_acc_42_objective_id_a() {
     let _ = IProbeU32Dispatcher { contract_address: a }.run(bench_input());
 }
 
+/// Deploys the `b` probe for `objective_id` and calls it once. Read the probe
+/// contract's `run` row from `--gas-report`, not this test's total.
 #[test]
 fn gas_acc_43_objective_id_b() {
     let c = declare("PbObjectiveIdB").unwrap().contract_class();
@@ -1077,6 +1313,8 @@ fn gas_acc_43_objective_id_b() {
     let _ = IProbeU32Dispatcher { contract_address: a }.run(bench_input());
 }
 
+/// Deploys the `v270` probe for `metadata` and calls it once. Read the probe
+/// contract's `run` row from `--gas-report`, not this test's total.
 #[test]
 fn gas_acc_44_metadata_v270() {
     let c = declare("PbMetadataV270").unwrap().contract_class();
@@ -1084,6 +1322,8 @@ fn gas_acc_44_metadata_v270() {
     let _ = IProbeU128Dispatcher { contract_address: a }.run(bench_input());
 }
 
+/// Deploys the `new` probe for `metadata` and calls it once. Read the probe
+/// contract's `run` row from `--gas-report`, not this test's total.
 #[test]
 fn gas_acc_45_metadata_new() {
     let c = declare("PbMetadataNew").unwrap().contract_class();
@@ -1091,6 +1331,8 @@ fn gas_acc_45_metadata_new() {
     let _ = IProbeU128Dispatcher { contract_address: a }.run(bench_input());
 }
 
+/// Deploys the `v270` probe for `extract_tx_hash_bits` and calls it once. Read the probe
+/// contract's `run` row from `--gas-report`, not this test's total.
 #[test]
 fn gas_acc_46_extract_tx_hash_bits_v270() {
     let c = declare("PbExtractTxHashBitsV270").unwrap().contract_class();
@@ -1098,6 +1340,8 @@ fn gas_acc_46_extract_tx_hash_bits_v270() {
     let _ = IProbeU16Dispatcher { contract_address: a }.run(bench_input());
 }
 
+/// Deploys the `new` probe for `extract_tx_hash_bits` and calls it once. Read the probe
+/// contract's `run` row from `--gas-report`, not this test's total.
 #[test]
 fn gas_acc_47_extract_tx_hash_bits_new() {
     let c = declare("PbExtractTxHashBitsNew").unwrap().contract_class();
@@ -1105,6 +1349,8 @@ fn gas_acc_47_extract_tx_hash_bits_new() {
     let _ = IProbeU16Dispatcher { contract_address: a }.run(bench_input());
 }
 
+/// Deploys the `a` probe for `extract_tx_hash_bits` and calls it once. Read the probe
+/// contract's `run` row from `--gas-report`, not this test's total.
 #[test]
 fn gas_acc_48_extract_tx_hash_bits_a() {
     let c = declare("PbExtractTxHashBitsA").unwrap().contract_class();
@@ -1112,6 +1358,8 @@ fn gas_acc_48_extract_tx_hash_bits_a() {
     let _ = IProbeU16Dispatcher { contract_address: a }.run(bench_input());
 }
 
+/// Deploys the `b` probe for `extract_tx_hash_bits` and calls it once. Read the probe
+/// contract's `run` row from `--gas-report`, not this test's total.
 #[test]
 fn gas_acc_49_extract_tx_hash_bits_b() {
     let c = declare("PbExtractTxHashBitsB").unwrap().contract_class();
@@ -1119,6 +1367,8 @@ fn gas_acc_49_extract_tx_hash_bits_b() {
     let _ = IProbeU16Dispatcher { contract_address: a }.run(bench_input());
 }
 
+/// Deploys the `v270` probe for `unpack_all` and calls it once. Read the probe
+/// contract's `run` row from `--gas-report`, not this test's total.
 #[test]
 fn gas_acc_50_unpack_all_v270() {
     let c = declare("PbUnpackAllV270").unwrap().contract_class();
@@ -1126,6 +1376,8 @@ fn gas_acc_50_unpack_all_v270() {
     let _ = IProbeFullDispatcher { contract_address: a }.run(bench_input());
 }
 
+/// Deploys the `a` probe for `unpack_all` and calls it once. Read the probe
+/// contract's `run` row from `--gas-report`, not this test's total.
 #[test]
 fn gas_acc_51_unpack_all_a() {
     let c = declare("PbUnpackAllA").unwrap().contract_class();
@@ -1133,6 +1385,8 @@ fn gas_acc_51_unpack_all_a() {
     let _ = IProbeFullDispatcher { contract_address: a }.run(bench_input());
 }
 
+/// Deploys the `b` probe for `unpack_all` and calls it once. Read the probe
+/// contract's `run` row from `--gas-report`, not this test's total.
 #[test]
 fn gas_acc_52_unpack_all_b() {
     let c = declare("PbUnpackAllB").unwrap().contract_class();
@@ -1140,6 +1394,8 @@ fn gas_acc_52_unpack_all_b() {
     let _ = IProbeFullDispatcher { contract_address: a }.run(bench_input());
 }
 
+/// Deploys the `c` probe for `unpack_all` and calls it once. Read the probe
+/// contract's `run` row from `--gas-report`, not this test's total.
 #[test]
 fn gas_acc_53_unpack_all_c() {
     let c = declare("PbUnpackAllC").unwrap().contract_class();
@@ -1147,6 +1403,8 @@ fn gas_acc_53_unpack_all_c() {
     let _ = IProbeFullDispatcher { contract_address: a }.run(bench_input());
 }
 
+/// Deploys the `d` probe for `unpack_all` and calls it once. Read the probe
+/// contract's `run` row from `--gas-report`, not this test's total.
 #[test]
 fn gas_acc_54_unpack_all_d() {
     let c = declare("PbUnpackAllD").unwrap().contract_class();
@@ -1154,6 +1412,8 @@ fn gas_acc_54_unpack_all_d() {
     let _ = IProbeFullDispatcher { contract_address: a }.run(bench_input());
 }
 
+/// Deploys the `new` probe for `unpack_all` and calls it once. Read the probe
+/// contract's `run` row from `--gas-report`, not this test's total.
 #[test]
 fn gas_acc_55_unpack_all_new() {
     let c = declare("PbUnpackAllNew").unwrap().contract_class();
@@ -1161,9 +1421,18 @@ fn gas_acc_55_unpack_all_new() {
     let _ = IProbeFullNewDispatcher { contract_address: a }.run(bench_input());
 }
 
+/// The scalar ABI floor (see `PbNoop`).
 #[test]
 fn gas_acc_56_floor_noop() {
     let c = declare("PbNoop").unwrap().contract_class();
     let (a, _) = c.deploy(@array![]).unwrap();
     let _ = IProbeFeltDispatcher { contract_address: a }.run(bench_input());
+}
+
+/// The 12-field-struct ABI floor for `unpack_token_id` (see `PbNoopFull`).
+#[test]
+fn gas_acc_57_floor_noop_full() {
+    let c = declare("PbNoopFull").unwrap().contract_class();
+    let (a, _) = c.deploy(@array![]).unwrap();
+    let _ = IProbeFullDispatcher { contract_address: a }.run(bench_input());
 }

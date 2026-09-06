@@ -180,6 +180,45 @@ pub mod PrimU32Div2 {
     }
 }
 
+/// Narrow to u64 and widen straight back, so the entrypoint's input AND output
+/// conversions are identical to `PrimBase128`'s (felt -> u128 ... u128 -> felt).
+/// `PrimNarrow64Widen - PrimBase128` is therefore the checked downcast plus one
+/// free `upcast`, with no output-conversion difference folded in.
+/// `PrimNarrow64Widen - PrimNarrow64` prices that upcast.
+#[starknet::contract]
+pub mod PrimNarrow64Widen {
+    #[storage]
+    pub struct Storage {}
+    #[abi(embed_v0)]
+    impl P of super::IProbe<ContractState> {
+        fn run(self: @ContractState, x: felt252) -> felt252 {
+            let v: u128 = x.try_into().unwrap();
+            let w: u64 = v.try_into().unwrap();
+            let z: u128 = w.into();
+            z.into()
+        }
+    }
+}
+
+/// As `PrimNarrow64Widen`, for the u128 -> u32 checked downcast.
+#[starknet::contract]
+pub mod PrimNarrow32Widen {
+    #[storage]
+    pub struct Storage {}
+    #[abi(embed_v0)]
+    impl P of super::IProbe<ContractState> {
+        fn run(self: @ContractState, x: felt252) -> felt252 {
+            let v: u128 = x.try_into().unwrap();
+            let w: u32 = v.try_into().unwrap();
+            let z: u128 = w.into();
+            z.into()
+        }
+    }
+}
+
+/// Control for `PrimBitAnd128`: identical endpoints, no bitwise op. (This is
+/// `PrimBase128`; declared separately only so the pairing is explicit in the
+/// driver list.)
 // --- bitwise ------------------------------------------------------------------
 #[starknet::contract]
 pub mod PrimBitAnd128 {
@@ -318,6 +357,16 @@ fn gas_prim_09_u32_div1() {
 #[test]
 fn gas_prim_10_u32_div2() {
     drive("PrimU32Div2");
+}
+
+#[test]
+fn gas_prim_16_narrow64_widen() {
+    drive("PrimNarrow64Widen");
+}
+
+#[test]
+fn gas_prim_17_narrow32_widen() {
+    drive("PrimNarrow32Widen");
 }
 
 #[test]

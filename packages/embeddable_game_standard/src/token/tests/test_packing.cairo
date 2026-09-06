@@ -38,6 +38,14 @@ const MAX_METADATA: u128 = 0x1FFFFFFFFFFFFFFFF; // 65 bits
 // every field, and the shipped bulk unpack agrees with the shipped accessors.
 // ==============================================================================
 
+/// The core assertion of this suite: all three decoders agree on every field of
+/// `token_id`, and the shipped bulk unpack agrees with the shipped accessors.
+///
+/// * `token_id` — ANY felt252. There is no well-formedness precondition: an
+///   arbitrary bit pattern is valid input and is exercised deliberately by
+///   `test_fuzz_arbitrary_id_decoders_agree`.
+///
+/// Returns nothing; panics naming the first field that diverges.
 fn assert_decoders_agree(token_id: felt252) {
     // --- shipped vs frozen v2.7.0 (the non-breaking claim) --------------------
     assert!(
@@ -146,6 +154,14 @@ fn assert_decoders_agree(token_id: felt252) {
 // PACK — the produced id must be bit-identical to v2.7.0's and to the oracle's
 // ==============================================================================
 
+/// Packs one field vector three ways and asserts the three ids are the SAME
+/// felt252 — this is the non-breaking claim in its most direct form.
+///
+/// Every parameter must fit its field width (see the layout table); the shipped
+/// packer asserts on all of them except `tx_hash`, which it masks, so callers
+/// must keep `tx_hash` <= 0x3FF for the naive packer to agree.
+///
+/// Returns the packed token id, so callers can go on to decode it.
 fn assert_pack_identical(
     minted_at: u64,
     start_delay: u32,
@@ -207,8 +223,12 @@ fn assert_pack_identical(
     shipped
 }
 
-/// Pack, prove the id is bit-identical to v2.7.0's, then prove every decoder
-/// reads back exactly what went in.
+/// Pack, prove the id is bit-identical to v2.7.0's and the oracle's, prove all
+/// three decoders agree on it, then prove every accessor reads back EXACTLY the
+/// value that went in.
+///
+/// Same parameter constraints as `assert_pack_identical`. Returns nothing;
+/// panics naming the first field that fails to survive the round trip.
 fn assert_round_trip(
     minted_at: u64,
     start_delay: u32,

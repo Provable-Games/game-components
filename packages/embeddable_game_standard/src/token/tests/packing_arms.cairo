@@ -53,6 +53,11 @@ mod mask {
 }
 
 // ---------------- minted_at (low 0-34) ----------------
+/// Rejected: mask-only in place of the shipped mask-only form — identical, kept as the arm the
+/// shipped code adopted.
+///
+/// * `token_id` — any felt252.
+/// Returns the same field the shipped accessor of this name returns.
 #[inline(always)]
 pub fn minted_at_a(token_id: felt252) -> u64 {
     let packed: u256 = token_id.into();
@@ -60,6 +65,11 @@ pub fn minted_at_a(token_id: felt252) -> u64 {
 }
 
 // ---------------- start_delay (low 35-59) ----------------
+/// Rejected: two u128 DivRems (the original hypothesis). 20,080 vs the shipped DivRem + mask at
+/// 19,883.
+///
+/// * `token_id` — any felt252.
+/// Returns the same field the shipped accessor of this name returns.
 #[inline(always)]
 pub fn start_delay_a(token_id: felt252) -> u32 {
     let packed: u256 = token_id.into();
@@ -68,6 +78,10 @@ pub fn start_delay_a(token_id: felt252) -> u32 {
     start_delay.try_into().unwrap()
 }
 
+/// The shape the shipped `unpack_start_delay` adopted: shift with one DivRem, trim with a mask.
+///
+/// * `token_id` — any felt252.
+/// Returns the same field the shipped accessor of this name returns.
 #[inline(always)]
 pub fn start_delay_b(token_id: felt252) -> u32 {
     let packed: u256 = token_id.into();
@@ -75,6 +89,11 @@ pub fn start_delay_b(token_id: felt252) -> u32 {
     (rest & mask::M25).try_into().unwrap()
 }
 
+/// Equivalent to `start_delay_b` with mask and DivRem swapped; measured identical (19,883), so
+/// order does not matter.
+///
+/// * `token_id` — any felt252.
+/// Returns the same field the shipped accessor of this name returns.
 #[inline(always)]
 pub fn start_delay_c(token_id: felt252) -> u32 {
     let packed: u256 = token_id.into();
@@ -84,6 +103,10 @@ pub fn start_delay_c(token_id: felt252) -> u32 {
 }
 
 // ---------------- end_delay (low 60-84) ----------------
+/// The shape the shipped `unpack_end_delay` adopted.
+///
+/// * `token_id` — any felt252.
+/// Returns the same field the shipped accessor of this name returns.
 #[inline(always)]
 pub fn end_delay_b(token_id: felt252) -> u32 {
     let packed: u256 = token_id.into();
@@ -92,6 +115,10 @@ pub fn end_delay_b(token_id: felt252) -> u32 {
 }
 
 // ---------------- settings_id (low 85-100) ----------------
+/// Rejected: two u128 DivRems. 20,080 vs the shipped 19,883.
+///
+/// * `token_id` — any felt252.
+/// Returns the same field the shipped accessor of this name returns.
 #[inline(always)]
 pub fn settings_id_a(token_id: felt252) -> u32 {
     let packed: u256 = token_id.into();
@@ -100,6 +127,10 @@ pub fn settings_id_a(token_id: felt252) -> u32 {
     settings_id.try_into().unwrap()
 }
 
+/// The shape the shipped `unpack_settings_id` adopted.
+///
+/// * `token_id` — any felt252.
+/// Returns the same field the shipped accessor of this name returns.
 #[inline(always)]
 pub fn settings_id_b(token_id: felt252) -> u32 {
     let packed: u256 = token_id.into();
@@ -108,6 +139,10 @@ pub fn settings_id_b(token_id: felt252) -> u32 {
 }
 
 // ---------------- minted_by (low 101-126) ----------------
+/// Rejected: two u128 DivRems. 20,080 vs the shipped 18,130.
+///
+/// * `token_id` — any felt252.
+/// Returns the same field the shipped accessor of this name returns.
 #[inline(always)]
 pub fn minted_by_a(token_id: felt252) -> u64 {
     let packed: u256 = token_id.into();
@@ -116,6 +151,11 @@ pub fn minted_by_a(token_id: felt252) -> u64 {
     minted_by.try_into().unwrap()
 }
 
+/// Rejected: DivRem + u128 mask + downcast. 19,883 vs the shipped 18,130 — the u64 return means
+/// the downcast is unavoidable, so paying it early is free.
+///
+/// * `token_id` — any felt252.
+/// Returns the same field the shipped accessor of this name returns.
 #[inline(always)]
 pub fn minted_by_b(token_id: felt252) -> u64 {
     let packed: u256 = token_id.into();
@@ -123,6 +163,11 @@ pub fn minted_by_b(token_id: felt252) -> u64 {
     (top & mask::M26).try_into().unwrap()
 }
 
+/// Rejected: DivRem + downcast + u64 mask. 18,983 vs the shipped 18,130 — closest challenger,
+/// still loses.
+///
+/// * `token_id` — any felt252.
+/// Returns the same field the shipped accessor of this name returns.
 #[inline(always)]
 pub fn minted_by_c(token_id: felt252) -> u64 {
     let packed: u256 = token_id.into();
@@ -132,12 +177,21 @@ pub fn minted_by_c(token_id: felt252) -> u64 {
 }
 
 // ---------------- soulbound (low 127) ----------------
+/// Rejected: flag mask. 16,333 vs the shipped DivRem at 15,830 — at bit 127 the quotient is
+/// already 0/1.
+///
+/// * `token_id` — any felt252.
+/// Returns the same field the shipped accessor of this name returns.
 #[inline(always)]
 pub fn soulbound_a(token_id: felt252) -> bool {
     let packed: u256 = token_id.into();
     (packed.low & mask::BIT127) != 0
 }
 
+/// Rejected: DivRem with `!= 0` instead of `== 1`. 16,630 vs the shipped 15,830.
+///
+/// * `token_id` — any felt252.
+/// Returns the same field the shipped accessor of this name returns.
 #[inline(always)]
 pub fn soulbound_b(token_id: felt252) -> bool {
     let packed: u256 = token_id.into();
@@ -146,6 +200,10 @@ pub fn soulbound_b(token_id: felt252) -> bool {
 }
 
 // ---------------- tx_hash (high 0-9) ----------------
+/// The shape the shipped `unpack_tx_hash` adopted: mask only, no DivRem.
+///
+/// * `token_id` — any felt252.
+/// Returns the same field the shipped accessor of this name returns.
 #[inline(always)]
 pub fn tx_hash_a(token_id: felt252) -> u16 {
     let packed: u256 = token_id.into();
@@ -153,6 +211,10 @@ pub fn tx_hash_a(token_id: felt252) -> u16 {
 }
 
 // ---------------- salt (high 10-25) ----------------
+/// Rejected: two u128 DivRems. 20,080 vs the shipped 19,883.
+///
+/// * `token_id` — any felt252.
+/// Returns the same field the shipped accessor of this name returns.
 #[inline(always)]
 pub fn salt_a(token_id: felt252) -> u16 {
     let packed: u256 = token_id.into();
@@ -161,6 +223,10 @@ pub fn salt_a(token_id: felt252) -> u16 {
     salt.try_into().unwrap()
 }
 
+/// The shape the shipped `unpack_salt` adopted.
+///
+/// * `token_id` — any felt252.
+/// Returns the same field the shipped accessor of this name returns.
 #[inline(always)]
 pub fn salt_b(token_id: felt252) -> u16 {
     let packed: u256 = token_id.into();
@@ -169,6 +235,10 @@ pub fn salt_b(token_id: felt252) -> u16 {
 }
 
 // ---------------- paymaster (high 26) ----------------
+/// Rejected: two u128 DivRems. 18,010 vs the shipped bare mask at 16,333.
+///
+/// * `token_id` — any felt252.
+/// Returns the same field the shipped accessor of this name returns.
 #[inline(always)]
 pub fn paymaster_a(token_id: felt252) -> bool {
     let packed: u256 = token_id.into();
@@ -177,6 +247,10 @@ pub fn paymaster_a(token_id: felt252) -> bool {
     paymaster == 1
 }
 
+/// The shape the shipped `unpack_paymaster` adopted: a bare flag mask, no DivRem.
+///
+/// * `token_id` — any felt252.
+/// Returns the same field the shipped accessor of this name returns.
 #[inline(always)]
 pub fn paymaster_b(token_id: felt252) -> bool {
     let packed: u256 = token_id.into();
@@ -184,6 +258,10 @@ pub fn paymaster_b(token_id: felt252) -> bool {
 }
 
 // ---------------- has_context (high 27) ----------------
+/// Rejected: two u128 DivRems. 18,010 vs the shipped bare mask at 16,333.
+///
+/// * `token_id` — any felt252.
+/// Returns the same field the shipped accessor of this name returns.
 #[inline(always)]
 pub fn has_context_a(token_id: felt252) -> bool {
     let packed: u256 = token_id.into();
@@ -192,6 +270,10 @@ pub fn has_context_a(token_id: felt252) -> bool {
     has_context == 1
 }
 
+/// The shape the shipped `unpack_has_context` adopted.
+///
+/// * `token_id` — any felt252.
+/// Returns the same field the shipped accessor of this name returns.
 #[inline(always)]
 pub fn has_context_b(token_id: felt252) -> bool {
     let packed: u256 = token_id.into();
@@ -199,6 +281,10 @@ pub fn has_context_b(token_id: felt252) -> bool {
 }
 
 // ---------------- objective_id (high 28-57) ----------------
+/// Rejected: two u128 DivRems. 20,080 vs the shipped 19,883.
+///
+/// * `token_id` — any felt252.
+/// Returns the same field the shipped accessor of this name returns.
 #[inline(always)]
 pub fn objective_id_a(token_id: felt252) -> u32 {
     let packed: u256 = token_id.into();
@@ -207,6 +293,10 @@ pub fn objective_id_a(token_id: felt252) -> u32 {
     objective_id.try_into().unwrap()
 }
 
+/// The shape the shipped `unpack_objective_id` adopted.
+///
+/// * `token_id` — any felt252.
+/// Returns the same field the shipped accessor of this name returns.
 #[inline(always)]
 pub fn objective_id_b(token_id: felt252) -> u32 {
     let packed: u256 = token_id.into();
@@ -215,6 +305,10 @@ pub fn objective_id_b(token_id: felt252) -> u32 {
 }
 
 // ---------------- extract_tx_hash_bits ----------------
+/// Rejected: DivRem on the low limb. 17,900 vs the shipped low-limb mask at 17,703.
+///
+/// * `token_id` — any felt252.
+/// Returns the same field the shipped accessor of this name returns.
 #[inline(always)]
 pub fn extract_tx_hash_bits_a(tx_hash: felt252) -> u16 {
     let hash_u256: u256 = tx_hash.into();
@@ -222,6 +316,10 @@ pub fn extract_tx_hash_bits_a(tx_hash: felt252) -> u16 {
     bits.try_into().unwrap()
 }
 
+/// The shape the shipped `extract_tx_hash_bits` adopted.
+///
+/// * `token_id` — any felt252.
+/// Returns the same field the shipped accessor of this name returns.
 #[inline(always)]
 pub fn extract_tx_hash_bits_b(tx_hash: felt252) -> u16 {
     let hash_u256: u256 = tx_hash.into();
@@ -241,6 +339,9 @@ mod nz64 {
 }
 
 /// Arm A: both halves as straight u128 DivRem chains (no narrowing at all).
+/// Measured 71,210 vs the shipped 69,190 — rejected.
+///
+/// * `token_id` — any felt252. Returns all twelve fields.
 #[inline(always)]
 pub fn unpack_token_id_a(token_id: felt252) -> PackedTokenId {
     let packed: u256 = token_id.into();
@@ -273,6 +374,9 @@ pub fn unpack_token_id_a(token_id: felt252) -> PackedTokenId {
 }
 
 /// Arm B: v2.7.0 low half, all-u128 high half.
+/// Measured 69,800 vs the shipped 69,190 — rejected.
+///
+/// * `token_id` — any felt252. Returns all twelve fields.
 #[inline(always)]
 pub fn unpack_token_id_b(token_id: felt252) -> PackedTokenId {
     let packed: u256 = token_id.into();
@@ -307,6 +411,9 @@ pub fn unpack_token_id_b(token_id: felt252) -> PackedTokenId {
 }
 
 /// Arm C: all-u128 low half, v2.7.0 high half.
+/// Measured 70,600 vs the shipped 69,190 — rejected.
+///
+/// * `token_id` — any felt252. Returns all twelve fields.
 #[inline(always)]
 pub fn unpack_token_id_c(token_id: felt252) -> PackedTokenId {
     let packed: u256 = token_id.into();
@@ -340,6 +447,9 @@ pub fn unpack_token_id_c(token_id: felt252) -> PackedTokenId {
 }
 
 /// Arm D: v2.7.0 shape, but the two 1-bit flag DivRems replaced by masks.
+/// Measured 72,546 vs the shipped 69,190 — rejected.
+///
+/// * `token_id` — any felt252. Returns all twelve fields.
 #[inline(always)]
 pub fn unpack_token_id_d(token_id: felt252) -> PackedTokenId {
     let packed: u256 = token_id.into();
