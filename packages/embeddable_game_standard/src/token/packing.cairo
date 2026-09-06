@@ -75,6 +75,12 @@
 //   DivRem beats mask + downcast) and `unpack_soulbound` (a DivRem at bit 127
 //   already produces 0/1 directly, so masking adds a comparison against a
 //   128-bit constant and costs more). Both keep the narrowing form.
+// - `unpack_lifecycle` is the one COMBINED accessor: minted_at, start_delay and
+//   end_delay are the bottom 85 bits, and the guard path (`is_playable`,
+//   `assert_lifecycle_open`) needs all three and nothing else. It narrows —
+//   splitting at bit 60 puts minted_at AND start_delay in one u64 word, so a
+//   single u64 DivRem yields two fields already in the return type — which is
+//   the amortisation the single-field accessors never get.
 
 use game_components_interfaces::structs::token::{Lifecycle, TokenMetadata};
 
@@ -406,6 +412,56 @@ pub fn unpack_metadata(token_id: felt252) -> u128 {
     let packed: u256 = token_id.into();
     let (metadata, _) = DivRem::div_rem(packed.high, nz128::TWO_POW_58);
     metadata
+}
+
+/// Unpacks ONLY the lifecycle window from a token_id.
+///
+/// `is_playable` and the `assert_lifecycle_open` guard need three of the twelve
+/// packed fields — minted_at (bits 0-34), start_delay (35-59) and end_delay
+/// (60-84), the bottom 85 bits of the low half. Going through
+/// `to_token_metadata(unpack_token_id(id))` to reach them decodes all twelve
+/// and builds a `TokenMetadata` that is then thrown away.
+///
+/// The reconstruction is IDENTICAL to `to_token_metadata`'s, sentinel included:
+///
+///     start = minted_at + start_delay
+///     end   = if end_delay > 0 { minted_at + start_delay + end_delay } else { 0 }
+///
+/// `end_delay == 0` means "no expiration" and must keep producing `end == 0`;
+/// `LifecycleTrait::has_expired` reads `end == 0` as never-expires.
+///
+/// This is the one place the u64 narrowing DOES pay, unlike the single-field
+/// accessors: splitting the low half at bit 60 yields a 60-bit word holding
+/// minted_at AND start_delay, so a single u64 DivRem produces two fields
+/// already in the return type. end_delay is then masked out of the u128
+/// remainder rather than costing a second DivRem.
+///
+/// * `token_id` — any felt252; arbitrary bit patterns are valid input.
+///
+/// Returns the same `Lifecycle` that
+/// `to_token_metadata(unpack_token_id(token_id)).lifecycle` returns, for every
+/// input. Cannot overflow: the three fields are bounded by their masks at 35,
+/// 25 and 25 bits, so the sum is always below 2^36.
+#[inline(always)]
+pub fn unpack_lifecycle(token_id: felt252) -> Lifecycle {
+    let packed: u256 = token_id.into();
+    // Bottom word (bits 0-59) fits u64 and holds two fields; one u64 DivRem
+    // separates them.
+    let (rest, low_word) = DivRem::div_rem(packed.low, nz128::TWO_POW_60);
+    let low_word: u64 = low_word.try_into().unwrap();
+    let (start_delay, minted_at) = DivRem::div_rem(low_word, nz64::TWO_POW_35);
+    // end_delay is the bottom 25 bits of what is left above bit 60.
+    let end_delay: u64 = (rest & mask::LOW_25).try_into().unwrap();
+
+    let start = minted_at + start_delay;
+    // end_delay == 0 is the "no expiration" sentinel and must stay end == 0;
+    // LifecycleTrait::has_expired reads end == 0 as never-expires.
+    let end = if end_delay > 0 {
+        start + end_delay
+    } else {
+        0
+    };
+    Lifecycle { start, end }
 }
 
 /// Convert PackedTokenId to the shared TokenMetadata struct.

@@ -149,6 +149,43 @@ fn bench_standard_guard_x10() {
 
 
 // ================================================================================================
+// LIFECYCLE READ PATH — entrypoint rows, not test totals.
+//
+// With `--gas-report` these produce a per-selector row on the StandardGameMock
+// contract, which is the real deployed entrypoint cost of the guard path. Read
+// the `is_playable` / `assert_owner_and_playable` / `token_metadata` rows.
+// One call per test so the row is attributable to that call alone.
+// ================================================================================================
+
+/// Read the StandardGameMock `is_playable` row.
+#[test]
+fn bench_standard_is_playable_x1() {
+    let (token, _, game) = setup_standard();
+    let token_id = mint_standard(token, game, 0);
+    let _ = token.is_playable(token_id);
+}
+
+/// Read the StandardGameMock `assert_owner_and_playable` row (the guard the
+/// embedding game calls on every action).
+#[test]
+fn bench_standard_guard_x1() {
+    let (token, _, game) = setup_standard();
+    let token_id = mint_standard(token, game, 0);
+    let game_mock = IStandardGameMockDispatcher { contract_address: token.contract_address };
+    game_mock.assert_owner_and_playable(token_id, ALICE());
+}
+
+/// Control: `token_metadata` still does the full twelve-field unpack and must
+/// NOT move. Read the StandardGameMock `token_metadata` row.
+#[test]
+fn bench_standard_token_metadata_x1() {
+    let (token, _, game) = setup_standard();
+    let token_id = mint_standard(token, game, 0);
+    let _ = token.token_metadata(token_id);
+}
+
+
+// ================================================================================================
 // POST-ACTION — full: update_game (SRC5 + registry resolve + game_over +
 // score callbacks + minter SRC5 probe) vs standard: refresh_metadata (event only)
 // ================================================================================================

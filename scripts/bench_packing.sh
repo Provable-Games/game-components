@@ -23,8 +23,15 @@
 # Usage:
 #   scripts/bench_packing.sh                    # accessors (default)
 #   scripts/bench_packing.sh primitives         # per-libfunc costs the rewrite trades
+#   scripts/bench_packing.sh lifecycle          # unpack_lifecycle + is_playable body
+#   scripts/bench_packing.sh guard              # StandardGameMock ENTRYPOINT rows
 #   scripts/bench_packing.sh steps              # same accessors under cairo-steps
 #   scripts/bench_packing.sh baseline <commit>  # same harness on an older tree
+#
+# `guard` reads per-selector rows off the deployed StandardGameMock rather than
+# a synthetic probe, so it is the realistic per-action figure. Those tests use
+# only the public dispatcher API, so the mode runs unchanged on a pre-change
+# tree — which is how the guard before/after pair is produced.
 #
 # `baseline` builds a throwaway worktree of <commit>, copies this harness into
 # it (the fixtures and this script; nothing else), and runs the accessor bench
@@ -37,6 +44,12 @@ cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.."
 REPO_ROOT="$PWD"
 
 TESTS_DIR="packages/embeddable_game_standard/src/token/tests"
+# Copied verbatim into a baseline worktree. Every one of these compiles against
+# a pre-change tree: none names a symbol this branch introduced.
+# `bench_lifecycle.cairo` and `lifecycle_arms.cairo` are deliberately NOT here —
+# the first names `packing::unpack_lifecycle`, which by construction does not
+# exist before this change. Their two arms coexist in one crate instead, so they
+# never needed a baseline worktree.
 FIXTURES=(
     "$TESTS_DIR/bench_packing.cairo"
     "$TESTS_DIR/bench_primitives.cairo"
@@ -44,8 +57,12 @@ FIXTURES=(
     "$TESTS_DIR/packing_oracle.cairo"
     "$TESTS_DIR/packing_v270.cairo"
     "$TESTS_DIR/test_packing.cairo"
-    "packages/embeddable_game_standard/src/token/tests.cairo"
+    "$TESTS_DIR/test_gas_bench.cairo"
 )
+# Module declarations the fixtures need. Appended to the baseline tree's own
+# tests.cairo rather than overwriting it, so the baseline keeps whatever else it
+# declares and this list stays independent of what this branch declares.
+FIXTURE_MODS=(bench_packing bench_primitives packing_arms packing_oracle packing_v270 test_packing)
 
 run_bench() {
     local filter="$1" resource="$2"
@@ -57,7 +74,11 @@ run_bench() {
         --color never \
         --max-threads 1 \
         | tee /dev/stderr \
-        | awk '/Contract \|/ { name = $2 } /^\| run / { printf "%-34s %s\n", name, $4 }' \
+        | awk '
+            /Contract \|/           { contract = $2; next }
+            /^\| Function Name/      { next }
+            /^\| [A-Za-z_][A-Za-z0-9_]* +\|/ {
+                                      printf "%-30s %-30s %s\n", contract, $2, $4 }' \
         | sort -u
 }
 
@@ -65,6 +86,8 @@ MODE="${1:-accessors}"
 case "$MODE" in
     accessors)  run_bench gas_acc_  sierra-gas ;;
     primitives) run_bench gas_prim_ sierra-gas ;;
+    lifecycle)  run_bench gas_life_ sierra-gas ;;
+    guard)      run_bench bench_standard_ sierra-gas ;;
     steps)      run_bench gas_acc_  cairo-steps ;;
     baseline)
         COMMIT="${2:-}"
@@ -80,11 +103,21 @@ case "$MODE" in
             mkdir -p "$WORKTREE/$(dirname "$f")"
             cp "$REPO_ROOT/$f" "$WORKTREE/$f"
         done
+        TESTS_MANIFEST="$WORKTREE/packages/embeddable_game_standard/src/token/tests.cairo"
+        for m in "${FIXTURE_MODS[@]}"; do
+            grep -q "^mod ${m};" "$TESTS_MANIFEST" || echo "mod ${m};" >> "$TESTS_MANIFEST"
+        done
         mkdir -p "$WORKTREE/scripts"
         cp "$REPO_ROOT/scripts/bench_packing.sh" "$WORKTREE/scripts/bench_packing.sh"
         echo "baseline worktree: $WORKTREE (at $COMMIT)" >&2
         echo "clean up with: git worktree remove --force $WORKTREE" >&2
-        exec bash "$WORKTREE/scripts/bench_packing.sh" accessors
+        bash "$WORKTREE/scripts/bench_packing.sh" accessors
+        echo >&2
+        echo "=== baseline guard entrypoint rows ===" >&2
+        exec bash "$WORKTREE/scripts/bench_packing.sh" guard
         ;;
-    *) echo "usage: $0 [accessors|primitives|steps|baseline <commit>]" >&2; exit 2 ;;
+    *)
+        echo "usage: $0 [accessors|primitives|lifecycle|guard|steps|baseline <commit>]" >&2
+        exit 2
+        ;;
 esac
