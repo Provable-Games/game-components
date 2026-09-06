@@ -21,38 +21,70 @@
 # Toolchain is pinned in .tool-versions (scarb 2.16.1, starknet-foundry 0.58.1).
 #
 # Usage:
-#   scripts/bench_packing.sh              # accessors (default)
-#   scripts/bench_packing.sh primitives   # per-libfunc costs the rewrite trades
-#   scripts/bench_packing.sh steps        # same accessors under cairo-steps
+#   scripts/bench_packing.sh                    # accessors (default)
+#   scripts/bench_packing.sh primitives         # per-libfunc costs the rewrite trades
+#   scripts/bench_packing.sh steps              # same accessors under cairo-steps
+#   scripts/bench_packing.sh baseline <commit>  # same harness on an older tree
 #
-# To measure a baseline, run the identical harness in a worktree of the
-# baseline commit:
-#   git worktree add /tmp/gc-baseline <commit>
-#   cp packages/embeddable_game_standard/src/token/tests/{bench_packing,\
-# bench_primitives,packing_arms,packing_v270,packing_oracle,test_packing}.cairo \
-#      packages/embeddable_game_standard/src/token/tests.cairo \
-#      /tmp/gc-baseline/packages/embeddable_game_standard/src/token/...
-#   cd /tmp/gc-baseline && scripts/bench_packing.sh
-# In such a worktree the `*New` and `*V270` rows must match exactly; that is
-# what proves the frozen arm is a faithful copy of the baseline.
+# `baseline` builds a throwaway worktree of <commit>, copies this harness into
+# it (the fixtures and this script; nothing else), and runs the accessor bench
+# there. In such a worktree `token::packing` is the OLD codec, so every
+# `Pb*New` row must equal its `Pb*V270` row — that equality is what proves the
+# frozen arm is a faithful copy of the baseline, and the `*V270` values are the
+# "before" column.
 set -euo pipefail
 cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.."
+REPO_ROOT="$PWD"
+
+TESTS_DIR="packages/embeddable_game_standard/src/token/tests"
+FIXTURES=(
+    "$TESTS_DIR/bench_packing.cairo"
+    "$TESTS_DIR/bench_primitives.cairo"
+    "$TESTS_DIR/packing_arms.cairo"
+    "$TESTS_DIR/packing_oracle.cairo"
+    "$TESTS_DIR/packing_v270.cairo"
+    "$TESTS_DIR/test_packing.cairo"
+    "packages/embeddable_game_standard/src/token/tests.cairo"
+)
+
+run_bench() {
+    local filter="$1" resource="$2"
+    SCARB_UI_VERBOSITY=no-warnings snforge test "$filter" \
+        --package game_components_embeddable_game_standard \
+        --gas-report \
+        --tracked-resource "$resource" \
+        --detailed-resources \
+        --color never \
+        --max-threads 1 \
+        | tee /dev/stderr \
+        | awk '/Contract \|/ { name = $2 } /^\| run / { printf "%-34s %s\n", name, $4 }' \
+        | sort -u
+}
 
 MODE="${1:-accessors}"
 case "$MODE" in
-    accessors)  FILTER=gas_acc_  RESOURCE=sierra-gas ;;
-    primitives) FILTER=gas_prim_ RESOURCE=sierra-gas ;;
-    steps)      FILTER=gas_acc_  RESOURCE=cairo-steps ;;
-    *) echo "usage: $0 [accessors|primitives|steps]" >&2; exit 2 ;;
+    accessors)  run_bench gas_acc_  sierra-gas ;;
+    primitives) run_bench gas_prim_ sierra-gas ;;
+    steps)      run_bench gas_acc_  cairo-steps ;;
+    baseline)
+        COMMIT="${2:-}"
+        [ -n "$COMMIT" ] || { echo "usage: $0 baseline <commit> [worktree-dir]" >&2; exit 2; }
+        WORKTREE="${3:-${TMPDIR:-/tmp}/gc-bench-baseline}"
+        if [ -e "$WORKTREE" ]; then
+            echo "error: $WORKTREE already exists; remove it or pass another path" >&2
+            echo "       (git worktree remove --force '$WORKTREE')" >&2
+            exit 2
+        fi
+        git worktree add --detach "$WORKTREE" "$COMMIT"
+        for f in "${FIXTURES[@]}"; do
+            mkdir -p "$WORKTREE/$(dirname "$f")"
+            cp "$REPO_ROOT/$f" "$WORKTREE/$f"
+        done
+        mkdir -p "$WORKTREE/scripts"
+        cp "$REPO_ROOT/scripts/bench_packing.sh" "$WORKTREE/scripts/bench_packing.sh"
+        echo "baseline worktree: $WORKTREE (at $COMMIT)" >&2
+        echo "clean up with: git worktree remove --force $WORKTREE" >&2
+        exec bash "$WORKTREE/scripts/bench_packing.sh" accessors
+        ;;
+    *) echo "usage: $0 [accessors|primitives|steps|baseline <commit>]" >&2; exit 2 ;;
 esac
-
-SCARB_UI_VERBOSITY=no-warnings snforge test "$FILTER" \
-    --package game_components_embeddable_game_standard \
-    --gas-report \
-    --tracked-resource "$RESOURCE" \
-    --detailed-resources \
-    --color never \
-    --max-threads 1 \
-    | tee /dev/stderr \
-    | awk '/Contract \|/ { name = $2 } /^\| run / { printf "%-34s %s\n", name, $4 }' \
-    | sort -u
