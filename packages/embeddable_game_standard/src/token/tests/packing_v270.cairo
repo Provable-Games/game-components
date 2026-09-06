@@ -1,80 +1,12 @@
-// ==============================================================================
-// PACKED TOKEN ID - Embeds immutable data directly in the token_id (felt252)
-// ==============================================================================
+// FROZEN BASELINE ARM — verbatim copy of packages/embeddable_game_standard/
+// src/token/packing.cairo as of v2.7.0 (56e5003), kept test-only so the
+// per-accessor gas benchmark can compile both arms into ONE crate and measure
+// them in ONE snforge run (same compiler, same profile, same invocation).
 //
-// Standard u128-aligned bit layout (251 bits, no field straddles the u128
-// boundary). This layout is OWNED by the standard token and is deliberately NOT the
-// legacy token's `token_legacy::structs::pack_token_id` layout — the legacy layout serves
-// legacy denshokan and keeps its bit positions untouched; the standard token drops
-// the fields it never writes and widens the ones it uses beyond the
-// legacy token's widths (settings_id 16, salt 16, metadata 65).
-// Indexers must branch their decoder by contract generation.
-//
-// Low u128 (128 bits):
-// | Bits      | Field            | Size     | Max Value                      |
-// |-----------|------------------|----------|--------------------------------|
-// | 0-34      | minted_at        | 35 bits  | Unix timestamp (~1000 years)   |
-// | 35-59     | start_delay      | 25 bits  | 33,554,431 seconds (~388 days) |
-// | 60-84     | end_delay        | 25 bits  | 33,554,431 seconds (~388 days) |
-// | 85-100    | settings_id      | 16 bits  | 65,535 settings                |
-// | 101-126   | minted_by        | 26 bits  | 67,108,863 minters             |
-// | 127       | soulbound        | 1 bit    | bool                           |
-//
-// High u128 (123 bits):
-// | Bits      | Field            | Size     | Max Value                      |
-// |-----------|------------------|----------|--------------------------------|
-// | 0-9       | tx_hash          | 10 bits  | last 10 bits of tx hash        |
-// | 10-25     | salt             | 16 bits  | 65,536 tokens per tx (multicall)|
-// | 26        | paymaster        | 1 bit    | bool                           |
-// | 27        | has_context      | 1 bit    | bool                           |
-// | 28-57     | objective_id     | 30 bits  | 1,073,741,823 objectives       |
-// | 58-122    | metadata         | 65 bits  | game-interpreted inert data    |
-// Total: 128 + 123 = 251 bits (max for felt252)
-//
-// Max value: (2^123 - 1) * 2^128 + (2^128 - 1) = 2^251 - 1 < P (Stark prime)
-//
-// The high half is fully allocated — there is no reserved region: every spare
-// bit was merged into the single writable `metadata` field, in line with the
-// original layout's single-field design. A future protocol-owned field would
-// require a new contract generation (accepted trade-off).
-//
-// COLLISION PROTECTION:
-// - tx_hash: Last 10 bits of starknet transaction hash. Since tx_hash includes
-//   the sender's nonce (unique per tx), different transactions have different
-//   hashes. This protects against same-block collisions.
-// - salt: Client-provided value for multicall scenarios. Client must increment
-//   salt for each mint within the same transaction to avoid collisions.
-//
-// CODEC (shared with SDM next-death-mountain's model packing — same method):
-// - PACK is pure felt252 arithmetic: a valid token id occupies at most 251
-//   bits, so every term and partial sum is below the Stark prime and native
-//   felt add/mul is exact — no u128 multiplications, no u256 assembly.
-// - FULL UNPACK splits each u128 half ONCE at a field-aligned boundary so that
-//   the resulting words fit u64, then extracts every field with cheap u64
-//   DivRem:
-//   * low splits at bit 60 (start_delay|end_delay boundary): the bottom word
-//     (minted_at + start_delay) fits u64; one more u128 DivRem at end_delay
-//     brings the 43-bit top (settings_id + minted_by + soulbound) into u64.
-//   * high splits at bit 58: metadata (65 bits) is the quotient and stays
-//     u128 (it is returned as u128 anyway); the 58-bit remainder word
-//     (tx_hash + salt + paymaster + has_context + objective_id) fits u64.
-//   Full unpack: 3 u128 + 6 u64 DivRems. Every DivRem there yields two used
-//   values, so the chain has no waste and the narrowing amortises across it.
-// - SINGLE-FIELD ACCESSORS do NOT narrow. Measured on scarb 2.16.1 /
-//   snforge 0.58.1 (see token/tests/bench_packing.cairo), the marginal cost of
-//   a u128 -> u64 checked downcast (1,470) plus a u64 DivRem (1,710) exceeds a
-//   u128 DivRem (2,180), so narrowing only pays once ~3.6 u64 DivRems follow
-//   it. An accessor that extracts one field performs one or two, so it stays
-//   in u128 and pays the wider op instead of the downcast.
-//   Within u128, `x & MASK` (1,083) is cheaper than DivRem (2,180) and yields
-//   the same low bits, so an accessor shifts its field down with ONE DivRem
-//   and then trims the field width with a mask, rather than spending a second
-//   DivRem whose quotient is discarded. A flag is a bare mask and no DivRem.
-//   Two accessors are excluded by measurement, not by principle:
-//   `unpack_minted_by` (its u64 return makes the narrowing free, so the u64
-//   DivRem beats mask + downcast) and `unpack_soulbound` (a DivRem at bit 127
-//   already produces 0/1 directly, so masking adds a comparison against a
-//   128-bit constant and costs more). Both keep the narrowing form.
+// Do not edit. It exists to disagree with the optimized implementation:
+// `test_packing_equivalence` differential-tests every shipped accessor against
+// the function of the same name here, which is what proves the bit format did
+// not move.
 
 use game_components_interfaces::structs::token::{Lifecycle, TokenMetadata};
 
@@ -84,10 +16,7 @@ use game_components_interfaces::structs::token::{Lifecycle, TokenMetadata};
 #[inline(always)]
 pub fn extract_tx_hash_bits(tx_hash: felt252) -> u16 {
     let hash_u256: u256 = tx_hash.into();
-    // 0x3FF < 2^128, so the mask only ever touches the low limb: masking
-    // `hash_u256.low` is bit-identical to masking the whole u256 and skips the
-    // second limb's AND and the u256 -> u16 two-limb check.
-    (hash_u256.low & mask::LOW_10).try_into().unwrap()
+    (hash_u256 & 0x3FF_u256).try_into().unwrap()
 }
 
 /// Data structure representing the packed token ID fields (for convenience).
@@ -107,12 +36,11 @@ pub struct PackedTokenId {
     pub metadata: u128 // 65 bits - inert data the game interprets
 }
 
-/// NonZero<u128> constants — the per-half word splits of the full unpack, and
-/// the single DivRem each accessor uses to shift its field down to bit 0.
+/// NonZero<u128> constants — used only for the per-half word splits and the
+/// helpers that shift a field to the bottom of a u128 in one DivRem.
 mod nz128 {
     pub const TWO_POW_10: NonZero<u128> = 0x400;
     pub const TWO_POW_25: NonZero<u128> = 0x2000000;
-    pub const TWO_POW_28: NonZero<u128> = 0x10000000;
     pub const TWO_POW_35: NonZero<u128> = 0x800000000;
     pub const TWO_POW_58: NonZero<u128> = 0x400000000000000;
     pub const TWO_POW_60: NonZero<u128> = 0x1000000000000000;
@@ -121,33 +49,16 @@ mod nz128 {
     pub const TWO_POW_127: NonZero<u128> = 0x80000000000000000000000000000000;
 }
 
-/// NonZero<u64> constants — the full unpack narrows once per half and then
-/// runs its remaining extractions on u64 operands, where the narrowing has
-/// enough following DivRems to amortise (see the CODEC note above).
+/// NonZero<u64> constants — every field extraction after the word splits runs
+/// on u64 operands (u64 DivRem is markedly cheaper than u128 DivRem).
 mod nz64 {
     pub const TWO_POW_1: NonZero<u64> = 0x2;
     pub const TWO_POW_10: NonZero<u64> = 0x400;
     pub const TWO_POW_16: NonZero<u64> = 0x10000;
     pub const TWO_POW_26: NonZero<u64> = 0x4000000;
+    pub const TWO_POW_27: NonZero<u64> = 0x8000000;
+    pub const TWO_POW_28: NonZero<u64> = 0x10000000;
     pub const TWO_POW_35: NonZero<u64> = 0x800000000;
-}
-
-/// Field-width masks, applied AFTER a field has been shifted to bit 0, to trim
-/// the bits above it. `x & MASK` costs less than the DivRem whose quotient
-/// would otherwise be discarded. `BIT_*` are single-bit flag masks used in
-/// place of any DivRem at all.
-///
-/// Each mask is `2^width - 1` for the field it names, so it is derived from the
-/// same layout table as the shifts above and cannot drift from it silently:
-/// `test_masks_match_layout` asserts every mask against its declared width.
-mod mask {
-    pub const LOW_10: u128 = 0x3FF; // tx_hash
-    pub const LOW_16: u128 = 0xFFFF; // settings_id, salt
-    pub const LOW_25: u128 = 0x1FFFFFF; // start_delay, end_delay
-    pub const LOW_30: u128 = 0x3FFFFFFF; // objective_id
-    pub const LOW_35: u128 = 0x7FFFFFFFF; // minted_at
-    pub const BIT_26: u128 = 0x4000000; // paymaster
-    pub const BIT_27: u128 = 0x8000000; // has_context
 }
 
 /// felt252 shift constants for the pure-felt pack. Low-half fields shift by
@@ -293,43 +204,44 @@ pub fn unpack_token_id(token_id: felt252) -> PackedTokenId {
 #[inline(always)]
 pub fn unpack_minted_at(token_id: felt252) -> u64 {
     let packed: u256 = token_id.into();
-    // Already at bit 0 — trim to 35 bits with a mask, no shift needed.
-    (packed.low & mask::LOW_35).try_into().unwrap()
+    let (_, minted_at) = DivRem::div_rem(packed.low, nz128::TWO_POW_35);
+    minted_at.try_into().unwrap()
 }
 
 /// Helper to unpack just start_delay from a token_id
 #[inline(always)]
 pub fn unpack_start_delay(token_id: felt252) -> u32 {
     let packed: u256 = token_id.into();
-    // Shift bits 35+ down, then trim to start_delay's 25 bits.
-    let (rest, _) = DivRem::div_rem(packed.low, nz128::TWO_POW_35);
-    (rest & mask::LOW_25).try_into().unwrap()
+    // Bottom word (60 bits) fits u64; start_delay is its quotient at bit 35.
+    let (_, low_word) = DivRem::div_rem(packed.low, nz128::TWO_POW_60);
+    let low_word: u64 = low_word.try_into().unwrap();
+    let (start_delay, _) = DivRem::div_rem(low_word, nz64::TWO_POW_35);
+    start_delay.try_into().unwrap()
 }
 
 /// Helper to unpack just end_delay from a token_id
 #[inline(always)]
 pub fn unpack_end_delay(token_id: felt252) -> u32 {
     let packed: u256 = token_id.into();
-    // end_delay sits at bits 60-84: shift to bottom, then trim to 25 bits.
+    // end_delay sits at bits 60-84: shift to bottom, then take 25 bits.
     let (rest, _) = DivRem::div_rem(packed.low, nz128::TWO_POW_60);
-    (rest & mask::LOW_25).try_into().unwrap()
+    let (_, end_delay) = DivRem::div_rem(rest, nz128::TWO_POW_25);
+    end_delay.try_into().unwrap()
 }
 
 /// Helper to unpack just settings_id from a token_id
 #[inline(always)]
 pub fn unpack_settings_id(token_id: felt252) -> u32 {
     let packed: u256 = token_id.into();
-    // Shift bits 85+ down; settings_id is the bottom 16 bits of that.
+    // Everything above bit 85 is 43 bits — fits u64; settings_id is its
+    // bottom 16 bits.
     let (top, _) = DivRem::div_rem(packed.low, nz128::TWO_POW_85);
-    (top & mask::LOW_16).try_into().unwrap()
+    let top: u64 = top.try_into().unwrap();
+    let (_, settings_id) = DivRem::div_rem(top, nz64::TWO_POW_16);
+    settings_id.try_into().unwrap()
 }
 
 /// Helper to unpack just minted_by from a token_id
-///
-/// Keeps the narrowing form deliberately: minted_by is returned as u64, so the
-/// u128 -> u64 downcast has to happen either way and doing it BEFORE the
-/// extraction makes that extraction a u64 op. Measured, this beats both the
-/// all-u128 DivRem form and the mask form (18,130 vs 19,883 / 20,080).
 #[inline(always)]
 pub fn unpack_minted_by(token_id: felt252) -> u64 {
     let packed: u256 = token_id.into();
@@ -342,10 +254,6 @@ pub fn unpack_minted_by(token_id: felt252) -> u64 {
 }
 
 /// Helper to unpack the soulbound flag from a token_id
-///
-/// The one flag that is NOT a mask: at bit 127 the DivRem quotient is already
-/// 0 or 1, whereas `low & 2^127` has to be compared against a 128-bit
-/// constant. Measured, the DivRem wins (15,830 vs 16,333).
 #[inline(always)]
 pub fn unpack_soulbound(token_id: felt252) -> bool {
     let packed: u256 = token_id.into();
@@ -358,25 +266,31 @@ pub fn unpack_soulbound(token_id: felt252) -> bool {
 #[inline(always)]
 pub fn unpack_tx_hash(token_id: felt252) -> u16 {
     let packed: u256 = token_id.into();
-    // Already at bit 0 of the high half — trim to 10 bits with a mask.
-    (packed.high & mask::LOW_10).try_into().unwrap()
+    let (_, tx_hash) = DivRem::div_rem(packed.high, nz128::TWO_POW_10);
+    tx_hash.try_into().unwrap()
 }
 
 /// Helper to unpack salt from a token_id (client-provided collision protection)
 #[inline(always)]
 pub fn unpack_salt(token_id: felt252) -> u16 {
     let packed: u256 = token_id.into();
-    // Shift tx_hash's 10 bits off, then trim to salt's 16 bits.
-    let (rest, _) = DivRem::div_rem(packed.high, nz128::TWO_POW_10);
-    (rest & mask::LOW_16).try_into().unwrap()
+    // The 58-bit high word fits u64; salt sits above tx_hash's 10 bits.
+    let (_, high_word) = DivRem::div_rem(packed.high, nz128::TWO_POW_58);
+    let high_word: u64 = high_word.try_into().unwrap();
+    let (rest, _) = DivRem::div_rem(high_word, nz64::TWO_POW_10);
+    let (_, salt) = DivRem::div_rem(rest, nz64::TWO_POW_16);
+    salt.try_into().unwrap()
 }
 
 /// Helper to unpack the paymaster flag from a token_id
 #[inline(always)]
 pub fn unpack_paymaster(token_id: felt252) -> bool {
     let packed: u256 = token_id.into();
-    // Single bit — test it in place, no shift and no DivRem.
-    (packed.high & mask::BIT_26) != 0
+    let (_, high_word) = DivRem::div_rem(packed.high, nz128::TWO_POW_58);
+    let high_word: u64 = high_word.try_into().unwrap();
+    let (rest, _) = DivRem::div_rem(high_word, nz64::TWO_POW_26);
+    let (_, paymaster_u64) = DivRem::div_rem(rest, nz64::TWO_POW_1);
+    paymaster_u64 == 1
 }
 
 /// Helper to unpack the has_context flag from a token_id. The context
@@ -385,8 +299,11 @@ pub fn unpack_paymaster(token_id: felt252) -> bool {
 #[inline(always)]
 pub fn unpack_has_context(token_id: felt252) -> bool {
     let packed: u256 = token_id.into();
-    // Single bit — test it in place, no shift and no DivRem.
-    (packed.high & mask::BIT_27) != 0
+    let (_, high_word) = DivRem::div_rem(packed.high, nz128::TWO_POW_58);
+    let high_word: u64 = high_word.try_into().unwrap();
+    let (rest, _) = DivRem::div_rem(high_word, nz64::TWO_POW_27);
+    let (_, has_context_u64) = DivRem::div_rem(rest, nz64::TWO_POW_1);
+    has_context_u64 == 1
 }
 
 /// Helper to unpack objective_id from a token_id (inert data the game
@@ -394,9 +311,11 @@ pub fn unpack_has_context(token_id: felt252) -> bool {
 #[inline(always)]
 pub fn unpack_objective_id(token_id: felt252) -> u32 {
     let packed: u256 = token_id.into();
-    // Shift bits 28+ down, then trim to objective_id's 30 bits.
-    let (rest, _) = DivRem::div_rem(packed.high, nz128::TWO_POW_28);
-    (rest & mask::LOW_30).try_into().unwrap()
+    // objective_id is the top field of the 58-bit high word — a quotient.
+    let (_, high_word) = DivRem::div_rem(packed.high, nz128::TWO_POW_58);
+    let high_word: u64 = high_word.try_into().unwrap();
+    let (objective_id, _) = DivRem::div_rem(high_word, nz64::TWO_POW_28);
+    objective_id.try_into().unwrap()
 }
 
 /// Helper to unpack the 65-bit metadata field from a token_id (inert
@@ -441,38 +360,5 @@ pub fn to_token_metadata(packed: PackedTokenId) -> TokenMetadata {
         objective_id: packed.objective_id,
         paymaster: packed.paymaster,
         metadata: packed.metadata,
-    }
-}
-
-#[cfg(test)]
-mod layout_invariants {
-    use super::mask;
-
-    /// 2^n built by repeated multiplication, so the expected value is derived
-    /// here rather than copied from the constant it is checking.
-    fn two_pow(n: u32) -> u128 {
-        let mut result: u128 = 1;
-        let mut i: u32 = 0;
-        while i < n {
-            result = result * 2;
-            i += 1;
-        }
-        result
-    }
-
-    /// Every mask must be exactly `2^width - 1` for the field it trims (and
-    /// every flag mask exactly `2^bit`), matching the layout table at the top
-    /// of this file. A mask one bit too wide reads a neighbour's low bit; one
-    /// bit too narrow silently truncates. Neither shows up in a full-vector
-    /// round-trip, so pin them directly.
-    #[test]
-    fn test_masks_match_layout() {
-        assert!(mask::LOW_10 == two_pow(10) - 1, "tx_hash mask is not 10 bits");
-        assert!(mask::LOW_16 == two_pow(16) - 1, "settings_id/salt mask is not 16 bits");
-        assert!(mask::LOW_25 == two_pow(25) - 1, "start_delay/end_delay mask is not 25 bits");
-        assert!(mask::LOW_30 == two_pow(30) - 1, "objective_id mask is not 30 bits");
-        assert!(mask::LOW_35 == two_pow(35) - 1, "minted_at mask is not 35 bits");
-        assert!(mask::BIT_26 == two_pow(26), "paymaster flag is not bit 26");
-        assert!(mask::BIT_27 == two_pow(27), "has_context flag is not bit 27");
     }
 }

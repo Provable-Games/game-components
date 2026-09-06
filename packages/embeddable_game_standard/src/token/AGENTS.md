@@ -32,6 +32,15 @@ Defined in `packing.cairo` (`pack_token_id` / `unpack_token_id` +
 per-field helpers, DivRem-chain style shared with `token_legacy::structs` for
 the u128_safe_divmod gas savings). No field crosses the u128 boundary.
 
+**Codec shape.** `unpack_token_id` narrows each half to u64 once and runs its
+remaining extractions there — it has enough following DivRems to amortise the
+downcast. The single-field helpers do NOT narrow: one downcast plus one u64
+DivRem costs more than the u128 DivRem it replaces, so each helper shifts its
+field down with one u128 DivRem and trims the width with a mask (a flag is a
+bare mask). `unpack_minted_by` and `unpack_soulbound` are the measured
+exceptions and keep the narrowing form. `scripts/bench_packing.sh` re-derives
+the whole table; both arms live in the crate so the numbers stay reproducible.
+
 Low u128 (128 bits):
 
 | Bits    | Field       | Size | Notes                                   |
