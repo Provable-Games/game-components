@@ -22,10 +22,7 @@
 
 use game_components_interfaces::structs::token::Lifecycle;
 use snforge_std::{ContractClassTrait, DeclareResultTrait, declare, start_cheat_block_timestamp};
-use starknet::get_block_timestamp;
-use crate::token::lifecycle::LifecycleTrait;
-use crate::token::packing;
-use super::{lifecycle_arms, packing_v270};
+use super::packing_v270;
 
 #[starknet::interface]
 pub trait IProbeLifecycle<T> {
