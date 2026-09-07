@@ -72,8 +72,9 @@ pub mod MinigameTokenComponent {
     use starknet::{ContractAddress, get_block_timestamp, get_caller_address, get_tx_info};
     use crate::token::lifecycle::{LifecycleTrait, create_lifecycle_with_defaults};
     use crate::token::packing::{
-        extract_tx_hash_bits, pack_token_id, to_token_metadata, unpack_metadata, unpack_minted_by,
-        unpack_objective_id, unpack_settings_id, unpack_soulbound, unpack_token_id,
+        extract_tx_hash_bits, pack_token_id, to_token_metadata, unpack_lifecycle, unpack_metadata,
+        unpack_minted_by, unpack_objective_id, unpack_settings_id, unpack_soulbound,
+        unpack_token_id,
     };
 
     #[storage]
@@ -156,8 +157,12 @@ pub mod MinigameTokenComponent {
         }
 
         fn is_playable(self: @ComponentState<TContractState>, token_id: felt252) -> bool {
-            let metadata = self.token_metadata(token_id);
-            metadata.lifecycle.is_playable(get_block_timestamp())
+            // Three of the twelve packed fields decide this, so it reads the
+            // lifecycle window directly rather than through
+            // `token_metadata()`'s full unpack + TokenMetadata build.
+            // `unpack_lifecycle` reproduces that reconstruction exactly,
+            // `end_delay == 0` sentinel included.
+            unpack_lifecycle(token_id).is_playable(get_block_timestamp())
         }
 
         fn settings_id(self: @ComponentState<TContractState>, token_id: felt252) -> u32 {
@@ -783,9 +788,10 @@ pub mod MinigameTokenComponent {
         /// game_over / completed_objective state to consult. Games gate dead
         /// runs themselves; they are the source of truth.
         fn assert_lifecycle_open(self: @ComponentState<TContractState>, token_id: felt252) {
-            let metadata = to_token_metadata(unpack_token_id(token_id));
+            // Same three-field read as `is_playable`; the other nine fields
+            // and the TokenMetadata build were never used here.
+            let lifecycle = unpack_lifecycle(token_id);
             let current_time = get_block_timestamp();
-            let lifecycle = metadata.lifecycle;
             assert!(
                 lifecycle.can_start(current_time),
                 "MinigameToken: Token is not playable - game has not started (now={}, start={})",

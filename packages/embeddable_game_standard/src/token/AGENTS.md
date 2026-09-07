@@ -32,6 +32,24 @@ Defined in `packing.cairo` (`pack_token_id` / `unpack_token_id` +
 per-field helpers, DivRem-chain style shared with `token_legacy::structs` for
 the u128_safe_divmod gas savings). No field crosses the u128 boundary.
 
+**Codec shape.** `unpack_token_id` narrows each half to u64 once and runs its
+remaining extractions there — it has enough following DivRems to amortise the
+downcast. The single-field helpers do NOT narrow: one downcast plus one u64
+DivRem costs more than the u128 DivRem it replaces, so each helper shifts its
+field down with one u128 DivRem and trims the width with a mask (a flag is a
+bare mask). `unpack_minted_by` and `unpack_soulbound` are the measured
+exceptions and keep the narrowing form. `scripts/bench_packing.sh` re-derives
+the whole table; both arms live in the crate so the numbers stay reproducible.
+
+**Guard path.** `is_playable` and `assert_lifecycle_open` read the window via
+`packing::unpack_lifecycle`, a combined accessor for the three lifecycle fields
+(the bottom 85 bits), NOT via `token_metadata()`. It reproduces
+`to_token_metadata`'s reconstruction exactly, `end_delay == 0` sentinel
+included, and is the one accessor where narrowing pays: splitting at bit 60
+puts minted_at and start_delay in one u64 word. `token_metadata()` still does
+the full twelve-field unpack — it needs all of them. It is internal only; the
+external surface is unchanged.
+
 Low u128 (128 bits):
 
 | Bits    | Field       | Size | Notes                                   |
