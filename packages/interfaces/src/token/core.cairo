@@ -22,8 +22,10 @@
 //   self == self; consumers probe `IMINIGAME_TOKEN_ID` via SRC5 instead
 //   of resolving addresses.
 // * `assert_is_playable` / `assert_owner_and_playable` — gone from the ABI:
-//   the embedding game's own guards, internal calls now
-//   (`MinigameTokenComponent::InternalTrait`); clients use `is_playable`.
+//   the embedding game's own guards. What survives is the single internal
+//   `MinigameTokenComponent::InternalTrait::assert_lifecycle_open`; the
+//   ownership half is a plain `owner_of` comparison the game writes at its
+//   own call site. Clients read `is_lifecycle_open`.
 // * `refresh_metadata_batch` — gone: a multicall of singles.
 // * The legacy token's `game_address`, `renderer_address` and `skills_address`
 //   mint parameters are gone (self-bound; no per-token renderer/skills).
@@ -41,8 +43,10 @@
 //   65-bit packed field; read via `mint_metadata(token_id)`.
 //
 // Semantics that differ from the legacy token:
-// * `is_playable` checks the lifecycle window only. There is no token-side
-//   `game_over`/`completed_objective` latch — ask the game.
+// * `is_lifecycle_open` checks the lifecycle window only — it is NOT a
+//   "can this token be played" answer. There is no token-side
+//   `game_over`/`completed_objective` latch, and the view knows nothing
+//   about ownership or objective completion — ask the game.
 // * `token_metadata` reports `game_over`/`completed_objective`/`completed_at`
 //   as `false`/`0` unconditionally, for the same reason, and its u16
 //   `metadata` field as 0 (the 65-bit packed value cannot fit — use
@@ -60,7 +64,7 @@ use crate::structs::token::{MintBatchRecipient, TokenMetadata};
 /// against a stripped copy of this trait (see packages/interfaces/src/AGENTS.md)
 /// to rederive:
 /// token_metadata: 0x2b0dd558353cb20e7f4ab7c3f1d2bc5ba7dbc4814f2f019e5910cd952338601
-/// is_playable: 0x2fbc9e87d82f279727e61c9ebc25269905fd28fb8137aeead5f417ac4cc66de
+/// is_lifecycle_open: 0x1da17b2b388744fb4dc987bca72f0639cf90a3bf07598e095b6fc4e07eca2bc
 /// settings_id: 0x2c1ab8f675f7da818ca288b9feb48811492444b5e6d822b3d1fe07728d1b714
 /// player_name: 0x2cf33209d5df54b50609fc29863a6b916471ac903c3d15acbe89210cac085aa
 /// minted_by: 0x1017c8450696b88787feabb9b5f2584574556b2091690953c038e051d5801bb
@@ -73,13 +77,17 @@ use crate::structs::token::{MintBatchRecipient, TokenMetadata};
 /// mint_batch_recipients: 0x144515c9b8cf0aa7bfe3e5c932f6d346730b53fa1515dd46a808bf5e055cbfe
 /// update_player_name: 0x1f68f6ce969c632201a916c0ec4432e7edf5340a2b7a71172b820d22c2e9481
 pub const IMINIGAME_TOKEN_ID: felt252 =
-    0x20253de95bcdb23620c88405a5f97da040b91de832ad98a34b45c4f3331d13b;
+    0x1238d845bb65d15a4ae71f27bef35d008ad496acb4c3b840c5de17bf0111559;
 
 #[starknet::interface]
 pub trait IMinigameToken<TState> {
     fn token_metadata(self: @TState, token_id: felt252) -> TokenMetadata;
-    /// Lifecycle window only — no game_over latch; ask the game.
-    fn is_playable(self: @TState, token_id: felt252) -> bool;
+    /// Is the mint-time lifecycle window open right now? `now >= start`, and
+    /// `now < end` when an end was set. That is the WHOLE claim: it says
+    /// nothing about ownership, game over, or objective completion — the game
+    /// contract is the authority on those. Named for what it checks; the old
+    /// name (`is_playable`) promised an answer this view cannot give.
+    fn is_lifecycle_open(self: @TState, token_id: felt252) -> bool;
     fn settings_id(self: @TState, token_id: felt252) -> u32;
     fn player_name(self: @TState, token_id: felt252) -> felt252;
     fn minted_by(self: @TState, token_id: felt252) -> felt252;
@@ -161,7 +169,7 @@ pub trait IMinigameToken<TState> {
 pub trait MinigameTokenABI<TState> {
     // IMinigameToken
     fn token_metadata(self: @TState, token_id: felt252) -> TokenMetadata;
-    fn is_playable(self: @TState, token_id: felt252) -> bool;
+    fn is_lifecycle_open(self: @TState, token_id: felt252) -> bool;
     fn settings_id(self: @TState, token_id: felt252) -> u32;
     fn player_name(self: @TState, token_id: felt252) -> felt252;
     fn minted_by(self: @TState, token_id: felt252) -> felt252;

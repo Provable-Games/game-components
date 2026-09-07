@@ -76,9 +76,9 @@ fn deploy_token() -> (
 }
 
 /// The embedding game's view of the same contract — used to exercise the
-/// component's internal pre-action guard (`assert_owner_and_playable` moved
-/// off the external ABI; the mock re-exposes it the way a real game consumes
-/// it inside its entrypoints).
+/// per-action guard the way a real game writes it: the component's internal
+/// `assert_lifecycle_open` plus an ERC721 `owner_of` comparison, which the
+/// mock re-exposes both separately and composed (`assert_pre_action`).
 fn game_of(token: IMinigameTokenDispatcher) -> IStandardGameMockDispatcher {
     IStandardGameMockDispatcher { contract_address: token.contract_address }
 }
@@ -298,7 +298,7 @@ fn test_mint_rejects_start_after_end() {
 }
 
 // ================================================================================================
-// PLAYABILITY — LIFECYCLE WINDOW ONLY
+// LIFECYCLE WINDOW — what `is_lifecycle_open` does and does not claim
 // ================================================================================================
 
 #[test]
@@ -318,47 +318,55 @@ fn test_playability_follows_lifecycle_window() {
         0,
     );
 
-    assert!(!token.is_playable(token_id), "Not playable before window opens");
+    assert!(!token.is_lifecycle_open(token_id), "Window not open before start");
 
     start_cheat_block_timestamp(token.contract_address, 2000);
-    assert!(token.is_playable(token_id), "Playable at window start");
-    // The embedding game's internal pre-action guard agrees with the view
-    game.assert_owner_and_playable(token_id, ALICE());
+    assert!(token.is_lifecycle_open(token_id), "Window open at start");
+    // The embedding game's per-action guard agrees with the view
+    game.assert_pre_action(token_id, ALICE());
 
     start_cheat_block_timestamp(token.contract_address, 3000);
-    assert!(!token.is_playable(token_id), "Expired at window end");
+    assert!(!token.is_lifecycle_open(token_id), "Window closed at end");
 }
 
 #[test]
-fn test_immortal_token_always_playable() {
+fn test_immortal_token_window_never_closes() {
     let (token, _, _) = deploy_token();
     start_cheat_block_timestamp(token.contract_address, 1000);
     let token_id = mint_basic(
         token, Option::None, Option::None, Option::None, Option::None, ALICE(), false, 0,
     );
     start_cheat_block_timestamp(token.contract_address, 99999999);
-    assert!(token.is_playable(token_id), "No end means playable forever");
+    assert!(token.is_lifecycle_open(token_id), "No end means the window never closes");
 }
 
 // ================================================================================================
-// INTERNAL GUARD (assert_owner_and_playable — via the embedding game mock)
+// PER-ACTION GUARD — the two halves, via the embedding game mock.
+//
+// The merged `assert_owner_and_playable` is gone; the component keeps only
+// `assert_lifecycle_open`, and the game pairs it with an ERC721 `owner_of`
+// comparison at its own call site. Both halves are covered here separately,
+// plus their composition, so nothing the merged guard rejected is now
+// silently accepted.
 // ================================================================================================
+
+// --- lifecycle half -----------------------------------------------------------
 
 #[test]
 #[should_panic(expected: "MinigameToken: Token is not playable - game has expired")]
-fn test_guard_panics_after_expiry() {
+fn test_lifecycle_guard_panics_after_expiry() {
     let (token, _, _) = deploy_token();
     start_cheat_block_timestamp(token.contract_address, 1000);
     let token_id = mint_basic(
         token, Option::None, Option::None, Option::None, Option::Some(2000), ALICE(), false, 0,
     );
     start_cheat_block_timestamp(token.contract_address, 2000);
-    game_of(token).assert_owner_and_playable(token_id, ALICE());
+    game_of(token).assert_lifecycle_open(token_id);
 }
 
 #[test]
 #[should_panic(expected: "MinigameToken: Token is not playable - game has not started")]
-fn test_guard_panics_before_start() {
+fn test_lifecycle_guard_panics_before_start() {
     let (token, _, _) = deploy_token();
     start_cheat_block_timestamp(token.contract_address, 1000);
     let token_id = mint_basic(
@@ -371,34 +379,89 @@ fn test_guard_panics_before_start() {
         false,
         0,
     );
-    game_of(token).assert_owner_and_playable(token_id, ALICE());
+    game_of(token).assert_lifecycle_open(token_id);
 }
 
+/// The lifecycle half is pure arithmetic over the packed id — it does NOT
+/// prove the token exists, which is precisely why the ownership half has to
+/// be written alongside it.
 #[test]
-#[should_panic(expected: "MinigameToken: Address is not owner of token")]
-fn test_guard_rejects_wrong_owner() {
+fn test_lifecycle_guard_says_nothing_about_existence() {
+    let (token, _, _) = deploy_token();
+    game_of(token).assert_lifecycle_open(0);
+    assert!(token.is_lifecycle_open(0), "an unminted id still has an open window");
+}
+
+// --- ownership half -----------------------------------------------------------
+
+#[test]
+#[should_panic(expected: "StandardGameMock: caller is not the owner of token")]
+fn test_owner_guard_rejects_wrong_owner() {
     let (token, _, _) = deploy_token();
     let token_id = mint_basic(
         token, Option::None, Option::None, Option::None, Option::None, ALICE(), false, 0,
     );
-    game_of(token).assert_owner_and_playable(token_id, BOB());
+    game_of(token).assert_owner(token_id, BOB());
 }
 
+/// Nonexistence is now its OWN error, from OZ's `owner_of` -> `_require_owned`,
+/// where the merged guard folded it into "not the owner" via `_owner_of`
+/// returning zero.
 #[test]
-#[should_panic(expected: "MinigameToken: Address is not owner of token")]
-fn test_guard_rejects_nonexistent_token() {
+#[should_panic(expected: ('ERC721: invalid token ID',))]
+fn test_owner_guard_rejects_nonexistent_token() {
     let (token, _, _) = deploy_token();
-    game_of(token).assert_owner_and_playable(12345, ALICE());
+    game_of(token).assert_owner(12345, ALICE());
 }
 
+/// The merged guard rejected a zero `expected_owner` explicitly. The split
+/// still rejects it — a minted token's owner is never zero — it just reports
+/// it as "not the owner".
 #[test]
-#[should_panic(expected: "MinigameToken: Expected owner cannot be zero")]
-fn test_guard_rejects_zero_owner() {
+#[should_panic(expected: "StandardGameMock: caller is not the owner of token")]
+fn test_owner_guard_rejects_zero_owner() {
     let (token, _, _) = deploy_token();
     let token_id = mint_basic(
         token, Option::None, Option::None, Option::None, Option::None, ALICE(), false, 0,
     );
-    game_of(token).assert_owner_and_playable(token_id, addr(0));
+    game_of(token).assert_owner(token_id, addr(0));
+}
+
+// --- both halves, as a game writes them ---------------------------------------
+
+#[test]
+fn test_pre_action_guard_accepts_owner_inside_window() {
+    let (token, _, _) = deploy_token();
+    let token_id = mint_basic(
+        token, Option::None, Option::None, Option::None, Option::None, ALICE(), false, 0,
+    );
+    game_of(token).assert_pre_action(token_id, ALICE());
+}
+
+/// Ordering is load-bearing: the lifecycle check is pure arithmetic and the
+/// ownership check is a storage read, so a closed window must reject BEFORE
+/// paying for storage. A wrong-owner call on an expired token therefore
+/// reports the lifecycle failure, not the ownership one.
+#[test]
+#[should_panic(expected: "MinigameToken: Token is not playable - game has expired")]
+fn test_pre_action_guard_checks_lifecycle_before_ownership() {
+    let (token, _, _) = deploy_token();
+    start_cheat_block_timestamp(token.contract_address, 1000);
+    let token_id = mint_basic(
+        token, Option::None, Option::None, Option::None, Option::Some(2000), ALICE(), false, 0,
+    );
+    start_cheat_block_timestamp(token.contract_address, 2000);
+    game_of(token).assert_pre_action(token_id, BOB());
+}
+
+#[test]
+#[should_panic(expected: "StandardGameMock: caller is not the owner of token")]
+fn test_pre_action_guard_rejects_wrong_owner_inside_window() {
+    let (token, _, _) = deploy_token();
+    let token_id = mint_basic(
+        token, Option::None, Option::None, Option::None, Option::None, ALICE(), false, 0,
+    );
+    game_of(token).assert_pre_action(token_id, BOB());
 }
 
 // ================================================================================================

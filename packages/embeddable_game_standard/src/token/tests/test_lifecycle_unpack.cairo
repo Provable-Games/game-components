@@ -3,7 +3,7 @@
 // ==============================================================================
 //
 // `unpack_lifecycle` replaces `to_token_metadata(unpack_token_id(id)).lifecycle`
-// on the `is_playable` / `assert_lifecycle_open` path. It must be
+// on the `is_lifecycle_open` / `assert_lifecycle_open` path. It must be
 // indistinguishable from what it replaced, for EVERY token id — including ids
 // that are not well-formed packs.
 //
@@ -51,7 +51,7 @@ fn oracle_lifecycle(token_id: felt252) -> Lifecycle {
 }
 
 /// Asserts the shipped shortcut is indistinguishable from every reference on
-/// `token_id`, and that `is_playable` agrees with the old path at EVERY
+/// `token_id`, and that `LifecycleTrait::is_open` agrees with the old path at EVERY
 /// interesting instant around the window: one second before it opens, exactly
 /// at open, mid-window, one before close, exactly at close, one after, plus the
 /// extremes 0 and u64 max.
@@ -86,8 +86,8 @@ fn assert_lifecycle_paths_agree(token_id: felt252) {
     }
     for t in probes {
         assert!(
-            shipped.is_playable(t) == before.is_playable(t),
-            "is_playable diverged at t={} (start={}, end={})",
+            shipped.is_open(t) == before.is_open(t),
+            "is_open diverged at t={} (start={}, end={})",
             t,
             shipped.start,
             shipped.end,
@@ -126,7 +126,7 @@ fn test_sentinel_end_delay_zero_means_no_expiry() {
     assert!(life.start == 1500, "start must be minted_at + start_delay");
     assert!(life.end == 0, "end_delay == 0 must produce the end == 0 sentinel");
     assert!(!life.has_expired(0xFFFFFFFFFFFFFFFF), "sentinel token must never expire");
-    assert!(life.is_playable(0xFFFFFFFFFFFFFFFF), "sentinel token must stay playable");
+    assert!(life.is_open(0xFFFFFFFFFFFFFFFF), "sentinel token's window never closes");
 }
 
 /// end_delay == 1 is the smallest NON-sentinel value; it must not be confused
@@ -137,8 +137,8 @@ fn test_smallest_non_sentinel_end_delay() {
     let id = packing::pack_token_id(1000, 500, 1, 0, 0, false, 0, 0, false, false, 0, 0);
     let life = packing::unpack_lifecycle(id);
     assert!(life.end == 1501, "end must be start + end_delay");
-    assert!(life.is_playable(1500), "playable at start");
-    assert!(!life.is_playable(1501), "expired exactly at end");
+    assert!(life.is_open(1500), "open at start");
+    assert!(!life.is_open(1501), "expired exactly at end");
 }
 
 // ==============================================================================
@@ -240,7 +240,7 @@ fn test_fuzz_lifecycle_arbitrary_id(low: u128, high: u128) {
 }
 
 // ==============================================================================
-// COMPONENT LEVEL — the rewired `is_playable` entrypoint through the deployed
+// COMPONENT LEVEL — the rewired `is_lifecycle_open` entrypoint through the deployed
 // mock, at every edge of the window.
 // ==============================================================================
 
@@ -270,7 +270,7 @@ fn deploy_mock() -> IMinigameTokenDispatcher {
 /// this is a differential test of the deployed entrypoint, not a restatement of
 /// the implementation.
 #[test]
-fn test_component_is_playable_across_the_window() {
+fn test_component_is_lifecycle_open_across_the_window() {
     let token = deploy_mock();
     start_cheat_block_timestamp(token.contract_address, 1000);
     let token_id = token
@@ -297,8 +297,8 @@ fn test_component_is_playable_across_the_window() {
     for t in instants {
         start_cheat_block_timestamp(token.contract_address, t);
         assert!(
-            token.is_playable(token_id) == reference.is_playable(t),
-            "entrypoint is_playable diverged at t={}",
+            token.is_lifecycle_open(token_id) == reference.is_open(t),
+            "entrypoint is_lifecycle_open diverged at t={}",
             t,
         );
     }
@@ -306,7 +306,7 @@ fn test_component_is_playable_across_the_window() {
 
 /// Same walk for a token with no expiration, where the sentinel decides.
 #[test]
-fn test_component_is_playable_immortal_across_the_window() {
+fn test_component_is_lifecycle_open_immortal_across_the_window() {
     let token = deploy_mock();
     start_cheat_block_timestamp(token.contract_address, 1000);
     let token_id = token
@@ -331,8 +331,8 @@ fn test_component_is_playable_immortal_across_the_window() {
     for t in instants {
         start_cheat_block_timestamp(token.contract_address, t);
         assert!(
-            token.is_playable(token_id) == reference.is_playable(t),
-            "entrypoint is_playable diverged at t={} for the immortal token",
+            token.is_lifecycle_open(token_id) == reference.is_open(t),
+            "entrypoint is_lifecycle_open diverged at t={} for the immortal token",
             t,
         );
     }

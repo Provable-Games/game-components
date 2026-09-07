@@ -27,6 +27,15 @@ The source-level breaks are loud by comparison and will simply fail to
 compile: `TokenMetadata` loses `game_id` and widens `metadata` to `u128`, and
 `IMinigame::mint_game` / `MintGameParams.metadata` widen from `u16` to `u128`.
 
+> **Later change — `IMINIGAME_TOKEN_ID` moved again.** Renaming `is_playable`
+> to `is_lifecycle_open` changed an existing entrypoint, so the id was
+> rederived: `0x20253de95bcdb23620c88405a5f97da040b91de832ad98a34b45c4f3331d13b`
+> → `0x1238d845bb65d15a4ae71f27bef35d008ad496acb4c3b840c5de17bf0111559`.
+> Everything the lockstep warning above says applies again, for the same
+> reason. The running value history lives in
+> `packages/interfaces/src/AGENTS.md`; the rest of this document is a record of
+> the 2.1.1 migration and is left as written.
+
 ---
 
 ## TL;DR

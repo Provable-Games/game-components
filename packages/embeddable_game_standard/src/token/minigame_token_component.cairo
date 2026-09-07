@@ -22,8 +22,10 @@
 /// * **Registry / game-address views** — one game: this contract. Consumers
 ///   SRC5-probe `IMINIGAME_TOKEN_ID`; there is nothing to resolve.
 /// * **Guards (`assert_is_playable`, `assert_owner_and_playable`)** — the
-///   embedding game's own pre-action checks, now `InternalTrait` calls with
-///   zero syscalls. Clients read `is_playable`.
+///   embedding game's own pre-action checks. Only the lifecycle half survives,
+///   as `InternalTrait::assert_lifecycle_open` (zero syscalls); the ownership
+///   half is a plain `owner_of` comparison the game writes at its own call
+///   site, where it is visible. Clients read `is_lifecycle_open`.
 /// * **`refresh_metadata_batch`** — a multicall of singles.
 /// * **Mutable token state** — no `game_over`/`completed_objective` latch,
 ///   no `update_game`, no metagame callbacks. `refresh_metadata` (ERC-4906)
@@ -156,13 +158,14 @@ pub mod MinigameTokenComponent {
             to_token_metadata(unpack_token_id(token_id))
         }
 
-        fn is_playable(self: @ComponentState<TContractState>, token_id: felt252) -> bool {
-            // Three of the twelve packed fields decide this, so it reads the
-            // lifecycle window directly rather than through
-            // `token_metadata()`'s full unpack + TokenMetadata build.
+        fn is_lifecycle_open(self: @ComponentState<TContractState>, token_id: felt252) -> bool {
+            // The mint-time window ONLY — not ownership, not game over, not
+            // objective completion. Three of the twelve packed fields decide
+            // it, so it reads the lifecycle window directly rather than
+            // through `token_metadata()`'s full unpack + TokenMetadata build.
             // `unpack_lifecycle` reproduces that reconstruction exactly,
             // `end_delay == 0` sentinel included.
-            unpack_lifecycle(token_id).is_playable(get_block_timestamp())
+            unpack_lifecycle(token_id).is_open(get_block_timestamp())
         }
 
         fn settings_id(self: @ComponentState<TContractState>, token_id: felt252) -> u32 {
@@ -540,8 +543,8 @@ pub mod MinigameTokenComponent {
         ) -> TokenMetadata {
             MinigameToken::token_metadata(self, token_id)
         }
-        fn is_playable(self: @ComponentState<TContractState>, token_id: felt252) -> bool {
-            MinigameToken::is_playable(self, token_id)
+        fn is_lifecycle_open(self: @ComponentState<TContractState>, token_id: felt252) -> bool {
+            MinigameToken::is_lifecycle_open(self, token_id)
         }
         fn settings_id(self: @ComponentState<TContractState>, token_id: felt252) -> u32 {
             MinigameToken::settings_id(self, token_id)
@@ -760,36 +763,20 @@ pub mod MinigameTokenComponent {
             src5_component.register_interface(IMINIGAME_TOKEN_GAME_FEE_ID);
         }
 
-        /// Combined ownership + playability guard for the embedding game's
-        /// own entrypoints: internal call, zero syscalls. `expected_owner` is
-        /// the game contract's caller (must be non-zero); panics unless it
-        /// owns the token and the lifecycle window is open.
-        fn assert_owner_and_playable(
-            self: @ComponentState<TContractState>,
-            token_id: felt252,
-            expected_owner: ContractAddress,
-        ) {
-            assert!(!expected_owner.is_zero(), "MinigameToken: Expected owner cannot be zero");
-            let contract = self.get_contract();
-            let erc721_component = ERC721::get_component(contract);
-            // _owner_of returns zero for a nonexistent token, which can never
-            // equal the asserted-non-zero expected_owner — so this also
-            // guarantees existence.
-            let token_owner = erc721_component._owner_of(token_id.into());
-            assert!(
-                token_owner == expected_owner,
-                "MinigameToken: Address is not owner of token {}",
-                token_id,
-            );
-            self.assert_lifecycle_open(token_id);
-        }
-
         /// Lifecycle-window check only — there is deliberately no token-side
         /// game_over / completed_objective state to consult. Games gate dead
         /// runs themselves; they are the source of truth.
+        ///
+        /// This is HALF of a per-action guard. The other half — "does the
+        /// caller own this token" — is deliberately not bundled in here: it is
+        /// an ERC721 `owner_of` comparison the embedding game writes at its own
+        /// call site, so the storage read is visible where it is paid for and
+        /// the two failure modes stay distinguishable. (A merged
+        /// `assert_owner_and_playable` existed and was removed for exactly
+        /// that reason.)
         fn assert_lifecycle_open(self: @ComponentState<TContractState>, token_id: felt252) {
-            // Same three-field read as `is_playable`; the other nine fields
-            // and the TokenMetadata build were never used here.
+            // Same three-field read as `is_lifecycle_open`; the other nine
+            // fields and the TokenMetadata build were never used here.
             let lifecycle = unpack_lifecycle(token_id);
             let current_time = get_block_timestamp();
             assert!(

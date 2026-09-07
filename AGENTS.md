@@ -99,7 +99,8 @@ Metagame ──→ Game contract (IS the ERC721 token)
 There is no registry, no `game_address` resolution, and no mutable token
 state — so nothing to sync and no `update_game()`. The game contract is the
 authority on game-over and objective completion, gating its own entrypoints
-with the component's internal `assert_owner_and_playable`. Consumers identify a
+with the component's internal `assert_lifecycle_open` plus its own ERC721
+`owner_of` check at the call site. Consumers identify a
 token by SRC5 (`IMINIGAME_TOKEN_ID`), and a game declares its fee terms and
 payee on the token itself (`IMINIGAME_TOKEN_GAME_FEE_ID`).
 

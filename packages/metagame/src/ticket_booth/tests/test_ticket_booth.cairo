@@ -986,7 +986,7 @@ mod MockMinigameTokenForTicketBooth {
         fn token_metadata(self: @ContractState, token_id: felt252) -> TokenMetadata {
             blank_metadata()
         }
-        fn is_playable(self: @ContractState, token_id: felt252) -> bool {
+        fn is_lifecycle_open(self: @ContractState, token_id: felt252) -> bool {
             true
         }
         fn settings_id(self: @ContractState, token_id: felt252) -> u32 {

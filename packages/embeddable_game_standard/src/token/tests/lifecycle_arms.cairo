@@ -1,7 +1,7 @@
 // LIFECYCLE ARMS — candidate shapes for a combined `(start, end)` accessor,
 // measured against the pre-change path. Test-only.
 //
-// `is_playable` and `assert_lifecycle_open` need three fields — minted_at
+// `is_lifecycle_open` and `assert_lifecycle_open` need three fields — minted_at
 // (bits 0-34), start_delay (35-59) and end_delay (60-84) — which are the
 // bottom 85 bits of the low u128. The pre-change path reached them through a
 // full twelve-field unpack plus a `TokenMetadata` struct build.
@@ -38,8 +38,8 @@ mod nz64 {
 const M25: u128 = 0x1FFFFFF;
 
 /// PRE-CHANGE PATH: full twelve-field unpack, `TokenMetadata` build, then take
-/// the lifecycle out of it. This is exactly what `is_playable` and
-/// `assert_lifecycle_open` did before this change.
+/// the lifecycle out of it. This is exactly what `is_lifecycle_open` (then
+/// named `is_playable`) and `assert_lifecycle_open` did before this change.
 ///
 /// * `token_id` — any felt252.
 /// Returns the reconstructed `(start, end)` window.
