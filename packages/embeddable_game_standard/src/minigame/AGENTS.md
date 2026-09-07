@@ -107,7 +107,7 @@ mod MyGame {
 
 1. **Init**: `MinigameTokenComponent::initializer(game_fee_recipient, license, fee_numerator)`
 2. **Mint**: `mint()` (`IMinigameTokenMinter`) — the token is this contract
-3. **Guard**: `assert_owner_and_playable(token_id, caller)` before actions — internal, zero syscalls
+3. **Guard**: `assert_lifecycle_open(token_id)` + `owner_of(token_id) == caller` before actions — internal, zero syscalls for the lifecycle half
 4. **Play**: update game state, then `refresh_metadata(token_id)` (ERC-4906)
 5. **Complete**: return `true` from `game_over()` when finished
 

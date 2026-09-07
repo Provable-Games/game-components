@@ -129,10 +129,13 @@ fn bench_standard_mint_x10() {
 
 
 // ================================================================================================
-// PER-ACTION GUARD — full: owner_of + assert_is_playable (2 calls, as
-// death-mountain's game_core does today) vs standard: assert_owner_and_playable —
-// an internal call in the real one-address shape, exercised here through the
-// game mock's single external entrypoint (1 call)
+// PER-ACTION GUARD — full: owner_of + assert_is_playable (2 cross-contract
+// calls, as death-mountain's game_core did before the one-address move) vs
+// standard: `assert_lifecycle_open` + an ERC721 `owner_of` comparison, both
+// INTERNAL to the one contract, exercised here through the game mock's single
+// external entrypoint (1 call). The split into two named checks is a source
+// change, not a call-count change: it is the same two checks the merged
+// `assert_owner_and_playable` ran, in the same order.
 // ================================================================================================
 
 #[test]
@@ -142,7 +145,7 @@ fn bench_standard_guard_x10() {
     let game_mock = IStandardGameMockDispatcher { contract_address: token.contract_address };
     let mut i: u32 = 0;
     while i < 10 {
-        game_mock.assert_owner_and_playable(token_id, ALICE());
+        game_mock.assert_pre_action(token_id, ALICE());
         i += 1;
     }
 }
@@ -153,26 +156,26 @@ fn bench_standard_guard_x10() {
 //
 // With `--gas-report` these produce a per-selector row on the StandardGameMock
 // contract, which is the real deployed entrypoint cost of the guard path. Read
-// the `is_playable` / `assert_owner_and_playable` / `token_metadata` rows.
+// the `is_lifecycle_open` / `assert_pre_action` / `token_metadata` rows.
 // One call per test so the row is attributable to that call alone.
 // ================================================================================================
 
-/// Read the StandardGameMock `is_playable` row.
+/// Read the StandardGameMock `is_lifecycle_open` row.
 #[test]
-fn bench_standard_is_playable_x1() {
+fn bench_standard_is_lifecycle_open_x1() {
     let (token, _, game) = setup_standard();
     let token_id = mint_standard(token, game, 0);
-    let _ = token.is_playable(token_id);
+    let _ = token.is_lifecycle_open(token_id);
 }
 
-/// Read the StandardGameMock `assert_owner_and_playable` row (the guard the
-/// embedding game calls on every action).
+/// Read the StandardGameMock `assert_pre_action` row (both halves of the
+/// guard the embedding game runs on every action).
 #[test]
 fn bench_standard_guard_x1() {
     let (token, _, game) = setup_standard();
     let token_id = mint_standard(token, game, 0);
     let game_mock = IStandardGameMockDispatcher { contract_address: token.contract_address };
-    game_mock.assert_owner_and_playable(token_id, ALICE());
+    game_mock.assert_pre_action(token_id, ALICE());
 }
 
 /// Control: `token_metadata` still does the full twelve-field unpack and must

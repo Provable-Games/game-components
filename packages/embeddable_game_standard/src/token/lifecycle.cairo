@@ -1,21 +1,25 @@
 // Lifecycle validation for the standard token.
 //
 // Pure functions over `Lifecycle` — no storage, no syscalls. The standard
-// token's `is_playable` and `assert_lifecycle_open` are built entirely on
-// these, which is what makes them zero-storage-read: the window is unpacked
-// from the token id and checked here.
+// token's `is_lifecycle_open` and `assert_lifecycle_open` are built entirely
+// on these, which is what makes them zero-storage-read: the window is
+// unpacked from the token id and checked here.
 //
 // This logic lived in `token_legacy::token` until the legacy generation was
 // retired. It was never legacy-specific — a lifecycle window means the same
 // thing in both generations — it simply had not been brought across during
-// the rename. Names are unchanged; only the module path moved.
+// the rename.
+//
+// `is_playable` here was renamed to `is_open` alongside the entrypoint
+// rename: it only ever answered "is the window open", never "can this be
+// played".
 
 use game_components_interfaces::structs::token::Lifecycle;
 
 pub trait LifecycleTrait {
     fn has_expired(self: @Lifecycle, current_time: u64) -> bool;
     fn can_start(self: @Lifecycle, current_time: u64) -> bool;
-    fn is_playable(self: @Lifecycle, current_time: u64) -> bool;
+    fn is_open(self: @Lifecycle, current_time: u64) -> bool;
     fn validate(self: @Lifecycle);
 }
 
@@ -40,8 +44,9 @@ pub impl LifecycleImpl of LifecycleTrait {
         }
     }
 
-    /// Playable when the window has opened and not yet closed.
-    fn is_playable(self: @Lifecycle, current_time: u64) -> bool {
+    /// Open when the window has opened and not yet closed. Says nothing
+    /// about whether the run can actually be played — that needs the game.
+    fn is_open(self: @Lifecycle, current_time: u64) -> bool {
         self.can_start(current_time) && !self.has_expired(current_time)
     }
 

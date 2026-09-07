@@ -76,8 +76,9 @@
 //   already produces 0/1 directly, so masking adds a comparison against a
 //   128-bit constant and costs more). Both keep the narrowing form.
 // - `unpack_lifecycle` is the one COMBINED accessor: minted_at, start_delay and
-//   end_delay are the bottom 85 bits, and the guard path (`is_playable`,
-//   `assert_lifecycle_open`) needs all three and nothing else. It narrows —
+//   end_delay are the bottom 85 bits, and the guard path
+//   (`is_lifecycle_open`, `assert_lifecycle_open`) needs all three and
+//   nothing else. It narrows —
 //   splitting at bit 60 puts minted_at AND start_delay in one u64 word, so a
 //   single u64 DivRem yields two fields already in the return type — which is
 //   the amortisation the single-field accessors never get.
@@ -416,7 +417,7 @@ pub fn unpack_metadata(token_id: felt252) -> u128 {
 
 /// Unpacks ONLY the lifecycle window from a token_id.
 ///
-/// `is_playable` and the `assert_lifecycle_open` guard need three of the twelve
+/// `is_lifecycle_open` and the `assert_lifecycle_open` guard need three of the twelve
 /// packed fields — minted_at (bits 0-34), start_delay (35-59) and end_delay
 /// (60-84), the bottom 85 bits of the low half. Going through
 /// `to_token_metadata(unpack_token_id(id))` to reach them decodes all twelve

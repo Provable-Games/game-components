@@ -66,7 +66,7 @@ use snforge_std::{start_cheat_block_timestamp, stop_cheat_block_timestamp};
 
 // Test token expired
 start_cheat_block_timestamp(contract_address, FUTURE_TIME);
-assert!(!token.is_playable(token_id), "Should be expired");
+assert!(!token.is_lifecycle_open(token_id), "Should be expired");
 stop_cheat_block_timestamp(contract_address);
 ```
 

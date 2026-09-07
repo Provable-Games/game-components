@@ -23,9 +23,21 @@ pub trait IStandardGameMock<TContractState> {
     fn create_settings_difficulty(
         ref self: TContractState, name: ByteArray, description: ByteArray, difficulty: u8,
     );
-    /// Test-only exposure of the component's internal pre-action guard —
+    /// Test-only exposure of the component's internal lifecycle guard —
     /// the way a real game consumes it inside its own entrypoints.
-    fn assert_owner_and_playable(
+    fn assert_lifecycle_open(self: @TContractState, token_id: felt252);
+    /// Test-only exposure of the OTHER half of a per-action guard: the ERC721
+    /// ownership check, written the way a real game now writes it at its own
+    /// call site.
+    fn assert_owner(
+        self: @TContractState, token_id: felt252, expected_owner: starknet::ContractAddress,
+    );
+    /// Both halves inline, in the order a real game's entrypoint writes them
+    /// (lifecycle first — pure arithmetic — then the `owner_of` storage read,
+    /// so a closed window rejects before paying for storage). Exists so the
+    /// gas bench can read ONE entrypoint row for the whole per-action guard,
+    /// which is what a game actually pays.
+    fn assert_pre_action(
         self: @TContractState, token_id: felt252, expected_owner: starknet::ContractAddress,
     );
 }
@@ -215,12 +227,30 @@ pub mod StandardGameMock {
             self.game_over.entry(token_id).write(true);
         }
 
-        /// Exposes the component's internal pre-action guard for tests —
+        /// Exposes the component's internal lifecycle guard for tests —
         /// mirrors how a real game calls it inside its own entrypoints.
-        fn assert_owner_and_playable(
+        fn assert_lifecycle_open(self: @ContractState, token_id: felt252) {
+            self.minigame_token.assert_lifecycle_open(token_id);
+        }
+
+        /// The ownership half. `owner_of` (not `_owner_of`) is deliberate:
+        /// it reverts with OZ's `ERC721: invalid token ID` for a token that
+        /// was never minted, so nonexistence is its own error rather than
+        /// being folded into "not the owner".
+        fn assert_owner(self: @ContractState, token_id: felt252, expected_owner: ContractAddress) {
+            assert!(
+                self.erc721.owner_of(token_id.into()) == expected_owner,
+                "StandardGameMock: caller is not the owner of token {}",
+                token_id,
+            );
+        }
+
+        /// The whole per-action guard, as a game writes it.
+        fn assert_pre_action(
             self: @ContractState, token_id: felt252, expected_owner: ContractAddress,
         ) {
-            self.minigame_token.assert_owner_and_playable(token_id, expected_owner);
+            self.assert_lifecycle_open(token_id);
+            self.assert_owner(token_id, expected_owner);
         }
 
         fn create_settings_difficulty(

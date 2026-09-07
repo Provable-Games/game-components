@@ -93,7 +93,16 @@ use game_components_interfaces::{
 
 ## Computing SRC5 Interface IDs
 
-Use `src5_rs parse` to compute interface IDs. The tool is pre-installed at `~/.cargo/bin/src5_rs`.
+Use `src5_rs parse` to compute interface IDs. The tool is normally pre-installed at
+`~/.cargo/bin/src5_rs`; if it is missing it is NOT on crates.io, install it from source:
+
+```bash
+cargo install --git https://github.com/ericnordelo/src5-rs   # v2.0.0
+```
+
+Sanity-check the setup before trusting a new ID: rerun the derivation for the
+CURRENT constant first and confirm it reproduces byte for byte. If it does not,
+the stripped input is wrong, not the constant.
 
 **Critical:** `src5_rs` v2.0.0 cannot parse modern Cairo `<TState>` generics or `self` parameters. You must create a temporary stripped-down file:
 
@@ -177,14 +186,29 @@ Apply the same reasoning to future additive methods: extend the trait, leave the
 alone, and note the exclusion here. Change the ID only for a genuinely breaking
 change to the existing surface.
 
-### Frozen `IMINIGAME_TOKEN_ID` value
+### `IMINIGAME_TOKEN_ID` value history
 
-The token interface-id VALUE is frozen — deployed contracts register it on-chain.
-When the lite token became the standard, only the NAME moved:
+The VALUE is not casually changeable — deployed contracts register it on-chain,
+and a change makes `supports_interface(IMINIGAME_TOKEN_ID)` return false on every
+one of them. It moves only for a genuinely breaking change to the existing
+surface (the rule above), and every move must be recorded here.
 
-| Constant (today) | Value | Was named |
+| Value | Since | Why it moved |
 | --- | --- | --- |
-| `IMINIGAME_TOKEN_ID` | `0x20253de95bcdb23620c88405a5f97da040b91de832ad98a34b45c4f3331d13b` | `IMINIGAME_TOKEN_LITE_ID` |
+| `0x15951d6d…b7aea` | lite token introduced | — (named `IMINIGAME_TOKEN_LITE_ID` then) |
+| `0x20253de95bcdb23620c88405a5f97da040b91de832ad98a34b45c4f3331d13b` | 2.1.1 | surface changes at the lite→standard transition; the constant took the `IMINIGAME_TOKEN_ID` name |
+| `0x1238d845bb65d15a4ae71f27bef35d008ad496acb4c3b840c5de17bf0111559` | this change | `is_playable` renamed to `is_lifecycle_open` — a breaking rename of an existing entrypoint, so the ID moves with it |
+
+Rederive after any change to the surface, and paste the tool's per-selector rows
+into the doc comment above the constant:
+
+```bash
+src5_rs parse /tmp/src5_input.cairo   # trait minus refresh_metadata, stripped per above
+```
+
+A wrong ID does NOT fail to compile. It fails at runtime, silently, as
+`supports_interface` returning false everywhere — never hand-edit the constant
+or XOR it by eye, always paste what `src5_rs` printed.
 
 ## Dependencies
 

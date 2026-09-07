@@ -18,13 +18,13 @@ two-phase init, a standalone preset, game-side call helpers).
 | Rule | Consequence |
 | --- | --- |
 | Self-bound: the embedding contract is the game | No stored game address, no registry, no `game_id` resolution, no SRC5 probes on mint; there is no game_address view or mint parameter at all — consumers identify a standard token by SRC5 (`IMINIGAME_TOKEN_ID`) |
-| No mutable token state | No `update_game`, no metagame callbacks; `is_playable` = lifecycle window only, zero storage reads. `player_name` (owner-renameable) and the mint-time `client_url` are the only per-token storage (plus the minter registry) |
+| No mutable token state | No `update_game`, no metagame callbacks; `is_lifecycle_open` = lifecycle window only, zero storage reads. `player_name` (owner-renameable) and the mint-time `client_url` are the only per-token storage (plus the minter registry) |
 | Token id layout is standard-native | `token::packing::pack_token_id` (251-bit) — its OWN layout, not the legacy token's (`token_legacy::structs` stays untouched, serving legacy denshokan). Indexers must branch their decoder by contract generation |
-| Strip principle: machinery deleted, capability + read views kept | The ABI is NOT `IMinigameTokenLegacy`-compatible: the legacy token's `game_address`, `renderer_address` and `skills_address` mint params are gone, and the compat views (`game_address`, `game_registry_address`) with them. Cheap client-facing read views (`token_metadata`, `is_playable`, `settings_id`, `minted_by`, `is_soulbound`, …) stay |
+| Strip principle: machinery deleted, capability + read views kept | The ABI is NOT `IMinigameTokenLegacy`-compatible: the legacy token's `game_address`, `renderer_address` and `skills_address` mint params are gone, and the compat views (`game_address`, `game_registry_address`) with them. Cheap client-facing read views (`token_metadata`, `is_lifecycle_open`, `settings_id`, `minted_by`, `is_soulbound`, …) stay |
 | Restored mint params keep their original legacy-token behaviors | `objective_id` (30-bit packed, INERT data the game interprets — no completion machinery; `completed_objective` stays always-false), `context` (sets the has_context bit only; the data is NOT stored — legacy-token parity), `client_url` (storage-backed, `client_url` view, empty default), `paymaster` (packed bit), `metadata` (u128 param packed into a 65-bit field, read via `mint_metadata` — the shared `TokenMetadata.metadata: u16` cannot hold it and stays 0, never truncated) |
 | The minter is standard, not optional | The minter registry is absorbed into `MinigameTokenComponent`: same storage variable names, same `IMinigameTokenMinter` surface (`MinterImpl`, `IMINIGAME_TOKEN_MINTER_ID`), same `MinterRegistryUpdate` event as the legacy `MinterComponent`. `OptionalMinter` indirection remains only in `token_legacy` |
 | The game-fee surface is standard, not optional | The registry's `game_fee_info` role moves onto the token: `game_fee_recipient` (payout sink), license and fee (bps, default 500) are set in the initializer and served via `GameFeeImpl` (`IMinigameTokenGameFee`, `IMINIGAME_TOKEN_GAME_FEE_ID`). Setters are gated on the game contract's OZ Ownable OWNER (`assert_only_owner`, hard `OwnableComponent::HasComponent` bound) — the stored recipient is a payee, not an admin. Monetization platforms resolve the payee LIVE at claim time |
-| Game contract is the authority | Games gate dead/finished runs themselves (internal `assert_owner_and_playable`) and call `refresh_metadata` (ERC-4906) after actions |
+| Game contract is the authority | Games gate dead/finished runs themselves — the component supplies the lifecycle half (`assert_lifecycle_open`, internal), the game writes the ERC721 `owner_of` half at its own call site — and call `refresh_metadata` (ERC-4906) after actions |
 
 ## Token ID Layout (standard, 251 bits)
 
@@ -41,7 +41,7 @@ bare mask). `unpack_minted_by` and `unpack_soulbound` are the measured
 exceptions and keep the narrowing form. `scripts/bench_packing.sh` re-derives
 the whole table; both arms live in the crate so the numbers stay reproducible.
 
-**Guard path.** `is_playable` and `assert_lifecycle_open` read the window via
+**Guard path.** `is_lifecycle_open` and `assert_lifecycle_open` read the window via
 `packing::unpack_lifecycle`, a combined accessor for the three lifecycle fields
 (the bottom 85 bits), NOT via `token_metadata()`. It reproduces
 `to_token_metadata`'s reconstruction exactly, `end_delay == 0` sentinel
@@ -79,9 +79,12 @@ require a new contract generation (accepted trade-off).
 
 ## Interface (IMinigameToken)
 
-**Interface ID:** `IMINIGAME_TOKEN_ID = 0x20253de95bcdb23620c88405a5f97da040b91de832ad98a34b45c4f3331d13b`
+**Interface ID:** `IMINIGAME_TOKEN_ID = 0x1238d845bb65d15a4ae71f27bef35d008ad496acb4c3b840c5de17bf0111559`
 (derived over the trait minus `refresh_metadata`, mirroring the refresh
-exclusion from `IMINIGAME_TOKEN_LEGACY_ID`)
+exclusion from `IMINIGAME_TOKEN_LEGACY_ID`). It MOVED with the
+`is_playable` -> `is_lifecycle_open` rename — the previous value,
+`0x20253de…d13b`, is what every already-deployed standard token registered,
+so `supports_interface` answers false across them until they are redeployed.
 
 Defined in `packages/interfaces/src/token/core.cairo`.
 `initializer(game_fee_recipient, license, fee_numerator)` stores the game-fee
@@ -97,7 +100,7 @@ instead of resolving registry/game-address views.
 | --- | --- | --- |
 | `mint(player_name, settings_id, start, end, objective_id, context, client_url, to, soulbound, paymaster, salt, metadata)` | 1 minter-map read (warm), optional name/url writes, ERC721 mint | 12-arg shape — no game address (self-bound), no renderer/skills. objective/paymaster/metadata pack into the id; context sets the has_context bit only; client_url written when Some |
 | `mint_batch_recipients(player_name, settings_id, start, end, objective_id, context, client_url, recipients, soulbound, paymaster, salt, metadata)` | batch work hoisted; per token: pack + optional name/url writes + ERC721 mint | Global salt counter over the 16-bit field (`salt + sum(counts) - 1 <= 0xFFFF`); packed fields (incl. the has_context bit) shared across the batch, client_url written per token |
-| `is_playable` | 0 storage reads | Lifecycle window only — no game_over latch |
+| `is_lifecycle_open` | 0 storage reads | Lifecycle window only — no game_over latch, no ownership, no objective completion |
 | `token_metadata`, `settings_id`, `minted_by`, `is_soulbound`, `objective_id`, `mint_metadata` | 0 storage reads | Pure unpack of the token id — kept as client/RPC conveniences (also derivable from the documented id layout). `token_metadata`'s u16 `metadata` field is always 0 (65 bits cannot fit; use `mint_metadata`) |
 | `player_name`, `minted_by_address`, `client_url` | 1 storage read | |
 | `refresh_metadata` | event only | Same advisory/no-existence-check semantics as the legacy token |
@@ -121,8 +124,10 @@ capability and read views stay):
 * `game_address` / `game_registry_address` — compat shims; the pairing is
   self == self and consumers probe `IMINIGAME_TOKEN_ID` via SRC5.
 * `assert_is_playable` / `assert_owner_and_playable` — the embedding game's
-  own guards, `InternalTrait` calls now (zero syscalls); clients read
-  `is_playable`.
+  own guards. Only the lifecycle half survives, as
+  `InternalTrait::assert_lifecycle_open` (zero syscalls); the ownership half is
+  an `owner_of` comparison the game writes at its own call site. Clients read
+  `is_lifecycle_open`.
 * `refresh_metadata_batch` — a multicall of singles.
 
 Not present (reverts with ENTRYPOINT_NOT_FOUND): `update_game`, all batch
@@ -148,8 +153,8 @@ different bit position). No separate minter component: the registry is
 absorbed — embed `MinigameTokenComponent::MinterImpl` alongside
 `MinigameTokenImpl`. The embedding contract is the game: it implements
 `IMinigameTokenData` (score/game_over) itself and calls the component's
-internal guard (`InternalTrait::assert_owner_and_playable`) and
-`refresh_metadata` internally.
+internal guard (`InternalTrait::assert_lifecycle_open`), pairs it with its own
+`owner_of` check, and calls `refresh_metadata` internally.
 
 See `test_common/src/mocks/standard_game_mock.cairo` (`StandardGameMock`) for
 a full merged game+token wiring example — it lives in the test_common package

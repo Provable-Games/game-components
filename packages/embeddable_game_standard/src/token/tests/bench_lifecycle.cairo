@@ -16,7 +16,7 @@
 //   `PbNoopLife` — felt252 in, a two-felt `Lifecycle` out, no codec call.
 //                  The floor for every `Lifecycle`-returning probe here.
 //   `PbNoop` (in bench_packing.cairo, 9,540) — the one-felt scalar floor, which
-//                  is the floor for the `is_playable`-body probes (bool).
+//                  is the floor for the `is_lifecycle_open`-body probes (bool).
 //
 // Boundary: isolated entrypoint execution, not transaction cost.
 
@@ -137,7 +137,7 @@ pub mod PbLifeD {
     }
 }
 
-/// Probe: the PRE-CHANGE `is_playable` body, verbatim.
+/// Probe: the PRE-CHANGE `is_lifecycle_open` body, verbatim.
 #[starknet::contract]
 pub mod PbIsPlayableBefore {
     use starknet::get_block_timestamp;
@@ -147,13 +147,12 @@ pub mod PbIsPlayableBefore {
     #[abi(embed_v0)]
     impl P of super::IProbeBool<ContractState> {
         fn run(self: @ContractState, x: felt252) -> bool {
-            crate::token::tests::lifecycle_arms::lifecycle_before(x)
-                .is_playable(get_block_timestamp())
+            crate::token::tests::lifecycle_arms::lifecycle_before(x).is_open(get_block_timestamp())
         }
     }
 }
 
-/// Probe: the SHIPPED `is_playable` body.
+/// Probe: the SHIPPED `is_lifecycle_open` body.
 #[starknet::contract]
 pub mod PbIsPlayableAfter {
     use starknet::get_block_timestamp;
@@ -163,7 +162,7 @@ pub mod PbIsPlayableAfter {
     #[abi(embed_v0)]
     impl P of super::IProbeBool<ContractState> {
         fn run(self: @ContractState, x: felt252) -> bool {
-            crate::token::packing::unpack_lifecycle(x).is_playable(get_block_timestamp())
+            crate::token::packing::unpack_lifecycle(x).is_open(get_block_timestamp())
         }
     }
 }
@@ -274,13 +273,13 @@ fn gas_life_08_new_immortal() {
     drive_life("PbLifeNew", bench_input_immortal());
 }
 
-/// Pre-change `is_playable` body. Read the `PbIsPlayableBefore` `run` row.
+/// Pre-change `is_lifecycle_open` body. Read the `PbIsPlayableBefore` `run` row.
 #[test]
 fn gas_life_09_is_playable_before() {
     drive_bool("PbIsPlayableBefore", bench_input());
 }
 
-/// Shipped `is_playable` body. Read the `PbIsPlayableAfter` `run` row.
+/// Shipped `is_lifecycle_open` body. Read the `PbIsPlayableAfter` `run` row.
 #[test]
 fn gas_life_10_is_playable_after() {
     drive_bool("PbIsPlayableAfter", bench_input());
