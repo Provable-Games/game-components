@@ -151,6 +151,7 @@ Game Components uses interface-based extensions for modularity:
 
 | Extension | Purpose |
 |-----------|---------|
+| [**Enumerable Lite**](packages/embeddable_game_standard/src/token/extensions/enumerable/README.md) | Optional owner token discovery through RPC |
 | **Settings** | Game configuration (difficulty, modes, custom parameters) |
 | **Objectives** | Achievements and goals tracking with completion rewards |
 | **Context** | Tournament/event metadata and cross-game coordination |

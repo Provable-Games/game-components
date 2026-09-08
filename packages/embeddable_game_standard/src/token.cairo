@@ -1,3 +1,4 @@
+pub mod extensions;
 pub mod interface;
 pub mod libs;
 pub mod lifecycle;
