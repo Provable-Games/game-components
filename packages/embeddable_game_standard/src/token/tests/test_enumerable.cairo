@@ -51,7 +51,9 @@ fn replace_owner(
 
 // Independent oracle: ownership only, with no index or swap-and-pop algorithm.
 #[feature("safe_dispatcher")]
-fn assert_inventory(address: ContractAddress, ids: Span<felt252>, owners: Span<ContractAddress>) {
+pub fn assert_inventory(
+    address: ContractAddress, ids: Span<felt252>, owners: Span<ContractAddress>,
+) {
     let nft = IERC721Dispatcher { contract_address: address };
     let safe_nft = IERC721SafeDispatcher { contract_address: address };
     let enumeration = IEnumerableOwnerDispatcher { contract_address: address };

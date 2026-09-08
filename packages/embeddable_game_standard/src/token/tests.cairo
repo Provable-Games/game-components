@@ -7,5 +7,6 @@ mod enumerable_fixtures;
 mod enumerable_reference;
 mod test_enumerable;
 mod test_enumerable_gas;
+mod test_enumerable_optimizations;
 mod test_gas_bench;
 mod test_token;

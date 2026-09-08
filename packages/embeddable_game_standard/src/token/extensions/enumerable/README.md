@@ -46,7 +46,9 @@ contract.enumerable.before_update_with_owner(to, id, previous_owner);
 Import `unpack_soulbound` from `token::packing`, `core::num::traits::Zero`,
 and the component internal traits as in the
 [test embedders](../../tests/enumerable_fixtures.cairo). The supplied owner must
-be the current trusted ERC721 owner, read with **no intervening external call**.
+be the current trusted ERC721 owner for the same token in the same hook invocation,
+with **no intervening external call or ownership/balance mutation**. Never substitute
+the caller, the transfer's `from` argument, or the approved operator for this read.
 Use exactly one enumeration hook per update. Neither hook authorizes minting,
 transfers or burns: keep the embedder's access controls and soulbound rules.
 The test embedders have unrestricted mint entrypoints and are not presets.
@@ -97,6 +99,13 @@ wallets rather than exposing that helper as an unrestricted batch RPC call.
 snforge test -p game_components_embeddable_game_standard '::token::tests::test_enumerable::' --fuzzer-runs 256
 python3 scripts/bench_enumerable.py --output /tmp/enumerable-gas
 ```
+
+To verify each optimization independently and check unsafe variants, run
+`python3 scripts/verify_enumerable_optimizations.py --output /tmp/enumerable-safety`
+in an isolated worktree without concurrent source edits, builds or tests. The
+runner temporarily rewrites the component/test hook and restores them in `finally`.
+It checks all 49 ownership/order states for three token IDs and two owners,
+408 outgoing transitions under each hook style, and focused rollback/operator cases.
 
 The benchmark runs twice and requires exact agreement. It reports isolated
 probe execution, an ABI-matched no-op floor, and their difference. Setup and
