@@ -14,6 +14,36 @@ Autonomous token buyback and distribution via Ekubo TWAMM (Time-Weighted Average
 
 Permissionless buyback execution using Ekubo TWAMM DCA orders.
 
+### Order storage and config epochs
+
+Each order occupies one storage slot with this layout, from low to high bits:
+
+| Field | Bits | Maximum |
+|-------|------|---------|
+| Raw start timestamp | 40 | `2^40 - 1` seconds |
+| Raw end timestamp | 40 | `2^40 - 1` seconds |
+| Sell amount | 128 | Full `u128` range |
+| Config epoch | 10 | 1,023 |
+
+The total is 218 bits, leaving 33 spare bits within a 251-bit layout. Times
+remain Unix seconds with no rounding; start time `0` still means immediate
+execution. Each timestamp lasts through approximately year 36,812. Oversized
+timestamps are rejected before transfers or Ekubo calls.
+Bits 218–250 are reserved: packing writes them as zero, and unpacking masks
+them off so future fields cannot affect the existing fields.
+Amounts retain all 128 bits; Ekubo's own execution constraints still apply.
+
+Epoch 0 holds the initial buy-token/fee pair. A subsequent buyback using a
+changed pair advances the epoch, allowing 1,023 changes per sell token. Further
+changes revert; orders using the current pair can continue at the limit.
+Historical orders retain their original pair for claims and order-key views.
+`get_config_epoch` returns `u16`, bounded to the 10-bit range for stored orders.
+
+**Upgrade compatibility:** the order layout changed from `64/64/112/8` and the
+epoch ABI changed from `u8` to `u16`. Existing recorded orders must be migrated
+before upgrading to this layout, including claimed records exposed by historical
+views. Update generated ABI bindings when integrating this version.
+
 ### IBuyback (Permissionless)
 
 | Function | Description |
@@ -113,3 +143,11 @@ component!(path: StreamComponent, storage: stream, event: StreamEvent);
 - `game_components_interfaces` - Buyback and stream interface definitions
 - `ekubo` v4.0.1 - TWAMM integration for DCA orders
 - `openzeppelin` - ERC20, Ownable components
+
+### Claim batches across epochs
+
+A claim processes consecutive completed orders for one buy token. It stops before
+an order whose epoch changes the buy token, so the returned amount and
+`BuybackProceeds` event always use one asset. The bookmark remains at that next
+order; keepers call again for it, even with `limit = 0`. Fee-only changes can
+still share a batch. A zero-proceeds order also respects the token boundary.

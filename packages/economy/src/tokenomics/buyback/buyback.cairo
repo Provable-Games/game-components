@@ -21,7 +21,7 @@ pub mod BuybackComponent {
     use ekubo::interfaces::extensions::twamm::OrderKey;
     use ekubo::interfaces::positions::{IPositionsDispatcher, IPositionsDispatcherTrait};
     use game_components_interfaces::tokenomics::buyback::{
-        BuybackParams, EpochConfig, GlobalBuybackConfig, MAX_CONFIG_EPOCH, MAX_ORDER_AMOUNT,
+        BuybackParams, EpochConfig, GlobalBuybackConfig, MAX_CONFIG_EPOCH, MAX_ORDER_TIME,
         OrderInfo, PackedOrderInfo, TokenBuybackConfig,
     };
     use openzeppelin_interfaces::token::erc20::{IERC20Dispatcher, IERC20DispatcherTrait};
@@ -55,13 +55,13 @@ pub mod BuybackComponent {
         /// Current config epoch per sell token. Advances only when a buy_back
         /// sees a buy_token/fee pair different from the one the current epoch
         /// holds — not per order, and not per config write.
-        Buyback_config_epoch: Map<ContractAddress, u8>,
+        Buyback_config_epoch: Map<ContractAddress, u16>,
         /// The buy_token/fee pair each (sell_token, epoch) was opened with.
         /// An order names its epoch, so it can always rebuild the exact Ekubo
         /// OrderKey it was created with, whatever the config does afterwards.
         /// A zero `buy_token` means the epoch has never been written: config
         /// validation rejects a zero buy_token, so it cannot occur otherwise.
-        Buyback_epoch_config: Map<(ContractAddress, u8), EpochConfig>,
+        Buyback_epoch_config: Map<(ContractAddress, u16), EpochConfig>,
     }
 
     /// Events emitted by the Buyback component
@@ -143,6 +143,10 @@ pub mod BuybackComponent {
             assert(params.sell_token != zero_address, Errors::INVALID_SELL_TOKEN);
             assert(params.sell_token != config.buy_token, Errors::SELL_TOKEN_IS_BUY_TOKEN);
 
+            // Validate raw timestamps before any token transfer or Ekubo call.
+            assert(params.start_time <= MAX_ORDER_TIME, Errors::ORDER_TIME_TOO_LARGE);
+            assert(params.end_time <= MAX_ORDER_TIME, Errors::ORDER_TIME_TOO_LARGE);
+
             // === Start Time Validation ===
             let start_time = if params.start_time == 0 {
                 current_time
@@ -188,13 +192,6 @@ pub mod BuybackComponent {
 
             let amount: u128 = balance.try_into().expect(Errors::BALANCE_OVERFLOW);
             assert(amount >= config.minimum_amount, Errors::AMOUNT_BELOW_MINIMUM);
-
-            // The order record packs the amount into 120 bits. Rejected here so
-            // the error names its cause rather than surfacing from inside the
-            // storage packing. ~1.3e18 tokens at 18 decimals, so unreachable for
-            // any realistic supply — but a silent truncation would corrupt the
-            // stored order and only show up as a failed claim later.
-            assert(amount <= MAX_ORDER_AMOUNT, Errors::ORDER_AMOUNT_TOO_LARGE);
 
             // === Position Handling ===
             let positions_dispatcher = self.Buyback_positions_dispatcher.read();
@@ -299,7 +296,7 @@ pub mod BuybackComponent {
             // pair can no longer be hoisted out of the loop. Cache the last one
             // instead: consecutive orders almost always share an epoch, since a
             // new one opens only when the config actually changes.
-            let mut cached_epoch: u8 = 0;
+            let mut cached_epoch: u16 = 0;
             let mut cached_config = EpochConfig { buy_token: Zero::zero(), fee: 0 };
 
             let mut order_number = starting_bookmark;
@@ -318,8 +315,18 @@ pub mod BuybackComponent {
                 // Build the order key from the config THIS order was created
                 // under, not from whatever the config says now.
                 if cached_config.buy_token.is_zero() || cached_epoch != packed_order.epoch {
+                    let next_config = self
+                        .Buyback_epoch_config
+                        .read((sell_token, packed_order.epoch));
+                    // A scalar amount and one event must describe one asset. Leave
+                    // the next token's order at the bookmark for a subsequent call,
+                    // even when this batch's proceeds are zero.
+                    if !cached_config.buy_token.is_zero()
+                        && next_config.buy_token != cached_config.buy_token {
+                        break;
+                    }
                     cached_epoch = packed_order.epoch;
-                    cached_config = self.Buyback_epoch_config.read((sell_token, cached_epoch));
+                    cached_config = next_config;
                 }
                 let order_key = OrderKey {
                     sell_token: sell_token,
@@ -500,7 +507,7 @@ pub mod BuybackComponent {
         /// that reached an order, not orders and not config writes.
         fn get_config_epoch(
             self: @ComponentState<TContractState>, sell_token: ContractAddress,
-        ) -> u8 {
+        ) -> u16 {
             self.Buyback_config_epoch.read(sell_token)
         }
 
@@ -566,14 +573,6 @@ pub mod BuybackComponent {
                 Errors::MIN_DURATION_GT_MAX_DURATION,
             );
 
-            // buy_back requires minimum_amount <= amount <= MAX_ORDER_AMOUNT, so a
-            // minimum above the packing cap is a config no order can ever satisfy.
-            // Rejected here rather than leaving that sell token silently unbuyable.
-            assert(
-                global_config.default_minimum_amount <= MAX_ORDER_AMOUNT,
-                Errors::MINIMUM_AMOUNT_UNSATISFIABLE,
-            );
-
             // Store configuration
             self.Buyback_global_config.write(global_config);
             self
@@ -602,7 +601,7 @@ pub mod BuybackComponent {
             sell_token: ContractAddress,
             buy_token: ContractAddress,
             fee: u128,
-        ) -> u8 {
+        ) -> u16 {
             let current = self.Buyback_config_epoch.read(sell_token);
             let stored = self.Buyback_epoch_config.read((sell_token, current));
 
@@ -617,11 +616,8 @@ pub mod BuybackComponent {
                 return current;
             }
 
-            // Refused rather than wrapped. The epoch is 8 bits in the packed
-            // order record, so a 256th config would wrap to 0 and silently
-            // reinterpret every epoch-0 order under the newest config — wrong
-            // OrderKeys, and proceeds that can no longer be claimed. 255 changes
-            // per sell token is far past any real operational need.
+            // Never reuse an epoch: historical orders must retain their original
+            // OrderKeys. Ten bits allow 1,023 changes after the initial config.
             assert(current < MAX_CONFIG_EPOCH, Errors::CONFIG_EPOCHS_EXHAUSTED);
 
             let next = current + 1;
@@ -676,12 +672,6 @@ pub mod BuybackComponent {
                 Errors::MIN_DURATION_GT_MAX_DURATION,
             );
 
-            // Same unsatisfiable-minimum rule as the initializer.
-            assert(
-                config.default_minimum_amount <= MAX_ORDER_AMOUNT,
-                Errors::MINIMUM_AMOUNT_UNSATISFIABLE,
-            );
-
             let old_config = self.Buyback_global_config.read();
             self.Buyback_global_config.write(config);
             self.emit(GlobalConfigUpdated { old_config, new_config: config });
@@ -702,7 +692,6 @@ pub mod BuybackComponent {
                 assert(c.min_delay <= c.max_delay, Errors::MIN_DELAY_GT_MAX_DELAY);
                 assert(c.max_duration != 0, Errors::MAX_DURATION_ZERO);
                 assert(c.min_duration <= c.max_duration, Errors::MIN_DURATION_GT_MAX_DURATION);
-                assert(c.minimum_amount <= MAX_ORDER_AMOUNT, Errors::MINIMUM_AMOUNT_UNSATISFIABLE);
             }
 
             let old_config = self.Buyback_token_config.read(sell_token);
