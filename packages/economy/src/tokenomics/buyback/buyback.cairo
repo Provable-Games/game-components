@@ -96,7 +96,7 @@ pub mod BuybackComponent {
         pub sell_token: ContractAddress,
         #[key]
         pub buy_token: ContractAddress,
-        pub amount: u128,
+        pub amount: u256,
         pub orders_claimed: u128,
         pub new_bookmark: u128,
     }
@@ -265,7 +265,7 @@ pub mod BuybackComponent {
         /// Claim proceeds from completed buyback orders
         fn claim_buyback_proceeds(
             ref self: ComponentState<TContractState>, sell_token: ContractAddress, limit: u16,
-        ) -> u128 {
+        ) -> u256 {
             let position_id = self.Buyback_position_token_id.read(sell_token);
             assert(position_id != 0, Errors::POSITION_NOT_INITIALIZED);
 
@@ -300,7 +300,9 @@ pub mod BuybackComponent {
             let mut cached_config = EpochConfig { buy_token: Zero::zero(), fee: 0 };
 
             let mut order_number = starting_bookmark;
-            let mut total_proceeds: u128 = 0;
+            // Each withdrawal fits u128, but the sum across orders need not.
+            // At most u128::MAX records each pay at most u128::MAX, fitting u256.
+            let mut total_proceeds: u256 = 0;
 
             // Iterate through orders and claim completed ones
             while order_number < max_index {
@@ -345,7 +347,7 @@ pub mod BuybackComponent {
                 let proceeds = positions_dispatcher
                     .withdraw_proceeds_from_sale_to(position_id, order_key, config.treasury);
 
-                total_proceeds += proceeds;
+                total_proceeds += proceeds.into();
                 order_number += 1;
             }
 

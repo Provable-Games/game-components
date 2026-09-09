@@ -163,9 +163,10 @@ pub trait IBuyback<TContractState> {
     /// Stops before a buy-token change, the first unfinished order, or `limit`
     /// orders (0 = no count limit). Returns units of the event's buy token.
     /// Call again while completed orders remain; fee-only epochs may share a batch.
+    /// The u256 total can exceed u128 even though individual withdrawals cannot.
     fn claim_buyback_proceeds(
         ref self: TContractState, sell_token: ContractAddress, limit: u16,
-    ) -> u128;
+    ) -> u256;
 
     /// Sweep any accumulated buy tokens directly to treasury
     fn sweep_buy_token_to_treasury(ref self: TContractState) -> u256;

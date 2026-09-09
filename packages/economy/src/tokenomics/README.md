@@ -151,3 +151,8 @@ an order whose epoch changes the buy token, so the returned amount and
 `BuybackProceeds` event always use one asset. The bookmark remains at that next
 order; keepers call again for it, even with `limit = 0`. Fee-only changes can
 still share a batch. A zero-proceeds order also respects the token boundary.
+
+Claim totals and `BuybackProceeds.amount` use `u256` so several full-u128
+withdrawals cannot overflow the batch. This changes the claim return and event
+ABI: amount serializes as low/high u128 limbs; consumers must update decoders.
+Individual order amounts and the 218-bit packed layout remain unchanged.

@@ -1513,6 +1513,49 @@ fn test_claim_proceeds_emits_event() {
     assert(events.events.len() > 0, 'Should emit BuybackProceeds');
 }
 
+/// Individual Ekubo withdrawals fit u128, but a same-asset batch need not.
+#[test]
+fn test_claim_batch_total_exceeds_u128() {
+    for limit in array![0_u16, 2_u16] {
+        let buy_token = deploy_mock_erc20("Buy", "BUY");
+        let sell_token = deploy_mock_erc20("Sell", "SELL");
+        let contract = setup_buyback_with_explicit_config(buy_token, sell_token);
+        let dispatcher = IBuybackDispatcher { contract_address: contract };
+        let token = IMockERC20Dispatcher { contract_address: sell_token };
+        let positions: ContractAddress = 'POSITIONS'.try_into().unwrap();
+        start_cheat_block_timestamp_global(1000);
+        let end_time = 1000 + defaults::MIN_DURATION;
+        mock_call(positions, selector!("mint_and_increase_sell_amount"), (42_u64, 100_u128), 1);
+        mock_call(positions, selector!("increase_sell_amount"), 100_u128, 1);
+        // Distinct keys allow two independent, maximum-sized withdrawals.
+        for offset in 0..2_u64 {
+            token.mint(contract, amounts::THOUSAND_TOKENS);
+            dispatcher
+                .buy_back(BuybackParams { sell_token, start_time: 0, end_time: end_time + offset });
+        }
+        start_cheat_block_timestamp_global(end_time + 2);
+        mock_call(positions, selector!("withdraw_proceeds_from_sale_to"), MAX_ORDER_AMOUNT, 2);
+        let mut spy = spy_events();
+        let claimed = dispatcher.claim_buyback_proceeds(sell_token, limit);
+        let expected = u256 { low: MAX_ORDER_AMOUNT - 1, high: 1 };
+        assert(claimed == expected, 'Full batch total');
+        assert(dispatcher.get_order_bookmark(sell_token) == 2, 'Both orders consumed');
+        assert(dispatcher.get_unclaimed_orders_count(sell_token) == 0, 'Queue drained');
+        let events = spy.get_events();
+        assert(events.events.len() == 1, 'One batch event');
+        let (source, event) = events.events.at(0);
+        assert(*source == contract, 'Correct event source');
+        assert(*event.keys.at(0) == selector!("BuybackProceeds"), 'Correct event');
+        assert(*event.keys.at(1) == sell_token.into(), 'Correct sell token');
+        assert(*event.keys.at(2) == buy_token.into(), 'Correct buy token');
+        assert(event.data.len() == 4, 'Wide amount event encoding');
+        assert(*event.data.at(0) == expected.low.into(), 'Amount low limb');
+        assert(*event.data.at(1) == expected.high.into(), 'Amount high limb');
+        assert(*event.data.at(2) == 2, 'Both orders in event');
+        assert(*event.data.at(3) == 2, 'Event bookmark advanced');
+    }
+}
+
 // ============================================================================
 // Order Info and Order Key Tests
 // ============================================================================
@@ -2152,7 +2195,8 @@ fn assert_claim_token_boundary(first_proceeds: u128) {
             10
         };
         assert(
-            dispatcher.claim_buyback_proceeds(sell_token, limit) == amount, 'One asset per result',
+            dispatcher.claim_buyback_proceeds(sell_token, limit) == amount.into(),
+            'One asset per result',
         );
         bookmark += 1;
         assert(dispatcher.get_order_bookmark(sell_token) == bookmark, 'Boundary bookmark');
@@ -2164,7 +2208,8 @@ fn assert_claim_token_boundary(first_proceeds: u128) {
         assert(*event.keys.at(1) == sell_token.into(), 'Correct sell token');
         assert(*event.keys.at(2) == buy_token.into(), 'Correct buy token');
         assert(*event.data.at(0) == amount.into(), 'Correct amount');
-        assert(*event.data.at(1) == 1, 'One order claimed');
-        assert(*event.data.at(2) == bookmark.into(), 'Correct event bookmark');
+        assert(*event.data.at(1) == 0, 'Zero high amount limb');
+        assert(*event.data.at(2) == 1, 'One order claimed');
+        assert(*event.data.at(3) == bookmark.into(), 'Correct event bookmark');
     }
 }
