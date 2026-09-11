@@ -325,6 +325,9 @@ fn test_playability_follows_lifecycle_window() {
     // The embedding game's internal pre-action guard agrees with the view
     game.assert_owner_and_playable(token_id, ALICE());
 
+    start_cheat_block_timestamp(token.contract_address, 2999);
+    game.assert_owner_and_playable(token_id, ALICE());
+
     start_cheat_block_timestamp(token.contract_address, 3000);
     assert!(!token.is_playable(token_id), "Expired at window end");
 }
@@ -338,6 +341,7 @@ fn test_immortal_token_always_playable() {
     );
     start_cheat_block_timestamp(token.contract_address, 99999999);
     assert!(token.is_playable(token_id), "No end means playable forever");
+    game_of(token).assert_owner_and_playable(token_id, ALICE());
 }
 
 // ================================================================================================
