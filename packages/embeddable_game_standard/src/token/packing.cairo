@@ -413,3 +413,20 @@ pub fn to_token_metadata(packed: PackedTokenId) -> TokenMetadata {
         metadata: packed.metadata,
     }
 }
+
+/// Decode only the lifecycle, preserving the standard token's relative timestamp layout.
+#[inline(always)]
+pub fn unpack_lifecycle(token_id: felt252) -> Lifecycle {
+    let packed: u256 = token_id.into();
+    let (low_rest, low_word) = DivRem::div_rem(packed.low, nz128::TWO_POW_60);
+    let low_word: u64 = low_word.try_into().unwrap();
+    let (start_delay, minted_at) = DivRem::div_rem(low_word, nz64::TWO_POW_35);
+    let (_, end_delay) = DivRem::div_rem(low_rest, nz128::TWO_POW_25);
+    let end_delay: u64 = end_delay.try_into().unwrap();
+    let start = minted_at + start_delay;
+    Lifecycle { start, end: if end_delay == 0 {
+        0
+    } else {
+        start + end_delay
+    } }
+}

@@ -4,4 +4,5 @@
 // game_components_test_common::mocks via build-external-contracts.
 
 mod test_gas_bench;
+mod test_lifecycle_projection;
 mod test_token;
