@@ -783,9 +783,8 @@ pub mod MinigameTokenComponent {
         /// game_over / completed_objective state to consult. Games gate dead
         /// runs themselves; they are the source of truth.
         fn assert_lifecycle_open(self: @ComponentState<TContractState>, token_id: felt252) {
-            let metadata = to_token_metadata(unpack_token_id(token_id));
+            let lifecycle = crate::token::packing::unpack_lifecycle(token_id);
             let current_time = get_block_timestamp();
-            let lifecycle = metadata.lifecycle;
             assert!(
                 lifecycle.can_start(current_time),
                 "MinigameToken: Token is not playable - game has not started (now={}, start={})",
