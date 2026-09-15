@@ -6,7 +6,9 @@ use game_components_economy::tokenomics::{
     BuybackParams, IBuybackAdminDispatcher, IBuybackAdminDispatcherTrait, IBuybackDispatcher,
     IBuybackDispatcherTrait, TokenBuybackConfig,
 };
-use game_components_interfaces::tokenomics::buyback::MAX_ORDER_AMOUNT;
+use game_components_interfaces::tokenomics::buyback::{
+    MAX_CONFIG_EPOCH, MAX_ORDER_AMOUNT, MAX_ORDER_TIME,
+};
 use openzeppelin_interfaces::token::erc20::{IERC20Dispatcher, IERC20DispatcherTrait};
 use snforge_std::{
     EventSpyTrait, map_entry_address, mock_call, spy_events, start_cheat_block_timestamp_global,
@@ -166,30 +168,6 @@ fn test_initialization_rejects_min_duration_gt_max_duration() {
 }
 
 #[test]
-#[ignore]
-fn test_initialization_rejects_minimum_above_order_cap() {
-    let buyback_token = deploy_mock_erc20("Buyback", "BUY");
-    let mock_positions: ContractAddress = 'POSITIONS'.try_into().unwrap();
-    let mock_extension: ContractAddress = 'EXTENSION'.try_into().unwrap();
-
-    // A minimum above the packing cap can never be satisfied by any balance
-    let invalid_config = game_components_economy::tokenomics::GlobalBuybackConfig {
-        default_buy_token: buyback_token,
-        default_treasury: TREASURY(),
-        default_minimum_amount: MAX_ORDER_AMOUNT + 1,
-        default_min_delay: 0,
-        default_max_delay: 0,
-        default_min_duration: defaults::MIN_DURATION,
-        default_max_duration: defaults::MAX_DURATION,
-        default_fee: defaults::DEFAULT_FEE,
-    };
-
-    // This panics during deployment with 'minimum_amount unsatisfiable'
-    // Validation is tested via test_set_global_config_rejects_minimum_above_order_cap
-    deploy_autonomous_buyback(OWNER(), invalid_config, mock_positions, mock_extension);
-}
-
-#[test]
 #[should_panic(expected: 'min_delay > max_delay')]
 fn test_set_global_config_rejects_min_delay_with_zero_max_delay() {
     // Under fail-closed semantics max_delay = 0 means "must start
@@ -262,30 +240,6 @@ fn test_set_global_config_rejects_max_duration_zero() {
 }
 
 #[test]
-#[should_panic(expected: 'minimum_amount unsatisfiable')]
-fn test_set_global_config_rejects_minimum_above_order_cap() {
-    // buy_back requires minimum_amount <= amount <= MAX_ORDER_AMOUNT. A minimum
-    // above the cap is a config no balance can ever satisfy, so it would leave
-    // every sell token on the defaults silently unbuyable. Rejected at write time.
-    let buyback_token = deploy_mock_erc20("Buyback", "BUY");
-    let contract = setup_buyback_contract(buyback_token);
-    let admin_dispatcher = IBuybackAdminDispatcher { contract_address: contract };
-
-    let invalid_config = game_components_economy::tokenomics::GlobalBuybackConfig {
-        default_buy_token: buyback_token,
-        default_treasury: TREASURY(),
-        default_minimum_amount: MAX_ORDER_AMOUNT + 1,
-        default_min_delay: 0,
-        default_max_delay: 0,
-        default_min_duration: defaults::MIN_DURATION,
-        default_max_duration: defaults::MAX_DURATION,
-        default_fee: defaults::DEFAULT_FEE,
-    };
-    start_cheat_caller_address(contract, OWNER());
-    admin_dispatcher.set_global_config(invalid_config);
-}
-
-#[test]
 fn test_set_global_config_accepts_minimum_at_order_cap() {
     // The cap itself is satisfiable — exactly one amount qualifies — so the
     // bound is <=, not <. Pins which side of the boundary is rejected.
@@ -312,21 +266,6 @@ fn test_set_global_config_accepts_minimum_at_order_cap() {
         dispatcher.get_global_config().default_minimum_amount == MAX_ORDER_AMOUNT,
         'cap minimum accepted',
     );
-}
-
-#[test]
-#[should_panic(expected: 'minimum_amount unsatisfiable')]
-fn test_set_token_config_rejects_minimum_above_order_cap() {
-    // Same rule per token: the per-token minimum overrides the global default,
-    // so it needs the same bound or the override reintroduces the dead config.
-    let buyback_token = deploy_mock_erc20("Buyback", "BUY");
-    let sell_token = deploy_mock_erc20("Sell", "SELL");
-    let contract = setup_buyback_contract(buyback_token);
-    let admin_dispatcher = IBuybackAdminDispatcher { contract_address: contract };
-
-    let invalid_config = defaults::token_config_with_minimum(MAX_ORDER_AMOUNT + 1);
-    start_cheat_caller_address(contract, OWNER());
-    admin_dispatcher.set_token_config(sell_token, Option::Some(invalid_config));
 }
 
 #[test]
@@ -700,7 +639,6 @@ fn test_buy_back_rejects_duration_too_long() {
     };
     dispatcher.buy_back(params);
 }
-
 
 #[test]
 #[should_panic(expected: 'No balance to buyback')]
@@ -1575,6 +1513,49 @@ fn test_claim_proceeds_emits_event() {
     assert(events.events.len() > 0, 'Should emit BuybackProceeds');
 }
 
+/// Individual Ekubo withdrawals fit u128, but a same-asset batch need not.
+#[test]
+fn test_claim_batch_total_exceeds_u128() {
+    for limit in array![0_u16, 2_u16] {
+        let buy_token = deploy_mock_erc20("Buy", "BUY");
+        let sell_token = deploy_mock_erc20("Sell", "SELL");
+        let contract = setup_buyback_with_explicit_config(buy_token, sell_token);
+        let dispatcher = IBuybackDispatcher { contract_address: contract };
+        let token = IMockERC20Dispatcher { contract_address: sell_token };
+        let positions: ContractAddress = 'POSITIONS'.try_into().unwrap();
+        start_cheat_block_timestamp_global(1000);
+        let end_time = 1000 + defaults::MIN_DURATION;
+        mock_call(positions, selector!("mint_and_increase_sell_amount"), (42_u64, 100_u128), 1);
+        mock_call(positions, selector!("increase_sell_amount"), 100_u128, 1);
+        // Distinct keys allow two independent, maximum-sized withdrawals.
+        for offset in 0..2_u64 {
+            token.mint(contract, amounts::THOUSAND_TOKENS);
+            dispatcher
+                .buy_back(BuybackParams { sell_token, start_time: 0, end_time: end_time + offset });
+        }
+        start_cheat_block_timestamp_global(end_time + 2);
+        mock_call(positions, selector!("withdraw_proceeds_from_sale_to"), MAX_ORDER_AMOUNT, 2);
+        let mut spy = spy_events();
+        let claimed = dispatcher.claim_buyback_proceeds(sell_token, limit);
+        let expected = u256 { low: MAX_ORDER_AMOUNT - 1, high: 1 };
+        assert(claimed == expected, 'Full batch total');
+        assert(dispatcher.get_order_bookmark(sell_token) == 2, 'Both orders consumed');
+        assert(dispatcher.get_unclaimed_orders_count(sell_token) == 0, 'Queue drained');
+        let events = spy.get_events();
+        assert(events.events.len() == 1, 'One batch event');
+        let (source, event) = events.events.at(0);
+        assert(*source == contract, 'Correct event source');
+        assert(*event.keys.at(0) == selector!("BuybackProceeds"), 'Correct event');
+        assert(*event.keys.at(1) == sell_token.into(), 'Correct sell token');
+        assert(*event.keys.at(2) == buy_token.into(), 'Correct buy token');
+        assert(event.data.len() == 4, 'Wide amount event encoding');
+        assert(*event.data.at(0) == expected.low.into(), 'Amount low limb');
+        assert(*event.data.at(1) == expected.high.into(), 'Amount high limb');
+        assert(*event.data.at(2) == 2, 'Both orders in event');
+        assert(*event.data.at(3) == 2, 'Event bookmark advanced');
+    }
+}
+
 // ============================================================================
 // Order Info and Order Key Tests
 // ============================================================================
@@ -1850,7 +1831,7 @@ fn test_token_config_rejects_zero_max_duration() {
 // pair it was created under, so the pair can move while orders are open and
 // every order stays claimable with the exact Ekubo OrderKey it was opened with.
 
-/// An unchanged config must not burn an epoch. There are only 255, and a
+/// An unchanged config must not burn an epoch. There are only 1,023, and a
 /// contract that advanced on every order would exhaust them.
 #[test]
 fn test_epoch_does_not_advance_when_config_is_unchanged() {
@@ -1981,18 +1962,8 @@ fn test_order_getters_survive_a_full_drain() {
     assert(key.end_time == end_time, 'Key end time intact');
 }
 
-/// The 256th config change is REFUSED, not wrapped.
-///
-/// The epoch is 8 bits inside the packed order record. Wrapping to 0 would
-/// silently reinterpret every epoch-0 order under the newest config, producing
-/// wrong OrderKeys and proceeds that can no longer be claimed — a loud refusal
-/// is much the better failure. 255 changes per sell token is far past any real
-/// operational need.
-///
-/// Driving 255 real config changes exceeds the harness's 1000-event cap, so the
-/// epoch is seeded at its maximum directly and the refusal is exercised from
-/// there. The seeded state is exactly what 255 changes would leave behind: a
-/// current epoch of 255 with a config written into it.
+/// The 1,024th config change is refused so historical OrderKeys remain valid.
+/// Seed the last epoch directly to stay below the test harness event limit.
 #[test]
 #[should_panic(expected: 'Config epochs exhausted')]
 fn test_epoch_exhaustion_is_refused() {
@@ -2004,20 +1975,23 @@ fn test_epoch_exhaustion_is_refused() {
     let mock_erc20 = IMockERC20Dispatcher { contract_address: sell_token };
     let mock_positions: ContractAddress = 'POSITIONS'.try_into().unwrap();
 
-    // Seed: current epoch = 255, with a config in it.
+    // Seed: current epoch = 1023, with a config in it.
     store(
         contract,
         map_entry_address(selector!("Buyback_config_epoch"), array![sell_token.into()].span()),
-        array![255].span(),
+        array![MAX_CONFIG_EPOCH.into()].span(),
     );
     store(
         contract,
-        map_entry_address(selector!("Buyback_epoch_config"), array![sell_token.into(), 255].span()),
+        map_entry_address(
+            selector!("Buyback_epoch_config"),
+            array![sell_token.into(), MAX_CONFIG_EPOCH.into()].span(),
+        ),
         array![buyback_token.into(), defaults::DEFAULT_FEE.into()].span(),
     );
-    assert(dispatcher.get_config_epoch(sell_token) == 255, 'Seeded at the cap');
+    assert(dispatcher.get_config_epoch(sell_token) == MAX_CONFIG_EPOCH, 'Seeded at the cap');
 
-    // A different fee would need epoch 256, which does not exist.
+    // A different fee would need epoch 1024, which does not exist.
     start_cheat_caller_address(contract, OWNER());
     admin_dispatcher
         .set_token_config(
@@ -2045,4 +2019,197 @@ fn test_epoch_exhaustion_is_refused() {
                 sell_token, start_time: 0, end_time: 1000 + defaults::MIN_DURATION + 1,
             },
         );
+}
+
+/// A full u128 balance survives transfer, packed storage and the public getter.
+#[test]
+fn test_buyback_accepts_full_u128_amount() {
+    let buyback_token = deploy_mock_erc20("Buyback", "BUY");
+    let sell_token = deploy_mock_erc20("Sell", "SELL");
+    let contract = setup_buyback_with_explicit_config(buyback_token, sell_token);
+    let dispatcher = IBuybackDispatcher { contract_address: contract };
+    let token = IMockERC20Dispatcher { contract_address: sell_token };
+    let positions: ContractAddress = 'POSITIONS'.try_into().unwrap();
+    start_cheat_block_timestamp_global(MAX_ORDER_TIME - defaults::MIN_DURATION);
+    mock_call(positions, selector!("mint_and_increase_sell_amount"), (42_u64, 100_u128), 1);
+    token.mint(contract, MAX_ORDER_AMOUNT.into());
+    dispatcher.buy_back(BuybackParams { sell_token, start_time: 0, end_time: MAX_ORDER_TIME });
+    let info = dispatcher.get_order_info(sell_token, 0);
+    assert(info.amount == MAX_ORDER_AMOUNT, 'Full amount preserved');
+    assert(info.start_time == 0, 'Immediate sentinel preserved');
+    assert(info.end_time == MAX_ORDER_TIME, 'Full timestamp preserved');
+    assert(
+        IERC20Dispatcher { contract_address: sell_token }
+            .balance_of(positions) == MAX_ORDER_AMOUNT
+            .into(),
+        'Full balance transferred',
+    );
+}
+
+#[test]
+#[should_panic(expected: 'Balance overflow')]
+fn test_buyback_rejects_balance_above_u128() {
+    let buyback_token = deploy_mock_erc20("Buyback", "BUY");
+    let sell_token = deploy_mock_erc20("Sell", "SELL");
+    let contract = setup_buyback_with_explicit_config(buyback_token, sell_token);
+    start_cheat_block_timestamp_global(1000);
+    IMockERC20Dispatcher { contract_address: sell_token }
+        .mint(contract, 0x100000000000000000000000000000000);
+    IBuybackDispatcher { contract_address: contract }
+        .buy_back(
+            BuybackParams { sell_token, start_time: 0, end_time: 1000 + defaults::MIN_DURATION },
+        );
+}
+
+#[test]
+#[should_panic(expected: 'Order time too large')]
+fn test_buyback_rejects_start_time_overflow_before_external_calls() {
+    let buyback_token = deploy_mock_erc20("Buyback", "BUY");
+    let contract = setup_buyback_contract(buyback_token);
+    IBuybackDispatcher { contract_address: contract }
+        .buy_back(
+            BuybackParams {
+                sell_token: 'UNDEPLOYED'.try_into().unwrap(),
+                start_time: MAX_ORDER_TIME + 1,
+                end_time: MAX_ORDER_TIME + 2,
+            },
+        );
+}
+
+#[test]
+#[should_panic(expected: 'Order time too large')]
+fn test_buyback_rejects_end_time_overflow_before_external_calls() {
+    let buyback_token = deploy_mock_erc20("Buyback", "BUY");
+    let contract = setup_buyback_contract(buyback_token);
+    IBuybackDispatcher { contract_address: contract }
+        .buy_back(
+            BuybackParams {
+                sell_token: 'UNDEPLOYED'.try_into().unwrap(),
+                start_time: 0,
+                end_time: MAX_ORDER_TIME + 1,
+            },
+        );
+}
+
+/// Exercise both the old u8 boundary and the last available epoch, then claim
+/// orders on either side using their original configurations.
+#[test]
+fn test_epoch_transitions_above_u8_and_at_cap() {
+    for previous in array![255_u16, MAX_CONFIG_EPOCH - 1] {
+        let buyback_token = deploy_mock_erc20("Buyback", "BUY");
+        let sell_token = deploy_mock_erc20("Sell", "SELL");
+        let contract = setup_buyback_with_explicit_config(buyback_token, sell_token);
+        let dispatcher = IBuybackDispatcher { contract_address: contract };
+        let admin = IBuybackAdminDispatcher { contract_address: contract };
+        let token = IMockERC20Dispatcher { contract_address: sell_token };
+        let positions: ContractAddress = 'POSITIONS'.try_into().unwrap();
+        store(
+            contract,
+            map_entry_address(selector!("Buyback_config_epoch"), array![sell_token.into()].span()),
+            array![previous.into()].span(),
+        );
+        store(
+            contract,
+            map_entry_address(
+                selector!("Buyback_epoch_config"),
+                array![sell_token.into(), previous.into()].span(),
+            ),
+            array![buyback_token.into(), defaults::DEFAULT_FEE.into()].span(),
+        );
+        start_cheat_block_timestamp_global(1000);
+        let end_time = 1000 + defaults::MIN_DURATION;
+        mock_call(positions, selector!("mint_and_increase_sell_amount"), (42_u64, 100_u128), 1);
+        mock_call(positions, selector!("increase_sell_amount"), 100_u128, 2);
+        token.mint(contract, amounts::THOUSAND_TOKENS);
+        dispatcher.buy_back(BuybackParams { sell_token, start_time: 0, end_time });
+        let old_key = dispatcher.get_order_key(sell_token, 0);
+        let mut config = dispatcher.get_effective_config(sell_token);
+        config.fee += 1;
+        start_cheat_caller_address(contract, OWNER());
+        admin.set_token_config(sell_token, Option::Some(config));
+        stop_cheat_caller_address(contract);
+        token.mint(contract, amounts::THOUSAND_TOKENS);
+        dispatcher.buy_back(BuybackParams { sell_token, start_time: 0, end_time });
+        assert(dispatcher.get_config_epoch(sell_token) == previous + 1, 'Epoch advanced');
+        assert(dispatcher.get_order_key(sell_token, 0) == old_key, 'Historical key preserved');
+        assert(dispatcher.get_order_key(sell_token, 1).fee == config.fee, 'New epoch fee');
+        // Even at 1023, further orders with the same pair remain valid.
+        token.mint(contract, amounts::THOUSAND_TOKENS);
+        dispatcher.buy_back(BuybackParams { sell_token, start_time: 0, end_time });
+        assert(dispatcher.get_config_epoch(sell_token) == previous + 1, 'Epoch reused');
+        start_cheat_block_timestamp_global(end_time + 1);
+        mock_call(positions, selector!("withdraw_proceeds_from_sale_to"), 100_u128, 3);
+        dispatcher.claim_buyback_proceeds(sell_token, 0);
+        assert(dispatcher.get_order_bookmark(sell_token) == 3, 'All orders claimed');
+        assert(dispatcher.get_order_key(sell_token, 0) == old_key, 'Key preserved after claim');
+    }
+}
+
+/// Each result/event describes one asset; the next asset remains claimable.
+#[test]
+fn test_claim_stops_at_buy_token_change() {
+    assert_claim_token_boundary(500);
+}
+
+/// Zero proceeds still consume an order and must not merge its event with another asset.
+#[test]
+fn test_claim_stops_at_buy_token_change_after_zero_proceeds() {
+    assert_claim_token_boundary(0);
+}
+
+fn assert_claim_token_boundary(first_proceeds: u128) {
+    let first_buy_token = deploy_mock_erc20("First", "A");
+    let second_buy_token = deploy_mock_erc20("Second", "B");
+    let sell_token = deploy_mock_erc20("Sell", "SELL");
+    let contract = setup_buyback_with_explicit_config(first_buy_token, sell_token);
+    let dispatcher = IBuybackDispatcher { contract_address: contract };
+    let admin = IBuybackAdminDispatcher { contract_address: contract };
+    let token = IMockERC20Dispatcher { contract_address: sell_token };
+    let positions: ContractAddress = 'POSITIONS'.try_into().unwrap();
+    start_cheat_block_timestamp_global(1000);
+    let end_time = 1000 + defaults::MIN_DURATION;
+    mock_call(positions, selector!("mint_and_increase_sell_amount"), (42_u64, 100_u128), 1);
+    mock_call(positions, selector!("increase_sell_amount"), 100_u128, 2);
+    // A -> B -> A proves the bookmark advances through every asset boundary.
+    for buy_token in array![first_buy_token, second_buy_token, first_buy_token] {
+        let mut config = dispatcher.get_effective_config(sell_token);
+        config.buy_token = buy_token;
+        start_cheat_caller_address(contract, OWNER());
+        admin.set_token_config(sell_token, Option::Some(config));
+        stop_cheat_caller_address(contract);
+        token.mint(contract, amounts::THOUSAND_TOKENS);
+        dispatcher.buy_back(BuybackParams { sell_token, start_time: 0, end_time });
+    }
+    start_cheat_block_timestamp_global(end_time + 1);
+    let mut bookmark: u128 = 0;
+    for (buy_token, amount) in array![
+        (first_buy_token, first_proceeds), (second_buy_token, 700_u128),
+        (first_buy_token, 900_u128),
+    ] {
+        mock_call(positions, selector!("withdraw_proceeds_from_sale_to"), amount, 1);
+        let mut spy = spy_events();
+        // Exercise both unlimited and explicit count limits spanning the boundary.
+        let limit = if bookmark == 0 {
+            0
+        } else {
+            10
+        };
+        assert(
+            dispatcher.claim_buyback_proceeds(sell_token, limit) == amount.into(),
+            'One asset per result',
+        );
+        bookmark += 1;
+        assert(dispatcher.get_order_bookmark(sell_token) == bookmark, 'Boundary bookmark');
+        let events = spy.get_events();
+        assert(events.events.len() == 1, 'One event per batch');
+        let (source, event) = events.events.at(0);
+        assert(*source == contract, 'Correct event source');
+        assert(*event.keys.at(0) == selector!("BuybackProceeds"), 'Correct event');
+        assert(*event.keys.at(1) == sell_token.into(), 'Correct sell token');
+        assert(*event.keys.at(2) == buy_token.into(), 'Correct buy token');
+        assert(*event.data.at(0) == amount.into(), 'Correct amount');
+        assert(*event.data.at(1) == 0, 'Zero high amount limb');
+        assert(*event.data.at(2) == 1, 'One order claimed');
+        assert(*event.data.at(3) == bookmark.into(), 'Correct event bookmark');
+    }
 }

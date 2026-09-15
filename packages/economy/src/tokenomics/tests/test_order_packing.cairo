@@ -7,7 +7,7 @@
 #[cfg(test)]
 mod order_packing_tests {
     use game_components_interfaces::tokenomics::buyback::{
-        MAX_CONFIG_EPOCH, MAX_ORDER_AMOUNT, PackedOrderInfo,
+        MAX_CONFIG_EPOCH, MAX_ORDER_AMOUNT, MAX_ORDER_TIME, PackedOrderInfo,
     };
     use starknet::Store;
     use starknet::storage_access::StorePacking;
@@ -42,8 +42,8 @@ mod order_packing_tests {
     fn roundtrips_at_the_boundaries() {
         roundtrip(
             PackedOrderInfo {
-                start_time: 0xFFFFFFFFFFFFFFFF,
-                end_time: 0xFFFFFFFFFFFFFFFF,
+                start_time: MAX_ORDER_TIME,
+                end_time: MAX_ORDER_TIME,
                 amount: MAX_ORDER_AMOUNT,
                 epoch: MAX_CONFIG_EPOCH,
             },
@@ -56,16 +56,12 @@ mod order_packing_tests {
     }
 
     /// Adjacent fields must not bleed into each other: a value in one must not
-    /// appear in the next. `epoch` sits in the top byte, directly above
+    /// appear in the next. `epoch` sits in the top 10 bits, directly above
     /// `amount`, so a missing mask on the amount read shows up here.
     #[test]
     fn does_not_bleed_between_adjacent_fields() {
-        roundtrip(
-            PackedOrderInfo { start_time: 0xFFFFFFFFFFFFFFFF, end_time: 0, amount: 0, epoch: 0 },
-        );
-        roundtrip(
-            PackedOrderInfo { start_time: 0, end_time: 0xFFFFFFFFFFFFFFFF, amount: 0, epoch: 0 },
-        );
+        roundtrip(PackedOrderInfo { start_time: MAX_ORDER_TIME, end_time: 0, amount: 0, epoch: 0 });
+        roundtrip(PackedOrderInfo { start_time: 0, end_time: MAX_ORDER_TIME, amount: 0, epoch: 0 });
         roundtrip(
             PackedOrderInfo { start_time: 0, end_time: 0, amount: MAX_ORDER_AMOUNT, epoch: 0 },
         );
@@ -75,7 +71,7 @@ mod order_packing_tests {
     }
 
     /// A full-width amount alongside a non-zero epoch. If `unpack` read the
-    /// amount without masking off the epoch byte, this is where it would come
+    /// amount without masking off the epoch bits, this is where it would come
     /// back wrong rather than merely large.
     #[test]
     fn epoch_does_not_leak_into_a_full_amount() {
@@ -89,14 +85,90 @@ mod order_packing_tests {
         );
     }
 
-    /// One over the cap must be refused, not silently wrapped.
     #[test]
-    #[should_panic(expected: 'Order amount too large')]
-    fn rejects_an_amount_that_would_truncate() {
+    #[fuzzer(runs: 256)]
+    fn roundtrips_arbitrary_fields(start_time: u64, end_time: u64, amount: u128, epoch: u16) {
+        roundtrip(
+            PackedOrderInfo {
+                start_time: start_time & MAX_ORDER_TIME,
+                end_time: end_time & MAX_ORDER_TIME,
+                amount,
+                epoch: epoch & MAX_CONFIG_EPOCH,
+            },
+        );
+    }
+
+    /// Fix the encoding independently of the roundtrip, including field offsets.
+    #[test]
+    fn layout_matches_218_bit_encoding() {
+        let packed = StorePacking::<
+            PackedOrderInfo, felt252,
+        >::pack(
+            PackedOrderInfo {
+                start_time: MAX_ORDER_TIME,
+                end_time: MAX_ORDER_TIME,
+                amount: MAX_ORDER_AMOUNT,
+                epoch: MAX_CONFIG_EPOCH,
+            },
+        );
+        assert(
+            packed == 0x3ffffffffffffffffffffffffffffffffffffffffffffffffffffff,
+            'Wrong packed maximum',
+        );
+        let packed = StorePacking::<
+            PackedOrderInfo, felt252,
+        >::pack(PackedOrderInfo { start_time: 1, end_time: 1, amount: 1, epoch: 1 });
+        assert(
+            packed == 0x10000000000000000000000000000000100000000010000000001,
+            'Wrong field offsets',
+        );
+    }
+
+    /// Future fields in the reserved high bits must not bleed into the epoch.
+    #[test]
+    #[fuzzer(runs: 256)]
+    fn reserved_bits_do_not_change_existing_fields(reserved: u64) {
+        let order = PackedOrderInfo {
+            start_time: MAX_ORDER_TIME,
+            end_time: MAX_ORDER_TIME,
+            amount: MAX_ORDER_AMOUNT,
+            epoch: MAX_CONFIG_EPOCH,
+        };
+        let packed = StorePacking::<PackedOrderInfo, felt252>::pack(order);
+        let reserved: felt252 = (reserved & 0x1ffffffff).into();
+        let extended = packed
+            + reserved * 0x4000000000000000000000000000000000000000000000000000000;
+        let decoded = StorePacking::<PackedOrderInfo, felt252>::unpack(extended);
+        assert(decoded == order, 'Reserved bits leaked');
+    }
+
+    #[test]
+    #[should_panic(expected: 'Order time too large')]
+    fn rejects_start_time_overflow() {
         StorePacking::<
             PackedOrderInfo, felt252,
         >::pack(
-            PackedOrderInfo { start_time: 0, end_time: 1, amount: MAX_ORDER_AMOUNT + 1, epoch: 0 },
+            PackedOrderInfo { start_time: MAX_ORDER_TIME + 1, end_time: 0, amount: 0, epoch: 0 },
+        );
+    }
+
+    #[test]
+    #[should_panic(expected: 'Order time too large')]
+    fn rejects_end_time_overflow() {
+        StorePacking::<
+            PackedOrderInfo, felt252,
+        >::pack(
+            PackedOrderInfo { start_time: 0, end_time: MAX_ORDER_TIME + 1, amount: 0, epoch: 0 },
+        );
+    }
+
+    #[test]
+    #[should_panic(expected: 'Config epochs exhausted')]
+    fn rejects_epoch_overflow() {
+        StorePacking::<
+            PackedOrderInfo, felt252,
+        >::pack(
+            PackedOrderInfo { start_time: 0, end_time: 0, amount: 0, epoch: MAX_CONFIG_EPOCH + 1 },
         );
     }
 }
