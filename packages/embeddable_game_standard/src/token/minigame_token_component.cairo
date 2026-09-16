@@ -27,15 +27,14 @@
 /// * **`refresh_metadata_batch`** — a multicall of singles.
 /// * **Mutable token state** — no `game_over`/`completed_objective` latch,
 ///   no `update_game`, no metagame callbacks. `refresh_metadata` (ERC-4906)
-///   is the only post-action hook; `player_name` (owner-renameable via
-///   `update_player_name`) and the mint-time `client_url` are the only
-///   per-token storage.
+///   is the only post-action hook; `player_name` and `client_url` — set by
+///   the token owner after mint via `set_player_name` / `set_client_url`,
+///   never at mint — are the only per-token storage.
 ///
 /// Mint parameters carry their original legacy-token behaviors: `objective_id`,
 /// `paymaster` and the (59-bit, u128) `metadata` are packed into the id as
 /// inert data the game interprets; `context` sets the id's has_context bit
-/// only (the data is NOT stored — legacy-token parity); `client_url` is
-/// storage-backed with a `client_url` view.
+/// only (the data is NOT stored — legacy-token parity).
 ///
 /// The minter registry is standard, not optional: absorbed into this
 /// component (storage names, `IMinigameTokenMinter` surface and
@@ -244,13 +243,11 @@ pub mod MinigameTokenComponent {
 
         fn mint(
             ref self: ComponentState<TContractState>,
-            player_name: Option<felt252>,
             settings_id: Option<u32>,
             start: Option<u64>,
             end: Option<u64>,
             objective_id: Option<u32>,
             context: Option<GameContextDetails>,
-            client_url: Option<ByteArray>,
             to: ContractAddress,
             soulbound: bool,
             paymaster: bool,
@@ -277,13 +274,6 @@ pub mod MinigameTokenComponent {
                 );
             let final_token_id = pack_token_id(fields);
 
-            if let Option::Some(name) = player_name {
-                self.token_player_names.entry(final_token_id).write(name);
-            }
-            if let Option::Some(url) = client_url {
-                self.token_client_url.entry(final_token_id).write(url);
-            }
-
             let mut contract = self.get_contract_mut();
             let mut erc721_component = ERC721::get_component_mut(ref contract);
             erc721_component.mint(to, final_token_id.into());
@@ -303,13 +293,11 @@ pub mod MinigameTokenComponent {
         /// reads and minter registration are hoisted and paid once.
         fn mint_batch_recipients(
             ref self: ComponentState<TContractState>,
-            player_name: Option<felt252>,
             settings_id: Option<u32>,
             start: Option<u64>,
             end: Option<u64>,
             objective_id: Option<u32>,
             context: Option<GameContextDetails>,
-            client_url: Option<ByteArray>,
             recipients: Array<MintBatchRecipient>,
             soulbound: bool,
             paymaster: bool,
@@ -364,16 +352,6 @@ pub mod MinigameTokenComponent {
                     nonce += 1;
                     let final_token_id = pack_token_id(fields);
 
-                    if let Option::Some(name) = player_name {
-                        self.token_player_names.entry(final_token_id).write(name);
-                    }
-                    match @client_url {
-                        Option::Some(url) => {
-                            self.token_client_url.entry(final_token_id).write(url.clone());
-                        },
-                        Option::None => {},
-                    }
-
                     let mut contract = self.get_contract_mut();
                     let mut erc721_component = ERC721::get_component_mut(ref contract);
                     erc721_component.mint(to, final_token_id.into());
@@ -397,17 +375,20 @@ pub mod MinigameTokenComponent {
             self.emit(MetadataUpdate { token_id: token_id.into() });
         }
 
-        fn update_player_name(
+        fn set_player_name(
             ref self: ComponentState<TContractState>, token_id: felt252, name: felt252,
         ) {
             assert!(!name.is_zero(), "MinigameToken: Player name is empty");
-            let contract = self.get_contract();
-            let erc721_component = ERC721::get_component(contract);
-            let token_owner = erc721_component._owner_of(token_id.into());
-            assert!(
-                token_owner == get_caller_address(), "MinigameToken: Caller is not owner of token",
-            );
+            self.assert_caller_owns(token_id);
             self.token_player_names.entry(token_id).write(name);
+            self.emit(MetadataUpdate { token_id: token_id.into() });
+        }
+
+        fn set_client_url(
+            ref self: ComponentState<TContractState>, token_id: felt252, url: ByteArray,
+        ) {
+            self.assert_caller_owns(token_id);
+            self.token_client_url.entry(token_id).write(url);
             self.emit(MetadataUpdate { token_id: token_id.into() });
         }
     }
@@ -579,13 +560,11 @@ pub mod MinigameTokenComponent {
         }
         fn mint(
             ref self: ComponentState<TContractState>,
-            player_name: Option<felt252>,
             settings_id: Option<u32>,
             start: Option<u64>,
             end: Option<u64>,
             objective_id: Option<u32>,
             context: Option<GameContextDetails>,
-            client_url: Option<ByteArray>,
             to: ContractAddress,
             soulbound: bool,
             paymaster: bool,
@@ -593,13 +572,11 @@ pub mod MinigameTokenComponent {
         ) -> felt252 {
             MinigameToken::mint(
                 ref self,
-                player_name,
                 settings_id,
                 start,
                 end,
                 objective_id,
                 context,
-                client_url,
                 to,
                 soulbound,
                 paymaster,
@@ -608,13 +585,11 @@ pub mod MinigameTokenComponent {
         }
         fn mint_batch_recipients(
             ref self: ComponentState<TContractState>,
-            player_name: Option<felt252>,
             settings_id: Option<u32>,
             start: Option<u64>,
             end: Option<u64>,
             objective_id: Option<u32>,
             context: Option<GameContextDetails>,
-            client_url: Option<ByteArray>,
             recipients: Array<MintBatchRecipient>,
             soulbound: bool,
             paymaster: bool,
@@ -622,13 +597,11 @@ pub mod MinigameTokenComponent {
         ) -> Array<felt252> {
             MinigameToken::mint_batch_recipients(
                 ref self,
-                player_name,
                 settings_id,
                 start,
                 end,
                 objective_id,
                 context,
-                client_url,
                 recipients,
                 soulbound,
                 paymaster,
@@ -638,10 +611,15 @@ pub mod MinigameTokenComponent {
         fn refresh_metadata(ref self: ComponentState<TContractState>, token_id: felt252) {
             MinigameToken::refresh_metadata(ref self, token_id)
         }
-        fn update_player_name(
+        fn set_player_name(
             ref self: ComponentState<TContractState>, token_id: felt252, name: felt252,
         ) {
-            MinigameToken::update_player_name(ref self, token_id, name)
+            MinigameToken::set_player_name(ref self, token_id, name)
+        }
+        fn set_client_url(
+            ref self: ComponentState<TContractState>, token_id: felt252, url: ByteArray,
+        ) {
+            MinigameToken::set_client_url(ref self, token_id, url)
         }
 
         // IMinigameTokenMinter
@@ -711,6 +689,16 @@ pub mod MinigameTokenComponent {
             self.emit(MinterRegistryUpdate { minter_id, minter_address: minter });
 
             minter_id
+        }
+
+        /// Panics unless the caller owns `token_id` (a nonexistent token has
+        /// owner zero, which never equals a caller).
+        fn assert_caller_owns(self: @ComponentState<TContractState>, token_id: felt252) {
+            let erc721_component = ERC721::get_component(self.get_contract());
+            assert!(
+                erc721_component._owner_of(token_id.into()) == get_caller_address(),
+                "MinigameToken: Caller is not owner of token",
+            );
         }
 
         /// Everything a mint packs (with `tx_nonce` 0): validates

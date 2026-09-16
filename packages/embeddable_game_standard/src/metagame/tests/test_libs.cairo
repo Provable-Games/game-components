@@ -53,8 +53,6 @@ mod standard_token_paths {
 
         let token_id = libs::mint(
             game,
-            Option::Some('player'),
-            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -71,8 +69,6 @@ mod standard_token_paths {
         assert!(token_id != 0, "mint returned a zero token id");
         let erc721 = IERC721Dispatcher { contract_address: game };
         assert!(erc721.owner_of(token_id.into()) == BOB(), "token not minted to recipient");
-        let token = IMinigameTokenDispatcher { contract_address: game };
-        assert!(token.player_name(token_id) == 'player', "player name not stored");
     }
 
     /// `metadata` is u128 so the single-mint path reaches the same 59-bit field
@@ -85,8 +81,6 @@ mod standard_token_paths {
 
         let token_id = libs::mint(
             game,
-            Option::None,
-            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -118,8 +112,6 @@ mod standard_token_paths {
             Option::None,
             Option::None,
             Option::None,
-            Option::None,
-            Option::None,
             BOB(),
             false,
             false,
@@ -142,8 +134,6 @@ mod standard_token_paths {
             Option::None,
             Option::None,
             Option::None,
-            Option::None,
-            Option::None,
             Option::Some(BOB()),
             Option::None,
             BOB(),
@@ -159,8 +149,6 @@ mod standard_token_paths {
         let game = deploy_standard_game(ALICE());
         libs::mint(
             game,
-            Option::None,
-            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -246,8 +234,6 @@ mod fake_game_paths {
             Option::None,
             Option::None,
             Option::None,
-            Option::None,
-            Option::None,
             BOB(),
             false,
             false,
@@ -293,7 +279,7 @@ mod fuzz_mint_parameters {
     };
     use game_components_interfaces::structs::token::MintBatchRecipient;
     use game_components_testing::constants::{ALICE, BOB, OWNER};
-    use snforge_std::{ContractClassTrait, DeclareResultTrait, declare};
+    use snforge_std::{ContractClassTrait, DeclareResultTrait, declare, start_cheat_caller_address};
     use starknet::ContractAddress;
     use crate::metagame::metagame as libs;
 
@@ -312,11 +298,9 @@ mod fuzz_mint_parameters {
         contract_address
     }
 
-    fn mint_with_name(game: ContractAddress, player_name: felt252) -> felt252 {
+    fn mint_plain(game: ContractAddress) -> felt252 {
         libs::mint(
             game,
-            Option::Some(player_name),
-            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -331,15 +315,22 @@ mod fuzz_mint_parameters {
         )
     }
 
-    /// Any player name survives the mint intact — the id packs no part of it,
-    /// so nothing can truncate or collide it.
+    /// Any non-zero player name survives `set_player_name` intact — the id
+    /// packs no part of it, so nothing can truncate or collide it. Names are
+    /// set by the owner after mint, never at mint.
     #[fuzzer(runs: 64)]
     #[test]
     fn test_fuzz_player_name_round_trips(player_name: felt252) {
+        if player_name == 0 {
+            return;
+        }
         let game = deploy_standard_game();
-        let token_id = mint_with_name(game, player_name);
+        let token_id = mint_plain(game);
 
         let token = IMinigameTokenDispatcher { contract_address: game };
+        assert!(token.player_name(token_id) == 0, "name is never set at mint");
+        start_cheat_caller_address(game, BOB());
+        token.set_player_name(token_id, player_name);
         assert!(token.player_name(token_id) == player_name, "player name did not round trip");
     }
 
@@ -354,9 +345,7 @@ mod fuzz_mint_parameters {
 
         let token_id = libs::mint(
             game,
-            Option::None,
             Option::Some(settings_id),
-            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -392,8 +381,6 @@ mod fuzz_mint_parameters {
             Option::None,
             Option::None,
             Option::None,
-            Option::None,
-            Option::None,
             BOB(),
             false,
             false,
@@ -415,8 +402,6 @@ mod fuzz_mint_parameters {
         let n: u16 = (count % 8).into() + 1;
         let ids = libs::mint_batch_recipients(
             game,
-            Option::Some('player'),
-            Option::None,
             Option::None,
             Option::None,
             Option::None,

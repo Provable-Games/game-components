@@ -64,7 +64,6 @@ pub mod TicketBoothComponent {
         fn buy_game(
             ref self: TContractState,
             payment_type: PaymentType,
-            player_name: Option<felt252>,
             to: ContractAddress,
             soulbound: bool,
         ) -> felt252;
@@ -95,7 +94,6 @@ pub mod TicketBoothComponent {
         fn buy_game(
             ref self: ComponentState<TContractState>,
             payment_type: PaymentType,
-            player_name: Option<felt252>,
             to: ContractAddress,
             soulbound: bool,
         ) -> felt252 {
@@ -126,8 +124,7 @@ pub mod TicketBoothComponent {
             };
 
             // Mint the game token with configured settings
-            let token_id = self
-                .mint_game(player_name, to, soulbound, Option::Some(current_time), expiration);
+            let token_id = self.mint_game(to, soulbound, Option::Some(current_time), expiration);
 
             // Emit the event
             self.emit(GameBought { player: to, token_id, payment_type });
@@ -327,7 +324,6 @@ pub mod TicketBoothComponent {
 
         fn mint_game(
             ref self: ComponentState<TContractState>,
-            player_name: Option<felt252>,
             to: ContractAddress,
             soulbound: bool,
             start_time: Option<u64>,
@@ -335,11 +331,9 @@ pub mod TicketBoothComponent {
         ) -> felt252 {
             mint(
                 self.game_address.read(),
-                player_name,
                 self.settings_id.read(),
                 start_time,
                 expiration,
-                Option::None,
                 Option::None,
                 Option::None,
                 Option::None,

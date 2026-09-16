@@ -84,33 +84,19 @@ fn game_of(token: IMinigameTokenDispatcher) -> IStandardGameMockDispatcher {
     IStandardGameMockDispatcher { contract_address: token.contract_address }
 }
 
-/// Mint with the 11-arg shape, neutral values for the params a test is not
-/// exercising (no objective/context/client_url, no paymaster, zero
+/// Mint with the 9-arg shape, neutral values for the params a test is not
+/// exercising (no objective/context, no paymaster, zero
 /// metadata). There is no game address — the token IS the game — and no
 /// salt: ids are made unique by the tx hash (and, in a batch, the position).
 fn mint_basic(
     token: IMinigameTokenDispatcher,
-    player_name: Option<felt252>,
     settings_id: Option<u32>,
     start: Option<u64>,
     end: Option<u64>,
     to: ContractAddress,
     soulbound: bool,
 ) -> felt252 {
-    token
-        .mint(
-            player_name,
-            settings_id,
-            start,
-            end,
-            Option::None,
-            Option::None,
-            Option::None,
-            to,
-            soulbound,
-            false,
-            0,
-        )
+    token.mint(settings_id, start, end, Option::None, Option::None, to, soulbound, false, 0)
 }
 
 fn sample_context() -> GameContextDetails {
@@ -161,13 +147,7 @@ fn test_mint_packs_expected_fields() {
 
     cheat_caller_address(token.contract_address, MINTER(), CheatSpan::TargetCalls(1));
     let token_id = mint_basic(
-        token,
-        Option::Some('alice'),
-        Option::Some(42),
-        Option::Some(2400),
-        Option::Some(3600),
-        ALICE(),
-        true,
+        token, Option::Some(42), Option::Some(2400), Option::Some(3600), ALICE(), true,
     );
 
     let packed = unpack_token_id(token_id);
@@ -196,7 +176,6 @@ fn test_mint_packs_expected_fields() {
     assert!(lifecycle.start == 2400 && lifecycle.end == 3600, "lifecycle view mismatch");
     assert!(token.settings_id(token_id) == 42, "settings_id view mismatch");
     assert!(token.is_soulbound(token_id), "is_soulbound view mismatch");
-    assert!(token.player_name(token_id) == 'alice', "player_name mismatch");
     assert!(token.minted_by(token_id) == 1, "First minter should get id 1");
     assert!(token.minted_by_address(token_id) == MINTER(), "minted_by_address mismatch");
     assert!(minter.get_minter_address(1) == MINTER(), "Minter registry mismatch");
@@ -208,9 +187,7 @@ fn test_mint_defaults_and_metadata_view() {
     let (token, _, _) = deploy_token();
     start_cheat_block_timestamp(token.contract_address, 1200);
 
-    let token_id = mint_basic(
-        token, Option::None, Option::None, Option::None, Option::None, ALICE(), false,
-    );
+    let token_id = mint_basic(token, Option::None, Option::None, Option::None, ALICE(), false);
 
     let metadata = token.token_metadata(token_id);
     assert!(metadata.settings_id == 0, "settings_id should default 0");
@@ -240,7 +217,7 @@ fn test_mint_past_start_clamps_to_now() {
     start_cheat_block_timestamp(token.contract_address, 1200);
 
     let token_id = mint_basic(
-        token, Option::None, Option::None, Option::Some(600), Option::Some(2400), ALICE(), false,
+        token, Option::None, Option::Some(600), Option::Some(2400), ALICE(), false,
     );
 
     let metadata = token.token_metadata(token_id);
@@ -265,11 +242,9 @@ fn pin_block_and_tx(token: IMinigameTokenDispatcher) {
 fn test_mint_identical_in_same_tx_reverts() {
     let (token, _, _) = deploy_token();
     pin_block_and_tx(token);
-    let id_a = mint_basic(
-        token, Option::None, Option::None, Option::None, Option::None, ALICE(), false,
-    );
+    let id_a = mint_basic(token, Option::None, Option::None, Option::None, ALICE(), false);
     assert!(token.tx_nonce(id_a) == 0, "single mint packs nonce 0");
-    mint_basic(token, Option::None, Option::None, Option::None, Option::None, ALICE(), false);
+    mint_basic(token, Option::None, Option::None, Option::None, ALICE(), false);
 }
 
 /// Same params but a different tx hash gives a different id; both single
@@ -278,13 +253,9 @@ fn test_mint_identical_in_same_tx_reverts() {
 fn test_mint_distinct_tx_hash_gives_distinct_ids() {
     let (token, _, _) = deploy_token();
     pin_block_and_tx(token);
-    let id_a = mint_basic(
-        token, Option::None, Option::None, Option::None, Option::None, ALICE(), false,
-    );
+    let id_a = mint_basic(token, Option::None, Option::None, Option::None, ALICE(), false);
     start_cheat_transaction_hash(token.contract_address, 0xABCDEE);
-    let id_b = mint_basic(
-        token, Option::None, Option::None, Option::None, Option::None, ALICE(), false,
-    );
+    let id_b = mint_basic(token, Option::None, Option::None, Option::None, ALICE(), false);
     assert!(id_a != id_b, "different tx hashes give different ids");
     assert!(token.tx_nonce(id_a) == 0 && token.tx_nonce(id_b) == 0, "single mints pack nonce 0");
     assert!(token.tx_hash(id_a) == 0xCDEF && token.tx_hash(id_b) == 0xCDEE, "tx_hash low 16");
@@ -295,23 +266,17 @@ fn test_mint_minter_ids_by_caller() {
     let (token, _, _) = deploy_token();
     start_cheat_block_timestamp(token.contract_address, 1200);
 
-    let id_a = mint_basic(
-        token, Option::None, Option::None, Option::None, Option::None, ALICE(), false,
-    );
+    let id_a = mint_basic(token, Option::None, Option::None, Option::None, ALICE(), false);
     assert!(token.minted_by(id_a) == 1, "First minter should get id 1");
 
     // Second distinct caller gets minter id 2
     cheat_caller_address(token.contract_address, MINTER(), CheatSpan::TargetCalls(1));
-    let id_c = mint_basic(
-        token, Option::None, Option::None, Option::None, Option::None, ALICE(), false,
-    );
+    let id_c = mint_basic(token, Option::None, Option::None, Option::None, ALICE(), false);
     assert!(token.minted_by(id_c) == 2, "Second minter should get id 2");
     // Repeat caller keeps its id
     start_cheat_transaction_hash(token.contract_address, 0x2222); // a new tx for the repeat mint
     cheat_caller_address(token.contract_address, MINTER(), CheatSpan::TargetCalls(1));
-    let id_d = mint_basic(
-        token, Option::None, Option::None, Option::None, Option::None, ALICE(), false,
-    );
+    let id_d = mint_basic(token, Option::None, Option::None, Option::None, ALICE(), false);
     assert!(token.minted_by(id_d) == 2, "Repeat minter keeps id");
 }
 
@@ -324,7 +289,7 @@ fn test_mint_minter_ids_by_caller() {
 fn test_mint_rejects_past_end() {
     let (token, _, _) = deploy_token();
     start_cheat_block_timestamp(token.contract_address, 1200);
-    mint_basic(token, Option::None, Option::None, Option::None, Option::Some(600), ALICE(), false);
+    mint_basic(token, Option::None, Option::None, Option::Some(600), ALICE(), false);
 }
 
 #[test]
@@ -332,9 +297,7 @@ fn test_mint_rejects_past_end() {
 fn test_mint_rejects_start_after_end() {
     let (token, _, _) = deploy_token();
     start_cheat_block_timestamp(token.contract_address, 1200);
-    mint_basic(
-        token, Option::None, Option::None, Option::Some(3600), Option::Some(2400), ALICE(), false,
-    );
+    mint_basic(token, Option::None, Option::Some(3600), Option::Some(2400), ALICE(), false);
 }
 
 // ================================================================================================
@@ -348,7 +311,7 @@ fn test_playability_follows_lifecycle_window() {
     start_cheat_block_timestamp(token.contract_address, 1200);
 
     let token_id = mint_basic(
-        token, Option::None, Option::None, Option::Some(2400), Option::Some(3600), ALICE(), false,
+        token, Option::None, Option::Some(2400), Option::Some(3600), ALICE(), false,
     );
 
     assert!(!token.is_playable(token_id), "Not playable before window opens");
@@ -369,9 +332,7 @@ fn test_playability_follows_lifecycle_window() {
 fn test_immortal_token_always_playable() {
     let (token, _, _) = deploy_token();
     start_cheat_block_timestamp(token.contract_address, 1200);
-    let token_id = mint_basic(
-        token, Option::None, Option::None, Option::None, Option::None, ALICE(), false,
-    );
+    let token_id = mint_basic(token, Option::None, Option::None, Option::None, ALICE(), false);
     start_cheat_block_timestamp(token.contract_address, 99999999);
     assert!(token.is_playable(token_id), "No end means playable forever");
     game_of(token).assert_owner_and_playable(token_id, ALICE());
@@ -387,7 +348,7 @@ fn test_guard_panics_after_expiry() {
     let (token, _, _) = deploy_token();
     start_cheat_block_timestamp(token.contract_address, 1200);
     let token_id = mint_basic(
-        token, Option::None, Option::None, Option::None, Option::Some(2400), ALICE(), false,
+        token, Option::None, Option::None, Option::Some(2400), ALICE(), false,
     );
     start_cheat_block_timestamp(token.contract_address, 2400);
     game_of(token).assert_owner_and_playable(token_id, ALICE());
@@ -399,7 +360,7 @@ fn test_guard_panics_before_start() {
     let (token, _, _) = deploy_token();
     start_cheat_block_timestamp(token.contract_address, 1200);
     let token_id = mint_basic(
-        token, Option::None, Option::None, Option::Some(2400), Option::Some(3600), ALICE(), false,
+        token, Option::None, Option::Some(2400), Option::Some(3600), ALICE(), false,
     );
     game_of(token).assert_owner_and_playable(token_id, ALICE());
 }
@@ -408,9 +369,7 @@ fn test_guard_panics_before_start() {
 #[should_panic(expected: "MinigameToken: Address is not owner of token")]
 fn test_guard_rejects_wrong_owner() {
     let (token, _, _) = deploy_token();
-    let token_id = mint_basic(
-        token, Option::None, Option::None, Option::None, Option::None, ALICE(), false,
-    );
+    let token_id = mint_basic(token, Option::None, Option::None, Option::None, ALICE(), false);
     game_of(token).assert_owner_and_playable(token_id, BOB());
 }
 
@@ -425,9 +384,7 @@ fn test_guard_rejects_nonexistent_token() {
 #[should_panic(expected: "MinigameToken: Expected owner cannot be zero")]
 fn test_guard_rejects_zero_owner() {
     let (token, _, _) = deploy_token();
-    let token_id = mint_basic(
-        token, Option::None, Option::None, Option::None, Option::None, ALICE(), false,
-    );
+    let token_id = mint_basic(token, Option::None, Option::None, Option::None, ALICE(), false);
     game_of(token).assert_owner_and_playable(token_id, addr(0));
 }
 
@@ -439,9 +396,7 @@ fn test_guard_rejects_zero_owner() {
 #[should_panic(expected: "Token is soulbound and cannot be transferred")]
 fn test_soulbound_transfer_blocked() {
     let (token, erc721, _) = deploy_token();
-    let token_id = mint_basic(
-        token, Option::None, Option::None, Option::None, Option::None, ALICE(), true,
-    );
+    let token_id = mint_basic(token, Option::None, Option::None, Option::None, ALICE(), true);
     cheat_caller_address(token.contract_address, ALICE(), CheatSpan::TargetCalls(1));
     erc721.transfer_from(ALICE(), BOB(), token_id.into());
 }
@@ -449,9 +404,7 @@ fn test_soulbound_transfer_blocked() {
 #[test]
 fn test_non_soulbound_transfer_allowed() {
     let (token, erc721, _) = deploy_token();
-    let token_id = mint_basic(
-        token, Option::None, Option::None, Option::None, Option::None, ALICE(), false,
-    );
+    let token_id = mint_basic(token, Option::None, Option::None, Option::None, ALICE(), false);
     cheat_caller_address(token.contract_address, ALICE(), CheatSpan::TargetCalls(1));
     erc721.transfer_from(ALICE(), BOB(), token_id.into());
     assert!(erc721.owner_of(token_id.into()) == BOB(), "Transfer should succeed");
@@ -464,9 +417,7 @@ fn test_non_soulbound_transfer_allowed() {
 #[test]
 fn test_refresh_metadata_emits_event() {
     let (token, _, _) = deploy_token();
-    let token_id = mint_basic(
-        token, Option::None, Option::None, Option::None, Option::None, ALICE(), false,
-    );
+    let token_id = mint_basic(token, Option::None, Option::None, Option::None, ALICE(), false);
 
     let mut spy = spy_events();
     token.refresh_metadata(token_id);
@@ -484,25 +435,21 @@ fn test_refresh_metadata_emits_event() {
 }
 
 #[test]
-fn test_update_player_name_by_owner() {
+fn test_set_player_name_by_owner() {
     let (token, _, _) = deploy_token();
-    let token_id = mint_basic(
-        token, Option::Some('old'), Option::None, Option::None, Option::None, ALICE(), false,
-    );
+    let token_id = mint_basic(token, Option::None, Option::None, Option::None, ALICE(), false);
     cheat_caller_address(token.contract_address, ALICE(), CheatSpan::TargetCalls(1));
-    token.update_player_name(token_id, 'new');
+    token.set_player_name(token_id, 'new');
     assert!(token.player_name(token_id) == 'new', "Player name should update");
 }
 
 #[test]
 #[should_panic(expected: "MinigameToken: Caller is not owner of token")]
-fn test_update_player_name_rejects_non_owner() {
+fn test_set_player_name_rejects_non_owner() {
     let (token, _, _) = deploy_token();
-    let token_id = mint_basic(
-        token, Option::None, Option::None, Option::None, Option::None, ALICE(), false,
-    );
+    let token_id = mint_basic(token, Option::None, Option::None, Option::None, ALICE(), false);
     cheat_caller_address(token.contract_address, BOB(), CheatSpan::TargetCalls(1));
-    token.update_player_name(token_id, 'new');
+    token.set_player_name(token_id, 'new');
 }
 
 // ================================================================================================
@@ -514,9 +461,7 @@ fn batch_neutral(
 ) -> Array<felt252> {
     token
         .mint_batch_recipients(
-            Option::Some('bench'),
             Option::Some(5),
-            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -561,7 +506,6 @@ fn test_mint_batch_recipients_counts_owners_and_nonces() {
         let id = *ids.at(i);
         assert!(token.minted_by(id) == 1, "All share minter id 1");
         assert!(token.settings_id(id) == 5, "Shared settings id");
-        assert!(token.player_name(id) == 'bench', "Shared player name");
         i += 1;
     }
 }
@@ -610,9 +554,7 @@ fn test_mint_then_identical_batch_in_same_tx_reverts() {
 
     let single = token
         .mint(
-            Option::Some('bench'),
             Option::Some(5),
-            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -677,7 +619,7 @@ fn test_helper_unpackers_agree_with_full_unpack() {
     start_cheat_block_number(token.contract_address, 99);
     cheat_caller_address(token.contract_address, MINTER(), CheatSpan::TargetCalls(1));
     let token_id = mint_basic(
-        token, Option::None, Option::Some(9), Option::None, Option::Some(9999), ALICE(), true,
+        token, Option::Some(9), Option::None, Option::Some(9999), ALICE(), true,
     );
 
     // The standalone helper unpackers (what game/dungeon contracts use on
@@ -722,13 +664,11 @@ fn test_views_decode_known_packed_input() {
 
     let token_id = token
         .mint(
-            Option::Some('alice'),
             Option::Some(0xABCDE),
             Option::Some(2400),
             Option::Some(6000),
             Option::Some(0x1ABCD),
             Option::Some(sample_context()),
-            Option::Some("https://play.example/game"),
             ALICE(),
             true,
             true,
@@ -770,6 +710,11 @@ fn test_views_decode_known_packed_input() {
     assert!(token.objective_id(token_id) == 0x1ABCD, "objective_id");
     assert!(token.minted_by(token_id) == 1, "minted_by");
     assert!(token.mint_metadata(token_id) == 0x123456789ABCD, "mint_metadata");
+    // Name and url are never set at mint; the owner sets them afterwards.
+    assert!(token.player_name(token_id) == 0 && token.client_url(token_id) == "", "unset");
+    cheat_caller_address(token.contract_address, ALICE(), CheatSpan::TargetCalls(2));
+    token.set_player_name(token_id, 'alice');
+    token.set_client_url(token_id, "https://play.example/game");
     assert!(token.player_name(token_id) == 'alice', "player_name");
     assert!(token.client_url(token_id) == "https://play.example/game", "client_url");
     let md = token.token_metadata(token_id);
@@ -786,9 +731,7 @@ fn test_views_decode_known_packed_input() {
 fn test_mint_time_floors_to_the_minute() {
     let (token, _, _) = deploy_token();
     start_cheat_block_timestamp(token.contract_address, 1_000_000_059);
-    let token_id = mint_basic(
-        token, Option::None, Option::None, Option::None, Option::None, ALICE(), false,
-    );
+    let token_id = mint_basic(token, Option::None, Option::None, Option::None, ALICE(), false);
     assert!(unpack_minted_at_timestamp(token_id) == 16_666_667, "floored minutes");
     assert!(token.minted_at(token_id) == 1_000_000_020, "minted_at in seconds");
     // start clamps to now (1_000_000_059) which ceils to minute +1
@@ -805,7 +748,6 @@ fn test_mint_delays_ceil_to_the_minute() {
     start_cheat_block_timestamp(token.contract_address, 1_000_000_059);
     let token_id = mint_basic(
         token,
-        Option::None,
         Option::None,
         Option::Some(1_000_000_061),
         Option::Some(1_000_000_062),
@@ -824,7 +766,7 @@ fn test_mint_accepts_settings_id_at_20_bit_boundary() {
     let (token, _, _) = deploy_token();
     start_cheat_block_timestamp(token.contract_address, 1200);
     let token_id = mint_basic(
-        token, Option::None, Option::Some(0xFFFFF), Option::None, Option::None, ALICE(), false,
+        token, Option::Some(0xFFFFF), Option::None, Option::None, ALICE(), false,
     );
     assert!(token.settings_id(token_id) == 0xFFFFF, "boundary settings_id roundtrip");
 }
@@ -835,13 +777,11 @@ fn test_mint_rejects_settings_id_over_20_bits() {
     let (token, _, _) = deploy_token();
     start_cheat_block_timestamp(token.contract_address, 1200);
     // 2^20 — one past the 20-bit field — must be rejected at mint.
-    mint_basic(
-        token, Option::None, Option::Some(0x100000), Option::None, Option::None, ALICE(), false,
-    );
+    mint_basic(token, Option::Some(0x100000), Option::None, Option::None, ALICE(), false);
 }
 
 // ================================================================================================
-// RESTORED MINT PARAMS — objective_id / context / client_url / paymaster / metadata
+// RESTORED MINT PARAMS — objective_id / context / paymaster / metadata
 // ================================================================================================
 
 /// Mint helper that exercises exactly the restored params, neutral elsewhere.
@@ -849,7 +789,6 @@ fn mint_restored(
     token: IMinigameTokenDispatcher,
     objective_id: Option<u32>,
     context: Option<GameContextDetails>,
-    client_url: Option<ByteArray>,
     paymaster: bool,
     metadata: u128,
 ) -> felt252 {
@@ -858,10 +797,8 @@ fn mint_restored(
             Option::None,
             Option::None,
             Option::None,
-            Option::None,
             objective_id,
             context,
-            client_url,
             ALICE(),
             false,
             paymaster,
@@ -877,12 +814,7 @@ fn test_mint_restored_fields_roundtrip() {
     start_cheat_block_timestamp(token.contract_address, 1200);
 
     let token_id = mint_restored(
-        token,
-        Option::Some(123456),
-        Option::Some(sample_context()),
-        Option::None,
-        true,
-        0xDEADBEEFCAFE,
+        token, Option::Some(123456), Option::Some(sample_context()), true, 0xDEADBEEFCAFE,
     );
 
     let packed = unpack_token_id(token_id);
@@ -921,12 +853,7 @@ fn test_mint_accepts_field_boundaries() {
     // 2^59-1 (filling high bit 122, the topmost usable bit), both flag bits
     // set.
     let token_id = mint_restored(
-        token,
-        Option::Some(0xFFFFF),
-        Option::Some(sample_context()),
-        Option::None,
-        true,
-        0x7FFFFFFFFFFFFFF,
+        token, Option::Some(0xFFFFF), Option::Some(sample_context()), true, 0x7FFFFFFFFFFFFFF,
     );
     assert!(token.objective_id(token_id) == 0xFFFFF, "boundary objective_id roundtrip");
     assert!(token.mint_metadata(token_id) == 0x7FFFFFFFFFFFFFF, "boundary metadata roundtrip");
@@ -947,7 +874,7 @@ fn test_mint_rejects_objective_id_over_20_bits() {
     let (token, _, _) = deploy_token();
     start_cheat_block_timestamp(token.contract_address, 1200);
     // 2^20 — one past the 20-bit field.
-    mint_restored(token, Option::Some(0x100000), Option::None, Option::None, false, 0);
+    mint_restored(token, Option::Some(0x100000), Option::None, false, 0);
 }
 
 #[test]
@@ -956,24 +883,42 @@ fn test_mint_rejects_metadata_over_59_bits() {
     let (token, _, _) = deploy_token();
     start_cheat_block_timestamp(token.contract_address, 1200);
     // 2^59 — one past the 59-bit field.
-    mint_restored(token, Option::None, Option::None, Option::None, false, 0x800000000000000);
+    mint_restored(token, Option::None, Option::None, false, 0x800000000000000);
 }
 
-/// client_url is storage-backed exactly as on the legacy token: written when
-/// Some, readable via the view, empty ByteArray default when absent.
+/// client_url is never set at mint: it defaults to empty and the token owner
+/// sets it afterwards via `set_client_url`, which emits `MetadataUpdate`.
 #[test]
-fn test_client_url_stored_and_empty_default() {
+fn test_set_client_url_by_owner() {
     let (token, _, _) = deploy_token();
     start_cheat_block_timestamp(token.contract_address, 1200);
+    let token_id = mint_restored(token, Option::None, Option::None, false, 0);
+    assert!(token.client_url(token_id) == "", "client_url defaults to empty");
 
-    let with_url = mint_restored(
-        token, Option::None, Option::None, Option::Some("https://play.example/game"), false, 0,
-    );
-    assert!(token.client_url(with_url) == "https://play.example/game", "client_url view mismatch");
+    let mut spy = spy_events();
+    cheat_caller_address(token.contract_address, ALICE(), CheatSpan::TargetCalls(1));
+    token.set_client_url(token_id, "https://play.example/game");
+    assert!(token.client_url(token_id) == "https://play.example/game", "client_url view mismatch");
+    spy
+        .assert_emitted(
+            @array![
+                (
+                    token.contract_address,
+                    MinigameTokenComponent::Event::MetadataUpdate(
+                        MinigameTokenComponent::MetadataUpdate { token_id: token_id.into() },
+                    ),
+                ),
+            ],
+        );
+}
 
-    start_cheat_transaction_hash(token.contract_address, 0x3333); // a new tx for the second mint
-    let without_url = mint_restored(token, Option::None, Option::None, Option::None, false, 0);
-    assert!(token.client_url(without_url) == "", "client_url should default to empty");
+#[test]
+#[should_panic(expected: "MinigameToken: Caller is not owner of token")]
+fn test_set_client_url_rejects_non_owner() {
+    let (token, _, _) = deploy_token();
+    let token_id = mint_restored(token, Option::None, Option::None, false, 0);
+    cheat_caller_address(token.contract_address, BOB(), CheatSpan::TargetCalls(1));
+    token.set_client_url(token_id, "https://play.example/game");
 }
 
 /// context sets the id's has_context bit only — the data itself is NOT stored
@@ -984,9 +929,7 @@ fn test_context_sets_has_context_bit_without_storage() {
     let (token, _, _) = deploy_token();
     start_cheat_block_timestamp(token.contract_address, 1200);
 
-    let with_context = mint_restored(
-        token, Option::None, Option::Some(sample_context()), Option::None, false, 0,
-    );
+    let with_context = mint_restored(token, Option::None, Option::Some(sample_context()), false, 0);
     assert!(unpack_has_context(with_context), "has_context bit must be set");
     assert!(token.token_metadata(with_context).has_context, "metadata view agrees");
     // Nothing context-shaped was persisted: the only storage-backed views
@@ -994,15 +937,14 @@ fn test_context_sets_has_context_bit_without_storage() {
     assert!(token.client_url(with_context) == "", "no context data lands in storage");
     assert!(token.player_name(with_context) == 0, "no context data lands in storage");
 
-    let without_context = mint_restored(token, Option::None, Option::None, Option::None, false, 0);
+    let without_context = mint_restored(token, Option::None, Option::None, false, 0);
     assert!(!unpack_has_context(without_context), "has_context bit must be clear");
 }
 
 /// Batch mints share the packed fields (has_context bit, objective, paymaster,
-/// metadata) across all tokens, and the client_url — when Some — is written
-/// per token.
+/// metadata) across all tokens.
 #[test]
-fn test_mint_batch_shares_restored_fields_and_url() {
+fn test_mint_batch_shares_restored_fields() {
     let (token, _, _) = deploy_token();
     start_cheat_block_timestamp(token.contract_address, 1200);
 
@@ -1011,10 +953,8 @@ fn test_mint_batch_shares_restored_fields_and_url() {
             Option::None,
             Option::None,
             Option::None,
-            Option::None,
             Option::Some(77),
             Option::Some(sample_context()),
-            Option::Some("https://play.example/batch"),
             array![
                 MintBatchRecipient { to: ALICE(), count: 2 },
                 MintBatchRecipient { to: BOB(), count: 1 },
@@ -1032,7 +972,6 @@ fn test_mint_batch_shares_restored_fields_and_url() {
         assert!(unpack_paymaster(id), "shared paymaster bit");
         assert!(token.objective_id(id) == 77, "shared objective_id");
         assert!(token.mint_metadata(id) == 42, "shared metadata");
-        assert!(token.client_url(id) == "https://play.example/batch", "url written per token");
         i += 1;
     }
 }

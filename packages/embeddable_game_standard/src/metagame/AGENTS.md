@@ -36,7 +36,7 @@ legacy callback receiver. The component now exposes internals only.
 
 | Method | Description |
 |--------|-------------|
-| `mint(game_address, player_name, settings_id, ...)` | Mint a single token |
+| `mint(game_address, settings_id, ...)` | Mint a single token |
 | `mint_batch(mints: Array<MintMetagameParams>)` | Many tokens, **one call per token**; each entry may name a different game |
 | `mint_batch_recipients(game_address, ..., recipients, ..., metadata: u128)` | Many tokens for **ONE** game in a **single dispatch**, via the token's own batch entrypoint |
 | `assert_game_registered(game_address)` | Validate game registration |
@@ -124,13 +124,11 @@ generation, pin `v2.0.0` or earlier.
 ```cairo
 pub struct MintMetagameParams {
     pub game_address: ContractAddress,
-    pub player_name: Option<felt252>,
     pub settings_id: Option<u32>,
     pub start: Option<u64>,
     pub end: Option<u64>,
     pub objective_id: Option<u32>,
     pub context: Option<GameContextDetails>,
-    pub client_url: Option<ByteArray>,
     pub renderer_address: Option<ContractAddress>,
     pub skills_address: Option<ContractAddress>,
     pub to: ContractAddress,

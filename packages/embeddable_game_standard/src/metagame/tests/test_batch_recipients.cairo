@@ -60,8 +60,6 @@ fn test_batch_recipients_through_standard_token() {
 
     let token_ids = libs::mint_batch_recipients(
         game,
-        Option::Some('Entrant'),
-        Option::None,
         Option::None,
         Option::None,
         Option::None,
@@ -90,8 +88,6 @@ fn test_batch_recipients_ids_are_distinct() {
 
     let token_ids = libs::mint_batch_recipients(
         game,
-        Option::None,
-        Option::None,
         Option::None,
         Option::None,
         Option::None,
@@ -130,8 +126,6 @@ fn test_batch_recipients_carries_wide_metadata() {
         Option::None,
         Option::None,
         Option::None,
-        Option::None,
-        Option::None,
         one_recipient(),
         false,
         false,
@@ -160,8 +154,6 @@ fn test_batch_recipients_rejects_game_that_is_not_a_standard_token() {
         Option::None,
         Option::None,
         Option::None,
-        Option::None,
-        Option::None,
         one_recipient(),
         false,
         false,
@@ -176,8 +168,6 @@ fn test_batch_recipients_rejects_renderer_on_standard_token() {
     let game = deploy_standard_game();
     libs::mint_batch_recipients(
         game,
-        Option::None,
-        Option::None,
         Option::None,
         Option::None,
         Option::None,
@@ -198,8 +188,6 @@ fn test_batch_recipients_rejects_skills_on_standard_token() {
     let game = deploy_standard_game();
     libs::mint_batch_recipients(
         game,
-        Option::None,
-        Option::None,
         Option::None,
         Option::None,
         Option::None,

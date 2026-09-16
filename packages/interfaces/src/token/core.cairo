@@ -4,8 +4,9 @@
 // IN the game contract, so the game and the token are always the same
 // contract, and the game contract remains the sole authority on game-over /
 // objective completion. The token stores no per-token mutable state except
-// `player_name` and `client_url`: every other view is unpacked from the token
-// id itself.
+// `player_name` and `client_url`, both set by the token owner after mint
+// (`set_player_name` / `set_client_url`): every other view is unpacked from
+// the token id itself.
 //
 // The ORIGINAL multi-game token trait (separate token contract, registry,
 // mutable state) lives on as `IMinigameTokenLegacy` in `token/legacy.cairo`,
@@ -36,7 +37,6 @@
 // * `context` — sets the id's has_context bit only; the data itself is NOT
 //   stored (legacy-token parity: its context hook was a documented no-op and
 //   token_uri sourced context from the minter at render time).
-// * `client_url` — storage-backed, readable via `client_url(token_id)`.
 // * `paymaster` — packed bit.
 // * `metadata` — widened from the legacy token's u16 to a u128 holding a
 //   59-bit packed field; read via `mint_metadata(token_id)`.
@@ -83,16 +83,17 @@ use crate::structs::token::{Lifecycle, MintBatchRecipient, TokenMetadata};
 /// start_delay: 0x6aa39306f5eb0a223e03880876b6e99167460552df902870b319d60df1af20
 /// end_delay: 0x381a4251694c88a7699f03059dc5327aaaae4d94348e61d22b9f3500a30a5
 /// lifecycle: 0x31518034af1ff3055a3b8ca33a5a8fa3736833b5c146af44a3a0e60ced0fed0
-/// mint: 0x25de59ac1f6dd5a5f6234f403c92b151e2f665f9d8138fe5a75c5025cc51e53
-/// mint_batch_recipients: 0x293e7d2fe0a493c47a014a18dda7c01119d97583ad4825168737ca157052cea
-/// update_player_name: 0x1f68f6ce969c632201a916c0ec4432e7edf5340a2b7a71172b820d22c2e9481
+/// mint: 0x48ad416b8cb93e8a0efab4c3eb95711c4cfbba9cfbe562f705c1b38b949cbb
+/// mint_batch_recipients: 0x352e0e3bdf40a5969d45478a24551b8ed644b2dde2e5d8e4d07d51ec6822b06
+/// set_player_name: 0x228047ae07a2ee2061a494891d2bb003eec951e7cf6d39ea9f775e02c1f5eb8
+/// set_client_url: 0xc0ee9669c3b8065a0e3dc50a471b7cb0775c1cd555104b8bb1a5fc734a869b
 ///
 /// Generation note: v3 tokens (token id schema v1, salt-free mint ABI)
 /// register this id. v2 and earlier deployments keep the previous id,
 /// `0x20253de95bcdb23620c88405a5f97da040b91de832ad98a34b45c4f3331d13b`,
 /// on-chain — a consumer that must recognise both generations probes both.
 pub const IMINIGAME_TOKEN_ID: felt252 =
-    0x3a2ed35c6e824eaf2721a9aeea082940f25bbad29b0f3acaa9d9c5b204c786;
+    0xf004b9d53af59928314ad1d40678a64e2c80683c0f69bd1253840587a90e20;
 
 #[starknet::interface]
 pub trait IMinigameToken<TState> {
@@ -109,7 +110,7 @@ pub trait IMinigameToken<TState> {
     /// Packed objective id — inert data the game interprets; the token
     /// has no completion machinery.
     fn objective_id(self: @TState, token_id: felt252) -> u32;
-    /// Stored client url from mint; empty ByteArray when none was supplied.
+    /// Stored client url; empty ByteArray until the owner sets one.
     fn client_url(self: @TState, token_id: felt252) -> ByteArray;
     /// The packed 59-bit mint metadata. Same value as
     /// `token_metadata(token_id).metadata`, as a single-field read.
@@ -144,19 +145,18 @@ pub trait IMinigameToken<TState> {
     /// `Option<u32>` for call-site ergonomics, but the value must fit the
     /// id layout's 20-bit field (`<= 0xFFFFF`) or the mint reverts; likewise
     /// `objective_id` must fit 20 bits and `metadata` 59 bits. `context` sets
-    /// the id's has_context bit only (data not stored); `client_url` is
-    /// written to storage when Some. Token ids are made unique by the
+    /// the id's has_context bit only (data not stored). Player name and
+    /// client url are not mint parameters: the owner sets them afterwards
+    /// via `set_player_name` / `set_client_url`. Token ids are made unique by the
     /// transaction hash and an internal per-transaction counter; callers
     /// pass nothing.
     fn mint(
         ref self: TState,
-        player_name: Option<felt252>,
         settings_id: Option<u32>,
         start: Option<u64>,
         end: Option<u64>,
         objective_id: Option<u32>,
         context: Option<GameContextDetails>,
-        client_url: Option<ByteArray>,
         to: ContractAddress,
         soulbound: bool,
         paymaster: bool,
@@ -166,17 +166,14 @@ pub trait IMinigameToken<TState> {
     /// Token ids are made unique by the transaction hash and an internal
     /// per-transaction counter that runs across the batch; callers pass
     /// nothing. All packed fields (including the has_context bit) are shared
-    /// by every minted token; the client_url, when Some, is written per
-    /// token.
+    /// by every minted token.
     fn mint_batch_recipients(
         ref self: TState,
-        player_name: Option<felt252>,
         settings_id: Option<u32>,
         start: Option<u64>,
         end: Option<u64>,
         objective_id: Option<u32>,
         context: Option<GameContextDetails>,
-        client_url: Option<ByteArray>,
         recipients: Array<MintBatchRecipient>,
         soulbound: bool,
         paymaster: bool,
@@ -186,8 +183,12 @@ pub trait IMinigameToken<TState> {
     /// `IMinigameTokenLegacy::refresh_metadata` for the spam/existence trade-offs;
     /// identical semantics here.
     fn refresh_metadata(ref self: TState, token_id: felt252);
-    /// Owner-gated rename; emits `MetadataUpdate`.
-    fn update_player_name(ref self: TState, token_id: felt252, name: felt252);
+    /// Owner-gated; stores the name and emits `MetadataUpdate`. Names are
+    /// never set at mint.
+    fn set_player_name(ref self: TState, token_id: felt252, name: felt252);
+    /// Owner-gated; stores the url and emits `MetadataUpdate`. Urls are
+    /// never set at mint.
+    fn set_client_url(ref self: TState, token_id: felt252, url: ByteArray);
 }
 
 /// Combined mixin ABI: the full external surface of the standard token —
@@ -226,13 +227,11 @@ pub trait MinigameTokenABI<TState> {
     fn lifecycle(self: @TState, token_id: felt252) -> Lifecycle;
     fn mint(
         ref self: TState,
-        player_name: Option<felt252>,
         settings_id: Option<u32>,
         start: Option<u64>,
         end: Option<u64>,
         objective_id: Option<u32>,
         context: Option<GameContextDetails>,
-        client_url: Option<ByteArray>,
         to: ContractAddress,
         soulbound: bool,
         paymaster: bool,
@@ -240,20 +239,19 @@ pub trait MinigameTokenABI<TState> {
     ) -> felt252;
     fn mint_batch_recipients(
         ref self: TState,
-        player_name: Option<felt252>,
         settings_id: Option<u32>,
         start: Option<u64>,
         end: Option<u64>,
         objective_id: Option<u32>,
         context: Option<GameContextDetails>,
-        client_url: Option<ByteArray>,
         recipients: Array<MintBatchRecipient>,
         soulbound: bool,
         paymaster: bool,
         metadata: u128,
     ) -> Array<felt252>;
     fn refresh_metadata(ref self: TState, token_id: felt252);
-    fn update_player_name(ref self: TState, token_id: felt252, name: felt252);
+    fn set_player_name(ref self: TState, token_id: felt252, name: felt252);
+    fn set_client_url(ref self: TState, token_id: felt252, url: ByteArray);
 
     // IMinigameTokenMinter (absorbed minter registry)
     fn get_minter_address(self: @TState, minter_id: u64) -> ContractAddress;

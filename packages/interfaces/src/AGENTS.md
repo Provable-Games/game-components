@@ -186,7 +186,7 @@ gained fields, and ten per-field views were added), not an additive one:
 
 | Constant (today) | Value | Generation |
 | --- | --- | --- |
-| `IMINIGAME_TOKEN_ID` | `0x3a2ed35c6e824eaf2721a9aeea082940f25bbad29b0f3acaa9d9c5b204c786` | v3.0.0+ (token id schema v1, salt-free mint) |
+| `IMINIGAME_TOKEN_ID` | `0xf004b9d53af59928314ad1d40678a64e2c80683c0f69bd1253840587a90e20` | v3.0.0+ (token id schema v1; mint takes no salt, player name or client url) |
 | (previous value) | `0x20253de95bcdb23620c88405a5f97da040b91de832ad98a34b45c4f3331d13b` | v2.x standard token |
 
 When the lite token became the standard (before v3), only the NAME moved:

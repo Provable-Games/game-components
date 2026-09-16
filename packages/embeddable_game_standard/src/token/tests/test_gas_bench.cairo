@@ -83,11 +83,9 @@ fn mint_standard(token: IMinigameTokenDispatcher, _game: ContractAddress) -> fel
     // stay comparable with the legacy-token bench call below.
     token
         .mint(
-            Option::Some('bench'),
             Option::None,
             Option::Some(START_TIME),
             Option::Some(END_TIME),
-            Option::None,
             Option::None,
             Option::None,
             ALICE(),

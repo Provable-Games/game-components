@@ -52,13 +52,11 @@ pub fn assert_game_registered(game_address: ContractAddress) {
 /// * `felt252` - The minted token id
 pub fn mint(
     game_address: ContractAddress,
-    player_name: Option<felt252>,
     settings_id: Option<u32>,
     start: Option<u64>,
     end: Option<u64>,
     objective_id: Option<u32>,
     context: Option<GameContextDetails>,
-    client_url: Option<ByteArray>,
     renderer_address: Option<ContractAddress>,
     skills_address: Option<ContractAddress>,
     to: ContractAddress,
@@ -70,19 +68,7 @@ pub fn mint(
     assert_no_retired_extensions(renderer_address, skills_address);
 
     IMinigameTokenDispatcher { contract_address: game_address }
-        .mint(
-            player_name,
-            settings_id,
-            start,
-            end,
-            objective_id,
-            context,
-            client_url,
-            to,
-            soulbound,
-            paymaster,
-            metadata,
-        )
+        .mint(settings_id, start, end, objective_id, context, to, soulbound, paymaster, metadata)
 }
 
 /// Mints many tokens for ONE game in a single call, via the token's own
@@ -104,13 +90,11 @@ pub fn mint(
 /// * `Array<felt252>` - The minted token ids, in recipient order
 pub fn mint_batch_recipients(
     game_address: ContractAddress,
-    player_name: Option<felt252>,
     settings_id: Option<u32>,
     start: Option<u64>,
     end: Option<u64>,
     objective_id: Option<u32>,
     context: Option<GameContextDetails>,
-    client_url: Option<ByteArray>,
     renderer_address: Option<ContractAddress>,
     skills_address: Option<ContractAddress>,
     recipients: Array<MintBatchRecipient>,
@@ -123,13 +107,11 @@ pub fn mint_batch_recipients(
 
     IMinigameTokenDispatcher { contract_address: game_address }
         .mint_batch_recipients(
-            player_name,
             settings_id,
             start,
             end,
             objective_id,
             context,
-            client_url,
             recipients,
             soulbound,
             paymaster,

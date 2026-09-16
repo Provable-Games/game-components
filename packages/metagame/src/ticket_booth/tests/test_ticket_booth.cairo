@@ -577,7 +577,7 @@ fn test_buy_game_ticket_before_opening() {
     start_cheat_block_timestamp(address, PAST_TIME);
     start_cheat_caller_address(address, ALICE());
 
-    dispatcher.buy_game(PaymentType::Ticket, Option::None, ALICE(), false);
+    dispatcher.buy_game(PaymentType::Ticket, ALICE(), false);
 }
 
 // TB-U-24: Buy game with golden pass - not configured
@@ -594,7 +594,7 @@ fn test_buy_game_golden_pass_not_configured() {
     let payment = PaymentType::GoldenPass(
         GoldenPassInfo { address: unconfigured_nft, token_id: 1 },
     );
-    dispatcher.buy_game(payment, Option::None, ALICE(), false);
+    dispatcher.buy_game(payment, ALICE(), false);
 }
 
 // TB-U-23: Buy game with golden pass - not owner
@@ -631,7 +631,7 @@ fn test_buy_game_golden_pass_not_owner() {
     start_cheat_caller_address(address, ALICE());
 
     let payment = PaymentType::GoldenPass(GoldenPassInfo { address: golden_pass_nft, token_id: 1 });
-    dispatcher.buy_game(payment, Option::None, ALICE(), false);
+    dispatcher.buy_game(payment, ALICE(), false);
 }
 
 // TB-U-25: Buy game with golden pass - on cooldown
@@ -672,7 +672,7 @@ fn test_buy_game_golden_pass_on_cooldown() {
     start_cheat_caller_address(address, ALICE());
 
     let payment = PaymentType::GoldenPass(GoldenPassInfo { address: golden_pass_nft, token_id: 1 });
-    dispatcher.buy_game(payment, Option::None, ALICE(), false);
+    dispatcher.buy_game(payment, ALICE(), false);
 }
 
 // =============================================================================
@@ -1047,13 +1047,11 @@ mod MockMinigameTokenForTicketBooth {
         }
         fn mint(
             ref self: ContractState,
-            player_name: Option<felt252>,
             settings_id: Option<u32>,
             start: Option<u64>,
             end: Option<u64>,
             objective_id: Option<u32>,
             context: Option<GameContextDetails>,
-            client_url: Option<ByteArray>,
             to: ContractAddress,
             soulbound: bool,
             paymaster: bool,
@@ -1065,13 +1063,11 @@ mod MockMinigameTokenForTicketBooth {
         }
         fn mint_batch_recipients(
             ref self: ContractState,
-            player_name: Option<felt252>,
             settings_id: Option<u32>,
             start: Option<u64>,
             end: Option<u64>,
             objective_id: Option<u32>,
             context: Option<GameContextDetails>,
-            client_url: Option<ByteArray>,
             recipients: Array<MintBatchRecipient>,
             soulbound: bool,
             paymaster: bool,
@@ -1093,7 +1089,8 @@ mod MockMinigameTokenForTicketBooth {
             ids
         }
         fn refresh_metadata(ref self: ContractState, token_id: felt252) {}
-        fn update_player_name(ref self: ContractState, token_id: felt252, name: felt252) {}
+        fn set_player_name(ref self: ContractState, token_id: felt252, name: felt252) {}
+        fn set_client_url(ref self: ContractState, token_id: felt252, url: ByteArray) {}
     }
 
     #[abi(embed_v0)]
@@ -1242,7 +1239,7 @@ fn test_buy_game_ticket_zero_receiver_burn_fallback() {
 
     // This exercises the burn fallback path (burn_from will fail on mock,
     // falling back to transfer_from to zero address)
-    let token_id = dispatcher.buy_game(PaymentType::Ticket, Option::None, ALICE(), false);
+    let token_id = dispatcher.buy_game(PaymentType::Ticket, ALICE(), false);
     assert!(token_id != 0, "Should mint a token");
 }
 
@@ -1414,6 +1411,6 @@ fn test_buy_game_golden_pass_expired() {
     start_cheat_caller_address(address, ALICE());
 
     let payment = PaymentType::GoldenPass(GoldenPassInfo { address: golden_pass_nft, token_id: 1 });
-    dispatcher.buy_game(payment, Option::None, ALICE(), false);
+    dispatcher.buy_game(payment, ALICE(), false);
 }
 
