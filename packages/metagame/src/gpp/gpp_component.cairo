@@ -12,7 +12,8 @@
 /// state that sees many game contracts at once. Ids are packed felts rather
 /// than counters, so a collision is not automatic, but it is constructible: an
 /// attacker controls their own game contract and every packed field except
-/// `minted_at`, which is a block timestamp they need only match to the second.
+/// `minted_at`, which is a block timestamp they need only match to the minute,
+/// and the block number.
 ///
 /// `gpp_token_nft` was keyed on `token_id` alone while `gpp_prize_token`,
 /// `gpp_nft_at`, `gpp_pool` and `gpp_token_claimed` were all context-scoped.

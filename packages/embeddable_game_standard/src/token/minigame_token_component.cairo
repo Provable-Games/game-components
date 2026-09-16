@@ -32,7 +32,7 @@
 ///   per-token storage.
 ///
 /// Mint parameters carry their original legacy-token behaviors: `objective_id`,
-/// `paymaster` and the (65-bit, u128) `metadata` are packed into the id as
+/// `paymaster` and the (59-bit, u128) `metadata` are packed into the id as
 /// inert data the game interprets; `context` sets the id's has_context bit
 /// only (the data is NOT stored — legacy-token parity); `client_url` is
 /// storage-backed with a `client_url` view.
@@ -41,15 +41,17 @@
 /// component (storage names, `IMinigameTokenMinter` surface and
 /// `MinterRegistryUpdate` event identical to the legacy MinterComponent's).
 ///
-/// Token ids use the standard's 251-bit layout in `token::packing` — NOT the
-/// legacy token's `token_legacy::structs::pack_token_id` layout (which stays
-/// untouched, serving legacy denshokan). Indexers must branch their token-id
-/// decoder by contract generation.
+/// Token ids use the standard's schema v1 layout in `token::packing` — NOT
+/// the retired registry generation's layout. Indexers must branch their
+/// token-id decoder by contract generation (`schema_version`, id low bits
+/// 0-4). Mint times are stored to the minute; ids are made unique by the tx
+/// hash plus an internal collision counter (`tx_nonce`) that the component
+/// bumps whenever a packed id already has an owner — no caller-supplied salt.
 #[starknet::component]
 pub mod MinigameTokenComponent {
     use core::num::traits::Zero;
     use game_components_interfaces::structs::metagame::GameContextDetails;
-    use game_components_interfaces::structs::token::{MintBatchRecipient, TokenMetadata};
+    use game_components_interfaces::structs::token::{Lifecycle, MintBatchRecipient, TokenMetadata};
     use game_components_interfaces::token::core::{
         IMINIGAME_TOKEN_ID, IMinigameToken, MinigameTokenABI,
     };
@@ -69,12 +71,24 @@ pub mod MinigameTokenComponent {
     use starknet::storage::{
         Map, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess,
     };
-    use starknet::{ContractAddress, get_block_timestamp, get_caller_address, get_tx_info};
+    use starknet::{
+        ContractAddress, get_block_info, get_block_timestamp, get_caller_address, get_tx_info,
+    };
     use crate::token::lifecycle::{LifecycleTrait, create_lifecycle_with_defaults};
     use crate::token::packing::{
-        extract_tx_hash_bits, pack_token_id, to_token_metadata, unpack_metadata, unpack_minted_by,
-        unpack_objective_id, unpack_settings_id, unpack_soulbound, unpack_token_id,
+        PackedTokenId, SCHEMA_VERSION, extract_tx_hash_bits, minutes_ceil_delay, minutes_floor,
+        minutes_to_seconds, pack_token_id, to_token_metadata, unpack_end_delay, unpack_has_context,
+        unpack_lifecycle, unpack_metadata, unpack_minted_at_block_number,
+        unpack_minted_at_timestamp, unpack_minted_by, unpack_objective_id, unpack_paymaster,
+        unpack_schema_version, unpack_settings_id, unpack_soulbound, unpack_start_delay,
+        unpack_token_id, unpack_tx_hash, unpack_tx_nonce,
     };
+
+    /// Hard cap on the internal collision counter (8-bit `tx_nonce` field):
+    /// at most 256 identical ids can be resolved in one tx or block.
+    const MAX_TX_NONCE: u32 = 255;
+    /// A batch shares one counter, so it can mint at most 256 tokens.
+    const MAX_BATCH_TOKENS: u32 = 256;
 
     #[storage]
     pub struct Storage {
@@ -150,14 +164,11 @@ pub mod MinigameTokenComponent {
             // No mutable state exists; the game contract is authoritative for
             // game_over / objective completion — the returned metadata reports
             // game_over/completed_objective/completed_at as false/0 always.
-            // Its u16 `metadata` field is 0 (never a truncation): the token id
-            // packs 65 bits — read them via `mint_metadata`.
             to_token_metadata(unpack_token_id(token_id))
         }
 
         fn is_playable(self: @ComponentState<TContractState>, token_id: felt252) -> bool {
-            let metadata = self.token_metadata(token_id);
-            metadata.lifecycle.is_playable(get_block_timestamp())
+            unpack_lifecycle(token_id).is_playable(get_block_timestamp())
         }
 
         fn settings_id(self: @ComponentState<TContractState>, token_id: felt252) -> u32 {
@@ -169,14 +180,13 @@ pub mod MinigameTokenComponent {
         }
 
         fn minted_by(self: @ComponentState<TContractState>, token_id: felt252) -> felt252 {
-            let minted_by_val: u64 = unpack_minted_by(token_id);
-            minted_by_val.into()
+            unpack_minted_by(token_id).into()
         }
 
         fn minted_by_address(
             self: @ComponentState<TContractState>, token_id: felt252,
         ) -> ContractAddress {
-            let minted_by_id: u64 = unpack_minted_by(token_id);
+            let minted_by_id: u64 = unpack_minted_by(token_id).into();
             self.minter_addresses.entry(minted_by_id).read()
         }
 
@@ -196,6 +206,46 @@ pub mod MinigameTokenComponent {
             unpack_metadata(token_id)
         }
 
+        fn schema_version(self: @ComponentState<TContractState>, token_id: felt252) -> u8 {
+            unpack_schema_version(token_id)
+        }
+
+        fn has_context(self: @ComponentState<TContractState>, token_id: felt252) -> bool {
+            unpack_has_context(token_id)
+        }
+
+        fn is_paymaster(self: @ComponentState<TContractState>, token_id: felt252) -> bool {
+            unpack_paymaster(token_id)
+        }
+
+        fn tx_hash(self: @ComponentState<TContractState>, token_id: felt252) -> u16 {
+            unpack_tx_hash(token_id)
+        }
+
+        fn tx_nonce(self: @ComponentState<TContractState>, token_id: felt252) -> u8 {
+            unpack_tx_nonce(token_id)
+        }
+
+        fn minted_at_block_number(self: @ComponentState<TContractState>, token_id: felt252) -> u32 {
+            unpack_minted_at_block_number(token_id)
+        }
+
+        fn minted_at(self: @ComponentState<TContractState>, token_id: felt252) -> u64 {
+            minutes_to_seconds(unpack_minted_at_timestamp(token_id).into())
+        }
+
+        fn start_delay(self: @ComponentState<TContractState>, token_id: felt252) -> u32 {
+            unpack_start_delay(token_id)
+        }
+
+        fn end_delay(self: @ComponentState<TContractState>, token_id: felt252) -> u32 {
+            unpack_end_delay(token_id)
+        }
+
+        fn lifecycle(self: @ComponentState<TContractState>, token_id: felt252) -> Lifecycle {
+            unpack_lifecycle(token_id)
+        }
+
         fn mint(
             ref self: ComponentState<TContractState>,
             player_name: Option<felt252>,
@@ -208,60 +258,26 @@ pub mod MinigameTokenComponent {
             to: ContractAddress,
             soulbound: bool,
             paymaster: bool,
-            salt: u16,
             metadata: u128,
         ) -> felt252 {
-            let caller = get_caller_address();
-            let current_time = get_block_timestamp();
-
-            // Same lifecycle rules as CoreTokenComponent::mint_game: a
-            // non-zero end must be in the future and after start (end_delay 0
-            // means "no expiration", so a past window must not collapse into
-            // an immortal token), and a start at or before now clamps to now
-            // so the packed delays reconstruct the caller's intended end.
-            let lifecycle = create_lifecycle_with_defaults(start, end);
-            lifecycle.validate();
-            assert!(
-                lifecycle.end == 0
-                    || (lifecycle.end > current_time && lifecycle.end > lifecycle.start),
-                "MinigameToken: Lifecycle end must be in the future and after start",
-            );
-            let effective_start = if lifecycle.start > current_time {
-                lifecycle.start
-            } else {
-                current_time
-            };
-            let start_delay: u32 = (effective_start - current_time).try_into().unwrap();
-            let end_delay: u32 = if lifecycle.end > effective_start {
-                (lifecycle.end - effective_start).try_into().unwrap()
-            } else {
-                0
-            };
-
-            let tx_hash_bits = extract_tx_hash_bits(get_tx_info().unbox().transaction_hash);
-
-            let minted_by = self.add_minter(caller);
-
             // settings_id keeps its Option<u32> call-site type; the pack
-            // asserts the value fits the id layout's 16-bit field. Likewise
-            // minted_by (u64 from add_minter) must fit 26
-            // bits, objective_id 30 bits and metadata 65 bits. context sets
-            // the has_context bit only — the data itself is NOT stored
+            // asserts the value fits the id layout's 20-bit field. Likewise
+            // objective_id must fit 20 bits and metadata 59 bits. context
+            // sets the has_context bit only — the data itself is NOT stored
             // (legacy-token parity: its context hook was a documented no-op).
-            let final_token_id = pack_token_id(
-                current_time,
-                start_delay,
-                end_delay,
-                settings_id.unwrap_or(0),
-                minted_by,
-                soulbound,
-                tx_hash_bits,
-                salt,
-                paymaster,
-                context.is_some(),
-                objective_id.unwrap_or(0),
-                metadata,
-            );
+            let mut fields = self
+                .mint_fields(
+                    start,
+                    end,
+                    settings_id.unwrap_or(0),
+                    objective_id.unwrap_or(0),
+                    context.is_some(),
+                    soulbound,
+                    paymaster,
+                    metadata,
+                );
+
+            let (final_token_id, _) = self.next_free_token_id(ref fields, 0);
 
             if let Option::Some(name) = player_name {
                 self.token_player_names.entry(final_token_id).write(name);
@@ -280,13 +296,14 @@ pub mod MinigameTokenComponent {
         /// Batch mint identical tokens to one or more recipients with
         /// per-recipient counts.
         ///
-        /// Salt is a single global counter across the batch (`salt + i` for
-        /// `i in 0..sum(counts)`): token ids do not encode the recipient, so
-        /// salts must be globally unique within the tx —
-        /// `salt + sum(counts) - 1 <= 0xFFFF` (the id layout's 16-bit field).
+        /// Every token in the batch shares every packed field, so one
+        /// `tx_nonce` counter runs across the whole batch: each token takes
+        /// the next free nonce (skipping ids another transaction already
+        /// minted this block), and the 8-bit field caps a batch at 256
+        /// tokens — checked up front, before anything is minted.
         ///
-        /// Versus calling `mint` per token, the lifecycle math, tx-info read
-        /// and minter registration are hoisted and paid once for the batch.
+        /// Versus calling `mint` per token, the lifecycle math, block/tx-info
+        /// reads and minter registration are hoisted and paid once.
         fn mint_batch_recipients(
             ref self: ComponentState<TContractState>,
             player_name: Option<felt252>,
@@ -299,13 +316,12 @@ pub mod MinigameTokenComponent {
             recipients: Array<MintBatchRecipient>,
             soulbound: bool,
             paymaster: bool,
-            salt: u16,
             metadata: u128,
         ) -> Array<felt252> {
             let recipient_count = recipients.len();
             assert!(recipient_count > 0, "MinigameToken: recipients array cannot be empty");
 
-            // Sum per-recipient counts and bound the global salt counter.
+            // Sum per-recipient counts and bound the shared nonce counter.
             let mut total_tokens: u32 = 0;
             let mut sum_idx: u32 = 0;
             while sum_idx < recipient_count {
@@ -315,48 +331,29 @@ pub mod MinigameTokenComponent {
                 total_tokens += c.into();
                 sum_idx += 1;
             }
-            let max_salt: u32 = salt.into() + total_tokens - 1;
             assert!(
-                max_salt <= 0xFFFF,
-                "MinigameToken: salt overflow (salt + total tokens - 1 must be <= 65535)",
+                total_tokens <= MAX_BATCH_TOKENS,
+                "MinigameToken: batch exceeds 256 tokens (8-bit tx_nonce)",
             );
 
-            // Hoisted per-batch work: lifecycle math (same rules and rationale as
-            // `mint`), tx-hash bits, minter registration.
-            let caller = get_caller_address();
-            let current_time = get_block_timestamp();
+            // Hoisted per-batch work: lifecycle math, block/tx reads, minter
+            // registration — the shared packed fields.
+            let mut fields = self
+                .mint_fields(
+                    start,
+                    end,
+                    settings_id.unwrap_or(0),
+                    objective_id.unwrap_or(0),
+                    context.is_some(),
+                    soulbound,
+                    paymaster,
+                    metadata,
+                );
 
-            let lifecycle = create_lifecycle_with_defaults(start, end);
-            lifecycle.validate();
-            assert!(
-                lifecycle.end == 0
-                    || (lifecycle.end > current_time && lifecycle.end > lifecycle.start),
-                "MinigameToken: Lifecycle end must be in the future and after start",
-            );
-            let effective_start = if lifecycle.start > current_time {
-                lifecycle.start
-            } else {
-                current_time
-            };
-            let start_delay: u32 = (effective_start - current_time).try_into().unwrap();
-            let end_delay: u32 = if lifecycle.end > effective_start {
-                (lifecycle.end - effective_start).try_into().unwrap()
-            } else {
-                0
-            };
-
-            let tx_hash_bits = extract_tx_hash_bits(get_tx_info().unbox().transaction_hash);
-
-            let minted_by = self.add_minter(caller);
-            let validated_settings_id = settings_id.unwrap_or(0);
-            let validated_objective_id = objective_id.unwrap_or(0);
-            // Shared has_context bit for all minted tokens; the context data
-            // itself is NOT stored (legacy-token parity).
-            let has_context = context.is_some();
-
-            // Per-token work: pack, optional name/url writes, ERC721 mint.
+            // Per-token work: next free id, optional name/url writes, ERC721
+            // mint. One nonce counter runs across the batch.
             let mut token_ids: Array<felt252> = ArrayTrait::new();
-            let mut salt_offset: u16 = 0;
+            let mut next_nonce: u32 = 0;
             let mut r_idx: u32 = 0;
             while r_idx < recipient_count {
                 let r: @MintBatchRecipient = recipients.at(r_idx);
@@ -365,20 +362,9 @@ pub mod MinigameTokenComponent {
 
                 let mut k: u16 = 0;
                 while k < count {
-                    let final_token_id = pack_token_id(
-                        current_time,
-                        start_delay,
-                        end_delay,
-                        validated_settings_id,
-                        minted_by,
-                        soulbound,
-                        tx_hash_bits,
-                        salt + salt_offset,
-                        paymaster,
-                        has_context,
-                        validated_objective_id,
-                        metadata,
-                    );
+                    let (final_token_id, used_nonce) = self
+                        .next_free_token_id(ref fields, next_nonce);
+                    next_nonce = used_nonce + 1;
 
                     if let Option::Some(name) = player_name {
                         self.token_player_names.entry(final_token_id).write(name);
@@ -395,7 +381,6 @@ pub mod MinigameTokenComponent {
                     erc721_component.mint(to, final_token_id.into());
 
                     token_ids.append(final_token_id);
-                    salt_offset += 1;
                     k += 1;
                 }
                 r_idx += 1;
@@ -564,6 +549,36 @@ pub mod MinigameTokenComponent {
         fn mint_metadata(self: @ComponentState<TContractState>, token_id: felt252) -> u128 {
             MinigameToken::mint_metadata(self, token_id)
         }
+        fn schema_version(self: @ComponentState<TContractState>, token_id: felt252) -> u8 {
+            MinigameToken::schema_version(self, token_id)
+        }
+        fn has_context(self: @ComponentState<TContractState>, token_id: felt252) -> bool {
+            MinigameToken::has_context(self, token_id)
+        }
+        fn is_paymaster(self: @ComponentState<TContractState>, token_id: felt252) -> bool {
+            MinigameToken::is_paymaster(self, token_id)
+        }
+        fn tx_hash(self: @ComponentState<TContractState>, token_id: felt252) -> u16 {
+            MinigameToken::tx_hash(self, token_id)
+        }
+        fn tx_nonce(self: @ComponentState<TContractState>, token_id: felt252) -> u8 {
+            MinigameToken::tx_nonce(self, token_id)
+        }
+        fn minted_at_block_number(self: @ComponentState<TContractState>, token_id: felt252) -> u32 {
+            MinigameToken::minted_at_block_number(self, token_id)
+        }
+        fn minted_at(self: @ComponentState<TContractState>, token_id: felt252) -> u64 {
+            MinigameToken::minted_at(self, token_id)
+        }
+        fn start_delay(self: @ComponentState<TContractState>, token_id: felt252) -> u32 {
+            MinigameToken::start_delay(self, token_id)
+        }
+        fn end_delay(self: @ComponentState<TContractState>, token_id: felt252) -> u32 {
+            MinigameToken::end_delay(self, token_id)
+        }
+        fn lifecycle(self: @ComponentState<TContractState>, token_id: felt252) -> Lifecycle {
+            MinigameToken::lifecycle(self, token_id)
+        }
         fn mint(
             ref self: ComponentState<TContractState>,
             player_name: Option<felt252>,
@@ -576,7 +591,6 @@ pub mod MinigameTokenComponent {
             to: ContractAddress,
             soulbound: bool,
             paymaster: bool,
-            salt: u16,
             metadata: u128,
         ) -> felt252 {
             MinigameToken::mint(
@@ -591,7 +605,6 @@ pub mod MinigameTokenComponent {
                 to,
                 soulbound,
                 paymaster,
-                salt,
                 metadata,
             )
         }
@@ -607,7 +620,6 @@ pub mod MinigameTokenComponent {
             recipients: Array<MintBatchRecipient>,
             soulbound: bool,
             paymaster: bool,
-            salt: u16,
             metadata: u128,
         ) -> Array<felt252> {
             MinigameToken::mint_batch_recipients(
@@ -622,7 +634,6 @@ pub mod MinigameTokenComponent {
                 recipients,
                 soulbound,
                 paymaster,
-                salt,
                 metadata,
             )
         }
@@ -704,6 +715,113 @@ pub mod MinigameTokenComponent {
             minter_id
         }
 
+        /// Everything a mint packs except the collision counter: validates
+        /// the requested lifecycle, converts it to the id's minute fields,
+        /// reads block/tx info and registers the caller as minter. Shared by
+        /// `mint` and `mint_batch_recipients` (hoisted once per batch).
+        ///
+        /// Lifecycle rules: a non-zero end must be in the future and after
+        /// start (end_delay 0 means "no expiration", so a past window must
+        /// not collapse into an immortal token); a start at or before now
+        /// clamps to now. Times are stored to the minute — the mint time is
+        /// floored, the delays are ceiled — so the reconstructed window is
+        /// never earlier than requested and at most 59 seconds later, and a
+        /// non-zero end always yields end_delay >= 1.
+        fn mint_fields(
+            ref self: ComponentState<TContractState>,
+            start: Option<u64>,
+            end: Option<u64>,
+            settings_id: u32,
+            objective_id: u32,
+            has_context: bool,
+            soulbound: bool,
+            paymaster: bool,
+            metadata: u128,
+        ) -> PackedTokenId {
+            let block_info = get_block_info().unbox();
+            let current_time = block_info.block_timestamp;
+            let minted_at_block_number: u32 = block_info
+                .block_number
+                .try_into()
+                .expect('MinigameToken: block > 32 bits');
+
+            let lifecycle = create_lifecycle_with_defaults(start, end);
+            lifecycle.validate();
+            assert!(
+                lifecycle.end == 0
+                    || (lifecycle.end > current_time && lifecycle.end > lifecycle.start),
+                "MinigameToken: Lifecycle end must be in the future and after start",
+            );
+            let effective_start = if lifecycle.start > current_time {
+                lifecycle.start
+            } else {
+                current_time
+            };
+            let minted_at_timestamp = minutes_floor(current_time);
+            let minted_at_seconds = minutes_to_seconds(minted_at_timestamp.into());
+            let start_delay = minutes_ceil_delay(minted_at_seconds, effective_start);
+            let reconstructed_start = minted_at_seconds + minutes_to_seconds(start_delay.into());
+            // A non-zero end always yields end_delay >= 1: the ceil handles
+            // end > reconstructed_start, and an end that the start's own
+            // round-up already overtook (a sub-minute window straddling a
+            // minute boundary) clamps to one minute after the start.
+            let end_delay = if lifecycle.end == 0 {
+                0
+            } else if lifecycle.end <= reconstructed_start {
+                1
+            } else {
+                minutes_ceil_delay(reconstructed_start, lifecycle.end)
+            };
+
+            let tx_hash = extract_tx_hash_bits(get_tx_info().unbox().transaction_hash);
+
+            let minted_by = self.add_minter(get_caller_address());
+            assert!(minted_by <= 0xFFFFFF, "MinigameToken: minter id exceeds 24-bit field");
+
+            PackedTokenId {
+                schema_version: SCHEMA_VERSION,
+                has_context,
+                soulbound,
+                paymaster,
+                tx_hash,
+                tx_nonce: 0,
+                minted_at_block_number,
+                minted_at_timestamp,
+                start_delay,
+                end_delay,
+                settings_id,
+                objective_id,
+                minted_by: minted_by.try_into().unwrap(),
+                metadata,
+            }
+        }
+
+        /// Resolves the first unused id for `fields`, starting the collision
+        /// counter at `from_nonce`: pack, read `_owner_of`, and bump
+        /// `tx_nonce` while the id already has an owner. Transactions in a
+        /// block run sequentially, so a same-block collision from another
+        /// transaction is already visible in the owner mapping; the ERC721
+        /// mint performs the same read, so the common path costs nothing
+        /// extra. Returns the id and the nonce it was packed with.
+        fn next_free_token_id(
+            self: @ComponentState<TContractState>, ref fields: PackedTokenId, from_nonce: u32,
+        ) -> (felt252, u32) {
+            let erc721_component = ERC721::get_component(self.get_contract());
+            let mut nonce = from_nonce;
+            loop {
+                assert!(
+                    nonce <= MAX_TX_NONCE,
+                    "MinigameToken: tx_nonce exhausted (256 identical ids in one tx or block)",
+                );
+                fields.tx_nonce = nonce.try_into().unwrap();
+                let candidate = pack_token_id(fields);
+                if erc721_component._owner_of(candidate.into()).is_zero() {
+                    break (candidate, nonce);
+                }
+                nonce += 1;
+            }
+        }
+
         /// Stores the game fee recipient + terms and registers the SRC5 ids:
         /// `IMINIGAME_TOKEN_ID`, the absorbed minter's
         /// `IMINIGAME_TOKEN_MINTER_ID` and the game-fee surface's
@@ -783,7 +901,7 @@ pub mod MinigameTokenComponent {
         /// game_over / completed_objective state to consult. Games gate dead
         /// runs themselves; they are the source of truth.
         fn assert_lifecycle_open(self: @ComponentState<TContractState>, token_id: felt252) {
-            let lifecycle = crate::token::packing::unpack_lifecycle(token_id);
+            let lifecycle = unpack_lifecycle(token_id);
             let current_time = get_block_timestamp();
             assert!(
                 lifecycle.can_start(current_time),

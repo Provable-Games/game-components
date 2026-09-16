@@ -46,10 +46,10 @@ legacy callback receiver. The component now exposes internals only.
 entry, say — use `mint_batch_recipients`. `mint_batch` costs one cross-contract
 dispatch per token and re-serialises `context` (which contains an `Array`) each
 time; `mint_batch_recipients` hoists the batch-invariant work and runs a single
-global salt counter. Reach for `mint_batch` only when entries genuinely name
+internal collision counter (at most 256 tokens per batch). Reach for `mint_batch` only when entries genuinely name
 different games.
 
-Every mint path takes `metadata: u128`, reaching the standard token's 65-bit
+Every mint path takes `metadata: u128`, reaching the standard token's 59-bit
 field. The legacy token's field is `u16`, so a legacy mint asserts the value
 fits (`Metagame: metadata exceeds u16`) rather than truncating it silently —
 identically on the single and batch paths, so the two never disagree about what
@@ -136,7 +136,6 @@ pub struct MintMetagameParams {
     pub to: ContractAddress,
     pub soulbound: bool,
     pub paymaster: bool,
-    pub salt: u16,
     pub metadata: u128,
 }
 ```

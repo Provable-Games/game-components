@@ -17,9 +17,10 @@
 /// Ids are packed felts rather than counters, so two games do not collide by
 /// default; a collision needs two ids that pack byte-identically. That is
 /// reachable accidentally (one multicall minting into two games with the same
-/// params and salt in the same block) and, more importantly, deliberately: an
+/// params in the same block) and, more importantly, deliberately: an
 /// attacker controls their own game contract and every packed field except
-/// `minted_at`, a block timestamp they need only match to the second.
+/// `minted_at`, a block timestamp they need only match to the minute, and the
+/// block number.
 ///
 /// The consequence was severe because `set_entry` wrote the slot
 /// unconditionally: the later registration overwrote the earlier token's

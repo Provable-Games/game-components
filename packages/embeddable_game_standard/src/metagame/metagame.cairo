@@ -64,7 +64,6 @@ pub fn mint(
     to: ContractAddress,
     soulbound: bool,
     paymaster: bool,
-    salt: u16,
     metadata: u128,
 ) -> felt252 {
     assert_is_standard_game(game_address);
@@ -82,7 +81,6 @@ pub fn mint(
             to,
             soulbound,
             paymaster,
-            salt,
             metadata,
         )
 }
@@ -90,17 +88,17 @@ pub fn mint(
 /// Mints many tokens for ONE game in a single call, via the token's own
 /// `mint_batch_recipients` entrypoint.
 ///
-/// This is NOT `mint_batch`. `mint_batch` loops over `mint`, one cross-contract
-/// dispatch per token, and each entry may name a different game. This routes a
-/// single dispatch to the token's batch entrypoint, which hoists the
-/// batch-invariant work (packing, the shared has_context bit) and runs one
-/// global salt counter across the batch. For a many-recipient single-game mint
-/// — a tournament entry — that is the difference between N dispatches and one,
-/// with the `context` array re-serialised N times versus once.
+/// Versus calling `mint` once per token (one cross-contract dispatch each),
+/// this routes a single dispatch to the token's batch entrypoint, which
+/// hoists the batch-invariant work (packing, the shared has_context bit) and
+/// runs one internal collision counter across the batch. For a
+/// many-recipient single-game mint — a tournament entry — that is the
+/// difference between N dispatches and one, with the `context` array
+/// re-serialised N times versus once.
 ///
 /// # Arguments
 /// * `game_address` - The game whose token mints; the token is resolved from it
-/// * `recipients` - Per-recipient counts; salts run `salt .. salt + sum(counts) - 1`
+/// * `recipients` - Per-recipient counts; at most 256 tokens per batch
 ///
 /// # Returns
 /// * `Array<felt252>` - The minted token ids, in recipient order
@@ -118,7 +116,6 @@ pub fn mint_batch_recipients(
     recipients: Array<MintBatchRecipient>,
     soulbound: bool,
     paymaster: bool,
-    salt: u16,
     metadata: u128,
 ) -> Array<felt252> {
     assert_is_standard_game(game_address);
@@ -136,7 +133,6 @@ pub fn mint_batch_recipients(
             recipients,
             soulbound,
             paymaster,
-            salt,
             metadata,
         )
 }

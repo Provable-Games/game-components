@@ -366,7 +366,8 @@ fn enumerable_owner_hook_composes_soulbound_and_burn() {
     let address = deploy("EnumerableOwnerMock");
     let fixture = IEnumerationFixtureDispatcher { contract_address: address };
     let safe = IERC721SafeDispatcher { contract_address: address };
-    let id = 0x80000000000000000000000000000000;
+    // Schema v1 soulbound flag: low bit 6.
+    let id = 0x40;
     fixture.mint(addr(201), id.into());
     start_cheat_caller_address(address, addr(201));
     expect_error(safe.transfer_from(addr(201), addr(202), id.into()), 'Token is soulbound');

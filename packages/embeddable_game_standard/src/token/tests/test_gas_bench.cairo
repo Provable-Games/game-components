@@ -24,7 +24,7 @@ use snforge_std::{ContractClassTrait, DeclareResultTrait, declare, start_cheat_b
 use starknet::ContractAddress;
 use crate::token::interface::{IMinigameTokenDispatcher, IMinigameTokenDispatcherTrait};
 
-const START_TIME: u64 = 1000;
+const START_TIME: u64 = 1200;
 const END_TIME: u64 = 100000;
 
 fn addr(value: felt252) -> ContractAddress {
@@ -74,7 +74,7 @@ fn setup_standard() -> (IMinigameTokenDispatcher, ERC721ABIDispatcher, ContractA
 }
 
 
-fn mint_standard(token: IMinigameTokenDispatcher, _game: ContractAddress, salt: u16) -> felt252 {
+fn mint_standard(token: IMinigameTokenDispatcher, _game: ContractAddress) -> felt252 {
     // Standard mint — no game address (self-bound); the restored legacy-token
     // params (objective/context/client_url/paymaster/metadata) neutral, to
     // stay comparable with the legacy-token bench call below.
@@ -90,7 +90,6 @@ fn mint_standard(token: IMinigameTokenDispatcher, _game: ContractAddress, salt: 
             ALICE(),
             false,
             false,
-            salt,
             0,
         )
 }
@@ -113,17 +112,17 @@ fn bench_standard_deploy_baseline() {
 #[test]
 fn bench_standard_mint_x1() {
     let (token, _, game) = setup_standard();
-    mint_standard(token, game, 0);
+    mint_standard(token, game);
 }
 
 
 #[test]
 fn bench_standard_mint_x10() {
     let (token, _, game) = setup_standard();
-    let mut salt: u16 = 0;
-    while salt < 10 {
-        mint_standard(token, game, salt);
-        salt += 1;
+    let mut i: u32 = 0;
+    while i < 10 {
+        mint_standard(token, game);
+        i += 1;
     }
 }
 
@@ -138,7 +137,7 @@ fn bench_standard_mint_x10() {
 #[test]
 fn bench_standard_guard_x10() {
     let (token, _, game) = setup_standard();
-    let token_id = mint_standard(token, game, 0);
+    let token_id = mint_standard(token, game);
     let game_mock = IStandardGameMockDispatcher { contract_address: token.contract_address };
     let mut i: u32 = 0;
     while i < 10 {
@@ -156,7 +155,7 @@ fn bench_standard_guard_x10() {
 #[test]
 fn bench_standard_post_action_x10() {
     let (token, _, game) = setup_standard();
-    let token_id = mint_standard(token, game, 0);
+    let token_id = mint_standard(token, game);
     let mut i: u32 = 0;
     while i < 10 {
         token.refresh_metadata(token_id);

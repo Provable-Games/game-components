@@ -22,7 +22,12 @@ pub struct Lifecycle {
 
 #[derive(Copy, Drop, Serde)]
 pub struct TokenMetadata {
+    /// Unix seconds — the id's minute-floored `minted_at_timestamp` times 60.
     pub minted_at: u64,
+    /// Block number at mint (id low bits 32-63).
+    pub minted_at_block_number: u32,
+    /// Token id layout version (id low bits 0-4).
+    pub schema_version: u8,
     pub settings_id: u32,
     pub lifecycle: Lifecycle,
     pub minted_by: u64,
@@ -34,8 +39,8 @@ pub struct TokenMetadata {
     pub has_context: bool,
     pub objective_id: u32,
     pub paymaster: bool,
-    /// Inert data the game interprets, 65 bits wide — matching the token id's
-    /// packed field exactly, so the value read back is the value minted.
+    /// Minter-writable, uninterpreted data, 59 bits wide — matching the token
+    /// id's packed field exactly, so the value read back is the value minted.
     pub metadata: u128,
 }
 
@@ -43,6 +48,8 @@ impl TokenMetadataDefault of Default<TokenMetadata> {
     fn default() -> TokenMetadata {
         TokenMetadata {
             minted_at: 0,
+            minted_at_block_number: 0,
+            schema_version: 0,
             settings_id: 0,
             lifecycle: Lifecycle { start: 0, end: 0 },
             minted_by: 0,
@@ -60,8 +67,9 @@ impl TokenMetadataDefault of Default<TokenMetadata> {
 
 /// Per-recipient parameters for `mint_batch_recipients`.
 /// Mints `count` tokens to `to` with the shared mint config supplied by the caller.
-/// The salt provided to `mint_batch_recipients` increments by one per minted token
-/// (across all recipients) for deterministic, collision-free token IDs.
+/// Token ids are made unique by the transaction hash and the token's internal
+/// per-transaction counter, which runs across all recipients; a batch may
+/// mint at most 256 tokens.
 #[derive(Copy, Drop, Serde)]
 pub struct MintBatchRecipient {
     pub to: ContractAddress,

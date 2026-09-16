@@ -11,10 +11,11 @@
 // mutable state) lives on as `IMinigameTokenLegacy` in `token/legacy.cairo`,
 // kept for deployed denshokan.
 //
-// Token ids use the standard's 251-bit layout (see
+// Token ids use the standard's schema v1 layout (see
 // `game_components_embeddable_game_standard::token::packing`), NOT the
 // legacy token's layout. Indexers must branch their token-id decoder by
-// contract generation.
+// contract generation; the `schema_version` view (id low bits 0-4) names
+// the layout.
 //
 // Strip principle: dead MACHINERY and compat shims are deleted; CAPABILITY
 // (writes) and cheap client-facing read views stay.
@@ -38,20 +39,23 @@
 // * `client_url` — storage-backed, readable via `client_url(token_id)`.
 // * `paymaster` — packed bit.
 // * `metadata` — widened from the legacy token's u16 to a u128 holding a
-//   65-bit packed field; read via `mint_metadata(token_id)`.
+//   59-bit packed field; read via `mint_metadata(token_id)`.
 //
 // Semantics that differ from the legacy token:
 // * `is_playable` checks the lifecycle window only. There is no token-side
 //   `game_over`/`completed_objective` latch — ask the game.
 // * `token_metadata` reports `game_over`/`completed_objective`/`completed_at`
-//   as `false`/`0` unconditionally, for the same reason, and its u16
-//   `metadata` field as 0 (the 65-bit packed value cannot fit — use
-//   `mint_metadata`).
+//   as `false`/`0` unconditionally, for the same reason.
+// * Mint times are stored to the minute: `minted_at` and the lifecycle
+//   `start`/`end` are reconstructed from minute fields (never earlier than
+//   requested, at most 59 seconds later).
+// * There is no salt parameter: token ids are made unique by the transaction
+//   hash and an internal per-transaction counter; callers pass nothing.
 // * There is no `update_game` — nothing to sync. `refresh_metadata`
 //   (ERC-4906 emit) is the only post-action hook a game needs.
 use starknet::ContractAddress;
 use crate::structs::metagame::GameContextDetails;
-use crate::structs::token::{MintBatchRecipient, TokenMetadata};
+use crate::structs::token::{Lifecycle, MintBatchRecipient, TokenMetadata};
 
 /// SNIP-5 interface ID derived via src5_rs: XOR of extended function selectors.
 ///
@@ -59,7 +63,7 @@ use crate::structs::token::{MintBatchRecipient, TokenMetadata};
 /// refresh-function exclusion from `IMINIGAME_TOKEN_LEGACY_ID`. Run `src5_rs parse`
 /// against a stripped copy of this trait (see packages/interfaces/src/AGENTS.md)
 /// to rederive:
-/// token_metadata: 0x2b0dd558353cb20e7f4ab7c3f1d2bc5ba7dbc4814f2f019e5910cd952338601
+/// token_metadata: 0x2f33e0f12dee3fd282c251bf5a7fbb58faf5089710e5031c394a2d7fe40d4d1
 /// is_playable: 0x2fbc9e87d82f279727e61c9ebc25269905fd28fb8137aeead5f417ac4cc66de
 /// settings_id: 0x2c1ab8f675f7da818ca288b9feb48811492444b5e6d822b3d1fe07728d1b714
 /// player_name: 0x2cf33209d5df54b50609fc29863a6b916471ac903c3d15acbe89210cac085aa
@@ -69,11 +73,26 @@ use crate::structs::token::{MintBatchRecipient, TokenMetadata};
 /// objective_id: 0x1c4b6eb95bb446da526020769358176d3498e17d9c19de091867d39d7aec5f6
 /// client_url: 0xfece505a913d6bf16c52441883915903c7f729b363edd8c5e632d00eec92d2
 /// mint_metadata: 0x336044a33f6a282d709d30cdd1b1ef63ea14c85c9e0d7cb14f51127fa7cfa36
-/// mint: 0x1bf0e27928426c321ad45df64c7ebb07bf82645eaecf532c67df90b4007692c
-/// mint_batch_recipients: 0x144515c9b8cf0aa7bfe3e5c932f6d346730b53fa1515dd46a808bf5e055cbfe
+/// schema_version: 0x258a7489ca188017fc520eec694f112495367610300d89b93c7484a1d55fdf4
+/// has_context: 0x1633419b5abcc4c0bbed8bd37a363fbe6de5bd25908761ab6dcda6a9b598ca9
+/// is_paymaster: 0x32badde0e306e50b9956caed68eca17ad752dd181ca3a5eb10d1a53aefa2254
+/// tx_hash: 0x2b6588e2657cbc9186a59b7591891a1a8e1d4991b5c87b8c34f1e9a7c666603
+/// tx_nonce: 0x3c03138f1e5c3755ced0a0f66f9f1f08936c3071fe7fdff5e6a10eb9738442d
+/// minted_at_block_number: 0x19ed497d0629ce5e2b55eac485f24a434058dbb15301f7bcfb6b03defdeae8d
+/// minted_at: 0x1ca7afe27530d09d655c7031c794058f480a045c5642708a7cd78a339896af9
+/// start_delay: 0x6aa39306f5eb0a223e03880876b6e99167460552df902870b319d60df1af20
+/// end_delay: 0x381a4251694c88a7699f03059dc5327aaaae4d94348e61d22b9f3500a30a5
+/// lifecycle: 0x31518034af1ff3055a3b8ca33a5a8fa3736833b5c146af44a3a0e60ced0fed0
+/// mint: 0x25de59ac1f6dd5a5f6234f403c92b151e2f665f9d8138fe5a75c5025cc51e53
+/// mint_batch_recipients: 0x293e7d2fe0a493c47a014a18dda7c01119d97583ad4825168737ca157052cea
 /// update_player_name: 0x1f68f6ce969c632201a916c0ec4432e7edf5340a2b7a71172b820d22c2e9481
+///
+/// Generation note: v3 tokens (token id schema v1, salt-free mint ABI)
+/// register this id. v2 and earlier deployments keep the previous id,
+/// `0x20253de95bcdb23620c88405a5f97da040b91de832ad98a34b45c4f3331d13b`,
+/// on-chain — a consumer that must recognise both generations probes both.
 pub const IMINIGAME_TOKEN_ID: felt252 =
-    0x20253de95bcdb23620c88405a5f97da040b91de832ad98a34b45c4f3331d13b;
+    0x3a2ed35c6e824eaf2721a9aeea082940f25bbad29b0f3acaa9d9c5b204c786;
 
 #[starknet::interface]
 pub trait IMinigameToken<TState> {
@@ -83,7 +102,7 @@ pub trait IMinigameToken<TState> {
     fn settings_id(self: @TState, token_id: felt252) -> u32;
     fn player_name(self: @TState, token_id: felt252) -> felt252;
     fn minted_by(self: @TState, token_id: felt252) -> felt252;
-    /// Resolves the packed 26-bit minter id back to the minter's address —
+    /// Resolves the packed 24-bit minter id back to the minter's address —
     /// the one view a packing-aware caller cannot derive from the id alone.
     fn minted_by_address(self: @TState, token_id: felt252) -> ContractAddress;
     fn is_soulbound(self: @TState, token_id: felt252) -> bool;
@@ -92,17 +111,43 @@ pub trait IMinigameToken<TState> {
     fn objective_id(self: @TState, token_id: felt252) -> u32;
     /// Stored client url from mint; empty ByteArray when none was supplied.
     fn client_url(self: @TState, token_id: felt252) -> ByteArray;
-    /// The packed 65-bit mint metadata. Same value as
+    /// The packed 59-bit mint metadata. Same value as
     /// `token_metadata(token_id).metadata`, as a single-field read.
     fn mint_metadata(self: @TState, token_id: felt252) -> u128;
+    /// Token id layout version (id low bits 0-4); this generation writes 1.
+    fn schema_version(self: @TState, token_id: felt252) -> u8;
+    /// Whether a context was supplied at mint (id low bit 5); the context
+    /// data itself is not stored.
+    fn has_context(self: @TState, token_id: felt252) -> bool;
+    /// Whether the mint was sponsored (id low bit 7).
+    fn is_paymaster(self: @TState, token_id: felt252) -> bool;
+    /// Low 16 bits of the mint transaction hash (id low bits 8-23).
+    fn tx_hash(self: @TState, token_id: felt252) -> u16;
+    /// The internal collision counter (id low bits 24-31): 0 for the first
+    /// id attempted in a transaction, bumped once per same-id collision.
+    fn tx_nonce(self: @TState, token_id: felt252) -> u8;
+    /// Block number at mint (id low bits 32-63).
+    fn minted_at_block_number(self: @TState, token_id: felt252) -> u32;
+    /// Mint time in Unix seconds: the id's minute-floored timestamp (low
+    /// bits 64-90) times 60.
+    fn minted_at(self: @TState, token_id: felt252) -> u64;
+    /// Minutes after `minted_at` when play may begin (id low bits 91-108).
+    fn start_delay(self: @TState, token_id: felt252) -> u32;
+    /// Minutes after start when the token expires (id low bits 109-127);
+    /// 0 = never expires.
+    fn end_delay(self: @TState, token_id: felt252) -> u32;
+    /// The reconstructed lifecycle window in Unix seconds (`end` 0 = never).
+    fn lifecycle(self: @TState, token_id: felt252) -> Lifecycle;
 
     /// Mints to `to` and returns the packed token id. The game is this
     /// contract — there is no game_address parameter. `settings_id` keeps
     /// `Option<u32>` for call-site ergonomics, but the value must fit the
-    /// id layout's 16-bit field (`<= 0xFFFF`) or the mint reverts; likewise
-    /// `objective_id` must fit 30 bits and `metadata` 65 bits. `context` sets
+    /// id layout's 20-bit field (`<= 0xFFFFF`) or the mint reverts; likewise
+    /// `objective_id` must fit 20 bits and `metadata` 59 bits. `context` sets
     /// the id's has_context bit only (data not stored); `client_url` is
-    /// written to storage when Some.
+    /// written to storage when Some. Token ids are made unique by the
+    /// transaction hash and an internal per-transaction counter; callers
+    /// pass nothing.
     fn mint(
         ref self: TState,
         player_name: Option<felt252>,
@@ -115,14 +160,14 @@ pub trait IMinigameToken<TState> {
         to: ContractAddress,
         soulbound: bool,
         paymaster: bool,
-        salt: u16,
         metadata: u128,
     ) -> felt252;
-    /// Batch mint with per-recipient counts. Salt is a single global counter
-    /// across the batch (`salt + sum(counts) - 1 <= 0xFFFF` — the id
-    /// layout's 16-bit salt field). All packed fields (including the
-    /// has_context bit) are shared by every minted token; the client_url, when
-    /// Some, is written per token.
+    /// Batch mint with per-recipient counts (at most 256 tokens per batch).
+    /// Token ids are made unique by the transaction hash and an internal
+    /// per-transaction counter that runs across the batch; callers pass
+    /// nothing. All packed fields (including the has_context bit) are shared
+    /// by every minted token; the client_url, when Some, is written per
+    /// token.
     fn mint_batch_recipients(
         ref self: TState,
         player_name: Option<felt252>,
@@ -135,7 +180,6 @@ pub trait IMinigameToken<TState> {
         recipients: Array<MintBatchRecipient>,
         soulbound: bool,
         paymaster: bool,
-        salt: u16,
         metadata: u128,
     ) -> Array<felt252>;
     /// Emits an ERC-4906 `MetadataUpdate` for `token_id` — see
@@ -170,6 +214,16 @@ pub trait MinigameTokenABI<TState> {
     fn objective_id(self: @TState, token_id: felt252) -> u32;
     fn client_url(self: @TState, token_id: felt252) -> ByteArray;
     fn mint_metadata(self: @TState, token_id: felt252) -> u128;
+    fn schema_version(self: @TState, token_id: felt252) -> u8;
+    fn has_context(self: @TState, token_id: felt252) -> bool;
+    fn is_paymaster(self: @TState, token_id: felt252) -> bool;
+    fn tx_hash(self: @TState, token_id: felt252) -> u16;
+    fn tx_nonce(self: @TState, token_id: felt252) -> u8;
+    fn minted_at_block_number(self: @TState, token_id: felt252) -> u32;
+    fn minted_at(self: @TState, token_id: felt252) -> u64;
+    fn start_delay(self: @TState, token_id: felt252) -> u32;
+    fn end_delay(self: @TState, token_id: felt252) -> u32;
+    fn lifecycle(self: @TState, token_id: felt252) -> Lifecycle;
     fn mint(
         ref self: TState,
         player_name: Option<felt252>,
@@ -182,7 +236,6 @@ pub trait MinigameTokenABI<TState> {
         to: ContractAddress,
         soulbound: bool,
         paymaster: bool,
-        salt: u16,
         metadata: u128,
     ) -> felt252;
     fn mint_batch_recipients(
@@ -197,7 +250,6 @@ pub trait MinigameTokenABI<TState> {
         recipients: Array<MintBatchRecipient>,
         soulbound: bool,
         paymaster: bool,
-        salt: u16,
         metadata: u128,
     ) -> Array<felt252>;
     fn refresh_metadata(ref self: TState, token_id: felt252);

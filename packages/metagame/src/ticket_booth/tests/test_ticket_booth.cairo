@@ -967,6 +967,8 @@ mod MockMinigameTokenForTicketBooth {
     fn blank_metadata() -> TokenMetadata {
         TokenMetadata {
             minted_at: 0,
+            minted_at_block_number: 0,
+            schema_version: 0,
             settings_id: 0,
             lifecycle: Lifecycle { start: 0, end: 0 },
             minted_by: 0,
@@ -1013,6 +1015,36 @@ mod MockMinigameTokenForTicketBooth {
         fn mint_metadata(self: @ContractState, token_id: felt252) -> u128 {
             0
         }
+        fn schema_version(self: @ContractState, token_id: felt252) -> u8 {
+            0
+        }
+        fn has_context(self: @ContractState, token_id: felt252) -> bool {
+            false
+        }
+        fn is_paymaster(self: @ContractState, token_id: felt252) -> bool {
+            false
+        }
+        fn tx_hash(self: @ContractState, token_id: felt252) -> u16 {
+            0
+        }
+        fn tx_nonce(self: @ContractState, token_id: felt252) -> u8 {
+            0
+        }
+        fn minted_at_block_number(self: @ContractState, token_id: felt252) -> u32 {
+            0
+        }
+        fn minted_at(self: @ContractState, token_id: felt252) -> u64 {
+            0
+        }
+        fn start_delay(self: @ContractState, token_id: felt252) -> u32 {
+            0
+        }
+        fn end_delay(self: @ContractState, token_id: felt252) -> u32 {
+            0
+        }
+        fn lifecycle(self: @ContractState, token_id: felt252) -> Lifecycle {
+            Lifecycle { start: 0, end: 0 }
+        }
         fn mint(
             ref self: ContractState,
             player_name: Option<felt252>,
@@ -1025,7 +1057,6 @@ mod MockMinigameTokenForTicketBooth {
             to: ContractAddress,
             soulbound: bool,
             paymaster: bool,
-            salt: u16,
             metadata: u128,
         ) -> felt252 {
             let id = self.next_token_id.read();
@@ -1044,7 +1075,6 @@ mod MockMinigameTokenForTicketBooth {
             recipients: Array<MintBatchRecipient>,
             soulbound: bool,
             paymaster: bool,
-            salt: u16,
             metadata: u128,
         ) -> Array<felt252> {
             let mut ids = array![];

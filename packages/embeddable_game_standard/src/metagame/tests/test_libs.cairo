@@ -66,7 +66,6 @@ mod standard_token_paths {
             false,
             false,
             0,
-            0,
         );
 
         assert!(token_id != 0, "mint returned a zero token id");
@@ -76,7 +75,7 @@ mod standard_token_paths {
         assert!(token.player_name(token_id) == 'player', "player name not stored");
     }
 
-    /// `metadata` is u128 so the single-mint path reaches the same 65-bit field
+    /// `metadata` is u128 so the single-mint path reaches the same 59-bit field
     /// the batch path does — a u16 here would silently narrow a consumer that
     /// threads a wider value through.
     #[test]
@@ -98,7 +97,6 @@ mod standard_token_paths {
             BOB(),
             false,
             false,
-            0,
             wide,
         );
 
@@ -126,7 +124,6 @@ mod standard_token_paths {
             false,
             false,
             0,
-            0,
         );
 
         let erc721 = IERC721Dispatcher { contract_address: game };
@@ -153,7 +150,6 @@ mod standard_token_paths {
             false,
             false,
             0,
-            0,
         );
     }
 
@@ -175,7 +171,6 @@ mod standard_token_paths {
             BOB(),
             false,
             false,
-            0,
             0,
         );
     }
@@ -257,7 +252,6 @@ mod fake_game_paths {
             false,
             false,
             0,
-            0,
         );
     }
 
@@ -317,7 +311,7 @@ mod fuzz_mint_parameters {
         contract_address
     }
 
-    fn mint_with_name(game: ContractAddress, player_name: felt252, salt: u16) -> felt252 {
+    fn mint_with_name(game: ContractAddress, player_name: felt252) -> felt252 {
         libs::mint(
             game,
             Option::Some(player_name),
@@ -332,7 +326,6 @@ mod fuzz_mint_parameters {
             BOB(),
             false,
             false,
-            salt,
             0,
         )
     }
@@ -343,13 +336,13 @@ mod fuzz_mint_parameters {
     #[test]
     fn test_fuzz_player_name_round_trips(player_name: felt252) {
         let game = deploy_standard_game();
-        let token_id = mint_with_name(game, player_name, 0);
+        let token_id = mint_with_name(game, player_name);
 
         let token = IMinigameTokenDispatcher { contract_address: game };
         assert!(token.player_name(token_id) == player_name, "player name did not round trip");
     }
 
-    /// `settings_id` is a 16-bit field in the packed id. Any value that fits
+    /// `settings_id` is a 20-bit field in the packed id. Any value that fits
     /// must come back exactly; the widening to `Option<u32>` at the ABI is
     /// call-site ergonomics, not extra range.
     #[fuzzer(runs: 64)]
@@ -373,21 +366,21 @@ mod fuzz_mint_parameters {
             false,
             false,
             0,
-            0,
         );
 
         let token = IMinigameTokenDispatcher { contract_address: game };
         assert!(token.settings_id(token_id) == settings_id, "settings id did not round trip");
     }
 
-    /// The 65-bit metadata field carries any value that fits, unchanged. This
+    /// The 59-bit metadata field carries any value that fits, unchanged. This
     /// is the field a consumer threads a wide value through, so truncation
     /// here would be silent data loss.
     #[fuzzer(runs: 64)]
     #[test]
     fn test_fuzz_metadata_round_trips(raw: u64) {
         let game = deploy_standard_game();
-        let metadata: u128 = raw.into();
+        // Any value inside the 59-bit field.
+        let metadata: u128 = raw.into() % 0x800000000000000;
 
         let token_id = libs::mint(
             game,
@@ -403,7 +396,6 @@ mod fuzz_mint_parameters {
             BOB(),
             false,
             false,
-            0,
             metadata,
         );
 
@@ -411,17 +403,25 @@ mod fuzz_mint_parameters {
         assert!(token.mint_metadata(token_id) == metadata, "metadata did not round trip");
     }
 
-    /// Distinct salts within one transaction produce distinct ids — the
-    /// property the salt field exists to guarantee for multicall minting.
+    /// Identical mints in one transaction produce distinct ids without any
+    /// caller-supplied salt: the token bumps its internal collision counter
+    /// (`tx_nonce`) whenever the packed id already has an owner.
     #[fuzzer(runs: 32)]
     #[test]
-    fn test_fuzz_distinct_salts_give_distinct_ids(salt_a: u16, salt_b: u16) {
-        if salt_a == salt_b {
-            return;
-        }
+    fn test_fuzz_identical_mints_give_distinct_ids(count: u8) {
         let game = deploy_standard_game();
-        let first = mint_with_name(game, 'player', salt_a);
-        let second = mint_with_name(game, 'player', salt_b);
-        assert!(first != second, "distinct salts collided");
+        let token = IMinigameTokenDispatcher { contract_address: game };
+        let mut n: u8 = count % 8;
+        let mut previous = mint_with_name(game, 'player');
+        assert!(token.tx_nonce(previous) == 0, "first mint takes nonce 0");
+        let mut expected_nonce: u8 = 1;
+        while n > 0 {
+            let next = mint_with_name(game, 'player');
+            assert!(next != previous, "identical mints collided");
+            assert!(token.tx_nonce(next) == expected_nonce, "nonce did not advance");
+            previous = next;
+            expected_nonce += 1;
+            n -= 1;
+        }
     }
 }
