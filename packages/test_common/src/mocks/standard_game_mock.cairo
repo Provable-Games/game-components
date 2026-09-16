@@ -116,12 +116,12 @@ pub mod StandardGameMock {
             token_id: u256,
             auth: ContractAddress,
         ) {
-            // Soulbound is a bit in the token id — pure unpack, no storage.
-            // Only transfers are blocked; mints (owner == 0) and burns
-            // (to == 0) pass through.
-            let current_owner = self._owner_of(token_id);
-            if !current_owner.is_zero() && !to.is_zero() {
-                if unpack_soulbound(token_id.try_into().unwrap()) {
+            // Soulbound is a bit in the token id — pure unpack, no storage —
+            // so check it first: a transferable token never pays the owner
+            // read here. Only transfers are blocked; mints (owner == 0) and
+            // burns (to == 0) pass through.
+            if unpack_soulbound(token_id.try_into().unwrap()) && !to.is_zero() {
+                if !self._owner_of(token_id).is_zero() {
                     panic!("Token is soulbound and cannot be transferred");
                 }
             }
