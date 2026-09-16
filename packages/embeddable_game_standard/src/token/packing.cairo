@@ -17,7 +17,7 @@
 // | 6       | soulbound              | 1  | bool | non-transferable               | transferable  |
 // | 7       | paymaster              | 1  | bool | mint was sponsored             | not sponsored |
 // | 8-23    | tx_hash                | 16 | u16  | low 16 bits of mint tx hash    | n/a           |
-// | 24-31   | tx_nonce               | 8  | u8   | internal collision counter     | first attempt |
+// | 24-31   | tx_nonce               | 8  | u8   | 0 for mint; position in batch  | single/first  |
 // | 32-63   | minted_at_block_number | 32 | u32  | block number at mint           | n/a           |
 // | 64-90   | minted_at_timestamp    | 27 | u32  | mint block timestamp, floored  | n/a           |
 // |         |                        |    |      | to whole minutes since epoch   |               |
@@ -63,26 +63,16 @@
 //   (end <= reconstructed_start), in which case end = reconstructed_start +
 //   60. `TokenMetadata.minted_at` equals minted_at_timestamp * 60.
 //
-// TX_NONCE SEMANTICS (internal collision counter):
-// tx_nonce is never a parameter of any public or internal mint function. It
-// starts at 0 for every mint call and is advanced only by the component:
-//   1. Pack the id with the current tx_nonce.
-//   2. Read ERC721::_owner_of(id). Zero means the id is unused.
-//   3. If non-zero, increment tx_nonce and go to 1. If tx_nonce would exceed
-//      255, panic ("MinigameToken: tx_nonce exhausted ...").
-//   4. Mint.
-// Transactions in a block execute sequentially, so a same-block collision
-// from another transaction is already visible in the owner mapping: this
-// resolves same-block same-params collisions across separate transactions
-// with no new storage. ERC721 mint performs the same owner read, so the
-// common path costs nothing extra. In `mint_batch_recipients` one counter
-// runs across the whole batch (every token in a batch shares every other
-// field); each token still performs the existence check, and a batch of
-// more than 256 tokens panics up front.
-//
-// BURNED IDS (accepted): `_owner_of` returns zero after a burn, so a burned
-// id could be re-minted — but only in the same block, with identical params
-// and the same tx hash. No burned marker is kept.
+// TX_NONCE SEMANTICS:
+// tx_nonce is never a parameter of any public or internal mint function.
+// `mint` packs 0. `mint_batch_recipients` numbers its tokens 0, 1, 2, …
+// across all recipients (every other field is shared by the batch), and
+// rejects more than 256 tokens up front. Nothing consults storage to pick a
+// nonce: uniqueness within a transaction comes from the tx hash bits plus
+// this position, so several tokens in one transaction must go through
+// `mint_batch_recipients`. Two mints with identical fields in one
+// transaction, or in one block with the same low 16 tx-hash bits, produce
+// the same id and the second one reverts in the ERC721 mint.
 //
 // CODEC:
 // - PACK is pure felt252 arithmetic: a valid id occupies at most 251 bits,
@@ -117,7 +107,7 @@ pub struct PackedTokenId {
     pub soulbound: bool, // 1 bit
     pub paymaster: bool, // 1 bit
     pub tx_hash: u16, // 16 bits — low 16 bits of the mint tx hash
-    pub tx_nonce: u8, // 8 bits — internal collision counter
+    pub tx_nonce: u8, // 8 bits — 0 for mint, position in the batch for batch mints
     pub minted_at_block_number: u32, // 32 bits
     pub minted_at_timestamp: u32, // 27 bits — whole minutes since the Unix epoch
     pub start_delay: u32, // 18 bits — minutes after minted_at_timestamp
@@ -347,7 +337,7 @@ pub fn unpack_tx_hash(token_id: felt252) -> u16 {
     tx_hash.try_into().unwrap()
 }
 
-/// Low bits 24-31: the internal collision counter.
+/// Low bits 24-31: 0 for `mint`, the token's position for a batch mint.
 #[inline(always)]
 pub fn unpack_tx_nonce(token_id: felt252) -> u8 {
     let (rest, _) = DivRem::div_rem(low_bottom_word(token_id), nz64::TWO_POW_24);

@@ -46,8 +46,8 @@ legacy callback receiver. The component now exposes internals only.
 entry, say — use `mint_batch_recipients`. `mint_batch` costs one cross-contract
 dispatch per token and re-serialises `context` (which contains an `Array`) each
 time; `mint_batch_recipients` hoists the batch-invariant work and runs a single
-internal collision counter (at most 256 tokens per batch). Reach for `mint_batch` only when entries genuinely name
-different games.
+`tx_nonce` counter across the batch (at most 256 tokens). Reach for
+`mint_batch` only when entries genuinely name different games.
 
 Every mint path takes `metadata: u128`, reaching the standard token's 59-bit
 field. The legacy token's field is `u16`, so a legacy mint asserts the value

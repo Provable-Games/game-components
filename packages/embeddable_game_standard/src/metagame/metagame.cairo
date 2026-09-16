@@ -91,7 +91,7 @@ pub fn mint(
 /// Versus calling `mint` once per token (one cross-contract dispatch each),
 /// this routes a single dispatch to the token's batch entrypoint, which
 /// hoists the batch-invariant work (packing, the shared has_context bit) and
-/// runs one internal collision counter across the batch. For a
+/// numbers the tokens through `tx_nonce` across the batch. For a
 /// many-recipient single-game mint — a tournament entry — that is the
 /// difference between N dispatches and one, with the `context` array
 /// re-serialised N times versus once.

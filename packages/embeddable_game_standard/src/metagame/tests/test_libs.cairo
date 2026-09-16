@@ -291,6 +291,7 @@ mod fuzz_mint_parameters {
     use game_components_embeddable_game_standard::token::interface::{
         IMinigameTokenDispatcher, IMinigameTokenDispatcherTrait,
     };
+    use game_components_interfaces::structs::token::MintBatchRecipient;
     use game_components_testing::constants::{ALICE, BOB, OWNER};
     use snforge_std::{ContractClassTrait, DeclareResultTrait, declare};
     use starknet::ContractAddress;
@@ -404,24 +405,39 @@ mod fuzz_mint_parameters {
     }
 
     /// Identical mints in one transaction produce distinct ids without any
-    /// caller-supplied salt: the token bumps its internal collision counter
-    /// (`tx_nonce`) whenever the packed id already has an owner.
+    /// caller-supplied salt: `mint_batch_recipients` numbers its tokens
+    /// 0, 1, 2, … through `tx_nonce`.
     #[fuzzer(runs: 32)]
     #[test]
-    fn test_fuzz_identical_mints_give_distinct_ids(count: u8) {
+    fn test_fuzz_batch_tokens_get_sequential_nonces(count: u8) {
         let game = deploy_standard_game();
         let token = IMinigameTokenDispatcher { contract_address: game };
-        let mut n: u8 = count % 8;
-        let mut previous = mint_with_name(game, 'player');
-        assert!(token.tx_nonce(previous) == 0, "first mint takes nonce 0");
-        let mut expected_nonce: u8 = 1;
-        while n > 0 {
-            let next = mint_with_name(game, 'player');
-            assert!(next != previous, "identical mints collided");
-            assert!(token.tx_nonce(next) == expected_nonce, "nonce did not advance");
-            previous = next;
-            expected_nonce += 1;
-            n -= 1;
+        let n: u16 = (count % 8).into() + 1;
+        let ids = libs::mint_batch_recipients(
+            game,
+            Option::Some('player'),
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            array![MintBatchRecipient { to: BOB(), count: n }],
+            false,
+            false,
+            0,
+        );
+        assert!(ids.len() == n.into(), "batch size");
+        let mut i: u32 = 0;
+        while i < ids.len() {
+            let expected: u8 = i.try_into().unwrap();
+            assert!(token.tx_nonce(*ids.at(i)) == expected, "nonce is the batch position");
+            if i > 0 {
+                assert!(*ids.at(i) != *ids.at(i - 1), "batch ids collided");
+            }
+            i += 1;
         }
     }
 }

@@ -87,7 +87,7 @@ fn game_of(token: IMinigameTokenDispatcher) -> IStandardGameMockDispatcher {
 /// Mint with the 11-arg shape, neutral values for the params a test is not
 /// exercising (no objective/context/client_url, no paymaster, zero
 /// metadata). There is no game address — the token IS the game — and no
-/// salt: ids are made unique by the tx hash and the internal counter.
+/// salt: ids are made unique by the tx hash (and, in a batch, the position).
 fn mint_basic(
     token: IMinigameTokenDispatcher,
     player_name: Option<felt252>,
@@ -249,42 +249,33 @@ fn test_mint_past_start_clamps_to_now() {
 }
 
 /// Pins block timestamp, block number and tx hash so every mint in the test
-/// packs byte-identical fields — only the internal counter can differ.
+/// packs byte-identical fields.
 fn pin_block_and_tx(token: IMinigameTokenDispatcher) {
     start_cheat_block_timestamp(token.contract_address, 1200);
     start_cheat_block_number(token.contract_address, 42);
     start_cheat_transaction_hash(token.contract_address, 0xABCDEF);
 }
 
-/// Identical params in one block and tx: the component bumps `tx_nonce`
-/// until the packed id has no owner — no caller-supplied salt.
+/// `mint` always packs tx_nonce 0 and never probes storage: a second mint
+/// with identical fields in the same block and tx produces the same id and
+/// reverts in the ERC721 mint. Several tokens per tx go through
+/// `mint_batch_recipients`.
 #[test]
-fn test_mint_collision_bumps_tx_nonce() {
+#[should_panic(expected: 'ERC721: token already minted')]
+fn test_mint_identical_in_same_tx_reverts() {
     let (token, _, _) = deploy_token();
     pin_block_and_tx(token);
-
     let id_a = mint_basic(
         token, Option::None, Option::None, Option::None, Option::None, ALICE(), false,
     );
-    let id_b = mint_basic(
-        token, Option::None, Option::None, Option::None, Option::None, ALICE(), false,
-    );
-    let id_c = mint_basic(
-        token, Option::None, Option::None, Option::None, Option::None, ALICE(), false,
-    );
-    assert!(id_a != id_b && id_b != id_c && id_a != id_c, "collisions must resolve to new ids");
-    assert!(token.tx_nonce(id_a) == 0, "first mint takes nonce 0");
-    assert!(token.tx_nonce(id_b) == 1, "second identical mint takes nonce 1");
-    assert!(token.tx_nonce(id_c) == 2, "third identical mint takes nonce 2");
-    // Only the nonce differs: the ids are 2^24 apart in the low half.
-    let a: u256 = id_a.into();
-    let b: u256 = id_b.into();
-    assert!(b - a == 0x1000000, "ids differ by exactly one nonce step");
+    assert!(token.tx_nonce(id_a) == 0, "single mint packs nonce 0");
+    mint_basic(token, Option::None, Option::None, Option::None, Option::None, ALICE(), false);
 }
 
-/// Same params but a different tx hash needs no nonce bump.
+/// Same params but a different tx hash gives a different id; both single
+/// mints carry nonce 0.
 #[test]
-fn test_mint_distinct_tx_hash_keeps_nonce_zero() {
+fn test_mint_distinct_tx_hash_gives_distinct_ids() {
     let (token, _, _) = deploy_token();
     pin_block_and_tx(token);
     let id_a = mint_basic(
@@ -295,7 +286,7 @@ fn test_mint_distinct_tx_hash_keeps_nonce_zero() {
         token, Option::None, Option::None, Option::None, Option::None, ALICE(), false,
     );
     assert!(id_a != id_b, "different tx hashes give different ids");
-    assert!(token.tx_nonce(id_a) == 0 && token.tx_nonce(id_b) == 0, "no collision, no bump");
+    assert!(token.tx_nonce(id_a) == 0 && token.tx_nonce(id_b) == 0, "single mints pack nonce 0");
     assert!(token.tx_hash(id_a) == 0xCDEF && token.tx_hash(id_b) == 0xCDEE, "tx_hash low 16");
 }
 
@@ -316,6 +307,7 @@ fn test_mint_minter_ids_by_caller() {
     );
     assert!(token.minted_by(id_c) == 2, "Second minter should get id 2");
     // Repeat caller keeps its id
+    start_cheat_transaction_hash(token.contract_address, 0x2222); // a new tx for the repeat mint
     cheat_caller_address(token.contract_address, MINTER(), CheatSpan::TargetCalls(1));
     let id_d = mint_basic(
         token, Option::None, Option::None, Option::None, Option::None, ALICE(), false,
@@ -607,40 +599,12 @@ fn test_mint_batch_recipients_rejects_257_tokens() {
     assert!(erc721.balance_of(ALICE()) == 0, "nothing minted before the cap check");
 }
 
-/// 256 identical ids exhaust the 8-bit counter: the 257th identical mint in
-/// the same block and tx has nowhere left to go and must panic rather than
-/// wrap onto an owned id.
+/// A batch always starts its nonces at 0, so mixing `mint` and a batch with
+/// identical fields in one block and tx is not supported: the batch's first
+/// token collides with the single mint and reverts.
 #[test]
-#[should_panic(
-    expected: "MinigameToken: tx_nonce exhausted (256 identical ids in one tx or block)",
-)]
-fn test_mint_panics_when_tx_nonce_exhausted() {
-    let (token, _, _) = deploy_token();
-    pin_block_and_tx(token);
-    // Fill nonces 0..255 with one batch, then try a 257th identical mint.
-    let ids = batch_neutral(token, array![MintBatchRecipient { to: ALICE(), count: 256 }]);
-    assert!(unpack_tx_nonce(*ids.at(255)) == 255, "batch fills the counter");
-    token
-        .mint(
-            Option::Some('bench'),
-            Option::Some(5),
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            Option::None,
-            ALICE(),
-            false,
-            false,
-            0,
-        );
-}
-
-/// The batch counter continues from wherever the owner map says the next
-/// free nonce is: a single mint at nonce 0, then a batch of 3 in the same
-/// block and tx takes nonces 1, 2, 3.
-#[test]
-fn test_mint_then_batch_continues_nonce_sequence() {
+#[should_panic(expected: 'ERC721: token already minted')]
+fn test_mint_then_identical_batch_in_same_tx_reverts() {
     let (token, _, _) = deploy_token();
     pin_block_and_tx(token);
 
@@ -658,13 +622,8 @@ fn test_mint_then_batch_continues_nonce_sequence() {
             false,
             0,
         );
-    let ids = batch_neutral(token, array![MintBatchRecipient { to: ALICE(), count: 3 }]);
-
-    assert!(unpack_tx_nonce(single) == 0, "single mint takes nonce 0");
-    assert!(unpack_tx_nonce(*ids.at(0)) == 1, "batch skips the taken nonce");
-    assert!(unpack_tx_nonce(*ids.at(1)) == 2, "batch continues");
-    assert!(unpack_tx_nonce(*ids.at(2)) == 3, "batch continues");
-    assert!(*ids.at(0) != single, "batch never re-mints an owned id");
+    assert!(unpack_tx_nonce(single) == 0, "single mint packs nonce 0");
+    batch_neutral(token, array![MintBatchRecipient { to: ALICE(), count: 3 }]);
 }
 
 #[test]
@@ -1012,6 +971,7 @@ fn test_client_url_stored_and_empty_default() {
     );
     assert!(token.client_url(with_url) == "https://play.example/game", "client_url view mismatch");
 
+    start_cheat_transaction_hash(token.contract_address, 0x3333); // a new tx for the second mint
     let without_url = mint_restored(token, Option::None, Option::None, Option::None, false, 0);
     assert!(token.client_url(without_url) == "", "client_url should default to empty");
 }

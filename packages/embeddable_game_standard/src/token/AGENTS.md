@@ -22,7 +22,7 @@ two-phase init, a standalone preset, game-side call helpers).
 | Token id layout is standard-native | `token::packing::pack_token_id` (schema v1, 251-bit) — its OWN layout, not the retired generation's. Indexers must branch their decoder by contract generation; `schema_version` (low bits 0-4) names the layout |
 | Strip principle: machinery deleted, capability + read views kept | The ABI is NOT `IMinigameTokenLegacy`-compatible: the legacy token's `game_address`, `renderer_address` and `skills_address` mint params are gone, and the compat views (`game_address`, `game_registry_address`) with them. Cheap client-facing read views (`token_metadata`, `is_playable`, `settings_id`, `minted_by`, `is_soulbound`, …) stay |
 | Restored mint params keep their original legacy-token behaviors | `objective_id` (20-bit packed, INERT data the game interprets — no completion machinery; `completed_objective` stays always-false), `context` (sets the has_context bit only; the data is NOT stored — legacy-token parity), `client_url` (storage-backed, `client_url` view, empty default), `paymaster` (packed bit), `metadata` (u128 param packed into a 59-bit field, read via `mint_metadata` or `TokenMetadata.metadata`) |
-| No caller-supplied salt | Ids are made unique by the tx hash plus the internal `tx_nonce` collision counter; see "Token ID Layout" below |
+| No caller-supplied salt | Ids are made unique by the tx hash plus `tx_nonce` (0 for `mint`, the token's position for `mint_batch_recipients`); see "Token ID Layout" below |
 | The minter is standard, not optional | The minter registry is absorbed into `MinigameTokenComponent`: same storage variable names, same `IMinigameTokenMinter` surface (`MinterImpl`, `IMINIGAME_TOKEN_MINTER_ID`), same `MinterRegistryUpdate` event as the legacy `MinterComponent`. `OptionalMinter` indirection remains only in `token_legacy` |
 | The game-fee surface is standard, not optional | The registry's `game_fee_info` role moves onto the token: `game_fee_recipient` (payout sink), license and fee (bps, default 500) are set in the initializer and served via `GameFeeImpl` (`IMinigameTokenGameFee`, `IMINIGAME_TOKEN_GAME_FEE_ID`). Setters are gated on the game contract's OZ Ownable OWNER (`assert_only_owner`, hard `OwnableComponent::HasComponent` bound) — the stored recipient is a payee, not an admin. Monetization platforms resolve the payee LIVE at claim time |
 | Game contract is the authority | Games gate dead/finished runs themselves (internal `assert_owner_and_playable`) and call `refresh_metadata` (ERC-4906) after actions |
@@ -46,7 +46,7 @@ Low u128 (bits 0-127, fully allocated):
 | 6       | soulbound              | 1     | bool | non-transferable                                             |
 | 7       | paymaster              | 1     | bool | mint was sponsored                                           |
 | 8-23    | tx_hash                | 16    | u16  | low 16 bits of the mint tx hash                              |
-| 24-31   | tx_nonce               | 8     | u8   | internal collision counter (see below)                       |
+| 24-31   | tx_nonce               | 8     | u8   | 0 for `mint`; position in the batch for `mint_batch_recipients` |
 | 32-63   | minted_at_block_number | 32    | u32  | block number at mint                                         |
 | 64-90   | minted_at_timestamp    | 27    | u32  | block timestamp floored to whole minutes since the epoch     |
 | 91-108  | start_delay            | 18    | u32  | minutes after minted_at_timestamp when play may begin        |
@@ -72,17 +72,14 @@ is shorter than the start's round-up, in which case `end_delay` clamps to 1
 (`end = start + 60`). A non-zero requested end therefore always yields
 `end_delay >= 1` — no sub-minute window collapses into an immortal token.
 
-**tx_nonce.** No public or internal mint function takes a salt or nonce. The
-component packs the id with `tx_nonce = 0`, reads `ERC721::_owner_of`, and
-bumps the nonce while the id already has an owner (panicking past 255 with
-`MinigameToken: tx_nonce exhausted ...`). Transactions in a block run
-sequentially, so same-block same-params collisions from other transactions
-are already visible in the owner map; the common path costs nothing extra
-because the ERC721 mint performs the same read. `mint_batch_recipients` runs
-one counter across the batch and rejects more than 256 tokens up front.
-Accepted: `_owner_of` is zero after a burn, so a burned id could be re-minted
-in the same block with identical params and tx hash — no burned marker is
-kept.
+**tx_nonce.** No public or internal mint function takes a salt or nonce.
+`mint` packs `tx_nonce = 0`; `mint_batch_recipients` numbers its tokens 0, 1,
+2, … across all recipients and rejects more than 256 tokens up front. Nothing
+consults storage to choose a nonce: within one transaction the id is unique
+by tx-hash bits plus batch position, so a caller that wants several tokens in
+one transaction uses `mint_batch_recipients`. Two mints with identical fields
+in one transaction, or in one block whose tx hashes share their low 16 bits,
+produce the same id and the second reverts in the ERC721 mint.
 
 ## Interface (IMinigameToken)
 
@@ -105,7 +102,7 @@ instead of resolving registry/game-address views.
 | Method | Cost | Notes |
 | --- | --- | --- |
 | `mint(player_name, settings_id, start, end, objective_id, context, client_url, to, soulbound, paymaster, metadata)` | block/tx info read, 1 minter-map read (warm), owner read per nonce attempt, optional name/url writes, ERC721 mint | 11-arg shape — no game address (self-bound), no renderer/skills, no salt. objective/paymaster/metadata pack into the id; context sets the has_context bit only; client_url written when Some |
-| `mint_batch_recipients(player_name, settings_id, start, end, objective_id, context, client_url, recipients, soulbound, paymaster, metadata)` | batch work hoisted; per token: next free nonce + optional name/url writes + ERC721 mint | One `tx_nonce` counter across the batch (≤ 256 tokens, checked before any mint); packed fields (incl. the has_context bit) shared across the batch, client_url written per token |
+| `mint_batch_recipients(player_name, settings_id, start, end, objective_id, context, client_url, recipients, soulbound, paymaster, metadata)` | batch work hoisted; per token: pack + optional name/url writes + ERC721 mint | `tx_nonce` runs 0, 1, 2, … across the batch (≤ 256 tokens, checked before any mint); every other packed field (incl. the has_context bit) shared across the batch, client_url written per token |
 | `is_playable` | 0 storage reads | Lifecycle window only — no game_over latch |
 | `token_metadata`, `settings_id`, `minted_by`, `is_soulbound`, `objective_id`, `mint_metadata`, `schema_version`, `has_context`, `is_paymaster`, `tx_hash`, `tx_nonce`, `minted_at_block_number`, `minted_at`, `start_delay`, `end_delay`, `lifecycle` | 0 storage reads | Pure unpack of the token id — one view per schema field (`minted_at` and `lifecycle` in seconds, the delays in minutes), kept as client/RPC conveniences (also derivable from the documented id layout) |
 | `player_name`, `minted_by_address`, `client_url` | 1 storage read | |

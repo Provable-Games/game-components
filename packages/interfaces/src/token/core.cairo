@@ -123,8 +123,8 @@ pub trait IMinigameToken<TState> {
     fn is_paymaster(self: @TState, token_id: felt252) -> bool;
     /// Low 16 bits of the mint transaction hash (id low bits 8-23).
     fn tx_hash(self: @TState, token_id: felt252) -> u16;
-    /// The internal collision counter (id low bits 24-31): 0 for the first
-    /// id attempted in a transaction, bumped once per same-id collision.
+    /// Id low bits 24-31: 0 for a token minted with `mint`, the token's
+    /// position (0, 1, 2, …) for one minted with `mint_batch_recipients`.
     fn tx_nonce(self: @TState, token_id: felt252) -> u8;
     /// Block number at mint (id low bits 32-63).
     fn minted_at_block_number(self: @TState, token_id: felt252) -> u32;

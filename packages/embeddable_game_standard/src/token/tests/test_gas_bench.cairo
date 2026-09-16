@@ -20,7 +20,10 @@ use game_components_test_common::mocks::standard_game_mock::{
     IStandardGameMockDispatcher, IStandardGameMockDispatcherTrait,
 };
 use openzeppelin_interfaces::erc721::ERC721ABIDispatcher;
-use snforge_std::{ContractClassTrait, DeclareResultTrait, declare, start_cheat_block_timestamp};
+use snforge_std::{
+    ContractClassTrait, DeclareResultTrait, declare, start_cheat_block_timestamp,
+    start_cheat_transaction_hash,
+};
 use starknet::ContractAddress;
 use crate::token::interface::{IMinigameTokenDispatcher, IMinigameTokenDispatcherTrait};
 
@@ -119,8 +122,11 @@ fn bench_standard_mint_x1() {
 #[test]
 fn bench_standard_mint_x10() {
     let (token, _, game) = setup_standard();
+    // Ten single mints as ten separate transactions: identical fields in
+    // one tx would collide (that shape is `mint_batch_recipients`).
     let mut i: u32 = 0;
     while i < 10 {
+        start_cheat_transaction_hash(token.contract_address, 0x1000 + i.into());
         mint_standard(token, game);
         i += 1;
     }

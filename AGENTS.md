@@ -128,7 +128,8 @@ branch their token-id decoder by contract generation: the layouts differ.
 `packages/embeddable_game_standard/src/token/AGENTS.md`): every id carries a
 5-bit `schema_version` in its low bits (this layout writes 1), mint times are
 stored to the minute, and the caller-supplied `salt` is gone — ids are made
-unique by the tx hash plus an internal `tx_nonce` collision counter. The mint
+unique by the tx hash plus `tx_nonce` (0 for `mint`, the token's position in
+the batch for `mint_batch_recipients`). The mint
 ABI and `IMINIGAME_TOKEN_ID` changed with it; v2.x standard tokens register
 the previous id and use the previous layout, so an indexer branches on the
 interface id a contract registers (or on the `schema_version` view) before

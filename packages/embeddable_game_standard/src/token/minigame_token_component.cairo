@@ -45,8 +45,8 @@
 /// the retired registry generation's layout. Indexers must branch their
 /// token-id decoder by contract generation (`schema_version`, id low bits
 /// 0-4). Mint times are stored to the minute; ids are made unique by the tx
-/// hash plus an internal collision counter (`tx_nonce`) that the component
-/// bumps whenever a packed id already has an owner — no caller-supplied salt.
+/// hash plus `tx_nonce`, which is 0 for `mint` and the token's position in
+/// the batch for `mint_batch_recipients` — no caller-supplied salt.
 #[starknet::component]
 pub mod MinigameTokenComponent {
     use core::num::traits::Zero;
@@ -82,10 +82,8 @@ pub mod MinigameTokenComponent {
         unpack_token_id, unpack_tx_hash, unpack_tx_nonce,
     };
 
-    /// Hard cap on the internal collision counter (8-bit `tx_nonce` field):
-    /// at most 256 identical ids can be resolved in one tx or block.
-    const MAX_TX_NONCE: u32 = 255;
-    /// A batch shares one counter, so it can mint at most 256 tokens.
+    /// A batch numbers its tokens through the 8-bit `tx_nonce` field, so it
+    /// can mint at most 256 tokens.
     const MAX_BATCH_TOKENS: u32 = 256;
 
     #[storage]
@@ -263,7 +261,10 @@ pub mod MinigameTokenComponent {
             // objective_id must fit 20 bits and metadata 59 bits. context
             // sets the has_context bit only — the data itself is NOT stored
             // (legacy-token parity: its context hook was a documented no-op).
-            let mut fields = self
+            // A single mint always packs tx_nonce 0: within one transaction
+            // the id is unique by construction as long as the caller mints
+            // once (several tokens per tx go through mint_batch_recipients).
+            let fields = self
                 .mint_fields(
                     start,
                     end,
@@ -274,8 +275,7 @@ pub mod MinigameTokenComponent {
                     paymaster,
                     metadata,
                 );
-
-            let (final_token_id, _) = self.next_free_token_id(ref fields, 0);
+            let final_token_id = pack_token_id(fields);
 
             if let Option::Some(name) = player_name {
                 self.token_player_names.entry(final_token_id).write(name);
@@ -294,11 +294,10 @@ pub mod MinigameTokenComponent {
         /// Batch mint identical tokens to one or more recipients with
         /// per-recipient counts.
         ///
-        /// Every token in the batch shares every packed field, so one
-        /// `tx_nonce` counter runs across the whole batch: each token takes
-        /// the next free nonce (skipping ids another transaction already
-        /// minted this block), and the 8-bit field caps a batch at 256
-        /// tokens — checked up front, before anything is minted.
+        /// Every token in the batch shares every packed field except
+        /// `tx_nonce`, which numbers the tokens 0, 1, 2, … across all
+        /// recipients. The 8-bit field caps a batch at 256 tokens — checked
+        /// up front, before anything is minted.
         ///
         /// Versus calling `mint` per token, the lifecycle math, block/tx-info
         /// reads and minter registration are hoisted and paid once.
@@ -348,10 +347,11 @@ pub mod MinigameTokenComponent {
                     metadata,
                 );
 
-            // Per-token work: next free id, optional name/url writes, ERC721
-            // mint. One nonce counter runs across the batch.
+            // Per-token work: pack with the next nonce, optional name/url
+            // writes, ERC721 mint. The u32 counter never overflows the u8
+            // field: total_tokens <= 256 is asserted above.
             let mut token_ids: Array<felt252> = ArrayTrait::new();
-            let mut next_nonce: u32 = 0;
+            let mut nonce: u32 = 0;
             let mut r_idx: u32 = 0;
             while r_idx < recipient_count {
                 let r: @MintBatchRecipient = recipients.at(r_idx);
@@ -360,9 +360,9 @@ pub mod MinigameTokenComponent {
 
                 let mut k: u16 = 0;
                 while k < count {
-                    let (final_token_id, used_nonce) = self
-                        .next_free_token_id(ref fields, next_nonce);
-                    next_nonce = used_nonce + 1;
+                    fields.tx_nonce = nonce.try_into().unwrap();
+                    nonce += 1;
+                    let final_token_id = pack_token_id(fields);
 
                     if let Option::Some(name) = player_name {
                         self.token_player_names.entry(final_token_id).write(name);
@@ -713,7 +713,7 @@ pub mod MinigameTokenComponent {
             minter_id
         }
 
-        /// Everything a mint packs except the collision counter: validates
+        /// Everything a mint packs (with `tx_nonce` 0): validates
         /// the requested lifecycle, converts it to the id's minute fields,
         /// reads block/tx info and registers the caller as minter. Shared by
         /// `mint` and `mint_batch_recipients` (hoisted once per batch).
@@ -794,32 +794,6 @@ pub mod MinigameTokenComponent {
                 objective_id,
                 minted_by: minted_by.try_into().unwrap(),
                 metadata,
-            }
-        }
-
-        /// Resolves the first unused id for `fields`, starting the collision
-        /// counter at `from_nonce`: pack, read `_owner_of`, and bump
-        /// `tx_nonce` while the id already has an owner. Transactions in a
-        /// block run sequentially, so a same-block collision from another
-        /// transaction is already visible in the owner mapping; the ERC721
-        /// mint performs the same read, so the common path costs nothing
-        /// extra. Returns the id and the nonce it was packed with.
-        fn next_free_token_id(
-            self: @ComponentState<TContractState>, ref fields: PackedTokenId, from_nonce: u32,
-        ) -> (felt252, u32) {
-            let erc721_component = ERC721::get_component(self.get_contract());
-            let mut nonce = from_nonce;
-            loop {
-                assert!(
-                    nonce <= MAX_TX_NONCE,
-                    "MinigameToken: tx_nonce exhausted (256 identical ids in one tx or block)",
-                );
-                fields.tx_nonce = nonce.try_into().unwrap();
-                let candidate = pack_token_id(fields);
-                if erc721_component._owner_of(candidate.into()).is_zero() {
-                    break (candidate, nonce);
-                }
-                nonce += 1;
             }
         }
 
