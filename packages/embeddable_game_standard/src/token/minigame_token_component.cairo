@@ -71,9 +71,7 @@ pub mod MinigameTokenComponent {
     use starknet::storage::{
         Map, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess,
     };
-    use starknet::{
-        ContractAddress, get_block_info, get_block_timestamp, get_caller_address, get_tx_info,
-    };
+    use starknet::{ContractAddress, get_block_timestamp, get_caller_address, get_execution_info};
     use crate::token::lifecycle::{LifecycleTrait, create_lifecycle_with_defaults};
     use crate::token::packing::{
         PackedTokenId, SCHEMA_VERSION, extract_tx_hash_bits, minutes_ceil_delay, minutes_floor,
@@ -738,7 +736,10 @@ pub mod MinigameTokenComponent {
             paymaster: bool,
             metadata: u128,
         ) -> PackedTokenId {
-            let block_info = get_block_info().unbox();
+            // One syscall for block, tx and caller info (each of the
+            // dedicated getters is its own get_execution_info call).
+            let execution_info = get_execution_info().unbox();
+            let block_info = execution_info.block_info.unbox();
             let current_time = block_info.block_timestamp;
             let minted_at_block_number: u32 = block_info
                 .block_number
@@ -773,9 +774,9 @@ pub mod MinigameTokenComponent {
                 minutes_ceil_delay(reconstructed_start, lifecycle.end)
             };
 
-            let tx_hash = extract_tx_hash_bits(get_tx_info().unbox().transaction_hash);
+            let tx_hash = extract_tx_hash_bits(execution_info.tx_info.unbox().transaction_hash);
 
-            let minted_by = self.add_minter(get_caller_address());
+            let minted_by = self.add_minter(execution_info.caller_address);
             assert!(minted_by <= 0xFFFFFF, "MinigameToken: minter id exceeds 24-bit field");
 
             PackedTokenId {
