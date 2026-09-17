@@ -15,8 +15,10 @@ def parse(path):
         if name in rows or low != high or high != mean or deviation != '0' or calls != '1':
             raise ValueError(f'Nonisolated or duplicate gas row: {line}')
         rows[name] = int(low)
-    if len(rows) != 87:
-        raise ValueError(f'Expected 87 rows from 29 cases; found {len(rows)}')
+    cases = {name.split('_', 1)[1] for name in rows}
+    expected = {prefix + name for name in cases for prefix in ('felt_', 'oz_', 'floor_')}
+    if len(cases) != 29 or set(rows) != expected:
+        raise ValueError('Expected 29 complete felt/oz/floor case triplets')
     return rows
 
 
@@ -34,6 +36,8 @@ def main():
         oz, felt, floor = first['oz_' + name], first[key], first['floor_' + name]
         if min(oz, felt) < floor:
             raise SystemExit(f'Probe below floor: {name}')
+        if oz == floor:
+            raise SystemExit(f'Zero OZ adjusted baseline: {name}')
         print(f'{name},{oz},{felt},{floor},{oz-floor},{felt-floor},{oz-felt},{100*(oz-felt)/(oz-floor):.4f}')
 
 

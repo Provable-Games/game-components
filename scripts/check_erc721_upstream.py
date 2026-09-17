@@ -11,7 +11,16 @@ PACKAGE = ROOT / 'packages/erc721'
 def main():
     manifest = json.loads((PACKAGE / 'upstream.json').read_text())
     errors = []
+    identities, targets = set(), set()
     for test in manifest['tests']:
+        identity = test['identity']
+        target = (test['local_file'], test['name'])
+        if identity in identities:
+            errors.append(f'Duplicate upstream identity: {identity}')
+        if target in targets:
+            errors.append(f'Duplicate upstream target: {target}')
+        identities.add(identity)
+        targets.add(target)
         source = (PACKAGE / test['local_file']).read_text()
         pattern = r'((?:#\[[^\n]*\]\s*)+)fn\s+' + re.escape(test['name']) + r'\s*\('
         matches = re.findall(pattern, source)
