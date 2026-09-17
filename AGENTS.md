@@ -23,7 +23,7 @@ You are a **senior Starknet smart contract engineer** specializing in Cairo deve
 
 ## Technology Stack
 
-- **Cairo**: 2.16.1 | **Starknet**: 2.16.1 | **snforge**: v0.58.1 | **OpenZeppelin**: v3.0.0
+- **Cairo**: 2.20.0 | **Starknet**: 2.20.0 | **snforge**: v0.63.0 | **OpenZeppelin**: v4.0.1
 
 ## Build Commands
 
@@ -158,13 +158,14 @@ When adding a new module to a group package, update **both** files:
 2. **`codecov.yml`** - Update the build count:
    ```yaml
    notify:
-     after_n_builds: 16 # ← Must equal total module count in matrix
+     after_n_builds: 17 # ← Must equal total module count in matrix
    ```
 
-### Current Matrix (16 modules)
+### Current Matrix (17 modules)
 
 | Group Package | Module | Runner | Fuzzer Runs |
 |---------------|--------|--------|-------------|
+| `erc721` | whole package (ERC721 + royalties + safety) | `ubuntu-latest` | 256 |
 | `embeddable_game_standard` | `minigame` | `ubuntu-latest-8` | 32 |
 | `embeddable_game_standard` | `metagame` | `ubuntu-latest-8` | 32 |
 | `embeddable_game_standard` | `token` | `ubuntu-latest-8` | 32 |
@@ -175,8 +176,15 @@ When adding a new module to a group package, update **both** files:
 | `metagame` | `prize` | `ubuntu-latest-4` | 256 |
 | `metagame` | `ticket_booth` | `ubuntu-latest-4` | 256 |
 | `metagame` | `merkledrop` | `ubuntu-latest-4` | 256 |
+| `metagame` | `gpp` | `ubuntu-latest-4` | 256 |
 | `economy` | `tokenomics` | `ubuntu-latest-4` | 256 |
 | `utilities` | `math` | `ubuntu-latest-4` | 256 |
 | `utilities` | `distribution` | `ubuntu-latest-4` | 256 |
 | `utilities` | `utils` | `ubuntu-latest-4` | 256 |
 | `presets` | `presets` | `ubuntu-latest-4` | 256 |
+
+The ERC721 package is a maintained OpenZeppelin 4.0.1 fork. Its package README
+and upstream manifest define the intentional felt storage domain and test provenance.
+Run its whole suite with `snforge test -p game_components_erc721 --features fuzzing`;
+module-only filters would omit royalty tests. CI checks every upstream identity and
+requires at least 90% production-line coverage for this package.

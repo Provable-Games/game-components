@@ -448,4 +448,3 @@ fn test_dust_spam_cannot_inflate_the_queue() {
     assert!(released == 1_000_300, "dust merged into the same day's bucket");
     assert!(l.locked_total() == 0, "no residue");
 }
-

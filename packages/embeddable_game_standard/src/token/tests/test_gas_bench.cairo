@@ -163,4 +163,3 @@ fn bench_standard_post_action_x10() {
         i += 1;
     }
 }
-

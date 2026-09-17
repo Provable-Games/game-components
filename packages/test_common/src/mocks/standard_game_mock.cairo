@@ -41,7 +41,9 @@ pub mod StandardGameMock {
     use game_components_embeddable_game_standard::token::packing::unpack_soulbound;
     use openzeppelin_access::ownable::OwnableComponent;
     use openzeppelin_introspection::src5::SRC5Component;
-    use openzeppelin_token::erc721::ERC721Component;
+    use openzeppelin_token::erc721::{
+        ERC721Component, ERC721OwnerOfDefaultImpl, ERC721TokenURIDefaultImpl,
+    };
     use starknet::ContractAddress;
     use starknet::storage::{
         Map, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess,

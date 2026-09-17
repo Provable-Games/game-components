@@ -15,3 +15,6 @@ coverage.lcov
 **/snfoundry_trace/
 **/coverage_html/
 **/coverage/
+.validation-tools/
+!tools/coverage/
+__pycache__/

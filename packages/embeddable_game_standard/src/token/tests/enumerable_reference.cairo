@@ -1,5 +1,6 @@
 //! Frozen benchmark reference from game-components 17558e939ab807776c785181551b5737699d443f.
 //! Burns are intentionally unsupported, matching that revision.
+//! OZ 4 ownership bounds are the only migration adaptation.
 #[starknet::component]
 pub mod EnumerableComponent {
     use core::num::traits::Zero;
@@ -32,6 +33,7 @@ pub mod EnumerableComponent {
         +HasComponent<TContractState>,
         impl ERC721: ERC721Component::HasComponent<TContractState>,
         +ERC721Component::ERC721HooksTrait<TContractState>,
+        +ERC721Component::ERC721TokenOwnerTrait<TContractState>,
         +SRC5Component::HasComponent<TContractState>,
         +Drop<TContractState>,
     > of crate::token::extensions::enumerable::interface::IEnumerableOwner<
@@ -54,6 +56,7 @@ pub mod EnumerableComponent {
         +HasComponent<TContractState>,
         impl ERC721: ERC721Component::HasComponent<TContractState>,
         +ERC721Component::ERC721HooksTrait<TContractState>,
+        +ERC721Component::ERC721TokenOwnerTrait<TContractState>,
         impl SRC5: SRC5Component::HasComponent<TContractState>,
         +Drop<TContractState>,
     > of InternalTrait<TContractState> {

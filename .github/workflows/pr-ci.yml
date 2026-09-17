@@ -21,6 +21,7 @@ jobs:
       need_metagame: ${{ steps.compute-matrix.outputs.need_metagame }}
       need_economy: ${{ steps.compute-matrix.outputs.need_economy }}
       need_utilities: ${{ steps.compute-matrix.outputs.need_utilities }}
+      need_erc721: ${{ steps.compute-matrix.outputs.need_erc721 }}
       need_presets: ${{ steps.compute-matrix.outputs.need_presets }}
       infra_ci: ${{ steps.filter.outputs.infra_ci }}
       general_ci: ${{ steps.filter.outputs.general_ci }}
@@ -33,16 +34,25 @@ jobs:
           filters: |
             packages:
               - "packages/**"
+              - "src/**"
+              - "scripts/*erc721*"
               - "Scarb.toml"
               - "Scarb.lock"
               - ".tool-versions"
+              - "tools/coverage/**"
+              - "scripts/setup_coverage.sh"
             general_ci:
               - "codecov.yml"
               - ".tool-versions"
+              - "tools/coverage/**"
+              - "scripts/setup_coverage.sh"
             infra_ci:
               - ".github/workflows/**"
               - ".github/prompts/**"
               - ".github/pull_request_template.md"
+            erc721:
+              - "packages/erc721/**"
+              - "scripts/*erc721*"
             embeddable_game_standard:
               - "packages/embeddable_game_standard/**"
             metagame_pkg:
@@ -61,7 +71,10 @@ jobs:
               - "packages/test_common/**"
             tool_versions:
               - ".tool-versions"
+              - "tools/coverage/**"
+              - "scripts/setup_coverage.sh"
             workspace_manifests:
+              - "src/**"
               - "Scarb.toml"
               - "Scarb.lock"
 
@@ -73,6 +86,7 @@ jobs:
           FILTER_UTILITIES: ${{ steps.filter.outputs.utilities }}
           FILTER_METAGAME_PKG: ${{ steps.filter.outputs.metagame_pkg }}
           FILTER_ECONOMY: ${{ steps.filter.outputs.economy }}
+          FILTER_ERC721: ${{ steps.filter.outputs.erc721 }}
           FILTER_EGS: ${{ steps.filter.outputs.embeddable_game_standard }}
           FILTER_TEST_COMMON: ${{ steps.filter.outputs.test_common }}
           FILTER_PRESETS: ${{ steps.filter.outputs.presets }}
@@ -89,6 +103,7 @@ jobs:
           # presets → presets
 
           RUN_ALL="false"
+          NEED_ERC721="$FILTER_ERC721"
           NEED_EGS="false"
           NEED_METAGAME="false"
           NEED_ECONOMY="false"
@@ -130,6 +145,7 @@ jobs:
           fi
 
           if [ "$RUN_ALL" = "true" ]; then
+            NEED_ERC721="true"
             NEED_EGS="true"
             NEED_METAGAME="true"
             NEED_ECONOMY="true"
@@ -138,7 +154,7 @@ jobs:
           fi
 
           HAS_TESTS="false"
-          for flag in "$NEED_EGS" "$NEED_METAGAME" "$NEED_ECONOMY" "$NEED_UTILITIES" "$NEED_PRESETS"; do
+          for flag in "$NEED_ERC721" "$NEED_EGS" "$NEED_METAGAME" "$NEED_ECONOMY" "$NEED_UTILITIES" "$NEED_PRESETS"; do
             if [ "$flag" = "true" ]; then
               HAS_TESTS="true"
               break
@@ -146,6 +162,7 @@ jobs:
           done
 
           echo "has_tests=$HAS_TESTS" >> "$GITHUB_OUTPUT"
+          echo "need_erc721=$NEED_ERC721" >> "$GITHUB_OUTPUT"
           echo "need_egs=$NEED_EGS" >> "$GITHUB_OUTPUT"
           echo "need_metagame=$NEED_METAGAME" >> "$GITHUB_OUTPUT"
           echo "need_economy=$NEED_ECONOMY" >> "$GITHUB_OUTPUT"
@@ -219,6 +236,7 @@ jobs:
       - name: Build test matrix from package flags
         id: build-matrix
         env:
+          NEED_ERC721: ${{ needs.changes.outputs.need_erc721 }}
           NEED_EGS: ${{ needs.changes.outputs.need_egs }}
           NEED_METAGAME: ${{ needs.changes.outputs.need_metagame }}
           NEED_ECONOMY: ${{ needs.changes.outputs.need_economy }}
@@ -230,6 +248,9 @@ jobs:
           INCLUDES="[]"
           add() { INCLUDES=$(echo "$INCLUDES" | jq -c --arg p "$1" --arg m "$2" --arg r "$3" --argjson f "$4" '. + [{package:$p,module:$m,runner:$r,fuzzer_runs:$f}]'); }
 
+          if [ "$NEED_ERC721" = "true" ]; then
+            add game_components_erc721 erc721 ubuntu-latest 256
+          fi
           if [ "$NEED_EGS" = "true" ]; then
             add game_components_embeddable_game_standard minigame ubuntu-latest-8 32
             add game_components_embeddable_game_standard metagame ubuntu-latest-8 32
@@ -299,6 +320,7 @@ jobs:
         run: snforge --version
 
       - name: Verify workspace compiles (no warnings)
+        shell: bash
         run: |
           scarb build --workspace 2>&1 | tee /tmp/build.log
           if grep -qE '^ --> .*\.cairo:[0-9]+:[0-9]+' /tmp/build.log; then
@@ -349,21 +371,26 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-cargo-snforge-
 
-      - name: Cache tools
+      - name: Cache pinned coverage adapter
         uses: actions/cache@v4
         id: cache-tools
         with:
-          path: |
-            ~/.local/bin/cairo-coverage
-            ~/.local/bin/universal-sierra-compiler
-          key: ${{ runner.os }}-tools-cairo-coverage-universal-sierra-compiler-v1
+          path: .validation-tools/
+          key: ${{ runner.os }}-coverage-${{ hashFiles('tools/coverage/**', 'scripts/setup_coverage.sh') }}
 
-      - name: Install tools
-        if: steps.cache-tools.outputs.cache-hit != 'true'
+      - name: Build pinned coverage adapter
         run: |
-          (curl -L https://raw.githubusercontent.com/software-mansion/cairo-coverage/main/scripts/install.sh | sh) &
-          (curl -L https://raw.githubusercontent.com/software-mansion/universal-sierra-compiler/master/scripts/install.sh | sh) &
-          wait
+          scripts/setup_coverage.sh
+          echo "$PWD/.validation-tools/bin" >> "$GITHUB_PATH"
+
+      - name: Install pinned universal Sierra compiler
+        run: |
+          curl --fail --location --retry 3 https://github.com/software-mansion/universal-sierra-compiler/releases/download/v2.10.0/universal-sierra-compiler-v2.10.0-x86_64-unknown-linux-gnu.tar.gz -o /tmp/usc.tar.gz
+          echo "eafa433885c32947fbe640937a12543d468a0e2905b62c177f0fd8099285c1b9  /tmp/usc.tar.gz" | sha256sum --check
+          tar -xzf /tmp/usc.tar.gz -C /tmp
+          mkdir -p "$HOME/.local/bin"
+          cp /tmp/universal-sierra-compiler-v2.10.0-x86_64-unknown-linux-gnu/bin/universal-sierra-compiler "$HOME/.local/bin/"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
       - name: Cache compiled packages
         uses: actions/cache@v4
@@ -374,8 +401,18 @@ jobs:
             ${{ runner.os }}-target-${{ matrix.package }}-${{ matrix.module }}-${{ env.SCARB_VERSION }}-
 
       - name: Run tests with coverage
+        shell: bash
         run: |
-          if [ "${{ matrix.package }}" = "game_components_${{ matrix.module }}" ]; then
+          coverage_package="${{ matrix.package }}"
+          coverage_package="${coverage_package#game_components_}"
+          echo "COVERAGE_FILE=./packages/$coverage_package/coverage/coverage.lcov" >> "$GITHUB_ENV"
+          rm -f "packages/$coverage_package/coverage/coverage.lcov"
+          if [ "${{ matrix.package }}" = "game_components_erc721" ]; then
+            python3 scripts/test_erc721_checks.py
+            python3 scripts/check_erc721_upstream.py
+            snforge test -p game_components_erc721 --features fuzzing --fuzzer-runs 256 --coverage 2>&1 | tee /tmp/test.log
+            python3 scripts/check_erc721_coverage.py
+          elif [ "${{ matrix.package }}" = "game_components_${{ matrix.module }}" ]; then
             snforge test -p ${{ matrix.package }} --fuzzer-runs ${{ matrix.fuzzer_runs }} --coverage 2>&1 | tee /tmp/test.log
           else
             snforge test -p ${{ matrix.package }} "::${{ matrix.module }}::" --fuzzer-runs ${{ matrix.fuzzer_runs }} --coverage 2>&1 | tee /tmp/test.log
@@ -393,7 +430,7 @@ jobs:
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
         with:
-          files: ./coverage.lcov
+          files: ${{ env.COVERAGE_FILE }}
           flags: ${{ matrix.module }}
           token: ${{ secrets.CODECOV_TOKEN }}
 

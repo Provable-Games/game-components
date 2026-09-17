@@ -1,0 +1,795 @@
+use starknet::ContractAddress;
+
+const SUCCESS: felt252 = 'SUCCESS';
+
+#[starknet::contract]
+pub mod DualCaseERC721Mock {
+    // Explicit expansion of the pinned upstream with_components macro.
+    use crate::erc721::ERC721Component;
+    component!(path: ERC721Component, storage: erc721, event: ERC721Event);
+    impl ERC721InternalImpl = ERC721Component::InternalImpl<ContractState>;
+    use openzeppelin_introspection::src5::SRC5Component;
+    component!(path: SRC5Component, storage: src5, event: SRC5Event);
+    impl SRC5InternalImpl = SRC5Component::InternalImpl<ContractState>;
+    use starknet::ContractAddress;
+    use crate::erc721::{ERC721HooksEmptyImpl, ERC721OwnerOfDefaultImpl, ERC721TokenURIDefaultImpl};
+
+    // ERC721
+    #[abi(embed_v0)]
+    impl ERC721Impl = ERC721Component::ERC721Impl<ContractState>;
+    #[abi(embed_v0)]
+    impl ERC721MetadataImpl = ERC721Component::ERC721MetadataImpl<ContractState>;
+    #[abi(embed_v0)]
+    impl ERC721CamelOnly = ERC721Component::ERC721CamelOnlyImpl<ContractState>;
+    #[abi(embed_v0)]
+    impl ERC721MetadataCamelOnly =
+        ERC721Component::ERC721MetadataCamelOnlyImpl<ContractState>;
+
+    // SRC5
+    #[abi(embed_v0)]
+    impl SRC5Impl = SRC5Component::SRC5Impl<ContractState>;
+
+    #[storage]
+    pub struct Storage {
+        #[substorage(v0)]
+        pub erc721: ERC721Component::Storage,
+        #[substorage(v0)]
+        pub src5: SRC5Component::Storage,
+    }
+
+    #[constructor]
+    fn constructor(
+        ref self: ContractState,
+        name: ByteArray,
+        symbol: ByteArray,
+        base_uri: ByteArray,
+        recipient: ContractAddress,
+        token_id: u256,
+    ) {
+        self.erc721.initializer(name, symbol, base_uri);
+        self.erc721.mint(recipient, token_id);
+    }
+
+    #[event]
+    #[derive(Drop, starknet::Event)]
+    enum Event {
+        #[flat]
+        ERC721Event: ERC721Component::Event,
+        #[flat]
+        SRC5Event: SRC5Component::Event,
+    }
+}
+
+#[starknet::contract]
+pub mod SnakeERC721Mock {
+    // Explicit expansion of the pinned upstream with_components macro.
+    use crate::erc721::ERC721Component;
+    component!(path: ERC721Component, storage: erc721, event: ERC721Event);
+    impl ERC721InternalImpl = ERC721Component::InternalImpl<ContractState>;
+    use openzeppelin_introspection::src5::SRC5Component;
+    component!(path: SRC5Component, storage: src5, event: SRC5Event);
+    impl SRC5InternalImpl = SRC5Component::InternalImpl<ContractState>;
+    use starknet::ContractAddress;
+    use crate::erc721::{ERC721HooksEmptyImpl, ERC721OwnerOfDefaultImpl, ERC721TokenURIDefaultImpl};
+
+    // ERC721
+    #[abi(embed_v0)]
+    impl ERC721Impl = ERC721Component::ERC721Impl<ContractState>;
+    #[abi(embed_v0)]
+    impl ERC721MetadataImpl = ERC721Component::ERC721MetadataImpl<ContractState>;
+
+    // SRC5
+    #[abi(embed_v0)]
+    impl SRC5Impl = SRC5Component::SRC5Impl<ContractState>;
+
+    #[storage]
+    pub struct Storage {
+        #[substorage(v0)]
+        pub erc721: ERC721Component::Storage,
+        #[substorage(v0)]
+        pub src5: SRC5Component::Storage,
+    }
+
+    #[constructor]
+    fn constructor(
+        ref self: ContractState,
+        name: ByteArray,
+        symbol: ByteArray,
+        base_uri: ByteArray,
+        recipient: ContractAddress,
+        token_id: u256,
+    ) {
+        self.erc721.initializer(name, symbol, base_uri);
+        self.erc721.mint(recipient, token_id);
+    }
+
+    #[event]
+    #[derive(Drop, starknet::Event)]
+    enum Event {
+        #[flat]
+        ERC721Event: ERC721Component::Event,
+        #[flat]
+        SRC5Event: SRC5Component::Event,
+    }
+}
+
+/// Similar as `SnakeERC721Mock`, but emits events for `before_update` and `after_update` hooks.
+/// This is used to test that the hooks are called with the correct arguments.
+#[starknet::contract]
+pub mod SnakeERC721MockWithHooks {
+    // Explicit expansion of the pinned upstream with_components macro.
+    use crate::erc721::ERC721Component;
+    component!(path: ERC721Component, storage: erc721, event: ERC721Event);
+    impl ERC721InternalImpl = ERC721Component::InternalImpl<ContractState>;
+    use openzeppelin_introspection::src5::SRC5Component;
+    component!(path: SRC5Component, storage: src5, event: SRC5Event);
+    impl SRC5InternalImpl = SRC5Component::InternalImpl<ContractState>;
+    use starknet::ContractAddress;
+    use crate::erc721::{ERC721OwnerOfDefaultImpl, ERC721TokenURIDefaultImpl};
+
+    // ERC721
+    #[abi(embed_v0)]
+    impl ERC721Impl = ERC721Component::ERC721Impl<ContractState>;
+    #[abi(embed_v0)]
+    impl ERC721MetadataImpl = ERC721Component::ERC721MetadataImpl<ContractState>;
+
+    // SRC5
+    #[abi(embed_v0)]
+    impl SRC5Impl = SRC5Component::SRC5Impl<ContractState>;
+
+    #[storage]
+    pub struct Storage {
+        #[substorage(v0)]
+        pub erc721: ERC721Component::Storage,
+        #[substorage(v0)]
+        pub src5: SRC5Component::Storage,
+    }
+
+    #[event]
+    #[derive(Drop, starknet::Event)]
+    pub enum Event {
+        #[flat]
+        ERC721Event: ERC721Component::Event,
+        #[flat]
+        SRC5Event: SRC5Component::Event,
+        BeforeUpdate: BeforeUpdate,
+        AfterUpdate: AfterUpdate,
+    }
+
+    /// Event used to test that `before_update` hook is called.
+    #[derive(Drop, PartialEq, starknet::Event)]
+    pub struct BeforeUpdate {
+        pub to: ContractAddress,
+        pub token_id: u256,
+        pub auth: ContractAddress,
+    }
+
+    /// Event used to test that `after_update` hook is called.
+    #[derive(Drop, PartialEq, starknet::Event)]
+    pub struct AfterUpdate {
+        pub to: ContractAddress,
+        pub token_id: u256,
+        pub auth: ContractAddress,
+    }
+
+    #[constructor]
+    fn constructor(
+        ref self: ContractState,
+        name: ByteArray,
+        symbol: ByteArray,
+        base_uri: ByteArray,
+        recipient: ContractAddress,
+        token_id: u256,
+    ) {
+        self.erc721.initializer(name, symbol, base_uri);
+        self.erc721.mint(recipient, token_id);
+    }
+
+    impl ERC721HooksImpl of ERC721Component::ERC721HooksTrait<ContractState> {
+        fn before_update(
+            ref self: ERC721Component::ComponentState<ContractState>,
+            to: ContractAddress,
+            token_id: u256,
+            auth: ContractAddress,
+        ) {
+            let mut contract_state = self.get_contract_mut();
+            contract_state.emit(BeforeUpdate { to, token_id, auth });
+        }
+
+        fn after_update(
+            ref self: ERC721Component::ComponentState<ContractState>,
+            to: ContractAddress,
+            token_id: u256,
+            auth: ContractAddress,
+        ) {
+            let mut contract_state = self.get_contract_mut();
+            contract_state.emit(AfterUpdate { to, token_id, auth });
+        }
+    }
+}
+
+#[starknet::contract]
+pub mod DualCaseERC721ReceiverMock {
+    // Explicit expansion of the pinned upstream with_components macro.
+    use crate::erc721::ERC721ReceiverComponent;
+    component!(path: ERC721ReceiverComponent, storage: erc721_receiver, event: ERC721ReceiverEvent);
+    impl ERC721ReceiverInternalImpl = ERC721ReceiverComponent::InternalImpl<ContractState>;
+    use openzeppelin_introspection::src5::SRC5Component;
+    component!(path: SRC5Component, storage: src5, event: SRC5Event);
+    impl SRC5InternalImpl = SRC5Component::InternalImpl<ContractState>;
+    use starknet::ContractAddress;
+
+    // ERC721Receiver
+    impl ERC721ReceiverImpl = ERC721ReceiverComponent::ERC721ReceiverImpl<ContractState>;
+
+    // SRC5
+    #[abi(embed_v0)]
+    impl SRC5Impl = SRC5Component::SRC5Impl<ContractState>;
+
+    #[storage]
+    pub struct Storage {
+        #[substorage(v0)]
+        pub erc721_receiver: ERC721ReceiverComponent::Storage,
+        #[substorage(v0)]
+        pub src5: SRC5Component::Storage,
+    }
+
+    #[constructor]
+    fn constructor(ref self: ContractState) {
+        self.erc721_receiver.initializer();
+    }
+
+    #[abi(per_item)]
+    #[generate_trait]
+    impl ExternalImpl of ExternalTrait {
+        #[external(v0)]
+        fn on_erc721_received(
+            self: @ContractState,
+            operator: ContractAddress,
+            from: ContractAddress,
+            token_id: u256,
+            data: Span<felt252>,
+        ) -> felt252 {
+            if *data.at(0) == super::SUCCESS {
+                self.erc721_receiver.on_erc721_received(operator, from, token_id, data)
+            } else {
+                0
+            }
+        }
+
+        #[external(v0)]
+        fn onERC721Received(
+            self: @ContractState,
+            operator: ContractAddress,
+            from: ContractAddress,
+            tokenId: u256,
+            data: Span<felt252>,
+        ) -> felt252 {
+            Self::on_erc721_received(self, operator, from, tokenId, data)
+        }
+    }
+
+    #[event]
+    #[derive(Drop, starknet::Event)]
+    enum Event {
+        #[flat]
+        ERC721ReceiverEvent: ERC721ReceiverComponent::Event,
+        #[flat]
+        SRC5Event: SRC5Component::Event,
+    }
+}
+
+#[starknet::contract]
+pub mod ERC721EnumerableMock {
+    // Explicit expansion of the pinned upstream with_components macro.
+    use crate::erc721::ERC721Component;
+    component!(path: ERC721Component, storage: erc721, event: ERC721Event);
+    impl ERC721InternalImpl = ERC721Component::InternalImpl<ContractState>;
+    use crate::erc721::extensions::ERC721EnumerableComponent;
+    component!(
+        path: ERC721EnumerableComponent, storage: erc721_enumerable, event: ERC721EnumerableEvent,
+    );
+    impl ERC721EnumerableInternalImpl = ERC721EnumerableComponent::InternalImpl<ContractState>;
+    use openzeppelin_introspection::src5::SRC5Component;
+    component!(path: SRC5Component, storage: src5, event: SRC5Event);
+    impl SRC5InternalImpl = SRC5Component::InternalImpl<ContractState>;
+    use starknet::ContractAddress;
+    use crate::erc721::{ERC721OwnerOfDefaultImpl, ERC721TokenURIDefaultImpl};
+
+    // ERC721
+    #[abi(embed_v0)]
+    impl ERC721MixinImpl = ERC721Component::ERC721Impl<ContractState>;
+
+    // ERC721Enumerable
+    #[abi(embed_v0)]
+    impl ERC721EnumerableImpl =
+        ERC721EnumerableComponent::ERC721EnumerableImpl<ContractState>;
+
+    // SRC5
+    #[abi(embed_v0)]
+    impl SRC5Impl = SRC5Component::SRC5Impl<ContractState>;
+
+    #[storage]
+    pub struct Storage {
+        #[substorage(v0)]
+        pub erc721: ERC721Component::Storage,
+        #[substorage(v0)]
+        pub erc721_enumerable: ERC721EnumerableComponent::Storage,
+        #[substorage(v0)]
+        pub src5: SRC5Component::Storage,
+    }
+
+    impl ERC721HooksImpl of ERC721Component::ERC721HooksTrait<ContractState> {
+        fn before_update(
+            ref self: ERC721Component::ComponentState<ContractState>,
+            to: ContractAddress,
+            token_id: u256,
+            auth: ContractAddress,
+        ) {
+            let mut contract_state = self.get_contract_mut();
+            contract_state.erc721_enumerable.before_update(to, token_id);
+        }
+    }
+
+    #[generate_trait]
+    #[abi(per_item)]
+    impl ExternalImpl of ExternalTrait {
+        #[external(v0)]
+        fn all_tokens_of_owner(self: @ContractState, owner: ContractAddress) -> Span<u256> {
+            self.erc721_enumerable.all_tokens_of_owner(owner)
+        }
+    }
+
+    #[constructor]
+    fn constructor(
+        ref self: ContractState,
+        name: ByteArray,
+        symbol: ByteArray,
+        base_uri: ByteArray,
+        recipient: ContractAddress,
+        token_id: u256,
+    ) {
+        self.erc721.initializer(name, symbol, base_uri);
+        self.erc721_enumerable.initializer();
+        self.erc721.mint(recipient, token_id);
+    }
+
+    #[event]
+    #[derive(Drop, starknet::Event)]
+    enum Event {
+        #[flat]
+        ERC721Event: ERC721Component::Event,
+        #[flat]
+        ERC721EnumerableEvent: ERC721EnumerableComponent::Event,
+        #[flat]
+        SRC5Event: SRC5Component::Event,
+    }
+}
+
+#[starknet::interface]
+pub trait IERC721Mintable<TState> {
+    fn mint(ref self: TState, to: ContractAddress, token_id: u256);
+}
+
+#[starknet::interface]
+pub trait IERC721WrapperRecoverer<TState> {
+    fn recover(ref self: TState, account: ContractAddress, token_id: u256) -> u256;
+}
+
+#[starknet::interface]
+pub trait IERC721ConsecutiveMintable<TState> {
+    fn mint_consecutive(ref self: TState, to: ContractAddress, batch_size: u64) -> u64;
+}
+
+#[starknet::interface]
+pub trait IERC721Burnable<TState> {
+    fn burn(ref self: TState, token_id: u256);
+}
+
+#[starknet::contract]
+pub mod ERC721MintableMock {
+    // Explicit expansion of the pinned upstream with_components macro.
+    use crate::erc721::ERC721Component;
+    component!(path: ERC721Component, storage: erc721, event: ERC721Event);
+    impl ERC721InternalImpl = ERC721Component::InternalImpl<ContractState>;
+    use openzeppelin_introspection::src5::SRC5Component;
+    component!(path: SRC5Component, storage: src5, event: SRC5Event);
+    impl SRC5InternalImpl = SRC5Component::InternalImpl<ContractState>;
+    use starknet::ContractAddress;
+    use crate::erc721::{ERC721HooksEmptyImpl, ERC721OwnerOfDefaultImpl, ERC721TokenURIDefaultImpl};
+    use super::IERC721Mintable;
+
+    // ERC721
+    #[abi(embed_v0)]
+    impl ERC721Impl = ERC721Component::ERC721Impl<ContractState>;
+
+    // SRC5
+    #[abi(embed_v0)]
+    impl SRC5Impl = SRC5Component::SRC5Impl<ContractState>;
+
+    #[storage]
+    pub struct Storage {
+        #[substorage(v0)]
+        pub erc721: ERC721Component::Storage,
+        #[substorage(v0)]
+        pub src5: SRC5Component::Storage,
+    }
+
+    #[constructor]
+    fn constructor(
+        ref self: ContractState, name: ByteArray, symbol: ByteArray, base_uri: ByteArray,
+    ) {
+        self.erc721.initializer(name, symbol, base_uri);
+    }
+
+    #[abi(embed_v0)]
+    impl ERC721MintableImpl of IERC721Mintable<ContractState> {
+        fn mint(ref self: ContractState, to: ContractAddress, token_id: u256) {
+            self.erc721.mint(to, token_id);
+        }
+    }
+
+    #[event]
+    #[derive(Drop, starknet::Event)]
+    enum Event {
+        #[flat]
+        ERC721Event: ERC721Component::Event,
+        #[flat]
+        SRC5Event: SRC5Component::Event,
+    }
+}
+
+#[starknet::contract]
+pub mod ERC721WrapperMock {
+    // Explicit expansion of the pinned upstream with_components macro.
+    use crate::erc721::ERC721Component;
+    component!(path: ERC721Component, storage: erc721, event: ERC721Event);
+    impl ERC721InternalImpl = ERC721Component::InternalImpl<ContractState>;
+    use openzeppelin_introspection::src5::SRC5Component;
+    component!(path: SRC5Component, storage: src5, event: SRC5Event);
+    impl SRC5InternalImpl = SRC5Component::InternalImpl<ContractState>;
+    use crate::erc721::extensions::erc721_wrapper::ERC721WrapperComponent;
+    component!(path: ERC721WrapperComponent, storage: erc721_wrapper, event: ERC721WrapperEvent);
+    impl ERC721WrapperInternalImpl = ERC721WrapperComponent::InternalImpl<ContractState>;
+    use starknet::ContractAddress;
+    use crate::erc721::{ERC721HooksEmptyImpl, ERC721OwnerOfDefaultImpl, ERC721TokenURIDefaultImpl};
+    use super::IERC721WrapperRecoverer;
+
+    #[abi(embed_v0)]
+    impl ERC721Impl = ERC721Component::ERC721Impl<ContractState>;
+    #[abi(embed_v0)]
+    impl ERC721WrapperImpl =
+        ERC721WrapperComponent::ERC721WrapperImpl<ContractState>;
+    #[abi(embed_v0)]
+    impl ERC721WrapperReceiverImpl =
+        ERC721WrapperComponent::ERC721WrapperReceiverImpl<ContractState>;
+    #[abi(embed_v0)]
+    impl SRC5Impl = SRC5Component::SRC5Impl<ContractState>;
+
+    #[storage]
+    struct Storage {
+        #[substorage(v0)]
+        pub erc721: ERC721Component::Storage,
+        #[substorage(v0)]
+        pub src5: SRC5Component::Storage,
+        #[substorage(v0)]
+        pub erc721_wrapper: ERC721WrapperComponent::Storage,
+    }
+
+    #[event]
+    #[derive(Drop, starknet::Event)]
+    enum Event {
+        #[flat]
+        ERC721Event: ERC721Component::Event,
+        #[flat]
+        SRC5Event: SRC5Component::Event,
+        #[flat]
+        ERC721WrapperEvent: ERC721WrapperComponent::Event,
+    }
+
+    #[constructor]
+    fn constructor(
+        ref self: ContractState,
+        name: ByteArray,
+        symbol: ByteArray,
+        base_uri: ByteArray,
+        underlying: ContractAddress,
+    ) {
+        self.erc721.initializer(name, symbol, base_uri);
+        self.erc721_wrapper.initializer(underlying);
+    }
+
+    #[abi(embed_v0)]
+    impl ERC721WrapperRecovererImpl of IERC721WrapperRecoverer<ContractState> {
+        fn recover(ref self: ContractState, account: ContractAddress, token_id: u256) -> u256 {
+            self.erc721_wrapper.recover(account, token_id)
+        }
+    }
+}
+
+#[starknet::interface]
+pub trait ERC721URIStorageMockABI<TState> {
+    fn mint(ref self: TState, to: ContractAddress, token_id: u256);
+    fn burn(ref self: TState, token_id: u256);
+    fn set_token_uri(ref self: TState, token_id: u256, uri: ByteArray);
+}
+
+#[starknet::contract]
+pub mod ERC721URIStorageMock {
+    // Explicit expansion of the pinned upstream with_components macro.
+    use crate::erc721::ERC721Component;
+    component!(path: ERC721Component, storage: erc721, event: ERC721Event);
+    impl ERC721InternalImpl = ERC721Component::InternalImpl<ContractState>;
+    use crate::erc721::extensions::ERC721URIStorageComponent;
+    component!(
+        path: ERC721URIStorageComponent, storage: erc721_uri_storage, event: ERC721URIStorageEvent,
+    );
+    impl ERC721URIStorageInternalImpl = ERC721URIStorageComponent::InternalImpl<ContractState>;
+    use openzeppelin_introspection::src5::SRC5Component;
+    component!(path: SRC5Component, storage: src5, event: SRC5Event);
+    impl SRC5InternalImpl = SRC5Component::InternalImpl<ContractState>;
+    use starknet::ContractAddress;
+    use crate::erc721::ERC721OwnerOfDefaultImpl;
+    use crate::erc721::extensions::erc721_uri_storage::ERC721URIStorageComponent::ERC721TokenURIStorageImpl;
+    use super::ERC721URIStorageMockABI;
+
+    // ERC721
+    #[abi(embed_v0)]
+    impl ERC721Impl = ERC721Component::ERC721Impl<ContractState>;
+    #[abi(embed_v0)]
+    impl ERC721MetadataImpl = ERC721Component::ERC721MetadataImpl<ContractState>;
+
+    // SRC5
+    #[abi(embed_v0)]
+    impl SRC5Impl = SRC5Component::SRC5Impl<ContractState>;
+
+    #[storage]
+    pub struct Storage {
+        #[substorage(v0)]
+        pub erc721: ERC721Component::Storage,
+        #[substorage(v0)]
+        pub erc721_uri_storage: ERC721URIStorageComponent::Storage,
+        #[substorage(v0)]
+        pub src5: SRC5Component::Storage,
+    }
+
+    #[constructor]
+    fn constructor(
+        ref self: ContractState,
+        name: ByteArray,
+        symbol: ByteArray,
+        base_uri: ByteArray,
+        recipient: ContractAddress,
+        token_id: u256,
+    ) {
+        self.erc721.initializer(name, symbol, base_uri);
+        self.erc721.mint(recipient, token_id);
+    }
+
+    impl ERC721HooksImpl of ERC721Component::ERC721HooksTrait<ContractState> {
+        fn after_update(
+            ref self: ERC721Component::ComponentState<ContractState>,
+            to: ContractAddress,
+            token_id: u256,
+            auth: ContractAddress,
+        ) {
+            let mut contract_state = self.get_contract_mut();
+            contract_state.erc721_uri_storage.after_update(to, token_id, auth);
+        }
+    }
+
+    #[abi(embed_v0)]
+    impl ExternalImpl of ERC721URIStorageMockABI<ContractState> {
+        fn mint(ref self: ContractState, to: ContractAddress, token_id: u256) {
+            self.erc721.mint(to, token_id);
+        }
+
+        fn burn(ref self: ContractState, token_id: u256) {
+            self.erc721.burn(token_id);
+        }
+
+        fn set_token_uri(ref self: ContractState, token_id: u256, uri: ByteArray) {
+            self.erc721_uri_storage.set_token_uri(token_id, uri);
+        }
+    }
+
+    #[event]
+    #[derive(Drop, starknet::Event)]
+    enum Event {
+        #[flat]
+        ERC721Event: ERC721Component::Event,
+        #[flat]
+        ERC721URIStorageEvent: ERC721URIStorageComponent::Event,
+        #[flat]
+        SRC5Event: SRC5Component::Event,
+    }
+}
+
+#[starknet::contract]
+pub mod ERC721ConsecutiveMock {
+    // Explicit expansion of the pinned upstream with_components macro.
+    use crate::erc721::ERC721Component;
+    component!(path: ERC721Component, storage: erc721, event: ERC721Event);
+    impl ERC721InternalImpl = ERC721Component::InternalImpl<ContractState>;
+    use crate::erc721::extensions::ERC721ConsecutiveComponent;
+    component!(
+        path: ERC721ConsecutiveComponent,
+        storage: erc721_consecutive,
+        event: ERC721ConsecutiveEvent,
+    );
+    impl ERC721ConsecutiveInternalImpl = ERC721ConsecutiveComponent::InternalImpl<ContractState>;
+    use openzeppelin_introspection::src5::SRC5Component;
+    component!(path: SRC5Component, storage: src5, event: SRC5Event);
+    impl SRC5InternalImpl = SRC5Component::InternalImpl<ContractState>;
+    use starknet::ContractAddress;
+    use crate::erc721::ERC721TokenURIDefaultImpl;
+    use crate::erc721::extensions::erc721_consecutive::DefaultConfig;
+    use super::{IERC721Burnable, IERC721ConsecutiveMintable};
+
+    #[abi(embed_v0)]
+    impl ERC721Impl = ERC721Component::ERC721Impl<ContractState>;
+    #[abi(embed_v0)]
+    impl SRC5Impl = SRC5Component::SRC5Impl<ContractState>;
+
+    #[storage]
+    struct Storage {
+        #[substorage(v0)]
+        pub erc721: ERC721Component::Storage,
+        #[substorage(v0)]
+        pub erc721_consecutive: ERC721ConsecutiveComponent::Storage,
+        #[substorage(v0)]
+        pub src5: SRC5Component::Storage,
+    }
+
+    #[constructor]
+    fn constructor(
+        ref self: ContractState,
+        name: ByteArray,
+        symbol: ByteArray,
+        base_uri: ByteArray,
+        recipient: ContractAddress,
+        batch_size: u64,
+    ) {
+        self.erc721.initializer(name, symbol, base_uri);
+        self.erc721_consecutive.mint_consecutive(recipient, batch_size);
+    }
+
+    impl ERC721HooksImpl of ERC721Component::ERC721HooksTrait<ContractState> {
+        fn before_update(
+            ref self: ERC721Component::ComponentState<ContractState>,
+            to: ContractAddress,
+            token_id: u256,
+            auth: ContractAddress,
+        ) {
+            let mut contract_state = self.get_contract_mut();
+            contract_state.erc721_consecutive.before_update(to, token_id, auth);
+        }
+
+        fn after_update(
+            ref self: ERC721Component::ComponentState<ContractState>,
+            to: ContractAddress,
+            token_id: u256,
+            auth: ContractAddress,
+        ) {
+            let mut contract_state = self.get_contract_mut();
+            contract_state.erc721_consecutive.after_update(to, token_id, auth);
+        }
+    }
+
+    #[abi(embed_v0)]
+    impl ERC721BurnableImpl of IERC721Burnable<ContractState> {
+        fn burn(ref self: ContractState, token_id: u256) {
+            self.erc721.burn(token_id);
+        }
+    }
+
+    #[abi(embed_v0)]
+    impl ERC721ConsecutiveMintableImpl of IERC721ConsecutiveMintable<ContractState> {
+        fn mint_consecutive(ref self: ContractState, to: ContractAddress, batch_size: u64) -> u64 {
+            self.erc721_consecutive.mint_consecutive(to, batch_size)
+        }
+    }
+
+    #[event]
+    #[derive(Drop, starknet::Event)]
+    enum Event {
+        #[flat]
+        ERC721Event: ERC721Component::Event,
+        #[flat]
+        ERC721ConsecutiveEvent: ERC721ConsecutiveComponent::Event,
+        #[flat]
+        SRC5Event: SRC5Component::Event,
+    }
+}
+
+#[starknet::contract]
+pub mod ERC721ConsecutiveMultiBatchMock {
+    // Explicit expansion of the pinned upstream with_components macro.
+    use crate::erc721::ERC721Component;
+    component!(path: ERC721Component, storage: erc721, event: ERC721Event);
+    impl ERC721InternalImpl = ERC721Component::InternalImpl<ContractState>;
+    use crate::erc721::extensions::ERC721ConsecutiveComponent;
+    component!(
+        path: ERC721ConsecutiveComponent,
+        storage: erc721_consecutive,
+        event: ERC721ConsecutiveEvent,
+    );
+    impl ERC721ConsecutiveInternalImpl = ERC721ConsecutiveComponent::InternalImpl<ContractState>;
+    use openzeppelin_introspection::src5::SRC5Component;
+    component!(path: SRC5Component, storage: src5, event: SRC5Event);
+    impl SRC5InternalImpl = SRC5Component::InternalImpl<ContractState>;
+    use starknet::ContractAddress;
+    use crate::erc721::ERC721TokenURIDefaultImpl;
+    use crate::erc721::extensions::erc721_consecutive::DefaultConfig;
+    use super::IERC721Burnable;
+
+    #[abi(embed_v0)]
+    impl ERC721Impl = ERC721Component::ERC721Impl<ContractState>;
+    #[abi(embed_v0)]
+    impl ERC721BurnableImpl of IERC721Burnable<ContractState> {
+        fn burn(ref self: ContractState, token_id: u256) {
+            self.erc721.burn(token_id);
+        }
+    }
+    #[abi(embed_v0)]
+    impl SRC5Impl = SRC5Component::SRC5Impl<ContractState>;
+
+    #[storage]
+    struct Storage {
+        #[substorage(v0)]
+        pub erc721: ERC721Component::Storage,
+        #[substorage(v0)]
+        pub erc721_consecutive: ERC721ConsecutiveComponent::Storage,
+        #[substorage(v0)]
+        pub src5: SRC5Component::Storage,
+    }
+
+    #[constructor]
+    fn constructor(
+        ref self: ContractState,
+        name: ByteArray,
+        symbol: ByteArray,
+        base_uri: ByteArray,
+        first_recipient: ContractAddress,
+        first_batch_size: u64,
+        second_recipient: ContractAddress,
+        second_batch_size: u64,
+    ) {
+        self.erc721.initializer(name, symbol, base_uri);
+        self.erc721_consecutive.mint_consecutive(first_recipient, first_batch_size);
+        self.erc721_consecutive.mint_consecutive(second_recipient, second_batch_size);
+    }
+
+    impl ERC721HooksImpl of ERC721Component::ERC721HooksTrait<ContractState> {
+        fn before_update(
+            ref self: ERC721Component::ComponentState<ContractState>,
+            to: ContractAddress,
+            token_id: u256,
+            auth: ContractAddress,
+        ) {
+            let mut contract_state = self.get_contract_mut();
+            contract_state.erc721_consecutive.before_update(to, token_id, auth);
+        }
+
+        fn after_update(
+            ref self: ERC721Component::ComponentState<ContractState>,
+            to: ContractAddress,
+            token_id: u256,
+            auth: ContractAddress,
+        ) {
+            let mut contract_state = self.get_contract_mut();
+            contract_state.erc721_consecutive.after_update(to, token_id, auth);
+        }
+    }
+
+    #[event]
+    #[derive(Drop, starknet::Event)]
+    enum Event {
+        #[flat]
+        ERC721Event: ERC721Component::Event,
+        #[flat]
+        ERC721ConsecutiveEvent: ERC721ConsecutiveComponent::Event,
+        #[flat]
+        SRC5Event: SRC5Component::Event,
+    }
+}

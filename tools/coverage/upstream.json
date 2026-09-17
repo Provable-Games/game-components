@@ -1,0 +1,6 @@
+{
+  "version": "0.6.0",
+  "revision": "47d7935bdbeb31d6964e746874997d1429ad5127",
+  "cairo_version": "2.20.0",
+  "rust_version": "1.96.0"
+}

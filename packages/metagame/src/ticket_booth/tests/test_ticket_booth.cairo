@@ -1386,4 +1386,3 @@ fn test_buy_game_golden_pass_expired() {
     let payment = PaymentType::GoldenPass(GoldenPassInfo { address: golden_pass_nft, token_id: 1 });
     dispatcher.buy_game(payment, Option::None, ALICE(), false);
 }
-

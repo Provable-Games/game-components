@@ -1,0 +1,53 @@
+use core::to_byte_array::FormatAsByteArray;
+use crate::tests::support::testing::constants::AsAddressImpl;
+
+/// Converts panic data into a string (ByteArray).
+///
+/// `panic_data` is expected to be a valid serialized byte array with an extra
+/// felt252 at the beginning, which is the BYTE_ARRAY_MAGIC.
+pub fn panic_data_to_byte_array(panic_data: Array<felt252>) -> ByteArray {
+    let mut panic_data = panic_data.span();
+
+    // Remove BYTE_ARRAY_MAGIC from the panic data.
+    panic_data.pop_front().expect('Empty panic data provided');
+
+    match Serde::<ByteArray>::deserialize(ref panic_data) {
+        Option::Some(string) => string,
+        Option::None => { #[allow(panic)]
+        panic!("Failed to deserialize panic data.") },
+    }
+}
+
+/// Converts a `felt252` to a `base16` string padded to 66 characters including the `0x` prefix.
+pub fn to_base_16_string(value: felt252) -> ByteArray {
+    let mut string = value.format_as_byte_array(16);
+    let mut padding = 64 - string.len();
+
+    while padding != 0 {
+        string = "0" + string;
+        padding -= 1;
+    }
+    format!("0x{}", string)
+}
+
+/// Converts a `felt252` to a `base16` (hexadecimal) string without padding, but including the `0x`
+/// prefix.
+/// We need this because Starknet Foundry has a way of representing addresses and selectors that
+/// does not include 0's after `0x`.
+pub fn to_base_16_string_no_padding(value: felt252) -> ByteArray {
+    let string = value.format_as_byte_array(16);
+    format!("0x{}", string)
+}
+
+/// A helper trait that enables any value that can be converted to `felt252` to be represented
+/// as a `base16` string (including the `0x` prefix).
+#[generate_trait]
+pub impl IntoBase16String<T, +Into<T, felt252>> of IntoBase16StringTrait<T> {
+    fn into_base_16_string(self: T) -> ByteArray {
+        to_base_16_string(self.into())
+    }
+
+    fn into_base_16_string_no_padding(self: T) -> ByteArray {
+        to_base_16_string_no_padding(self.into())
+    }
+}

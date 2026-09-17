@@ -1,6 +1,7 @@
 [workspace]
 members = [
     "packages/interfaces",
+    "packages/erc721",
     "packages/embeddable_game_standard",
     "packages/metagame",
     "packages/economy",
@@ -19,7 +20,7 @@ edition.workspace = true
 [workspace.package]
 version = "2.7.0"
 edition = "2024_07"
-cairo-version = "2.16.1"
+cairo-version = "2.20.0"
 authors = ["Provable Games <maintainers@provable.games>"]
 keywords = [
     "starknet",
@@ -34,12 +35,12 @@ keywords = [
 ]
 
 [workspace.dependencies]
-starknet = "2.16.1"
-snforge_std = { git = "https://github.com/foundry-rs/starknet-foundry", tag = "v0.58.1" }
-openzeppelin_access = { git = "https://github.com/OpenZeppelin/cairo-contracts.git", tag = "v3.0.0" }
-openzeppelin_introspection = { git = "https://github.com/OpenZeppelin/cairo-contracts.git", tag = "v3.0.0" }
-openzeppelin_token = { git = "https://github.com/OpenZeppelin/cairo-contracts.git", tag = "v3.0.0" }
-openzeppelin_interfaces = { git = "https://github.com/OpenZeppelin/cairo-contracts.git", tag = "v3.0.0" }
+starknet = "2.20.0"
+snforge_std = "=0.63.0"
+openzeppelin_access = "=4.0.1"
+openzeppelin_introspection = "=4.0.1"
+openzeppelin_token = "=4.0.1"
+openzeppelin_interfaces = "=2.2.0"
 ekubo = { git = "https://github.com/EkuboProtocol/starknet-contracts.git", tag = "v4.0.1" }
 metagame_extensions_interfaces = { git = "https://github.com/Provable-Games/metagame_extensions.git", tag = "v0.1.5" }
 alexandria_merkle_tree = { git = "https://github.com/keep-starknet-strange/alexandria.git", tag = "v0.9.0" }
@@ -47,6 +48,7 @@ alexandria_merkle_tree = { git = "https://github.com/keep-starknet-strange/alexa
 [dependencies]
 starknet.workspace = true
 # Group packages
+game_components_erc721 = { path = "packages/erc721" }
 game_components_interfaces = { path = "packages/interfaces" }
 metagame_extensions_interfaces.workspace = true
 game_components_embeddable_game_standard = { path = "packages/embeddable_game_standard" }

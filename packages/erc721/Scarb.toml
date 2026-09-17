@@ -1,0 +1,31 @@
+[package]
+name = "game_components_erc721"
+version.workspace = true
+edition.workspace = true
+cairo-version.workspace = true
+license-file = "LICENSE"
+
+[dependencies]
+starknet.workspace = true
+openzeppelin_access.workspace = true
+openzeppelin_interfaces.workspace = true
+openzeppelin_introspection.workspace = true
+openzeppelin_utils = "=2.2.0"
+
+[dev-dependencies]
+openzeppelin_token.workspace = true
+openzeppelin_account = "=4.0.1"
+snforge_std.workspace = true
+assert_macros = "2.20.0"
+
+[features]
+fuzzing = []
+
+[lib]
+
+[[target.starknet-contract]]
+sierra = true
+casm = true
+
+[tool.snforge]
+fuzzer_runs = 256

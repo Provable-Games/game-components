@@ -67,4 +67,3 @@ pub struct MintBatchRecipient {
     pub to: ContractAddress,
     pub count: u16,
 }
-
