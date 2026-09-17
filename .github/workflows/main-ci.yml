@@ -32,6 +32,7 @@ jobs:
           filters: |
             packages:
               - "packages/**"
+              - "src/**"
               - "scripts/*erc721*"
               - "Scarb.toml"
               - "Scarb.lock"
@@ -169,7 +170,7 @@ jobs:
           # Complete ERC721 + royalty suite, including feature-gated fuzzers.
           - package: game_components_erc721
             module: erc721
-            runner: ubuntu-latest-4
+            runner: ubuntu-latest
             fuzzer_runs: 256
           # Embeddable Game Standard
           - package: game_components_embeddable_game_standard

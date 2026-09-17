@@ -34,6 +34,7 @@ jobs:
           filters: |
             packages:
               - "packages/**"
+              - "src/**"
               - "scripts/*erc721*"
               - "Scarb.toml"
               - "Scarb.lock"
@@ -73,6 +74,7 @@ jobs:
               - "tools/coverage/**"
               - "scripts/setup_coverage.sh"
             workspace_manifests:
+              - "src/**"
               - "Scarb.toml"
               - "Scarb.lock"
 
@@ -247,7 +249,7 @@ jobs:
           add() { INCLUDES=$(echo "$INCLUDES" | jq -c --arg p "$1" --arg m "$2" --arg r "$3" --argjson f "$4" '. + [{package:$p,module:$m,runner:$r,fuzzer_runs:$f}]'); }
 
           if [ "$NEED_ERC721" = "true" ]; then
-            add game_components_erc721 erc721 ubuntu-latest-4 256
+            add game_components_erc721 erc721 ubuntu-latest 256
           fi
           if [ "$NEED_EGS" = "true" ]; then
             add game_components_embeddable_game_standard minigame ubuntu-latest-8 32

@@ -165,7 +165,7 @@ When adding a new module to a group package, update **both** files:
 
 | Group Package | Module | Runner | Fuzzer Runs |
 |---------------|--------|--------|-------------|
-| `erc721` | whole package (ERC721 + royalties + safety) | `ubuntu-latest-4` | 256 |
+| `erc721` | whole package (ERC721 + royalties + safety) | `ubuntu-latest` | 256 |
 | `embeddable_game_standard` | `minigame` | `ubuntu-latest-8` | 32 |
 | `embeddable_game_standard` | `metagame` | `ubuntu-latest-8` | 32 |
 | `embeddable_game_standard` | `token` | `ubuntu-latest-8` | 32 |
@@ -176,6 +176,7 @@ When adding a new module to a group package, update **both** files:
 | `metagame` | `prize` | `ubuntu-latest-4` | 256 |
 | `metagame` | `ticket_booth` | `ubuntu-latest-4` | 256 |
 | `metagame` | `merkledrop` | `ubuntu-latest-4` | 256 |
+| `metagame` | `gpp` | `ubuntu-latest-4` | 256 |
 | `economy` | `tokenomics` | `ubuntu-latest-4` | 256 |
 | `utilities` | `math` | `ubuntu-latest-4` | 256 |
 | `utilities` | `distribution` | `ubuntu-latest-4` | 256 |
