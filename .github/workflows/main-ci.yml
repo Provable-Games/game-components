@@ -35,6 +35,8 @@ jobs:
               - "Scarb.toml"
               - "Scarb.lock"
               - ".tool-versions"
+              - "tools/coverage/**"
+              - "scripts/setup_coverage.sh"
             infra_ci:
               - ".github/workflows/**"
               - ".github/prompts/**"
@@ -42,6 +44,8 @@ jobs:
             general_ci:
               - "codecov.yml"
               - ".tool-versions"
+              - "tools/coverage/**"
+              - "scripts/setup_coverage.sh"
 
   infra-validate:
     needs: changes
@@ -263,21 +267,26 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-cargo-snforge-
 
-      - name: Cache tools
+      - name: Cache pinned coverage adapter
         uses: actions/cache@v4
         id: cache-tools
         with:
-          path: |
-            ~/.local/bin/cairo-coverage
-            ~/.local/bin/universal-sierra-compiler
-          key: ${{ runner.os }}-tools-cairo-coverage-universal-sierra-compiler-v1
+          path: .validation-tools/
+          key: ${{ runner.os }}-coverage-${{ hashFiles('tools/coverage/**', 'scripts/setup_coverage.sh') }}
 
-      - name: Install tools
-        if: steps.cache-tools.outputs.cache-hit != 'true'
+      - name: Build pinned coverage adapter
         run: |
-          (curl -L https://raw.githubusercontent.com/software-mansion/cairo-coverage/main/scripts/install.sh | sh) &
-          (curl -L https://raw.githubusercontent.com/software-mansion/universal-sierra-compiler/master/scripts/install.sh | sh) &
-          wait
+          scripts/setup_coverage.sh
+          echo "$PWD/.validation-tools/bin" >> "$GITHUB_PATH"
+
+      - name: Install pinned universal Sierra compiler
+        run: |
+          curl --fail --location --retry 3 https://github.com/software-mansion/universal-sierra-compiler/releases/download/v2.10.0/universal-sierra-compiler-v2.10.0-x86_64-unknown-linux-gnu.tar.gz -o /tmp/usc.tar.gz
+          echo "eafa433885c32947fbe640937a12543d468a0e2905b62c177f0fd8099285c1b9  /tmp/usc.tar.gz" | sha256sum --check
+          tar -xzf /tmp/usc.tar.gz -C /tmp
+          mkdir -p "$HOME/.local/bin"
+          cp /tmp/universal-sierra-compiler-v2.10.0-x86_64-unknown-linux-gnu/bin/universal-sierra-compiler "$HOME/.local/bin/"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
       - name: Cache compiled packages
         uses: actions/cache@v4
@@ -307,7 +316,7 @@ jobs:
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
         with:
-          files: ./coverage.lcov
+          files: ./packages/**/coverage/coverage.lcov
           flags: ${{ matrix.module }}
           token: ${{ secrets.CODECOV_TOKEN }}
 

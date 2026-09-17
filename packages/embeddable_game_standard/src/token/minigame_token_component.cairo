@@ -143,6 +143,7 @@ pub mod MinigameTokenComponent {
         impl ERC721: ERC721Component::HasComponent<TContractState>,
         +Drop<TContractState>,
         +ERC721Component::ERC721HooksTrait<TContractState>,
+        +ERC721Component::ERC721TokenOwnerTrait<TContractState>,
     > of IMinigameToken<ComponentState<TContractState>> {
         fn token_metadata(
             self: @ComponentState<TContractState>, token_id: felt252,
@@ -528,6 +529,7 @@ pub mod MinigameTokenComponent {
         impl Own: OwnableComponent::HasComponent<TContractState>,
         +Drop<TContractState>,
         +ERC721Component::ERC721HooksTrait<TContractState>,
+        +ERC721Component::ERC721TokenOwnerTrait<TContractState>,
     > of MinigameTokenABI<ComponentState<TContractState>> {
         // IMinigameToken
         fn token_metadata(
@@ -682,6 +684,7 @@ pub mod MinigameTokenComponent {
         impl ERC721: ERC721Component::HasComponent<TContractState>,
         +Drop<TContractState>,
         +ERC721Component::ERC721HooksTrait<TContractState>,
+        +ERC721Component::ERC721TokenOwnerTrait<TContractState>,
     > of InternalTrait<TContractState> {
         /// Returns the caller's minter id, registering the caller (and
         /// emitting `MinterRegistryUpdate`) on first sight — identical

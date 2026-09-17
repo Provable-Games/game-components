@@ -2,8 +2,8 @@
 
 <!-- Version badges - keep in sync with Scarb.toml -->
 
-[![Scarb](https://img.shields.io/badge/Scarb-2.16.1-blue)](https://github.com/software-mansion/scarb)
-[![Starknet Foundry](https://img.shields.io/badge/snforge-0.58.1-purple)](https://foundry-rs.github.io/starknet-foundry/)
+[![Scarb](https://img.shields.io/badge/Scarb-2.20.1-blue)](https://github.com/software-mansion/scarb)
+[![Starknet Foundry](https://img.shields.io/badge/snforge-0.63.0-purple)](https://foundry-rs.github.io/starknet-foundry/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Docs](https://img.shields.io/badge/Docs-Embeddable%20Game%20Standard-blue)](https://docs.provable.games/embeddable-game-standard)
 [![codecov](https://codecov.io/gh/Provable-Games/game-components/branch/next/graph/badge.svg?token=YNYQOJ76VV)](https://codecov.io/gh/Provable-Games/game-components)
@@ -107,8 +107,8 @@ Components for applications that coordinate and interact with games.
 
 <!-- Keep versions in sync with Scarb.toml -->
 
-- **Scarb**: 2.16.1
-- **Starknet Foundry**: 0.58.1
+- **Scarb**: 2.20.1
+- **Starknet Foundry**: 0.63.0
 
 ### Installation
 
@@ -232,3 +232,14 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ---
 
 **Built with love for the Starknet gaming ecosystem by [Provable Games](https://provable.games)**
+
+### Pinned coverage tooling
+
+Scarb 2.20.1 bundles Cairo 2.20.0. CI builds cairo-coverage 0.6.0 with
+our pinned Cairo 2.20 compatibility adapter instead of downloading a moving
+installer. Run `scripts/setup_coverage.sh` and add
+`$PWD/.validation-tools/bin` to `PATH` before running `snforge test --coverage`.
+The adapter revision, patch and locked Rust dependency graph live in
+`tools/coverage/`; its build requires Rust 1.96.0 and network access initially.
+The existing development profile retains the debug information and disabled
+inlining required for coverage. Benchmark comparisons must use identical profiles.

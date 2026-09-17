@@ -1,0 +1,42 @@
+diff --git a/Cargo.toml b/Cargo.toml
+index 4a57880..a31a191 100644
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -14,4 +14,5 @@ edition = "2024"
+-cairo-lang-sierra = "2.12.1"
+-cairo-lang-sierra-to-casm = "2.12.1"
+-cairo-lang-starknet-classes = "2.12.1"
+-cairo-annotations = "0.5.2"
++cairo-lang-sierra = "=2.20.0"
++cairo-lang-sierra-to-casm = "=2.20.0"
++cairo-lang-starknet-classes = "=2.20.0"
++cairo-lang-sierra-type-size = "=2.20.0"
++cairo-annotations = { version = "=0.10.0", features = ["cairo-lang"] }
+diff --git a/crates/cairo-coverage-core/Cargo.toml b/crates/cairo-coverage-core/Cargo.toml
+index c591d6d..be30748 100644
+--- a/crates/cairo-coverage-core/Cargo.toml
++++ b/crates/cairo-coverage-core/Cargo.toml
+@@ -10,0 +11 @@ cairo-lang-sierra.workspace = true
++cairo-lang-sierra-type-size.workspace = true
+diff --git a/crates/cairo-coverage-core/src/build/coverage_input.rs b/crates/cairo-coverage-core/src/build/coverage_input.rs
+index cf48e15..05d71bf 100644
+--- a/crates/cairo-coverage-core/src/build/coverage_input.rs
++++ b/crates/cairo-coverage-core/src/build/coverage_input.rs
+@@ -8,0 +9 @@ use cairo_lang_sierra::program::Program;
++use cairo_lang_sierra_type_size::ProgramRegistryInfo;
+@@ -54,0 +56 @@ fn compile(program: &Program) -> Result<CairoProgramDebugInfo> {
++    let program_registry_info = ProgramRegistryInfo::new(program)?;
+@@ -57 +59,2 @@ fn compile(program: &Program) -> Result<CairoProgramDebugInfo> {
+-        &calc_metadata(program, MetadataComputationConfig::default())?,
++        &program_registry_info,
++        &calc_metadata(program, &program_registry_info, MetadataComputationConfig::default())?,
+diff --git a/crates/cairo-coverage-core/src/loading/enriched_program.rs b/crates/cairo-coverage-core/src/loading/enriched_program.rs
+index c9eaa6d..b4ead0f 100644
+--- a/crates/cairo-coverage-core/src/loading/enriched_program.rs
++++ b/crates/cairo-coverage-core/src/loading/enriched_program.rs
+@@ -76 +76 @@ fn extract_contract_class(contract_class: ContractClass) -> Result<(Program, Deb
+-    let program = contract_class.extract_sierra_program()?;
++    let program = contract_class.extract_sierra_program(false)?.program;
+@@ -89 +89 @@ fn extract_test_executables(mut debug_info: DebugInfo) -> Vec<FunctionId> {
+-        .remove(SNFORGE_TEST_EXECUTABLE)
++        .shift_remove(SNFORGE_TEST_EXECUTABLE)

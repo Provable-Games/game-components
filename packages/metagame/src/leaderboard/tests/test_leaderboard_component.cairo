@@ -2308,4 +2308,3 @@ fn test_find_position_single_entry() {
     let pos = leaderboard.find_position(TOURNAMENT_1, 50, 10);
     assert!(pos == Option::Some(2), "Equal score, higher ID goes second");
 }
-

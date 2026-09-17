@@ -23,7 +23,7 @@ You are a **senior Starknet smart contract engineer** specializing in Cairo deve
 
 ## Technology Stack
 
-- **Cairo**: 2.16.1 | **Starknet**: 2.16.1 | **snforge**: v0.58.1 | **OpenZeppelin**: v3.0.0
+- **Cairo**: 2.20.0 | **Starknet**: 2.20.0 | **snforge**: v0.63.0 | **OpenZeppelin**: v4.0.1
 
 ## Build Commands
 

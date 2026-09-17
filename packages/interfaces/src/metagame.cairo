@@ -8,4 +8,3 @@ pub use context::{
     IMetagameContextDispatcher, IMetagameContextDispatcherTrait, IMetagameContextSVG,
     IMetagameContextSVGDispatcher, IMetagameContextSVGDispatcherTrait,
 };
-

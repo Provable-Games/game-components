@@ -16,7 +16,9 @@ pub trait IEnumerationFixture<T> {
 #[starknet::contract]
 pub mod EnumerableGenericMock {
     use openzeppelin_introspection::src5::SRC5Component;
-    use openzeppelin_token::erc721::ERC721Component;
+    use openzeppelin_token::erc721::{
+        ERC721Component, ERC721OwnerOfDefaultImpl, ERC721TokenURIDefaultImpl,
+    };
     use starknet::storage::StorageMapReadAccess;
     use starknet::{ContractAddress, get_caller_address};
     use crate::token::extensions::enumerable::enumerable::EnumerableComponent;
@@ -78,7 +80,12 @@ pub mod EnumerableGenericMock {
             self.erc721.safe_mint(to, token_id, data);
         }
         fn burn(ref self: ContractState, token_id: u256) {
-            assert(self.erc721.owner_of(token_id) == get_caller_address(), 'Only holder can burn');
+            assert(
+                openzeppelin_interfaces::erc721::IERC721::owner_of(
+                    @self.erc721, token_id,
+                ) == get_caller_address(),
+                'Only holder can burn',
+            );
             self.erc721.burn(token_id);
         }
         fn all_tokens(self: @ContractState, owner: ContractAddress) -> Span<u256> {
@@ -102,7 +109,9 @@ pub mod EnumerableGenericMock {
 pub mod EnumerableOwnerMock {
     use core::num::traits::Zero;
     use openzeppelin_introspection::src5::SRC5Component;
-    use openzeppelin_token::erc721::ERC721Component;
+    use openzeppelin_token::erc721::{
+        ERC721Component, ERC721OwnerOfDefaultImpl, ERC721TokenURIDefaultImpl,
+    };
     use starknet::storage::StorageMapReadAccess;
     use starknet::{ContractAddress, get_caller_address};
     use crate::token::extensions::enumerable::enumerable::EnumerableComponent;
@@ -173,7 +182,12 @@ pub mod EnumerableOwnerMock {
             self.erc721.safe_mint(to, token_id, data);
         }
         fn burn(ref self: ContractState, token_id: u256) {
-            assert(self.erc721.owner_of(token_id) == get_caller_address(), 'Only holder can burn');
+            assert(
+                openzeppelin_interfaces::erc721::IERC721::owner_of(
+                    @self.erc721, token_id,
+                ) == get_caller_address(),
+                'Only holder can burn',
+            );
             self.erc721.burn(token_id);
         }
         fn all_tokens(self: @ContractState, owner: ContractAddress) -> Span<u256> {
@@ -197,7 +211,9 @@ pub mod EnumerableOwnerMock {
 pub mod EnumerableReferenceMock {
     use core::num::traits::Zero;
     use openzeppelin_introspection::src5::SRC5Component;
-    use openzeppelin_token::erc721::ERC721Component;
+    use openzeppelin_token::erc721::{
+        ERC721Component, ERC721OwnerOfDefaultImpl, ERC721TokenURIDefaultImpl,
+    };
     use starknet::storage::StorageMapReadAccess;
     use starknet::{ContractAddress, get_caller_address};
     use crate::token::tests::enumerable_reference::EnumerableComponent;
@@ -267,7 +283,12 @@ pub mod EnumerableReferenceMock {
             self.erc721.safe_mint(to, token_id, data);
         }
         fn burn(ref self: ContractState, token_id: u256) {
-            assert(self.erc721.owner_of(token_id) == get_caller_address(), 'Only holder can burn');
+            assert(
+                openzeppelin_interfaces::erc721::IERC721::owner_of(
+                    @self.erc721, token_id,
+                ) == get_caller_address(),
+                'Only holder can burn',
+            );
             self.erc721.burn(token_id);
         }
         fn all_tokens(self: @ContractState, owner: ContractAddress) -> Span<u256> {
