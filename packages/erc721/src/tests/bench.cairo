@@ -208,6 +208,14 @@ pub mod OZBenchTarget {
 }
 #[starknet::contract]
 pub mod BenchFloor {
+    #[external(v0)]
+    fn balance_of(self: @ContractState, owner: starknet::ContractAddress) -> u256 {
+        if owner == 201.try_into().unwrap() {
+            1
+        } else {
+            0x100000000000000000000000000000000
+        }
+    }
     use starknet::ContractAddress;
     #[storage]
     struct Storage {}
@@ -234,6 +242,43 @@ pub mod BenchFloor {
 }
 #[starknet::contract]
 pub mod BenchProbe {
+    use openzeppelin_interfaces::erc721::{IERC721Dispatcher, IERC721DispatcherTrait};
+    #[external(v0)]
+    fn felt_public_balance_low(
+        self: @ContractState, target: starknet::ContractAddress, owner: starknet::ContractAddress,
+    ) -> u256 {
+        IERC721Dispatcher { contract_address: target }.balance_of(owner)
+    }
+    #[external(v0)]
+    fn oz_public_balance_low(
+        self: @ContractState, target: starknet::ContractAddress, owner: starknet::ContractAddress,
+    ) -> u256 {
+        IERC721Dispatcher { contract_address: target }.balance_of(owner)
+    }
+    #[external(v0)]
+    fn floor_public_balance_low(
+        self: @ContractState, target: starknet::ContractAddress, owner: starknet::ContractAddress,
+    ) -> u256 {
+        IERC721Dispatcher { contract_address: target }.balance_of(owner)
+    }
+    #[external(v0)]
+    fn felt_public_balance_high(
+        self: @ContractState, target: starknet::ContractAddress, owner: starknet::ContractAddress,
+    ) -> u256 {
+        IERC721Dispatcher { contract_address: target }.balance_of(owner)
+    }
+    #[external(v0)]
+    fn oz_public_balance_high(
+        self: @ContractState, target: starknet::ContractAddress, owner: starknet::ContractAddress,
+    ) -> u256 {
+        IERC721Dispatcher { contract_address: target }.balance_of(owner)
+    }
+    #[external(v0)]
+    fn floor_public_balance_high(
+        self: @ContractState, target: starknet::ContractAddress, owner: starknet::ContractAddress,
+    ) -> u256 {
+        IERC721Dispatcher { contract_address: target }.balance_of(owner)
+    }
     use starknet::ContractAddress;
     use super::{IBenchTargetDispatcher, IBenchTargetDispatcherTrait};
     #[storage]
@@ -1318,5 +1363,62 @@ fn bench_erc721_consecutive_balance() {
         9,
         2,
         false,
+    );
+}
+
+fn run_public_balance(
+    high: bool, felt_selector: felt252, oz_selector: felt252, floor_selector: felt252,
+) {
+    let (felt, _) = declare("FeltBenchTarget").unwrap().contract_class().deploy(@array![]).unwrap();
+    let (oz, _) = declare("OZBenchTarget").unwrap().contract_class().deploy(@array![]).unwrap();
+    let (floor, _) = declare("BenchFloor").unwrap().contract_class().deploy(@array![]).unwrap();
+    let (probe, _) = declare("BenchProbe").unwrap().contract_class().deploy(@array![]).unwrap();
+    let owner: ContractAddress = if high {
+        202
+    } else {
+        201
+    }.try_into().unwrap();
+    let balance: u256 = if high {
+        0x100000000000000000000000000000000
+    } else {
+        1
+    };
+    for target in array![felt, oz] {
+        IResearchBalanceDispatcher { contract_address: target }.set_balance(owner, balance);
+    }
+    let a = starknet::syscalls::call_contract_syscall(
+        probe, felt_selector, array![felt.into(), owner.into()].span(),
+    )
+        .unwrap_syscall();
+    let b = starknet::syscalls::call_contract_syscall(
+        probe, oz_selector, array![oz.into(), owner.into()].span(),
+    )
+        .unwrap_syscall();
+    let c = starknet::syscalls::call_contract_syscall(
+        probe, floor_selector, array![floor.into(), owner.into()].span(),
+    )
+        .unwrap_syscall();
+    assert_eq!(a, b);
+    assert_eq!(a, c);
+    assert_eq!(a, array![balance.low.into(), balance.high.into()].span());
+}
+#[test]
+#[ignore]
+fn bench_erc721_public_balance_low() {
+    run_public_balance(
+        false,
+        selector!("felt_public_balance_low"),
+        selector!("oz_public_balance_low"),
+        selector!("floor_public_balance_low"),
+    );
+}
+#[test]
+#[ignore]
+fn bench_erc721_public_balance_high() {
+    run_public_balance(
+        true,
+        selector!("felt_public_balance_high"),
+        selector!("oz_public_balance_high"),
+        selector!("floor_public_balance_high"),
     );
 }

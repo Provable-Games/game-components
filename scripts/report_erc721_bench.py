@@ -15,8 +15,8 @@ def parse(path):
         if name in rows or low != high or high != mean or deviation != '0' or calls != '1':
             raise ValueError(f'Nonisolated or duplicate gas row: {line}')
         rows[name] = int(low)
-    if len(rows) != 81:
-        raise ValueError(f'Expected 81 rows from 27 cases; found {len(rows)}')
+    if len(rows) != 87:
+        raise ValueError(f'Expected 87 rows from 29 cases; found {len(rows)}')
     return rows
 
 
