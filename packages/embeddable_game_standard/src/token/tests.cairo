@@ -10,4 +10,5 @@ mod test_enumerable_gas;
 mod test_enumerable_optimizations;
 mod test_gas_bench;
 mod test_lifecycle_projection;
+mod test_packing;
 mod test_token;

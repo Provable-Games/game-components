@@ -36,7 +36,7 @@ legacy callback receiver. The component now exposes internals only.
 
 | Method | Description |
 |--------|-------------|
-| `mint(game_address, player_name, settings_id, ...)` | Mint a single token |
+| `mint(game_address, settings_id, ...)` | Mint a single token |
 | `mint_batch(mints: Array<MintMetagameParams>)` | Many tokens, **one call per token**; each entry may name a different game |
 | `mint_batch_recipients(game_address, ..., recipients, ..., metadata: u128)` | Many tokens for **ONE** game in a **single dispatch**, via the token's own batch entrypoint |
 | `assert_game_registered(game_address)` | Validate game registration |
@@ -46,10 +46,10 @@ legacy callback receiver. The component now exposes internals only.
 entry, say — use `mint_batch_recipients`. `mint_batch` costs one cross-contract
 dispatch per token and re-serialises `context` (which contains an `Array`) each
 time; `mint_batch_recipients` hoists the batch-invariant work and runs a single
-global salt counter. Reach for `mint_batch` only when entries genuinely name
-different games.
+`tx_nonce` counter across the batch (at most 256 tokens). Reach for
+`mint_batch` only when entries genuinely name different games.
 
-Every mint path takes `metadata: u128`, reaching the standard token's 65-bit
+Every mint path takes `metadata: u128`, reaching the standard token's 59-bit
 field. The legacy token's field is `u16`, so a legacy mint asserts the value
 fits (`Metagame: metadata exceeds u16`) rather than truncating it silently —
 identically on the single and batch paths, so the two never disagree about what
@@ -124,19 +124,16 @@ generation, pin `v2.0.0` or earlier.
 ```cairo
 pub struct MintMetagameParams {
     pub game_address: ContractAddress,
-    pub player_name: Option<felt252>,
     pub settings_id: Option<u32>,
     pub start: Option<u64>,
     pub end: Option<u64>,
     pub objective_id: Option<u32>,
     pub context: Option<GameContextDetails>,
-    pub client_url: Option<ByteArray>,
     pub renderer_address: Option<ContractAddress>,
     pub skills_address: Option<ContractAddress>,
     pub to: ContractAddress,
     pub soulbound: bool,
     pub paymaster: bool,
-    pub salt: u16,
     pub metadata: u128,
 }
 ```

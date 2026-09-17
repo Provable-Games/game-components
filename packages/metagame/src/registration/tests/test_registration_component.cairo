@@ -420,9 +420,9 @@ fn test_token_flags_are_independent_per_token() {
 ///
 /// A token id is unique only within the contract that minted it, so two games
 /// can produce the same id -- accidentally (one multicall minting into both
-/// with the same params and salt in one block) or deliberately, since an
-/// attacker controls their own game contract and every packed field except the
-/// block timestamp.
+/// with the same params in one block) or deliberately, since an attacker
+/// controls their own game contract and every packed field except the block
+/// timestamp and block number.
 ///
 /// While state was keyed on `token_id` alone, the second registration
 /// overwrote the first's context and cleared its flags, so the first player

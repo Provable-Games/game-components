@@ -5,7 +5,7 @@
 // Distinct from `mint_batch`, which loops over `mint`: one cross-contract call
 // per token, each entry free to name a different game. This routes a single
 // dispatch to the token's own batch entrypoint, which hoists the
-// batch-invariant work and runs one global salt counter. Tournament entry is
+// batch-invariant work and runs one internal collision counter. Tournament entry is
 // the motivating case — budokan mints every entrant in one call, and adopting
 // `mint_batch` there would have turned that into N calls.
 
@@ -60,8 +60,6 @@ fn test_batch_recipients_through_standard_token() {
 
     let token_ids = libs::mint_batch_recipients(
         game,
-        Option::Some('Entrant'),
-        Option::None,
         Option::None,
         Option::None,
         Option::None,
@@ -73,7 +71,6 @@ fn test_batch_recipients_through_standard_token() {
         false,
         false,
         0,
-        0,
     );
 
     assert!(token_ids.len() == 3, "expected 3 tokens, got {}", token_ids.len());
@@ -83,8 +80,8 @@ fn test_batch_recipients_through_standard_token() {
     assert!(erc721.owner_of((*token_ids.at(2)).into()) == BOB(), "token 2 should go to BOB");
 }
 
-/// Every token in the batch is distinct — the global salt counter runs across
-/// recipients, not per recipient.
+/// Every token in the batch is distinct — the internal collision counter runs
+/// across recipients, not per recipient.
 #[test]
 fn test_batch_recipients_ids_are_distinct() {
     let game = deploy_standard_game();
@@ -98,12 +95,9 @@ fn test_batch_recipients_ids_are_distinct() {
         Option::None,
         Option::None,
         Option::None,
-        Option::None,
-        Option::None,
         two_recipients(),
         false,
         false,
-        0,
         0,
     );
 
@@ -120,7 +114,7 @@ fn test_batch_recipients_ids_are_distinct() {
 #[test]
 fn test_batch_recipients_carries_wide_metadata() {
     let game = deploy_standard_game();
-    // Wider than u16, well inside the id layout's 65-bit metadata field.
+    // Wider than u16, well inside the id layout's 59-bit metadata field.
     let wide: u128 = 0x100000000;
 
     let token_ids = libs::mint_batch_recipients(
@@ -132,12 +126,9 @@ fn test_batch_recipients_carries_wide_metadata() {
         Option::None,
         Option::None,
         Option::None,
-        Option::None,
-        Option::None,
         one_recipient(),
         false,
         false,
-        0,
         wide,
     );
 
@@ -163,12 +154,9 @@ fn test_batch_recipients_rejects_game_that_is_not_a_standard_token() {
         Option::None,
         Option::None,
         Option::None,
-        Option::None,
-        Option::None,
         one_recipient(),
         false,
         false,
-        0,
         0,
     );
 }
@@ -185,14 +173,11 @@ fn test_batch_recipients_rejects_renderer_on_standard_token() {
         Option::None,
         Option::None,
         Option::None,
-        Option::None,
-        Option::None,
         Option::Some(BOB()),
         Option::None,
         one_recipient(),
         false,
         false,
-        0,
         0,
     );
 }
@@ -209,13 +194,10 @@ fn test_batch_recipients_rejects_skills_on_standard_token() {
         Option::None,
         Option::None,
         Option::None,
-        Option::None,
-        Option::None,
         Option::Some(BOB()),
         one_recipient(),
         false,
         false,
-        0,
         0,
     );
 }

@@ -122,6 +122,19 @@ their interface ids. **To build against them, pin `v2.0.0` or earlier** — that
 tag is the last release containing the registry generation. Indexers must also
 branch their token-id decoder by contract generation: the layouts differ.
 
+### Token id schema v1 (v3.0.0)
+
+`v3.0.0` replaced the standard token's id layout with schema v1 (see
+`packages/embeddable_game_standard/src/token/AGENTS.md`): every id carries a
+5-bit `schema_version` in its low bits (this layout writes 1), mint times are
+stored to the minute, and the caller-supplied `salt` is gone — ids are made
+unique by the tx hash plus `tx_nonce` (0 for `mint`, the token's position in
+the batch for `mint_batch_recipients`). The mint
+ABI and `IMINIGAME_TOKEN_ID` changed with it; v2.x standard tokens register
+the previous id and use the previous layout, so an indexer branches on the
+interface id a contract registers (or on the `schema_version` view) before
+decoding.
+
 ## Key Patterns
 
 - `#[starknet::component]` for reusable architecture

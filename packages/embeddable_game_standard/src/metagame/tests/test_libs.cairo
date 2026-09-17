@@ -53,8 +53,6 @@ mod standard_token_paths {
 
         let token_id = libs::mint(
             game,
-            Option::Some('player'),
-            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -66,17 +64,14 @@ mod standard_token_paths {
             false,
             false,
             0,
-            0,
         );
 
         assert!(token_id != 0, "mint returned a zero token id");
         let erc721 = IERC721Dispatcher { contract_address: game };
         assert!(erc721.owner_of(token_id.into()) == BOB(), "token not minted to recipient");
-        let token = IMinigameTokenDispatcher { contract_address: game };
-        assert!(token.player_name(token_id) == 'player', "player name not stored");
     }
 
-    /// `metadata` is u128 so the single-mint path reaches the same 65-bit field
+    /// `metadata` is u128 so the single-mint path reaches the same 59-bit field
     /// the batch path does — a u16 here would silently narrow a consumer that
     /// threads a wider value through.
     #[test]
@@ -93,12 +88,9 @@ mod standard_token_paths {
             Option::None,
             Option::None,
             Option::None,
-            Option::None,
-            Option::None,
             BOB(),
             false,
             false,
-            0,
             wide,
         );
 
@@ -120,12 +112,9 @@ mod standard_token_paths {
             Option::None,
             Option::None,
             Option::None,
-            Option::None,
-            Option::None,
             BOB(),
             false,
             false,
-            0,
             0,
         );
 
@@ -145,14 +134,11 @@ mod standard_token_paths {
             Option::None,
             Option::None,
             Option::None,
-            Option::None,
-            Option::None,
             Option::Some(BOB()),
             Option::None,
             BOB(),
             false,
             false,
-            0,
             0,
         );
     }
@@ -169,13 +155,10 @@ mod standard_token_paths {
             Option::None,
             Option::None,
             Option::None,
-            Option::None,
-            Option::None,
             Option::Some(BOB()),
             BOB(),
             false,
             false,
-            0,
             0,
         );
     }
@@ -251,12 +234,9 @@ mod fake_game_paths {
             Option::None,
             Option::None,
             Option::None,
-            Option::None,
-            Option::None,
             BOB(),
             false,
             false,
-            0,
             0,
         );
     }
@@ -297,8 +277,9 @@ mod fuzz_mint_parameters {
     use game_components_embeddable_game_standard::token::interface::{
         IMinigameTokenDispatcher, IMinigameTokenDispatcherTrait,
     };
+    use game_components_interfaces::structs::token::MintBatchRecipient;
     use game_components_testing::constants::{ALICE, BOB, OWNER};
-    use snforge_std::{ContractClassTrait, DeclareResultTrait, declare};
+    use snforge_std::{ContractClassTrait, DeclareResultTrait, declare, start_cheat_caller_address};
     use starknet::ContractAddress;
     use crate::metagame::metagame as libs;
 
@@ -317,11 +298,9 @@ mod fuzz_mint_parameters {
         contract_address
     }
 
-    fn mint_with_name(game: ContractAddress, player_name: felt252, salt: u16) -> felt252 {
+    fn mint_plain(game: ContractAddress) -> felt252 {
         libs::mint(
             game,
-            Option::Some(player_name),
-            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -332,24 +311,30 @@ mod fuzz_mint_parameters {
             BOB(),
             false,
             false,
-            salt,
             0,
         )
     }
 
-    /// Any player name survives the mint intact — the id packs no part of it,
-    /// so nothing can truncate or collide it.
+    /// Any non-zero player name survives `set_player_name` intact — the id
+    /// packs no part of it, so nothing can truncate or collide it. Names are
+    /// set by the owner after mint, never at mint.
     #[fuzzer(runs: 64)]
     #[test]
     fn test_fuzz_player_name_round_trips(player_name: felt252) {
+        if player_name == 0 {
+            return;
+        }
         let game = deploy_standard_game();
-        let token_id = mint_with_name(game, player_name, 0);
+        let token_id = mint_plain(game);
 
         let token = IMinigameTokenDispatcher { contract_address: game };
+        assert!(token.player_name(token_id) == 0, "name is never set at mint");
+        start_cheat_caller_address(game, BOB());
+        token.set_player_name(token_id, player_name);
         assert!(token.player_name(token_id) == player_name, "player name did not round trip");
     }
 
-    /// `settings_id` is a 16-bit field in the packed id. Any value that fits
+    /// `settings_id` is a 20-bit field in the packed id. Any value that fits
     /// must come back exactly; the widening to `Option<u32>` at the ABI is
     /// call-site ergonomics, not extra range.
     #[fuzzer(runs: 64)]
@@ -360,9 +345,7 @@ mod fuzz_mint_parameters {
 
         let token_id = libs::mint(
             game,
-            Option::None,
             Option::Some(settings_id),
-            Option::None,
             Option::None,
             Option::None,
             Option::None,
@@ -373,21 +356,21 @@ mod fuzz_mint_parameters {
             false,
             false,
             0,
-            0,
         );
 
         let token = IMinigameTokenDispatcher { contract_address: game };
         assert!(token.settings_id(token_id) == settings_id, "settings id did not round trip");
     }
 
-    /// The 65-bit metadata field carries any value that fits, unchanged. This
+    /// The 59-bit metadata field carries any value that fits, unchanged. This
     /// is the field a consumer threads a wide value through, so truncation
     /// here would be silent data loss.
     #[fuzzer(runs: 64)]
     #[test]
     fn test_fuzz_metadata_round_trips(raw: u64) {
         let game = deploy_standard_game();
-        let metadata: u128 = raw.into();
+        // Any value inside the 59-bit field.
+        let metadata: u128 = raw.into() % 0x800000000000000;
 
         let token_id = libs::mint(
             game,
@@ -398,12 +381,9 @@ mod fuzz_mint_parameters {
             Option::None,
             Option::None,
             Option::None,
-            Option::None,
-            Option::None,
             BOB(),
             false,
             false,
-            0,
             metadata,
         );
 
@@ -411,17 +391,38 @@ mod fuzz_mint_parameters {
         assert!(token.mint_metadata(token_id) == metadata, "metadata did not round trip");
     }
 
-    /// Distinct salts within one transaction produce distinct ids — the
-    /// property the salt field exists to guarantee for multicall minting.
+    /// Identical mints in one transaction produce distinct ids without any
+    /// caller-supplied salt: `mint_batch_recipients` numbers its tokens
+    /// 0, 1, 2, … through `tx_nonce`.
     #[fuzzer(runs: 32)]
     #[test]
-    fn test_fuzz_distinct_salts_give_distinct_ids(salt_a: u16, salt_b: u16) {
-        if salt_a == salt_b {
-            return;
-        }
+    fn test_fuzz_batch_tokens_get_sequential_nonces(count: u8) {
         let game = deploy_standard_game();
-        let first = mint_with_name(game, 'player', salt_a);
-        let second = mint_with_name(game, 'player', salt_b);
-        assert!(first != second, "distinct salts collided");
+        let token = IMinigameTokenDispatcher { contract_address: game };
+        let n: u16 = (count % 8).into() + 1;
+        let ids = libs::mint_batch_recipients(
+            game,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            Option::None,
+            array![MintBatchRecipient { to: BOB(), count: n }],
+            false,
+            false,
+            0,
+        );
+        assert!(ids.len() == n.into(), "batch size");
+        let mut i: u32 = 0;
+        while i < ids.len() {
+            let expected: u8 = i.try_into().unwrap();
+            assert!(token.tx_nonce(*ids.at(i)) == expected, "nonce is the batch position");
+            if i > 0 {
+                assert!(*ids.at(i) != *ids.at(i - 1), "batch ids collided");
+            }
+            i += 1;
+        }
     }
 }

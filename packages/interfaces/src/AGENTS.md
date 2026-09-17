@@ -177,12 +177,21 @@ Apply the same reasoning to future additive methods: extend the trait, leave the
 alone, and note the exclusion here. Change the ID only for a genuinely breaking
 change to the existing surface.
 
-### Frozen `IMINIGAME_TOKEN_ID` value
+### `IMINIGAME_TOKEN_ID` values by generation
 
-The token interface-id VALUE is frozen — deployed contracts register it on-chain.
-When the lite token became the standard, only the NAME moved:
+Deployed contracts register the id on-chain, so each value below stays
+meaningful for the contracts that registered it. The v3.0.0 rederivation was a
+genuinely breaking change (the mint signatures lost `salt`, `TokenMetadata`
+gained fields, and ten per-field views were added), not an additive one:
 
-| Constant (today) | Value | Was named |
+| Constant (today) | Value | Generation |
+| --- | --- | --- |
+| `IMINIGAME_TOKEN_ID` | `0xf004b9d53af59928314ad1d40678a64e2c80683c0f69bd1253840587a90e20` | v3.0.0+ (token id schema v1; mint takes no salt, player name or client url) |
+| (previous value) | `0x20253de95bcdb23620c88405a5f97da040b91de832ad98a34b45c4f3331d13b` | v2.x standard token |
+
+When the lite token became the standard (before v3), only the NAME moved:
+
+| Constant (then) | Value | Was named |
 | --- | --- | --- |
 | `IMINIGAME_TOKEN_ID` | `0x20253de95bcdb23620c88405a5f97da040b91de832ad98a34b45c4f3331d13b` | `IMINIGAME_TOKEN_LITE_ID` |
 

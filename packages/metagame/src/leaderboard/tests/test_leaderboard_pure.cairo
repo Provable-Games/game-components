@@ -1,16 +1,36 @@
 // Pure leaderboard library tests
-use game_components_embeddable_game_standard::token::packing::pack_token_id;
+use game_components_embeddable_game_standard::token::packing::{
+    PackedTokenId, SCHEMA_VERSION, pack_token_id,
+};
 use game_components_interfaces::leaderboard::LeaderboardResult;
 use game_components_metagame::leaderboard::leaderboard::leaderboard;
 
-/// Helper to create a packed token ID with a specific minted_at timestamp.
-fn make_token(minted_at: u64) -> felt252 {
-    pack_token_id(minted_at, 0, 0, 0, 0, false, 0, 0, false, false, 0, 0)
+/// Packed token id with a specific minute-floored mint time and collision
+/// counter; every other field neutral.
+fn make_token_with_nonce(minted_at_timestamp: u32, tx_nonce: u8) -> felt252 {
+    pack_token_id(
+        PackedTokenId {
+            schema_version: SCHEMA_VERSION,
+            has_context: false,
+            soulbound: false,
+            paymaster: false,
+            tx_hash: 0,
+            tx_nonce,
+            minted_at_block_number: 0,
+            minted_at_timestamp,
+            start_delay: 0,
+            end_delay: 0,
+            settings_id: 0,
+            objective_id: 0,
+            minted_by: 1,
+            metadata: 0,
+        },
+    )
 }
 
-/// Helper to create a packed token ID with specific minted_at and salt.
-fn make_token_with_salt(minted_at: u64, salt: u16) -> felt252 {
-    pack_token_id(minted_at, 0, 0, 0, 0, false, 0, salt, false, false, 0, 0)
+/// Packed token id with a specific minute-floored mint time.
+fn make_token(minted_at_timestamp: u32) -> felt252 {
+    make_token_with_nonce(minted_at_timestamp, 0)
 }
 
 // ── is_better_score ──
@@ -39,12 +59,27 @@ fn test_wins_tiebreak_earlier_minted_wins() {
     assert!(!leaderboard::wins_tiebreak(late, early)); // later loses
 }
 
+/// The tiebreak reads the id's `minted_at_timestamp` field: a later mint
+/// with a numerically smaller id (a lower collision counter, say) still
+/// loses to the earlier mint.
+#[test]
+fn test_wins_tiebreak_reads_mint_time_not_raw_id() {
+    let early_high_nonce = make_token_with_nonce(1000, 200);
+    let late_low_nonce = make_token_with_nonce(2000, 0);
+    let a: u256 = early_high_nonce.into();
+    let b: u256 = late_low_nonce.into();
+    assert!(a < b, "fixture: the later mint must have the larger raw id");
+    assert!(leaderboard::wins_tiebreak(early_high_nonce, late_low_nonce));
+    assert!(!leaderboard::wins_tiebreak(late_low_nonce, early_high_nonce));
+}
+
 #[test]
 fn test_wins_tiebreak_same_mint_time_falls_back_to_token_id() {
-    let a = make_token_with_salt(1000, 1);
-    let b = make_token_with_salt(1000, 2);
-    // Same minted_at — falls back to lower token ID
-    assert!(leaderboard::wins_tiebreak(a, b) || leaderboard::wins_tiebreak(b, a));
+    let a = make_token_with_nonce(1000, 1);
+    let b = make_token_with_nonce(1000, 2);
+    // Same minted_at_timestamp — falls back to the lower token id.
+    assert!(leaderboard::wins_tiebreak(a, b), "lower id wins on equal mint time");
+    assert!(!leaderboard::wins_tiebreak(b, a), "higher id loses on equal mint time");
     assert!(!leaderboard::wins_tiebreak(a, a)); // equal — no winner
 }
 

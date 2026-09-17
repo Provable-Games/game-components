@@ -5,18 +5,15 @@ pub trait IMetagameMock<TContractState> {
     fn mint_game(
         ref self: TContractState,
         game_address: ContractAddress,
-        player_name: Option<felt252>,
         settings_id: Option<u32>,
         start: Option<u64>,
         end: Option<u64>,
         objective_id: Option<u32>,
-        client_url: Option<ByteArray>,
         renderer_address: Option<ContractAddress>,
         skills_address: Option<ContractAddress>,
         to: ContractAddress,
         soulbound: bool,
         paymaster: bool,
-        salt: u16,
         metadata: u128,
     ) -> felt252;
 }
@@ -132,18 +129,15 @@ pub mod metagame_mock {
         fn mint_game(
             ref self: ContractState,
             game_address: ContractAddress,
-            player_name: Option<felt252>,
             settings_id: Option<u32>,
             start: Option<u64>,
             end: Option<u64>,
             objective_id: Option<u32>,
-            client_url: Option<ByteArray>,
             renderer_address: Option<ContractAddress>,
             skills_address: Option<ContractAddress>,
             to: ContractAddress,
             soulbound: bool,
             paymaster: bool,
-            salt: u16,
             metadata: u128,
         ) -> felt252 {
             let context = array![GameContext { name: 'Test Context 1', value: 'Test Context' }]
@@ -157,19 +151,16 @@ pub mod metagame_mock {
             // Call the metagame component mint function
             let token_id = metagame::mint(
                 game_address,
-                player_name,
                 settings_id,
                 start,
                 end,
                 objective_id,
                 Option::Some(context_details),
-                client_url,
                 renderer_address,
                 skills_address,
                 to,
                 soulbound,
                 paymaster,
-                salt,
                 metadata,
             );
 

@@ -18,52 +18,76 @@ two-phase init, a standalone preset, game-side call helpers).
 | Rule | Consequence |
 | --- | --- |
 | Self-bound: the embedding contract is the game | No stored game address, no registry, no `game_id` resolution, no SRC5 probes on mint; there is no game_address view or mint parameter at all — consumers identify a standard token by SRC5 (`IMINIGAME_TOKEN_ID`) |
-| No mutable token state | No `update_game`, no metagame callbacks; `is_playable` = lifecycle window only, zero storage reads. `player_name` (owner-renameable) and the mint-time `client_url` are the only per-token storage (plus the minter registry) |
-| Token id layout is standard-native | `token::packing::pack_token_id` (251-bit) — its OWN layout, not the legacy token's (`token_legacy::structs` stays untouched, serving legacy denshokan). Indexers must branch their decoder by contract generation |
+| No mutable token state | No `update_game`, no metagame callbacks; `is_playable` = lifecycle window only, zero storage reads. `player_name` and `client_url` — set by the token owner after mint via `set_player_name` / `set_client_url`, never at mint — are the only per-token storage (plus the minter registry) |
+| Token id layout is standard-native | `token::packing::pack_token_id` (schema v1, 251-bit) — its OWN layout, not the retired generation's. Indexers must branch their decoder by contract generation; `schema_version` (low bits 0-4) names the layout |
 | Strip principle: machinery deleted, capability + read views kept | The ABI is NOT `IMinigameTokenLegacy`-compatible: the legacy token's `game_address`, `renderer_address` and `skills_address` mint params are gone, and the compat views (`game_address`, `game_registry_address`) with them. Cheap client-facing read views (`token_metadata`, `is_playable`, `settings_id`, `minted_by`, `is_soulbound`, …) stay |
-| Restored mint params keep their original legacy-token behaviors | `objective_id` (30-bit packed, INERT data the game interprets — no completion machinery; `completed_objective` stays always-false), `context` (sets the has_context bit only; the data is NOT stored — legacy-token parity), `client_url` (storage-backed, `client_url` view, empty default), `paymaster` (packed bit), `metadata` (u128 param packed into a 65-bit field, read via `mint_metadata` — the shared `TokenMetadata.metadata: u16` cannot hold it and stays 0, never truncated) |
+| Restored mint params keep their original legacy-token behaviors | `objective_id` (20-bit packed, INERT data the game interprets — no completion machinery; `completed_objective` stays always-false), `context` (sets the has_context bit only; the data is NOT stored — legacy-token parity), `paymaster` (packed bit), `metadata` (u128 param packed into a 59-bit field, read via `mint_metadata` or `TokenMetadata.metadata`) |
+| No caller-supplied salt | Ids are made unique by the tx hash plus `tx_nonce` (0 for `mint`, the token's position for `mint_batch_recipients`); see "Token ID Layout" below |
 | The minter is standard, not optional | The minter registry is absorbed into `MinigameTokenComponent`: same storage variable names, same `IMinigameTokenMinter` surface (`MinterImpl`, `IMINIGAME_TOKEN_MINTER_ID`), same `MinterRegistryUpdate` event as the legacy `MinterComponent`. `OptionalMinter` indirection remains only in `token_legacy` |
 | The game-fee surface is standard, not optional | The registry's `game_fee_info` role moves onto the token: `game_fee_recipient` (payout sink), license and fee (bps, default 500) are set in the initializer and served via `GameFeeImpl` (`IMinigameTokenGameFee`, `IMINIGAME_TOKEN_GAME_FEE_ID`). Setters are gated on the game contract's OZ Ownable OWNER (`assert_only_owner`, hard `OwnableComponent::HasComponent` bound) — the stored recipient is a payee, not an admin. Monetization platforms resolve the payee LIVE at claim time |
 | Game contract is the authority | Games gate dead/finished runs themselves (internal `assert_owner_and_playable`) and call `refresh_metadata` (ERC-4906) after actions |
 
-## Token ID Layout (standard, 251 bits)
+## Token ID Layout (schema v1, 251 bits)
 
-Defined in `packing.cairo` (`pack_token_id` / `unpack_token_id` +
-per-field helpers, DivRem-chain style shared with `token_legacy::structs` for
-the u128_safe_divmod gas savings). No field crosses the u128 boundary.
+Defined in `packing.cairo` (`pack_token_id(PackedTokenId)` /
+`unpack_token_id` + one `unpack_<field>` decoder per field, `unpack_lifecycle`
+for the guard's hot path, and the pure minute helpers `minutes_floor`,
+`minutes_ceil_delay`, `minutes_to_seconds`). Decode the id as a u256; bit
+numbers are relative to their u128 half and no field crosses the boundary.
+`SCHEMA_VERSION = 1` is written into low bits 0-4 so indexers can branch by
+layout.
 
-Low u128 (128 bits):
+Low u128 (bits 0-127, fully allocated):
 
-| Bits    | Field       | Size | Notes                                   |
-| ------- | ----------- | ---- | --------------------------------------- |
-| 0-34    | minted_at   | 35   | unix seconds                            |
-| 35-59   | start_delay | 25   | seconds after minted_at (~388 days max) |
-| 60-84   | end_delay   | 25   | 0 = no expiration (immortal)            |
-| 85-100  | settings_id | 16   | ABI stays `Option<u32>`; value must be ≤ 0xFFFF |
-| 101-126 | minted_by   | 26   | minter id from the absorbed `add_minter` (u64, must fit 26 bits) |
-| 127     | soulbound   | 1    | bool                                    |
+| Bits    | Field                  | Width | Type | Notes                                                        |
+| ------- | ---------------------- | ----- | ---- | ------------------------------------------------------------ |
+| 0-4     | schema_version         | 5     | u8   | this layout writes 1; 0 is never written                     |
+| 5       | has_context            | 1     | bool | a context was supplied at mint (data NOT stored)             |
+| 6       | soulbound              | 1     | bool | non-transferable                                             |
+| 7       | paymaster              | 1     | bool | mint was sponsored                                           |
+| 8-23    | tx_hash                | 16    | u16  | low 16 bits of the mint tx hash                              |
+| 24-31   | tx_nonce               | 8     | u8   | 0 for `mint`; position in the batch for `mint_batch_recipients` |
+| 32-63   | minted_at_block_number | 32    | u32  | block number at mint                                         |
+| 64-90   | minted_at_timestamp    | 27    | u32  | block timestamp floored to whole minutes since the epoch     |
+| 91-108  | start_delay            | 18    | u32  | minutes after minted_at_timestamp when play may begin        |
+| 109-127 | end_delay              | 19    | u32  | minutes after start when the token expires; 0 = never        |
 
-High u128 (123 bits):
+High u128 (bits 0-122 used; 123-127 must be zero to stay below the prime):
 
-| Bits   | Field        | Size | Notes                                        |
-| ------ | ------------ | ---- | -------------------------------------------- |
-| 0-9    | tx_hash      | 10   | last 10 bits of tx hash                      |
-| 10-25  | salt         | 16   | per-tx multicall counter (65,536 per tx)     |
-| 26     | paymaster    | 1    | bool                                         |
-| 27     | has_context  | 1    | bool; the context data itself is NOT stored  |
-| 28-57  | objective_id | 30   | inert data the game interprets               |
-| 58-122 | metadata     | 65   | inert data the game interprets; u128 param, must be ≤ 2^65−1 |
+| Bits   | Field        | Width | Type | Notes                                                                     |
+| ------ | ------------ | ----- | ---- | ------------------------------------------------------------------------- |
+| 0-19   | settings_id  | 20    | u32  | ABI stays `Option<u32>`; value must be ≤ 0xFFFFF                          |
+| 20-39  | objective_id | 20    | u32  | inert data the game interprets                                            |
+| 40-63  | minted_by    | 24    | u32  | minter id from the absorbed `add_minter`, starts at 1                     |
+| 64-122 | metadata     | 59    | u128 | minter-writable, uninterpreted; no built-in on-chain or off-chain reader  |
 
-The high half is **fully allocated — there is no reserved region**: every
-spare bit was merged into the single writable `metadata` field, in line with
-the original layout's single-field design. A future protocol-owned field would
-require a new contract generation (accepted trade-off).
+**Time semantics.** Times are stored to the minute: `minted_at_timestamp =
+block_timestamp / 60`, the delays are `ceil` of the requested offsets, and the
+public `Lifecycle` / `TokenMetadata.minted_at` are reconstructed in seconds
+(`minted_at = minted_at_timestamp * 60`, `start = (minted_at_timestamp +
+start_delay) * 60`, `end = start + end_delay * 60` or 0). A past start clamps
+to now. Reconstructed times are never earlier than requested; `minted_at` and
+`start` are at most 59 s later, and `end` is too unless the requested window
+is shorter than the start's round-up, in which case `end_delay` clamps to 1
+(`end = start + 60`). A non-zero requested end therefore always yields
+`end_delay >= 1` — no sub-minute window collapses into an immortal token.
+
+**tx_nonce.** No public or internal mint function takes a salt or nonce.
+`mint` packs `tx_nonce = 0`; `mint_batch_recipients` numbers its tokens 0, 1,
+2, … across all recipients and rejects more than 256 tokens up front. Nothing
+consults storage to choose a nonce: within one transaction the id is unique
+by tx-hash bits plus batch position, so a caller that wants several tokens in
+one transaction uses `mint_batch_recipients`. Two mints with identical fields
+in one transaction, or in one block whose tx hashes share their low 16 bits,
+produce the same id and the second reverts in the ERC721 mint.
 
 ## Interface (IMinigameToken)
 
-**Interface ID:** `IMINIGAME_TOKEN_ID = 0x20253de95bcdb23620c88405a5f97da040b91de832ad98a34b45c4f3331d13b`
+**Interface ID:** `IMINIGAME_TOKEN_ID = 0xf004b9d53af59928314ad1d40678a64e2c80683c0f69bd1253840587a90e20`
 (derived over the trait minus `refresh_metadata`, mirroring the refresh
-exclusion from `IMINIGAME_TOKEN_LEGACY_ID`)
+exclusion from `IMINIGAME_TOKEN_LEGACY_ID`). v3 tokens register this id; v2
+and earlier deployments keep the previous value,
+`0x20253de95bcdb23620c88405a5f97da040b91de832ad98a34b45c4f3331d13b`, on-chain.
 
 Defined in `packages/interfaces/src/token/core.cairo`.
 `initializer(game_fee_recipient, license, fee_numerator)` stores the game-fee
@@ -77,13 +101,13 @@ instead of resolving registry/game-address views.
 
 | Method | Cost | Notes |
 | --- | --- | --- |
-| `mint(player_name, settings_id, start, end, objective_id, context, client_url, to, soulbound, paymaster, salt, metadata)` | 1 minter-map read (warm), optional name/url writes, ERC721 mint | 12-arg shape — no game address (self-bound), no renderer/skills. objective/paymaster/metadata pack into the id; context sets the has_context bit only; client_url written when Some |
-| `mint_batch_recipients(player_name, settings_id, start, end, objective_id, context, client_url, recipients, soulbound, paymaster, salt, metadata)` | batch work hoisted; per token: pack + optional name/url writes + ERC721 mint | Global salt counter over the 16-bit field (`salt + sum(counts) - 1 <= 0xFFFF`); packed fields (incl. the has_context bit) shared across the batch, client_url written per token |
+| `mint(settings_id, start, end, objective_id, context, to, soulbound, paymaster, metadata)` | one execution-info read, 1 minter-map read (warm), ERC721 mint | 9-arg shape — no game address (self-bound), no renderer/skills, no salt, no player name or client url. objective/paymaster/metadata pack into the id; context sets the has_context bit only |
+| `mint_batch_recipients(settings_id, start, end, objective_id, context, recipients, soulbound, paymaster, metadata)` | batch work hoisted; per token: pack + ERC721 mint | `tx_nonce` runs 0, 1, 2, … across the batch (≤ 256 tokens, checked before any mint); every other packed field (incl. the has_context bit) shared across the batch |
 | `is_playable` | 0 storage reads | Lifecycle window only — no game_over latch |
-| `token_metadata`, `settings_id`, `minted_by`, `is_soulbound`, `objective_id`, `mint_metadata` | 0 storage reads | Pure unpack of the token id — kept as client/RPC conveniences (also derivable from the documented id layout). `token_metadata`'s u16 `metadata` field is always 0 (65 bits cannot fit; use `mint_metadata`) |
+| `token_metadata`, `settings_id`, `minted_by`, `is_soulbound`, `objective_id`, `mint_metadata`, `schema_version`, `has_context`, `is_paymaster`, `tx_hash`, `tx_nonce`, `minted_at_block_number`, `minted_at`, `start_delay`, `end_delay`, `lifecycle` | 0 storage reads | Pure unpack of the token id — one view per schema field (`minted_at` and `lifecycle` in seconds, the delays in minutes), kept as client/RPC conveniences (also derivable from the documented id layout) |
 | `player_name`, `minted_by_address`, `client_url` | 1 storage read | |
 | `refresh_metadata` | event only | Same advisory/no-existence-check semantics as the legacy token |
-| `update_player_name` | owner-gated write | Emits `MetadataUpdate` |
+| `set_player_name`, `set_client_url` | owner-gated write | The only way a name or url is stored; each emits `MetadataUpdate` |
 
 The absorbed minter registry additionally exposes the unchanged
 `IMinigameTokenMinter` surface (`get_minter_address`, `get_minter_id`,

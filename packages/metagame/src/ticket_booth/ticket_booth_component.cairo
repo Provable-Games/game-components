@@ -64,17 +64,8 @@ pub mod TicketBoothComponent {
         fn buy_game(
             ref self: TContractState,
             payment_type: PaymentType,
-            player_name: Option<felt252>,
             to: ContractAddress,
             soulbound: bool,
-        ) -> felt252;
-        fn buy_game_with_salt(
-            ref self: TContractState,
-            payment_type: PaymentType,
-            player_name: Option<felt252>,
-            to: ContractAddress,
-            soulbound: bool,
-            salt: u16,
         ) -> felt252;
 
         fn payment_token(self: @TContractState) -> ContractAddress;
@@ -103,7 +94,6 @@ pub mod TicketBoothComponent {
         fn buy_game(
             ref self: ComponentState<TContractState>,
             payment_type: PaymentType,
-            player_name: Option<felt252>,
             to: ContractAddress,
             soulbound: bool,
         ) -> felt252 {
@@ -134,54 +124,7 @@ pub mod TicketBoothComponent {
             };
 
             // Mint the game token with configured settings
-            let token_id = self
-                .mint_game(player_name, to, soulbound, Option::Some(current_time), expiration);
-
-            // Emit the event
-            self.emit(GameBought { player: to, token_id, payment_type });
-
-            token_id
-        }
-
-        fn buy_game_with_salt(
-            ref self: ComponentState<TContractState>,
-            payment_type: PaymentType,
-            player_name: Option<felt252>,
-            to: ContractAddress,
-            soulbound: bool,
-            salt: u16,
-        ) -> felt252 {
-            assert!(get_block_timestamp() >= self.opening_time.read(), "Game not open yet");
-            self.assert_not_closed();
-
-            let caller = get_caller_address();
-            let current_time = get_block_timestamp();
-
-            // Handle payment based on type and get expiration
-            let expiration = match payment_type.clone() {
-                PaymentType::Ticket => {
-                    self.handle_ticket_payment(caller);
-                    ticket_booth::calculate_ticket_expiration(
-                        self.expiration_time.read(), current_time,
-                    )
-                },
-                PaymentType::GoldenPass(golden_pass_info) => {
-                    self
-                        .handle_golden_pass_payment(
-                            caller,
-                            golden_pass_info.address,
-                            golden_pass_info.token_id,
-                            current_time,
-                            to,
-                        )
-                },
-            };
-
-            // Mint the game token with configured settings
-            let token_id = self
-                .mint_game_with_salt(
-                    player_name, to, soulbound, Option::Some(current_time), expiration, salt,
-                );
+            let token_id = self.mint_game(to, soulbound, Option::Some(current_time), expiration);
 
             // Emit the event
             self.emit(GameBought { player: to, token_id, payment_type });
@@ -381,7 +324,6 @@ pub mod TicketBoothComponent {
 
         fn mint_game(
             ref self: ComponentState<TContractState>,
-            player_name: Option<felt252>,
             to: ContractAddress,
             soulbound: bool,
             start_time: Option<u64>,
@@ -389,7 +331,6 @@ pub mod TicketBoothComponent {
         ) -> felt252 {
             mint(
                 self.game_address.read(),
-                player_name,
                 self.settings_id.read(),
                 start_time,
                 expiration,
@@ -397,39 +338,9 @@ pub mod TicketBoothComponent {
                 Option::None,
                 Option::None,
                 Option::None,
-                Option::None,
                 to,
                 soulbound,
                 false,
-                0,
-                0,
-            )
-        }
-
-        fn mint_game_with_salt(
-            ref self: ComponentState<TContractState>,
-            player_name: Option<felt252>,
-            to: ContractAddress,
-            soulbound: bool,
-            start_time: Option<u64>,
-            expiration: Option<u64>,
-            salt: u16,
-        ) -> felt252 {
-            mint(
-                self.game_address.read(),
-                player_name,
-                self.settings_id.read(),
-                start_time,
-                expiration,
-                Option::None,
-                Option::None,
-                Option::None,
-                Option::None,
-                Option::None,
-                to,
-                soulbound,
-                false,
-                salt,
                 0,
             )
         }
