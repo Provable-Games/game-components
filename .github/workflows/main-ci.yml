@@ -32,6 +32,7 @@ jobs:
           filters: |
             packages:
               - "packages/**"
+              - "scripts/*erc721*"
               - "Scarb.toml"
               - "Scarb.lock"
               - ".tool-versions"
@@ -165,6 +166,11 @@ jobs:
         #   - codecov.yml: after_n_builds must equal module count
         #   - AGENTS.md: CI Configuration section
         include:
+          # Complete ERC721 + royalty suite, including feature-gated fuzzers.
+          - package: game_components_erc721
+            module: erc721
+            runner: ubuntu-latest-4
+            fuzzer_runs: 256
           # Embeddable Game Standard
           - package: game_components_embeddable_game_standard
             module: minigame
@@ -298,7 +304,16 @@ jobs:
 
       - name: Run tests with coverage
         run: |
-          if [ "${{ matrix.package }}" = "game_components_${{ matrix.module }}" ]; then
+          coverage_package="${{ matrix.package }}"
+          coverage_package="${coverage_package#game_components_}"
+          echo "COVERAGE_FILE=./packages/$coverage_package/coverage/coverage.lcov" >> "$GITHUB_ENV"
+          rm -f "packages/$coverage_package/coverage/coverage.lcov"
+          if [ "${{ matrix.package }}" = "game_components_erc721" ]; then
+            python3 scripts/test_erc721_checks.py
+            python3 scripts/check_erc721_upstream.py
+            snforge test -p game_components_erc721 --features fuzzing --fuzzer-runs 256 --coverage 2>&1 | tee /tmp/test.log
+            python3 scripts/check_erc721_coverage.py
+          elif [ "${{ matrix.package }}" = "game_components_${{ matrix.module }}" ]; then
             snforge test -p ${{ matrix.package }} --fuzzer-runs ${{ matrix.fuzzer_runs }} --coverage 2>&1 | tee /tmp/test.log
           else
             snforge test -p ${{ matrix.package }} "::${{ matrix.module }}::" --fuzzer-runs ${{ matrix.fuzzer_runs }} --coverage 2>&1 | tee /tmp/test.log
@@ -316,7 +331,7 @@ jobs:
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
         with:
-          files: ./packages/**/coverage/coverage.lcov
+          files: ${{ env.COVERAGE_FILE }}
           flags: ${{ matrix.module }}
           token: ${{ secrets.CODECOV_TOKEN }}
 

@@ -21,6 +21,7 @@ jobs:
       need_metagame: ${{ steps.compute-matrix.outputs.need_metagame }}
       need_economy: ${{ steps.compute-matrix.outputs.need_economy }}
       need_utilities: ${{ steps.compute-matrix.outputs.need_utilities }}
+      need_erc721: ${{ steps.compute-matrix.outputs.need_erc721 }}
       need_presets: ${{ steps.compute-matrix.outputs.need_presets }}
       infra_ci: ${{ steps.filter.outputs.infra_ci }}
       general_ci: ${{ steps.filter.outputs.general_ci }}
@@ -33,6 +34,7 @@ jobs:
           filters: |
             packages:
               - "packages/**"
+              - "scripts/*erc721*"
               - "Scarb.toml"
               - "Scarb.lock"
               - ".tool-versions"
@@ -47,6 +49,9 @@ jobs:
               - ".github/workflows/**"
               - ".github/prompts/**"
               - ".github/pull_request_template.md"
+            erc721:
+              - "packages/erc721/**"
+              - "scripts/*erc721*"
             embeddable_game_standard:
               - "packages/embeddable_game_standard/**"
             metagame_pkg:
@@ -79,6 +84,7 @@ jobs:
           FILTER_UTILITIES: ${{ steps.filter.outputs.utilities }}
           FILTER_METAGAME_PKG: ${{ steps.filter.outputs.metagame_pkg }}
           FILTER_ECONOMY: ${{ steps.filter.outputs.economy }}
+          FILTER_ERC721: ${{ steps.filter.outputs.erc721 }}
           FILTER_EGS: ${{ steps.filter.outputs.embeddable_game_standard }}
           FILTER_TEST_COMMON: ${{ steps.filter.outputs.test_common }}
           FILTER_PRESETS: ${{ steps.filter.outputs.presets }}
@@ -95,6 +101,7 @@ jobs:
           # presets → presets
 
           RUN_ALL="false"
+          NEED_ERC721="$FILTER_ERC721"
           NEED_EGS="false"
           NEED_METAGAME="false"
           NEED_ECONOMY="false"
@@ -136,6 +143,7 @@ jobs:
           fi
 
           if [ "$RUN_ALL" = "true" ]; then
+            NEED_ERC721="true"
             NEED_EGS="true"
             NEED_METAGAME="true"
             NEED_ECONOMY="true"
@@ -144,7 +152,7 @@ jobs:
           fi
 
           HAS_TESTS="false"
-          for flag in "$NEED_EGS" "$NEED_METAGAME" "$NEED_ECONOMY" "$NEED_UTILITIES" "$NEED_PRESETS"; do
+          for flag in "$NEED_ERC721" "$NEED_EGS" "$NEED_METAGAME" "$NEED_ECONOMY" "$NEED_UTILITIES" "$NEED_PRESETS"; do
             if [ "$flag" = "true" ]; then
               HAS_TESTS="true"
               break
@@ -152,6 +160,7 @@ jobs:
           done
 
           echo "has_tests=$HAS_TESTS" >> "$GITHUB_OUTPUT"
+          echo "need_erc721=$NEED_ERC721" >> "$GITHUB_OUTPUT"
           echo "need_egs=$NEED_EGS" >> "$GITHUB_OUTPUT"
           echo "need_metagame=$NEED_METAGAME" >> "$GITHUB_OUTPUT"
           echo "need_economy=$NEED_ECONOMY" >> "$GITHUB_OUTPUT"
@@ -225,6 +234,7 @@ jobs:
       - name: Build test matrix from package flags
         id: build-matrix
         env:
+          NEED_ERC721: ${{ needs.changes.outputs.need_erc721 }}
           NEED_EGS: ${{ needs.changes.outputs.need_egs }}
           NEED_METAGAME: ${{ needs.changes.outputs.need_metagame }}
           NEED_ECONOMY: ${{ needs.changes.outputs.need_economy }}
@@ -236,6 +246,9 @@ jobs:
           INCLUDES="[]"
           add() { INCLUDES=$(echo "$INCLUDES" | jq -c --arg p "$1" --arg m "$2" --arg r "$3" --argjson f "$4" '. + [{package:$p,module:$m,runner:$r,fuzzer_runs:$f}]'); }
 
+          if [ "$NEED_ERC721" = "true" ]; then
+            add game_components_erc721 erc721 ubuntu-latest-4 256
+          fi
           if [ "$NEED_EGS" = "true" ]; then
             add game_components_embeddable_game_standard minigame ubuntu-latest-8 32
             add game_components_embeddable_game_standard metagame ubuntu-latest-8 32
@@ -386,7 +399,16 @@ jobs:
 
       - name: Run tests with coverage
         run: |
-          if [ "${{ matrix.package }}" = "game_components_${{ matrix.module }}" ]; then
+          coverage_package="${{ matrix.package }}"
+          coverage_package="${coverage_package#game_components_}"
+          echo "COVERAGE_FILE=./packages/$coverage_package/coverage/coverage.lcov" >> "$GITHUB_ENV"
+          rm -f "packages/$coverage_package/coverage/coverage.lcov"
+          if [ "${{ matrix.package }}" = "game_components_erc721" ]; then
+            python3 scripts/test_erc721_checks.py
+            python3 scripts/check_erc721_upstream.py
+            snforge test -p game_components_erc721 --features fuzzing --fuzzer-runs 256 --coverage 2>&1 | tee /tmp/test.log
+            python3 scripts/check_erc721_coverage.py
+          elif [ "${{ matrix.package }}" = "game_components_${{ matrix.module }}" ]; then
             snforge test -p ${{ matrix.package }} --fuzzer-runs ${{ matrix.fuzzer_runs }} --coverage 2>&1 | tee /tmp/test.log
           else
             snforge test -p ${{ matrix.package }} "::${{ matrix.module }}::" --fuzzer-runs ${{ matrix.fuzzer_runs }} --coverage 2>&1 | tee /tmp/test.log
@@ -404,7 +426,7 @@ jobs:
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
         with:
-          files: ./packages/**/coverage/coverage.lcov
+          files: ${{ env.COVERAGE_FILE }}
           flags: ${{ matrix.module }}
           token: ${{ secrets.CODECOV_TOKEN }}
 

@@ -1,0 +1,2540 @@
+{
+  "repository": "https://github.com/OpenZeppelin/cairo-contracts",
+  "registry_version": "4.0.1",
+  "registry_source_revision": "cfb5ceefa2875bd5ae6ae646150bbee60453803f",
+  "release_tag_revision": "87e32f3d1269c80970201e086f3362d4b707368e",
+  "license": "MIT",
+  "tests": [
+    {
+      "identity": "erc721::test_erc721::test_initializer",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test_initializer"
+    },
+    {
+      "identity": "erc721::test_erc721::test_initializer_no_metadata",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test_initializer_no_metadata"
+    },
+    {
+      "identity": "erc721::test_erc721::test_balance_of",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test_balance_of"
+    },
+    {
+      "identity": "erc721::test_erc721::test_balance_of_zero",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test_balance_of_zero"
+    },
+    {
+      "identity": "erc721::test_erc721::test_owner_of",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test_owner_of"
+    },
+    {
+      "identity": "erc721::test_erc721::test_owner_of_non_minted",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test_owner_of_non_minted"
+    },
+    {
+      "identity": "erc721::test_erc721::test_token_uri",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test_token_uri"
+    },
+    {
+      "identity": "erc721::test_erc721::test_token_uri_not_set",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test_token_uri_not_set"
+    },
+    {
+      "identity": "erc721::test_erc721::test_token_uri_non_minted",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test_token_uri_non_minted"
+    },
+    {
+      "identity": "erc721::test_erc721::test_get_approved",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test_get_approved"
+    },
+    {
+      "identity": "erc721::test_erc721::test_get_approved_nonexistent",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test_get_approved_nonexistent"
+    },
+    {
+      "identity": "erc721::test_erc721::test_approve_from_owner",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test_approve_from_owner"
+    },
+    {
+      "identity": "erc721::test_erc721::test_approve_from_operator",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test_approve_from_operator"
+    },
+    {
+      "identity": "erc721::test_erc721::test_approve_from_unauthorized",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test_approve_from_unauthorized"
+    },
+    {
+      "identity": "erc721::test_erc721::test_approve_nonexistent",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test_approve_nonexistent"
+    },
+    {
+      "identity": "erc721::test_erc721::test__approve",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test__approve"
+    },
+    {
+      "identity": "erc721::test_erc721::test__approve_nonexistent",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test__approve_nonexistent"
+    },
+    {
+      "identity": "erc721::test_erc721::test__approve_auth_is_owner",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test__approve_auth_is_owner"
+    },
+    {
+      "identity": "erc721::test_erc721::test__approve_auth_is_approved_for_all",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test__approve_auth_is_approved_for_all"
+    },
+    {
+      "identity": "erc721::test_erc721::test__approve_auth_not_authorized",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test__approve_auth_not_authorized"
+    },
+    {
+      "identity": "erc721::test_erc721::test_set_approval_for_all",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test_set_approval_for_all"
+    },
+    {
+      "identity": "erc721::test_erc721::test_set_approval_for_all_invalid_operator",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test_set_approval_for_all_invalid_operator"
+    },
+    {
+      "identity": "erc721::test_erc721::test__set_approval_for_all",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test__set_approval_for_all"
+    },
+    {
+      "identity": "erc721::test_erc721::test__set_approval_for_all_invalid_operator",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test__set_approval_for_all_invalid_operator"
+    },
+    {
+      "identity": "erc721::test_erc721::test_transfer_from_owner",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test_transfer_from_owner"
+    },
+    {
+      "identity": "erc721::test_erc721::test_transferFrom_owner",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test_transferFrom_owner"
+    },
+    {
+      "identity": "erc721::test_erc721::test_transfer_from_nonexistent",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test_transfer_from_nonexistent"
+    },
+    {
+      "identity": "erc721::test_erc721::test_transferFrom_nonexistent",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test_transferFrom_nonexistent"
+    },
+    {
+      "identity": "erc721::test_erc721::test_transfer_from_to_zero",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test_transfer_from_to_zero"
+    },
+    {
+      "identity": "erc721::test_erc721::test_transferFrom_to_zero",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test_transferFrom_to_zero"
+    },
+    {
+      "identity": "erc721::test_erc721::test_transfer_from_to_owner",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test_transfer_from_to_owner"
+    },
+    {
+      "identity": "erc721::test_erc721::test_transferFrom_to_owner",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test_transferFrom_to_owner"
+    },
+    {
+      "identity": "erc721::test_erc721::test_transfer_from_approved",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test_transfer_from_approved"
+    },
+    {
+      "identity": "erc721::test_erc721::test_transferFrom_approved",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test_transferFrom_approved"
+    },
+    {
+      "identity": "erc721::test_erc721::test_transfer_from_approved_for_all",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test_transfer_from_approved_for_all"
+    },
+    {
+      "identity": "erc721::test_erc721::test_transferFrom_approved_for_all",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test_transferFrom_approved_for_all"
+    },
+    {
+      "identity": "erc721::test_erc721::test_transfer_from_unauthorized",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test_transfer_from_unauthorized"
+    },
+    {
+      "identity": "erc721::test_erc721::test_transferFrom_unauthorized",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test_transferFrom_unauthorized"
+    },
+    {
+      "identity": "erc721::test_erc721::test_safe_transfer_from_to_account",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test_safe_transfer_from_to_account"
+    },
+    {
+      "identity": "erc721::test_erc721::test_safeTransferFrom_to_account",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test_safeTransferFrom_to_account"
+    },
+    {
+      "identity": "erc721::test_erc721::test_safe_transfer_from_to_receiver",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test_safe_transfer_from_to_receiver"
+    },
+    {
+      "identity": "erc721::test_erc721::test_safeTransferFrom_to_receiver",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test_safeTransferFrom_to_receiver"
+    },
+    {
+      "identity": "erc721::test_erc721::test_safe_transfer_from_to_receiver_failure",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test_safe_transfer_from_to_receiver_failure"
+    },
+    {
+      "identity": "erc721::test_erc721::test_safeTransferFrom_to_receiver_failure",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test_safeTransferFrom_to_receiver_failure"
+    },
+    {
+      "identity": "erc721::test_erc721::test_safe_transfer_from_to_non_receiver",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": true,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test_safe_transfer_from_to_non_receiver"
+    },
+    {
+      "identity": "erc721::test_erc721::test_safeTransferFrom_to_non_receiver",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": true,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test_safeTransferFrom_to_non_receiver"
+    },
+    {
+      "identity": "erc721::test_erc721::test_safe_transfer_from_nonexistent",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test_safe_transfer_from_nonexistent"
+    },
+    {
+      "identity": "erc721::test_erc721::test_safeTransferFrom_nonexistent",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test_safeTransferFrom_nonexistent"
+    },
+    {
+      "identity": "erc721::test_erc721::test_safe_transfer_from_to_zero",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test_safe_transfer_from_to_zero"
+    },
+    {
+      "identity": "erc721::test_erc721::test_safeTransferFrom_to_zero",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test_safeTransferFrom_to_zero"
+    },
+    {
+      "identity": "erc721::test_erc721::test_safe_transfer_from_to_owner",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test_safe_transfer_from_to_owner"
+    },
+    {
+      "identity": "erc721::test_erc721::test_safeTransferFrom_to_owner",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test_safeTransferFrom_to_owner"
+    },
+    {
+      "identity": "erc721::test_erc721::test_safe_transfer_from_approved",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test_safe_transfer_from_approved"
+    },
+    {
+      "identity": "erc721::test_erc721::test_safeTransferFrom_approved",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test_safeTransferFrom_approved"
+    },
+    {
+      "identity": "erc721::test_erc721::test_safe_transfer_from_approved_for_all",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test_safe_transfer_from_approved_for_all"
+    },
+    {
+      "identity": "erc721::test_erc721::test_safeTransferFrom_approved_for_all",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test_safeTransferFrom_approved_for_all"
+    },
+    {
+      "identity": "erc721::test_erc721::test_safe_transfer_from_unauthorized",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test_safe_transfer_from_unauthorized"
+    },
+    {
+      "identity": "erc721::test_erc721::test_safeTransferFrom_unauthorized",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test_safeTransferFrom_unauthorized"
+    },
+    {
+      "identity": "erc721::test_erc721::test__transfer",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test__transfer"
+    },
+    {
+      "identity": "erc721::test_erc721::test__transfer_nonexistent",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test__transfer_nonexistent"
+    },
+    {
+      "identity": "erc721::test_erc721::test__transfer_to_zero",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test__transfer_to_zero"
+    },
+    {
+      "identity": "erc721::test_erc721::test__transfer_from_invalid_owner",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test__transfer_from_invalid_owner"
+    },
+    {
+      "identity": "erc721::test_erc721::test_mint",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test_mint"
+    },
+    {
+      "identity": "erc721::test_erc721::test_mint_to_zero",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test_mint_to_zero"
+    },
+    {
+      "identity": "erc721::test_erc721::test_mint_already_exist",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test_mint_already_exist"
+    },
+    {
+      "identity": "erc721::test_erc721::test__safe_mint_to_receiver",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test__safe_mint_to_receiver"
+    },
+    {
+      "identity": "erc721::test_erc721::test__safe_mint_to_account",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test__safe_mint_to_account"
+    },
+    {
+      "identity": "erc721::test_erc721::test__safe_mint_to_non_receiver",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": true,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test__safe_mint_to_non_receiver"
+    },
+    {
+      "identity": "erc721::test_erc721::test__safe_mint_to_receiver_failure",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test__safe_mint_to_receiver_failure"
+    },
+    {
+      "identity": "erc721::test_erc721::test__safe_mint_to_zero",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test__safe_mint_to_zero"
+    },
+    {
+      "identity": "erc721::test_erc721::test__safe_mint_already_exist",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test__safe_mint_already_exist"
+    },
+    {
+      "identity": "erc721::test_erc721::test_burn",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test_burn"
+    },
+    {
+      "identity": "erc721::test_erc721::test_burn_nonexistent",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test_burn_nonexistent"
+    },
+    {
+      "identity": "erc721::test_erc721::test__base_uri_not_set",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test__base_uri_not_set"
+    },
+    {
+      "identity": "erc721::test_erc721::test__base_uri",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test__base_uri"
+    },
+    {
+      "identity": "erc721::test_erc721::test__set_base_uri",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test__set_base_uri"
+    },
+    {
+      "identity": "erc721::test_erc721::test__owner_of",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test__owner_of"
+    },
+    {
+      "identity": "erc721::test_erc721::test__require_owned",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test__require_owned"
+    },
+    {
+      "identity": "erc721::test_erc721::test__require_owned_non_existent",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test__require_owned_non_existent"
+    },
+    {
+      "identity": "erc721::test_erc721::test__exists",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test__exists"
+    },
+    {
+      "identity": "erc721::test_erc721::test__approve_with_optional_event_emitting",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test__approve_with_optional_event_emitting"
+    },
+    {
+      "identity": "erc721::test_erc721::test__approve_with_optional_event_not_emitting",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test__approve_with_optional_event_not_emitting"
+    },
+    {
+      "identity": "erc721::test_erc721::test__approve_with_optional_event_nonexistent_emitting",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test__approve_with_optional_event_nonexistent_emitting"
+    },
+    {
+      "identity": "erc721::test_erc721::test__approve_with_optional_event_nonexistent_not_emitting",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test__approve_with_optional_event_nonexistent_not_emitting"
+    },
+    {
+      "identity": "erc721::test_erc721::test__approve_with_optional_event_auth_is_owner",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test__approve_with_optional_event_auth_is_owner"
+    },
+    {
+      "identity": "erc721::test_erc721::test__approve_with_optional_event_auth_is_approved_for_all",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test__approve_with_optional_event_auth_is_approved_for_all"
+    },
+    {
+      "identity": "erc721::test_erc721::test__approve_with_optional_event_auth_not_authorized",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test__approve_with_optional_event_auth_not_authorized"
+    },
+    {
+      "identity": "erc721::test_erc721::test__is_authorized_owner",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test__is_authorized_owner"
+    },
+    {
+      "identity": "erc721::test_erc721::test__is_authorized_approved_for_all",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test__is_authorized_approved_for_all"
+    },
+    {
+      "identity": "erc721::test_erc721::test__is_authorized_approved",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test__is_authorized_approved"
+    },
+    {
+      "identity": "erc721::test_erc721::test__is_authorized_not_authorized",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test__is_authorized_not_authorized"
+    },
+    {
+      "identity": "erc721::test_erc721::test__is_authorized_zero_address",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test__is_authorized_zero_address"
+    },
+    {
+      "identity": "erc721::test_erc721::test__check_authorized_owner",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test__check_authorized_owner"
+    },
+    {
+      "identity": "erc721::test_erc721::test__check_authorized_approved_for_all",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test__check_authorized_approved_for_all"
+    },
+    {
+      "identity": "erc721::test_erc721::test__check_authorized_approved",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test__check_authorized_approved"
+    },
+    {
+      "identity": "erc721::test_erc721::test__check_authorized_owner_is_zero",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test__check_authorized_owner_is_zero"
+    },
+    {
+      "identity": "erc721::test_erc721::test__check_authorized_not_authorized",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test__check_authorized_not_authorized"
+    },
+    {
+      "identity": "erc721::test_erc721::test__check_authorized_zero_address",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test__check_authorized_zero_address"
+    },
+    {
+      "identity": "erc721::test_erc721::test_update_mint",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test_update_mint"
+    },
+    {
+      "identity": "erc721::test_erc721::test_update_burn",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test_update_burn"
+    },
+    {
+      "identity": "erc721::test_erc721::test_update_transfer",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test_update_transfer"
+    },
+    {
+      "identity": "erc721::test_erc721::test_update_auth_owner",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test_update_auth_owner"
+    },
+    {
+      "identity": "erc721::test_erc721::test_update_auth_approved_for_all",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test_update_auth_approved_for_all"
+    },
+    {
+      "identity": "erc721::test_erc721::test_update_auth_approved",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test_update_auth_approved"
+    },
+    {
+      "identity": "erc721::test_erc721::test_update_auth_not_approved",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test_update_auth_not_approved"
+    },
+    {
+      "identity": "erc721::test_erc721::test_update_mint_auth_not_zero",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test_update_mint_auth_not_zero"
+    },
+    {
+      "identity": "erc721::test_erc721::test_update_calls_before_update_hook",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test_update_calls_before_update_hook"
+    },
+    {
+      "identity": "erc721::test_erc721::test_update_calls_after_update_hook",
+      "file": "packages/token/src/tests/erc721/test_erc721.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721.cairo",
+      "name": "test_update_calls_after_update_hook"
+    },
+    {
+      "identity": "erc721::test_erc721_consecutive::test_constructor_mints_consecutive_tokens",
+      "file": "packages/token/src/tests/erc721/test_erc721_consecutive.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721_consecutive.cairo",
+      "name": "test_constructor_mints_consecutive_tokens"
+    },
+    {
+      "identity": "erc721::test_erc721_consecutive::test_constructor_mints_multiple_batches",
+      "file": "packages/token/src/tests/erc721/test_erc721_consecutive.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721_consecutive.cairo",
+      "name": "test_constructor_mints_multiple_batches"
+    },
+    {
+      "identity": "erc721::test_erc721_consecutive::test_mint_consecutive_outside_constructor_panics",
+      "file": "packages/token/src/tests/erc721/test_erc721_consecutive.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721_consecutive.cairo",
+      "name": "test_mint_consecutive_outside_constructor_panics"
+    },
+    {
+      "identity": "erc721::test_erc721_consecutive::test_balance_after_constructor_batch_mint",
+      "file": "packages/token/src/tests/erc721/test_erc721_consecutive.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721_consecutive.cairo",
+      "name": "test_balance_after_constructor_batch_mint"
+    },
+    {
+      "identity": "erc721::test_erc721_consecutive::test_balance_after_transfers_and_burns",
+      "file": "packages/token/src/tests/erc721/test_erc721_consecutive.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721_consecutive.cairo",
+      "name": "test_balance_after_transfers_and_burns"
+    },
+    {
+      "identity": "erc721::test_erc721_consecutive::test_owner_of_first_middle_last",
+      "file": "packages/token/src/tests/erc721/test_erc721_consecutive.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721_consecutive.cairo",
+      "name": "test_owner_of_first_middle_last"
+    },
+    {
+      "identity": "erc721::test_erc721_consecutive::test_owner_of_out_of_range_panics",
+      "file": "packages/token/src/tests/erc721/test_erc721_consecutive.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721_consecutive.cairo",
+      "name": "test_owner_of_out_of_range_panics"
+    },
+    {
+      "identity": "erc721::test_erc721_consecutive::test_owner_of_zero_batch_size_panics",
+      "file": "packages/token/src/tests/erc721/test_erc721_consecutive.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721_consecutive.cairo",
+      "name": "test_owner_of_zero_batch_size_panics"
+    },
+    {
+      "identity": "erc721::test_erc721_consecutive::test_zero_batch_size_balance_is_zero",
+      "file": "packages/token/src/tests/erc721/test_erc721_consecutive.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721_consecutive.cairo",
+      "name": "test_zero_batch_size_balance_is_zero"
+    },
+    {
+      "identity": "erc721::test_erc721_consecutive::test_burn_emits_transfer_and_updates_balance",
+      "file": "packages/token/src/tests/erc721/test_erc721_consecutive.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721_consecutive.cairo",
+      "name": "test_burn_emits_transfer_and_updates_balance"
+    },
+    {
+      "identity": "erc721::test_erc721_consecutive::test_burn_out_of_range_panics",
+      "file": "packages/token/src/tests/erc721/test_erc721_consecutive.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721_consecutive.cairo",
+      "name": "test_burn_out_of_range_panics"
+    },
+    {
+      "identity": "erc721::test_erc721_consecutive::test_owner_of_after_burn_panics",
+      "file": "packages/token/src/tests/erc721/test_erc721_consecutive.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721_consecutive.cairo",
+      "name": "test_owner_of_after_burn_panics"
+    },
+    {
+      "identity": "erc721::test_erc721_consecutive::test_transfer_updates_owner_balance_and_emits_event",
+      "file": "packages/token/src/tests/erc721/test_erc721_consecutive.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721_consecutive.cairo",
+      "name": "test_transfer_updates_owner_balance_and_emits_event"
+    },
+    {
+      "identity": "erc721::test_erc721_consecutive::test_transfer_keeps_other_tokens_in_consecutive_range",
+      "file": "packages/token/src/tests/erc721/test_erc721_consecutive.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721_consecutive.cairo",
+      "name": "test_transfer_keeps_other_tokens_in_consecutive_range"
+    },
+    {
+      "identity": "erc721::test_erc721_consecutive::test_transfer_back_and_forth",
+      "file": "packages/token/src/tests/erc721/test_erc721_consecutive.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721_consecutive.cairo",
+      "name": "test_transfer_back_and_forth"
+    },
+    {
+      "identity": "erc721::test_erc721_consecutive::test_consecutive_transfer_event",
+      "file": "packages/token/src/tests/erc721/test_erc721_consecutive.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721_consecutive.cairo",
+      "name": "test_consecutive_transfer_event"
+    },
+    {
+      "identity": "erc721::test_erc721_consecutive::test_consecutive_transfer_event_multiple_batches",
+      "file": "packages/token/src/tests/erc721/test_erc721_consecutive.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721_consecutive.cairo",
+      "name": "test_consecutive_transfer_event_multiple_batches"
+    },
+    {
+      "identity": "erc721::test_erc721_consecutive::test_consecutive_transfer_event_single_token",
+      "file": "packages/token/src/tests/erc721/test_erc721_consecutive.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721_consecutive.cairo",
+      "name": "test_consecutive_transfer_event_single_token"
+    },
+    {
+      "identity": "erc721::test_erc721_consecutive::test_large_batch_size",
+      "file": "packages/token/src/tests/erc721/test_erc721_consecutive.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721_consecutive.cairo",
+      "name": "test_large_batch_size"
+    },
+    {
+      "identity": "erc721::test_erc721_consecutive::test_transfer_from_burned_token_panics",
+      "file": "packages/token/src/tests/erc721/test_erc721_consecutive.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721_consecutive.cairo",
+      "name": "test_transfer_from_burned_token_panics"
+    },
+    {
+      "identity": "erc721::test_erc721_enumerable::test_initializer",
+      "file": "packages/token/src/tests/erc721/test_erc721_enumerable.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721_enumerable.cairo",
+      "name": "test_initializer"
+    },
+    {
+      "identity": "erc721::test_erc721_enumerable::test_total_supply",
+      "file": "packages/token/src/tests/erc721/test_erc721_enumerable.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721_enumerable.cairo",
+      "name": "test_total_supply"
+    },
+    {
+      "identity": "erc721::test_erc721_enumerable::test_token_by_index",
+      "file": "packages/token/src/tests/erc721/test_erc721_enumerable.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721_enumerable.cairo",
+      "name": "test_token_by_index"
+    },
+    {
+      "identity": "erc721::test_erc721_enumerable::test_token_by_index_equal_to_supply",
+      "file": "packages/token/src/tests/erc721/test_erc721_enumerable.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721_enumerable.cairo",
+      "name": "test_token_by_index_equal_to_supply"
+    },
+    {
+      "identity": "erc721::test_erc721_enumerable::test_token_by_index_greater_than_supply",
+      "file": "packages/token/src/tests/erc721/test_erc721_enumerable.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721_enumerable.cairo",
+      "name": "test_token_by_index_greater_than_supply"
+    },
+    {
+      "identity": "erc721::test_erc721_enumerable::test_token_by_index_burn_last_token",
+      "file": "packages/token/src/tests/erc721/test_erc721_enumerable.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721_enumerable.cairo",
+      "name": "test_token_by_index_burn_last_token"
+    },
+    {
+      "identity": "erc721::test_erc721_enumerable::test_token_by_index_burn_first_token",
+      "file": "packages/token/src/tests/erc721/test_erc721_enumerable.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721_enumerable.cairo",
+      "name": "test_token_by_index_burn_first_token"
+    },
+    {
+      "identity": "erc721::test_erc721_enumerable::test_token_by_index_burn_and_mint_all",
+      "file": "packages/token/src/tests/erc721/test_erc721_enumerable.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721_enumerable.cairo",
+      "name": "test_token_by_index_burn_and_mint_all"
+    },
+    {
+      "identity": "erc721::test_erc721_enumerable::test_token_of_owner_by_index",
+      "file": "packages/token/src/tests/erc721/test_erc721_enumerable.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721_enumerable.cairo",
+      "name": "test_token_of_owner_by_index"
+    },
+    {
+      "identity": "erc721::test_erc721_enumerable::test_token_of_owner_by_index_when_index_equals_owned_tokens",
+      "file": "packages/token/src/tests/erc721/test_erc721_enumerable.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721_enumerable.cairo",
+      "name": "test_token_of_owner_by_index_when_index_equals_owned_tokens"
+    },
+    {
+      "identity": "erc721::test_erc721_enumerable::test_token_of_owner_by_index_when_index_exceeds_owned_tokens",
+      "file": "packages/token/src/tests/erc721/test_erc721_enumerable.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721_enumerable.cairo",
+      "name": "test_token_of_owner_by_index_when_index_exceeds_owned_tokens"
+    },
+    {
+      "identity": "erc721::test_erc721_enumerable::test_token_of_owner_by_index_when_target_has_no_tokens",
+      "file": "packages/token/src/tests/erc721/test_erc721_enumerable.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721_enumerable.cairo",
+      "name": "test_token_of_owner_by_index_when_target_has_no_tokens"
+    },
+    {
+      "identity": "erc721::test_erc721_enumerable::test_token_of_owner_by_index_when_owner_is_zero",
+      "file": "packages/token/src/tests/erc721/test_erc721_enumerable.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721_enumerable.cairo",
+      "name": "test_token_of_owner_by_index_when_owner_is_zero"
+    },
+    {
+      "identity": "erc721::test_erc721_enumerable::test_token_of_owner_by_index_remove_last_token",
+      "file": "packages/token/src/tests/erc721/test_erc721_enumerable.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721_enumerable.cairo",
+      "name": "test_token_of_owner_by_index_remove_last_token"
+    },
+    {
+      "identity": "erc721::test_erc721_enumerable::test_token_of_owner_by_index_remove_first_token",
+      "file": "packages/token/src/tests/erc721/test_erc721_enumerable.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721_enumerable.cairo",
+      "name": "test_token_of_owner_by_index_remove_first_token"
+    },
+    {
+      "identity": "erc721::test_erc721_enumerable::test_token_of_owner_by_index_when_all_tokens_transferred",
+      "file": "packages/token/src/tests/erc721/test_erc721_enumerable.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721_enumerable.cairo",
+      "name": "test_token_of_owner_by_index_when_all_tokens_transferred"
+    },
+    {
+      "identity": "erc721::test_erc721_enumerable::test_before_update_when_mint",
+      "file": "packages/token/src/tests/erc721/test_erc721_enumerable.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721_enumerable.cairo",
+      "name": "test_before_update_when_mint"
+    },
+    {
+      "identity": "erc721::test_erc721_enumerable::test_before_update_when_last_token_burned",
+      "file": "packages/token/src/tests/erc721/test_erc721_enumerable.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721_enumerable.cairo",
+      "name": "test_before_update_when_last_token_burned"
+    },
+    {
+      "identity": "erc721::test_erc721_enumerable::test_before_update_when_first_token_burned",
+      "file": "packages/token/src/tests/erc721/test_erc721_enumerable.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721_enumerable.cairo",
+      "name": "test_before_update_when_first_token_burned"
+    },
+    {
+      "identity": "erc721::test_erc721_enumerable::test_before_update_when_transfer_last_token",
+      "file": "packages/token/src/tests/erc721/test_erc721_enumerable.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721_enumerable.cairo",
+      "name": "test_before_update_when_transfer_last_token"
+    },
+    {
+      "identity": "erc721::test_erc721_enumerable::test_before_update_when_transfer_first_token",
+      "file": "packages/token/src/tests/erc721/test_erc721_enumerable.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721_enumerable.cairo",
+      "name": "test_before_update_when_transfer_first_token"
+    },
+    {
+      "identity": "erc721::test_erc721_enumerable::test__add_token_to_owner_enumeration",
+      "file": "packages/token/src/tests/erc721/test_erc721_enumerable.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721_enumerable.cairo",
+      "name": "test__add_token_to_owner_enumeration"
+    },
+    {
+      "identity": "erc721::test_erc721_enumerable::test__add_token_to_all_tokens_enumeration",
+      "file": "packages/token/src/tests/erc721/test_erc721_enumerable.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721_enumerable.cairo",
+      "name": "test__add_token_to_all_tokens_enumeration"
+    },
+    {
+      "identity": "erc721::test_erc721_enumerable::test__remove_token_from_owner_enumeration_with_last_token",
+      "file": "packages/token/src/tests/erc721/test_erc721_enumerable.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721_enumerable.cairo",
+      "name": "test__remove_token_from_owner_enumeration_with_last_token"
+    },
+    {
+      "identity": "erc721::test_erc721_enumerable::test__remove_token_from_owner_enumeration_with_first_token",
+      "file": "packages/token/src/tests/erc721/test_erc721_enumerable.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721_enumerable.cairo",
+      "name": "test__remove_token_from_owner_enumeration_with_first_token"
+    },
+    {
+      "identity": "erc721::test_erc721_enumerable::test__remove_token_from_all_tokens_enumeration_with_last_token",
+      "file": "packages/token/src/tests/erc721/test_erc721_enumerable.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721_enumerable.cairo",
+      "name": "test__remove_token_from_all_tokens_enumeration_with_last_token"
+    },
+    {
+      "identity": "erc721::test_erc721_enumerable::test__remove_token_from_all_tokens_enumeration_with_first_token",
+      "file": "packages/token/src/tests/erc721/test_erc721_enumerable.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721_enumerable.cairo",
+      "name": "test__remove_token_from_all_tokens_enumeration_with_first_token"
+    },
+    {
+      "identity": "erc721::test_erc721_enumerable::test_all_tokens_of_owner",
+      "file": "packages/token/src/tests/erc721/test_erc721_enumerable.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721_enumerable.cairo",
+      "name": "test_all_tokens_of_owner"
+    },
+    {
+      "identity": "erc721::test_erc721_enumerable::test_all_tokens_of_owner_after_transfer_first_token",
+      "file": "packages/token/src/tests/erc721/test_erc721_enumerable.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721_enumerable.cairo",
+      "name": "test_all_tokens_of_owner_after_transfer_first_token"
+    },
+    {
+      "identity": "erc721::test_erc721_enumerable::test_all_tokens_of_owner_after_transfer_last_token",
+      "file": "packages/token/src/tests/erc721/test_erc721_enumerable.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721_enumerable.cairo",
+      "name": "test_all_tokens_of_owner_after_transfer_last_token"
+    },
+    {
+      "identity": "erc721::test_erc721_enumerable::test_all_tokens_of_owner_after_burn_first_token",
+      "file": "packages/token/src/tests/erc721/test_erc721_enumerable.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721_enumerable.cairo",
+      "name": "test_all_tokens_of_owner_after_burn_first_token"
+    },
+    {
+      "identity": "erc721::test_erc721_enumerable::test_all_tokens_of_owner_after_burn_last_token",
+      "file": "packages/token/src/tests/erc721/test_erc721_enumerable.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721_enumerable.cairo",
+      "name": "test_all_tokens_of_owner_after_burn_last_token"
+    },
+    {
+      "identity": "erc721::test_erc721_receiver::test_initializer",
+      "file": "packages/token/src/tests/erc721/test_erc721_receiver.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721_receiver.cairo",
+      "name": "test_initializer"
+    },
+    {
+      "identity": "erc721::test_erc721_receiver::test_on_erc721_received",
+      "file": "packages/token/src/tests/erc721/test_erc721_receiver.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721_receiver.cairo",
+      "name": "test_on_erc721_received"
+    },
+    {
+      "identity": "erc721::test_erc721_uri_storage::test_token_uri_with_base_uri_and_no_token_uri",
+      "file": "packages/token/src/tests/erc721/test_erc721_uri_storage.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721_uri_storage.cairo",
+      "name": "test_token_uri_with_base_uri_and_no_token_uri"
+    },
+    {
+      "identity": "erc721::test_erc721_uri_storage::test_token_uri_with_base_uri_and_token_uri",
+      "file": "packages/token/src/tests/erc721/test_erc721_uri_storage.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721_uri_storage.cairo",
+      "name": "test_token_uri_with_base_uri_and_token_uri"
+    },
+    {
+      "identity": "erc721::test_erc721_uri_storage::test_token_uri_with_no_base_uri_and_token_uri",
+      "file": "packages/token/src/tests/erc721/test_erc721_uri_storage.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721_uri_storage.cairo",
+      "name": "test_token_uri_with_no_base_uri_and_token_uri"
+    },
+    {
+      "identity": "erc721::test_erc721_uri_storage::test_token_uri_with_no_base_uri_and_no_token_uri",
+      "file": "packages/token/src/tests/erc721/test_erc721_uri_storage.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721_uri_storage.cairo",
+      "name": "test_token_uri_with_no_base_uri_and_no_token_uri"
+    },
+    {
+      "identity": "erc721::test_erc721_uri_storage::test_token_uri_nonexistent_token",
+      "file": "packages/token/src/tests/erc721/test_erc721_uri_storage.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721_uri_storage.cairo",
+      "name": "test_token_uri_nonexistent_token"
+    },
+    {
+      "identity": "erc721::test_erc721_uri_storage::test_set_token_uri_emits_event",
+      "file": "packages/token/src/tests/erc721/test_erc721_uri_storage.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721_uri_storage.cairo",
+      "name": "test_set_token_uri_emits_event"
+    },
+    {
+      "identity": "erc721::test_erc721_uri_storage::test_set_token_uri_multiple_times",
+      "file": "packages/token/src/tests/erc721/test_erc721_uri_storage.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721_uri_storage.cairo",
+      "name": "test_set_token_uri_multiple_times"
+    },
+    {
+      "identity": "erc721::test_erc721_uri_storage::test_set_token_uri_nonexistent_token",
+      "file": "packages/token/src/tests/erc721/test_erc721_uri_storage.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721_uri_storage.cairo",
+      "name": "test_set_token_uri_nonexistent_token"
+    },
+    {
+      "identity": "erc721::test_erc721_uri_storage::test_burn_cleans_up_token_uri",
+      "file": "packages/token/src/tests/erc721/test_erc721_uri_storage.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721_uri_storage.cairo",
+      "name": "test_burn_cleans_up_token_uri"
+    },
+    {
+      "identity": "erc721::test_erc721_uri_storage::test_transfer_preserves_token_uri",
+      "file": "packages/token/src/tests/erc721/test_erc721_uri_storage.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721_uri_storage.cairo",
+      "name": "test_transfer_preserves_token_uri"
+    },
+    {
+      "identity": "erc721::test_erc721_uri_storage::test_multiple_tokens_with_different_uris",
+      "file": "packages/token/src/tests/erc721/test_erc721_uri_storage.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721_uri_storage.cairo",
+      "name": "test_multiple_tokens_with_different_uris"
+    },
+    {
+      "identity": "erc721::test_erc721_uri_storage::test_burn_one_token_preserves_other_uris",
+      "file": "packages/token/src/tests/erc721/test_erc721_uri_storage.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721_uri_storage.cairo",
+      "name": "test_burn_one_token_preserves_other_uris"
+    },
+    {
+      "identity": "erc721::test_erc721_uri_storage::test_mint_burn_remint_same_token_id",
+      "file": "packages/token/src/tests/erc721/test_erc721_uri_storage.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721_uri_storage.cairo",
+      "name": "test_mint_burn_remint_same_token_id"
+    },
+    {
+      "identity": "erc721::test_erc721_uri_storage::test_multiple_events_emitted",
+      "file": "packages/token/src/tests/erc721/test_erc721_uri_storage.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721_uri_storage.cairo",
+      "name": "test_multiple_events_emitted"
+    },
+    {
+      "identity": "erc721::test_erc721_wrapper::test_initializer",
+      "file": "packages/token/src/tests/erc721/test_erc721_wrapper.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721_wrapper.cairo",
+      "name": "test_initializer"
+    },
+    {
+      "identity": "erc721::test_erc721_wrapper::initializer_reverts_on_zero_underlying",
+      "file": "packages/token/src/tests/erc721/test_erc721_wrapper.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721_wrapper.cairo",
+      "name": "initializer_reverts_on_zero_underlying"
+    },
+    {
+      "identity": "erc721::test_erc721_wrapper::initializer_reverts_on_self_underlying",
+      "file": "packages/token/src/tests/erc721/test_erc721_wrapper.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721_wrapper.cairo",
+      "name": "initializer_reverts_on_self_underlying"
+    },
+    {
+      "identity": "erc721::test_erc721_wrapper::deposit_for_mints_wrapped_and_pulls_underlying",
+      "file": "packages/token/src/tests/erc721/test_erc721_wrapper.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721_wrapper.cairo",
+      "name": "deposit_for_mints_wrapped_and_pulls_underlying"
+    },
+    {
+      "identity": "erc721::test_erc721_wrapper::deposit_for_handles_multiple_tokens",
+      "file": "packages/token/src/tests/erc721/test_erc721_wrapper.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721_wrapper.cairo",
+      "name": "deposit_for_handles_multiple_tokens"
+    },
+    {
+      "identity": "erc721::test_erc721_wrapper::withdraw_to_burns_wrapped_and_returns_underlying",
+      "file": "packages/token/src/tests/erc721/test_erc721_wrapper.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721_wrapper.cairo",
+      "name": "withdraw_to_burns_wrapped_and_returns_underlying"
+    },
+    {
+      "identity": "erc721::test_erc721_wrapper::withdraw_to_reverts_for_unauthorized_caller",
+      "file": "packages/token/src/tests/erc721/test_erc721_wrapper.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721_wrapper.cairo",
+      "name": "withdraw_to_reverts_for_unauthorized_caller"
+    },
+    {
+      "identity": "erc721::test_erc721_wrapper::on_erc721_received_mints_wrapped_on_safe_transfer",
+      "file": "packages/token/src/tests/erc721/test_erc721_wrapper.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721_wrapper.cairo",
+      "name": "on_erc721_received_mints_wrapped_on_safe_transfer"
+    },
+    {
+      "identity": "erc721::test_erc721_wrapper::on_erc721_received_reverts_for_unsupported_token",
+      "file": "packages/token/src/tests/erc721/test_erc721_wrapper.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721_wrapper.cairo",
+      "name": "on_erc721_received_reverts_for_unsupported_token"
+    },
+    {
+      "identity": "erc721::test_erc721_wrapper::recover_mints_wrapped_for_untracked_underlying",
+      "file": "packages/token/src/tests/erc721/test_erc721_wrapper.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721_wrapper.cairo",
+      "name": "recover_mints_wrapped_for_untracked_underlying"
+    },
+    {
+      "identity": "erc721::test_erc721_wrapper::recover_reverts_when_underlying_not_owned",
+      "file": "packages/token/src/tests/erc721/test_erc721_wrapper.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc721/test_erc721_wrapper.cairo",
+      "name": "recover_reverts_when_underlying_not_owned"
+    },
+    {
+      "identity": "erc721::test_fuzz_erc721_enumerable::test_initial_state",
+      "file": "packages/token/src/tests/erc721/test_fuzz_erc721_enumerable.cairo",
+      "fuzzer": true,
+      "ignored": false,
+      "feature_fuzzing": true,
+      "local_file": "src/tests/erc721/test_fuzz_erc721_enumerable.cairo",
+      "name": "test_initial_state"
+    },
+    {
+      "identity": "erc721::test_fuzz_erc721_enumerable::test_burn_token",
+      "file": "packages/token/src/tests/erc721/test_fuzz_erc721_enumerable.cairo",
+      "fuzzer": true,
+      "ignored": false,
+      "feature_fuzzing": true,
+      "local_file": "src/tests/erc721/test_fuzz_erc721_enumerable.cairo",
+      "name": "test_burn_token"
+    },
+    {
+      "identity": "erc721::test_fuzz_erc721_enumerable::test_transfer_single_token",
+      "file": "packages/token/src/tests/erc721/test_fuzz_erc721_enumerable.cairo",
+      "fuzzer": true,
+      "ignored": false,
+      "feature_fuzzing": true,
+      "local_file": "src/tests/erc721/test_fuzz_erc721_enumerable.cairo",
+      "name": "test_transfer_single_token"
+    },
+    {
+      "identity": "erc721::test_fuzz_erc721_enumerable::test_transfer_two_tokens",
+      "file": "packages/token/src/tests/erc721/test_fuzz_erc721_enumerable.cairo",
+      "fuzzer": true,
+      "ignored": false,
+      "feature_fuzzing": true,
+      "local_file": "src/tests/erc721/test_fuzz_erc721_enumerable.cairo",
+      "name": "test_transfer_two_tokens"
+    },
+    {
+      "identity": "erc721::test_fuzz_erc721_enumerable::test__add_token_to_owner_enumeration",
+      "file": "packages/token/src/tests/erc721/test_fuzz_erc721_enumerable.cairo",
+      "fuzzer": true,
+      "ignored": false,
+      "feature_fuzzing": true,
+      "local_file": "src/tests/erc721/test_fuzz_erc721_enumerable.cairo",
+      "name": "test__add_token_to_owner_enumeration"
+    },
+    {
+      "identity": "erc721::test_fuzz_erc721_enumerable::test__add_token_to_all_tokens_enumeration",
+      "file": "packages/token/src/tests/erc721/test_fuzz_erc721_enumerable.cairo",
+      "fuzzer": true,
+      "ignored": false,
+      "feature_fuzzing": true,
+      "local_file": "src/tests/erc721/test_fuzz_erc721_enumerable.cairo",
+      "name": "test__add_token_to_all_tokens_enumeration"
+    },
+    {
+      "identity": "erc2981::test_erc2981_accesscontrol::test_default_royalty",
+      "file": "packages/token/src/tests/erc2981/test_erc2981_accesscontrol.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc2981/test_erc2981_accesscontrol.cairo",
+      "name": "test_default_royalty"
+    },
+    {
+      "identity": "erc2981::test_erc2981_accesscontrol::test_royalty_info_default_royalty",
+      "file": "packages/token/src/tests/erc2981/test_erc2981_accesscontrol.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc2981/test_erc2981_accesscontrol.cairo",
+      "name": "test_royalty_info_default_royalty"
+    },
+    {
+      "identity": "erc2981::test_erc2981_accesscontrol::test_royalty_info_token_royalty_set",
+      "file": "packages/token/src/tests/erc2981/test_erc2981_accesscontrol.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc2981/test_erc2981_accesscontrol.cairo",
+      "name": "test_royalty_info_token_royalty_set"
+    },
+    {
+      "identity": "erc2981::test_erc2981_accesscontrol::test_set_default_royalty",
+      "file": "packages/token/src/tests/erc2981/test_erc2981_accesscontrol.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc2981/test_erc2981_accesscontrol.cairo",
+      "name": "test_set_default_royalty"
+    },
+    {
+      "identity": "erc2981::test_erc2981_accesscontrol::test_set_default_royalty_other_admin",
+      "file": "packages/token/src/tests/erc2981/test_erc2981_accesscontrol.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc2981/test_erc2981_accesscontrol.cairo",
+      "name": "test_set_default_royalty_other_admin"
+    },
+    {
+      "identity": "erc2981::test_erc2981_accesscontrol::test_set_default_royalty_unauthorized",
+      "file": "packages/token/src/tests/erc2981/test_erc2981_accesscontrol.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc2981/test_erc2981_accesscontrol.cairo",
+      "name": "test_set_default_royalty_unauthorized"
+    },
+    {
+      "identity": "erc2981::test_erc2981_accesscontrol::test_set_default_royalty_invalid_role",
+      "file": "packages/token/src/tests/erc2981/test_erc2981_accesscontrol.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc2981/test_erc2981_accesscontrol.cairo",
+      "name": "test_set_default_royalty_invalid_role"
+    },
+    {
+      "identity": "erc2981::test_erc2981_accesscontrol::test_set_default_royalty_with_zero_royalty_fraction",
+      "file": "packages/token/src/tests/erc2981/test_erc2981_accesscontrol.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc2981/test_erc2981_accesscontrol.cairo",
+      "name": "test_set_default_royalty_with_zero_royalty_fraction"
+    },
+    {
+      "identity": "erc2981::test_erc2981_accesscontrol::test_set_default_royalty_with_zero_receiver",
+      "file": "packages/token/src/tests/erc2981/test_erc2981_accesscontrol.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc2981/test_erc2981_accesscontrol.cairo",
+      "name": "test_set_default_royalty_with_zero_receiver"
+    },
+    {
+      "identity": "erc2981::test_erc2981_accesscontrol::test_set_default_royalty_with_invalid_fee_numerator",
+      "file": "packages/token/src/tests/erc2981/test_erc2981_accesscontrol.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc2981/test_erc2981_accesscontrol.cairo",
+      "name": "test_set_default_royalty_with_invalid_fee_numerator"
+    },
+    {
+      "identity": "erc2981::test_erc2981_accesscontrol::test_delete_default_royalty",
+      "file": "packages/token/src/tests/erc2981/test_erc2981_accesscontrol.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc2981/test_erc2981_accesscontrol.cairo",
+      "name": "test_delete_default_royalty"
+    },
+    {
+      "identity": "erc2981::test_erc2981_accesscontrol::test_delete_default_royalty_other_admin",
+      "file": "packages/token/src/tests/erc2981/test_erc2981_accesscontrol.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc2981/test_erc2981_accesscontrol.cairo",
+      "name": "test_delete_default_royalty_other_admin"
+    },
+    {
+      "identity": "erc2981::test_erc2981_accesscontrol::test_delete_default_royalty_unauthorized",
+      "file": "packages/token/src/tests/erc2981/test_erc2981_accesscontrol.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc2981/test_erc2981_accesscontrol.cairo",
+      "name": "test_delete_default_royalty_unauthorized"
+    },
+    {
+      "identity": "erc2981::test_erc2981_accesscontrol::test_delete_default_royalty_invalid_role",
+      "file": "packages/token/src/tests/erc2981/test_erc2981_accesscontrol.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc2981/test_erc2981_accesscontrol.cairo",
+      "name": "test_delete_default_royalty_invalid_role"
+    },
+    {
+      "identity": "erc2981::test_erc2981_accesscontrol::test_set_token_royalty",
+      "file": "packages/token/src/tests/erc2981/test_erc2981_accesscontrol.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc2981/test_erc2981_accesscontrol.cairo",
+      "name": "test_set_token_royalty"
+    },
+    {
+      "identity": "erc2981::test_erc2981_accesscontrol::test_set_token_royalty_other_admin",
+      "file": "packages/token/src/tests/erc2981/test_erc2981_accesscontrol.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc2981/test_erc2981_accesscontrol.cairo",
+      "name": "test_set_token_royalty_other_admin"
+    },
+    {
+      "identity": "erc2981::test_erc2981_accesscontrol::test_set_token_royalty_unauthorized",
+      "file": "packages/token/src/tests/erc2981/test_erc2981_accesscontrol.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc2981/test_erc2981_accesscontrol.cairo",
+      "name": "test_set_token_royalty_unauthorized"
+    },
+    {
+      "identity": "erc2981::test_erc2981_accesscontrol::test_set_token_royalty_invalid_role",
+      "file": "packages/token/src/tests/erc2981/test_erc2981_accesscontrol.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc2981/test_erc2981_accesscontrol.cairo",
+      "name": "test_set_token_royalty_invalid_role"
+    },
+    {
+      "identity": "erc2981::test_erc2981_accesscontrol::test_set_token_royalty_with_zero_royalty_fraction",
+      "file": "packages/token/src/tests/erc2981/test_erc2981_accesscontrol.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc2981/test_erc2981_accesscontrol.cairo",
+      "name": "test_set_token_royalty_with_zero_royalty_fraction"
+    },
+    {
+      "identity": "erc2981::test_erc2981_accesscontrol::test_set_token_royalty_with_zero_receiver",
+      "file": "packages/token/src/tests/erc2981/test_erc2981_accesscontrol.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc2981/test_erc2981_accesscontrol.cairo",
+      "name": "test_set_token_royalty_with_zero_receiver"
+    },
+    {
+      "identity": "erc2981::test_erc2981_accesscontrol::test_set_token_royalty_with_invalid_fee_numerator",
+      "file": "packages/token/src/tests/erc2981/test_erc2981_accesscontrol.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc2981/test_erc2981_accesscontrol.cairo",
+      "name": "test_set_token_royalty_with_invalid_fee_numerator"
+    },
+    {
+      "identity": "erc2981::test_erc2981_accesscontrol::test_reset_token_royalty",
+      "file": "packages/token/src/tests/erc2981/test_erc2981_accesscontrol.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc2981/test_erc2981_accesscontrol.cairo",
+      "name": "test_reset_token_royalty"
+    },
+    {
+      "identity": "erc2981::test_erc2981_accesscontrol::test_reset_token_royalty_other_admin",
+      "file": "packages/token/src/tests/erc2981/test_erc2981_accesscontrol.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc2981/test_erc2981_accesscontrol.cairo",
+      "name": "test_reset_token_royalty_other_admin"
+    },
+    {
+      "identity": "erc2981::test_erc2981_accesscontrol::test_reset_token_royalty_unauthorized",
+      "file": "packages/token/src/tests/erc2981/test_erc2981_accesscontrol.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc2981/test_erc2981_accesscontrol.cairo",
+      "name": "test_reset_token_royalty_unauthorized"
+    },
+    {
+      "identity": "erc2981::test_erc2981_accesscontrol::test_reset_token_royalty_invalid_role",
+      "file": "packages/token/src/tests/erc2981/test_erc2981_accesscontrol.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc2981/test_erc2981_accesscontrol.cairo",
+      "name": "test_reset_token_royalty_invalid_role"
+    },
+    {
+      "identity": "erc2981::test_erc2981_accesscontrol_default_admin_rules::test_default_royalty",
+      "file": "packages/token/src/tests/erc2981/test_erc2981_accesscontrol_default_admin_rules.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc2981/test_erc2981_accesscontrol_default_admin_rules.cairo",
+      "name": "test_default_royalty"
+    },
+    {
+      "identity": "erc2981::test_erc2981_accesscontrol_default_admin_rules::test_royalty_info_default_royalty",
+      "file": "packages/token/src/tests/erc2981/test_erc2981_accesscontrol_default_admin_rules.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc2981/test_erc2981_accesscontrol_default_admin_rules.cairo",
+      "name": "test_royalty_info_default_royalty"
+    },
+    {
+      "identity": "erc2981::test_erc2981_accesscontrol_default_admin_rules::test_royalty_info_token_royalty_set",
+      "file": "packages/token/src/tests/erc2981/test_erc2981_accesscontrol_default_admin_rules.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc2981/test_erc2981_accesscontrol_default_admin_rules.cairo",
+      "name": "test_royalty_info_token_royalty_set"
+    },
+    {
+      "identity": "erc2981::test_erc2981_accesscontrol_default_admin_rules::test_set_default_royalty",
+      "file": "packages/token/src/tests/erc2981/test_erc2981_accesscontrol_default_admin_rules.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc2981/test_erc2981_accesscontrol_default_admin_rules.cairo",
+      "name": "test_set_default_royalty"
+    },
+    {
+      "identity": "erc2981::test_erc2981_accesscontrol_default_admin_rules::test_set_default_royalty_other_admin",
+      "file": "packages/token/src/tests/erc2981/test_erc2981_accesscontrol_default_admin_rules.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc2981/test_erc2981_accesscontrol_default_admin_rules.cairo",
+      "name": "test_set_default_royalty_other_admin"
+    },
+    {
+      "identity": "erc2981::test_erc2981_accesscontrol_default_admin_rules::test_set_default_royalty_unauthorized",
+      "file": "packages/token/src/tests/erc2981/test_erc2981_accesscontrol_default_admin_rules.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc2981/test_erc2981_accesscontrol_default_admin_rules.cairo",
+      "name": "test_set_default_royalty_unauthorized"
+    },
+    {
+      "identity": "erc2981::test_erc2981_accesscontrol_default_admin_rules::test_set_default_royalty_invalid_role",
+      "file": "packages/token/src/tests/erc2981/test_erc2981_accesscontrol_default_admin_rules.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc2981/test_erc2981_accesscontrol_default_admin_rules.cairo",
+      "name": "test_set_default_royalty_invalid_role"
+    },
+    {
+      "identity": "erc2981::test_erc2981_accesscontrol_default_admin_rules::test_set_default_royalty_with_zero_royalty_fraction",
+      "file": "packages/token/src/tests/erc2981/test_erc2981_accesscontrol_default_admin_rules.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc2981/test_erc2981_accesscontrol_default_admin_rules.cairo",
+      "name": "test_set_default_royalty_with_zero_royalty_fraction"
+    },
+    {
+      "identity": "erc2981::test_erc2981_accesscontrol_default_admin_rules::test_set_default_royalty_with_zero_receiver",
+      "file": "packages/token/src/tests/erc2981/test_erc2981_accesscontrol_default_admin_rules.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc2981/test_erc2981_accesscontrol_default_admin_rules.cairo",
+      "name": "test_set_default_royalty_with_zero_receiver"
+    },
+    {
+      "identity": "erc2981::test_erc2981_accesscontrol_default_admin_rules::test_set_default_royalty_with_invalid_fee_numerator",
+      "file": "packages/token/src/tests/erc2981/test_erc2981_accesscontrol_default_admin_rules.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc2981/test_erc2981_accesscontrol_default_admin_rules.cairo",
+      "name": "test_set_default_royalty_with_invalid_fee_numerator"
+    },
+    {
+      "identity": "erc2981::test_erc2981_accesscontrol_default_admin_rules::test_delete_default_royalty",
+      "file": "packages/token/src/tests/erc2981/test_erc2981_accesscontrol_default_admin_rules.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc2981/test_erc2981_accesscontrol_default_admin_rules.cairo",
+      "name": "test_delete_default_royalty"
+    },
+    {
+      "identity": "erc2981::test_erc2981_accesscontrol_default_admin_rules::test_delete_default_royalty_other_admin",
+      "file": "packages/token/src/tests/erc2981/test_erc2981_accesscontrol_default_admin_rules.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc2981/test_erc2981_accesscontrol_default_admin_rules.cairo",
+      "name": "test_delete_default_royalty_other_admin"
+    },
+    {
+      "identity": "erc2981::test_erc2981_accesscontrol_default_admin_rules::test_delete_default_royalty_unauthorized",
+      "file": "packages/token/src/tests/erc2981/test_erc2981_accesscontrol_default_admin_rules.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc2981/test_erc2981_accesscontrol_default_admin_rules.cairo",
+      "name": "test_delete_default_royalty_unauthorized"
+    },
+    {
+      "identity": "erc2981::test_erc2981_accesscontrol_default_admin_rules::test_delete_default_royalty_invalid_role",
+      "file": "packages/token/src/tests/erc2981/test_erc2981_accesscontrol_default_admin_rules.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc2981/test_erc2981_accesscontrol_default_admin_rules.cairo",
+      "name": "test_delete_default_royalty_invalid_role"
+    },
+    {
+      "identity": "erc2981::test_erc2981_accesscontrol_default_admin_rules::test_set_token_royalty",
+      "file": "packages/token/src/tests/erc2981/test_erc2981_accesscontrol_default_admin_rules.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc2981/test_erc2981_accesscontrol_default_admin_rules.cairo",
+      "name": "test_set_token_royalty"
+    },
+    {
+      "identity": "erc2981::test_erc2981_accesscontrol_default_admin_rules::test_set_token_royalty_other_admin",
+      "file": "packages/token/src/tests/erc2981/test_erc2981_accesscontrol_default_admin_rules.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc2981/test_erc2981_accesscontrol_default_admin_rules.cairo",
+      "name": "test_set_token_royalty_other_admin"
+    },
+    {
+      "identity": "erc2981::test_erc2981_accesscontrol_default_admin_rules::test_set_token_royalty_unauthorized",
+      "file": "packages/token/src/tests/erc2981/test_erc2981_accesscontrol_default_admin_rules.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc2981/test_erc2981_accesscontrol_default_admin_rules.cairo",
+      "name": "test_set_token_royalty_unauthorized"
+    },
+    {
+      "identity": "erc2981::test_erc2981_accesscontrol_default_admin_rules::test_set_token_royalty_invalid_role",
+      "file": "packages/token/src/tests/erc2981/test_erc2981_accesscontrol_default_admin_rules.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc2981/test_erc2981_accesscontrol_default_admin_rules.cairo",
+      "name": "test_set_token_royalty_invalid_role"
+    },
+    {
+      "identity": "erc2981::test_erc2981_accesscontrol_default_admin_rules::test_set_token_royalty_with_zero_royalty_fraction",
+      "file": "packages/token/src/tests/erc2981/test_erc2981_accesscontrol_default_admin_rules.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc2981/test_erc2981_accesscontrol_default_admin_rules.cairo",
+      "name": "test_set_token_royalty_with_zero_royalty_fraction"
+    },
+    {
+      "identity": "erc2981::test_erc2981_accesscontrol_default_admin_rules::test_set_token_royalty_with_zero_receiver",
+      "file": "packages/token/src/tests/erc2981/test_erc2981_accesscontrol_default_admin_rules.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc2981/test_erc2981_accesscontrol_default_admin_rules.cairo",
+      "name": "test_set_token_royalty_with_zero_receiver"
+    },
+    {
+      "identity": "erc2981::test_erc2981_accesscontrol_default_admin_rules::test_set_token_royalty_with_invalid_fee_numerator",
+      "file": "packages/token/src/tests/erc2981/test_erc2981_accesscontrol_default_admin_rules.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc2981/test_erc2981_accesscontrol_default_admin_rules.cairo",
+      "name": "test_set_token_royalty_with_invalid_fee_numerator"
+    },
+    {
+      "identity": "erc2981::test_erc2981_accesscontrol_default_admin_rules::test_reset_token_royalty",
+      "file": "packages/token/src/tests/erc2981/test_erc2981_accesscontrol_default_admin_rules.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc2981/test_erc2981_accesscontrol_default_admin_rules.cairo",
+      "name": "test_reset_token_royalty"
+    },
+    {
+      "identity": "erc2981::test_erc2981_accesscontrol_default_admin_rules::test_reset_token_royalty_other_admin",
+      "file": "packages/token/src/tests/erc2981/test_erc2981_accesscontrol_default_admin_rules.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc2981/test_erc2981_accesscontrol_default_admin_rules.cairo",
+      "name": "test_reset_token_royalty_other_admin"
+    },
+    {
+      "identity": "erc2981::test_erc2981_accesscontrol_default_admin_rules::test_reset_token_royalty_unauthorized",
+      "file": "packages/token/src/tests/erc2981/test_erc2981_accesscontrol_default_admin_rules.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc2981/test_erc2981_accesscontrol_default_admin_rules.cairo",
+      "name": "test_reset_token_royalty_unauthorized"
+    },
+    {
+      "identity": "erc2981::test_erc2981_accesscontrol_default_admin_rules::test_reset_token_royalty_invalid_role",
+      "file": "packages/token/src/tests/erc2981/test_erc2981_accesscontrol_default_admin_rules.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc2981/test_erc2981_accesscontrol_default_admin_rules.cairo",
+      "name": "test_reset_token_royalty_invalid_role"
+    },
+    {
+      "identity": "erc2981::test_erc2981_internal::test_initializer",
+      "file": "packages/token/src/tests/erc2981/test_erc2981_internal.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc2981/test_erc2981_internal.cairo",
+      "name": "test_initializer"
+    },
+    {
+      "identity": "erc2981::test_erc2981_internal::test_royalty_info_default_royalty",
+      "file": "packages/token/src/tests/erc2981/test_erc2981_internal.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc2981/test_erc2981_internal.cairo",
+      "name": "test_royalty_info_default_royalty"
+    },
+    {
+      "identity": "erc2981::test_erc2981_internal::test_royalty_info_token_royalty_set",
+      "file": "packages/token/src/tests/erc2981/test_erc2981_internal.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc2981/test_erc2981_internal.cairo",
+      "name": "test_royalty_info_token_royalty_set"
+    },
+    {
+      "identity": "erc2981::test_erc2981_internal::test_default_royalty",
+      "file": "packages/token/src/tests/erc2981/test_erc2981_internal.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc2981/test_erc2981_internal.cairo",
+      "name": "test_default_royalty"
+    },
+    {
+      "identity": "erc2981::test_erc2981_internal::test_set_default_royalty",
+      "file": "packages/token/src/tests/erc2981/test_erc2981_internal.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc2981/test_erc2981_internal.cairo",
+      "name": "test_set_default_royalty"
+    },
+    {
+      "identity": "erc2981::test_erc2981_internal::test_set_default_royalty_with_zero_royalty_fraction",
+      "file": "packages/token/src/tests/erc2981/test_erc2981_internal.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc2981/test_erc2981_internal.cairo",
+      "name": "test_set_default_royalty_with_zero_royalty_fraction"
+    },
+    {
+      "identity": "erc2981::test_erc2981_internal::test_set_default_royalty_with_zero_receiver",
+      "file": "packages/token/src/tests/erc2981/test_erc2981_internal.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc2981/test_erc2981_internal.cairo",
+      "name": "test_set_default_royalty_with_zero_receiver"
+    },
+    {
+      "identity": "erc2981::test_erc2981_internal::test_set_default_royalty_with_invalid_fee_numerator",
+      "file": "packages/token/src/tests/erc2981/test_erc2981_internal.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc2981/test_erc2981_internal.cairo",
+      "name": "test_set_default_royalty_with_invalid_fee_numerator"
+    },
+    {
+      "identity": "erc2981::test_erc2981_internal::test_delete_default_royalty",
+      "file": "packages/token/src/tests/erc2981/test_erc2981_internal.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc2981/test_erc2981_internal.cairo",
+      "name": "test_delete_default_royalty"
+    },
+    {
+      "identity": "erc2981::test_erc2981_internal::test_set_token_royalty",
+      "file": "packages/token/src/tests/erc2981/test_erc2981_internal.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc2981/test_erc2981_internal.cairo",
+      "name": "test_set_token_royalty"
+    },
+    {
+      "identity": "erc2981::test_erc2981_internal::test_set_token_royalty_with_zero_royalty_fraction",
+      "file": "packages/token/src/tests/erc2981/test_erc2981_internal.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc2981/test_erc2981_internal.cairo",
+      "name": "test_set_token_royalty_with_zero_royalty_fraction"
+    },
+    {
+      "identity": "erc2981::test_erc2981_internal::test_set_token_royalty_with_zero_receiver",
+      "file": "packages/token/src/tests/erc2981/test_erc2981_internal.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc2981/test_erc2981_internal.cairo",
+      "name": "test_set_token_royalty_with_zero_receiver"
+    },
+    {
+      "identity": "erc2981::test_erc2981_internal::test_set_token_royalty_with_invalid_fee_numerator",
+      "file": "packages/token/src/tests/erc2981/test_erc2981_internal.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc2981/test_erc2981_internal.cairo",
+      "name": "test_set_token_royalty_with_invalid_fee_numerator"
+    },
+    {
+      "identity": "erc2981::test_erc2981_internal::test_reset_token_royalty",
+      "file": "packages/token/src/tests/erc2981/test_erc2981_internal.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc2981/test_erc2981_internal.cairo",
+      "name": "test_reset_token_royalty"
+    },
+    {
+      "identity": "erc2981::test_erc2981_internal::test_default_config",
+      "file": "packages/token/src/tests/erc2981/test_erc2981_internal.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc2981/test_erc2981_internal.cairo",
+      "name": "test_default_config"
+    },
+    {
+      "identity": "erc2981::test_erc2981_ownable::test_default_royalty",
+      "file": "packages/token/src/tests/erc2981/test_erc2981_ownable.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc2981/test_erc2981_ownable.cairo",
+      "name": "test_default_royalty"
+    },
+    {
+      "identity": "erc2981::test_erc2981_ownable::test_royalty_info_default_royalty",
+      "file": "packages/token/src/tests/erc2981/test_erc2981_ownable.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc2981/test_erc2981_ownable.cairo",
+      "name": "test_royalty_info_default_royalty"
+    },
+    {
+      "identity": "erc2981::test_erc2981_ownable::test_royalty_info_token_royalty_set",
+      "file": "packages/token/src/tests/erc2981/test_erc2981_ownable.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc2981/test_erc2981_ownable.cairo",
+      "name": "test_royalty_info_token_royalty_set"
+    },
+    {
+      "identity": "erc2981::test_erc2981_ownable::test_set_default_royalty",
+      "file": "packages/token/src/tests/erc2981/test_erc2981_ownable.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc2981/test_erc2981_ownable.cairo",
+      "name": "test_set_default_royalty"
+    },
+    {
+      "identity": "erc2981::test_erc2981_ownable::test_set_default_royalty_unauthorized",
+      "file": "packages/token/src/tests/erc2981/test_erc2981_ownable.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc2981/test_erc2981_ownable.cairo",
+      "name": "test_set_default_royalty_unauthorized"
+    },
+    {
+      "identity": "erc2981::test_erc2981_ownable::test_set_default_royalty_with_zero_royalty_fraction",
+      "file": "packages/token/src/tests/erc2981/test_erc2981_ownable.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc2981/test_erc2981_ownable.cairo",
+      "name": "test_set_default_royalty_with_zero_royalty_fraction"
+    },
+    {
+      "identity": "erc2981::test_erc2981_ownable::test_set_default_royalty_with_zero_receiver",
+      "file": "packages/token/src/tests/erc2981/test_erc2981_ownable.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc2981/test_erc2981_ownable.cairo",
+      "name": "test_set_default_royalty_with_zero_receiver"
+    },
+    {
+      "identity": "erc2981::test_erc2981_ownable::test_set_default_royalty_with_invalid_fee_numerator",
+      "file": "packages/token/src/tests/erc2981/test_erc2981_ownable.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc2981/test_erc2981_ownable.cairo",
+      "name": "test_set_default_royalty_with_invalid_fee_numerator"
+    },
+    {
+      "identity": "erc2981::test_erc2981_ownable::test_delete_default_royalty",
+      "file": "packages/token/src/tests/erc2981/test_erc2981_ownable.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc2981/test_erc2981_ownable.cairo",
+      "name": "test_delete_default_royalty"
+    },
+    {
+      "identity": "erc2981::test_erc2981_ownable::test_delete_default_royalty_unauthorized",
+      "file": "packages/token/src/tests/erc2981/test_erc2981_ownable.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc2981/test_erc2981_ownable.cairo",
+      "name": "test_delete_default_royalty_unauthorized"
+    },
+    {
+      "identity": "erc2981::test_erc2981_ownable::test_set_token_royalty",
+      "file": "packages/token/src/tests/erc2981/test_erc2981_ownable.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc2981/test_erc2981_ownable.cairo",
+      "name": "test_set_token_royalty"
+    },
+    {
+      "identity": "erc2981::test_erc2981_ownable::test_set_token_royalty_unauthorized",
+      "file": "packages/token/src/tests/erc2981/test_erc2981_ownable.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc2981/test_erc2981_ownable.cairo",
+      "name": "test_set_token_royalty_unauthorized"
+    },
+    {
+      "identity": "erc2981::test_erc2981_ownable::test_set_token_royalty_with_zero_royalty_fraction",
+      "file": "packages/token/src/tests/erc2981/test_erc2981_ownable.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc2981/test_erc2981_ownable.cairo",
+      "name": "test_set_token_royalty_with_zero_royalty_fraction"
+    },
+    {
+      "identity": "erc2981::test_erc2981_ownable::test_set_token_royalty_with_zero_receiver",
+      "file": "packages/token/src/tests/erc2981/test_erc2981_ownable.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc2981/test_erc2981_ownable.cairo",
+      "name": "test_set_token_royalty_with_zero_receiver"
+    },
+    {
+      "identity": "erc2981::test_erc2981_ownable::test_set_token_royalty_with_invalid_fee_numerator",
+      "file": "packages/token/src/tests/erc2981/test_erc2981_ownable.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc2981/test_erc2981_ownable.cairo",
+      "name": "test_set_token_royalty_with_invalid_fee_numerator"
+    },
+    {
+      "identity": "erc2981::test_erc2981_ownable::test_reset_token_royalty",
+      "file": "packages/token/src/tests/erc2981/test_erc2981_ownable.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc2981/test_erc2981_ownable.cairo",
+      "name": "test_reset_token_royalty"
+    },
+    {
+      "identity": "erc2981::test_erc2981_ownable::test_reset_token_royalty_unauthorized",
+      "file": "packages/token/src/tests/erc2981/test_erc2981_ownable.cairo",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false,
+      "local_file": "src/tests/erc2981/test_erc2981_ownable.cairo",
+      "name": "test_reset_token_royalty_unauthorized"
+    },
+    {
+      "identity": "common::erc2981::erc2981::tests::test_initializer_invalid_config_panics",
+      "file": "packages/token/src/common/erc2981/erc2981.cairo",
+      "local_file": "src/common/erc2981/erc2981.cairo",
+      "name": "test_initializer_invalid_config_panics",
+      "fuzzer": false,
+      "ignored": false,
+      "feature_fuzzing": false
+    }
+  ],
+  "upstream_file_sha256": {
+    "LICENSE": "628dce50ae8964ab834edb537560a43e5781a1310b3eb44eb943fbadd9ca12ae",
+    "Scarb.toml": "227eb04d42eec1d3a7b9c85c75a543f83db0a3b837d6597d70b6ef7067677e5b",
+    "packages/test_common/src/erc721.cairo": "898f935f485572d545e5481b7c02d7782998e69a92c7e33d30917d5332311295",
+    "packages/test_common/src/mocks/account.cairo": "9a400979bc700ebaf099f94206abfa63f98244b7b0bc063f2e658a4a10368f78",
+    "packages/test_common/src/mocks/erc2981.cairo": "e47d951fb1022acf68ccffefb3d6c5dcd10bd3a333630d99ef20e1b1f2292806",
+    "packages/test_common/src/mocks/erc721.cairo": "aa97834a2d3dae1d699cfb261a8c5bd862d1ce9e1ca2a7f4727593ab269fd5c9",
+    "packages/test_common/src/mocks/non_implementing.cairo": "d2f12a46ba276b3054a585f57c386a0fbcf00395341e7b3fb6819db3a0a9cb73",
+    "packages/test_common/src/mocks/src5.cairo": "8792b1eb43b8dd96cee59b7a33f88871f1b338ec7b043aef624681894648209b",
+    "packages/testing/src/common.cairo": "89089df63f7bcc3e6f4c3bbfdb26916dd9d7a714adea2d843a92d4039f690830",
+    "packages/testing/src/constants.cairo": "22266b26f246a47e5bc5ab02728ae7499bf3805eeadf5bf29cb7d6fa21aa82ea",
+    "packages/testing/src/deployment.cairo": "b4c879e35f9a07e8939d53b2a17719be693cbc958042546920740df16f517e1c",
+    "packages/testing/src/events.cairo": "2befddf4ce05ba28a1047f21b36474937aa073bf969637b68745f554c59a477a",
+    "packages/testing/src/lib.cairo": "d9fa90940430ff8398a8fe294a8422a1f3e619fdc8a17585e380e5d0a9e4427b",
+    "packages/token/Scarb.toml": "de45b4c64729320467a2f56751a4fecebb54877d4d4a49770d92d82e0481035f",
+    "packages/token/src/common.cairo": "e4c20ac5b0dc018a1edae148e11fd1e937818348586a8af6bd97e1a0b0064f47",
+    "packages/token/src/common/erc2981.cairo": "846389a12ff2e28601c7926fb0761dfd3e1c2c0d46d0e1eb257cbd15a1918a56",
+    "packages/token/src/common/erc2981/erc2981.cairo": "4eba2b744aa763656eab1e6168f090f95873d6b2aec30bb7ccf304cfa3328c6d",
+    "packages/token/src/erc721.cairo": "adb02cb8a6defcb58211b661bf6428be859038119c2c26fcc95e8ce812cba467",
+    "packages/token/src/erc721/erc721.cairo": "2486c68424767697dcfa1d158a0e744641fc73b1b47dad7e84d22e924d3ccb54",
+    "packages/token/src/erc721/erc721_receiver.cairo": "ffb69525ac74329b647577d172b7c5d728fe6c60976d45d7875ecfa7c9650bb4",
+    "packages/token/src/erc721/extensions.cairo": "f169e333054e47ea02ed898086cb048ddf94f8c6fb367728f80667e042cd0fac",
+    "packages/token/src/erc721/extensions/erc721_consecutive.cairo": "e4ccec64689839a813883731416f9be486e0f21e63f93044622984c6010fe7ca",
+    "packages/token/src/erc721/extensions/erc721_enumerable.cairo": "e204810c069082457b61261c90df665e55f42058287751173710dafcd930e2cf",
+    "packages/token/src/erc721/extensions/erc721_enumerable/erc721_enumerable.cairo": "eab6b29a3d706e23f1ef4953db70b532d3ab217c7116d94e5b77417e604ee80b",
+    "packages/token/src/erc721/extensions/erc721_uri_storage.cairo": "ea93b48022b1211a1a8f8dd3b4add954f7112062183d96c23e3fbd9ecfdeb50c",
+    "packages/token/src/erc721/extensions/erc721_wrapper.cairo": "11e78d6c28c59d1c557d74a97e44641f1405944c78b9e15af25f39e2c7a6cc25",
+    "packages/token/src/tests/erc2981/test_erc2981_accesscontrol.cairo": "2550d8d63580d77c75b4fa2703415f0bc266bc4c56e4672d62cb60542658d005",
+    "packages/token/src/tests/erc2981/test_erc2981_accesscontrol_default_admin_rules.cairo": "1cb431005c07d88652c0842d22fe5f392257785bd85452c7cad7ab4b0a2b7dcd",
+    "packages/token/src/tests/erc2981/test_erc2981_internal.cairo": "828f0a5daebbfe48db540d684156a2af2a914f3273d0382926f59c3fc5e35891",
+    "packages/token/src/tests/erc2981/test_erc2981_ownable.cairo": "e4bafe2a36fbdd652ae0a40fc217bb113feb8740dae736bb370f88d35688edb1",
+    "packages/token/src/tests/erc721/test_erc721.cairo": "4d86c0e03b7d55b25ccef3e8d064dc0365dca5b84835c16691cd10c7ebf09dce",
+    "packages/token/src/tests/erc721/test_erc721_consecutive.cairo": "f577ed75aee4e403bb93dc3dbdd6fdc4331fb653c489c60d8cf802af01dbd4ee",
+    "packages/token/src/tests/erc721/test_erc721_enumerable.cairo": "568a625f85646da9694082871d40ee8dc9cef17728b40417b74fad8e5b140b96",
+    "packages/token/src/tests/erc721/test_erc721_receiver.cairo": "a4902814eb912553aae94f767fa8d1e167ea8659b5c853e5457ce099d9615ec4",
+    "packages/token/src/tests/erc721/test_erc721_uri_storage.cairo": "60d2bce2e382b4015bd29f0e5708c6382a0531950b1f52a0bf8b475410c1a2ee",
+    "packages/token/src/tests/erc721/test_erc721_wrapper.cairo": "fd60cf2190a3a1a5df01027feec09de747269e5fbc76c72e4e675929e37fc1b2",
+    "packages/token/src/tests/erc721/test_fuzz_erc721_enumerable.cairo": "3d11fe2d7f3e1b01d6bfcdd417412082aec0492047e7c7bf289e6dc668dc1f37"
+  },
+  "adaptations": [
+    "Package self-imports and testing support imports point to the local fork.",
+    "with_components macros are explicitly expanded into equivalent local component wiring.",
+    "Core owner and token-approval map assertions convert known-valid u256 IDs to felt252 keys.",
+    "Three upstream ignored nonreceiver identities invoke deployed safe dispatchers and assert the complete nested error plus rollback.",
+    "Unused signing-key helper modules are omitted; shared address helper retained.",
+    "Only DualCaseAccountMock is included from account mocks; its OZ4 account dependency is test-only."
+  ]
+}

@@ -17,3 +17,4 @@ coverage.lcov
 **/coverage/
 .validation-tools/
 !tools/coverage/
+__pycache__/

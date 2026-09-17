@@ -243,3 +243,11 @@ The adapter revision, patch and locked Rust dependency graph live in
 `tools/coverage/`; its build requires Rust 1.96.0 and network access initially.
 The existing development profile retains the debug information and disabled
 inlining required for coverage. Benchmark comparisons must use identical profiles.
+
+### Felt-storage ERC721
+
+The [ERC721 package](packages/erc721/README.md) provides a maintained OpenZeppelin
+4.0.1 component with checked felt token-key and balance storage, standard u256
+public interfaces, and complete ERC721/royalty regression coverage. It can be
+imported directly as `game_components_erc721` from a reviewed repository commit.
+Its README records the storage layout, supported domain, and upstream provenance.
