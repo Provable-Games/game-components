@@ -303,6 +303,7 @@ jobs:
             ${{ runner.os }}-target-${{ matrix.package }}-${{ matrix.module }}-${{ env.SCARB_VERSION }}-
 
       - name: Run tests with coverage
+        shell: bash
         run: |
           coverage_package="${{ matrix.package }}"
           coverage_package="${coverage_package#game_components_}"
