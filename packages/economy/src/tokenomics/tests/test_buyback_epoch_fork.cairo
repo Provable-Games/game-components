@@ -185,6 +185,6 @@ mod buyback_epoch_fork_tests {
 
         // Each order was withdrawn against the key the component rebuilt from
         // its OWN epoch, and real BUDOKAN reached the treasury for both.
-        assert(after - before == (proceeds_0 + proceeds_1).into(), 'Treasury got both payouts');
+        assert(after - before == proceeds_0 + proceeds_1, 'Treasury got both payouts');
     }
 }
