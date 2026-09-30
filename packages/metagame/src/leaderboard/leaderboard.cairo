@@ -18,10 +18,20 @@ pub mod leaderboard {
 
     /// Extract minted_at (lowest 35 bits of high u128) from a packed token ID.
     /// Layout: high u128 = minted_at(35) | end_delay(25) | objective_id(30) | ...
+    #[cfg(not(feature: "packet_token_tiebreak"))]
     fn unpack_minted_at(token_id: felt252) -> u64 {
         let packed: u256 = token_id.into();
         let (_, minted_at) = DivRem::div_rem(packed.high, 0x800000000_u128.try_into().unwrap());
         minted_at.try_into().unwrap()
+    }
+
+    /// Schema-1 game-token stores its mint timestamp in low-half bits 64..90,
+    /// in whole minutes. This feature applies to all contexts of the host.
+    #[cfg(feature: "packet_token_tiebreak")]
+    fn unpack_minted_at(token_id: felt252) -> u64 {
+        let packed: u256 = token_id.into();
+        let minutes: u64 = ((packed.low / 0x10000000000000000) & 0x7ffffff).try_into().unwrap();
+        minutes * 60
     }
 
     /// Tie-break: earlier minted token wins (deterministic ordering for equal scores).

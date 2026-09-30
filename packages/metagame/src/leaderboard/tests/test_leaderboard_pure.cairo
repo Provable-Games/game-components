@@ -1,14 +1,17 @@
 // Pure leaderboard library tests
+#[cfg(not(feature: "packet_token_tiebreak"))]
 use game_components_embeddable_game_standard::token::packing::pack_token_id;
 use game_components_interfaces::leaderboard::LeaderboardResult;
 use game_components_metagame::leaderboard::leaderboard::leaderboard;
 
 /// Helper to create a packed token ID with a specific minted_at timestamp.
+#[cfg(not(feature: "packet_token_tiebreak"))]
 fn make_token(minted_at: u64) -> felt252 {
     pack_token_id(minted_at, 0, 0, 0, 0, false, 0, 0, false, false, 0, 0)
 }
 
 /// Helper to create a packed token ID with specific minted_at and salt.
+#[cfg(not(feature: "packet_token_tiebreak"))]
 fn make_token_with_salt(minted_at: u64, salt: u16) -> felt252 {
     pack_token_id(minted_at, 0, 0, 0, 0, false, 0, salt, false, false, 0, 0)
 }
@@ -277,4 +280,33 @@ fn test_validate_insertion_zero_capacity() {
         token_above: 0,
     );
     assert!(result == LeaderboardResult::LeaderboardFull);
+}
+
+#[cfg(feature: "packet_token_tiebreak")]
+fn make_token(minted_at: u64) -> felt252 {
+    1 + (minted_at / 60).into() * 0x10000000000000000
+}
+
+#[cfg(feature: "packet_token_tiebreak")]
+fn make_token_with_salt(minted_at: u64, salt: u16) -> felt252 {
+    make_token(minted_at) + salt.into() * 0x200000
+}
+
+#[test]
+#[cfg(feature: "packet_token_tiebreak")]
+#[fuzzer(runs: 256)]
+fn test_packet_timestamp_precedes_payload_and_id_order(earlier_minutes: u32, later_minutes: u32) {
+    let earlier = earlier_minutes % 0x7ffffff;
+    let later = later_minutes % 0x7ffffff;
+    if earlier >= later {
+        return;
+    }
+    // Different minter payloads reverse the raw ID order. Mint time still wins.
+    let a = 1
+        + Into::<u32, felt252>::into(earlier) * 0x10000000000000000
+        + 0x1000000000000000000000000000000000000000000000000;
+    let b = 1 + Into::<u32, felt252>::into(later) * 0x10000000000000000;
+    assert!(Into::<felt252, u256>::into(a) > b.into(), "raw ID order differs");
+    assert!(leaderboard::wins_tiebreak(a, b), "earlier minute wins");
+    assert!(!leaderboard::wins_tiebreak(b, a), "later minute loses");
 }
