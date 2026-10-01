@@ -442,7 +442,7 @@ jobs:
   # and `lint` is conditional on packages/ changing, so gating on it would
   # silently drop reviews on docs-only PRs.
   review:
-    uses: Provable-Games/.github/.github/workflows/code-review.yml@v1
+    uses: uses: Provable-Games/.github/.github/workflows/code-review.yml@bd41f96e283f731daf917720c1f1dd7e2bf3a6f7
     with:
       # Preserves the merge gate the inline review jobs had: a [CRITICAL] or
       # [HIGH] finding fails the job rather than only posting a comment.
