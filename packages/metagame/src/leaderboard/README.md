@@ -117,12 +117,17 @@ let top_5 = leaderboard.get_top_entries(tournament_id, 5);
 
 - `game_components_interfaces` - Leaderboard structs and interface definitions
 
-### Schema-1 game-token mint blocks
+### Token format and tie-breaking
 
-Hosts using game-token's packet IDs can enable the metagame package's
-`packet_token_tiebreak` feature. Equal scores prefer the earlier
+Leaderboard token IDs must use game-token's schema-1 layout. Equal scores
+prefer the earlier
 `minted_at_block_number`, then the lower numerical token ID when mint blocks
 match. Both insertion validation and `find_position` use this
-ordering, regardless of ascending/descending score direction. The feature applies
-to every leaderboard context in the host; do not mix token layouts in that host.
-The default feature set retains the earlier token layout's timestamp decoder.
+ordering, regardless of ascending/descending score direction. This is the
+standard behavior for every leaderboard context; no feature flag is required.
+
+This changes the supported token format. The embedded token and legacy token
+layouts do not encode a mint block at these bit positions and are unsupported.
+Hosts using those layouts must retain a compatible component version until they
+migrate their token source. Existing rankings must be rebuilt for the new
+ordering before upgrading a deployed leaderboard.

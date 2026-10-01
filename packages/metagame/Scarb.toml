@@ -26,7 +26,3 @@ build-external-contracts = [
     "game_components_test_common::mocks::mock_leaderboard_contract::MockLeaderboardContract",
     "game_components_test_common::mocks::mock_game_details::MockGameDetails",
 ]
-
-[features]
-# Opt in when this host uses game-token's schema-1 packet IDs.
-packet_token_tiebreak = []

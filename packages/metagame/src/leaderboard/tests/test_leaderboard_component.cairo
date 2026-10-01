@@ -2310,8 +2310,7 @@ fn test_find_position_single_entry() {
 }
 
 #[test]
-#[cfg(feature: "packet_token_tiebreak")]
-fn test_packet_block_order_matches_lookup_submission_and_entry_view() {
+fn test_mint_block_order_matches_lookup_submission_and_entry_view() {
     let (leaderboard, admin, mock) = deploy_mock_leaderboard();
     let (game_address, game_admin) = deploy_mock_game_details();
     // Payload and timestamp reverse the ID order; the earlier block wins.

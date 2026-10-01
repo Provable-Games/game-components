@@ -176,7 +176,7 @@ pub trait LeaderboardStoreHelpersTrait<T> {
     ) -> Array<LeaderboardEntry>;
 
     /// Find the position where a score would be inserted (1-based) — O(log n) view function
-    /// Accounts for token_id tiebreaking so the returned position is always valid for
+    /// Accounts for mint-block/token-ID tie-breaking so the returned position is always valid for
     /// submit_score without further adjustment.
     fn find_position(
         self: @T, context_id: u64, score: u64, token_id: felt252, config: LeaderboardStoreConfig,
@@ -231,7 +231,7 @@ pub impl LeaderboardStoreHelpersImpl<T, +Store<T>, +Drop<T>> of LeaderboardStore
     }
 
     /// Find the position where a score would be inserted — O(log n) binary search
-    /// Uses token_id for deterministic tiebreaking on equal scores (lower token_id wins).
+    /// Equal scores prefer the earlier mint block, then the lower token ID.
     fn find_position(
         self: @T, context_id: u64, score: u64, token_id: felt252, config: LeaderboardStoreConfig,
     ) -> Option<u32> {

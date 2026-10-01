@@ -1,19 +1,15 @@
 // Pure leaderboard library tests
-#[cfg(not(feature: "packet_token_tiebreak"))]
-use game_components_embeddable_game_standard::token::packing::pack_token_id;
 use game_components_interfaces::leaderboard::LeaderboardResult;
 use game_components_metagame::leaderboard::leaderboard::leaderboard;
 
-/// Helper to create a packed token ID with a specific minted_at timestamp.
-#[cfg(not(feature: "packet_token_tiebreak"))]
-fn make_token(minted_at: u64) -> felt252 {
-    pack_token_id(minted_at, 0, 0, 0, 0, false, 0, 0, false, false, 0, 0)
+/// Schema-1 game-token ID with a specific mint block.
+fn make_token(mint_block: u32) -> felt252 {
+    1 + mint_block.into() * 0x100000000
 }
 
-/// Helper to create a packed token ID with specific minted_at and salt.
-#[cfg(not(feature: "packet_token_tiebreak"))]
-fn make_token_with_salt(minted_at: u64, salt: u16) -> felt252 {
-    pack_token_id(minted_at, 0, 0, 0, 0, false, 0, salt, false, false, 0, 0)
+/// Same mint block with distinct mint nonces.
+fn make_token_with_mint_nonce(mint_block: u32, mint_nonce: u16) -> felt252 {
+    make_token(mint_block) + mint_nonce.into() * 0x200000
 }
 
 // ── is_better_score ──
@@ -35,7 +31,7 @@ fn test_is_better_score_ascending() {
 // ── wins_tiebreak ──
 
 #[test]
-fn test_wins_tiebreak_earlier_minted_wins() {
+fn test_wins_tiebreak_earlier_mint_block_wins() {
     let early = make_token(1000);
     let late = make_token(2000);
     assert!(leaderboard::wins_tiebreak(early, late)); // earlier wins
@@ -43,11 +39,11 @@ fn test_wins_tiebreak_earlier_minted_wins() {
 }
 
 #[test]
-fn test_wins_tiebreak_same_mint_time_falls_back_to_token_id() {
-    let a = make_token_with_salt(1000, 1);
-    let b = make_token_with_salt(1000, 2);
-    // Same minted_at — falls back to lower token ID
-    assert!(leaderboard::wins_tiebreak(a, b) || leaderboard::wins_tiebreak(b, a));
+fn test_wins_tiebreak_same_mint_block_falls_back_to_token_id() {
+    let a = make_token_with_mint_nonce(1000, 1);
+    let b = make_token_with_mint_nonce(1000, 2);
+    assert!(leaderboard::wins_tiebreak(a, b));
+    assert!(!leaderboard::wins_tiebreak(b, a));
     assert!(!leaderboard::wins_tiebreak(a, a)); // equal — no winner
 }
 
@@ -282,20 +278,9 @@ fn test_validate_insertion_zero_capacity() {
     assert!(result == LeaderboardResult::LeaderboardFull);
 }
 
-#[cfg(feature: "packet_token_tiebreak")]
-fn make_token(mint_block: u64) -> felt252 {
-    1 + mint_block.into() * 0x100000000
-}
-
-#[cfg(feature: "packet_token_tiebreak")]
-fn make_token_with_salt(mint_block: u64, salt: u16) -> felt252 {
-    make_token(mint_block) + salt.into() * 0x200000
-}
-
 #[test]
-#[cfg(feature: "packet_token_tiebreak")]
 #[fuzzer(runs: 256)]
-fn test_packet_mint_block_precedes_payload_and_id_order(earlier: u32, later: u32) {
+fn test_mint_block_precedes_payload_and_id_order(earlier: u32, later: u32) {
     if earlier >= later {
         return;
     }
@@ -310,8 +295,7 @@ fn test_packet_mint_block_precedes_payload_and_id_order(earlier: u32, later: u32
 }
 
 #[test]
-#[cfg(feature: "packet_token_tiebreak")]
-fn test_packet_mint_block_ignores_timestamp_and_handles_u32_boundary() {
+fn test_mint_block_ignores_timestamp_and_handles_u32_boundary() {
     // Conflicting timestamps and payloads cannot outrank the mint block.
     let earlier = make_token(0)
         + 0x10000000000000000
