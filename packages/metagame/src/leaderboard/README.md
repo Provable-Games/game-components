@@ -117,12 +117,12 @@ let top_5 = leaderboard.get_top_entries(tournament_id, 5);
 
 - `game_components_interfaces` - Leaderboard structs and interface definitions
 
-### Schema-1 game-token timestamps
+### Schema-1 game-token mint blocks
 
 Hosts using game-token's packet IDs can enable the metagame package's
 `packet_token_tiebreak` feature. Equal scores prefer the earlier
-`minted_at_timestamp` (whole-minute precision), then the lower numerical token ID
-when timestamps match. Both insertion validation and `find_position` use this
+`minted_at_block_number`, then the lower numerical token ID when mint blocks
+match. Both insertion validation and `find_position` use this
 ordering, regardless of ascending/descending score direction. The feature applies
 to every leaderboard context in the host; do not mix token layouts in that host.
 The default feature set retains the earlier token layout's timestamp decoder.

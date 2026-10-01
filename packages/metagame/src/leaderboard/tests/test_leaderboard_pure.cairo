@@ -283,30 +283,47 @@ fn test_validate_insertion_zero_capacity() {
 }
 
 #[cfg(feature: "packet_token_tiebreak")]
-fn make_token(minted_at: u64) -> felt252 {
-    1 + (minted_at / 60).into() * 0x10000000000000000
+fn make_token(mint_block: u64) -> felt252 {
+    1 + mint_block.into() * 0x100000000
 }
 
 #[cfg(feature: "packet_token_tiebreak")]
-fn make_token_with_salt(minted_at: u64, salt: u16) -> felt252 {
-    make_token(minted_at) + salt.into() * 0x200000
+fn make_token_with_salt(mint_block: u64, salt: u16) -> felt252 {
+    make_token(mint_block) + salt.into() * 0x200000
 }
 
 #[test]
 #[cfg(feature: "packet_token_tiebreak")]
 #[fuzzer(runs: 256)]
-fn test_packet_timestamp_precedes_payload_and_id_order(earlier_minutes: u32, later_minutes: u32) {
-    let earlier = earlier_minutes % 0x7ffffff;
-    let later = later_minutes % 0x7ffffff;
+fn test_packet_mint_block_precedes_payload_and_id_order(earlier: u32, later: u32) {
     if earlier >= later {
         return;
     }
-    // Different minter payloads reverse the raw ID order. Mint time still wins.
+    // Different minter payloads reverse the raw ID order. Mint block still wins.
     let a = 1
-        + Into::<u32, felt252>::into(earlier) * 0x10000000000000000
-        + 0x1000000000000000000000000000000000000000000000000;
-    let b = 1 + Into::<u32, felt252>::into(later) * 0x10000000000000000;
+        + Into::<u32, felt252>::into(earlier) * 0x100000000
+        + 0x10000000000000000000000000000000000000000;
+    let b = 1 + Into::<u32, felt252>::into(later) * 0x100000000;
     assert!(Into::<felt252, u256>::into(a) > b.into(), "raw ID order differs");
-    assert!(leaderboard::wins_tiebreak(a, b), "earlier minute wins");
-    assert!(!leaderboard::wins_tiebreak(b, a), "later minute loses");
+    assert!(leaderboard::wins_tiebreak(a, b), "earlier block wins");
+    assert!(!leaderboard::wins_tiebreak(b, a), "later block loses");
+}
+
+#[test]
+#[cfg(feature: "packet_token_tiebreak")]
+fn test_packet_mint_block_ignores_timestamp_and_handles_u32_boundary() {
+    // Conflicting timestamps and payloads cannot outrank the mint block.
+    let earlier = make_token(0)
+        + 0x10000000000000000
+        + 0x1000000000000000000000000000000000000000000000000;
+    let later = make_token(0xffffffff);
+    assert!(leaderboard::wins_tiebreak(earlier, later), "earlier block wins");
+    assert!(!leaderboard::wins_tiebreak(later, earlier), "later block loses");
+    // Same block falls back to the ID, even when mint timestamps disagree.
+    let same_block_higher_id = later + 0x1000000000000000000000000000000000000000000000000;
+    let same_block_lower_id = later + 0x10000000000000000;
+    assert!(
+        leaderboard::wins_tiebreak(same_block_lower_id, same_block_higher_id),
+        "same block uses numerical ID",
+    );
 }

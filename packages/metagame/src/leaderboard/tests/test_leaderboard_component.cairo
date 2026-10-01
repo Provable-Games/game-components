@@ -2308,3 +2308,42 @@ fn test_find_position_single_entry() {
     let pos = leaderboard.find_position(TOURNAMENT_1, 50, 10);
     assert!(pos == Option::Some(2), "Equal score, higher ID goes second");
 }
+
+#[test]
+#[cfg(feature: "packet_token_tiebreak")]
+fn test_packet_block_order_matches_lookup_submission_and_entry_view() {
+    let (leaderboard, admin, mock) = deploy_mock_leaderboard();
+    let (game_address, game_admin) = deploy_mock_game_details();
+    // Payload and timestamp reverse the ID order; the earlier block wins.
+    let earlier: felt252 = 1
+        + 100 * 0x100000000
+        + 101 * 0x10000000000000000
+        + 0x1000000000000000000000000000000000000000000000000;
+    let later: felt252 = 1 + 101 * 0x100000000 + 100 * 0x10000000000000000;
+    game_admin.set_score(earlier, 100);
+    game_admin.set_score(later, 100);
+    let mut i = 0_u64;
+    while i < 2 {
+        let context = TOURNAMENT_1 + i;
+        configure_tournament_with_game(admin, context, 10, i == 1, game_address);
+        assert!(mock.submit_score(context, later, 100, 1) == LeaderboardResult::Success);
+        assert!(
+            leaderboard.find_position(context, 100, earlier) == Option::Some(1),
+            "lookup prefers earlier block",
+        );
+        assert!(mock.submit_score(context, earlier, 100, 1) == LeaderboardResult::Success);
+        let first = leaderboard.get_leaderboard_entry(context, 1);
+        assert!(first.id == earlier && first.score == 100, "entry view shows winner");
+        assert!(
+            leaderboard.find_position(context, 100, later) == Option::Some(2),
+            "later block belongs second",
+        );
+        assert!(mock.submit_score(context, later, 100, 2) == LeaderboardResult::Success);
+        let entries = leaderboard.get_leaderboard_entries(context);
+        assert!(
+            *entries.at(0).id == earlier && *entries.at(1).id == later,
+            "insertion agrees with lookup",
+        );
+        i += 1;
+    }
+}
