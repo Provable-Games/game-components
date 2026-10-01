@@ -16,22 +16,21 @@ pub mod leaderboard {
         }
     }
 
-    /// Extract minted_at (lowest 35 bits of high u128) from a packed token ID.
-    /// Layout: high u128 = minted_at(35) | end_delay(25) | objective_id(30) | ...
-    fn unpack_minted_at(token_id: felt252) -> u64 {
+    /// Schema-1 game-token stores its mint block in low-half bits 32..63.
+    fn unpack_mint_block(token_id: felt252) -> u64 {
         let packed: u256 = token_id.into();
-        let (_, minted_at) = DivRem::div_rem(packed.high, 0x800000000_u128.try_into().unwrap());
-        minted_at.try_into().unwrap()
+        ((packed.low / 0x100000000) & 0xffffffff).try_into().unwrap()
     }
 
-    /// Tie-break: earlier minted token wins (deterministic ordering for equal scores).
+    /// Equal scores prefer the earlier mint block, then the lower token ID.
+    /// Token IDs must use the schema-1 game-token layout.
     pub fn wins_tiebreak(token_a: felt252, token_b: felt252) -> bool {
-        let minted_a = unpack_minted_at(token_a);
-        let minted_b = unpack_minted_at(token_b);
-        if minted_a != minted_b {
-            minted_a < minted_b
+        let block_a = unpack_mint_block(token_a);
+        let block_b = unpack_mint_block(token_b);
+        if block_a != block_b {
+            block_a < block_b
         } else {
-            // Same mint time — fall back to lower token ID for determinism
+            // Same mint block — fall back to lower token ID for determinism
             let a: u256 = token_a.into();
             let b: u256 = token_b.into();
             a < b
@@ -95,7 +94,7 @@ pub mod leaderboard {
             if is_better_score(score_at_index, score, ascending) {
                 return LeaderboardResult::ScoreTooLow;
             }
-            // Equal score — tie-break by token ID
+            // Equal score — tie-break by mint block, then token ID
             if score == score_at_index && !wins_tiebreak(token_id, token_at_index) {
                 return LeaderboardResult::ScoreTooLow;
             }
