@@ -110,6 +110,3 @@ Captures require two identical complete runs. Compare captures produced with
 the same toolchain, harness, fixtures, and benchmark definitions. Reported
 selector gas is already per call. Re-run correctness, coverage, and gas checks
 when upgrading the toolchain: the encoder uses unstable corelib features.
-
-The encoder was originally based on the Base64 encoder from the Beast NFT
-project.
