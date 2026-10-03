@@ -110,11 +110,3 @@ Captures require two identical complete runs. Compare captures produced with
 the same toolchain, harness, fixtures, and benchmark definitions. Reported
 selector gas is already per call. Re-run correctness, coverage, and gas checks
 when upgrading the toolchain: the encoder uses unstable corelib features.
-
-The current verified compact v7 encoder reduces full-output selector gas by
-0.6480% at 1 KiB and 0.5710% at 8 KiB, and the same benchmark wrapper's CASM by
-232 words, against v6 in a previously verified paired downstream measurement. All 106
-cases improved or tied, using Scarb 2.20.1/Cairo 2.20.0, Foundry 0.63.0 and USC
-2.10.1. The upstream lab used Foundry 0.64.0. Captures are generated on demand;
-no archived reports or benchmark reference is required for correctness.
-See [source provenance](PROVENANCE.md) for attribution and the exact source hash.
