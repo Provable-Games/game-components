@@ -1,0 +1,23 @@
+# Original v6 lab supervisor source review
+
+This is the historical review from base64-cairo baseline-v6. Its toolchain,
+compiler artifacts and gas measurements refer to the original Foundry 0.64.0
+lab, not this target repository. The encoder is identical, while the package,
+harness and Foundry pin have changed. The transferred range proof is
+self-contained; historical supporting artifacts remain in the source lab.
+
+The final encoder is byte-identical to Sol's validated source, SHA `ef6d2fc50e1b5d1d81cd81091d3c34402ad41ebcd670d03e38a2a82b74c13883`. Only `src/encoding.cairo` changes the production algorithm. The frozen harnesses, manifests, gas fixtures and compiler pins are unchanged. The supervisor read the final source, helper types, pinned corelib and compiler lowering; [the original range proof](range-proof.md) records the complete construction.
+
+For a successful usize length n, integer DivRem by 3 produces q=floor(n/3) at most 0x55555555 and remainder 0..2. Both byte paths start a felt counter at q and test zero before decrement. Inductively it stays an ordinary nonnegative integer, runs exactly q iterations and consumes exactly 3q bytes, leaving the unchanged padding tail. The original overhead review verifies canonical empty output and the unchanged sextet ranges. The measured empty-return pilot's nonempty saving is a whole-source/compiler-layout effect, rather than an attribution to an untaken branch.
+
+For n=31w+p with p in 0..30, k=floor(w/3)=floor(n/93). Processing three full words per block consumes exactly 93k bytes; all index increments and the product 93k are bounded by the valid input length. Word serialization preserves leading zeros and explicit byte widths. Each word splits at 2^120 into high16/low15 bytes. The six peel shapes emit triplets in these consecutive byte ranges: 0..14, 15..29, 30..44, 45..59, 60..77 and 78..92. Carries contain respectively one byte, one byte, two bytes and two bytes and concatenate with the next limb in big-endian order. Exact helper ranges bound these integers by 128, 136 or 144 bits. All arithmetic stays below the field modulus. The group helper splits each 24-bit triplet into four 6-bit alphabet indices in order.
+
+The supervisor decoded the compile probe's complete 23 emitted bounded DivRem range pairs, including five native integer pairs omitted from the initial inventory. All satisfy the pinned KnownSmallRhs preconditions. The corrected experiment report distinguishes these concrete operand kinds; the original compiled Sierra/CASM hashes are unchanged. This supports the compiler-path claim and does not itself measure gas. Final captures separately establish performance.
+
+The independent original symbolic packing audit expands every static shift and verifies all 124 output character positions. Crossings split groups 7, 15 and 23 as 3|1, 2|2 and 1|3 characters. Four disjoint 31-byte words cover the complete output in order. Even arbitrary u8 values bound each word by 2^248−1, below the Cairo prime; nonnegative partial sums cannot wrap. Actual alphabet characters are ASCII. Corelib append_word at pending length zero and length 31 appends the complete word and restores zero pending length and value. Starting empty proves that invariant across every word and every block.
+
+The suffix range 93k..n is valid, starts on a 31-byte word boundary, and has fewer than 93 bytes. ByteSpan conversion preserves those bytes; its first triplet starts at the same phase because 93k is divisible by 3. Only the suffix can add padding. Joining its encoded result to the complete block words therefore preserves canonical Base64. Empty suffix returns the block result. Tiny and cached paths retain their prior input order and explicit zero-byte counts.
+
+The final gate checks every output against independent Python goldens through both helper and production. Twenty compiled faults target old and new semantics, including a block with an all-zero first word, carry loss, output crossings and truncated suffix. A targeted countdown probe initially used a batch of single-byte inputs; the corrected filter exercises lengths 0..63 and a new tooling check protects this selection. The full original corpus already exercises the triplet loop. Both audit attempts are preserved; the final source-bound gate fingerprints the corrected tools.
+
+Code size grows to 6,415 Sierra felts and 318,424 artifact bytes. Whole-input serialization still requires O(n) temporary memory; suffix caching is bounded by fewer than 93 bytes. That observation is not a measured memory saving. The encoder uses the pinned unstable bounded-int-utils, byte-span and corelib-get-trait features. Measurements include local ABI and returned-output costs; actual Beast metadata gas is unmeasured.

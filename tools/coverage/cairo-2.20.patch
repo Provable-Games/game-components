@@ -19,17 +19,88 @@ index c591d6d..be30748 100644
 @@ -10,0 +11 @@ cairo-lang-sierra.workspace = true
 +cairo-lang-sierra-type-size.workspace = true
 diff --git a/crates/cairo-coverage-core/src/build/coverage_input.rs b/crates/cairo-coverage-core/src/build/coverage_input.rs
-index cf48e15..05d71bf 100644
+index cf48e15..6cf0b73 100644
 --- a/crates/cairo-coverage-core/src/build/coverage_input.rs
 +++ b/crates/cairo-coverage-core/src/build/coverage_input.rs
-@@ -8,0 +9 @@ use cairo_lang_sierra::program::Program;
+@@ -10,0 +11 @@ use cairo_lang_sierra_to_casm::metadata::{MetadataComputationConfig, calc_metada
 +use cairo_lang_sierra_type_size::ProgramRegistryInfo;
-@@ -54,0 +56 @@ fn compile(program: &Program) -> Result<CairoProgramDebugInfo> {
+@@ -38 +39,7 @@ pub fn build(
+-    let statement_information_map =
++    assert_eq!(
++        casm_debug_info.sierra_statement_info.len(),
++        program.statements.len(),
++        "CASM debug information must cover every Sierra statement"
++    );
++
++    let mut statement_information_map =
+@@ -39,0 +47,4 @@ pub fn build(
++    // No-op Sierra statements have no VM program counter and cannot receive a trace hit.
++    // Keep the upstream category filter, then require an actual CASM bytecode span.
++    // This is compiler-derived, never a source-line or libfunc-name exception.
++    statement_information_map.retain(|idx, _| emits_bytecode(&casm_debug_info, idx.0));
+@@ -52,0 +64,52 @@ pub fn build(
++fn emits_bytecode(debug_info: &CairoProgramDebugInfo, idx: usize) -> bool {
++    let span = debug_info
++        .sierra_statement_info
++        .get(idx)
++        .expect("missing Sierra statement CASM debug information");
++    assert!(
++        span.start_offset <= span.end_offset,
++        "invalid CASM bytecode span"
++    );
++    span.start_offset < span.end_offset
++}
++
++#[cfg(test)]
++mod instruction_span_tests {
++    use super::*;
++    use cairo_lang_sierra_to_casm::compiler::{
++        ReturnStatementDebugInfo, SierraStatementDebugInfo, StatementKindDebugInfo,
++    };
++
++    fn debug_info(start: usize, end: usize) -> CairoProgramDebugInfo {
++        CairoProgramDebugInfo {
++            sierra_statement_info: vec![SierraStatementDebugInfo {
++                start_offset: start,
++                end_offset: end,
++                instruction_idx: 0,
++                additional_kind_info: StatementKindDebugInfo::Return(ReturnStatementDebugInfo {
++                    ref_values: vec![],
++                }),
++            }],
++        }
++    }
++
++    #[test]
++    fn excludes_only_zero_bytecode_spans() {
++        assert!(!emits_bytecode(&debug_info(7, 7), 0));
++        assert!(emits_bytecode(&debug_info(7, 8), 0));
++        assert!(emits_bytecode(&debug_info(7, 15), 0));
++    }
++
++    #[test]
++    #[should_panic(expected = "missing Sierra statement CASM debug information")]
++    fn missing_statement_fails_closed() {
++        emits_bytecode(&debug_info(7, 8), 1);
++    }
++
++    #[test]
++    #[should_panic(expected = "invalid CASM bytecode span")]
++    fn reversed_span_fails_closed() {
++        emits_bytecode(&debug_info(8, 7), 0);
++    }
++}
++
+@@ -54,0 +118 @@ fn compile(program: &Program) -> Result<CairoProgramDebugInfo> {
 +    let program_registry_info = ProgramRegistryInfo::new(program)?;
-@@ -57 +59,2 @@ fn compile(program: &Program) -> Result<CairoProgramDebugInfo> {
+@@ -57 +121,6 @@ fn compile(program: &Program) -> Result<CairoProgramDebugInfo> {
 -        &calc_metadata(program, MetadataComputationConfig::default())?,
 +        &program_registry_info,
-+        &calc_metadata(program, &program_registry_info, MetadataComputationConfig::default())?,
++        &calc_metadata(
++            program,
++            &program_registry_info,
++            MetadataComputationConfig::default(),
++        )?,
 diff --git a/crates/cairo-coverage-core/src/loading/enriched_program.rs b/crates/cairo-coverage-core/src/loading/enriched_program.rs
 index c9eaa6d..b4ead0f 100644
 --- a/crates/cairo-coverage-core/src/loading/enriched_program.rs

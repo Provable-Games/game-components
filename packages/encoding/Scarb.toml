@@ -1,0 +1,8 @@
+[package]
+name = "game_components_encoding"
+version.workspace = true
+edition.workspace = true
+cairo-version = "2.20.0"
+readme = "README.md"
+
+[lib]

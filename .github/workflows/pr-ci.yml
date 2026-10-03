@@ -20,6 +20,7 @@ jobs:
       need_egs: ${{ steps.compute-matrix.outputs.need_egs }}
       need_metagame: ${{ steps.compute-matrix.outputs.need_metagame }}
       need_economy: ${{ steps.compute-matrix.outputs.need_economy }}
+      need_encoding: ${{ steps.compute-matrix.outputs.need_encoding }}
       need_utilities: ${{ steps.compute-matrix.outputs.need_utilities }}
       need_erc721: ${{ steps.compute-matrix.outputs.need_erc721 }}
       need_presets: ${{ steps.compute-matrix.outputs.need_presets }}
@@ -59,6 +60,8 @@ jobs:
               - "packages/metagame/**"
             economy:
               - "packages/economy/**"
+            encoding:
+              - "packages/encoding/**"
             utilities:
               - "packages/utilities/**"
             interfaces:
@@ -83,6 +86,7 @@ jobs:
         env:
           FILTER_INTERFACES: ${{ steps.filter.outputs.interfaces }}
           FILTER_TESTING: ${{ steps.filter.outputs.testing }}
+          FILTER_ENCODING: ${{ steps.filter.outputs.encoding }}
           FILTER_UTILITIES: ${{ steps.filter.outputs.utilities }}
           FILTER_METAGAME_PKG: ${{ steps.filter.outputs.metagame_pkg }}
           FILTER_ECONOMY: ${{ steps.filter.outputs.economy }}
@@ -101,8 +105,10 @@ jobs:
           # embeddable_game_standard → embeddable_game_standard + presets
           # test_common → embeddable_game_standard + metagame + presets
           # presets → presets
+          # encoding library/harness → encoding (aggregate re-export has no runtime consumer)
 
           RUN_ALL="false"
+          NEED_ENCODING="$FILTER_ENCODING"
           NEED_ERC721="$FILTER_ERC721"
           NEED_EGS="false"
           NEED_METAGAME="false"
@@ -145,6 +151,7 @@ jobs:
           fi
 
           if [ "$RUN_ALL" = "true" ]; then
+            NEED_ENCODING="true"
             NEED_ERC721="true"
             NEED_EGS="true"
             NEED_METAGAME="true"
@@ -154,7 +161,7 @@ jobs:
           fi
 
           HAS_TESTS="false"
-          for flag in "$NEED_ERC721" "$NEED_EGS" "$NEED_METAGAME" "$NEED_ECONOMY" "$NEED_UTILITIES" "$NEED_PRESETS"; do
+          for flag in "$NEED_ENCODING" "$NEED_ERC721" "$NEED_EGS" "$NEED_METAGAME" "$NEED_ECONOMY" "$NEED_UTILITIES" "$NEED_PRESETS"; do
             if [ "$flag" = "true" ]; then
               HAS_TESTS="true"
               break
@@ -162,6 +169,7 @@ jobs:
           done
 
           echo "has_tests=$HAS_TESTS" >> "$GITHUB_OUTPUT"
+          echo "need_encoding=$NEED_ENCODING" >> "$GITHUB_OUTPUT"
           echo "need_erc721=$NEED_ERC721" >> "$GITHUB_OUTPUT"
           echo "need_egs=$NEED_EGS" >> "$GITHUB_OUTPUT"
           echo "need_metagame=$NEED_METAGAME" >> "$GITHUB_OUTPUT"
@@ -236,6 +244,7 @@ jobs:
       - name: Build test matrix from package flags
         id: build-matrix
         env:
+          NEED_ENCODING: ${{ needs.changes.outputs.need_encoding }}
           NEED_ERC721: ${{ needs.changes.outputs.need_erc721 }}
           NEED_EGS: ${{ needs.changes.outputs.need_egs }}
           NEED_METAGAME: ${{ needs.changes.outputs.need_metagame }}
@@ -248,6 +257,9 @@ jobs:
           INCLUDES="[]"
           add() { INCLUDES=$(echo "$INCLUDES" | jq -c --arg p "$1" --arg m "$2" --arg r "$3" --argjson f "$4" '. + [{package:$p,module:$m,runner:$r,fuzzer_runs:$f}]'); }
 
+          if [ "$NEED_ENCODING" = "true" ]; then
+            add game_components_encoding_harness encoding ubuntu-latest-4 256
+          fi
           if [ "$NEED_ERC721" = "true" ]; then
             add game_components_erc721 erc721 ubuntu-latest 256
           fi
@@ -405,9 +417,18 @@ jobs:
         run: |
           coverage_package="${{ matrix.package }}"
           coverage_package="${coverage_package#game_components_}"
+          if [ "${{ matrix.package }}" = "game_components_encoding_harness" ]; then
+            coverage_package="encoding/harness"
+          fi
           echo "COVERAGE_FILE=./packages/$coverage_package/coverage/coverage.lcov" >> "$GITHUB_ENV"
           rm -f "packages/$coverage_package/coverage/coverage.lcov"
-          if [ "${{ matrix.package }}" = "game_components_erc721" ]; then
+          if [ "${{ matrix.package }}" = "game_components_encoding_harness" ]; then
+            python3 packages/encoding/harness/scripts/validate-candidate.py run --output /tmp/encoding-validation
+            (cd packages/encoding/harness && snforge clean trace coverage)
+            # This additional helper run collects traces; the complete gate above covers all 401 tests.
+            snforge test -p game_components_encoding_harness oracle_correctness --max-threads 2 --coverage 2>&1 | tee /tmp/test.log
+            python3 packages/encoding/harness/scripts/check-coverage.py
+          elif [ "${{ matrix.package }}" = "game_components_erc721" ]; then
             python3 scripts/test_erc721_checks.py
             python3 scripts/check_erc721_upstream.py
             snforge test -p game_components_erc721 --features fuzzing --fuzzer-runs 256 --coverage 2>&1 | tee /tmp/test.log

@@ -1,0 +1,16 @@
+[package]
+name = "game_components_encoding_harness"
+version.workspace = true
+edition.workspace = true
+publish = false
+
+[dependencies]
+game_components_encoding = { path = ".." }
+starknet.workspace = true
+
+[dev-dependencies]
+snforge_std.workspace = true
+
+[[target.starknet-contract]]
+
+[lib]

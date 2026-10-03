@@ -1,5 +1,7 @@
 [workspace]
 members = [
+    "packages/encoding",
+    "packages/encoding/harness",
     "packages/interfaces",
     "packages/erc721",
     "packages/embeddable_game_standard",
@@ -48,6 +50,7 @@ alexandria_merkle_tree = { git = "https://github.com/keep-starknet-strange/alexa
 [dependencies]
 starknet.workspace = true
 # Group packages
+game_components_encoding = { path = "packages/encoding" }
 game_components_erc721 = { path = "packages/erc721" }
 game_components_interfaces = { path = "packages/interfaces" }
 metagame_extensions_interfaces.workspace = true

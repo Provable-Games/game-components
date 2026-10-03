@@ -37,6 +37,7 @@ test "$(git -C "$coverage_source" rev-parse HEAD)" = "$coverage_revision"
 cmp tools/coverage/Cargo.lock "$coverage_source/Cargo.lock"
 git -C "$coverage_source" diff --no-ext-diff --no-color --unified=0 HEAD -- . ':!Cargo.lock' | cmp - tools/coverage/cairo-2.20.patch
 rustup toolchain install "$coverage_rust" --profile minimal
+cargo +"$coverage_rust" test --locked --release --manifest-path "$coverage_source/Cargo.toml" -p cairo-coverage-core instruction_span_tests
 cargo +"$coverage_rust" build --locked --release --manifest-path "$coverage_source/Cargo.toml" -p cairo-coverage
 mkdir -p "$coverage_bin"
 cp "$coverage_source/target/release/cairo-coverage" "$coverage_bin/cairo-coverage"
