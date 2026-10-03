@@ -112,28 +112,52 @@ def outputs():
     return result
 
 
-def main():
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--check', action='store_true', help='Fail if generated files differ; never write')
-    args = parser.parse_args()
-    mismatches = []
-    result = outputs()
+def verify_outputs(result, folders, prepare=False):
+    """Check frozen authorities and declarations before materializing missing data."""
+    authority = ROOT / 'fixtures/source-sha256.json'
+    if hashlib.sha256(authority.read_bytes()).hexdigest() != (
+            '32fa2f240b58571d12c84fd89a8d1b8093b13fbbb1bac19d1d5a5921ccd20711'):
+        raise ValueError('Original fixture hash authority changed')
+    hashes = json.loads(authority.read_text())
+    missing, mismatches = [], []
     for relative, content in result.items():
+        encoded = content.encode()
         path = ROOT / relative
-        if args.check:
-            if not path.is_file() or path.read_text() != content:
+        if relative.startswith('fixtures/') and (
+                hashes.get(relative) != hashlib.sha256(encoded).hexdigest()):
+            mismatches.append(relative + ' (frozen hash)')
+        if path.is_file():
+            if path.read_bytes() != encoded:
                 mismatches.append(relative)
+        elif prepare and relative.endswith('.txt'):
+            missing.append((path, encoded))
         else:
-            path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_text(content)
-    extras = {str(path.relative_to(ROOT)) for folder in ['fixtures/benchmarks', 'fixtures/oracle']
+            mismatches.append(relative)
+    extras = {str(path.relative_to(ROOT)) for folder in folders
         for path in (ROOT / folder).glob('*.txt')} - set(result)
     mismatches.extend(sorted(extras))
     if mismatches:
-        parser.exit(1, 'Fixture drift: ' + ', '.join(mismatches) + '\n')
+        raise ValueError('Fixture drift: ' + ', '.join(mismatches))
+    # Never rewrite existing files, manifests, declarations or the hash authority.
+    for path, encoded in missing:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with path.open('xb') as output:
+            output.write(encoded)
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument('--check', action='store_true', help='Verify without writing files')
+    mode.add_argument('--prepare', action='store_true', help='Materialize missing data after frozen checks (default)')
+    args = parser.parse_args()
+    result = outputs()
+    try:
+        verify_outputs(result, ['fixtures/benchmarks', 'fixtures/oracle'], prepare=not args.check)
+    except ValueError as error:
+        parser.exit(1, str(error) + '\n')
     manifest = json.loads(result['fixtures/manifest.json'])
-    print(f'{len(manifest["benchmarks"])} benchmark cases; {manifest["oracle_cases"]} oracle cases; generated files verified' if args.check
-        else f'Generated {len(manifest["benchmarks"])} benchmark cases and {manifest["oracle_cases"]} oracle cases')
+    print(f'{len(manifest["benchmarks"])} benchmark cases; {manifest["oracle_cases"]} oracle cases; verified')
 
 
 if __name__ == '__main__':

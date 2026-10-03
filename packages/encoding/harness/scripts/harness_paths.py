@@ -17,4 +17,5 @@ def definitions():
         'src/benchmark_harness.cairo', 'src/lab_benchmark_harness.cairo',
         'tests/benchmark_support.cairo', 'tests/lab_benchmarks.cairo',
         'tests/oracle_correctness.cairo', 'scripts/harness_paths.py',
-        'scripts/generate-fixtures.py', 'scripts/benchmark.py', 'fixtures/manifest.json']
+        'scripts/generate-fixtures.py', 'scripts/generate-accuracy-fixtures.py', 'scripts/benchmark.py',
+        'fixtures/manifest.json', 'fixtures/accuracy-manifest.json', 'fixtures/source-sha256.json']

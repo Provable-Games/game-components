@@ -62,9 +62,18 @@ scarb fmt --check --workspace
 snforge test -p game_components_encoding_harness
 ```
 
-The harness tests standard vectors, binary input, padding, word and block
-boundaries, and large payloads against independent Python goldens. To run the
-complete correctness and harness-integrity gate and verify its saved report:
+The harness build hook automatically generates all 313 ignored fixture text
+files using independent Python Base64 oracles. Preparation verifies the frozen
+hash authority, both committed manifests and generated Cairo test declarations
+before writing missing data; corrupted existing files fail validation. Python 3
+is required for harness builds and tests. The production library has no hook.
+
+Every encoding change runs all 401 tests in CI, including 71,989 supplemental
+goldens and 841 legacy cases through the helper and separately compiled
+production contract. Coverage includes every two-byte input, all single bytes,
+word and block boundaries, zero and sparse words, four random seeds per length,
+large payloads and nested SVG/JSON. Run the complete correctness and
+harness-integrity gate and verify its report:
 
 ```sh
 python3 packages/encoding/harness/scripts/validate-candidate.py run --output /tmp/encoding-validation
@@ -104,6 +113,8 @@ when upgrading the toolchain: the encoder uses unstable corelib features.
 
 The current verified compact v7 encoder reduces full-output selector gas by
 0.6480% at 1 KiB and 0.5710% at 8 KiB, and the same benchmark wrapper's CASM by
-232 words, against the preserved v6 baseline. All 106 cases improve or tie.
-See [paired downstream evidence](harness/benchmarks/README.md) and
-[source provenance](PROVENANCE.md) for exact versions, hashes and reproduction.
+232 words, against v6 in a previously verified paired downstream measurement. All 106
+cases improved or tied, using Scarb 2.20.1/Cairo 2.20.0, Foundry 0.63.0 and USC
+2.10.1. The upstream lab used Foundry 0.64.0. Captures are generated on demand;
+no archived reports or benchmark reference is required for correctness.
+See [source provenance](PROVENANCE.md) for attribution and the exact source hash.

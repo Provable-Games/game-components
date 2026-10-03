@@ -114,6 +114,7 @@ def capture(args):
     if args.runs < 2:
         raise ValueError('Capture requires at least two independent runs')
     versions = toolchain()
+    subprocess.run([sys.executable, 'scripts/generate-accuracy-fixtures.py', '--prepare'], cwd=ROOT, check=True)
     subprocess.run([sys.executable, 'scripts/generate-fixtures.py', '--check'], cwd=ROOT, check=True)
     subprocess.run(['scarb', 'fmt', '--check', '--workspace'], cwd=ROOT, check=True)
     # Resolve dependencies before freezing the generated workspace lockfile hash.

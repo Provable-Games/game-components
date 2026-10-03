@@ -18,7 +18,9 @@ Alphabet, packing, tiny-input and cached-suffix paths are unchanged. No partial
 prefix or broader inlining variant is included. Pinned Cairo 2.20.0 corelib and
 compiler APIs were inspected because Context7 was unavailable.
 
-[Paired downstream evidence](harness/benchmarks/README.md) uses identical
-Scarb 2.20.1/Cairo 2.20.0, Foundry 0.63.0 and USC 2.10.1 with the same wrapper and
-fixtures. The upstream lab used Foundry 0.64.0; its artifact sizes are not the
-downstream measurements. The production manifest remains dependency-free.
+The three committed fixture manifests preserve the original golden hashes.
+Fixture data is reproduced deterministically by independent Python generators,
+checked against those hashes and kept outside Git. The complete accuracy gate,
+coverage enforcement and 21 compiled semantic-fault checks remain available.
+Gas captures accept an explicit compatible external reference; historical reports
+are not part of this package. The production manifest remains dependency-free.

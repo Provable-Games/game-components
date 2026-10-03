@@ -210,7 +210,7 @@ def run(destination):
         shutil.copytree(ROOT / '../src', workspace / 'packages/encoding/src')
         shutil.copy2(ROOT / '../Scarb.toml', workspace / 'packages/encoding/Scarb.toml')
         shutil.copy2(ROOT / '../README.md', workspace / 'packages/encoding/README.md')
-        for name in ['src', 'tests', 'fixtures', 'Scarb.toml']:
+        for name in ['src', 'tests', 'fixtures', 'scripts', 'Scarb.toml']:
             path = ROOT / name
             if path.is_dir():
                 shutil.copytree(path, project / name)

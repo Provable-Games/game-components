@@ -1,2 +1,0 @@
-# Preserve raw measured tool output, including its final blank lines.
-packages/encoding/harness/benchmarks/**/*.txt whitespace=-blank-at-eof
