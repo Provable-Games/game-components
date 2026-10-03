@@ -158,13 +158,14 @@ When adding a new module to a group package, update **both** files:
 2. **`codecov.yml`** - Update the build count:
    ```yaml
    notify:
-     after_n_builds: 17 # ← Must equal total module count in matrix
+     after_n_builds: 18 # ← Must equal total module count in matrix
    ```
 
-### Current Matrix (17 modules)
+### Current Matrix (18 modules)
 
 | Group Package | Module | Runner | Fuzzer Runs |
 |---------------|--------|--------|-------------|
+| `encoding` | whole separate harness (401 tests; dependency-free library) | `ubuntu-latest-4` | 256 |
 | `erc721` | whole package (ERC721 + royalties + safety) | `ubuntu-latest` | 256 |
 | `embeddable_game_standard` | `minigame` | `ubuntu-latest-8` | 32 |
 | `embeddable_game_standard` | `metagame` | `ubuntu-latest-8` | 32 |

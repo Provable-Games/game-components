@@ -251,3 +251,7 @@ The [ERC721 package](packages/erc721/README.md) provides a maintained OpenZeppel
 public interfaces, and complete ERC721/royalty regression coverage. It can be
 imported directly as `game_components_erc721` from a reviewed repository commit.
 Its README records the storage layout, supported domain, and upstream provenance.
+
+The dependency-free [encoding package](packages/encoding/README.md) exports canonical
+RFC 4648 Base64 for `ByteArray`. Its separate test harness carries the full
+401-test validation corpus without adding dependencies to the production library.

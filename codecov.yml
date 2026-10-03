@@ -3,7 +3,7 @@ codecov:
   notify:
     # Must equal total module count in the .github/workflows/main-ci.yml matrix
     # (modules, NOT packages). See AGENTS.md "CI Configuration" when adding a module
-    after_n_builds: 17
+    after_n_builds: 18
 
 comment:
   layout: "diff, files, header, footer"
@@ -41,6 +41,7 @@ ignore:
   - "scripts/"
   - "packages/test_common/"
   - "packages/testing/"
+  - "packages/encoding/harness/"
   - "packages/interfaces/"
 
 github_checks:

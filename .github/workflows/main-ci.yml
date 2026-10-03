@@ -168,6 +168,11 @@ jobs:
         #   - codecov.yml: after_n_builds must equal module count
         #   - AGENTS.md: CI Configuration section
         include:
+          # Dependency-free library tested through its separate harness.
+          - package: game_components_encoding_harness
+            module: encoding
+            runner: ubuntu-latest-4
+            fuzzer_runs: 256
           # Complete ERC721 + royalty suite, including feature-gated fuzzers.
           - package: game_components_erc721
             module: erc721
@@ -309,9 +314,18 @@ jobs:
         run: |
           coverage_package="${{ matrix.package }}"
           coverage_package="${coverage_package#game_components_}"
+          if [ "${{ matrix.package }}" = "game_components_encoding_harness" ]; then
+            coverage_package="encoding/harness"
+          fi
           echo "COVERAGE_FILE=./packages/$coverage_package/coverage/coverage.lcov" >> "$GITHUB_ENV"
           rm -f "packages/$coverage_package/coverage/coverage.lcov"
-          if [ "${{ matrix.package }}" = "game_components_erc721" ]; then
+          if [ "${{ matrix.package }}" = "game_components_encoding_harness" ]; then
+            python3 packages/encoding/harness/scripts/validate-candidate.py run --output /tmp/encoding-validation
+            (cd packages/encoding/harness && snforge clean trace coverage)
+            # This additional helper run collects traces; the complete gate above covers all 401 tests.
+            snforge test -p game_components_encoding_harness oracle_correctness --max-threads 2 --coverage 2>&1 | tee /tmp/test.log
+            python3 packages/encoding/harness/scripts/check-coverage.py
+          elif [ "${{ matrix.package }}" = "game_components_erc721" ]; then
             python3 scripts/test_erc721_checks.py
             python3 scripts/check_erc721_upstream.py
             snforge test -p game_components_erc721 --features fuzzing --fuzzer-runs 256 --coverage 2>&1 | tee /tmp/test.log
