@@ -117,27 +117,25 @@ def outputs():
     return result
 
 
+def prepare(check=False):
+    # Check all declarations and both manifests before creating any fixture data.
+    result = {**legacy.outputs(), **outputs()}
+    legacy.verify_outputs(result, ['fixtures/benchmarks', 'fixtures/oracle', 'fixtures/accuracy'],
+        prepare=not check)
+    return json.loads(result['fixtures/accuracy-manifest.json'])
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--check', action='store_true', help='Verify without modifying files')
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument('--check', action='store_true', help='Verify without writing files')
+    mode.add_argument('--prepare', action='store_true', help='Materialize missing data after frozen checks (default)')
     args = parser.parse_args()
-    result = outputs()
-    mismatches = []
-    for relative, content in result.items():
-        path = ROOT / relative
-        if args.check:
-            if not path.is_file() or path.read_text() != content:
-                mismatches.append(relative)
-        else:
-            path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_text(content)
-    extras = {str(path.relative_to(ROOT)) for path in (ROOT / 'fixtures/accuracy').glob('*.txt')} - set(result)
-    mismatches.extend(sorted(extras))
-    if mismatches:
-        parser.exit(1, 'Accuracy fixture drift: ' + ', '.join(mismatches) + '\n')
-    manifest = json.loads(result['fixtures/accuracy-manifest.json'])
-    print(f'{manifest["cases"]} accuracy cases in {len(manifest["batches"])} batches; '
-        + ('verified' if args.check else 'generated'))
+    try:
+        manifest = prepare(check=args.check)
+    except ValueError as error:
+        parser.exit(1, str(error) + '\n')
+    print(f'{manifest["cases"]} accuracy cases in {len(manifest["batches"])} batches; verified')
 
 
 if __name__ == '__main__':

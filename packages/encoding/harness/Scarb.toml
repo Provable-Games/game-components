@@ -14,3 +14,6 @@ snforge_std.workspace = true
 [[target.starknet-contract]]
 
 [lib]
+
+[scripts]
+build = "python3 scripts/generate-accuracy-fixtures.py --prepare"

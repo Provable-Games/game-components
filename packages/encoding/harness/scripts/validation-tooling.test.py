@@ -4,6 +4,8 @@ import importlib.util
 import json
 import contextlib
 import tempfile
+import shutil
+import hashlib
 import unittest
 from pathlib import Path
 from unittest.mock import patch
@@ -18,6 +20,85 @@ SPEC2.loader.exec_module(accuracy)
 SPEC3 = importlib.util.spec_from_file_location('mutations', ROOT / 'scripts/mutation-audit.py')
 mutations = importlib.util.module_from_spec(SPEC3)
 SPEC3.loader.exec_module(mutations)
+
+
+class FixturePreparationTests(unittest.TestCase):
+    def setUp(self):
+        self.temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temporary.cleanup)
+        self.root = Path(self.temporary.name)
+        for relative in ['fixtures/manifest.json', 'fixtures/accuracy-manifest.json',
+                'fixtures/source-sha256.json', 'tests/lab_benchmarks.cairo',
+                'tests/oracle_correctness.cairo', 'tests/accuracy_validation.cairo']:
+            destination = self.root / relative
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(ROOT / relative, destination)
+        for module in [accuracy, accuracy.legacy]:
+            patcher = patch.object(module, 'ROOT', self.root)
+            patcher.start()
+            self.addCleanup(patcher.stop)
+
+    def test_missing_data_is_recreated_byte_identically_without_changing_authorities(self):
+        before = {str(path.relative_to(self.root)): path.read_bytes()
+            for path in self.root.rglob('*') if path.is_file()}
+        accuracy.prepare()
+        hashes = json.loads((self.root / 'fixtures/source-sha256.json').read_text())
+        self.assertEqual(len(list(self.root.rglob('*.txt'))), 313)
+        self.assertEqual(len(hashes), 315)
+        for relative, digest in hashes.items():
+            self.assertEqual(hashlib.sha256((self.root / relative).read_bytes()).hexdigest(), digest)
+        for relative, content in before.items():
+            self.assertEqual((self.root / relative).read_bytes(), content)
+        accuracy.prepare(check=True)
+
+    def test_corrupt_existing_data_is_rejected_and_never_repaired(self):
+        fixture = self.root / 'fixtures/oracle/batch_00.txt'
+        fixture.parent.mkdir()
+        fixture.write_bytes(b'corrupt data')
+        with self.assertRaisesRegex(ValueError, 'Fixture drift'):
+            accuracy.prepare()
+        self.assertEqual(fixture.read_bytes(), b'corrupt data')
+        self.assertEqual(list(self.root.rglob('*.txt')), [fixture])
+
+    def test_edited_hash_authority_is_rejected_before_writes(self):
+        authority = self.root / 'fixtures/source-sha256.json'
+        hashes = json.loads(authority.read_text())
+        hashes['fixtures/oracle/batch_00.txt'] = '0' * 64
+        authority.write_text(json.dumps(hashes))
+        with self.assertRaisesRegex(ValueError, 'hash authority changed'):
+            accuracy.prepare()
+        self.assertFalse(list(self.root.rglob('*.txt')))
+
+    def test_generator_drift_cannot_be_blessed_by_preparation(self):
+        result = {**accuracy.legacy.outputs(), **accuracy.outputs()}
+        result['fixtures/oracle/batch_00.txt'] += '0\n'
+        with self.assertRaisesRegex(ValueError, 'frozen hash'):
+            accuracy.legacy.verify_outputs(result, [], prepare=True)
+        self.assertFalse(list(self.root.rglob('*.txt')))
+
+    def test_changed_manifest_or_cairo_declaration_fails_before_writes(self):
+        for relative in ['fixtures/manifest.json', 'fixtures/accuracy-manifest.json',
+                'tests/lab_benchmarks.cairo', 'tests/oracle_correctness.cairo',
+                'tests/accuracy_validation.cairo']:
+            with self.subTest(relative=relative):
+                path = self.root / relative
+                original = path.read_bytes()
+                path.write_bytes(original + b'\n')
+                with self.assertRaisesRegex(ValueError, 'Fixture drift'):
+                    accuracy.prepare()
+                self.assertFalse(list(self.root.rglob('*.txt')))
+                path.write_bytes(original)
+
+    def test_check_does_not_prepare_and_extra_fixture_is_rejected(self):
+        with self.assertRaisesRegex(ValueError, 'Fixture drift'):
+            accuracy.prepare(check=True)
+        self.assertFalse(list(self.root.rglob('*.txt')))
+        extra = self.root / 'fixtures/accuracy/unexpected.txt'
+        extra.parent.mkdir()
+        extra.write_text('0')
+        with self.assertRaisesRegex(ValueError, 'unexpected.txt'):
+            accuracy.prepare()
+        self.assertEqual(list(self.root.rglob('*.txt')), [extra])
 
 
 class AccuracyGateTests(unittest.TestCase):
@@ -68,7 +149,7 @@ class AccuracyGateTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary) / 'packages/encoding/harness'
             root.mkdir(parents=True)
-            for name in ['src', 'tests', 'scripts', 'fixtures', 'benchmarks']:
+            for name in ['src', 'tests', 'scripts', 'fixtures']:
                 (root / name).mkdir()
             for name in validation.benchmark.DEFINITIONS + validation.CONFIG_FILES + [validation.ENCODER_KEY]:
                 (root / name).parent.mkdir(parents=True, exist_ok=True)
@@ -93,8 +174,8 @@ class AccuracyGateTests(unittest.TestCase):
                 mutations.validate_failure(broken, 'accuracy_pairs_004')
         source = (ROOT / '../src/encoding.cairo').read_text()
         cases = list(mutations.mutants(source))
-        self.assertEqual(len(cases), 20)
-        self.assertEqual(len({name for name, _, _ in cases}), 20)
+        self.assertEqual(len(cases), 21)
+        self.assertEqual(len({name for name, _, _ in cases}), 21)
         self.assertTrue(all(mutated != source for _, _, mutated in cases))
 
     def test_compilation_error_cannot_count_as_mutant_rejection(self):
@@ -118,6 +199,8 @@ class AccuracyGateTests(unittest.TestCase):
             return result
 
         self.assertTrue(any(len(data) >= 3 for data in inputs('countdown_short')))
+        self.assertIn('block_countdown_short', filters)
+        self.assertTrue(any(len(data) >= 93 for data in inputs('block_countdown_short')))
         for name in filters:
             if name.startswith('block_'):
                 self.assertTrue(any(len(data) >= 93 for data in inputs(name)), name)
@@ -125,6 +208,15 @@ class AccuracyGateTests(unittest.TestCase):
             for data in inputs('block_tail_truncation')))
         self.assertTrue(any(len(data) >= 93 and data[:31] == bytes(31) and any(data[31:93])
             for data in inputs('block_zero_word_loss')))
+
+    def test_scoped_mutation_changes_only_the_selected_helper(self):
+        source = '    fn encode_block() { if true { same(); } }\n    fn other() { same(); }\n'
+        changed = mutations.replace_function(source, 'encode_block', 'same();', 'fault();')
+        self.assertEqual(changed, '    fn encode_block() { if true { fault(); } }\n    fn other() { same(); }\n')
+        for broken in [source.replace('fn encode_block', 'fn other'), source + source,
+                '    fn encode_block() { same();']:
+            with self.assertRaises(ValueError):
+                mutations.replace_function(broken, 'encode_block', 'same();', 'fault();')
 
     def test_original_fixture_provenance_covers_all_goldens(self):
         validation.verify_fixture_provenance()

@@ -18,3 +18,6 @@ coverage.lcov
 .validation-tools/
 !tools/coverage/
 __pycache__/
+
+# Encoding oracle data is regenerated and checked against frozen manifests.
+/packages/encoding/harness/fixtures/**/*.txt

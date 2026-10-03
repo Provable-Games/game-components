@@ -22,7 +22,7 @@ SPEC.loader.exec_module(benchmark)
 CONFIG_FILES = ['../../../.github/workflows/main-ci.yml', '../../../.github/workflows/pr-ci.yml',
     '../../../codecov.yml', '../../../tools/coverage/cairo-2.20.patch',
     '../../../tools/coverage/Cargo.lock', '../../../tools/coverage/upstream.json',
-    '../../../scripts/setup_coverage.sh']
+    '../../../scripts/setup_coverage.sh', '../../../.gitignore']
 
 
 def fingerprints():
@@ -140,6 +140,7 @@ def run(args):
     if args.threads < 1:
         raise ValueError('Thread count must be positive')
     versions = benchmark.toolchain()
+    subprocess.run([sys.executable, 'scripts/generate-accuracy-fixtures.py', '--prepare'], cwd=ROOT, check=True)
     verify_fixture_provenance()
     subprocess.run([sys.executable, 'scripts/generate-fixtures.py', '--check'], cwd=ROOT, check=True)
     subprocess.run([sys.executable, 'scripts/generate-accuracy-fixtures.py', '--check'], cwd=ROOT, check=True)
