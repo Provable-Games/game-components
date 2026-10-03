@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "generation": 7,
+  "capture_directory": "downstream-v7/gas",
+  "previous_capture_directory": "downstream-v6/gas",
+  "encoder_sha256": "e7f8bfaa75c13c0e8d051ad82c4639f27be0c262978fc4dc67c9a1d86af35350",
+  "comparison": "downstream-v7/accuracy/comparison.csv",
+  "result": {
+    "improved": 58,
+    "tied": 48,
+    "regressed": 0
+  }
+}

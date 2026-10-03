@@ -1,0 +1,1070 @@
+{
+  "architecture": "x86_64",
+  "cases": [
+    {
+      "case": "a5_0",
+      "encoded_bytes": 0,
+      "fixture": "fixtures/benchmarks/a5_0.txt",
+      "input_bytes": 0,
+      "input_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "output_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "pattern": "a5"
+    },
+    {
+      "case": "a5_1",
+      "encoded_bytes": 4,
+      "fixture": "fixtures/benchmarks/a5_1.txt",
+      "input_bytes": 1,
+      "input_sha256": "6922e93e3827642ce4b883c756b31abf80036649d3614bf5fcb3adda43b8ea32",
+      "output_sha256": "b76a138ae64db3efe4668e0b4ebfc6d0c9769ae79191443457e1130943ce9511",
+      "pattern": "a5"
+    },
+    {
+      "case": "a5_2",
+      "encoded_bytes": 4,
+      "fixture": "fixtures/benchmarks/a5_2.txt",
+      "input_bytes": 2,
+      "input_sha256": "79ee250219c953c2f2410e7ae113caac39596bf776e00bb7e4d34e2b4f46dc15",
+      "output_sha256": "de6903e822a32629ba919fbf1cf75d78a7f90f4b0ede29aa3cbbb685b12c6770",
+      "pattern": "a5"
+    },
+    {
+      "case": "a5_3",
+      "encoded_bytes": 4,
+      "fixture": "fixtures/benchmarks/a5_3.txt",
+      "input_bytes": 3,
+      "input_sha256": "0f0f7a6ffcf4abb6ca9e9d1e6bc46d1d43f7d730baf93ddacd28b62255c43f4b",
+      "output_sha256": "bdc5ad199d9f47c0ef871592b2277b280b64297b9bc2f331dbd54c65650746bf",
+      "pattern": "a5"
+    },
+    {
+      "case": "a5_4",
+      "encoded_bytes": 8,
+      "fixture": "fixtures/benchmarks/a5_4.txt",
+      "input_bytes": 4,
+      "input_sha256": "e51245c8418dd3f3629da3001ddfed530dc7b5d85c74ecc4acf507e073938422",
+      "output_sha256": "87b3c97456592cbfa89aeea466496416082e16a233621c659b987e6dac9ec6a9",
+      "pattern": "a5"
+    },
+    {
+      "case": "a5_5",
+      "encoded_bytes": 8,
+      "fixture": "fixtures/benchmarks/a5_5.txt",
+      "input_bytes": 5,
+      "input_sha256": "2120ac0a873ea708ead0d6d1feca016ecaca38a7c61b368740dc8b7962ca0f35",
+      "output_sha256": "7c19895f1f13933977612c665e3ddee85b7825ed9f00aa770c522a7f7c412a22",
+      "pattern": "a5"
+    },
+    {
+      "case": "a5_6",
+      "encoded_bytes": 8,
+      "fixture": "fixtures/benchmarks/a5_6.txt",
+      "input_bytes": 6,
+      "input_sha256": "3d5b20fffe67bcf5798cb24c130c9f8049cfb48bd1954eb761ea951c8f3cd881",
+      "output_sha256": "b5c5b1080bb0a5814eaf416ce9e989895009067178017a836d0fe04fdc30dace",
+      "pattern": "a5"
+    },
+    {
+      "case": "a5_7",
+      "encoded_bytes": 12,
+      "fixture": "fixtures/benchmarks/a5_7.txt",
+      "input_bytes": 7,
+      "input_sha256": "8e6779dc67531152659c232566664185bfc1b4c8ef4459044609583c9327e404",
+      "output_sha256": "2bfeb478a43dbc7c7fa49c92f940a8d94f0159e257ca63750425c83dac6964ef",
+      "pattern": "a5"
+    },
+    {
+      "case": "a5_8",
+      "encoded_bytes": 12,
+      "fixture": "fixtures/benchmarks/a5_8.txt",
+      "input_bytes": 8,
+      "input_sha256": "ed0b4dd158a46dc424a660c0e9aaa52558406cb7c106391897bb07fd8dc3ba99",
+      "output_sha256": "aabc34e0cf8ae95efd3f0154e5aa5c82602a5ea6689950f337471a15d31aa68e",
+      "pattern": "a5"
+    },
+    {
+      "case": "a5_9",
+      "encoded_bytes": 12,
+      "fixture": "fixtures/benchmarks/a5_9.txt",
+      "input_bytes": 9,
+      "input_sha256": "ae8cec2c24a536e0dcd21a59040578fc89821d05db856349a7373bc31e4a6f12",
+      "output_sha256": "7b259f297abb2b3bb9002330986e43aa276341da4557fb6b48101860bcee836f",
+      "pattern": "a5"
+    },
+    {
+      "case": "a5_10",
+      "encoded_bytes": 16,
+      "fixture": "fixtures/benchmarks/a5_10.txt",
+      "input_bytes": 10,
+      "input_sha256": "1133b14696af2eb86b034bec4582480a2b9e774b90766cab6d115a75f16e21de",
+      "output_sha256": "64e801cf4a756a2de3ba3a8c7e96c134b3e49f6484223888926340e50b110c21",
+      "pattern": "a5"
+    },
+    {
+      "case": "a5_11",
+      "encoded_bytes": 16,
+      "fixture": "fixtures/benchmarks/a5_11.txt",
+      "input_bytes": 11,
+      "input_sha256": "83b043c0044f525771ec256f1556655a6b164593837fe028834fc89d5041245f",
+      "output_sha256": "a2019250b051fb8056b137fce09310dc8f1faeebefbe3df75e40feedb0059197",
+      "pattern": "a5"
+    },
+    {
+      "case": "a5_12",
+      "encoded_bytes": 16,
+      "fixture": "fixtures/benchmarks/a5_12.txt",
+      "input_bytes": 12,
+      "input_sha256": "1bbfcdb48f8ec9db2c673609239241e6b90813ef31ae06e0874161c71f596069",
+      "output_sha256": "14b99f9d8da1437cc36f86245fff1aa505981b2dc0ab1f8d1830934bf315b0ce",
+      "pattern": "a5"
+    },
+    {
+      "case": "a5_22",
+      "encoded_bytes": 32,
+      "fixture": "fixtures/benchmarks/a5_22.txt",
+      "input_bytes": 22,
+      "input_sha256": "7a4fae696d21d22f173a2071267d296e31dfe2167f13563992b94ac790d5c765",
+      "output_sha256": "7b7cc964ca70b59a72795be678194848ecb7b3b022f8639dcc164a5eceee877f",
+      "pattern": "a5"
+    },
+    {
+      "case": "a5_23",
+      "encoded_bytes": 32,
+      "fixture": "fixtures/benchmarks/a5_23.txt",
+      "input_bytes": 23,
+      "input_sha256": "3d4782da8d4d750f4f468603da412ecb0505d4bd669184074a8579540f798318",
+      "output_sha256": "d7f74897c525447e95369b64770ac1826ee02df44905e67cb16386b54069d10a",
+      "pattern": "a5"
+    },
+    {
+      "case": "a5_24",
+      "encoded_bytes": 32,
+      "fixture": "fixtures/benchmarks/a5_24.txt",
+      "input_bytes": 24,
+      "input_sha256": "13acf1f67640cb66febc57ec05fdb5102c27b60453fdcfaf357ddff1f224d058",
+      "output_sha256": "3715949b183e39a98ce9ca68e77a5fd5739ed842f05fb671661003308875b52a",
+      "pattern": "a5"
+    },
+    {
+      "case": "a5_30",
+      "encoded_bytes": 40,
+      "fixture": "fixtures/benchmarks/a5_30.txt",
+      "input_bytes": 30,
+      "input_sha256": "3f602f0d44c26057387596e3793a79c92cf2cf3722b843f7fa30bd40f9bf0fb4",
+      "output_sha256": "ff2c4d4bb0eb1ee7887e15af2dc62628219e543a5eca5ffb78c2b151bd70a2f8",
+      "pattern": "a5"
+    },
+    {
+      "case": "a5_31",
+      "encoded_bytes": 44,
+      "fixture": "fixtures/benchmarks/a5_31.txt",
+      "input_bytes": 31,
+      "input_sha256": "c4c119c5722e2fc985cefd5e55e7d5a2bd0c8d6c9e0d34649a6244e181fc4d04",
+      "output_sha256": "56672c964d31b6e34124ab11945076a72325d3f7db9b7ba1f5fad9f7c31598cd",
+      "pattern": "a5"
+    },
+    {
+      "case": "a5_32",
+      "encoded_bytes": 44,
+      "fixture": "fixtures/benchmarks/a5_32.txt",
+      "input_bytes": 32,
+      "input_sha256": "fc8b64001c5fdd0f2f40fb67dae4a865a2c5bd17836676d6d5b58b7917e33717",
+      "output_sha256": "d433684920ed51c5d17e0e7a1c1367a385b8f334dcb968fa7d4b507e533ed60c",
+      "pattern": "a5"
+    },
+    {
+      "case": "a5_33",
+      "encoded_bytes": 44,
+      "fixture": "fixtures/benchmarks/a5_33.txt",
+      "input_bytes": 33,
+      "input_sha256": "325e8142d0cad37019603eefdbe16925a869d9c01dc74719052e2deef319a42f",
+      "output_sha256": "bdd81e7762f2cb40cdb4fd6ca29a3ffc624d3190ae40ff02ac21fde534f3e364",
+      "pattern": "a5"
+    },
+    {
+      "case": "a5_45",
+      "encoded_bytes": 60,
+      "fixture": "fixtures/benchmarks/a5_45.txt",
+      "input_bytes": 45,
+      "input_sha256": "d2cced991d68411f339248876f122a6f8e1631f4be4c9af31cdf3c7d3d661004",
+      "output_sha256": "b4665b3a9460004dfcf50e340ad79ee59d6c21817b5664449b2619081fd24d77",
+      "pattern": "a5"
+    },
+    {
+      "case": "a5_46",
+      "encoded_bytes": 64,
+      "fixture": "fixtures/benchmarks/a5_46.txt",
+      "input_bytes": 46,
+      "input_sha256": "e600ceb4726941a567f17096910e7911dbdfc11eb765158ad996d6c547afea6c",
+      "output_sha256": "80eac6f1df1c089dff04d157f133b77fcaacebd74403a340dd0e1128aeb07338",
+      "pattern": "a5"
+    },
+    {
+      "case": "a5_47",
+      "encoded_bytes": 64,
+      "fixture": "fixtures/benchmarks/a5_47.txt",
+      "input_bytes": 47,
+      "input_sha256": "ecd3964bf1f79d5cca7395ecac07643d3c76ec024579cbd7caa5fbe4166d0624",
+      "output_sha256": "2314ed32704d028a343c78b70b65be8193d9d78b21bdf4b0da32c3ee9564ebc6",
+      "pattern": "a5"
+    },
+    {
+      "case": "a5_48",
+      "encoded_bytes": 64,
+      "fixture": "fixtures/benchmarks/a5_48.txt",
+      "input_bytes": 48,
+      "input_sha256": "2ad646e61069eb06e735d18b0369e6d4f6a2c19219e184fc7487d59b83ebe021",
+      "output_sha256": "b269f107f225e32b8b6fe62ea039a817f59dca76fe6b8e5e0ba46dc48e827998",
+      "pattern": "a5"
+    },
+    {
+      "case": "a5_61",
+      "encoded_bytes": 84,
+      "fixture": "fixtures/benchmarks/a5_61.txt",
+      "input_bytes": 61,
+      "input_sha256": "ee14ee2218d48fe10f7c314c885d93a7982dc725df158840f345b057a8452a8c",
+      "output_sha256": "13d1c1f5ddda0f6d9d3ad721c9dd277819bba919ad17df7cd2b16f3e4e2942de",
+      "pattern": "a5"
+    },
+    {
+      "case": "a5_62",
+      "encoded_bytes": 84,
+      "fixture": "fixtures/benchmarks/a5_62.txt",
+      "input_bytes": 62,
+      "input_sha256": "e22c54407dcb9c7200daec4297a50149da8ff72c1c6abff4011a914bd28309b0",
+      "output_sha256": "23b29cdcb4adc76e6ffa0589207c73e9b2073f3ce686f99b66dc8c11f8bc69d1",
+      "pattern": "a5"
+    },
+    {
+      "case": "a5_63",
+      "encoded_bytes": 84,
+      "fixture": "fixtures/benchmarks/a5_63.txt",
+      "input_bytes": 63,
+      "input_sha256": "a1942663a5b8b93dffc9c4ff5f62c71a1c021d1fcc1e470dd46172abace1bca5",
+      "output_sha256": "90a8ad79e9f34c2fbb192ca3e4eeb6e50fd1c3d1c41bcfb9aeef0421af1ff39a",
+      "pattern": "a5"
+    },
+    {
+      "case": "a5_64",
+      "encoded_bytes": 88,
+      "fixture": "fixtures/benchmarks/a5_64.txt",
+      "input_bytes": 64,
+      "input_sha256": "bb626e5577021df95ea17eb6339e75904855b80087e40660931c4a89b302f74a",
+      "output_sha256": "a7b12069a360e29ceca1f9323a12a235b89945a3590cebe34f9970bb4482d9fb",
+      "pattern": "a5"
+    },
+    {
+      "case": "a5_91",
+      "encoded_bytes": 124,
+      "fixture": "fixtures/benchmarks/a5_91.txt",
+      "input_bytes": 91,
+      "input_sha256": "f1023ec9583ed0e650702e48c3cd7241e379c12b5d42a8322f0c5993fd0b7c82",
+      "output_sha256": "f127b5bbb31febbfb1f6618543a46cd02ace03c5467cc68d5a3408810824593f",
+      "pattern": "a5"
+    },
+    {
+      "case": "a5_92",
+      "encoded_bytes": 124,
+      "fixture": "fixtures/benchmarks/a5_92.txt",
+      "input_bytes": 92,
+      "input_sha256": "8a5f00761a4087fad65d5b6e03bd44f1a304bf80d4be79cde4106fafe5253f23",
+      "output_sha256": "1743e795fa3bda8d6660de2aac79483a09a88e6e262413f552065ed5a4fdfea2",
+      "pattern": "a5"
+    },
+    {
+      "case": "a5_93",
+      "encoded_bytes": 124,
+      "fixture": "fixtures/benchmarks/a5_93.txt",
+      "input_bytes": 93,
+      "input_sha256": "41802bce980af3cfc4af88000100a1b5e4e444a2b6936330b4d8b45a0adeec49",
+      "output_sha256": "d9b0269f09aa30568b80ede77508bdd17b03bf1e1484ec22a3c5e46a47068c80",
+      "pattern": "a5"
+    },
+    {
+      "case": "a5_94",
+      "encoded_bytes": 128,
+      "fixture": "fixtures/benchmarks/a5_94.txt",
+      "input_bytes": 94,
+      "input_sha256": "8006c380fe750a1674abac62cc00b245db3d5db305d402bf5dc0b2fb372d8a7b",
+      "output_sha256": "809270735e0cd1cc2bfbf7ab46b1a2256287f619b8e304fc6bf8539defeb9a8c",
+      "pattern": "a5"
+    },
+    {
+      "case": "a5_95",
+      "encoded_bytes": 128,
+      "fixture": "fixtures/benchmarks/a5_95.txt",
+      "input_bytes": 95,
+      "input_sha256": "d6ea54ae5725472c9417c4d99a3615709d7d4b9371754a3f8ac31e44caf6ce74",
+      "output_sha256": "6e094d6c4db50c25f3c5db960ff237ce655a22e5cb889398ea1cb5e1603516f0",
+      "pattern": "a5"
+    },
+    {
+      "case": "a5_96",
+      "encoded_bytes": 128,
+      "fixture": "fixtures/benchmarks/a5_96.txt",
+      "input_bytes": 96,
+      "input_sha256": "2ed3c3dd51931178fe1c751b6d6d158ce537da2e472ab3ce1f06391d8552e629",
+      "output_sha256": "3f89ee61c1fe985c5657726cc85f6f07c5f3223c823448491d805bb107f1ceaf",
+      "pattern": "a5"
+    },
+    {
+      "case": "a5_127",
+      "encoded_bytes": 172,
+      "fixture": "fixtures/benchmarks/a5_127.txt",
+      "input_bytes": 127,
+      "input_sha256": "bcc0ed0d968974b0fcba8a5fa9eef960a0c50803f14a65ea06fba1ed4b6f75f2",
+      "output_sha256": "913d660062c8dbc1b179f47a86d1e909d1b48e2233b271e0bd5304aa08e56052",
+      "pattern": "a5"
+    },
+    {
+      "case": "a5_128",
+      "encoded_bytes": 172,
+      "fixture": "fixtures/benchmarks/a5_128.txt",
+      "input_bytes": 128,
+      "input_sha256": "39557315215be0f6922cec45d29336c8f72198032cababdc5ec0672d45e894ad",
+      "output_sha256": "42266ee62a11ea154caf53231af9293a16cc18a1ded3cb32232f9f6b2e9baabf",
+      "pattern": "a5"
+    },
+    {
+      "case": "a5_129",
+      "encoded_bytes": 172,
+      "fixture": "fixtures/benchmarks/a5_129.txt",
+      "input_bytes": 129,
+      "input_sha256": "0d4df645e098e323828009a90258def0ec1a596a54fe023e76a1bc05992eba61",
+      "output_sha256": "b534043a3c126a91df61159fb148b7f45510f9064fc5489e0fb276db9ad35783",
+      "pattern": "a5"
+    },
+    {
+      "case": "a5_255",
+      "encoded_bytes": 340,
+      "fixture": "fixtures/benchmarks/a5_255.txt",
+      "input_bytes": 255,
+      "input_sha256": "a437e5e8f4be9c13851f645cc1aed50914e02d80c028e7b5b92fabf5eed25107",
+      "output_sha256": "89b5eda417176c11283c4ae9f111d3fcfa32a125fd8273880d609957d30056b7",
+      "pattern": "a5"
+    },
+    {
+      "case": "a5_256",
+      "encoded_bytes": 344,
+      "fixture": "fixtures/benchmarks/a5_256.txt",
+      "input_bytes": 256,
+      "input_sha256": "2c41a1dd584e3773b95674841b685f36c76b48ec4db75863372c2fd6e19a61ce",
+      "output_sha256": "707e6effb83c7982a4271e1c19e311dd4666932006a1a7d3e69e85ce1304eba8",
+      "pattern": "a5"
+    },
+    {
+      "case": "a5_257",
+      "encoded_bytes": 344,
+      "fixture": "fixtures/benchmarks/a5_257.txt",
+      "input_bytes": 257,
+      "input_sha256": "df545862281629404e0d819988b07f6d20fc94080186a4a7485546326943e12d",
+      "output_sha256": "03a732c613c6ca012b657477377af1e1118c3d254504d4ead482465c2838f7bf",
+      "pattern": "a5"
+    },
+    {
+      "case": "a5_511",
+      "encoded_bytes": 684,
+      "fixture": "fixtures/benchmarks/a5_511.txt",
+      "input_bytes": 511,
+      "input_sha256": "2a69e4dea2bbe1acc85f1baae96f0508487b3b8192513c1f3c94852bd6d3220c",
+      "output_sha256": "0fea1372799535b5116a048913f5002287c2fdedd5ab6e16b3499d62ae4bc8cc",
+      "pattern": "a5"
+    },
+    {
+      "case": "a5_512",
+      "encoded_bytes": 684,
+      "fixture": "fixtures/benchmarks/a5_512.txt",
+      "input_bytes": 512,
+      "input_sha256": "2ea16988ca9a3b973ff11693e6de4bd078775655cd6715c5a06a120f71b3e827",
+      "output_sha256": "9aa2df3faca7ab815bdd6c866e7242a270a86c7d8c8f1b67faea86a56e61e231",
+      "pattern": "a5"
+    },
+    {
+      "case": "a5_513",
+      "encoded_bytes": 684,
+      "fixture": "fixtures/benchmarks/a5_513.txt",
+      "input_bytes": 513,
+      "input_sha256": "58c3e444272d0a9af3d532ada386426c87ad6c5ecf54c5ec1ea5df2a253f2831",
+      "output_sha256": "ef08287785671ea3b2116b4823e71e8b5b07124cc0216018749541b568a43d23",
+      "pattern": "a5"
+    },
+    {
+      "case": "a5_1023",
+      "encoded_bytes": 1364,
+      "fixture": "fixtures/benchmarks/a5_1023.txt",
+      "input_bytes": 1023,
+      "input_sha256": "fa8a6dc32905e28986782ad406c6854bfa560d9e76add408005907e2399a15e0",
+      "output_sha256": "74ddabfbce1ee63b268889064a8112bb67403ded8eb2f2b834f29bad71e8e4da",
+      "pattern": "a5"
+    },
+    {
+      "case": "a5_1024",
+      "encoded_bytes": 1368,
+      "fixture": "fixtures/benchmarks/a5_1024.txt",
+      "input_bytes": 1024,
+      "input_sha256": "e75809e0d15667ce44e6aa5c64689a4917b245eb0920094ff0b017dc0612a17a",
+      "output_sha256": "3379b78e599fca3808ec1f1b64e4d46b5039f2112b4208b5d0481eb61bb3f571",
+      "pattern": "a5"
+    },
+    {
+      "case": "a5_1025",
+      "encoded_bytes": 1368,
+      "fixture": "fixtures/benchmarks/a5_1025.txt",
+      "input_bytes": 1025,
+      "input_sha256": "955ba0e96d4f97cd523eebc57af8662dc3590c5e3f31b40ee949290aef0451ab",
+      "output_sha256": "d5a20003b8c30ab90d7cfcf57ef661ed10cbb9e7d3258673b30f7d003f44404a",
+      "pattern": "a5"
+    },
+    {
+      "case": "a5_2047",
+      "encoded_bytes": 2732,
+      "fixture": "fixtures/benchmarks/a5_2047.txt",
+      "input_bytes": 2047,
+      "input_sha256": "752b1981531a137b1105c2078561189a343d0a22c16e01107f705cafa8ce6eb7",
+      "output_sha256": "5db4e701368bfae5b5862b76196e1dcb65907c0f4b12eebdf200b496bbeb2ca1",
+      "pattern": "a5"
+    },
+    {
+      "case": "a5_2048",
+      "encoded_bytes": 2732,
+      "fixture": "fixtures/benchmarks/a5_2048.txt",
+      "input_bytes": 2048,
+      "input_sha256": "9c9b3365a5704fb1bbd5dbac227ecc2e878dedce86338eca2ec1278e21ac1a9e",
+      "output_sha256": "5d14c52a01600cc99c908a6294155d55729231cf532b415e5eb53bf77bb6d19e",
+      "pattern": "a5"
+    },
+    {
+      "case": "a5_2049",
+      "encoded_bytes": 2732,
+      "fixture": "fixtures/benchmarks/a5_2049.txt",
+      "input_bytes": 2049,
+      "input_sha256": "b6092f4b8c3649de2da7202fe2012e2a0c61233eacdbb4eab66e617a651b6475",
+      "output_sha256": "d6d62a6f2e8f3470efcfe46f097396ba4b1db2bb6be37e476e562e22ddfc0da3",
+      "pattern": "a5"
+    },
+    {
+      "case": "a5_4095",
+      "encoded_bytes": 5460,
+      "fixture": "fixtures/benchmarks/a5_4095.txt",
+      "input_bytes": 4095,
+      "input_sha256": "65b38e62039c6c13139c0fe22373ece2e87531379faaba6be5c83894a8e49a08",
+      "output_sha256": "fd25d854b681082ce46f37e087e35e79adad68325a7a3df3550499aba0287a08",
+      "pattern": "a5"
+    },
+    {
+      "case": "a5_4096",
+      "encoded_bytes": 5464,
+      "fixture": "fixtures/benchmarks/a5_4096.txt",
+      "input_bytes": 4096,
+      "input_sha256": "f600eca824e84a43f0691b267bd620e462c50da165c5b80e17aecb7a924f1fa8",
+      "output_sha256": "8b492d2a1b6c7df2e106cf0703e6863560602bff944f3f54adcb220f3aac1db0",
+      "pattern": "a5"
+    },
+    {
+      "case": "a5_4097",
+      "encoded_bytes": 5464,
+      "fixture": "fixtures/benchmarks/a5_4097.txt",
+      "input_bytes": 4097,
+      "input_sha256": "ce38859d387e37a06597deb8072e124efea05553a6842ca03126f62225e58819",
+      "output_sha256": "f4a8dad3de3f881261b0638e11d471623744b976b0ca4cfda7df908be9c219b3",
+      "pattern": "a5"
+    },
+    {
+      "case": "a5_8191",
+      "encoded_bytes": 10924,
+      "fixture": "fixtures/benchmarks/a5_8191.txt",
+      "input_bytes": 8191,
+      "input_sha256": "4a2aa6c5045281e4a21ec0a1dddc459aad87886838b13809ea19d49a803be1b1",
+      "output_sha256": "a18ab54aafe258053f26bb9083c33d1dc1c3d1c60bff73d95b384f98739fe0ff",
+      "pattern": "a5"
+    },
+    {
+      "case": "a5_8192",
+      "encoded_bytes": 10924,
+      "fixture": "fixtures/benchmarks/a5_8192.txt",
+      "input_bytes": 8192,
+      "input_sha256": "2ef1444bc950050c92f373cd2f5442022af98aa900aefd82c749cff93d4c0037",
+      "output_sha256": "9d5f7d2167268e7f8f4f7a3829af3a92fc485ef833fc820ff6a942e25d712a3a",
+      "pattern": "a5"
+    },
+    {
+      "case": "a5_8193",
+      "encoded_bytes": 10924,
+      "fixture": "fixtures/benchmarks/a5_8193.txt",
+      "input_bytes": 8193,
+      "input_sha256": "e8a22d873929700dd2f170a1d6fbef3a7f773eb9f20305f6729e5a8f319554a2",
+      "output_sha256": "b00570dc6acff7f2c3814f3c09928e0898c37f4722b319f4fa2c0191d4cbdcee",
+      "pattern": "a5"
+    },
+    {
+      "case": "a5_16383",
+      "encoded_bytes": 21844,
+      "fixture": "fixtures/benchmarks/a5_16383.txt",
+      "input_bytes": 16383,
+      "input_sha256": "90ed582262e8d3f285b1d0a2ee9b67642244247e0c26f559fd1c6d8de30c5128",
+      "output_sha256": "c5409e5c0a755a72da22b7c1a8643db6e319e2c52ac163539c985db0b4257d42",
+      "pattern": "a5"
+    },
+    {
+      "case": "a5_16384",
+      "encoded_bytes": 21848,
+      "fixture": "fixtures/benchmarks/a5_16384.txt",
+      "input_bytes": 16384,
+      "input_sha256": "add4fa3e6dbfb8723b21cfe7debadbed5d5f2ca1ab88c666470daed16afbe21a",
+      "output_sha256": "2e74ba8952cc21f283623e6b093414a1cce37fbd5b32339a43569a21084b1f66",
+      "pattern": "a5"
+    },
+    {
+      "case": "a5_16385",
+      "encoded_bytes": 21848,
+      "fixture": "fixtures/benchmarks/a5_16385.txt",
+      "input_bytes": 16385,
+      "input_sha256": "aa11d1561de1f717781d5b02d79e52c14694355ba9c21ced62347e55b1ef05bc",
+      "output_sha256": "025110f9ffdffa31d64a2f5ff03321e8ea94adb0bec49af0c5d5eaccffea6e56",
+      "pattern": "a5"
+    },
+    {
+      "case": "zero_3",
+      "encoded_bytes": 4,
+      "fixture": "fixtures/benchmarks/zero_3.txt",
+      "input_bytes": 3,
+      "input_sha256": "709e80c88487a2411e1ee4dfb9f22a861492d20c4765150c0c794abd70f8147c",
+      "output_sha256": "63c1dd951ffedf6f7fd968ad4efa39b8ed584f162f46e715114ee184f8de9201",
+      "pattern": "zero"
+    },
+    {
+      "case": "zero_31",
+      "encoded_bytes": 44,
+      "fixture": "fixtures/benchmarks/zero_31.txt",
+      "input_bytes": 31,
+      "input_sha256": "fd08be957bda07dc529ad8100df732f9ce12ae3e42bcda6acabe12c02dfd6989",
+      "output_sha256": "c0cfbd23c303c26572caf428dcf2496fe7081afdccb93d0228b440d1cb93fc8a",
+      "pattern": "zero"
+    },
+    {
+      "case": "zero_32",
+      "encoded_bytes": 44,
+      "fixture": "fixtures/benchmarks/zero_32.txt",
+      "input_bytes": 32,
+      "input_sha256": "66687aadf862bd776c8fc18b8e9f8e20089714856ee233b3902a591d0d5f2925",
+      "output_sha256": "51643eac9777b63a7b268174d1fd4276daedec9bc9ea0bc6e5abf69047bc54f6",
+      "pattern": "zero"
+    },
+    {
+      "case": "zero_93",
+      "encoded_bytes": 124,
+      "fixture": "fixtures/benchmarks/zero_93.txt",
+      "input_bytes": 93,
+      "input_sha256": "dbcfcc77f5774ed3333f3963eb84a324fd967de4d62c96631be6af1d6b3fe136",
+      "output_sha256": "a2ee2228d4798988ce3ac273c0cd8b9bbc4e3e58413eb22dfbe6395758659a2b",
+      "pattern": "zero"
+    },
+    {
+      "case": "zero_1024",
+      "encoded_bytes": 1368,
+      "fixture": "fixtures/benchmarks/zero_1024.txt",
+      "input_bytes": 1024,
+      "input_sha256": "5f70bf18a086007016e948b04aed3b82103a36bea41755b6cddfaf10ace3c6ef",
+      "output_sha256": "35f9bfea2821459f2d19f87898c3fe63ae849449d1fb6930a6d8be8ea1ac543a",
+      "pattern": "zero"
+    },
+    {
+      "case": "zero_8192",
+      "encoded_bytes": 10924,
+      "fixture": "fixtures/benchmarks/zero_8192.txt",
+      "input_bytes": 8192,
+      "input_sha256": "9f1dcbc35c350d6027f98be0f5c8b43b42ca52b7604459c0c42be3aa88913d47",
+      "output_sha256": "3c30dae988c40eb7169732f5774f065c6bbe69aeaf4e3c7e4487797f0a838c39",
+      "pattern": "zero"
+    },
+    {
+      "case": "zero_8193",
+      "encoded_bytes": 10924,
+      "fixture": "fixtures/benchmarks/zero_8193.txt",
+      "input_bytes": 8193,
+      "input_sha256": "b1fb0079828ab653919011a9f8cfdd3704387eb08e1dc971155b33c03e0da1ef",
+      "output_sha256": "8ec538c121b4ba046d654123ca4333951d549067f0bced3ce62e46f3d81c4ba7",
+      "pattern": "zero"
+    },
+    {
+      "case": "zero_16384",
+      "encoded_bytes": 21848,
+      "fixture": "fixtures/benchmarks/zero_16384.txt",
+      "input_bytes": 16384,
+      "input_sha256": "4fe7b59af6de3b665b67788cc2f99892ab827efae3a467342b3bb4e3bc8e5bfe",
+      "output_sha256": "cecfc0330e0b346191618393a18453818eb436c4de5099d9cd1ec09414faa84b",
+      "pattern": "zero"
+    },
+    {
+      "case": "ff_3",
+      "encoded_bytes": 4,
+      "fixture": "fixtures/benchmarks/ff_3.txt",
+      "input_bytes": 3,
+      "input_sha256": "5ae7e6a42304dc6e4176210b83c43024f99a0bce9a870c3b6d2c95fc8ebfb74c",
+      "output_sha256": "0ea28b450f5e2ae8a3979cdc28901fb7dc257f1b9639199a52eafa9489420330",
+      "pattern": "ff"
+    },
+    {
+      "case": "ff_31",
+      "encoded_bytes": 44,
+      "fixture": "fixtures/benchmarks/ff_31.txt",
+      "input_bytes": 31,
+      "input_sha256": "76942cd290464dbb5e869731ffc41017d75f3f144f001405ca24087447b1d60d",
+      "output_sha256": "fa0d7ddb4a1abedfe344a9914fde702db6c67f45d41034e875e73b94a87a799a",
+      "pattern": "ff"
+    },
+    {
+      "case": "ff_32",
+      "encoded_bytes": 44,
+      "fixture": "fixtures/benchmarks/ff_32.txt",
+      "input_bytes": 32,
+      "input_sha256": "af9613760f72635fbdb44a5a0a63c39f12af30f950a6ee5c971be188e89c4051",
+      "output_sha256": "135ac29d93fc19f0729b29f5e1215308eb151a4f171e4f83824a976fdc94ebd8",
+      "pattern": "ff"
+    },
+    {
+      "case": "ff_93",
+      "encoded_bytes": 124,
+      "fixture": "fixtures/benchmarks/ff_93.txt",
+      "input_bytes": 93,
+      "input_sha256": "1d40adb605ca76b03daa2937354750b406ba9fb77588118268967a33b6cba746",
+      "output_sha256": "9b367607990ed50c7caae1b92c1e0dc6920e341a3d25f958f97a9353dcf5428f",
+      "pattern": "ff"
+    },
+    {
+      "case": "ff_1024",
+      "encoded_bytes": 1368,
+      "fixture": "fixtures/benchmarks/ff_1024.txt",
+      "input_bytes": 1024,
+      "input_sha256": "5f4ecdb7b71c3e403983fe405cddcdc2f2576b655fdb3e80d94a6f7c32e58bc2",
+      "output_sha256": "73568bb48569992f0ca35b5eed97a1dc15a2a8d24b17fa8917ebae43e8fa6bba",
+      "pattern": "ff"
+    },
+    {
+      "case": "ff_8192",
+      "encoded_bytes": 10924,
+      "fixture": "fixtures/benchmarks/ff_8192.txt",
+      "input_bytes": 8192,
+      "input_sha256": "7d2c7ac4888bfd75cd5f56e8d61f69595121183afc81556c876732fd3782c62f",
+      "output_sha256": "3f50522c230eba552e3a2ec39f7a315eaab897b4f2cd708ba416cfc2594e0b1c",
+      "pattern": "ff"
+    },
+    {
+      "case": "ff_8193",
+      "encoded_bytes": 10924,
+      "fixture": "fixtures/benchmarks/ff_8193.txt",
+      "input_bytes": 8193,
+      "input_sha256": "dacde6d8d4ffa459c574141dd13484d4cc2bd5710358597c75c1eeed0a60b27c",
+      "output_sha256": "c0c75b632e4c2339abfbdda3e51c5b798be5c295ef34d6e0444d515959994a21",
+      "pattern": "ff"
+    },
+    {
+      "case": "ff_16384",
+      "encoded_bytes": 21848,
+      "fixture": "fixtures/benchmarks/ff_16384.txt",
+      "input_bytes": 16384,
+      "input_sha256": "0fbba07a833d4dcfc7024eaf313661a0ba8f80a05c6d29b8801c612e10e60dee",
+      "output_sha256": "04147d4c7b571c517ac6c41692a2419a65d61ae8438fdb29ca8c0ff95e73ed5e",
+      "pattern": "ff"
+    },
+    {
+      "case": "ascending_3",
+      "encoded_bytes": 4,
+      "fixture": "fixtures/benchmarks/ascending_3.txt",
+      "input_bytes": 3,
+      "input_sha256": "ae4b3280e56e2faf83f414a6e3dabe9d5fbe18976544c05fed121accb85b53fc",
+      "output_sha256": "6688ea8f2669ad284d82b62ebd2893d7167cbc941caeead579361676209f70f7",
+      "pattern": "ascending"
+    },
+    {
+      "case": "ascending_31",
+      "encoded_bytes": 44,
+      "fixture": "fixtures/benchmarks/ascending_31.txt",
+      "input_bytes": 31,
+      "input_sha256": "4f23c2ca8c5c962e50cd31e221bfb6d0adca19111dca8e0c62598ff146dd19c4",
+      "output_sha256": "97fad3f0bb7fa4a7606375f38478f252f6cf110712cad6a3637d686a314426bb",
+      "pattern": "ascending"
+    },
+    {
+      "case": "ascending_32",
+      "encoded_bytes": 44,
+      "fixture": "fixtures/benchmarks/ascending_32.txt",
+      "input_bytes": 32,
+      "input_sha256": "630dcd2966c4336691125448bbb25b4ff412a49c732db2c8abc1b8581bd710dd",
+      "output_sha256": "905f28def18eaac05ae6f12b2c3452744afaf626da1343d57b395b544e0519b6",
+      "pattern": "ascending"
+    },
+    {
+      "case": "ascending_93",
+      "encoded_bytes": 124,
+      "fixture": "fixtures/benchmarks/ascending_93.txt",
+      "input_bytes": 93,
+      "input_sha256": "a09c9d3e42342c7dea44edb4aeb48cf6727cacd8032a12cf77a25829fc249d32",
+      "output_sha256": "31f01b0dd7c477c15610df1de0a673f2dabe6f700aeb617de074b948989c563c",
+      "pattern": "ascending"
+    },
+    {
+      "case": "ascending_1024",
+      "encoded_bytes": 1368,
+      "fixture": "fixtures/benchmarks/ascending_1024.txt",
+      "input_bytes": 1024,
+      "input_sha256": "785b0751fc2c53dc14a4ce3d800e69ef9ce1009eb327ccf458afe09c242c26c9",
+      "output_sha256": "7cb3af48ba428e0139db3a4a8e398643c056a05077d2d36cd7aa8123679fdb4b",
+      "pattern": "ascending"
+    },
+    {
+      "case": "ascending_8192",
+      "encoded_bytes": 10924,
+      "fixture": "fixtures/benchmarks/ascending_8192.txt",
+      "input_bytes": 8192,
+      "input_sha256": "dc404a613fedaeb54034514bc6505f56b933caa5250299ba7d094377a51caa46",
+      "output_sha256": "9938212aa8539cd7fe56a5bdea88fc0e6a8dad43d305b861d1095236c1db837f",
+      "pattern": "ascending"
+    },
+    {
+      "case": "ascending_8193",
+      "encoded_bytes": 10924,
+      "fixture": "fixtures/benchmarks/ascending_8193.txt",
+      "input_bytes": 8193,
+      "input_sha256": "db8e82fcacaeceb336ecb8be90fad31da698c72a6c10fd1ea68a2e5874b78b17",
+      "output_sha256": "4441e31297f6991e23a1e8a375f7efdd388412653088875a58fc9257947513d7",
+      "pattern": "ascending"
+    },
+    {
+      "case": "ascending_16384",
+      "encoded_bytes": 21848,
+      "fixture": "fixtures/benchmarks/ascending_16384.txt",
+      "input_bytes": 16384,
+      "input_sha256": "a1f259d4365ed4320c377ce26f5c8c56dcdc9a89e7b641bfd8eabfbbeac86654",
+      "output_sha256": "06886b001b7a0bedd9cb9cc2b6d41eab6d2067bf4fcae22ebcecd1185f1b5806",
+      "pattern": "ascending"
+    },
+    {
+      "case": "alternating_3",
+      "encoded_bytes": 4,
+      "fixture": "fixtures/benchmarks/alternating_3.txt",
+      "input_bytes": 3,
+      "input_sha256": "a92c9d9d8ebed3b9f239a7cb66fbd2bfc1587600fdb8684b56017c9e3990cc89",
+      "output_sha256": "199b8d822369b65d64272176e5efce4512d5d295aa11735a68afc9db3fd9aa0f",
+      "pattern": "alternating"
+    },
+    {
+      "case": "alternating_31",
+      "encoded_bytes": 44,
+      "fixture": "fixtures/benchmarks/alternating_31.txt",
+      "input_bytes": 31,
+      "input_sha256": "130b888d06aca4d3db794e78513e531f57c6ea7f7dcca64e2b61210bf991ffb3",
+      "output_sha256": "60d52d4aea9c67bf46b6018ca06570408ccd31851fcbcb1ddd5010c6dfe1da7e",
+      "pattern": "alternating"
+    },
+    {
+      "case": "alternating_32",
+      "encoded_bytes": 44,
+      "fixture": "fixtures/benchmarks/alternating_32.txt",
+      "input_bytes": 32,
+      "input_sha256": "291f6bb98d3fa955d8212c01d925fbee9064b498f62c9438958f6da7f65a8d11",
+      "output_sha256": "8f49759a295cefdbb039af722cf45f8be0c817c131defad9f6183315d85cc368",
+      "pattern": "alternating"
+    },
+    {
+      "case": "alternating_93",
+      "encoded_bytes": 124,
+      "fixture": "fixtures/benchmarks/alternating_93.txt",
+      "input_bytes": 93,
+      "input_sha256": "5834994a21253a4ce6cf928d8a6f705a62ccab1fab88c16f492b92492b196b9d",
+      "output_sha256": "bcc26eb735404e34c83b08c5abde73cf3a07db263f4392c224367b90a4219db7",
+      "pattern": "alternating"
+    },
+    {
+      "case": "alternating_1024",
+      "encoded_bytes": 1368,
+      "fixture": "fixtures/benchmarks/alternating_1024.txt",
+      "input_bytes": 1024,
+      "input_sha256": "3fe63efac70c18ff2cf4ead4920e1fb2fd8034ad5373373dad47e8ff6365a524",
+      "output_sha256": "c48a3da24c91670344dedb59ad5e7a05b0de09f5b03503bbb94871f0c92c0055",
+      "pattern": "alternating"
+    },
+    {
+      "case": "alternating_8192",
+      "encoded_bytes": 10924,
+      "fixture": "fixtures/benchmarks/alternating_8192.txt",
+      "input_bytes": 8192,
+      "input_sha256": "d01f1a12803432f58447331d234a2a0e6b34a82d1c807597bff37cc58609145d",
+      "output_sha256": "bcff5550779486a57692df5fefed20dced316b4cc3eaa93833779fa0469e64aa",
+      "pattern": "alternating"
+    },
+    {
+      "case": "alternating_8193",
+      "encoded_bytes": 10924,
+      "fixture": "fixtures/benchmarks/alternating_8193.txt",
+      "input_bytes": 8193,
+      "input_sha256": "fb85b5b949e2cb7e5f8303ac72bf2d947a7fbc1e59449a4d33eebbeda8717fc0",
+      "output_sha256": "07eb319baad060b32662f964d66f8c361f1e7f978d98376338ee83cee37f2bbd",
+      "pattern": "alternating"
+    },
+    {
+      "case": "alternating_16384",
+      "encoded_bytes": 21848,
+      "fixture": "fixtures/benchmarks/alternating_16384.txt",
+      "input_bytes": 16384,
+      "input_sha256": "53a31bbd7abb95a3bc7313283cd8259b7445a65a9a7e91d9abab6beafc604f1f",
+      "output_sha256": "d8f92a2f508aa10aefbd26bf51bd76c681d56656382cd9c7e3344133134729d0",
+      "pattern": "alternating"
+    },
+    {
+      "case": "pseudorandom_3",
+      "encoded_bytes": 4,
+      "fixture": "fixtures/benchmarks/pseudorandom_3.txt",
+      "input_bytes": 3,
+      "input_sha256": "4b4c7bc229967365a4f569d2535eb6a2f36236ede341ae7cf6b0ed542ebe777c",
+      "output_sha256": "cb58fc877a33a79d6c19733df94acc9ec951c2f8c3d6b60ce8cb2320a6455fa6",
+      "pattern": "pseudorandom"
+    },
+    {
+      "case": "pseudorandom_31",
+      "encoded_bytes": 44,
+      "fixture": "fixtures/benchmarks/pseudorandom_31.txt",
+      "input_bytes": 31,
+      "input_sha256": "1c6b500408837f6fe5a3488bd650764a47ec500be9f75823606c881a31639760",
+      "output_sha256": "2929476e757f23e2277c4a19e1c00e2b7c5d6389c663b73fed74b7368924e04a",
+      "pattern": "pseudorandom"
+    },
+    {
+      "case": "pseudorandom_32",
+      "encoded_bytes": 44,
+      "fixture": "fixtures/benchmarks/pseudorandom_32.txt",
+      "input_bytes": 32,
+      "input_sha256": "beb2690a09aa081191e08b46be4a864a0aec9cbf176d2ef6fd46c9576c8305e6",
+      "output_sha256": "de7a191fd170f4b168549b689648acfc2c145992d7acb2bb1672e406e5829bed",
+      "pattern": "pseudorandom"
+    },
+    {
+      "case": "pseudorandom_93",
+      "encoded_bytes": 124,
+      "fixture": "fixtures/benchmarks/pseudorandom_93.txt",
+      "input_bytes": 93,
+      "input_sha256": "0d52a001ed8d2fc8bfc830ebe941d330d5170bafd9081e1232fd5813c56a6f4f",
+      "output_sha256": "7fcd307f680d90948a32ff164484d83052c28ef963740168d8b4fefe025f6fba",
+      "pattern": "pseudorandom"
+    },
+    {
+      "case": "pseudorandom_1024",
+      "encoded_bytes": 1368,
+      "fixture": "fixtures/benchmarks/pseudorandom_1024.txt",
+      "input_bytes": 1024,
+      "input_sha256": "9beda9fe46b660919bd84e2a1585dc4289cdbd5cdda213e98b87beed0ed71b73",
+      "output_sha256": "67bcef6ddbcf50b4bad8699f7119f0f61bb8a2c6b31dbb264e760bfbb31e6090",
+      "pattern": "pseudorandom"
+    },
+    {
+      "case": "pseudorandom_8192",
+      "encoded_bytes": 10924,
+      "fixture": "fixtures/benchmarks/pseudorandom_8192.txt",
+      "input_bytes": 8192,
+      "input_sha256": "ffff19d56725f782a05e5a31a4962f2ac1f0fdabd861c22c3443b228a84566dc",
+      "output_sha256": "a60780c17a989e75799691578d2c06af11d475f06b56161738f3eee48cb51029",
+      "pattern": "pseudorandom"
+    },
+    {
+      "case": "pseudorandom_8193",
+      "encoded_bytes": 10924,
+      "fixture": "fixtures/benchmarks/pseudorandom_8193.txt",
+      "input_bytes": 8193,
+      "input_sha256": "6d481dc3bd68c715c8f3f1d24380a7e7a34a7a934a4747e8278fba9cc647a6b8",
+      "output_sha256": "87340470b12743889539c8d17191340b7a14da08054759bb2842a950484da173",
+      "pattern": "pseudorandom"
+    },
+    {
+      "case": "pseudorandom_16384",
+      "encoded_bytes": 21848,
+      "fixture": "fixtures/benchmarks/pseudorandom_16384.txt",
+      "input_bytes": 16384,
+      "input_sha256": "14d83136802ef6dbaa67ac226bb418746aa4c54aebd132b7b647c8456d394cf2",
+      "output_sha256": "9be5c4841caeb05272ac8504a89e880ba06ec96d125cce409611d343d2a27a4b",
+      "pattern": "pseudorandom"
+    },
+    {
+      "case": "text_3",
+      "encoded_bytes": 4,
+      "fixture": "fixtures/benchmarks/text_3.txt",
+      "input_bytes": 3,
+      "input_sha256": "f1e798581e1c258a59effd264b2c24b742415f2af013a4ea4f3cf2bdad3faea8",
+      "output_sha256": "bf81a5aeb47e4192d1f806e8b0ecd887b4547ab0e8ac84e368e4467a4c6c7967",
+      "pattern": "text"
+    },
+    {
+      "case": "text_31",
+      "encoded_bytes": 44,
+      "fixture": "fixtures/benchmarks/text_31.txt",
+      "input_bytes": 31,
+      "input_sha256": "46aa80e5de74c21aedec95ef79f8f5fd5425c545e988c4080204d2998f2db564",
+      "output_sha256": "d2d9cca04c0598eef1284883eb09d065c3374b673492e5d7fc13dc1fea1e739d",
+      "pattern": "text"
+    },
+    {
+      "case": "text_32",
+      "encoded_bytes": 44,
+      "fixture": "fixtures/benchmarks/text_32.txt",
+      "input_bytes": 32,
+      "input_sha256": "8bdaf0b3b29b8cb16f55917d029f6aac4b1bc37fc3e327a10e0b0fc041a58348",
+      "output_sha256": "f1e0de55d6da9c5dc034ab1b600ee1c1edf61c8cc83946a68f56c6e39835cef1",
+      "pattern": "text"
+    },
+    {
+      "case": "text_93",
+      "encoded_bytes": 124,
+      "fixture": "fixtures/benchmarks/text_93.txt",
+      "input_bytes": 93,
+      "input_sha256": "1f81e5806dfbb7eb1bac75fb27b71eceafa612226f28c2356af60d7255d52781",
+      "output_sha256": "1b721a04abe1c59098518449a05847604668edafd383003f76b3067f54bde38f",
+      "pattern": "text"
+    },
+    {
+      "case": "text_1024",
+      "encoded_bytes": 1368,
+      "fixture": "fixtures/benchmarks/text_1024.txt",
+      "input_bytes": 1024,
+      "input_sha256": "a736248bef46c1bb8e201090fc560ab2636e000fb53d2a0470d4df44f7dd8dea",
+      "output_sha256": "f130edc9c9e2d9a637b485ce3ad7d584c5129897125152864d05bdf649ecf680",
+      "pattern": "text"
+    },
+    {
+      "case": "text_8192",
+      "encoded_bytes": 10924,
+      "fixture": "fixtures/benchmarks/text_8192.txt",
+      "input_bytes": 8192,
+      "input_sha256": "82bae94afa2f6abfd07deaa015eb54565e2ba8c20682539a0b468e03f11ad516",
+      "output_sha256": "5706bc96d1cfa5bc17facaa1f7b1c91f63b3da39daa1d058bb57b55f5d5e53f7",
+      "pattern": "text"
+    },
+    {
+      "case": "text_8193",
+      "encoded_bytes": 10924,
+      "fixture": "fixtures/benchmarks/text_8193.txt",
+      "input_bytes": 8193,
+      "input_sha256": "77b1c16e350fc3755d0c09287ce337c637d6ba850b1a49d479e0635642441197",
+      "output_sha256": "8803ea6c0ca1ddc9e09382169ba3a185f33c3bd3579149520023dafd907a0ee9",
+      "pattern": "text"
+    },
+    {
+      "case": "text_16384",
+      "encoded_bytes": 21848,
+      "fixture": "fixtures/benchmarks/text_16384.txt",
+      "input_bytes": 16384,
+      "input_sha256": "0630498ce6ee36c0c668821a5c40e21da84c03a8d14b7cfbee5546d657a9879f",
+      "output_sha256": "6657dbdc055d02cdc9f5be22d2afa3dfe76d6117d6b0c995741d3359fb2dc7bc",
+      "pattern": "text"
+    }
+  ],
+  "contract_artifact_sha256": "d5e84c66d956828981d2be797c4773ede4fef091c97cf85b3fe2a6b3af70d6fb",
+  "created_utc": "2026-10-03T15:14:04.552989+00:00",
+  "measurement": {
+    "contract_compilation": "separate Starknet contract target (--no-optimization)",
+    "engine": "cairo-vm",
+    "primary_metric": "encode selector L2 gas",
+    "profile": "release",
+    "repetitions": 3,
+    "tracked_resource": "sierra-gas"
+  },
+  "oracle": {
+    "batches": 44,
+    "cases": 841,
+    "command": [
+      "snforge",
+      "test",
+      "-p",
+      "game_components_encoding_harness",
+      "--release",
+      "--no-optimization",
+      "--tracked-resource",
+      "sierra-gas",
+      "--max-n-steps",
+      "4294967295",
+      "--gas-report",
+      "--detailed-resources",
+      "--color",
+      "never",
+      "--max-threads",
+      "4",
+      "oracle_correctness"
+    ],
+    "raw": "oracle.txt",
+    "sha256": "22865fc6e38c1e0012cf06515acf2bd0432e81a37a54bf6d7ea9f13cb4810ce4"
+  },
+  "python": "3.12.3",
+  "results_sha256": "c19bab20b14296fbe989203e639f73d73b32b0a750f9eae1b26d10fb84e635e9",
+  "runs": [
+    {
+      "command": [
+        "snforge",
+        "test",
+        "-p",
+        "game_components_encoding_harness",
+        "--release",
+        "--no-optimization",
+        "--tracked-resource",
+        "sierra-gas",
+        "--max-n-steps",
+        "4294967295",
+        "--gas-report",
+        "--detailed-resources",
+        "--color",
+        "never",
+        "--max-threads",
+        "4",
+        "lab_benchmarks"
+      ],
+      "raw": "run-01.txt",
+      "sha256": "bb40cd16a74d6f2705c07eb3bb113ea2a33fc966ac4695e4202cf596425cdeb7"
+    },
+    {
+      "command": [
+        "snforge",
+        "test",
+        "-p",
+        "game_components_encoding_harness",
+        "--release",
+        "--no-optimization",
+        "--tracked-resource",
+        "sierra-gas",
+        "--max-n-steps",
+        "4294967295",
+        "--gas-report",
+        "--detailed-resources",
+        "--color",
+        "never",
+        "--max-threads",
+        "4",
+        "lab_benchmarks"
+      ],
+      "raw": "run-02.txt",
+      "sha256": "8018bc9e61994af61425de6c4459accdbd02e3247fa367846191a8d23768ca81"
+    }
+  ],
+  "schema": 1,
+  "source_sha256": {
+    "../../../.tool-versions": "07db1df650bb8315df21a3b251cb26059226c654dcf4b1e1fe62541449380df1",
+    "../../../Scarb.lock": "82616c37976bd87d9c2f148f59bc9f9b8cd11728503e2643cb6a524f88a69c3c",
+    "../../../Scarb.toml": "c4b7f77c800a936a4ae2c339aac22763712f0484e953749991fb8714451187c1",
+    "../../../src/lib.cairo": "49dc55d8b638309ae8cbf8c44fb6ac08b5bcae68d591a1ae99522bd59045d075",
+    "../Scarb.toml": "f7e8e0a7464569594451cd36f84588ca27e275397132bffab33280edec464b3a",
+    "../src/encoding.cairo": "e7f8bfaa75c13c0e8d051ad82c4639f27be0c262978fc4dc67c9a1d86af35350",
+    "../src/lib.cairo": "febdba31db2f52797c46bde30e9846d7687db97a485079bdb46f681488280fc9",
+    "Scarb.toml": "2e382723828329417b60a8fe60a597a4885171185dea2ddd4b5e02d94892136b",
+    "fixtures/manifest.json": "d6292f4c53d4daf5ef351209110d858a7aa79f64f9192bf28576b7b546f14974",
+    "scripts/benchmark.py": "0d27496c2d8330a9065f77ac99eae56c7f0cf2f3e04c05253b380e28fb0eb2ce",
+    "scripts/generate-fixtures.py": "6654726b110804d79ec8dec737d5485afedcf9baf8a0991a04175bb5dbbe799c",
+    "scripts/harness_paths.py": "21c504098c7b4fa604fa265e41e8475e6b179de6e41d9c00595cdabb61a67ad3",
+    "src/benchmark_harness.cairo": "9f756c3a94493c705c588d112dfdc951cbacdc4fccaf92d9bceae4579be4cbd9",
+    "src/lab_benchmark_harness.cairo": "a86cc1a4759b67df7f0e416b55a30f98d36ecf2729b98de705934065cae11e51",
+    "src/lib.cairo": "080afb859ff16530394badc2720a68423a638a0f5e6ea2ad045cb3dc9e4f3782",
+    "tests/benchmark_support.cairo": "b07ae26f2f4cee02020385bbda78db2ebce29cc5c77bf4e7766d65c30a65dc6b",
+    "tests/lab_benchmarks.cairo": "42bb0f072407958a502ff2d8537115cd0124b108cb1ed31a9e7cf4fa6de917f3",
+    "tests/oracle_correctness.cairo": "2e2de6b5acb15b0d04fb1fbc309a04991f5d35c33890cd4309815c9b0ed8efd1"
+  },
+  "toolchain": {
+    "scarb": "scarb 2.20.1 (dd18779a1 2026-08-21)\ncairo: 2.20.0 (https://crates.io/crates/cairo-lang-compiler/2.20.0)\nsierra: 1.9.3\narch: x86_64-unknown-linux-gnu",
+    "snforge": "snforge 0.63.0",
+    "universal-sierra-compiler": "universal-sierra-compiler 2.10.1"
+  }
+}

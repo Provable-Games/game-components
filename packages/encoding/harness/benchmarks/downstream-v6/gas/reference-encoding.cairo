@@ -181,9 +181,8 @@ pub fn bytes_base64_encode(_bytes: ByteArray) -> ByteArray {
 
 
 fn encode_bytes_blocked(bytes: ByteArray, bytes_len: usize, base64_chars: Span<u8>) -> ByteArray {
-    let (mut result, processed_len, tail_len) = block_engine::encode_full_blocks(
-        @bytes, bytes_len, base64_chars,
-    );
+    let (mut result, processed_len) = block_engine::encode_full_blocks(@bytes, base64_chars);
+    let tail_len = bytes_len - processed_len;
     if tail_len == 0 {
         return result;
     }
@@ -327,19 +326,6 @@ mod block_engine {
     type B12 = BoundedInt<0, 0xfff>;
     type B8 = BoundedInt<0, 0xff>;
     type B6 = BoundedInt<0, 0x3f>;
-
-    type FullBlockCount = BoundedInt<0, 0x2c0b02c>;
-    type FullBlockTailLength = BoundedInt<0, 92>;
-    type ProcessedFullBlockLength = BoundedInt<0, 0xfffffffc>;
-
-    // ByteArray.len() is usize (u32), so the quotient and exact result bounds follow directly.
-    impl DivRemInputLengthBy93 of DivRemHelper<usize, UnitInt<93>> {
-        type DivT = FullBlockCount;
-        type RemT = FullBlockTailLength;
-    }
-    impl MulFullBlockCountBy93 of MulHelper<FullBlockCount, UnitInt<93>> {
-        type Result = ProcessedFullBlockLength;
-    }
 
     type Prefix8At120Range = BoundedInt<0, 0xff000000000000000000000000000000>;
     impl MulPrefix8At120 of MulHelper<B8, UnitInt<0x1000000000000000000000000000000>> {
@@ -541,7 +527,6 @@ mod block_engine {
         )
     }
 
-    #[inline(always)]
     fn encode_groups6(
         g0: B24, g1: B24, g2: B24, g3: B24, g4: B24, g5: B24, chars: Span<u8>,
     ) -> (
@@ -654,21 +639,18 @@ mod block_engine {
         output.append_word(word3, 31);
     }
 
-    pub(crate) fn encode_full_blocks(
-        bytes: @ByteArray, bytes_len: usize, chars: Span<u8>,
-    ) -> (ByteArray, usize, usize) {
+    pub(crate) fn encode_full_blocks(bytes: @ByteArray, chars: Span<u8>) -> (ByteArray, usize) {
         let mut serialized = array![];
         bytes.serialize(ref serialized);
         let mut serialized = serialized.span();
-        let _word_count = *serialized.pop_front().unwrap();
-        let (block_count, tail_len) = bounded_int::div_rem::<_, UnitInt<93>>(bytes_len, 93);
+        let word_count: usize = (*serialized.pop_front().unwrap()).try_into().unwrap();
+        let block_count = word_count / 3;
         let mut output: ByteArray = "";
-        let mut blocks_remaining: felt252 = upcast(block_count);
+        let mut block_index = 0;
         loop {
-            if blocks_remaining == 0 {
+            if block_index == block_count {
                 break;
             }
-            blocks_remaining -= 1;
             let wa_serialized = *serialized.pop_front().unwrap();
             let wa: bytes31 = wa_serialized.try_into().unwrap();
             let wb_serialized = *serialized.pop_front().unwrap();
@@ -676,8 +658,8 @@ mod block_engine {
             let wc_serialized = *serialized.pop_front().unwrap();
             let wc: bytes31 = wc_serialized.try_into().unwrap();
             encode_block(ref output, wa, wb, wc, chars);
+            block_index += 1;
         }
-        let processed_len: usize = upcast(bounded_int::mul::<_, UnitInt<93>>(block_count, 93));
-        (output, processed_len, upcast(tail_len))
+        (output, block_count * 93)
     }
 }

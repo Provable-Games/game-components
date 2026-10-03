@@ -22,7 +22,8 @@ SPEC.loader.exec_module(benchmark)
 CONFIG_FILES = ['../../../.github/workflows/main-ci.yml', '../../../.github/workflows/pr-ci.yml',
     '../../../codecov.yml', '../../../tools/coverage/cairo-2.20.patch',
     '../../../tools/coverage/Cargo.lock', '../../../tools/coverage/upstream.json',
-    '../../../scripts/setup_coverage.sh']
+    '../../../scripts/setup_coverage.sh', '../../../.cairofmtignore',
+    'benchmarks/downstream-v6/gas/reference-encoding.cairo']
 
 
 def fingerprints():

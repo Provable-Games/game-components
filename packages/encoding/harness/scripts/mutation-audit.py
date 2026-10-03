@@ -28,6 +28,23 @@ def replace_encoding(source, old, new):
     return source.replace(old, new)
 
 
+def replace_function(source, name, old, new):
+    """Keep a fault in one helper when partial paths reuse its expressions."""
+    matches = list(re.finditer(r'(?m)^    (?:pub\(crate\) )?fn ' + re.escape(name) + r'\(', source))
+    if len(matches) != 1:
+        raise ValueError('Mutation helper is missing or duplicated: ' + name)
+    start = matches[0].start()
+    body = source.index('{', matches[0].end())
+    depth = 1
+    end = body + 1
+    while depth and end < len(source):
+        depth += (source[end] == '{') - (source[end] == '}')
+        end += 1
+    if depth:
+        raise ValueError('Mutation helper body is incomplete: ' + name)
+    return source[:start] + replace_once(source[start:end], old, new) + source[end:]
+
+
 def mutants(source):
     byte_splits = 'let (b2_high, e4) = b2.div_rem(64);' in source
     bounded_splits = 'let (b2_high, e4) = bounded_int::div_rem::<_, UnitInt<64>>(b2, 64);' in source
@@ -125,22 +142,28 @@ def mutants(source):
             'let mut triplets_remaining: felt252 = if bytes_len >= 3 {\n'
             '        upcast::<_, felt252>(triplet_count) - 1\n'
             '    } else { 0 };')
+    if 'let mut blocks_remaining: felt252 = upcast(block_count);' in source:
+        yield 'block_countdown_short', 'accuracy_random_001', replace_once(source,
+            'let mut blocks_remaining: felt252 = upcast(block_count);',
+            'let mut blocks_remaining: felt252 = if bytes_len >= 93 {\n'
+            '            upcast::<_, felt252>(block_count) - 1\n'
+            '        } else { 0 };')
     if 'mod block_engine {' in source:
         # random_001 contains lengths64..127, including the93-byte block and both tails.
         # random_000 covers only0..63 and cannot exercise these block corruptions.
         yield 'block_input_word_order', 'accuracy_random_001', replace_once(source,
             'encode_block(ref output, wa, wb, wc, chars);',
             'encode_block(ref output, wb, wa, wc, chars);')
-        yield 'block_carry_drop', 'accuracy_random_001', replace_once(source,
+        yield 'block_carry_drop', 'accuracy_random_001', replace_function(source, 'encode_block',
             'let x = bounded_int::add(carry0, a_low);',
             'let x: B128 = upcast(a_low);')
-        yield 'block_group_order', 'accuracy_random_001', replace_once(source,
+        yield 'block_group_order', 'accuracy_random_001', replace_function(source, 'encode_block',
             'encode_groups5(g0, g1, g2, g3, g4, chars)',
             'encode_groups5(g1, g0, g2, g3, g4, chars)')
-        yield 'block_output_crossing', 'accuracy_random_001', replace_once(source,
+        yield 'block_output_crossing', 'accuracy_random_001', replace_function(source, 'encode_block',
             '+ pack3(e7_0, e7_1, e7_2);',
             '+ pack3(e7_0, e7_1, e7_1);')
-        yield 'block_output_word_order', 'accuracy_random_001', replace_once(source,
+        yield 'block_output_word_order', 'accuracy_random_001', replace_function(source, 'encode_block',
             'output.append_word(word0, 31);\n        output.append_word(word1, 31);',
             'output.append_word(word1, 31);\n        output.append_word(word0, 31);')
         yield 'block_tail_truncation', 'accuracy_random_001', replace_once(source,

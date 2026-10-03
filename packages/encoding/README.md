@@ -101,3 +101,9 @@ Captures require two identical complete runs. Compare captures produced with
 the same toolchain, harness, fixtures, and benchmark definitions. Reported
 selector gas is already per call. Re-run correctness, coverage, and gas checks
 when upgrading the toolchain: the encoder uses unstable corelib features.
+
+The current verified compact v7 encoder reduces full-output selector gas by
+0.6480% at 1 KiB and 0.5710% at 8 KiB, and the same benchmark wrapper's CASM by
+232 words, against the preserved v6 baseline. All 106 cases improve or tie.
+See [paired downstream evidence](harness/benchmarks/README.md) and
+[source provenance](PROVENANCE.md) for exact versions, hashes and reproduction.

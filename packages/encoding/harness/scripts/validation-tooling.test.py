@@ -93,9 +93,11 @@ class AccuracyGateTests(unittest.TestCase):
                 mutations.validate_failure(broken, 'accuracy_pairs_004')
         source = (ROOT / '../src/encoding.cairo').read_text()
         cases = list(mutations.mutants(source))
-        self.assertEqual(len(cases), 20)
-        self.assertEqual(len({name for name, _, _ in cases}), 20)
+        self.assertEqual(len(cases), 21)
+        self.assertEqual(len({name for name, _, _ in cases}), 21)
         self.assertTrue(all(mutated != source for _, _, mutated in cases))
+        historical = (ROOT / 'benchmarks/downstream-v6/gas/reference-encoding.cairo').read_text()
+        self.assertEqual(len(list(mutations.mutants(historical))), 20)
 
     def test_compilation_error_cannot_count_as_mutant_rejection(self):
         with self.assertRaises(ValueError):
@@ -118,6 +120,8 @@ class AccuracyGateTests(unittest.TestCase):
             return result
 
         self.assertTrue(any(len(data) >= 3 for data in inputs('countdown_short')))
+        self.assertIn('block_countdown_short', filters)
+        self.assertTrue(any(len(data) >= 93 for data in inputs('block_countdown_short')))
         for name in filters:
             if name.startswith('block_'):
                 self.assertTrue(any(len(data) >= 93 for data in inputs(name)), name)
@@ -125,6 +129,15 @@ class AccuracyGateTests(unittest.TestCase):
             for data in inputs('block_tail_truncation')))
         self.assertTrue(any(len(data) >= 93 and data[:31] == bytes(31) and any(data[31:93])
             for data in inputs('block_zero_word_loss')))
+
+    def test_scoped_mutation_changes_only_the_selected_helper(self):
+        source = '    fn encode_block() { if true { same(); } }\n    fn other() { same(); }\n'
+        changed = mutations.replace_function(source, 'encode_block', 'same();', 'fault();')
+        self.assertEqual(changed, '    fn encode_block() { if true { fault(); } }\n    fn other() { same(); }\n')
+        for broken in [source.replace('fn encode_block', 'fn other'), source + source,
+                '    fn encode_block() { same();']:
+            with self.assertRaises(ValueError):
+                mutations.replace_function(broken, 'encode_block', 'same();', 'fault();')
 
     def test_original_fixture_provenance_covers_all_goldens(self):
         validation.verify_fixture_provenance()

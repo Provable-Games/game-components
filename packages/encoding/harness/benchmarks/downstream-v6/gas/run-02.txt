@@ -1,0 +1,2037 @@
+warn: unknown manifest field `profile.coverage.sierra` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:40:1)
+warn: unknown manifest field `workspace.cairo-version` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:26:1)
+warn: unknown manifest field `workspace.description` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:24:1)
+warn: unknown manifest field `workspace.homepage` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:25:1)
+warn: unknown manifest field `workspace.name` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:21:1)
+warn: unknown manifest field `workspace.version` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:22:1)
+warn: unknown manifest field `package.scarb-version` (/home/ubuntu/.cache/scarb/registry/git/checkouts/graffiti-qjhqvenhgun2q/0856575/Scarb.toml:6:1)
+warn: unknown manifest field `profile.coverage.sierra` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:40:1)
+warn: unknown manifest field `profile.coverage.sierra` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:40:1)
+warn: unknown manifest field `workspace.cairo-version` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:26:1)
+warn: unknown manifest field `workspace.description` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:24:1)
+warn: unknown manifest field `workspace.cairo-version` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:26:1)
+warn: unknown manifest field `workspace.homepage` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:25:1)
+warn: unknown manifest field `workspace.description` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:24:1)
+warn: unknown manifest field `workspace.homepage` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:25:1)
+warn: unknown manifest field `workspace.name` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:21:1)
+warn: unknown manifest field `workspace.name` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:21:1)
+warn: unknown manifest field `workspace.version` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:22:1)
+warn: unknown manifest field `workspace.version` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:22:1)
+warn: unknown manifest field `profile.coverage.sierra` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:40:1)
+warn: unknown manifest field `workspace.cairo-version` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:26:1)
+warn: unknown manifest field `workspace.description` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:24:1)
+warn: unknown manifest field `workspace.homepage` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:25:1)
+warn: unknown manifest field `workspace.name` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:21:1)
+warn: unknown manifest field `workspace.version` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:22:1)
+warn: unknown manifest field `profile.coverage.sierra` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:40:1)
+warn: unknown manifest field `workspace.cairo-version` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:26:1)
+warn: unknown manifest field `workspace.description` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:24:1)
+warn: unknown manifest field `workspace.homepage` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:25:1)
+warn: unknown manifest field `workspace.name` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:21:1)
+warn: unknown manifest field `workspace.version` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:22:1)
+warn: unknown manifest field `profile.coverage.sierra` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:40:1)
+warn: unknown manifest field `workspace.cairo-version` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:26:1)
+warn: unknown manifest field `workspace.description` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:24:1)
+warn: unknown manifest field `workspace.homepage` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:25:1)
+warn: unknown manifest field `workspace.name` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:21:1)
+warn: unknown manifest field `workspace.version` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:22:1)
+warn: unknown manifest field `package.scarb-version` (/home/ubuntu/.cache/scarb/registry/git/checkouts/graffiti-qjhqvenhgun2q/0856575/Scarb.toml:6:1)
+warn: unknown manifest field `profile.coverage.sierra` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:40:1)
+warn: unknown manifest field `workspace.cairo-version` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:26:1)
+warn: unknown manifest field `workspace.description` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:24:1)
+warn: unknown manifest field `workspace.homepage` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:25:1)
+warn: unknown manifest field `workspace.name` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:21:1)
+warn: unknown manifest field `workspace.version` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:22:1)
+warn: unknown manifest field `profile.coverage.sierra` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:40:1)
+warn: unknown manifest field `workspace.cairo-version` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:26:1)
+warn: unknown manifest field `workspace.description` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:24:1)
+warn: unknown manifest field `workspace.homepage` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:25:1)
+warn: unknown manifest field `workspace.name` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:21:1)
+warn: unknown manifest field `workspace.version` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:22:1)
+warn: unknown manifest field `profile.coverage.sierra` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:40:1)
+warn: unknown manifest field `workspace.cairo-version` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:26:1)
+warn: unknown manifest field `workspace.description` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:24:1)
+warn: unknown manifest field `workspace.homepage` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:25:1)
+warn: unknown manifest field `workspace.name` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:21:1)
+warn: unknown manifest field `workspace.version` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:22:1)
+warn: unknown manifest field `profile.coverage.sierra` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:40:1)
+warn: unknown manifest field `workspace.cairo-version` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:26:1)
+warn: unknown manifest field `profile.coverage.sierra` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:40:1)
+warn: unknown manifest field `workspace.description` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:24:1)
+warn: unknown manifest field `workspace.homepage` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:25:1)
+warn: unknown manifest field `workspace.cairo-version` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:26:1)
+warn: unknown manifest field `workspace.name` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:21:1)
+warn: unknown manifest field `workspace.description` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:24:1)
+warn: unknown manifest field `workspace.version` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:22:1)
+warn: unknown manifest field `workspace.homepage` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:25:1)
+warn: unknown manifest field `workspace.name` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:21:1)
+warn: unknown manifest field `workspace.version` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:22:1)
+warn: unknown manifest field `profile.coverage.sierra` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:40:1)
+warn: unknown manifest field `workspace.cairo-version` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:26:1)
+warn: unknown manifest field `workspace.description` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:24:1)
+warn: unknown manifest field `workspace.homepage` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:25:1)
+warn: unknown manifest field `workspace.name` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:21:1)
+warn: unknown manifest field `workspace.version` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:22:1)
+   Compiling lib(game_components_encoding_harness) game_components_encoding_harness v2.7.0 (/tmp/game-components-encoding-v7/packages/encoding/harness/Scarb.toml)
+   Compiling starknet-contract(game_components_encoding_harness) game_components_encoding_harness v2.7.0 (/tmp/game-components-encoding-v7/packages/encoding/harness/Scarb.toml)
+    Finished `release` profile target(s) in 0 seconds
+warn: unknown manifest field `profile.coverage.sierra` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:40:1)
+warn: unknown manifest field `workspace.cairo-version` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:26:1)
+warn: unknown manifest field `workspace.description` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:24:1)
+warn: unknown manifest field `workspace.homepage` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:25:1)
+warn: unknown manifest field `workspace.name` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:21:1)
+warn: unknown manifest field `workspace.version` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:22:1)
+warn: unknown manifest field `package.scarb-version` (/home/ubuntu/.cache/scarb/registry/git/checkouts/graffiti-qjhqvenhgun2q/0856575/Scarb.toml:6:1)
+warn: unknown manifest field `profile.coverage.sierra` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:40:1)
+warn: unknown manifest field `workspace.cairo-version` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:26:1)
+warn: unknown manifest field `workspace.description` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:24:1)
+warn: unknown manifest field `workspace.homepage` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:25:1)
+warn: unknown manifest field `workspace.name` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:21:1)
+warn: unknown manifest field `workspace.version` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:22:1)
+warn: unknown manifest field `profile.coverage.sierra` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:40:1)
+warn: unknown manifest field `workspace.cairo-version` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:26:1)
+warn: unknown manifest field `workspace.description` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:24:1)
+warn: unknown manifest field `profile.coverage.sierra` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:40:1)
+warn: unknown manifest field `workspace.homepage` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:25:1)
+warn: unknown manifest field `workspace.cairo-version` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:26:1)
+warn: unknown manifest field `workspace.name` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:21:1)
+warn: unknown manifest field `workspace.description` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:24:1)
+warn: unknown manifest field `workspace.version` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:22:1)
+warn: unknown manifest field `workspace.homepage` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:25:1)
+warn: unknown manifest field `profile.coverage.sierra` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:40:1)
+warn: unknown manifest field `workspace.name` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:21:1)
+warn: unknown manifest field `workspace.cairo-version` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:26:1)
+warn: unknown manifest field `workspace.version` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:22:1)
+warn: unknown manifest field `workspace.description` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:24:1)
+warn: unknown manifest field `workspace.homepage` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:25:1)
+warn: unknown manifest field `workspace.name` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:21:1)
+warn: unknown manifest field `workspace.version` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:22:1)
+warn: unknown manifest field `profile.coverage.sierra` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:40:1)
+warn: unknown manifest field `workspace.cairo-version` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:26:1)
+warn: unknown manifest field `workspace.description` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:24:1)
+warn: unknown manifest field `workspace.homepage` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:25:1)
+warn: unknown manifest field `workspace.name` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:21:1)
+warn: unknown manifest field `workspace.version` (/home/ubuntu/.cache/scarb/registry/git/checkouts/alexandria-oen34onnk9gr0/2b04d3f/Scarb.toml:22:1)
+   Compiling snforge_scarb_plugin v0.63.0
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Finished `release` profile [optimized] target(s) in 0.06s
+   Compiling test(game_components_encoding_harness_unittest) game_components_encoding_harness v2.7.0 (/tmp/game-components-encoding-v7/packages/encoding/harness/Scarb.toml)
+   Compiling test(game_components_encoding_harness_integrationtest) game_components_encoding_harness_integrationtest v2.7.0 (/tmp/game-components-encoding-v7/packages/encoding/harness/Scarb.toml)
+    Finished `release` profile target(s) in 0 seconds
+
+
+Collected 106 test(s) from game_components_encoding_harness package
+Running 0 test(s) from src/
+Running 106 test(s) from tests/
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_a5_0 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~1311080)
+        sierra gas: 1311080
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+-------+-------+-------+---------+---------╮
+| LabBenchmarkHarness Contract |       |       |       |         |         |
++==========================================================================+
+| Function Name                | Min   | Max   | Avg   | Std Dev | # Calls |
+|------------------------------+-------+-------+-------+---------+---------|
+| encode                       | 16070 | 16070 | 16070 | 0       | 3       |
+|------------------------------+-------+-------+-------+---------+---------|
+| encode_len                   | 15470 | 15470 | 15470 | 0       | 3       |
+|------------------------------+-------+-------+-------+---------+---------|
+| input_len                    | 12600 | 12600 | 12600 | 0       | 3       |
+╰------------------------------+-------+-------+-------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_a5_1 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~1467560)
+        sierra gas: 1467560
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+-------+-------+-------+---------+---------╮
+| LabBenchmarkHarness Contract |       |       |       |         |         |
++==========================================================================+
+| Function Name                | Min   | Max   | Avg   | Std Dev | # Calls |
+|------------------------------+-------+-------+-------+---------+---------|
+| encode                       | 42150 | 42150 | 42150 | 0       | 3       |
+|------------------------------+-------+-------+-------+---------+---------|
+| encode_len                   | 41550 | 41550 | 41550 | 0       | 3       |
+|------------------------------+-------+-------+-------+---------+---------|
+| input_len                    | 12600 | 12600 | 12600 | 0       | 3       |
+╰------------------------------+-------+-------+-------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_a5_10 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~1883060)
+        sierra gas: 1883060
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+--------+--------+--------+---------+---------╮
+| LabBenchmarkHarness Contract |        |        |        |         |         |
++=============================================================================+
+| Function Name                | Min    | Max    | Avg    | Std Dev | # Calls |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode                       | 111400 | 111400 | 111400 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode_len                   | 110800 | 110800 | 110800 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| input_len                    | 12600  | 12600  | 12600  | 0       | 3       |
+╰------------------------------+--------+--------+--------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_a5_1023 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~24531660)
+        sierra gas: 24531660
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+---------+---------+---------+---------+---------╮
+| LabBenchmarkHarness Contract |         |         |         |         |         |
++================================================================================+
+| Function Name                | Min     | Max     | Avg     | Std Dev | # Calls |
+|------------------------------+---------+---------+---------+---------+---------|
+| encode                       | 3563920 | 3563920 | 3563920 | 0       | 3       |
+|------------------------------+---------+---------+---------+---------+---------|
+| encode_len                   | 3494240 | 3494240 | 3494240 | 0       | 3       |
+|------------------------------+---------+---------+---------+---------+---------|
+| input_len                    | 101040  | 101040  | 101040  | 0       | 3       |
+╰------------------------------+---------+---------+---------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_a5_1024 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~24980760)
+        sierra gas: 24980760
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+---------+---------+---------+---------+---------╮
+| LabBenchmarkHarness Contract |         |         |         |         |         |
++================================================================================+
+| Function Name                | Min     | Max     | Avg     | Std Dev | # Calls |
+|------------------------------+---------+---------+---------+---------+---------|
+| encode                       | 3638770 | 3638770 | 3638770 | 0       | 3       |
+|------------------------------+---------+---------+---------+---------+---------|
+| encode_len                   | 3569090 | 3569090 | 3569090 | 0       | 3       |
+|------------------------------+---------+---------+---------+---------+---------|
+| input_len                    | 101040  | 101040  | 101040  | 0       | 3       |
+╰------------------------------+---------+---------+---------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_a5_1025 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~25000740)
+        sierra gas: 25000740
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+---------+---------+---------+---------+---------╮
+| LabBenchmarkHarness Contract |         |         |         |         |         |
++================================================================================+
+| Function Name                | Min     | Max     | Avg     | Std Dev | # Calls |
+|------------------------------+---------+---------+---------+---------+---------|
+| encode                       | 3642100 | 3642100 | 3642100 | 0       | 3       |
+|------------------------------+---------+---------+---------+---------+---------|
+| encode_len                   | 3572420 | 3572420 | 3572420 | 0       | 3       |
+|------------------------------+---------+---------+---------+---------+---------|
+| input_len                    | 101040  | 101040  | 101040  | 0       | 3       |
+╰------------------------------+---------+---------+---------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_a5_11 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~1903040)
+        sierra gas: 1903040
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+--------+--------+--------+---------+---------╮
+| LabBenchmarkHarness Contract |        |        |        |         |         |
++=============================================================================+
+| Function Name                | Min    | Max    | Avg    | Std Dev | # Calls |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode                       | 114730 | 114730 | 114730 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode_len                   | 114130 | 114130 | 114130 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| input_len                    | 12600  | 12600  | 12600  | 0       | 3       |
+╰------------------------------+--------+--------+--------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_a5_12 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~1936040)
+        sierra gas: 1936040
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+--------+--------+--------+---------+---------╮
+| LabBenchmarkHarness Contract |        |        |        |         |         |
++=============================================================================+
+| Function Name                | Min    | Max    | Avg    | Std Dev | # Calls |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode                       | 120230 | 120230 | 120230 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode_len                   | 119630 | 119630 | 119630 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| input_len                    | 12600  | 12600  | 12600  | 0       | 3       |
+╰------------------------------+--------+--------+--------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_a5_127 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~5387990)
+        sierra gas: 5387990
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+--------+--------+--------+---------+---------╮
+| LabBenchmarkHarness Contract |        |        |        |         |         |
++=============================================================================+
+| Function Name                | Min    | Max    | Avg    | Std Dev | # Calls |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode                       | 657280 | 657280 | 657280 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode_len                   | 648830 | 648830 | 648830 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| input_len                    | 23320  | 23320  | 23320  | 0       | 3       |
+╰------------------------------+--------+--------+--------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_a5_128 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~5407970)
+        sierra gas: 5407970
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+--------+--------+--------+---------+---------╮
+| LabBenchmarkHarness Contract |        |        |        |         |         |
++=============================================================================+
+| Function Name                | Min    | Max    | Avg    | Std Dev | # Calls |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode                       | 660610 | 660610 | 660610 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode_len                   | 652160 | 652160 | 652160 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| input_len                    | 23320  | 23320  | 23320  | 0       | 3       |
+╰------------------------------+--------+--------+--------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_a5_129 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~5440970)
+        sierra gas: 5440970
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+--------+--------+--------+---------+---------╮
+| LabBenchmarkHarness Contract |        |        |        |         |         |
++=============================================================================+
+| Function Name                | Min    | Max    | Avg    | Std Dev | # Calls |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode                       | 666110 | 666110 | 666110 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode_len                   | 657660 | 657660 | 657660 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| input_len                    | 23320  | 23320  | 23320  | 0       | 3       |
+╰------------------------------+--------+--------+--------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_a5_16383 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~372345330)
+        sierra gas: 372345330
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+----------+----------+----------+---------+---------╮
+| LabBenchmarkHarness Contract |          |          |          |         |         |
++===================================================================================+
+| Function Name                | Min      | Max      | Avg      | Std Dev | # Calls |
+|------------------------------+----------+----------+----------+---------+---------|
+| encode                       | 56703590 | 56703590 | 56703590 | 0       | 3       |
+|------------------------------+----------+----------+----------+---------+---------|
+| encode_len                   | 55597710 | 55597710 | 55597710 | 0       | 3       |
+|------------------------------+----------+----------+----------+---------+---------|
+| input_len                    | 1427640  | 1427640  | 1427640  | 0       | 3       |
+╰------------------------------+----------+----------+----------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_a5_16384 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~372524010)
+        sierra gas: 372524010
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+----------+----------+----------+---------+---------╮
+| LabBenchmarkHarness Contract |          |          |          |         |         |
++===================================================================================+
+| Function Name                | Min      | Max      | Avg      | Std Dev | # Calls |
+|------------------------------+----------+----------+----------+---------+---------|
+| encode                       | 56733370 | 56733370 | 56733370 | 0       | 3       |
+|------------------------------+----------+----------+----------+---------+---------|
+| encode_len                   | 55627490 | 55627490 | 55627490 | 0       | 3       |
+|------------------------------+----------+----------+----------+---------+---------|
+| input_len                    | 1427640  | 1427640  | 1427640  | 0       | 3       |
+╰------------------------------+----------+----------+----------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_a5_16385 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~372543990)
+        sierra gas: 372543990
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+----------+----------+----------+---------+---------╮
+| LabBenchmarkHarness Contract |          |          |          |         |         |
++===================================================================================+
+| Function Name                | Min      | Max      | Avg      | Std Dev | # Calls |
+|------------------------------+----------+----------+----------+---------+---------|
+| encode                       | 56736700 | 56736700 | 56736700 | 0       | 3       |
+|------------------------------+----------+----------+----------+---------+---------|
+| encode_len                   | 55630820 | 55630820 | 55630820 | 0       | 3       |
+|------------------------------+----------+----------+----------+---------+---------|
+| input_len                    | 1427640  | 1427640  | 1427640  | 0       | 3       |
+╰------------------------------+----------+----------+----------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_a5_2 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~1545080)
+        sierra gas: 1545080
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+-------+-------+-------+---------+---------╮
+| LabBenchmarkHarness Contract |       |       |       |         |         |
++==========================================================================+
+| Function Name                | Min   | Max   | Avg   | Std Dev | # Calls |
+|------------------------------+-------+-------+-------+---------+---------|
+| encode                       | 55070 | 55070 | 55070 | 0       | 3       |
+|------------------------------+-------+-------+-------+---------+---------|
+| encode_len                   | 54470 | 54470 | 54470 | 0       | 3       |
+|------------------------------+-------+-------+-------+---------+---------|
+| input_len                    | 12600 | 12600 | 12600 | 0       | 3       |
+╰------------------------------+-------+-------+-------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_a5_2047 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~48110350)
+        sierra gas: 48110350
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+---------+---------+---------+---------+---------╮
+| LabBenchmarkHarness Contract |         |         |         |         |         |
++================================================================================+
+| Function Name                | Min     | Max     | Avg     | Std Dev | # Calls |
+|------------------------------+---------+---------+---------+---------+---------|
+| encode                       | 7171750 | 7171750 | 7171750 | 0       | 3       |
+|------------------------------+---------+---------+---------+---------+---------|
+| encode_len                   | 7032990 | 7032990 | 7032990 | 0       | 3       |
+|------------------------------+---------+---------+---------+---------+---------|
+| input_len                    | 189480  | 189480  | 189480  | 0       | 3       |
+╰------------------------------+---------+---------+---------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_a5_2048 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~48130330)
+        sierra gas: 48130330
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+---------+---------+---------+---------+---------╮
+| LabBenchmarkHarness Contract |         |         |         |         |         |
++================================================================================+
+| Function Name                | Min     | Max     | Avg     | Std Dev | # Calls |
+|------------------------------+---------+---------+---------+---------+---------|
+| encode                       | 7175080 | 7175080 | 7175080 | 0       | 3       |
+|------------------------------+---------+---------+---------+---------+---------|
+| encode_len                   | 7036320 | 7036320 | 7036320 | 0       | 3       |
+|------------------------------+---------+---------+---------+---------+---------|
+| input_len                    | 189480  | 189480  | 189480  | 0       | 3       |
+╰------------------------------+---------+---------+---------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_a5_2049 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~48139150)
+        sierra gas: 48139150
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+---------+---------+---------+---------+---------╮
+| LabBenchmarkHarness Contract |         |         |         |         |         |
++================================================================================+
+| Function Name                | Min     | Max     | Avg     | Std Dev | # Calls |
+|------------------------------+---------+---------+---------+---------+---------|
+| encode                       | 7176550 | 7176550 | 7176550 | 0       | 3       |
+|------------------------------+---------+---------+---------+---------+---------|
+| encode_len                   | 7037790 | 7037790 | 7037790 | 0       | 3       |
+|------------------------------+---------+---------+---------+---------+---------|
+| input_len                    | 189480  | 189480  | 189480  | 0       | 3       |
+╰------------------------------+---------+---------+---------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_a5_22 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~2438290)
+        sierra gas: 2438290
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+--------+--------+--------+---------+---------╮
+| LabBenchmarkHarness Contract |        |        |        |         |         |
++=============================================================================+
+| Function Name                | Min    | Max    | Avg    | Std Dev | # Calls |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode                       | 201690 | 201690 | 201690 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode_len                   | 199520 | 199520 | 199520 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| input_len                    | 12600  | 12600  | 12600  | 0       | 3       |
+╰------------------------------+--------+--------+--------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_a5_23 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~2458270)
+        sierra gas: 2458270
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+--------+--------+--------+---------+---------╮
+| LabBenchmarkHarness Contract |        |        |        |         |         |
++=============================================================================+
+| Function Name                | Min    | Max    | Avg    | Std Dev | # Calls |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode                       | 205020 | 205020 | 205020 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode_len                   | 202850 | 202850 | 202850 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| input_len                    | 12600  | 12600  | 12600  | 0       | 3       |
+╰------------------------------+--------+--------+--------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_a5_24 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~2492050)
+        sierra gas: 2492050
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+--------+--------+--------+---------+---------╮
+| LabBenchmarkHarness Contract |        |        |        |         |         |
++=============================================================================+
+| Function Name                | Min    | Max    | Avg    | Std Dev | # Calls |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode                       | 210650 | 210650 | 210650 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode_len                   | 208480 | 208480 | 208480 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| input_len                    | 12600  | 12600  | 12600  | 0       | 3       |
+╰------------------------------+--------+--------+--------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_a5_255 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~9025580)
+        sierra gas: 9025580
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+---------+---------+---------+---------+---------╮
+| LabBenchmarkHarness Contract |         |         |         |         |         |
++================================================================================+
+| Function Name                | Min     | Max     | Avg     | Std Dev | # Calls |
+|------------------------------+---------+---------+---------+---------+---------|
+| encode                       | 1225270 | 1225270 | 1225270 | 0       | 3       |
+|------------------------------+---------+---------+---------+---------+---------|
+| encode_len                   | 1208970 | 1208970 | 1208970 | 0       | 3       |
+|------------------------------+---------+---------+---------+---------+---------|
+| input_len                    | 34040   | 34040   | 34040   | 0       | 3       |
+╰------------------------------+---------+---------+---------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_a5_256 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~9110230)
+        sierra gas: 9110230
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+---------+---------+---------+---------+---------╮
+| LabBenchmarkHarness Contract |         |         |         |         |         |
++================================================================================+
+| Function Name                | Min     | Max     | Avg     | Std Dev | # Calls |
+|------------------------------+---------+---------+---------+---------+---------|
+| encode                       | 1237130 | 1237130 | 1237130 | 0       | 3       |
+|------------------------------+---------+---------+---------+---------+---------|
+| encode_len                   | 1219260 | 1219260 | 1219260 | 0       | 3       |
+|------------------------------+---------+---------+---------+---------+---------|
+| input_len                    | 34040   | 34040   | 34040   | 0       | 3       |
+╰------------------------------+---------+---------+---------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_a5_257 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~9130390)
+        sierra gas: 9130390
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+---------+---------+---------+---------+---------╮
+| LabBenchmarkHarness Contract |         |         |         |         |         |
++================================================================================+
+| Function Name                | Min     | Max     | Avg     | Std Dev | # Calls |
+|------------------------------+---------+---------+---------+---------+---------|
+| encode                       | 1240490 | 1240490 | 1240490 | 0       | 3       |
+|------------------------------+---------+---------+---------+---------+---------|
+| encode_len                   | 1222620 | 1222620 | 1222620 | 0       | 3       |
+|------------------------------+---------+---------+---------+---------+---------|
+| input_len                    | 34040   | 34040   | 34040   | 0       | 3       |
+╰------------------------------+---------+---------+---------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_a5_3 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~1614140)
+        sierra gas: 1614140
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+-------+-------+-------+---------+---------╮
+| LabBenchmarkHarness Contract |       |       |       |         |         |
++==========================================================================+
+| Function Name                | Min   | Max   | Avg   | Std Dev | # Calls |
+|------------------------------+-------+-------+-------+---------+---------|
+| encode                       | 66580 | 66580 | 66580 | 0       | 3       |
+|------------------------------+-------+-------+-------+---------+---------|
+| encode_len                   | 65980 | 65980 | 65980 | 0       | 3       |
+|------------------------------+-------+-------+-------+---------+---------|
+| input_len                    | 12600 | 12600 | 12600 | 0       | 3       |
+╰------------------------------+-------+-------+-------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_a5_30 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~2688010)
+        sierra gas: 2688010
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+--------+--------+--------+---------+---------╮
+| LabBenchmarkHarness Contract |        |        |        |         |         |
++=============================================================================+
+| Function Name                | Min    | Max    | Avg    | Std Dev | # Calls |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode                       | 243310 | 243310 | 243310 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode_len                   | 241140 | 241140 | 241140 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| input_len                    | 12600  | 12600  | 12600  | 0       | 3       |
+╰------------------------------+--------+--------+--------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_a5_31 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~2814480)
+        sierra gas: 2814480
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+--------+--------+--------+---------+---------╮
+| LabBenchmarkHarness Contract |        |        |        |         |         |
++=============================================================================+
+| Function Name                | Min    | Max    | Avg    | Std Dev | # Calls |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode                       | 257630 | 257630 | 257630 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode_len                   | 255460 | 255460 | 255460 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| input_len                    | 15280  | 15280  | 15280  | 0       | 3       |
+╰------------------------------+--------+--------+--------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_a5_32 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~2964780)
+        sierra gas: 2964780
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+--------+--------+--------+---------+---------╮
+| LabBenchmarkHarness Contract |        |        |        |         |         |
++=============================================================================+
+| Function Name                | Min    | Max    | Avg    | Std Dev | # Calls |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode                       | 282680 | 282680 | 282680 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode_len                   | 280510 | 280510 | 280510 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| input_len                    | 15280  | 15280  | 15280  | 0       | 3       |
+╰------------------------------+--------+--------+--------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_a5_33 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~2997780)
+        sierra gas: 2997780
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+--------+--------+--------+---------+---------╮
+| LabBenchmarkHarness Contract |        |        |        |         |         |
++=============================================================================+
+| Function Name                | Min    | Max    | Avg    | Std Dev | # Calls |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode                       | 288180 | 288180 | 288180 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode_len                   | 286010 | 286010 | 286010 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| input_len                    | 15280  | 15280  | 15280  | 0       | 3       |
+╰------------------------------+--------+--------+--------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_a5_4 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~1714460)
+        sierra gas: 1714460
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+-------+-------+-------+---------+---------╮
+| LabBenchmarkHarness Contract |       |       |       |         |         |
++==========================================================================+
+| Function Name                | Min   | Max   | Avg   | Std Dev | # Calls |
+|------------------------------+-------+-------+-------+---------+---------|
+| encode                       | 83300 | 83300 | 83300 | 0       | 3       |
+|------------------------------+-------+-------+-------+---------+---------|
+| encode_len                   | 82700 | 82700 | 82700 | 0       | 3       |
+|------------------------------+-------+-------+-------+---------+---------|
+| input_len                    | 12600 | 12600 | 12600 | 0       | 3       |
+╰------------------------------+-------+-------+-------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_a5_4095 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~94398330)
+        sierra gas: 94398330
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+----------+----------+----------+---------+---------╮
+| LabBenchmarkHarness Contract |          |          |          |         |         |
++===================================================================================+
+| Function Name                | Min      | Max      | Avg      | Std Dev | # Calls |
+|------------------------------+----------+----------+----------+---------+---------|
+| encode                       | 14242510 | 14242510 | 14242510 | 0       | 3       |
+|------------------------------+----------+----------+----------+---------+---------|
+| encode_len                   | 13965590 | 13965590 | 13965590 | 0       | 3       |
+|------------------------------+----------+----------+----------+---------+---------|
+| input_len                    | 366360   | 366360   | 366360   | 0       | 3       |
+╰------------------------------+----------+----------+----------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_a5_4096 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~94443330)
+        sierra gas: 94443330
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+----------+----------+----------+---------+---------╮
+| LabBenchmarkHarness Contract |          |          |          |         |         |
++===================================================================================+
+| Function Name                | Min      | Max      | Avg      | Std Dev | # Calls |
+|------------------------------+----------+----------+----------+---------+---------|
+| encode                       | 14250010 | 14250010 | 14250010 | 0       | 3       |
+|------------------------------+----------+----------+----------+---------+---------|
+| encode_len                   | 13973090 | 13973090 | 13973090 | 0       | 3       |
+|------------------------------+----------+----------+----------+---------+---------|
+| input_len                    | 366360   | 366360   | 366360   | 0       | 3       |
+╰------------------------------+----------+----------+----------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_a5_4097 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~94463310)
+        sierra gas: 94463310
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+----------+----------+----------+---------+---------╮
+| LabBenchmarkHarness Contract |          |          |          |         |         |
++===================================================================================+
+| Function Name                | Min      | Max      | Avg      | Std Dev | # Calls |
+|------------------------------+----------+----------+----------+---------+---------|
+| encode                       | 14253340 | 14253340 | 14253340 | 0       | 3       |
+|------------------------------+----------+----------+----------+---------+---------|
+| encode_len                   | 13976420 | 13976420 | 13976420 | 0       | 3       |
+|------------------------------+----------+----------+----------+---------+---------|
+| input_len                    | 366360   | 366360   | 366360   | 0       | 3       |
+╰------------------------------+----------+----------+----------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_a5_45 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~3389700)
+        sierra gas: 3389700
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+--------+--------+--------+---------+---------╮
+| LabBenchmarkHarness Contract |        |        |        |         |         |
++=============================================================================+
+| Function Name                | Min    | Max    | Avg    | Std Dev | # Calls |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode                       | 353500 | 353500 | 353500 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode_len                   | 351330 | 351330 | 351330 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| input_len                    | 15280  | 15280  | 15280  | 0       | 3       |
+╰------------------------------+--------+--------+--------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_a5_46 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~3466730)
+        sierra gas: 3466730
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+--------+--------+--------+---------+---------╮
+| LabBenchmarkHarness Contract |        |        |        |         |         |
++=============================================================================+
+| Function Name                | Min    | Max    | Avg    | Std Dev | # Calls |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode                       | 364090 | 364090 | 364090 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode_len                   | 360350 | 360350 | 360350 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| input_len                    | 15280  | 15280  | 15280  | 0       | 3       |
+╰------------------------------+--------+--------+--------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_a5_47 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~3618590)
+        sierra gas: 3618590
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+--------+--------+--------+---------+---------╮
+| LabBenchmarkHarness Contract |        |        |        |         |         |
++=============================================================================+
+| Function Name                | Min    | Max    | Avg    | Std Dev | # Calls |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode                       | 389400 | 389400 | 389400 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode_len                   | 385660 | 385660 | 385660 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| input_len                    | 15280  | 15280  | 15280  | 0       | 3       |
+╰------------------------------+--------+--------+--------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_a5_48 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~3651770)
+        sierra gas: 3651770
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+--------+--------+--------+---------+---------╮
+| LabBenchmarkHarness Contract |        |        |        |         |         |
++=============================================================================+
+| Function Name                | Min    | Max    | Avg    | Std Dev | # Calls |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode                       | 394930 | 394930 | 394930 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode_len                   | 391190 | 391190 | 391190 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| input_len                    | 15280  | 15280  | 15280  | 0       | 3       |
+╰------------------------------+--------+--------+--------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_a5_5 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~1791980)
+        sierra gas: 1791980
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+-------+-------+-------+---------+---------╮
+| LabBenchmarkHarness Contract |       |       |       |         |         |
++==========================================================================+
+| Function Name                | Min   | Max   | Avg   | Std Dev | # Calls |
+|------------------------------+-------+-------+-------+---------+---------|
+| encode                       | 96220 | 96220 | 96220 | 0       | 3       |
+|------------------------------+-------+-------+-------+---------+---------|
+| encode_len                   | 95620 | 95620 | 95620 | 0       | 3       |
+|------------------------------+-------+-------+-------+---------+---------|
+| input_len                    | 12600 | 12600 | 12600 | 0       | 3       |
+╰------------------------------+-------+-------+-------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_a5_511 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~14232120)
+        sierra gas: 14232120
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+---------+---------+---------+---------+---------╮
+| LabBenchmarkHarness Contract |         |         |         |         |         |
++================================================================================+
+| Function Name                | Min     | Max     | Avg     | Std Dev | # Calls |
+|------------------------------+---------+---------+---------+---------+---------|
+| encode                       | 2011980 | 2011980 | 2011980 | 0       | 3       |
+|------------------------------+---------+---------+---------+---------+---------|
+| encode_len                   | 1976840 | 1976840 | 1976840 | 0       | 3       |
+|------------------------------+---------+---------+---------+---------+---------|
+| input_len                    | 55480   | 55480   | 55480   | 0       | 3       |
+╰------------------------------+---------+---------+---------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_a5_512 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~14383980)
+        sierra gas: 14383980
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+---------+---------+---------+---------+---------╮
+| LabBenchmarkHarness Contract |         |         |         |         |         |
++================================================================================+
+| Function Name                | Min     | Max     | Avg     | Std Dev | # Calls |
+|------------------------------+---------+---------+---------+---------+---------|
+| encode                       | 2037290 | 2037290 | 2037290 | 0       | 3       |
+|------------------------------+---------+---------+---------+---------+---------|
+| encode_len                   | 2002150 | 2002150 | 2002150 | 0       | 3       |
+|------------------------------+---------+---------+---------+---------+---------|
+| input_len                    | 55480   | 55480   | 55480   | 0       | 3       |
+╰------------------------------+---------+---------+---------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_a5_513 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~14417160)
+        sierra gas: 14417160
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+---------+---------+---------+---------+---------╮
+| LabBenchmarkHarness Contract |         |         |         |         |         |
++================================================================================+
+| Function Name                | Min     | Max     | Avg     | Std Dev | # Calls |
+|------------------------------+---------+---------+---------+---------+---------|
+| encode                       | 2042820 | 2042820 | 2042820 | 0       | 3       |
+|------------------------------+---------+---------+---------+---------+---------|
+| encode_len                   | 2007680 | 2007680 | 2007680 | 0       | 3       |
+|------------------------------+---------+---------+---------+---------+---------|
+| input_len                    | 55480   | 55480   | 55480   | 0       | 3       |
+╰------------------------------+---------+---------+---------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_a5_6 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~1740080)
+        sierra gas: 1740080
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+-------+-------+-------+---------+---------╮
+| LabBenchmarkHarness Contract |       |       |       |         |         |
++==========================================================================+
+| Function Name                | Min   | Max   | Avg   | Std Dev | # Calls |
+|------------------------------+-------+-------+-------+---------+---------|
+| encode                       | 87570 | 87570 | 87570 | 0       | 3       |
+|------------------------------+-------+-------+-------+---------+---------|
+| encode_len                   | 86970 | 86970 | 86970 | 0       | 3       |
+|------------------------------+-------+-------+-------+---------+---------|
+| input_len                    | 12600 | 12600 | 12600 | 0       | 3       |
+╰------------------------------+-------+-------+-------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_a5_61 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~4088690)
+        sierra gas: 4088690
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+--------+--------+--------+---------+---------╮
+| LabBenchmarkHarness Contract |        |        |        |         |         |
++=============================================================================+
+| Function Name                | Min    | Max    | Avg    | Std Dev | # Calls |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode                       | 467750 | 467750 | 467750 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode_len                   | 464010 | 464010 | 464010 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| input_len                    | 15280  | 15280  | 15280  | 0       | 3       |
+╰------------------------------+--------+--------+--------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_a5_62 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~4190140)
+        sierra gas: 4190140
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+--------+--------+--------+---------+---------╮
+| LabBenchmarkHarness Contract |        |        |        |         |         |
++=============================================================================+
+| Function Name                | Min    | Max    | Avg    | Std Dev | # Calls |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode                       | 477900 | 477900 | 477900 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode_len                   | 474160 | 474160 | 474160 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| input_len                    | 17960  | 17960  | 17960  | 0       | 3       |
+╰------------------------------+--------+--------+--------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_a5_63 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~4353460)
+        sierra gas: 4353460
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+--------+--------+--------+---------+---------╮
+| LabBenchmarkHarness Contract |        |        |        |         |         |
++=============================================================================+
+| Function Name                | Min    | Max    | Avg    | Std Dev | # Calls |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode                       | 505120 | 505120 | 505120 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode_len                   | 501380 | 501380 | 501380 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| input_len                    | 17960  | 17960  | 17960  | 0       | 3       |
+╰------------------------------+--------+--------+--------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_a5_64 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~4398460)
+        sierra gas: 4398460
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+--------+--------+--------+---------+---------╮
+| LabBenchmarkHarness Contract |        |        |        |         |         |
++=============================================================================+
+| Function Name                | Min    | Max    | Avg    | Std Dev | # Calls |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode                       | 512620 | 512620 | 512620 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode_len                   | 508880 | 508880 | 508880 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| input_len                    | 17960  | 17960  | 17960  | 0       | 3       |
+╰------------------------------+--------+--------+--------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_a5_7 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~1785080)
+        sierra gas: 1785080
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+-------+-------+-------+---------+---------╮
+| LabBenchmarkHarness Contract |       |       |       |         |         |
++==========================================================================+
+| Function Name                | Min   | Max   | Avg   | Std Dev | # Calls |
+|------------------------------+-------+-------+-------+---------+---------|
+| encode                       | 95070 | 95070 | 95070 | 0       | 3       |
+|------------------------------+-------+-------+-------+---------+---------|
+| encode_len                   | 94470 | 94470 | 94470 | 0       | 3       |
+|------------------------------+-------+-------+-------+---------+---------|
+| input_len                    | 12600 | 12600 | 12600 | 0       | 3       |
+╰------------------------------+-------+-------+-------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_a5_8 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~1805060)
+        sierra gas: 1805060
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+-------+-------+-------+---------+---------╮
+| LabBenchmarkHarness Contract |       |       |       |         |         |
++==========================================================================+
+| Function Name                | Min   | Max   | Avg   | Std Dev | # Calls |
+|------------------------------+-------+-------+-------+---------+---------|
+| encode                       | 98400 | 98400 | 98400 | 0       | 3       |
+|------------------------------+-------+-------+-------+---------+---------|
+| encode_len                   | 97800 | 97800 | 97800 | 0       | 3       |
+|------------------------------+-------+-------+-------+---------+---------|
+| input_len                    | 12600 | 12600 | 12600 | 0       | 3       |
+╰------------------------------+-------+-------+-------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_a5_8191 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~187059670)
+        sierra gas: 187059670
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+----------+----------+----------+---------+---------╮
+| LabBenchmarkHarness Contract |          |          |          |         |         |
++===================================================================================+
+| Function Name                | Min      | Max      | Avg      | Std Dev | # Calls |
+|------------------------------+----------+----------+----------+---------+---------|
+| encode                       | 28398260 | 28398260 | 28398260 | 0       | 3       |
+|------------------------------+----------+----------+----------+---------+---------|
+| encode_len                   | 27845020 | 27845020 | 27845020 | 0       | 3       |
+|------------------------------+----------+----------+----------+---------+---------|
+| input_len                    | 720120   | 720120   | 720120   | 0       | 3       |
+╰------------------------------+----------+----------+----------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_a5_8192 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~187079650)
+        sierra gas: 187079650
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+----------+----------+----------+---------+---------╮
+| LabBenchmarkHarness Contract |          |          |          |         |         |
++===================================================================================+
+| Function Name                | Min      | Max      | Avg      | Std Dev | # Calls |
+|------------------------------+----------+----------+----------+---------+---------|
+| encode                       | 28401590 | 28401590 | 28401590 | 0       | 3       |
+|------------------------------+----------+----------+----------+---------+---------|
+| encode_len                   | 27848350 | 27848350 | 27848350 | 0       | 3       |
+|------------------------------+----------+----------+----------+---------+---------|
+| input_len                    | 720120   | 720120   | 720120   | 0       | 3       |
+╰------------------------------+----------+----------+----------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_a5_8193 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~187112650)
+        sierra gas: 187112650
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+----------+----------+----------+---------+---------╮
+| LabBenchmarkHarness Contract |          |          |          |         |         |
++===================================================================================+
+| Function Name                | Min      | Max      | Avg      | Std Dev | # Calls |
+|------------------------------+----------+----------+----------+---------+---------|
+| encode                       | 28407090 | 28407090 | 28407090 | 0       | 3       |
+|------------------------------+----------+----------+----------+---------+---------|
+| encode_len                   | 27853850 | 27853850 | 27853850 | 0       | 3       |
+|------------------------------+----------+----------+----------+---------+---------|
+| input_len                    | 720120   | 720120   | 720120   | 0       | 3       |
+╰------------------------------+----------+----------+----------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_a5_9 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~1838060)
+        sierra gas: 1838060
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+--------+--------+--------+---------+---------╮
+| LabBenchmarkHarness Contract |        |        |        |         |         |
++=============================================================================+
+| Function Name                | Min    | Max    | Avg    | Std Dev | # Calls |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode                       | 103900 | 103900 | 103900 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode_len                   | 103300 | 103300 | 103300 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| input_len                    | 12600  | 12600  | 12600  | 0       | 3       |
+╰------------------------------+--------+--------+--------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_a5_91 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~5472740)
+        sierra gas: 5472740
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+--------+--------+--------+---------+---------╮
+| LabBenchmarkHarness Contract |        |        |        |         |         |
++=============================================================================+
+| Function Name                | Min    | Max    | Avg    | Std Dev | # Calls |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode                       | 687170 | 687170 | 687170 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode_len                   | 680290 | 680290 | 680290 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| input_len                    | 17960  | 17960  | 17960  | 0       | 3       |
+╰------------------------------+--------+--------+--------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_a5_92 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~5493320)
+        sierra gas: 5493320
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+--------+--------+--------+---------+---------╮
+| LabBenchmarkHarness Contract |        |        |        |         |         |
++=============================================================================+
+| Function Name                | Min    | Max    | Avg    | Std Dev | # Calls |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode                       | 690600 | 690600 | 690600 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode_len                   | 683720 | 683720 | 683720 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| input_len                    | 17960  | 17960  | 17960  | 0       | 3       |
+╰------------------------------+--------+--------+--------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_a5_93 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~3502990)
+        sierra gas: 3502990
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+--------+--------+--------+---------+---------╮
+| LabBenchmarkHarness Contract |        |        |        |         |         |
++=============================================================================+
+| Function Name                | Min    | Max    | Avg    | Std Dev | # Calls |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode                       | 352120 | 352120 | 352120 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode_len                   | 345240 | 345240 | 345240 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| input_len                    | 20640  | 20640  | 20640  | 0       | 3       |
+╰------------------------------+--------+--------+--------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_a5_94 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~3952090)
+        sierra gas: 3952090
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+--------+--------+--------+---------+---------╮
+| LabBenchmarkHarness Contract |        |        |        |         |         |
++=============================================================================+
+| Function Name                | Min    | Max    | Avg    | Std Dev | # Calls |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode                       | 426970 | 426970 | 426970 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode_len                   | 420090 | 420090 | 420090 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| input_len                    | 20640  | 20640  | 20640  | 0       | 3       |
+╰------------------------------+--------+--------+--------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_a5_95 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~3972070)
+        sierra gas: 3972070
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+--------+--------+--------+---------+---------╮
+| LabBenchmarkHarness Contract |        |        |        |         |         |
++=============================================================================+
+| Function Name                | Min    | Max    | Avg    | Std Dev | # Calls |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode                       | 430300 | 430300 | 430300 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode_len                   | 423420 | 423420 | 423420 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| input_len                    | 20640  | 20640  | 20640  | 0       | 3       |
+╰------------------------------+--------+--------+--------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_a5_96 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~3980890)
+        sierra gas: 3980890
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+--------+--------+--------+---------+---------╮
+| LabBenchmarkHarness Contract |        |        |        |         |         |
++=============================================================================+
+| Function Name                | Min    | Max    | Avg    | Std Dev | # Calls |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode                       | 431770 | 431770 | 431770 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode_len                   | 424890 | 424890 | 424890 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| input_len                    | 20640  | 20640  | 20640  | 0       | 3       |
+╰------------------------------+--------+--------+--------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_alternating_1024 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~24980760)
+        sierra gas: 24980760
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+---------+---------+---------+---------+---------╮
+| LabBenchmarkHarness Contract |         |         |         |         |         |
++================================================================================+
+| Function Name                | Min     | Max     | Avg     | Std Dev | # Calls |
+|------------------------------+---------+---------+---------+---------+---------|
+| encode                       | 3638770 | 3638770 | 3638770 | 0       | 3       |
+|------------------------------+---------+---------+---------+---------+---------|
+| encode_len                   | 3569090 | 3569090 | 3569090 | 0       | 3       |
+|------------------------------+---------+---------+---------+---------+---------|
+| input_len                    | 101040  | 101040  | 101040  | 0       | 3       |
+╰------------------------------+---------+---------+---------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_alternating_16384 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~372524010)
+        sierra gas: 372524010
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+----------+----------+----------+---------+---------╮
+| LabBenchmarkHarness Contract |          |          |          |         |         |
++===================================================================================+
+| Function Name                | Min      | Max      | Avg      | Std Dev | # Calls |
+|------------------------------+----------+----------+----------+---------+---------|
+| encode                       | 56733370 | 56733370 | 56733370 | 0       | 3       |
+|------------------------------+----------+----------+----------+---------+---------|
+| encode_len                   | 55627490 | 55627490 | 55627490 | 0       | 3       |
+|------------------------------+----------+----------+----------+---------+---------|
+| input_len                    | 1427640  | 1427640  | 1427640  | 0       | 3       |
+╰------------------------------+----------+----------+----------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_alternating_3 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~1615910)
+        sierra gas: 1615910
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+-------+-------+-------+---------+---------╮
+| LabBenchmarkHarness Contract |       |       |       |         |         |
++==========================================================================+
+| Function Name                | Min   | Max   | Avg   | Std Dev | # Calls |
+|------------------------------+-------+-------+-------+---------+---------|
+| encode                       | 66580 | 66580 | 66580 | 0       | 3       |
+|------------------------------+-------+-------+-------+---------+---------|
+| encode_len                   | 65980 | 65980 | 65980 | 0       | 3       |
+|------------------------------+-------+-------+-------+---------+---------|
+| input_len                    | 12600 | 12600 | 12600 | 0       | 3       |
+╰------------------------------+-------+-------+-------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_alternating_31 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~2816250)
+        sierra gas: 2816250
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+--------+--------+--------+---------+---------╮
+| LabBenchmarkHarness Contract |        |        |        |         |         |
++=============================================================================+
+| Function Name                | Min    | Max    | Avg    | Std Dev | # Calls |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode                       | 257630 | 257630 | 257630 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode_len                   | 255460 | 255460 | 255460 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| input_len                    | 15280  | 15280  | 15280  | 0       | 3       |
+╰------------------------------+--------+--------+--------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_alternating_32 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~2966550)
+        sierra gas: 2966550
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+--------+--------+--------+---------+---------╮
+| LabBenchmarkHarness Contract |        |        |        |         |         |
++=============================================================================+
+| Function Name                | Min    | Max    | Avg    | Std Dev | # Calls |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode                       | 282680 | 282680 | 282680 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode_len                   | 280510 | 280510 | 280510 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| input_len                    | 15280  | 15280  | 15280  | 0       | 3       |
+╰------------------------------+--------+--------+--------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_alternating_8192 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~187079650)
+        sierra gas: 187079650
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+----------+----------+----------+---------+---------╮
+| LabBenchmarkHarness Contract |          |          |          |         |         |
++===================================================================================+
+| Function Name                | Min      | Max      | Avg      | Std Dev | # Calls |
+|------------------------------+----------+----------+----------+---------+---------|
+| encode                       | 28401590 | 28401590 | 28401590 | 0       | 3       |
+|------------------------------+----------+----------+----------+---------+---------|
+| encode_len                   | 27848350 | 27848350 | 27848350 | 0       | 3       |
+|------------------------------+----------+----------+----------+---------+---------|
+| input_len                    | 720120   | 720120   | 720120   | 0       | 3       |
+╰------------------------------+----------+----------+----------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_alternating_8193 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~187112650)
+        sierra gas: 187112650
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+----------+----------+----------+---------+---------╮
+| LabBenchmarkHarness Contract |          |          |          |         |         |
++===================================================================================+
+| Function Name                | Min      | Max      | Avg      | Std Dev | # Calls |
+|------------------------------+----------+----------+----------+---------+---------|
+| encode                       | 28407090 | 28407090 | 28407090 | 0       | 3       |
+|------------------------------+----------+----------+----------+---------+---------|
+| encode_len                   | 27853850 | 27853850 | 27853850 | 0       | 3       |
+|------------------------------+----------+----------+----------+---------+---------|
+| input_len                    | 720120   | 720120   | 720120   | 0       | 3       |
+╰------------------------------+----------+----------+----------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_alternating_93 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~3504760)
+        sierra gas: 3504760
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+--------+--------+--------+---------+---------╮
+| LabBenchmarkHarness Contract |        |        |        |         |         |
++=============================================================================+
+| Function Name                | Min    | Max    | Avg    | Std Dev | # Calls |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode                       | 352120 | 352120 | 352120 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode_len                   | 345240 | 345240 | 345240 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| input_len                    | 20640  | 20640  | 20640  | 0       | 3       |
+╰------------------------------+--------+--------+--------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_ascending_1024 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~24980760)
+        sierra gas: 24980760
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+---------+---------+---------+---------+---------╮
+| LabBenchmarkHarness Contract |         |         |         |         |         |
++================================================================================+
+| Function Name                | Min     | Max     | Avg     | Std Dev | # Calls |
+|------------------------------+---------+---------+---------+---------+---------|
+| encode                       | 3638770 | 3638770 | 3638770 | 0       | 3       |
+|------------------------------+---------+---------+---------+---------+---------|
+| encode_len                   | 3569090 | 3569090 | 3569090 | 0       | 3       |
+|------------------------------+---------+---------+---------+---------+---------|
+| input_len                    | 101040  | 101040  | 101040  | 0       | 3       |
+╰------------------------------+---------+---------+---------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_ascending_16384 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~372524010)
+        sierra gas: 372524010
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+----------+----------+----------+---------+---------╮
+| LabBenchmarkHarness Contract |          |          |          |         |         |
++===================================================================================+
+| Function Name                | Min      | Max      | Avg      | Std Dev | # Calls |
+|------------------------------+----------+----------+----------+---------+---------|
+| encode                       | 56733370 | 56733370 | 56733370 | 0       | 3       |
+|------------------------------+----------+----------+----------+---------+---------|
+| encode_len                   | 55627490 | 55627490 | 55627490 | 0       | 3       |
+|------------------------------+----------+----------+----------+---------+---------|
+| input_len                    | 1427640  | 1427640  | 1427640  | 0       | 3       |
+╰------------------------------+----------+----------+----------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_ascending_3 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~1615910)
+        sierra gas: 1615910
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+-------+-------+-------+---------+---------╮
+| LabBenchmarkHarness Contract |       |       |       |         |         |
++==========================================================================+
+| Function Name                | Min   | Max   | Avg   | Std Dev | # Calls |
+|------------------------------+-------+-------+-------+---------+---------|
+| encode                       | 66580 | 66580 | 66580 | 0       | 3       |
+|------------------------------+-------+-------+-------+---------+---------|
+| encode_len                   | 65980 | 65980 | 65980 | 0       | 3       |
+|------------------------------+-------+-------+-------+---------+---------|
+| input_len                    | 12600 | 12600 | 12600 | 0       | 3       |
+╰------------------------------+-------+-------+-------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_ascending_31 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~2816250)
+        sierra gas: 2816250
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+--------+--------+--------+---------+---------╮
+| LabBenchmarkHarness Contract |        |        |        |         |         |
++=============================================================================+
+| Function Name                | Min    | Max    | Avg    | Std Dev | # Calls |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode                       | 257630 | 257630 | 257630 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode_len                   | 255460 | 255460 | 255460 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| input_len                    | 15280  | 15280  | 15280  | 0       | 3       |
+╰------------------------------+--------+--------+--------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_ascending_32 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~2966550)
+        sierra gas: 2966550
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+--------+--------+--------+---------+---------╮
+| LabBenchmarkHarness Contract |        |        |        |         |         |
++=============================================================================+
+| Function Name                | Min    | Max    | Avg    | Std Dev | # Calls |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode                       | 282680 | 282680 | 282680 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode_len                   | 280510 | 280510 | 280510 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| input_len                    | 15280  | 15280  | 15280  | 0       | 3       |
+╰------------------------------+--------+--------+--------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_ascending_8192 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~187079650)
+        sierra gas: 187079650
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+----------+----------+----------+---------+---------╮
+| LabBenchmarkHarness Contract |          |          |          |         |         |
++===================================================================================+
+| Function Name                | Min      | Max      | Avg      | Std Dev | # Calls |
+|------------------------------+----------+----------+----------+---------+---------|
+| encode                       | 28401590 | 28401590 | 28401590 | 0       | 3       |
+|------------------------------+----------+----------+----------+---------+---------|
+| encode_len                   | 27848350 | 27848350 | 27848350 | 0       | 3       |
+|------------------------------+----------+----------+----------+---------+---------|
+| input_len                    | 720120   | 720120   | 720120   | 0       | 3       |
+╰------------------------------+----------+----------+----------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_ascending_8193 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~187112650)
+        sierra gas: 187112650
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+----------+----------+----------+---------+---------╮
+| LabBenchmarkHarness Contract |          |          |          |         |         |
++===================================================================================+
+| Function Name                | Min      | Max      | Avg      | Std Dev | # Calls |
+|------------------------------+----------+----------+----------+---------+---------|
+| encode                       | 28407090 | 28407090 | 28407090 | 0       | 3       |
+|------------------------------+----------+----------+----------+---------+---------|
+| encode_len                   | 27853850 | 27853850 | 27853850 | 0       | 3       |
+|------------------------------+----------+----------+----------+---------+---------|
+| input_len                    | 720120   | 720120   | 720120   | 0       | 3       |
+╰------------------------------+----------+----------+----------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_ascending_93 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~3504760)
+        sierra gas: 3504760
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+--------+--------+--------+---------+---------╮
+| LabBenchmarkHarness Contract |        |        |        |         |         |
++=============================================================================+
+| Function Name                | Min    | Max    | Avg    | Std Dev | # Calls |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode                       | 352120 | 352120 | 352120 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode_len                   | 345240 | 345240 | 345240 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| input_len                    | 20640  | 20640  | 20640  | 0       | 3       |
+╰------------------------------+--------+--------+--------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_ff_1024 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~24980760)
+        sierra gas: 24980760
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+---------+---------+---------+---------+---------╮
+| LabBenchmarkHarness Contract |         |         |         |         |         |
++================================================================================+
+| Function Name                | Min     | Max     | Avg     | Std Dev | # Calls |
+|------------------------------+---------+---------+---------+---------+---------|
+| encode                       | 3638770 | 3638770 | 3638770 | 0       | 3       |
+|------------------------------+---------+---------+---------+---------+---------|
+| encode_len                   | 3569090 | 3569090 | 3569090 | 0       | 3       |
+|------------------------------+---------+---------+---------+---------+---------|
+| input_len                    | 101040  | 101040  | 101040  | 0       | 3       |
+╰------------------------------+---------+---------+---------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_ff_16384 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~372524010)
+        sierra gas: 372524010
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+----------+----------+----------+---------+---------╮
+| LabBenchmarkHarness Contract |          |          |          |         |         |
++===================================================================================+
+| Function Name                | Min      | Max      | Avg      | Std Dev | # Calls |
+|------------------------------+----------+----------+----------+---------+---------|
+| encode                       | 56733370 | 56733370 | 56733370 | 0       | 3       |
+|------------------------------+----------+----------+----------+---------+---------|
+| encode_len                   | 55627490 | 55627490 | 55627490 | 0       | 3       |
+|------------------------------+----------+----------+----------+---------+---------|
+| input_len                    | 1427640  | 1427640  | 1427640  | 0       | 3       |
+╰------------------------------+----------+----------+----------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_ff_3 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~1614140)
+        sierra gas: 1614140
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+-------+-------+-------+---------+---------╮
+| LabBenchmarkHarness Contract |       |       |       |         |         |
++==========================================================================+
+| Function Name                | Min   | Max   | Avg   | Std Dev | # Calls |
+|------------------------------+-------+-------+-------+---------+---------|
+| encode                       | 66580 | 66580 | 66580 | 0       | 3       |
+|------------------------------+-------+-------+-------+---------+---------|
+| encode_len                   | 65980 | 65980 | 65980 | 0       | 3       |
+|------------------------------+-------+-------+-------+---------+---------|
+| input_len                    | 12600 | 12600 | 12600 | 0       | 3       |
+╰------------------------------+-------+-------+-------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_ff_31 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~2814480)
+        sierra gas: 2814480
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+--------+--------+--------+---------+---------╮
+| LabBenchmarkHarness Contract |        |        |        |         |         |
++=============================================================================+
+| Function Name                | Min    | Max    | Avg    | Std Dev | # Calls |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode                       | 257630 | 257630 | 257630 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode_len                   | 255460 | 255460 | 255460 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| input_len                    | 15280  | 15280  | 15280  | 0       | 3       |
+╰------------------------------+--------+--------+--------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_ff_32 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~2964780)
+        sierra gas: 2964780
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+--------+--------+--------+---------+---------╮
+| LabBenchmarkHarness Contract |        |        |        |         |         |
++=============================================================================+
+| Function Name                | Min    | Max    | Avg    | Std Dev | # Calls |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode                       | 282680 | 282680 | 282680 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode_len                   | 280510 | 280510 | 280510 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| input_len                    | 15280  | 15280  | 15280  | 0       | 3       |
+╰------------------------------+--------+--------+--------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_ff_8192 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~187079650)
+        sierra gas: 187079650
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+----------+----------+----------+---------+---------╮
+| LabBenchmarkHarness Contract |          |          |          |         |         |
++===================================================================================+
+| Function Name                | Min      | Max      | Avg      | Std Dev | # Calls |
+|------------------------------+----------+----------+----------+---------+---------|
+| encode                       | 28401590 | 28401590 | 28401590 | 0       | 3       |
+|------------------------------+----------+----------+----------+---------+---------|
+| encode_len                   | 27848350 | 27848350 | 27848350 | 0       | 3       |
+|------------------------------+----------+----------+----------+---------+---------|
+| input_len                    | 720120   | 720120   | 720120   | 0       | 3       |
+╰------------------------------+----------+----------+----------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_ff_8193 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~187112650)
+        sierra gas: 187112650
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+----------+----------+----------+---------+---------╮
+| LabBenchmarkHarness Contract |          |          |          |         |         |
++===================================================================================+
+| Function Name                | Min      | Max      | Avg      | Std Dev | # Calls |
+|------------------------------+----------+----------+----------+---------+---------|
+| encode                       | 28407090 | 28407090 | 28407090 | 0       | 3       |
+|------------------------------+----------+----------+----------+---------+---------|
+| encode_len                   | 27853850 | 27853850 | 27853850 | 0       | 3       |
+|------------------------------+----------+----------+----------+---------+---------|
+| input_len                    | 720120   | 720120   | 720120   | 0       | 3       |
+╰------------------------------+----------+----------+----------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_ff_93 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~3502990)
+        sierra gas: 3502990
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+--------+--------+--------+---------+---------╮
+| LabBenchmarkHarness Contract |        |        |        |         |         |
++=============================================================================+
+| Function Name                | Min    | Max    | Avg    | Std Dev | # Calls |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode                       | 352120 | 352120 | 352120 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode_len                   | 345240 | 345240 | 345240 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| input_len                    | 20640  | 20640  | 20640  | 0       | 3       |
+╰------------------------------+--------+--------+--------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_pseudorandom_1024 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~24980760)
+        sierra gas: 24980760
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+---------+---------+---------+---------+---------╮
+| LabBenchmarkHarness Contract |         |         |         |         |         |
++================================================================================+
+| Function Name                | Min     | Max     | Avg     | Std Dev | # Calls |
+|------------------------------+---------+---------+---------+---------+---------|
+| encode                       | 3638770 | 3638770 | 3638770 | 0       | 3       |
+|------------------------------+---------+---------+---------+---------+---------|
+| encode_len                   | 3569090 | 3569090 | 3569090 | 0       | 3       |
+|------------------------------+---------+---------+---------+---------+---------|
+| input_len                    | 101040  | 101040  | 101040  | 0       | 3       |
+╰------------------------------+---------+---------+---------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_pseudorandom_16384 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~372524010)
+        sierra gas: 372524010
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+----------+----------+----------+---------+---------╮
+| LabBenchmarkHarness Contract |          |          |          |         |         |
++===================================================================================+
+| Function Name                | Min      | Max      | Avg      | Std Dev | # Calls |
+|------------------------------+----------+----------+----------+---------+---------|
+| encode                       | 56733370 | 56733370 | 56733370 | 0       | 3       |
+|------------------------------+----------+----------+----------+---------+---------|
+| encode_len                   | 55627490 | 55627490 | 55627490 | 0       | 3       |
+|------------------------------+----------+----------+----------+---------+---------|
+| input_len                    | 1427640  | 1427640  | 1427640  | 0       | 3       |
+╰------------------------------+----------+----------+----------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_pseudorandom_3 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~1615910)
+        sierra gas: 1615910
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+-------+-------+-------+---------+---------╮
+| LabBenchmarkHarness Contract |       |       |       |         |         |
++==========================================================================+
+| Function Name                | Min   | Max   | Avg   | Std Dev | # Calls |
+|------------------------------+-------+-------+-------+---------+---------|
+| encode                       | 66580 | 66580 | 66580 | 0       | 3       |
+|------------------------------+-------+-------+-------+---------+---------|
+| encode_len                   | 65980 | 65980 | 65980 | 0       | 3       |
+|------------------------------+-------+-------+-------+---------+---------|
+| input_len                    | 12600 | 12600 | 12600 | 0       | 3       |
+╰------------------------------+-------+-------+-------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_pseudorandom_31 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~2816250)
+        sierra gas: 2816250
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+--------+--------+--------+---------+---------╮
+| LabBenchmarkHarness Contract |        |        |        |         |         |
++=============================================================================+
+| Function Name                | Min    | Max    | Avg    | Std Dev | # Calls |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode                       | 257630 | 257630 | 257630 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode_len                   | 255460 | 255460 | 255460 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| input_len                    | 15280  | 15280  | 15280  | 0       | 3       |
+╰------------------------------+--------+--------+--------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_pseudorandom_32 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~2966550)
+        sierra gas: 2966550
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+--------+--------+--------+---------+---------╮
+| LabBenchmarkHarness Contract |        |        |        |         |         |
++=============================================================================+
+| Function Name                | Min    | Max    | Avg    | Std Dev | # Calls |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode                       | 282680 | 282680 | 282680 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode_len                   | 280510 | 280510 | 280510 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| input_len                    | 15280  | 15280  | 15280  | 0       | 3       |
+╰------------------------------+--------+--------+--------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_pseudorandom_8192 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~187079650)
+        sierra gas: 187079650
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+----------+----------+----------+---------+---------╮
+| LabBenchmarkHarness Contract |          |          |          |         |         |
++===================================================================================+
+| Function Name                | Min      | Max      | Avg      | Std Dev | # Calls |
+|------------------------------+----------+----------+----------+---------+---------|
+| encode                       | 28401590 | 28401590 | 28401590 | 0       | 3       |
+|------------------------------+----------+----------+----------+---------+---------|
+| encode_len                   | 27848350 | 27848350 | 27848350 | 0       | 3       |
+|------------------------------+----------+----------+----------+---------+---------|
+| input_len                    | 720120   | 720120   | 720120   | 0       | 3       |
+╰------------------------------+----------+----------+----------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_pseudorandom_8193 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~187112650)
+        sierra gas: 187112650
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+----------+----------+----------+---------+---------╮
+| LabBenchmarkHarness Contract |          |          |          |         |         |
++===================================================================================+
+| Function Name                | Min      | Max      | Avg      | Std Dev | # Calls |
+|------------------------------+----------+----------+----------+---------+---------|
+| encode                       | 28407090 | 28407090 | 28407090 | 0       | 3       |
+|------------------------------+----------+----------+----------+---------+---------|
+| encode_len                   | 27853850 | 27853850 | 27853850 | 0       | 3       |
+|------------------------------+----------+----------+----------+---------+---------|
+| input_len                    | 720120   | 720120   | 720120   | 0       | 3       |
+╰------------------------------+----------+----------+----------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_pseudorandom_93 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~3504760)
+        sierra gas: 3504760
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+--------+--------+--------+---------+---------╮
+| LabBenchmarkHarness Contract |        |        |        |         |         |
++=============================================================================+
+| Function Name                | Min    | Max    | Avg    | Std Dev | # Calls |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode                       | 352120 | 352120 | 352120 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode_len                   | 345240 | 345240 | 345240 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| input_len                    | 20640  | 20640  | 20640  | 0       | 3       |
+╰------------------------------+--------+--------+--------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_text_1024 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~24980760)
+        sierra gas: 24980760
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+---------+---------+---------+---------+---------╮
+| LabBenchmarkHarness Contract |         |         |         |         |         |
++================================================================================+
+| Function Name                | Min     | Max     | Avg     | Std Dev | # Calls |
+|------------------------------+---------+---------+---------+---------+---------|
+| encode                       | 3638770 | 3638770 | 3638770 | 0       | 3       |
+|------------------------------+---------+---------+---------+---------+---------|
+| encode_len                   | 3569090 | 3569090 | 3569090 | 0       | 3       |
+|------------------------------+---------+---------+---------+---------+---------|
+| input_len                    | 101040  | 101040  | 101040  | 0       | 3       |
+╰------------------------------+---------+---------+---------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_text_16384 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~372524010)
+        sierra gas: 372524010
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+----------+----------+----------+---------+---------╮
+| LabBenchmarkHarness Contract |          |          |          |         |         |
++===================================================================================+
+| Function Name                | Min      | Max      | Avg      | Std Dev | # Calls |
+|------------------------------+----------+----------+----------+---------+---------|
+| encode                       | 56733370 | 56733370 | 56733370 | 0       | 3       |
+|------------------------------+----------+----------+----------+---------+---------|
+| encode_len                   | 55627490 | 55627490 | 55627490 | 0       | 3       |
+|------------------------------+----------+----------+----------+---------+---------|
+| input_len                    | 1427640  | 1427640  | 1427640  | 0       | 3       |
+╰------------------------------+----------+----------+----------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_text_3 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~1614140)
+        sierra gas: 1614140
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+-------+-------+-------+---------+---------╮
+| LabBenchmarkHarness Contract |       |       |       |         |         |
++==========================================================================+
+| Function Name                | Min   | Max   | Avg   | Std Dev | # Calls |
+|------------------------------+-------+-------+-------+---------+---------|
+| encode                       | 66580 | 66580 | 66580 | 0       | 3       |
+|------------------------------+-------+-------+-------+---------+---------|
+| encode_len                   | 65980 | 65980 | 65980 | 0       | 3       |
+|------------------------------+-------+-------+-------+---------+---------|
+| input_len                    | 12600 | 12600 | 12600 | 0       | 3       |
+╰------------------------------+-------+-------+-------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_text_31 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~2816250)
+        sierra gas: 2816250
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+--------+--------+--------+---------+---------╮
+| LabBenchmarkHarness Contract |        |        |        |         |         |
++=============================================================================+
+| Function Name                | Min    | Max    | Avg    | Std Dev | # Calls |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode                       | 257630 | 257630 | 257630 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode_len                   | 255460 | 255460 | 255460 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| input_len                    | 15280  | 15280  | 15280  | 0       | 3       |
+╰------------------------------+--------+--------+--------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_text_32 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~2966550)
+        sierra gas: 2966550
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+--------+--------+--------+---------+---------╮
+| LabBenchmarkHarness Contract |        |        |        |         |         |
++=============================================================================+
+| Function Name                | Min    | Max    | Avg    | Std Dev | # Calls |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode                       | 282680 | 282680 | 282680 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode_len                   | 280510 | 280510 | 280510 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| input_len                    | 15280  | 15280  | 15280  | 0       | 3       |
+╰------------------------------+--------+--------+--------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_text_8192 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~187079650)
+        sierra gas: 187079650
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+----------+----------+----------+---------+---------╮
+| LabBenchmarkHarness Contract |          |          |          |         |         |
++===================================================================================+
+| Function Name                | Min      | Max      | Avg      | Std Dev | # Calls |
+|------------------------------+----------+----------+----------+---------+---------|
+| encode                       | 28401590 | 28401590 | 28401590 | 0       | 3       |
+|------------------------------+----------+----------+----------+---------+---------|
+| encode_len                   | 27848350 | 27848350 | 27848350 | 0       | 3       |
+|------------------------------+----------+----------+----------+---------+---------|
+| input_len                    | 720120   | 720120   | 720120   | 0       | 3       |
+╰------------------------------+----------+----------+----------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_text_8193 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~187112650)
+        sierra gas: 187112650
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+----------+----------+----------+---------+---------╮
+| LabBenchmarkHarness Contract |          |          |          |         |         |
++===================================================================================+
+| Function Name                | Min      | Max      | Avg      | Std Dev | # Calls |
+|------------------------------+----------+----------+----------+---------+---------|
+| encode                       | 28407090 | 28407090 | 28407090 | 0       | 3       |
+|------------------------------+----------+----------+----------+---------+---------|
+| encode_len                   | 27853850 | 27853850 | 27853850 | 0       | 3       |
+|------------------------------+----------+----------+----------+---------+---------|
+| input_len                    | 720120   | 720120   | 720120   | 0       | 3       |
+╰------------------------------+----------+----------+----------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_text_93 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~3504760)
+        sierra gas: 3504760
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+--------+--------+--------+---------+---------╮
+| LabBenchmarkHarness Contract |        |        |        |         |         |
++=============================================================================+
+| Function Name                | Min    | Max    | Avg    | Std Dev | # Calls |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode                       | 352120 | 352120 | 352120 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode_len                   | 345240 | 345240 | 345240 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| input_len                    | 20640  | 20640  | 20640  | 0       | 3       |
+╰------------------------------+--------+--------+--------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_zero_1024 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~24980760)
+        sierra gas: 24980760
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+---------+---------+---------+---------+---------╮
+| LabBenchmarkHarness Contract |         |         |         |         |         |
++================================================================================+
+| Function Name                | Min     | Max     | Avg     | Std Dev | # Calls |
+|------------------------------+---------+---------+---------+---------+---------|
+| encode                       | 3638770 | 3638770 | 3638770 | 0       | 3       |
+|------------------------------+---------+---------+---------+---------+---------|
+| encode_len                   | 3569090 | 3569090 | 3569090 | 0       | 3       |
+|------------------------------+---------+---------+---------+---------+---------|
+| input_len                    | 101040  | 101040  | 101040  | 0       | 3       |
+╰------------------------------+---------+---------+---------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_zero_16384 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~372524010)
+        sierra gas: 372524010
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+----------+----------+----------+---------+---------╮
+| LabBenchmarkHarness Contract |          |          |          |         |         |
++===================================================================================+
+| Function Name                | Min      | Max      | Avg      | Std Dev | # Calls |
+|------------------------------+----------+----------+----------+---------+---------|
+| encode                       | 56733370 | 56733370 | 56733370 | 0       | 3       |
+|------------------------------+----------+----------+----------+---------+---------|
+| encode_len                   | 55627490 | 55627490 | 55627490 | 0       | 3       |
+|------------------------------+----------+----------+----------+---------+---------|
+| input_len                    | 1427640  | 1427640  | 1427640  | 0       | 3       |
+╰------------------------------+----------+----------+----------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_zero_3 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~1614140)
+        sierra gas: 1614140
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+-------+-------+-------+---------+---------╮
+| LabBenchmarkHarness Contract |       |       |       |         |         |
++==========================================================================+
+| Function Name                | Min   | Max   | Avg   | Std Dev | # Calls |
+|------------------------------+-------+-------+-------+---------+---------|
+| encode                       | 66580 | 66580 | 66580 | 0       | 3       |
+|------------------------------+-------+-------+-------+---------+---------|
+| encode_len                   | 65980 | 65980 | 65980 | 0       | 3       |
+|------------------------------+-------+-------+-------+---------+---------|
+| input_len                    | 12600 | 12600 | 12600 | 0       | 3       |
+╰------------------------------+-------+-------+-------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_zero_31 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~2816250)
+        sierra gas: 2816250
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+--------+--------+--------+---------+---------╮
+| LabBenchmarkHarness Contract |        |        |        |         |         |
++=============================================================================+
+| Function Name                | Min    | Max    | Avg    | Std Dev | # Calls |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode                       | 257630 | 257630 | 257630 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode_len                   | 255460 | 255460 | 255460 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| input_len                    | 15280  | 15280  | 15280  | 0       | 3       |
+╰------------------------------+--------+--------+--------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_zero_32 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~2966550)
+        sierra gas: 2966550
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+--------+--------+--------+---------+---------╮
+| LabBenchmarkHarness Contract |        |        |        |         |         |
++=============================================================================+
+| Function Name                | Min    | Max    | Avg    | Std Dev | # Calls |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode                       | 282680 | 282680 | 282680 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode_len                   | 280510 | 280510 | 280510 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| input_len                    | 15280  | 15280  | 15280  | 0       | 3       |
+╰------------------------------+--------+--------+--------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_zero_8192 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~187079650)
+        sierra gas: 187079650
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+----------+----------+----------+---------+---------╮
+| LabBenchmarkHarness Contract |          |          |          |         |         |
++===================================================================================+
+| Function Name                | Min      | Max      | Avg      | Std Dev | # Calls |
+|------------------------------+----------+----------+----------+---------+---------|
+| encode                       | 28401590 | 28401590 | 28401590 | 0       | 3       |
+|------------------------------+----------+----------+----------+---------+---------|
+| encode_len                   | 27848350 | 27848350 | 27848350 | 0       | 3       |
+|------------------------------+----------+----------+----------+---------+---------|
+| input_len                    | 720120   | 720120   | 720120   | 0       | 3       |
+╰------------------------------+----------+----------+----------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_zero_8193 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~187112650)
+        sierra gas: 187112650
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+----------+----------+----------+---------+---------╮
+| LabBenchmarkHarness Contract |          |          |          |         |         |
++===================================================================================+
+| Function Name                | Min      | Max      | Avg      | Std Dev | # Calls |
+|------------------------------+----------+----------+----------+---------+---------|
+| encode                       | 28407090 | 28407090 | 28407090 | 0       | 3       |
+|------------------------------+----------+----------+----------+---------+---------|
+| encode_len                   | 27853850 | 27853850 | 27853850 | 0       | 3       |
+|------------------------------+----------+----------+----------+---------+---------|
+| input_len                    | 720120   | 720120   | 720120   | 0       | 3       |
+╰------------------------------+----------+----------+----------+---------+---------╯
+
+[PASS] game_components_encoding_harness_integrationtest::lab_benchmarks::bench_zero_93 (l1_gas: ~0, l1_data_gas: ~96, l2_gas: ~3504760)
+        sierra gas: 3504760
+        syscalls: (CallContract: 9, Deploy: 1)
+        events: (count: 0, keys: 0, data size: 0)
+        messages: (l2 to l1: 0, l1 handler: 0)
+
+╭------------------------------+--------+--------+--------+---------+---------╮
+| LabBenchmarkHarness Contract |        |        |        |         |         |
++=============================================================================+
+| Function Name                | Min    | Max    | Avg    | Std Dev | # Calls |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode                       | 352120 | 352120 | 352120 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| encode_len                   | 345240 | 345240 | 345240 | 0       | 3       |
+|------------------------------+--------+--------+--------+---------+---------|
+| input_len                    | 20640  | 20640  | 20640  | 0       | 3       |
+╰------------------------------+--------+--------+--------+---------+---------╯
+
+Tests: 106 passed, 0 failed, 0 ignored, 295 filtered out
+
