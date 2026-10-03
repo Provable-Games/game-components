@@ -144,6 +144,8 @@ def run(args):
     subprocess.run([sys.executable, 'scripts/generate-fixtures.py', '--check'], cwd=ROOT, check=True)
     subprocess.run([sys.executable, 'scripts/generate-accuracy-fixtures.py', '--check'], cwd=ROOT, check=True)
     subprocess.run(['scarb', 'fmt', '--check', '--workspace'], cwd=ROOT, check=True)
+    # Fresh checkouts have no ignored lockfile until dependency resolution runs.
+    subprocess.run(['scarb', 'fetch'], cwd=ROOT, check=True)
     expected = expected_tests()
     source = fingerprints()
     destination.mkdir(parents=True)

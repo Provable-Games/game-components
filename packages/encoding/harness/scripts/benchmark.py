@@ -116,6 +116,8 @@ def capture(args):
     versions = toolchain()
     subprocess.run([sys.executable, 'scripts/generate-fixtures.py', '--check'], cwd=ROOT, check=True)
     subprocess.run(['scarb', 'fmt', '--check', '--workspace'], cwd=ROOT, check=True)
+    # Resolve dependencies before freezing the generated workspace lockfile hash.
+    subprocess.run(['scarb', 'fetch'], cwd=ROOT, check=True)
     fixture_manifest = manifest()
     cases = fixture_manifest['benchmarks']
     hashes = {path: sha(ROOT / path) for path in DEFINITIONS + [ENCODER_KEY]}
