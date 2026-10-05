@@ -5,7 +5,7 @@ Individual game logic foundation. Each game contract embeds this component and *
 ## Features
 
 - Game lifecycle management (mint, play, complete)
-- Required `IMinigameTokenData` trait for score and game-over queries
+- Required `IMinigameTokenData` trait for score and game-state queries
 - Optional settings and objectives extensions
 - Token integration for NFT-based game instances
 - Pre/post action hooks for game state validation
@@ -30,10 +30,16 @@ own `IMinigameTokenMinter::mint` (the game IS the token).
 
 | Method | Returns | Description |
 |--------|---------|-------------|
-| `score(token_id)` | `u32` | Current score for token |
-| `game_over(token_id)` | `bool` | Whether game has ended |
-| `score_batch(token_ids)` | `Array<u32>` | Batch scores |
-| `game_over_batch(token_ids)` | `Array<bool>` | Batch game states |
+| `score(token_id: felt252)` | `u64` | Current score for token |
+| `game_over(token_id: felt252)` | `bool` | Whether game has ended |
+| `new_game(token_id: felt252)` | `bool` | Whether an existing token’s gameplay has not started; false for nonexistent or burned tokens. Commit/reveal games may use zero commitments as the signal |
+| `score_batch(token_ids: Span<felt252>)` | `Array<u64>` | Batch scores |
+| `game_over_batch(token_ids: Span<felt252>)` | `Array<bool>` | Batch game states |
+
+`new_game` is a required game-provided entrypoint. Existing deployed games do not gain
+it automatically, so callers should invoke it only on deployments known to implement
+it, for example through an allowlist or version check. A missing selector reverts the
+calling transaction. No SRC5 ID is assigned to this view.
 
 ### IMinigameDetails (Optional)
 
@@ -110,6 +116,8 @@ mod MyGame {
         fn game_over(self: @ContractState, token_id: u64) -> bool {
             self.game_data.read(token_id).is_finished
         }
+        // `new_game` must combine the game's existence check with its
+        // gameplay-start state; commit/reveal games can use commitment count.
         // ... batch methods
     }
 
@@ -120,7 +128,7 @@ mod MyGame {
 
 ## Game Lifecycle
 
-1. **Init**: Deploy with `token_address`, optional `settings_address`/`objectives_address`
+1. **Init**: Deploy with `token_address`, optional `settings_address`/`objectives_address`; initialization alone does not start a game
 2. **Mint**: Call `mint()` (`IMinigameTokenMinter`) to create playable token
 3. **Validate**: Use `assert_game_token_playable(token_id)` before actions
 4. **Play**: Update game state, `pre_action()`/`post_action()` hooks

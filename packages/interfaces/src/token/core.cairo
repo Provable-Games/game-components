@@ -221,6 +221,15 @@ pub trait MinigameTokenABI<TState> {
 pub trait IMinigameTokenData<TState> {
     fn score(self: @TState, token_id: felt252) -> u64;
     fn game_over(self: @TState, token_id: felt252) -> bool;
+    /// Whether an existing token's gameplay has not started. Return false for
+    /// tokens that do not exist or have been burned. Setup or initialization
+    /// alone does not start gameplay; commit/reveal games can derive this view
+    /// from whether the token has any commitments. This is a required external
+    /// entrypoint for implementers. Older deployed contracts do not gain it
+    /// automatically. Callers should invoke it only on deployments known to
+    /// implement it; a missing selector reverts the calling transaction. It has
+    /// no independent SRC5 ID.
+    fn new_game(self: @TState, token_id: felt252) -> bool;
 
     // Batch operations
     fn score_batch(self: @TState, token_ids: Span<felt252>) -> Array<u64>;

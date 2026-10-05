@@ -3,6 +3,7 @@ pub trait IMockGame<TContractState> {
     // Test helpers
     fn set_score(ref self: TContractState, token_id: felt252, score: u64);
     fn set_game_over(ref self: TContractState, token_id: felt252, game_over: bool);
+    fn set_new_game(ref self: TContractState, token_id: felt252, new_game: bool);
 }
 
 #[starknet::contract]
@@ -19,6 +20,9 @@ pub mod MockGame {
         src5: SRC5Component::Storage,
         scores: Map<felt252, u64>,
         game_overs: Map<felt252, bool>,
+        // This bare game mock does not model token existence; tests must opt in
+        // only when an id represents an existing, unstarted fixture token.
+        new_games: Map<felt252, bool>,
     }
 
     #[event]
@@ -39,6 +43,10 @@ pub mod MockGame {
 
         fn game_over(self: @ContractState, token_id: felt252) -> bool {
             self.game_overs.read(token_id)
+        }
+
+        fn new_game(self: @ContractState, token_id: felt252) -> bool {
+            self.new_games.read(token_id)
         }
 
         fn score_batch(self: @ContractState, token_ids: Span<felt252>) -> Array<u64> {
@@ -76,6 +84,10 @@ pub mod MockGame {
 
         fn set_game_over(ref self: ContractState, token_id: felt252, game_over: bool) {
             self.game_overs.write(token_id, game_over);
+        }
+
+        fn set_new_game(ref self: ContractState, token_id: felt252, new_game: bool) {
+            self.new_games.write(token_id, new_game);
         }
     }
 
