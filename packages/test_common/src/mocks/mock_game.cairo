@@ -20,6 +20,8 @@ pub mod MockGame {
         src5: SRC5Component::Storage,
         scores: Map<felt252, u64>,
         game_overs: Map<felt252, bool>,
+        // This bare game mock does not model token existence; tests must opt in
+        // only when an id represents an existing, unstarted fixture token.
         new_games: Map<felt252, bool>,
     }
 

@@ -224,7 +224,10 @@ pub trait IMinigameTokenData<TState> {
     /// Whether an existing token's gameplay has not started. Return false for
     /// tokens that do not exist or have been burned. Setup or initialization
     /// alone does not start gameplay; commit/reveal games can derive this view
-    /// from whether the token has any commitments.
+    /// from whether the token has any commitments. This is a required external
+    /// entrypoint for implementers. Older deployed contracts do not gain it
+    /// automatically, so callers should target compatible deployments or handle
+    /// the unsupported-selector fallback. It has no independent SRC5 ID.
     fn new_game(self: @TState, token_id: felt252) -> bool;
 
     // Batch operations

@@ -167,8 +167,13 @@ fn new_game_is_true_for_fresh_existing_token_and_false_for_missing_or_started() 
     let game_data = game_data_of(token);
     let game = game_of(token);
 
+    let missing_id = token_id + 1;
     assert!(game_data.new_game(token_id), "A freshly minted token has not started gameplay");
-    assert!(!game_data.new_game(token_id + 1), "A missing token is not a new game");
+    assert!(!game_data.new_game(missing_id), "A missing token is not a new game");
+    game.set_new_game(missing_id, true);
+    assert!(
+        !game_data.new_game(missing_id), "The game-start flag cannot make a missing token exist",
+    );
 
     // Score alone is not the gameplay-start signal; gameplay may start while
     // the score remains zero, so the fixture exposes that state explicitly.

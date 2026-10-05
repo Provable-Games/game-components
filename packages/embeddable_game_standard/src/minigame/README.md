@@ -36,6 +36,10 @@ own `IMinigameTokenMinter::mint` (the game IS the token).
 | `score_batch(token_ids: Span<felt252>)` | `Array<u64>` | Batch scores |
 | `game_over_batch(token_ids: Span<felt252>)` | `Array<bool>` | Batch game states |
 
+`new_game` is a required game-provided entrypoint. Existing deployed games do not gain
+it automatically, so consumers should call it only on known compatible deployments
+or handle the unsupported-selector fallback. No SRC5 ID is assigned to this view.
+
 ### IMinigameDetails (Optional)
 
 | Method | Returns | Description |
