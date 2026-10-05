@@ -171,7 +171,7 @@ pub mod StandardGameMock {
         }
 
         fn new_game(self: @ContractState, token_id: felt252) -> bool {
-            let owner = self.erc721._owner_of(token_id.try_into().unwrap());
+            let owner = self.erc721._owner_of(token_id.into());
             !owner.is_zero() && !self.game_started.entry(token_id).read()
         }
 
@@ -231,7 +231,7 @@ pub mod StandardGameMock {
         }
 
         fn burn_test_token(ref self: ContractState, token_id: felt252) {
-            self.erc721.burn(token_id.try_into().unwrap());
+            self.erc721.burn(token_id.into());
         }
 
         /// Exposes the component's internal pre-action guard for tests —
