@@ -20,6 +20,8 @@
 pub trait IStandardGameMock<TContractState> {
     fn set_score(ref self: TContractState, token_id: felt252, score: u64);
     fn end_game(ref self: TContractState, token_id: felt252, score: u64);
+    fn set_new_game(ref self: TContractState, token_id: felt252, new_game: bool);
+    fn burn_test_token(ref self: TContractState, token_id: felt252);
     fn create_settings_difficulty(
         ref self: TContractState, name: ByteArray, description: ByteArray, difficulty: u8,
     );
@@ -70,6 +72,7 @@ pub mod StandardGameMock {
         // game-over; the standard token holds no mutable state.
         scores: Map<felt252, u64>,
         game_over: Map<felt252, bool>,
+        game_started: Map<felt252, bool>,
         // Settings storage (minigame_mock-style)
         settings_count: u32,
         settings_difficulty: Map<u32, u8>, // settings_id -> difficulty
@@ -167,6 +170,11 @@ pub mod StandardGameMock {
             self.game_over.entry(token_id).read()
         }
 
+        fn new_game(self: @ContractState, token_id: felt252) -> bool {
+            let owner = self.erc721._owner_of(token_id.try_into().unwrap());
+            !owner.is_zero() && !self.game_started.entry(token_id).read()
+        }
+
         fn score_batch(self: @ContractState, token_ids: Span<felt252>) -> Array<u64> {
             let mut results = array![];
             let mut index = 0;
@@ -215,6 +223,15 @@ pub mod StandardGameMock {
         fn end_game(ref self: ContractState, token_id: felt252, score: u64) {
             self.scores.entry(token_id).write(score);
             self.game_over.entry(token_id).write(true);
+            self.game_started.entry(token_id).write(true);
+        }
+
+        fn set_new_game(ref self: ContractState, token_id: felt252, new_game: bool) {
+            self.game_started.entry(token_id).write(!new_game);
+        }
+
+        fn burn_test_token(ref self: ContractState, token_id: felt252) {
+            self.erc721.burn(token_id.try_into().unwrap());
         }
 
         /// Exposes the component's internal pre-action guard for tests —

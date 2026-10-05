@@ -19,7 +19,8 @@ use snforge_std::{
 };
 use starknet::ContractAddress;
 use crate::token::interface::{
-    IMINIGAME_TOKEN_ID, IMinigameTokenDispatcher, IMinigameTokenDispatcherTrait,
+    IMINIGAME_TOKEN_ID, IMinigameTokenDataDispatcher, IMinigameTokenDataDispatcherTrait,
+    IMinigameTokenDispatcher, IMinigameTokenDispatcherTrait,
 };
 use crate::token::minigame_token_component::MinigameTokenComponent;
 use crate::token::packing::{
@@ -81,6 +82,10 @@ fn deploy_token() -> (
 /// it inside its entrypoints).
 fn game_of(token: IMinigameTokenDispatcher) -> IStandardGameMockDispatcher {
     IStandardGameMockDispatcher { contract_address: token.contract_address }
+}
+
+fn game_data_of(token: IMinigameTokenDispatcher) -> IMinigameTokenDataDispatcher {
+    IMinigameTokenDataDispatcher { contract_address: token.contract_address }
 }
 
 /// Mint with the restored 12-arg shape, neutral values for the params a test
@@ -147,6 +152,47 @@ fn test_deployment_and_interfaces() {
         !src5.supports_interface(retired_legacy_id),
         "Must NOT advertise the retired generation's token id",
     );
+}
+
+// ================================================================================================
+// GAME START VIEW
+// ================================================================================================
+
+#[test]
+fn new_game_is_true_for_fresh_existing_token_and_false_for_missing_or_started() {
+    let (token, _, _) = deploy_token();
+    let token_id = mint_basic(
+        token, Option::None, Option::None, Option::None, Option::None, ALICE(), false, 0,
+    );
+    let game_data = game_data_of(token);
+    let game = game_of(token);
+
+    assert!(game_data.new_game(token_id), "A freshly minted token has not started gameplay");
+    assert!(!game_data.new_game(token_id + 1), "A missing token is not a new game");
+
+    // Score alone is not the gameplay-start signal; gameplay may start while
+    // the score remains zero, so the fixture exposes that state explicitly.
+    game.set_score(token_id, 0);
+    assert!(game_data.new_game(token_id), "A zero score does not establish gameplay state");
+    game.set_new_game(token_id, false);
+    assert!(!game_data.new_game(token_id), "Started gameplay is not a new game");
+}
+
+#[test]
+fn new_game_tracks_existing_token_across_transfer_and_burn() {
+    let (token, erc721, _) = deploy_token();
+    let token_id = mint_basic(
+        token, Option::None, Option::None, Option::None, Option::None, ALICE(), false, 0,
+    );
+    let game_data = game_data_of(token);
+    let game = game_of(token);
+
+    cheat_caller_address(token.contract_address, ALICE(), CheatSpan::TargetCalls(1));
+    erc721.transfer_from(ALICE(), BOB(), token_id.into());
+    assert!(game_data.new_game(token_id), "Transfer does not start gameplay");
+
+    game.burn_test_token(token_id);
+    assert!(!game_data.new_game(token_id), "A burned token is not a new game");
 }
 
 // ================================================================================================

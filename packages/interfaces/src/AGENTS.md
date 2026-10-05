@@ -7,7 +7,7 @@ Single source of truth for all game component interface definitions. Other packa
 | Module | Interfaces | Purpose |
 |--------|------------|---------|
 | `metagame` | `IMetagame`, `IMetagameContext`, `IMetagameCallback` | Game management, context extensions |
-| `minigame` | `IMinigame`, `IMinigameTokenData`, `IMinigameSettings`, `IMinigameObjectives` | Game logic, score/game_over queries |
+| `minigame` | `IMinigame`, `IMinigameTokenData`, `IMinigameSettings`, `IMinigameObjectives` | Game logic, score and game-state queries |
 | `token` (`token/core`) | `IMinigameToken` | THE minigame token standard: gas-optimized token embedded in the game contract itself (self-bound, no registry, no mutable state), plus the `IMinigameTokenMinter` surface |
 | `token/game_fee` | `IMinigameTokenGameFee` | Game fee recipient (payout sink) + license + fee rate on the standard token (replaces the registry's `game_fee_info`); setters gated on the game contract's Ownable owner |
 | `leaderboard` | `ILeaderboard`, `ILeaderboardAdmin`, `IGameDetails` | Tournament scoring and rankings |
@@ -41,15 +41,15 @@ pub const ILEADERBOARD_ID: felt252 = 0x...;
 ### Cross-Contract Calls (Dispatcher Pattern)
 
 ```cairo
-use game_components_interfaces::{
-    IMinigameDispatcher, IMinigameDispatcherTrait,
-    IMinigameTokenDispatcher, IMinigameTokenDispatcherTrait,
+use game_components_interfaces::token::core::{
+    IMinigameTokenDataDispatcher, IMinigameTokenDataDispatcherTrait,
 };
 
-// Call another contract
-let minigame = IMinigameDispatcher { contract_address: game_address };
-let score = minigame.score(token_id);
-let is_over = minigame.game_over(token_id);
+// Read game-owned data from another contract
+let game_data = IMinigameTokenDataDispatcher { contract_address: game_address };
+let score = game_data.score(token_id);
+let is_over = game_data.game_over(token_id);
+let is_new = game_data.new_game(token_id);
 ```
 
 ### SRC5 Interface Registration
@@ -77,9 +77,12 @@ use game_components_interfaces::{
 
 ## Key Interface Methods
 
-**IMinigameTokenData** (required for minigame contracts):
-- `score(token_id: u64) -> u32` - Get token's current score
-- `game_over(token_id: u64) -> bool` - Check if game has ended
+**IMinigameTokenData** (implemented by games for their token data):
+- `score(token_id: felt252) -> u64` - Get token's current score
+- `game_over(token_id: felt252) -> bool` - Check if game has ended
+- `new_game(token_id: felt252) -> bool` - True for an existing token whose gameplay has not started; false for nonexistent or burned tokens. Initialization/setup alone does not start gameplay; commit/reveal games may derive this from zero commitments.
+- `score_batch(token_ids: Span<felt252>) -> Array<u64>` - Get scores for multiple tokens
+- `game_over_batch(token_ids: Span<felt252>) -> Array<bool>` - Get game-over states for multiple tokens
 
 **IMinigame** (identity views only — self-bound game returns its own address):
 - `token_address() -> ContractAddress`
@@ -176,6 +179,10 @@ original surface, which those contracts all still implement in full.
 Apply the same reasoning to future additive methods: extend the trait, leave the ID
 alone, and note the exclusion here. Change the ID only for a genuinely breaking
 change to the existing surface.
+
+`IMinigameTokenData.new_game` is an additive view on the game-provided trait. It
+has no separately registered SRC5 interface ID, so it does not change any frozen
+interface ID above.
 
 ### Frozen `IMINIGAME_TOKEN_ID` value
 

@@ -7,7 +7,7 @@ Centralized interface and struct definitions for all game components. Other pack
 | Module | Interfaces | Purpose |
 |--------|------------|---------|
 | `metagame` | `IMetagame`, `IMetagameContext`, `IMetagameCallback` | Game management, context extensions |
-| `minigame` | `IMinigame`, `IMinigameTokenData`, `IMinigameSettings`, `IMinigameObjectives` | Game logic, score/game_over queries |
+| `minigame` | `IMinigame`, `IMinigameTokenData`, `IMinigameSettings`, `IMinigameObjectives` | Game logic, score and game-state queries |
 | `token` (`token/core`) | `IMinigameToken` | THE minigame token standard: self-bound token embedded in the game contract (plus the `IMinigameTokenMinter` surface) |
 | `leaderboard` | `ILeaderboard`, `ILeaderboardAdmin`, `IGameDetails` | Tournament scoring and rankings |
 | `tokenomics/buyback` | `IBuyback`, `IBuybackAdmin` | Autonomous buyback via Ekubo TWAMM |
@@ -39,15 +39,15 @@ pub const ILEADERBOARD_ID: felt252 = 0x...;
 ### Cross-Contract Calls (Dispatcher Pattern)
 
 ```cairo
-use game_components_interfaces::{
-    IMinigameDispatcher, IMinigameDispatcherTrait,
-    IMinigameTokenDispatcher, IMinigameTokenDispatcherTrait,
+use game_components_interfaces::token::core::{
+    IMinigameTokenDataDispatcher, IMinigameTokenDataDispatcherTrait,
 };
 
-// Call another contract
-let minigame = IMinigameDispatcher { contract_address: game_address };
-let score = minigame.score(token_id);
-let is_over = minigame.game_over(token_id);
+// Read game-owned data from another contract
+let game_data = IMinigameTokenDataDispatcher { contract_address: game_address };
+let score = game_data.score(token_id);
+let is_over = game_data.game_over(token_id);
+let is_new = game_data.new_game(token_id);
 ```
 
 ### SRC5 Interface Registration
@@ -75,9 +75,12 @@ use game_components_interfaces::{
 
 ## Key Interface Methods
 
-**IMinigameTokenData** (required for minigame contracts):
-- `score(token_id: u64) -> u32` - Get token's current score
-- `game_over(token_id: u64) -> bool` - Check if game has ended
+**IMinigameTokenData** (implemented by games for their token data):
+- `score(token_id: felt252) -> u64` - Get token's current score
+- `game_over(token_id: felt252) -> bool` - Check if game has ended
+- `new_game(token_id: felt252) -> bool` - True for an existing token whose gameplay has not started; false for nonexistent or burned tokens. Initialization/setup alone does not start gameplay; commit/reveal games may derive this from zero commitments.
+- `score_batch(token_ids: Span<felt252>) -> Array<u64>` - Get scores for multiple tokens
+- `game_over_batch(token_ids: Span<felt252>) -> Array<bool>` - Get game-over states for multiple tokens
 
 **IMinigame** (identity views only — self-bound game returns its own address):
 - `token_address() -> ContractAddress`
