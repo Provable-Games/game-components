@@ -37,8 +37,9 @@ own `IMinigameTokenMinter::mint` (the game IS the token).
 | `game_over_batch(token_ids: Span<felt252>)` | `Array<bool>` | Batch game states |
 
 `new_game` is a required game-provided entrypoint. Existing deployed games do not gain
-it automatically, so consumers should call it only on known compatible deployments
-or handle the unsupported-selector fallback. No SRC5 ID is assigned to this view.
+it automatically, so callers should invoke it only on deployments known to implement
+it, for example through an allowlist or version check. A missing selector reverts the
+calling transaction. No SRC5 ID is assigned to this view.
 
 ### IMinigameDetails (Optional)
 

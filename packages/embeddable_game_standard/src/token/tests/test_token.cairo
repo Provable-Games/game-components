@@ -181,6 +181,13 @@ fn new_game_is_true_for_fresh_existing_token_and_false_for_missing_or_started() 
     assert!(game_data.new_game(token_id), "A zero score does not establish gameplay state");
     game.set_new_game(token_id, false);
     assert!(!game_data.new_game(token_id), "Started gameplay is not a new game");
+
+    let ended = mint_basic(
+        token, Option::None, Option::None, Option::None, Option::None, ALICE(), false, 1,
+    );
+    assert!(game_data.new_game(ended), "The token starts with fresh gameplay");
+    game.end_game(ended, 10);
+    assert!(!game_data.new_game(ended), "An ended game is not a new game");
 }
 
 #[test]

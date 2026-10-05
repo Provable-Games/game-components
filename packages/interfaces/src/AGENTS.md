@@ -85,9 +85,10 @@ use game_components_interfaces::{
 - `game_over_batch(token_ids: Span<felt252>) -> Array<bool>` - Get game-over states for multiple tokens
 
 Adding `new_game` requires every `IMinigameTokenData` implementation to expose this
-entrypoint. Existing deployed contracts do not acquire it automatically; consumers
-should call it only on known compatible deployments or handle an unsupported-selector
-fallback. The view has no independent SRC5 ID.
+entrypoint. Existing deployed contracts do not acquire it automatically; callers
+should invoke it only on deployments known to implement it, for example through an
+allowlist or version check. A missing selector reverts the calling transaction. The
+view has no independent SRC5 ID.
 
 **IMinigame** (identity views only — self-bound game returns its own address):
 - `token_address() -> ContractAddress`
