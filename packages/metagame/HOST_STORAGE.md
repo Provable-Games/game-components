@@ -43,6 +43,10 @@ ordering are reused. Positions passed to submission and public views are
 only on `Success`. Other hooks belong to the host's configuration/admin paths.
 Game address zero selects stored scores; a nonzero address selects live game
 scores for public entry views, as in the standard component.
+Configuration providers may override `leaderboard_game_address` and
+`leaderboard_max_entries` to avoid reading unused configuration fields in entry
+views and capacity checks. Their defaults derive values from `leaderboard_config`;
+the standard component overrides both to retain its original single-slot reads.
 
 For entry requirements implement `entry_requirement::store::Store<ContractState>`:
 

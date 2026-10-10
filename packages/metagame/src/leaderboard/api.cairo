@@ -6,6 +6,7 @@ use game_components_interfaces::leaderboard::{
     IGameDetailsDispatcher, IGameDetailsDispatcherTrait, ILeaderboard, LeaderboardEntry,
     LeaderboardResult, LeaderboardStoreConfig,
 };
+use starknet::ContractAddress;
 use crate::leaderboard::hooks::LeaderboardHooksTrait;
 use crate::leaderboard::leaderboard_store::{
     LeaderboardStoreHelpersImpl, LeaderboardStoreHelpersTrait, LeaderboardStoreImpl,
@@ -15,6 +16,17 @@ use crate::leaderboard::store::Store;
 
 pub trait Configuration<T> {
     fn leaderboard_config(self: @T, context_id: u64) -> LeaderboardStoreConfig;
+    /// Override when reading the full configuration would fetch unused storage slots.
+    fn leaderboard_game_address(
+        self: @T, context_id: u64,
+    ) -> ContractAddress {
+        Self::leaderboard_config(self, context_id).game_address
+    }
+    fn leaderboard_max_entries(
+        self: @T, context_id: u64,
+    ) -> u32 {
+        Self::leaderboard_config(self, context_id).max_entries
+    }
 }
 
 #[starknet::embeddable]
@@ -26,7 +38,7 @@ pub impl LeaderboardImpl<
     }
     fn get_leaderboard_entries(self: @TContractState, context_id: u64) -> Array<LeaderboardEntry> {
         LeaderboardStoreTrait::get_entries(
-            self, context_id, self.leaderboard_config(context_id).game_address,
+            self, context_id, self.leaderboard_game_address(context_id),
         )
     }
     fn get_leaderboard_entry(
@@ -40,7 +52,7 @@ pub impl LeaderboardImpl<
         );
         let index = position - 1;
         let token_id = self.get_entry_at(context_id, index);
-        let game_address = self.leaderboard_config(context_id).game_address;
+        let game_address = self.leaderboard_game_address(context_id);
         let score = if !game_address.is_zero() {
             IGameDetailsDispatcher { contract_address: game_address }.score(token_id)
         } else {
@@ -52,7 +64,7 @@ pub impl LeaderboardImpl<
         self: @TContractState, context_id: u64, count: u32,
     ) -> Array<LeaderboardEntry> {
         LeaderboardStoreHelpersTrait::get_range(
-            self, context_id, 0, count, self.leaderboard_config(context_id).game_address,
+            self, context_id, 0, count, self.leaderboard_game_address(context_id),
         )
     }
     fn get_position(self: @TContractState, context_id: u64, token_id: felt252) -> Option<u32> {
@@ -65,7 +77,7 @@ pub impl LeaderboardImpl<
     }
     fn is_full(self: @TContractState, context_id: u64) -> bool {
         LeaderboardStoreHelpersTrait::is_full(
-            self, context_id, self.leaderboard_config(context_id).max_entries,
+            self, context_id, self.leaderboard_max_entries(context_id),
         )
     }
     fn get_leaderboard_length(self: @TContractState, context_id: u64) -> u32 {

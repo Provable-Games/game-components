@@ -130,6 +130,12 @@ pub mod LeaderboardComponent {
                 game_address: self.game_address.read(context_id),
             }
         }
+        fn leaderboard_game_address(self: @ComponentState<T>, context_id: u64) -> ContractAddress {
+            self.game_address.read(context_id)
+        }
+        fn leaderboard_max_entries(self: @ComponentState<T>, context_id: u64) -> u32 {
+            self.max_entries.read(context_id)
+        }
     }
 
     impl ComponentHooks<
