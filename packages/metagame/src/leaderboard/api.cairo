@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: BUSL-1.1
 //! Storage-independent leaderboard API. Hosts implement Store and Configuration;
 //! the standard component remains an optional storage implementation.
+use core::num::traits::Zero;
 use game_components_interfaces::leaderboard::{
-    ILeaderboard, LeaderboardEntry, LeaderboardResult, LeaderboardStoreConfig,
+    IGameDetailsDispatcher, IGameDetailsDispatcherTrait, ILeaderboard, LeaderboardEntry,
+    LeaderboardResult, LeaderboardStoreConfig,
 };
 use crate::leaderboard::hooks::LeaderboardHooksTrait;
 use crate::leaderboard::leaderboard_store::{
@@ -36,10 +38,15 @@ pub impl LeaderboardImpl<
             "Leaderboard: position {} out of range",
             position,
         );
-        let entries = LeaderboardStoreHelpersTrait::get_range(
-            self, context_id, position - 1, 1, self.leaderboard_config(context_id).game_address,
-        );
-        *entries.at(0)
+        let index = position - 1;
+        let token_id = self.get_entry_at(context_id, index);
+        let game_address = self.leaderboard_config(context_id).game_address;
+        let score = if !game_address.is_zero() {
+            IGameDetailsDispatcher { contract_address: game_address }.score(token_id)
+        } else {
+            self.get_score_at(context_id, index)
+        };
+        LeaderboardEntry { id: token_id, score }
     }
     fn get_top_leaderboard_entries(
         self: @TContractState, context_id: u64, count: u32,

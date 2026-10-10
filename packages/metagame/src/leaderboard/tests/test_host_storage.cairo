@@ -166,3 +166,72 @@ fn leaderboard_host_storage_rejects_missing_position_view() {
     let (_, board) = deploy();
     board.get_leaderboard_entry(1, 1);
 }
+
+#[starknet::contract]
+mod ComponentBackedLeaderboard {
+    use game_components_interfaces::leaderboard::{
+        ILeaderboard, LeaderboardResult, LeaderboardStoreConfig,
+    };
+    use openzeppelin_introspection::src5::SRC5Component;
+    use crate::leaderboard::api::{
+        Configuration, LeaderboardInternalImpl, LeaderboardInternalTrait as HostInternalTrait,
+    };
+    use crate::leaderboard::leaderboard_component::LeaderboardComponent::LeaderboardInternalTrait;
+    use crate::leaderboard::leaderboard_component::{
+        LeaderboardComponent, LeaderboardHooksEmptyImpl,
+    };
+    use crate::leaderboard::store::Store;
+    component!(path: LeaderboardComponent, storage: leaderboard, event: LeaderboardEvent);
+    component!(path: SRC5Component, storage: src5, event: SRC5Event);
+    impl Hooks = LeaderboardHooksEmptyImpl<ContractState>;
+    impl StorageAdapter = crate::leaderboard::storage_adapter::ComponentStore<ContractState>;
+    #[abi(embed_v0)]
+    impl Views = crate::leaderboard::api::LeaderboardImpl<ContractState>;
+    impl Config of Configuration<ContractState> {
+        fn leaderboard_config(self: @ContractState, context_id: u64) -> LeaderboardStoreConfig {
+            ILeaderboard::get_config(self.leaderboard, context_id)
+        }
+    }
+    #[storage]
+    struct Storage {
+        #[substorage(v0)]
+        leaderboard: LeaderboardComponent::Storage,
+        #[substorage(v0)]
+        src5: SRC5Component::Storage,
+    }
+    #[event]
+    #[derive(Drop, starknet::Event)]
+    enum Event {
+        LeaderboardEvent: LeaderboardComponent::Event,
+        SRC5Event: SRC5Component::Event,
+    }
+    #[abi(embed_v0)]
+    impl TestApi of super::IHostLeaderboard<ContractState> {
+        fn configure(ref self: ContractState, id: u64, max: u32, ascending: bool) {
+            self.leaderboard._configure(id, max, ascending, 0.try_into().unwrap());
+        }
+        fn submit(
+            ref self: ContractState, id: u64, token: felt252, score: u64, position: u32,
+        ) -> LeaderboardResult {
+            HostInternalTrait::submit_score(ref self, id, token, score, position)
+        }
+        fn hook_count(self: @ContractState) -> u32 {
+            Store::get_leaderboard(self, 1).len().try_into().unwrap()
+        }
+    }
+}
+#[test]
+fn leaderboard_host_storage_component_adapter_preserves_component_maps() {
+    let cls = declare("ComponentBackedLeaderboard").unwrap().contract_class();
+    let (address, _) = cls.deploy(@array![]).unwrap();
+    let host = IHostLeaderboardDispatcher { contract_address: address };
+    let board = ILeaderboardDispatcher { contract_address: address };
+    host.configure(1, 2, false);
+    assert!(host.submit(1, 11, 50, 1) == LeaderboardResult::Success);
+    assert!(host.submit(1, 12, 40, 2) == LeaderboardResult::Success);
+    assert!(board.get_leaderboard_entry(1, 1).id == 11);
+    assert!(board.get_leaderboard_entries(1).len() == 2);
+    assert!(board.get_position(1, 12) == Option::Some(2));
+    assert!(board.qualifies(1, 60) && board.is_full(1));
+    assert!(host.hook_count() == 2);
+}

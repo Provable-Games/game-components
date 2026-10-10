@@ -178,3 +178,126 @@ fn entry_requirement_host_storage_rejects_wrong_owner() {
             Option::Some(0x456.try_into().unwrap()),
         );
 }
+
+#[starknet::contract]
+mod ComponentBackedRequirement {
+    use starknet::ContractAddress;
+    use crate::entry_requirement::api::{
+        EntryRequirementInternalImpl, EntryRequirementInternalTrait,
+    };
+    use crate::entry_requirement::entry_requirement_component::EntryRequirementComponent;
+    use crate::entry_requirement::entry_requirement_store::{
+        EntryRequirementStoreImpl, EntryRequirementStoreTrait,
+    };
+    use crate::entry_requirement::structs::{EntryRequirement, QualificationProof};
+    component!(
+        path: EntryRequirementComponent, storage: entry_requirement, event: RequirementEvent,
+    );
+    impl Meta = crate::entry_requirement::storage_adapter::ComponentMetadata<ContractState>;
+    impl StorageAdapter =
+        crate::entry_requirement::storage_adapter::ComponentStore<ContractState, _, Meta>;
+    #[abi(embed_v0)]
+    impl Views = crate::entry_requirement::api::EntryRequirementImpl<ContractState>;
+    #[storage]
+    struct Storage {
+        #[substorage(v0)]
+        entry_requirement: EntryRequirementComponent::Storage,
+    }
+    #[event]
+    #[derive(Drop, starknet::Event)]
+    enum Event {
+        RequirementEvent: EntryRequirementComponent::Event,
+    }
+    #[abi(embed_v0)]
+    impl TestApi of super::IHostRequirement<ContractState> {
+        fn configure(ref self: ContractState, id: u64, requirement: Option<EntryRequirement>) {
+            EntryRequirementInternalTrait::set_entry_requirement(ref self, id, requirement);
+        }
+        fn enter(
+            ref self: ContractState,
+            id: u64,
+            proof: QualificationProof,
+            qualifier: Option<ContractAddress>,
+        ) -> ContractAddress {
+            let req = EntryRequirementStoreTrait::get_entry_requirement(@self, id).unwrap();
+            let player = EntryRequirementStoreTrait::validate_qualification(
+                @self, id, req, proof, qualifier,
+            );
+            EntryRequirementStoreTrait::update_qualification_entries(ref self, id, proof, req);
+            player
+        }
+    }
+}
+#[test]
+fn entry_requirement_host_storage_component_adapter_preserves_component_maps() {
+    let cls = declare("ComponentBackedRequirement").unwrap().contract_class();
+    let (address, _) = cls.deploy(@array![]).unwrap();
+    let nft_cls = declare("ERC721Mock").unwrap().contract_class();
+    let (nft, _) = nft_cls.deploy(@array![]).unwrap();
+    let host = IHostRequirementDispatcher { contract_address: address };
+    let view = IEntryRequirementDispatcher { contract_address: address };
+    let player: ContractAddress = 0x123.try_into().unwrap();
+    INftSetupDispatcher { contract_address: nft }.set_owner(1, player);
+    let proof = QualificationProof::NFT(NFTQualification { token_id: 1 });
+    let req = EntryRequirement {
+        entry_limit: 2, entry_requirement_type: EntryRequirementType::token(nft),
+    };
+    host.configure(1, Option::Some(req));
+    assert!(view.get_entry_requirement(1).unwrap() == req);
+    assert!(host.enter(1, proof, Option::Some(player)) == player);
+    assert!(view.get_qualification_entries(1, proof).entry_count == 1);
+    host.configure(1, Option::None);
+    assert!(view.get_entry_requirement(1).is_none());
+}
+
+#[test]
+fn entry_requirement_host_storage_extension_configuration_and_dispatch() {
+    let cls = declare("ComponentBackedRequirement").unwrap().contract_class();
+    let (address, _) = cls.deploy(@array![]).unwrap();
+    let host = IHostRequirementDispatcher { contract_address: address };
+    let view = IEntryRequirementDispatcher { contract_address: address };
+    let extension: ContractAddress = 0x456.try_into().unwrap();
+    let player: ContractAddress = 0x123.try_into().unwrap();
+    snforge_std::start_mock_call(extension, selector!("supports_interface"), true);
+    snforge_std::start_mock_call(extension, selector!("valid_entry"), true);
+    let req = EntryRequirement {
+        entry_limit: 1,
+        entry_requirement_type: EntryRequirementType::extension(
+            crate::entry_requirement::structs::ExtensionConfig {
+                address: extension, config: array![17].span(),
+            },
+        ),
+    };
+    host.configure(1, Option::Some(req));
+    let stored = view.get_entry_requirement(1).unwrap();
+    match stored.entry_requirement_type {
+        EntryRequirementType::extension(cfg) => {
+            assert!(cfg.address == extension && cfg.config.is_empty());
+        },
+        _ => panic!("extension expected"),
+    }
+    let proof = QualificationProof::Extension(array![99].span());
+    assert!(host.enter(1, proof, Option::Some(player)) == player);
+    assert!(
+        view.get_qualification_entries(1, proof).entry_count == 0, "extension owns quota tracking",
+    );
+}
+#[test]
+#[should_panic(expected: "EntryRequirement: Extension address cannot be zero")]
+fn entry_requirement_host_storage_rejects_invalid_configuration() {
+    let (host, _, _) = deploy();
+    host
+        .configure(
+            1,
+            Option::Some(
+                EntryRequirement {
+                    entry_limit: 1,
+                    entry_requirement_type: EntryRequirementType::extension(
+                        crate::entry_requirement::structs::ExtensionConfig {
+                            address: 0.try_into().unwrap(), config: array![].span(),
+                        },
+                    ),
+                },
+            ),
+        );
+}
