@@ -17,10 +17,6 @@ pub mod LeaderboardComponent {
         StoragePointerWriteAccess,
     };
     use starknet::{ContractAddress, get_caller_address};
-    use crate::leaderboard::leaderboard_store::{
-        IGameDetailsDispatcher, IGameDetailsDispatcherTrait, LeaderboardStoreHelpersImpl,
-        LeaderboardStoreHelpersTrait, LeaderboardStoreImpl, LeaderboardStoreTrait,
-    };
     use crate::leaderboard::store::Store;
 
     #[storage]
@@ -47,29 +43,7 @@ pub mod LeaderboardComponent {
     // Allows the embedding contract to define custom behavior on leaderboard
     // operations. Implementers can emit events, update state, etc.
 
-    pub trait LeaderboardHooksTrait<TContractState> {
-        /// Called after a score is successfully submitted
-        fn on_score_submitted(
-            ref self: TContractState, context_id: u64, token_id: felt252, score: u64, position: u32,
-        );
-
-        /// Called after a leaderboard context is configured
-        fn on_configured(
-            ref self: TContractState,
-            context_id: u64,
-            max_entries: u32,
-            ascending: bool,
-            game_address: ContractAddress,
-        );
-
-        /// Called after a leaderboard is cleared
-        fn on_cleared(ref self: TContractState, context_id: u64);
-
-        /// Called after ownership is transferred
-        fn on_ownership_transferred(
-            ref self: TContractState, previous_owner: ContractAddress, new_owner: ContractAddress,
-        );
-    }
+    pub use crate::leaderboard::hooks::LeaderboardHooksTrait;
 
     // Implement the Store trait for this component
     impl ComponentStore<
@@ -146,6 +120,65 @@ pub mod LeaderboardComponent {
         }
     }
 
+    impl StoredConfiguration<
+        T, +HasComponent<T>,
+    > of crate::leaderboard::api::Configuration<ComponentState<T>> {
+        fn leaderboard_config(self: @ComponentState<T>, context_id: u64) -> LeaderboardStoreConfig {
+            LeaderboardStoreConfig {
+                max_entries: self.max_entries.read(context_id),
+                ascending: self.ascending.read(context_id),
+                game_address: self.game_address.read(context_id),
+            }
+        }
+        fn leaderboard_game_address(self: @ComponentState<T>, context_id: u64) -> ContractAddress {
+            self.game_address.read(context_id)
+        }
+        fn leaderboard_max_entries(self: @ComponentState<T>, context_id: u64) -> u32 {
+            self.max_entries.read(context_id)
+        }
+    }
+
+    impl ComponentHooks<
+        T, +HasComponent<T>, +LeaderboardHooksTrait<T>, +Drop<T>,
+    > of LeaderboardHooksTrait<ComponentState<T>> {
+        fn on_score_submitted(
+            ref self: ComponentState<T>,
+            context_id: u64,
+            token_id: felt252,
+            score: u64,
+            position: u32,
+        ) {
+            let mut host = self.get_contract_mut();
+            LeaderboardHooksTrait::on_score_submitted(
+                ref host, context_id, token_id, score, position,
+            );
+        }
+        fn on_configured(
+            ref self: ComponentState<T>,
+            context_id: u64,
+            max_entries: u32,
+            ascending: bool,
+            game_address: ContractAddress,
+        ) {
+            let mut host = self.get_contract_mut();
+            LeaderboardHooksTrait::on_configured(
+                ref host, context_id, max_entries, ascending, game_address,
+            );
+        }
+        fn on_cleared(ref self: ComponentState<T>, context_id: u64) {
+            let mut host = self.get_contract_mut();
+            LeaderboardHooksTrait::on_cleared(ref host, context_id);
+        }
+        fn on_ownership_transferred(
+            ref self: ComponentState<T>,
+            previous_owner: ContractAddress,
+            new_owner: ContractAddress,
+        ) {
+            let mut host = self.get_contract_mut();
+            LeaderboardHooksTrait::on_ownership_transferred(ref host, previous_owner, new_owner);
+        }
+    }
+
     #[embeddable_as(LeaderboardImpl)]
     impl LeaderboardComponent<
         TContractState,
@@ -157,96 +190,55 @@ pub mod LeaderboardComponent {
         fn get_leaderboard_entries(
             self: @ComponentState<TContractState>, context_id: u64,
         ) -> Array<LeaderboardEntry> {
-            let game_address = self.game_address.read(context_id);
-            LeaderboardStoreTrait::get_entries(self, context_id, game_address)
+            crate::leaderboard::api::LeaderboardImpl::get_leaderboard_entries(self, context_id)
         }
 
         fn get_leaderboard_entry(
             self: @ComponentState<TContractState>, context_id: u64, position: u32,
         ) -> LeaderboardEntry {
-            assert!(position > 0, "Leaderboard: position must be 1-indexed");
-            let count = self.entries_count.read(context_id);
-            assert!(position <= count, "Leaderboard: position {} out of range", position);
-            let storage_index: u32 = position - 1;
-            let token_id = self.entries.read((context_id, storage_index));
-            let game_address = self.game_address.read(context_id);
-            let score = if !game_address.is_zero() {
-                // Live score read from the game contract.
-                IGameDetailsDispatcher { contract_address: game_address }.score(token_id)
-            } else {
-                self.scores.read((context_id, storage_index))
-            };
-            LeaderboardEntry { id: token_id, score }
+            crate::leaderboard::api::LeaderboardImpl::get_leaderboard_entry(
+                self, context_id, position,
+            )
         }
 
         fn get_top_leaderboard_entries(
             self: @ComponentState<TContractState>, context_id: u64, count: u32,
         ) -> Array<LeaderboardEntry> {
-            let game_address = self.game_address.read(context_id);
-            let total = self.entries_count.read(context_id);
-            let limit = if count < total {
-                count
-            } else {
-                total
-            };
-            let mut entries = ArrayTrait::new();
-            let mut i = 0_u32;
-            while i < limit {
-                let token_id = self.entries.read((context_id, i));
-                let score = if !game_address.is_zero() {
-                    IGameDetailsDispatcher { contract_address: game_address }.score(token_id)
-                } else {
-                    self.scores.read((context_id, i))
-                };
-                entries.append(LeaderboardEntry { id: token_id, score });
-                i += 1;
-            }
-            entries
+            crate::leaderboard::api::LeaderboardImpl::get_top_leaderboard_entries(
+                self, context_id, count,
+            )
         }
 
         fn get_position(
             self: @ComponentState<TContractState>, context_id: u64, token_id: felt252,
         ) -> Option<u32> {
-            LeaderboardStoreTrait::get_position(self, context_id, token_id)
+            crate::leaderboard::api::LeaderboardImpl::get_position(self, context_id, token_id)
         }
 
         fn qualifies(self: @ComponentState<TContractState>, context_id: u64, score: u64) -> bool {
-            let config = LeaderboardStoreConfig {
-                max_entries: self.max_entries.read(context_id),
-                ascending: self.ascending.read(context_id),
-                game_address: self.game_address.read(context_id),
-            };
-            LeaderboardStoreTrait::qualifies(self, context_id, score, config)
+            crate::leaderboard::api::LeaderboardImpl::qualifies(self, context_id, score)
         }
 
         fn is_full(self: @ComponentState<TContractState>, context_id: u64) -> bool {
-            let max_entries = self.max_entries.read(context_id);
-            LeaderboardStoreHelpersTrait::is_full(self, context_id, max_entries)
+            crate::leaderboard::api::LeaderboardImpl::is_full(self, context_id)
         }
 
         fn get_leaderboard_length(self: @ComponentState<TContractState>, context_id: u64) -> u32 {
-            self.entries_count.read(context_id)
+            crate::leaderboard::api::LeaderboardImpl::get_leaderboard_length(self, context_id)
         }
 
         fn get_config(
             self: @ComponentState<TContractState>, context_id: u64,
         ) -> LeaderboardStoreConfig {
-            LeaderboardStoreConfig {
-                max_entries: self.max_entries.read(context_id),
-                ascending: self.ascending.read(context_id),
-                game_address: self.game_address.read(context_id),
-            }
+            crate::leaderboard::api::LeaderboardImpl::get_config(self, context_id)
         }
 
         fn find_position(
             self: @ComponentState<TContractState>, context_id: u64, score: u64, token_id: felt252,
         ) -> Option<u32> {
-            let config = LeaderboardStoreConfig {
-                max_entries: self.max_entries.read(context_id),
-                ascending: self.ascending.read(context_id),
-                game_address: self.game_address.read(context_id),
-            };
-            LeaderboardStoreHelpersTrait::find_position(self, context_id, score, token_id, config)
+            crate::leaderboard::api::LeaderboardImpl::find_position(
+                self, context_id, score, token_id,
+            )
         }
     }
 
@@ -373,27 +365,9 @@ pub mod LeaderboardComponent {
             score: u64,
             position: u32,
         ) -> LeaderboardResult {
-            let config = LeaderboardStoreConfig {
-                max_entries: self.max_entries.read(context_id),
-                ascending: self.ascending.read(context_id),
-                game_address: self.game_address.read(context_id),
-            };
-
-            let result = LeaderboardStoreTrait::submit_score(
-                ref self, context_id, token_id, score, position, config,
-            );
-
-            match result {
-                LeaderboardResult::Success => {
-                    let mut contract = self.get_contract_mut();
-                    LeaderboardHooksTrait::on_score_submitted(
-                        ref contract, context_id, token_id, score, position,
-                    );
-                },
-                _ => {},
-            }
-
-            result
+            crate::leaderboard::api::LeaderboardInternalImpl::submit_score(
+                ref self, context_id, token_id, score, position,
+            )
         }
     }
 

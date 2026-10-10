@@ -1,6 +1,8 @@
+pub mod api;
 pub mod prize;
 pub mod prize_component;
 pub mod prize_store;
+pub mod storage_adapter;
 pub mod store;
 pub mod structs;
 
