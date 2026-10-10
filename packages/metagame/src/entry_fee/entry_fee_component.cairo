@@ -8,25 +8,18 @@
 
 #[starknet::component]
 pub mod EntryFeeComponent {
-    use core::num::traits::Zero;
     use game_components_interfaces::entry_fee::{IENTRY_FEE_ID, IEntryFee};
     use game_components_utilities::distribution::packed_shares::CustomShares;
     use game_components_utilities::distribution::structs::{
         PackedDistribution, PackedDistributionStorePacking,
     };
-    use metagame_extensions_interfaces::entry_fee_extension::{
-        IENTRY_FEE_EXTENSION_ID, IEntryFeeExtensionDispatcher, IEntryFeeExtensionDispatcherTrait,
-    };
     use metagame_extensions_interfaces::extension::ExtensionConfig;
-    use openzeppelin_interfaces::erc20::{IERC20Dispatcher, IERC20DispatcherTrait};
-    use openzeppelin_interfaces::introspection::{ISRC5Dispatcher, ISRC5DispatcherTrait};
     use openzeppelin_introspection::src5::SRC5Component;
     use openzeppelin_introspection::src5::SRC5Component::InternalTrait as SRC5InternalTrait;
+    use starknet::ContractAddress;
     use starknet::storage::{
         Map, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess,
     };
-    use starknet::{ContractAddress, get_caller_address, get_contract_address};
-    use crate::entry_fee::entry_fee_store::{EntryFeeStoreImpl, EntryFeeStoreTrait};
     use crate::entry_fee::store::Store;
     use crate::entry_fee::structs::{
         AdditionalShare, EntryFee, EntryFeeClaimType, EntryFeeConfig, EntryFeeDeposit,
@@ -207,7 +200,7 @@ pub mod EntryFeeComponent {
         fn get_entry_fee(
             self: @ComponentState<TContractState>, context_id: u64,
         ) -> Option<EntryFeeConfig> {
-            EntryFeeStoreTrait::get_entry_fee(self, context_id)
+            crate::entry_fee::api::EntryFeeImpl::get_entry_fee(self, context_id)
         }
     }
 
@@ -220,7 +213,7 @@ pub mod EntryFeeComponent {
         fn _get_entry_fee(
             self: @ComponentState<TContractState>, context_id: u64,
         ) -> Option<EntryFeeConfig> {
-            EntryFeeStoreTrait::get_entry_fee(self, context_id)
+            crate::entry_fee::api::EntryFeeInternalImpl::_get_entry_fee(self, context_id)
         }
 
         /// Get additional shares for a context
@@ -228,7 +221,7 @@ pub mod EntryFeeComponent {
         fn _get_additional_shares(
             self: @ComponentState<TContractState>, context_id: u64,
         ) -> Span<AdditionalShare> {
-            EntryFeeStoreTrait::get_additional_shares(self, context_id)
+            crate::entry_fee::api::EntryFeeInternalImpl::_get_additional_shares(self, context_id)
         }
 
         /// Persist a custom distribution shares array for a context.
@@ -237,7 +230,9 @@ pub mod EntryFeeComponent {
         fn _store_distribution_shares(
             ref self: ComponentState<TContractState>, context_id: u64, shares: Span<u16>,
         ) {
-            EntryFeeStoreTrait::store_distribution_shares(ref self, context_id, shares);
+            crate::entry_fee::api::EntryFeeInternalImpl::_store_distribution_shares(
+                ref self, context_id, shares,
+            )
         }
 
         /// Read `count` custom distribution shares for a context. Callers
@@ -247,7 +242,9 @@ pub mod EntryFeeComponent {
         fn _get_distribution_shares(
             self: @ComponentState<TContractState>, context_id: u64, count: u32,
         ) -> Array<u16> {
-            EntryFeeStoreTrait::get_distribution_shares(self, context_id, count)
+            crate::entry_fee::api::EntryFeeInternalImpl::_get_distribution_shares(
+                self, context_id, count,
+            )
         }
 
         /// Read a single custom distribution share at a 1-indexed position.
@@ -257,7 +254,9 @@ pub mod EntryFeeComponent {
         fn _get_custom_share_at(
             self: @ComponentState<TContractState>, context_id: u64, position: u32,
         ) -> u16 {
-            EntryFeeStoreTrait::get_custom_share_at(self, context_id, position)
+            crate::entry_fee::api::EntryFeeInternalImpl::_get_custom_share_at(
+                self, context_id, position,
+            )
         }
 
         /// Set entry fee or extension for a context.
@@ -267,38 +266,18 @@ pub mod EntryFeeComponent {
         fn set_entry_fee(
             ref self: ComponentState<TContractState>, context_id: u64, entry_fee: EntryFee,
         ) -> Option<EntryFeeConfig> {
-            // Assert entry fee has not already been set (either config or extension)
-            assert!(
-                !EntryFeeStoreTrait::is_entry_fee_set(@self, context_id),
-                "EntryFee: Entry fee already set for context {}",
-                context_id,
-            );
-
-            match entry_fee {
-                EntryFee::Config(config) => {
-                    EntryFeeStoreTrait::set_entry_fee_config(ref self, context_id, @config);
-                    Option::Some(config)
-                },
-                EntryFee::Extension(ext) => {
-                    assert!(!ext.address.is_zero(), "EntryFee: Extension address cannot be zero");
-                    let src5 = ISRC5Dispatcher { contract_address: ext.address };
-                    let display_address: felt252 = ext.address.into();
-                    assert!(
-                        src5.supports_interface(IENTRY_FEE_EXTENSION_ID),
-                        "EntryFee: Extension {} does not support IEntryFeeExtension",
-                        display_address,
-                    );
-                    self._set_extension(context_id, ext);
-                    Option::None
-                },
-            }
+            crate::entry_fee::api::EntryFeeInternalImpl::set_entry_fee(
+                ref self, context_id, entry_fee,
+            )
         }
 
         /// Internal: store entry fee config data
         fn _set_entry_fee_config(
             ref self: ComponentState<TContractState>, context_id: u64, config: @EntryFeeConfig,
         ) {
-            EntryFeeStoreTrait::set_entry_fee_config(ref self, context_id, config);
+            crate::entry_fee::api::EntryFeeInternalImpl::_set_entry_fee_config(
+                ref self, context_id, config,
+            )
         }
 
         /// Internal: persist the extension address and forward the config
@@ -310,10 +289,7 @@ pub mod EntryFeeComponent {
         fn _set_extension(
             ref self: ComponentState<TContractState>, context_id: u64, ext: ExtensionConfig,
         ) {
-            EntryFeeStoreTrait::store_extension_address(ref self, context_id, ext.address);
-
-            let dispatcher = IEntryFeeExtensionDispatcher { contract_address: ext.address };
-            dispatcher.set_entry_fee_config(context_id, ext.config);
+            crate::entry_fee::api::EntryFeeInternalImpl::_set_extension(ref self, context_id, ext)
         }
 
         /// Process entry fee deposit.
@@ -323,28 +299,9 @@ pub mod EntryFeeComponent {
         fn deposit_entry_fee(
             ref self: ComponentState<TContractState>, context_id: u64, deposit: EntryFeeDeposit,
         ) {
-            match deposit {
-                EntryFeeDeposit::Config(config) => {
-                    let erc20_dispatcher = IERC20Dispatcher {
-                        contract_address: config.token_address,
-                    };
-                    assert!(
-                        erc20_dispatcher
-                            .transfer_from(
-                                get_caller_address(), get_contract_address(), config.amount.into(),
-                            ),
-                        "EntryFee: ERC20 transfer_from failed",
-                    );
-                },
-                EntryFeeDeposit::Extension(pay_params) => {
-                    let extension_address = EntryFeeStoreTrait::get_extension(@self, context_id);
-                    assert!(!extension_address.is_zero(), "EntryFee: No extension configured");
-                    let dispatcher = IEntryFeeExtensionDispatcher {
-                        contract_address: extension_address,
-                    };
-                    dispatcher.pay_entry_fee(context_id, pay_params);
-                },
-            }
+            crate::entry_fee::api::EntryFeeInternalImpl::deposit_entry_fee(
+                ref self, context_id, deposit,
+            )
         }
 
         /// Forward a payout call to the entry-fee extension configured for
@@ -369,10 +326,9 @@ pub mod EntryFeeComponent {
             token_id: Option<felt252>,
             claim_params: Span<felt252>,
         ) {
-            let extension_address = EntryFeeStoreTrait::get_extension(@self, context_id);
-            assert!(!extension_address.is_zero(), "EntryFee: No extension configured");
-            let dispatcher = IEntryFeeExtensionDispatcher { contract_address: extension_address };
-            dispatcher.payout_entry_fee(context_id, token_id, claim_params);
+            crate::entry_fee::api::EntryFeeInternalImpl::payout_entry_fee_extension(
+                ref self, context_id, token_id, claim_params,
+            )
         }
 
         /// Read-through dispatcher for `IEntryFeeExtension.get_config`. Lets
@@ -383,12 +339,9 @@ pub mod EntryFeeComponent {
         fn get_entry_fee_extension_config(
             self: @ComponentState<TContractState>, context_owner: ContractAddress, context_id: u64,
         ) -> Span<felt252> {
-            let extension_address = EntryFeeStoreTrait::get_extension(self, context_id);
-            if extension_address.is_zero() {
-                return array![].span();
-            }
-            let dispatcher = IEntryFeeExtensionDispatcher { contract_address: extension_address };
-            dispatcher.get_config(context_owner, context_id)
+            crate::entry_fee::api::EntryFeeInternalImpl::get_entry_fee_extension_config(
+                self, context_owner, context_id,
+            )
         }
 
         /// Payout to a recipient
@@ -398,20 +351,16 @@ pub mod EntryFeeComponent {
             recipient: ContractAddress,
             amount: u128,
         ) {
-            if amount > 0 {
-                let erc20_dispatcher = IERC20Dispatcher { contract_address: token_address };
-                assert!(
-                    erc20_dispatcher.transfer(recipient, amount.into()),
-                    "EntryFee: ERC20 transfer failed",
-                );
-            }
+            crate::entry_fee::api::EntryFeeInternalImpl::payout(
+                ref self, token_address, recipient, amount,
+            )
         }
 
         /// Check if a claim has been made
         fn is_claimed(
             self: @ComponentState<TContractState>, context_id: u64, claim_type: EntryFeeClaimType,
         ) -> bool {
-            EntryFeeStoreTrait::is_claimed(self, context_id, claim_type)
+            crate::entry_fee::api::EntryFeeInternalImpl::is_claimed(self, context_id, claim_type)
         }
 
         /// Mark a claim as completed
@@ -420,7 +369,9 @@ pub mod EntryFeeComponent {
             context_id: u64,
             claim_type: EntryFeeClaimType,
         ) {
-            EntryFeeStoreTrait::set_claimed(ref self, context_id, claim_type);
+            crate::entry_fee::api::EntryFeeInternalImpl::set_claimed(
+                ref self, context_id, claim_type,
+            )
         }
 
         // --- Extension helpers ---
@@ -429,7 +380,7 @@ pub mod EntryFeeComponent {
         fn get_extension_address(
             self: @ComponentState<TContractState>, context_id: u64,
         ) -> ContractAddress {
-            EntryFeeStoreTrait::get_extension(self, context_id)
+            crate::entry_fee::api::EntryFeeInternalImpl::get_extension_address(self, context_id)
         }
     }
 

@@ -4,7 +4,7 @@ use starknet::ContractAddress;
 use crate::prize::structs::{CustomShares, StoredPrize};
 
 /// Generic store trait for prize operations.
-/// Maps 1:1 to storage fields without business logic.
+/// Logical accessors without business logic; hosts may pack, derive or share fields.
 pub trait Store<T> {
     fn get_prize(self: @T, prize_id: u64) -> StoredPrize;
     fn set_prize(ref self: T, prize_id: u64, prize: StoredPrize);

@@ -1,7 +1,7 @@
-# Host-owned leaderboard and entry-requirement storage
+# Host-owned metagame storage
 
 An application can use the shared metagame APIs and algorithms with its own
-storage. It does not need to embed either component or maintain a separate copy
+storage. It does not need to embed a component or maintain a separate copy
 of their interface implementations. The standard components remain available
 with their existing storage layout, embedded aliases and admin interfaces.
 
@@ -138,4 +138,118 @@ adapters. Run them with:
 ```sh
 snforge test -p game_components_metagame
 snforge test -p game_components_metagame test_host_storage
+```
+
+## Registration, entry fees and prizes
+
+The same separation is available for all five metagame modules:
+
+| Module | Shared views | Shared internal operations | Optional original-map adapter |
+| --- | --- | --- | --- |
+| `leaderboard` | `api::LeaderboardImpl` | `api::LeaderboardInternalImpl` | `storage_adapter::ComponentStore` |
+| `entry_requirement` | `api::EntryRequirementImpl` | `api::EntryRequirementInternalImpl` | `storage_adapter::ComponentStore` |
+| `registration` | `api::RegistrationImpl` | `api::RegistrationInternalImpl` | `storage_adapter::ComponentStore` |
+| `entry_fee` | `api::EntryFeeImpl` | `api::EntryFeeInternalImpl` | `storage_adapter::ComponentStore` |
+| `prize` | `api::PrizeImpl` | `api::PrizeInternalImpl` | `storage_adapter::ComponentStore` |
+
+For each module, implement `store::Store<ContractState>` and embed its shared
+views. Import the module's generated internal trait and implementation, or call
+its internal implementation explicitly when multiple modules have overlapping
+helper names. Existing standard components delegate to these same APIs; their
+storage declarations, public signatures, embedded aliases, initializers and
+SRC5 registration remain unchanged.
+
+For example, an application that keeps the original registration maps can use:
+
+```cairo
+component!(path: RegistrationComponent, storage: registration, event: RegistrationEvent);
+impl RegistrationStorage =
+    game_components_metagame::registration::storage_adapter::ComponentStore<ContractState>;
+#[abi(embed_v0)]
+impl RegistrationViews =
+    game_components_metagame::registration::api::RegistrationImpl<ContractState>;
+```
+
+Alternatively, implement `registration::store::Store<ContractState>` against
+application maps and omit `RegistrationComponent` entirely. This applies equally
+to entry fees and prizes. The independent contracts in
+`src/registration/tests/host_fixtures.cairo` and
+`src/prize/tests/host_fixtures.cairo` are compiling examples of this approach;
+they also include matching component-backed adapters.
+
+### Combining storage across modules
+
+`Store<T>` describes logical fields, not a required physical layout. A host can
+implement multiple store traits against one packed map. It may also forward
+individual fields through `storage_adapter::ComponentStore` using explicit
+implementation calls, while storing the remaining fields itself. When defining
+a custom `Store` implementation, do not also bind the full component adapter as
+a second `Store` implementation in the same scope.
+
+The registration/fee example stores these fields together, keyed by the same
+`(context_id, token_id)` pair:
+
+- bits 0–63: registration context;
+- bit 64: score submitted;
+- bit 65: banned;
+- bit 66: fee refund claimed.
+
+Registration reads mask out the refund bit before passing state to the shared
+registration decoders. Registration writes preserve the refund bit; fee writes
+preserve all registration fields. In particular, replacing a registration entry
+clears the displaced token's registration state but **retains its fee claim
+history**. Retaining this history prevents a storage update from enabling a
+second refund. Contexts remain isolated even when they contain the same token ID.
+
+The prize example combines extension context (64 bits), custom-share count
+(32 bits) and payout position (32 bits) into one application metadata slot.
+Each setter preserves the other fields, including at maximum integer values.
+This demonstrates flexibility; it does not imply that every prize needs all
+three fields or that packing them always saves a write.
+
+Do not concatenate packed formats without checking their full supported ranges.
+Entry-fee data uses 165 bits; the current distribution format can use 88 bits
+with Tiered parameters. Their combined 253 bits cannot fit in one felt. Addresses
+also require their own capacity. Apps may derive or specialize fields only when
+their supported configurations and invariants make that valid.
+
+### Internal operations and host responsibilities
+
+The new internal APIs preserve existing validation, revert messages, token
+transfers, extension dispatch and claim bookkeeping. They are not externally
+embedded. The application must enforce authorization, tournament phase,
+registration eligibility, correct deposit/configuration selection, entitlement,
+claim-before-transfer ordering and reentrancy protection. A payout/refund helper
+alone does not verify entitlement or mark the corresponding claim.
+
+For deployed applications, keep old maps readable. A new host packing layout
+needs an explicit version discriminator or a migration; adding a generic API
+does not migrate any data. All original component maps retain their names and
+types in this change. Public token-owner payout behavior is unchanged.
+
+### Measured packing example
+
+The matched `entry_fee_host_storage_gas_combined` and
+`entry_fee_host_storage_gas_separate` tests deploy the fixture, register one game,
+mark its score submitted and mark its fee refund claimed. They use the same
+shared APIs with either combined application state or separate component maps.
+This isolates a packing opportunity rather than measuring a complete tournament,
+account validation or a charged network fee. See the benchmark results below.
+
+| Fixture | L2 gas | L1 data gas | Distinct changed data slots |
+| --- | ---: | ---: | ---: |
+| Separate component maps | 2,373,361 | 384 | 3 |
+| Combined application map | 2,166,402 | 288 | 2 |
+
+This sequence saves **8.72% L2 gas** and **25% L1 data gas**.
+Both paths make four storage-write syscalls; packing reduces the number of
+distinct slots changed, rather than the number of setter calls. The combined
+store performs extra reads and bit manipulation, already included in these
+measurements. Other workloads can have different tradeoffs.
+
+Measured with Scarb 2.20.1 and snforge 0.63.0 in the dev profile, without account
+validation. Reproduce with:
+
+```bash
+snforge test -p game_components_metagame entry_fee_host_storage_gas --max-threads 1
 ```

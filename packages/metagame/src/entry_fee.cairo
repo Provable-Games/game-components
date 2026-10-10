@@ -1,6 +1,8 @@
+pub mod api;
 pub mod entry_fee;
 pub mod entry_fee_component;
 pub mod entry_fee_store;
+pub mod storage_adapter;
 pub mod store;
 pub mod structs;
 
