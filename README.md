@@ -58,9 +58,10 @@ Core components for onboarding games onto Starknet.
 
 Components for applications that coordinate and interact with games.
 
-Leaderboard and entry-requirement APIs also support application-owned storage
-without embedding their components. See [host-owned storage](packages/metagame/HOST_STORAGE.md)
-for configuration providers, optional component adapters and upgrade compatibility.
+Leaderboard, registration, entry-requirement, entry-fee and prize APIs also support
+application-owned storage without embedding their components. See
+[host-owned storage](packages/metagame/HOST_STORAGE.md) for configuration providers,
+optional component adapters and upgrade compatibility.
 
 | Module | Description | Docs |
 |--------|-------------|------|
