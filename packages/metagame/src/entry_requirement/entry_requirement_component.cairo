@@ -22,11 +22,7 @@
 
 #[starknet::component]
 pub mod EntryRequirementComponent {
-    use core::num::traits::Zero;
     use game_components_interfaces::entry_requirement::{IENTRY_REQUIREMENT_ID, IEntryRequirement};
-    use metagame_extensions_interfaces::entry_requirement_extension::IENTRY_REQUIREMENT_EXTENSION_ID;
-    use openzeppelin_interfaces::erc721::IERC721_ID;
-    use openzeppelin_interfaces::introspection::{ISRC5Dispatcher, ISRC5DispatcherTrait};
     use openzeppelin_introspection::src5::SRC5Component;
     use openzeppelin_introspection::src5::SRC5Component::InternalTrait as SRC5InternalTrait;
     use starknet::ContractAddress;
@@ -40,7 +36,7 @@ pub mod EntryRequirementComponent {
     use crate::entry_requirement::store::Store;
     use crate::entry_requirement::structs::{
         EntryRequirement, EntryRequirementMeta, EntryRequirementMetaStorePacking,
-        EntryRequirementType, QualificationEntries, QualificationProof,
+        QualificationEntries, QualificationProof,
     };
 
     #[storage]
@@ -119,13 +115,17 @@ pub mod EntryRequirementComponent {
         fn get_entry_requirement(
             self: @ComponentState<TContractState>, context_id: u64,
         ) -> Option<EntryRequirement> {
-            self._get_entry_requirement(context_id)
+            crate::entry_requirement::api::EntryRequirementImpl::get_entry_requirement(
+                self, context_id,
+            )
         }
 
         fn get_qualification_entries(
             self: @ComponentState<TContractState>, context_id: u64, proof: QualificationProof,
         ) -> QualificationEntries {
-            self._get_qualification_entries(context_id, proof)
+            crate::entry_requirement::api::EntryRequirementImpl::get_qualification_entries(
+                self, context_id, proof,
+            )
         }
     }
 
@@ -148,51 +148,9 @@ pub mod EntryRequirementComponent {
             context_id: u64,
             entry_requirement: Option<EntryRequirement>,
         ) {
-            match entry_requirement {
-                Option::Some(req) => {
-                    let (req_type, entry_limit) = match req.entry_requirement_type {
-                        EntryRequirementType::token(token) => {
-                            let src5 = ISRC5Dispatcher { contract_address: token };
-                            let display_address: felt252 = token.into();
-                            assert!(
-                                src5.supports_interface(IERC721_ID),
-                                "EntryRequirement: Token {} does not support IERC721",
-                                display_address,
-                            );
-                            self.set_token(context_id, token);
-                            (entry_requirement::REQ_TYPE_TOKEN, req.entry_limit)
-                        },
-                        EntryRequirementType::extension(config) => {
-                            assert!(
-                                !config.address.is_zero(),
-                                "EntryRequirement: Extension address cannot be zero",
-                            );
-                            let src5 = ISRC5Dispatcher { contract_address: config.address };
-                            let display_address: felt252 = config.address.into();
-                            assert!(
-                                src5.supports_interface(IENTRY_REQUIREMENT_EXTENSION_ID),
-                                "EntryRequirement: Extension {} does not support IEntryRequirementExtension",
-                                display_address,
-                            );
-                            // Address-only persistence: the extension contract
-                            // owns its own config (the host typically forwards
-                            // it directly via `add_config`).
-                            self.set_extension_address(context_id, config.address);
-                            (entry_requirement::REQ_TYPE_EXTENSION, req.entry_limit)
-                        },
-                    };
-
-                    let meta = EntryRequirementMeta { entry_limit, req_type };
-                    self.set_meta(context_id, meta);
-                },
-                Option::None => {
-                    // Write empty meta with REQ_TYPE_NONE
-                    let meta = EntryRequirementMeta {
-                        entry_limit: 0, req_type: entry_requirement::REQ_TYPE_NONE,
-                    };
-                    self.set_meta(context_id, meta);
-                },
-            }
+            crate::entry_requirement::api::EntryRequirementInternalImpl::set_entry_requirement(
+                ref self, context_id, entry_requirement,
+            )
         }
 
         /// Get qualification entries for a context and qualification proof (internal)

@@ -35,8 +35,6 @@ pub mod RegistrationComponent {
     use starknet::storage::{
         Map, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess,
     };
-    use crate::registration::registration::registration::RegistrationValidationImpl;
-    use crate::registration::registration_store::{RegistrationStoreImpl, RegistrationStoreTrait};
     use crate::registration::store::Store;
 
     #[storage]
@@ -104,23 +102,23 @@ pub mod RegistrationComponent {
         fn get_entry(
             self: @ComponentState<TContractState>, context_id: u64, entry_id: u32,
         ) -> Registration {
-            RegistrationStoreTrait::get_entry(self, context_id, entry_id)
+            crate::registration::api::RegistrationImpl::get_entry(self, context_id, entry_id)
         }
 
         fn entry_exists(
             self: @ComponentState<TContractState>, context_id: u64, entry_id: u32,
         ) -> bool {
-            RegistrationStoreTrait::entry_exists(self, context_id, entry_id)
+            crate::registration::api::RegistrationImpl::entry_exists(self, context_id, entry_id)
         }
 
         fn is_token_banned(
             self: @ComponentState<TContractState>, context_id: u64, token_id: felt252,
         ) -> bool {
-            RegistrationStoreTrait::is_token_banned(self, context_id, token_id)
+            crate::registration::api::RegistrationImpl::is_token_banned(self, context_id, token_id)
         }
 
         fn get_entry_count(self: @ComponentState<TContractState>, context_id: u64) -> u32 {
-            Store::get_entry_count(self, context_id)
+            crate::registration::api::RegistrationImpl::get_entry_count(self, context_id)
         }
     }
 
@@ -131,59 +129,77 @@ pub mod RegistrationComponent {
         fn _get_entry(
             self: @ComponentState<TContractState>, context_id: u64, entry_id: u32,
         ) -> Registration {
-            RegistrationStoreTrait::get_entry(self, context_id, entry_id)
+            crate::registration::api::RegistrationInternalImpl::_get_entry(
+                self, context_id, entry_id,
+            )
         }
 
         fn set_entry(ref self: ComponentState<TContractState>, registration: @Registration) {
-            RegistrationStoreTrait::set_entry(ref self, registration);
+            crate::registration::api::RegistrationInternalImpl::set_entry(ref self, registration)
         }
 
         fn _get_entry_count(self: @ComponentState<TContractState>, context_id: u64) -> u32 {
-            Store::get_entry_count(self, context_id)
+            crate::registration::api::RegistrationInternalImpl::_get_entry_count(self, context_id)
         }
 
         fn increment_entry_count(ref self: ComponentState<TContractState>, context_id: u64) -> u32 {
-            RegistrationStoreTrait::increment_entry_count(ref self, context_id)
+            crate::registration::api::RegistrationInternalImpl::increment_entry_count(
+                ref self, context_id,
+            )
         }
 
         fn mark_token_submitted(
             ref self: ComponentState<TContractState>, context_id: u64, token_id: felt252,
         ) {
-            RegistrationStoreTrait::mark_token_submitted(ref self, context_id, token_id);
+            crate::registration::api::RegistrationInternalImpl::mark_token_submitted(
+                ref self, context_id, token_id,
+            )
         }
 
         fn ban_token(ref self: ComponentState<TContractState>, context_id: u64, token_id: felt252) {
-            RegistrationStoreTrait::ban_token(ref self, context_id, token_id);
+            crate::registration::api::RegistrationInternalImpl::ban_token(
+                ref self, context_id, token_id,
+            )
         }
 
         fn _entry_exists(
             self: @ComponentState<TContractState>, context_id: u64, entry_id: u32,
         ) -> bool {
-            RegistrationStoreTrait::entry_exists(self, context_id, entry_id)
+            crate::registration::api::RegistrationInternalImpl::_entry_exists(
+                self, context_id, entry_id,
+            )
         }
 
         fn assert_valid_for_submission(
             self: @ComponentState<TContractState>, registration: @Registration, context_id: u64,
         ) {
-            RegistrationValidationImpl::assert_valid_for_submission(registration, context_id);
+            crate::registration::api::RegistrationInternalImpl::assert_valid_for_submission(
+                self, registration, context_id,
+            )
         }
 
         fn _get_token_context(
             self: @ComponentState<TContractState>, context_id: u64, token_id: felt252,
         ) -> u64 {
-            RegistrationStoreTrait::get_token_context(self, context_id, token_id)
+            crate::registration::api::RegistrationInternalImpl::_get_token_context(
+                self, context_id, token_id,
+            )
         }
 
         fn _is_token_submitted(
             self: @ComponentState<TContractState>, context_id: u64, token_id: felt252,
         ) -> bool {
-            RegistrationStoreTrait::is_token_submitted(self, context_id, token_id)
+            crate::registration::api::RegistrationInternalImpl::_is_token_submitted(
+                self, context_id, token_id,
+            )
         }
 
         fn _is_token_banned(
             self: @ComponentState<TContractState>, context_id: u64, token_id: felt252,
         ) -> bool {
-            RegistrationStoreTrait::is_token_banned(self, context_id, token_id)
+            crate::registration::api::RegistrationInternalImpl::_is_token_banned(
+                self, context_id, token_id,
+            )
         }
     }
 }

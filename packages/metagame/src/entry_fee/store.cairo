@@ -6,7 +6,7 @@ use starknet::ContractAddress;
 use crate::entry_fee::structs::PackedAdditionalShares;
 
 /// Generic store trait for entry fee operations.
-/// Maps storage reads/writes without business logic.
+/// Logical accessors without business logic; hosts may pack, derive or share fields.
 pub trait Store<T> {
     fn get_token(self: @T, context_id: u64) -> ContractAddress;
     fn set_token(ref self: T, context_id: u64, token: ContractAddress);
