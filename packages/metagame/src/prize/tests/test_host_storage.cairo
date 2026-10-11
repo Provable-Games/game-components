@@ -1,7 +1,10 @@
 use core::num::traits::Zero;
 use game_components_interfaces::prize::{IPrizeDispatcher, IPrizeDispatcherTrait};
 use game_components_utilities::distribution::structs::Distribution;
-use snforge_std::{ContractClassTrait, DeclareResultTrait, declare, mock_call};
+use snforge_std::trace::get_call_trace;
+use snforge_std::{
+    ContractClassTrait, DeclareResultTrait, declare, mock_call, start_cheat_caller_address,
+};
 use starknet::ContractAddress;
 use crate::prize::structs::{
     ERC20Data, ERC721Data, ExtensionPrizePayload, Prize, PrizeType, TokenPrizePayload,
@@ -80,6 +83,58 @@ fn prize_host_storage_roundtrip_and_claims() {
 #[test]
 fn prize_host_storage_component_adapter() {
     check_prize("AdapterPrize");
+}
+fn check_erc721_deposit(name: ByteArray) {
+    let (host, views) = deploy(name);
+    let sponsor = addr(99);
+    let nft = addr(0xcba);
+    let token_id = 0xffffffffffffffffffffffffffffffff_u128;
+    start_cheat_caller_address(host.contract_address, sponsor);
+    mock_call(nft, selector!("transfer_from"), (), 1);
+    let id = host
+        .add_prize(
+            2,
+            Prize::Token(
+                TokenPrizePayload {
+                    token_address: nft,
+                    token_type: TokenTypeData::erc721(ERC721Data { id: token_id }),
+                },
+            ),
+        );
+    let trace = get_call_trace();
+    let deposit = trace.nested_calls.at(trace.nested_calls.len() - 1);
+    assert!(*deposit.entry_point.entry_point_selector == selector!("add_prize"));
+    assert!(deposit.nested_calls.len() == 1);
+    let transfer = deposit.nested_calls.at(0);
+    assert!(*transfer.entry_point.contract_address == nft);
+    assert!(*transfer.entry_point.entry_point_selector == selector!("transfer_from"));
+    assert!(
+        transfer
+            .entry_point
+            .calldata == @array![sponsor.into(), host.contract_address.into(), token_id.into(), 0],
+    );
+    assert!(id == 1);
+    assert!(views.get_total_prizes() == 1);
+    let record = views.get_prize(id);
+    assert!(record.context_id == 2);
+    assert!(record.sponsor_address == sponsor);
+    let deposited = match record.prize {
+        Prize::Token(payload) => payload,
+        _ => panic!("expected token prize"),
+    };
+    assert!(deposited.token_address == nft);
+    match deposited.token_type {
+        TokenTypeData::erc721(data) => assert!(data.id == token_id),
+        _ => panic!("expected ERC721 prize"),
+    }
+}
+#[test]
+fn prize_host_storage_erc721_deposit() {
+    check_erc721_deposit("HostPrize");
+}
+#[test]
+fn prize_host_storage_erc721_deposit_component_adapter() {
+    check_erc721_deposit("AdapterPrize");
 }
 fn check_prize_extensions(name: ByteArray) {
     let (host, views) = deploy(name);
